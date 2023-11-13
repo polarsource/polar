@@ -11,16 +11,18 @@ import {
 import { useListAllOrganizations } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
 
-const TeamSelect = ({
+const OrganizationSelect = ({
   onChange,
   allowSelfSelect,
   title,
   defaultToFirstOrganization,
+  organizationFilter,
 }: {
   onChange: (o: Organization | undefined) => void
   allowSelfSelect: boolean
   title?: string
   defaultToFirstOrganization?: boolean
+  organizationFilter?: (o: Organization) => boolean
 }) => {
   const { currentUser } = useAuth()
 
@@ -30,19 +32,24 @@ const TeamSelect = ({
 
   const organizations = useListAllOrganizations()
 
-  const canAttributeAsOrganizations = (organizations.data?.items || []).filter(
-    (o) => o.name !== currentUser?.username,
-  )
+  const canSelectOrganizations = (organizations.data?.items || [])
+    .filter((o) => o.name !== currentUser?.username)
+    .filter((o) => {
+      if (organizationFilter) {
+        return organizationFilter(o)
+      }
+      return true
+    })
 
-  const show = canAttributeAsOrganizations.length > 0
+  const show = canSelectOrganizations.length > 0
 
   const onAttributePledgeChange = useCallback(
     (id: string) => {
-      const o = canAttributeAsOrganizations.find((o) => o.id === id)
+      const o = canSelectOrganizations.find((o) => o.id === id)
       setAttributePledgeTo(o)
       onChange(o)
     },
-    [canAttributeAsOrganizations, onChange],
+    [canSelectOrganizations, onChange],
   )
 
   const [userSelectedTeam, setUserSelectedTeam] = useState(false)
@@ -51,14 +58,14 @@ const TeamSelect = ({
     if (
       defaultToFirstOrganization &&
       !userSelectedTeam &&
-      canAttributeAsOrganizations.length > 0 &&
-      canAttributeAsOrganizations[0].id !== attributePledgeTo?.id
+      canSelectOrganizations.length > 0 &&
+      canSelectOrganizations[0].id !== attributePledgeTo?.id
     ) {
-      onAttributePledgeChange(canAttributeAsOrganizations[0].id)
+      onAttributePledgeChange(canSelectOrganizations[0].id)
     }
   }, [
     defaultToFirstOrganization,
-    canAttributeAsOrganizations,
+    canSelectOrganizations,
     attributePledgeTo,
     userSelectedTeam,
     onAttributePledgeChange,
@@ -96,7 +103,7 @@ const TeamSelect = ({
             </SelectTrigger>
 
             <SelectContent>
-              {canAttributeAsOrganizations.map((o) => (
+              {canSelectOrganizations.map((o) => (
                 <SelectItem value={o.id} key={o.id}>
                   <div className="flex items-center space-x-2">
                     <Avatar avatar_url={o.avatar_url} name={o.name} />
@@ -131,4 +138,4 @@ const TeamSelect = ({
   )
 }
 
-export default TeamSelect
+export default OrganizationSelect

@@ -14,7 +14,7 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GithubLoginButton from '../Shared/GithubLoginButton'
-import TeamSelect from './TeamSelect'
+import OrganizationSelect from './OrganizationSelect'
 
 const PledgeCheckoutFundOnCompletion = ({
   issue,
@@ -121,7 +121,10 @@ const PledgeCheckoutFundOnCompletion = ({
       </div>
 
       {currentUser && (
-        <TeamSelect onChange={onChangeOnBehalfOf} allowSelfSelect={true} />
+        <OrganizationSelect
+          onChange={onChangeOnBehalfOf}
+          allowSelfSelect={true}
+        />
       )}
 
       <NextSteps />

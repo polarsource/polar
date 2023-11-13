@@ -11,7 +11,7 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CircledNumber from './CircledNumber'
-import TeamSelect from './TeamSelect'
+import OrganizationSelect from './OrganizationSelect'
 
 const PledgeCheckoutFundByTeam = ({
   issue,
@@ -133,11 +133,12 @@ const PledgeCheckoutFundByTeam = ({
         </div>
       </div>
 
-      <TeamSelect
+      <OrganizationSelect
         onChange={onChangeOnBehalfOf}
         allowSelfSelect={false}
         title="Team"
         defaultToFirstOrganization={true}
+        organizationFilter={(o) => o.is_teams_enabled}
       />
 
       {selectedOrg ? <SpendingLimit org={selectedOrg} /> : null}

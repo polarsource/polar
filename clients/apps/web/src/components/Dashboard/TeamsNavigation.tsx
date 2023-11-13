@@ -1,44 +1,21 @@
-import { useAuth } from '@/hooks'
-import { isFeatureEnabled } from '@/utils/feature-flags'
+import { useListTeams } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Avatar } from 'polarkit/components/ui/atoms'
-import {
-  useListAllOrganizations,
-  useListOrganizationMembers,
-} from 'polarkit/hooks'
+import { useListOrganizationMembers } from 'polarkit/hooks'
 import { twMerge } from 'tailwind-merge'
 
 const TeamsNavigation = () => {
-  const { currentUser, hydrated } = useAuth()
+  const allTeams = useListTeams()
 
-  const allOrganizations = useListAllOrganizations()
-
-  // Kind of a hack.
-  // Filter out the users own organization if it exists.
-  // This organiztaion can not have extra members, and can not be a "Team".
-  const allOrgs = (allOrganizations.data?.items || []).filter(
-    (o) => o.name !== currentUser?.username,
-  )
-
-  const teamsEnabled = isFeatureEnabled('teams')
-
-  if (!hydrated) {
-    return <></>
-  }
-
-  if (!teamsEnabled) {
-    return <></>
-  }
-
-  if (allOrgs.length === 0) {
+  if (allTeams.length === 0) {
     return <></>
   }
 
   return (
     <div className="dark:border-polar-700 mx-4 space-y-2 border-t border-gray-100 pt-8 ">
-      {allOrgs.map((o) => (
+      {allTeams.map((o) => (
         <Team org={o} key={o.id} />
       ))}
     </div>

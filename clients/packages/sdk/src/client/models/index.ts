@@ -2225,6 +2225,12 @@ export interface Organization {
      * @memberof Organization
      */
     per_user_monthly_spending_limit?: number;
+    /**
+     * Feature flag for if this organization is a team.
+     * @type {boolean}
+     * @memberof Organization
+     */
+    is_teams_enabled: boolean;
 }
 /**
  * 

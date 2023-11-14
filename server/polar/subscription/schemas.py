@@ -296,6 +296,10 @@ class Subscription(TimestampedSchema):
     subscription_tier: SubscriptionTier
 
 
+class SubscriptionUpgrade(Schema):
+    subscription_tier_id: UUID4
+
+
 class SubscriptionSummary(Schema):
     user: User
     subscription_tier: SubscriptionTier

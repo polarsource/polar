@@ -1,3 +1,5 @@
+import random
+import string
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
@@ -26,8 +28,12 @@ from polar.postgres import AsyncSession
 from polar.subscription.endpoints import is_feature_flag_enabled
 
 
+def rstr(prefix: str) -> str:
+    return f"{prefix}.{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}"
+
+
 @pytest.fixture(autouse=True)
-def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
+def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch(
         "polar.subscription.service.subscription_tier.stripe_service", new=mock
@@ -35,6 +41,7 @@ def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
     mocker.patch(
         "polar.subscription.service.subscribe_session.stripe_service", new=mock
     )
+    mocker.patch("polar.subscription.service.subscription.stripe_service", new=mock)
     return mock
 
 
@@ -67,8 +74,8 @@ async def create_subscription_tier(
         is_archived=is_archived,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
-        stripe_product_id="PRODUCT_ID",
-        stripe_price_id="PRICE_ID",
+        stripe_product_id=rstr("PRODUCT_ID"),
+        stripe_price_id=rstr("PRICE_ID"),
         subscription_tier_benefits=[],
         description="x",
     )
@@ -112,7 +119,6 @@ async def add_subscription_benefits(
             subscription_benefit_id=subscription_benefit.id,
             order=order,
         )
-        # session.add(benefit)???
 
         subscription_tier.subscription_tier_benefits.append(benefit)
     session.add(subscription_tier)
@@ -175,6 +181,13 @@ async def subscription_tier_organization(
 
 
 @pytest_asyncio.fixture
+async def subscription_tier_organization_second(
+    session: AsyncSession, organization: Organization
+) -> SubscriptionTier:
+    return await create_subscription_tier(session, organization=organization)
+
+
+@pytest_asyncio.fixture
 async def subscription_tier_repository(
     session: AsyncSession, public_repository: Repository
 ) -> SubscriptionTier:
@@ -193,11 +206,13 @@ async def subscription_tier_private_repository(
 @pytest_asyncio.fixture
 async def subscription_tiers(
     subscription_tier_organization: SubscriptionTier,
+    subscription_tier_organization_second: SubscriptionTier,
     subscription_tier_repository: SubscriptionTier,
     subscription_tier_private_repository: SubscriptionTier,
 ) -> list[SubscriptionTier]:
     return [
         subscription_tier_organization,
+        subscription_tier_organization_second,
         subscription_tier_repository,
         subscription_tier_private_repository,
     ]

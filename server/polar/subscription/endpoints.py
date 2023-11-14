@@ -7,7 +7,7 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import Authz
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Repository, SubscriptionBenefit, SubscriptionTier
+from polar.models import Repository, Subscription, SubscriptionBenefit, SubscriptionTier
 from polar.models.organization import Organization
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
@@ -26,7 +26,6 @@ from .dependencies import SearchSorting
 from .schemas import (
     SubscribeSession,
     SubscribeSessionCreate,
-    Subscription,
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
     SubscriptionsStatistics,
@@ -34,7 +33,11 @@ from .schemas import (
     SubscriptionTierBenefitsUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
+    SubscriptionUpgrade,
     subscription_benefit_schema_map,
+)
+from .schemas import (
+    Subscription as SubscriptionSchema,
 )
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
@@ -423,7 +426,7 @@ async def get_subscriptions_statistics(
 
 @router.get(
     "/subscriptions/search",
-    response_model=ListResource[Subscription],
+    response_model=ListResource[SubscriptionSchema],
     tags=[Tags.PUBLIC],
 )
 async def search_subscriptions(
@@ -437,7 +440,7 @@ async def search_subscriptions(
     subscription_tier_id: UUID4 | None = Query(None),
     subscriber_user_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[Subscription]:
+) -> ListResource[SubscriptionSchema]:
     organization: Organization | None = None
     if organization_name_platform is not None:
         organization_name, platform = organization_name_platform
@@ -473,9 +476,32 @@ async def search_subscriptions(
     )
 
     return ListResource.from_paginated_results(
-        [Subscription.from_orm(result) for result in results],
+        [SubscriptionSchema.from_orm(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.post(
+    "/subscriptions/{id}", response_model=SubscriptionSchema, tags=[Tags.PUBLIC]
+)
+async def upgrade_subscription(
+    id: UUID4,
+    subscription_upgrade: SubscriptionUpgrade,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    subscription = await subscription_service.get(session, id)
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await subscription_service.upgrade_subscription(
+        session,
+        subscription=subscription,
+        subscription_upgrade=subscription_upgrade,
+        authz=authz,
+        user=auth.subject,
     )
 
 

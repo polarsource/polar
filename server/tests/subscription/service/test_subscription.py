@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock, call
@@ -6,6 +7,8 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.authz.service import Authz
+from polar.exceptions import NotPermitted
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -13,6 +16,7 @@ from polar.models import (
     Organization,
     Subscription,
     SubscriptionBenefit,
+    SubscriptionBenefitGrant,
     SubscriptionTier,
     User,
     UserOrganization,
@@ -21,8 +25,10 @@ from polar.models.repository import Repository
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
+from polar.subscription.schemas import SubscriptionUpgrade
 from polar.subscription.service.subscription import (
     AssociatedSubscriptionTierDoesNotExist,
+    InvalidSubscriptionTierUpgrade,
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service.subscription import subscription as subscription_service
@@ -103,11 +109,16 @@ def construct_stripe_invoice(
 
 
 @pytest.fixture(autouse=True)
-def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
+def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch(
         "polar.subscription.service.subscription.stripe_service",
         spec=StripeService,
     )
+
+
+@pytest.fixture
+def authz(session: AsyncSession) -> Authz:
+    return Authz(session)
 
 
 @pytest.mark.asyncio
@@ -122,11 +133,11 @@ class TestCreateSubscription:
     async def test_new_user(
         self,
         session: AsyncSession,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         stripe_customer = construct_stripe_customer()
-        get_customer_mock = mock_stripe_service.get_customer
+        get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
         assert subscription_tier_organization.stripe_product_id is not None
@@ -405,6 +416,41 @@ class TestEnqueueBenefitsGrants:
             ]
         )
 
+    async def test_outdated_grants(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+        subscription: Subscription,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        grant = SubscriptionBenefitGrant(
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefits[0].id,
+        )
+        grant.set_granted()
+        session.add(grant)
+        await session.commit()
+
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits[1:],
+        )
+        subscription.status = SubscriptionStatus.active
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+        enqueue_job_mock.assert_any_await(
+            "subscription.subscription_benefit.revoke",
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefits[0].id,
+        )
+
 
 @pytest.mark.asyncio
 class TestSearch:
@@ -487,6 +533,103 @@ class TestSearch:
 
         assert len(results) == 1
         assert count == 1
+
+
+@pytest.mark.asyncio
+class TestUpgradeSubscription:
+    async def test_not_permitted(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription: Subscription,
+        user_second: User,
+    ) -> None:
+        with pytest.raises(NotPermitted):
+            await subscription_service.upgrade_subscription(
+                session,
+                subscription=subscription,
+                subscription_upgrade=SubscriptionUpgrade(
+                    subscription_tier_id=uuid.uuid4()
+                ),
+                authz=authz,
+                user=user_second,
+            )
+
+    async def test_not_existing_tier(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription: Subscription,
+        user: User,
+    ) -> None:
+        with pytest.raises(InvalidSubscriptionTierUpgrade):
+            await subscription_service.upgrade_subscription(
+                session,
+                subscription=subscription,
+                subscription_upgrade=SubscriptionUpgrade(
+                    subscription_tier_id=uuid.uuid4()
+                ),
+                authz=authz,
+                user=user,
+            )
+
+    async def test_extraneous_tier(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription: Subscription,
+        subscription_tier_repository: SubscriptionTier,
+        user: User,
+    ) -> None:
+        with pytest.raises(InvalidSubscriptionTierUpgrade):
+            await subscription_service.upgrade_subscription(
+                session,
+                subscription=subscription,
+                subscription_upgrade=SubscriptionUpgrade(
+                    subscription_tier_id=subscription_tier_repository.id
+                ),
+                authz=authz,
+                user=user,
+            )
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        authz: Authz,
+        subscription: Subscription,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_tier_organization_second: SubscriptionTier,
+        user: User,
+    ) -> None:
+        updated_subscription = await subscription_service.upgrade_subscription(
+            session,
+            subscription=subscription,
+            subscription_upgrade=SubscriptionUpgrade(
+                subscription_tier_id=subscription_tier_organization_second.id
+            ),
+            authz=authz,
+            user=user,
+        )
+
+        assert (
+            updated_subscription.subscription_tier_id
+            == subscription_tier_organization_second.id
+        )
+        assert (
+            updated_subscription.price_currency
+            == subscription_tier_organization_second.price_currency
+        )
+        assert (
+            updated_subscription.price_amount
+            == subscription_tier_organization_second.price_amount
+        )
+
+        stripe_service_mock.update_subscription_price.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            old_price=subscription_tier_organization.stripe_price_id,
+            new_price=subscription_tier_organization_second.stripe_price_id,
+        )
 
 
 @pytest.mark.asyncio

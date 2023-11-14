@@ -7,7 +7,13 @@ from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
-from polar.models import Subscription, SubscriptionBenefit, SubscriptionBenefitGrant
+from polar.models import (
+    Subscription,
+    SubscriptionBenefit,
+    SubscriptionBenefitGrant,
+    SubscriptionTier,
+    SubscriptionTierBenefit,
+)
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
@@ -222,6 +228,33 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         )
 
         email_sender.send_to_user(subscription.user.email, subject, body)
+
+    async def get_outdated_grants(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        current_subscription_tier: SubscriptionTier,
+    ) -> Sequence[SubscriptionBenefitGrant]:
+        subscription_tier_benefits_statement = (
+            select(SubscriptionBenefit.id)
+            .join(SubscriptionTierBenefit)
+            .where(
+                SubscriptionTierBenefit.subscription_tier_id
+                == current_subscription_tier.id
+            )
+        )
+
+        statement = select(SubscriptionBenefitGrant).where(
+            SubscriptionBenefitGrant.subscription_id == subscription.id,
+            SubscriptionBenefitGrant.subscription_benefit_id.not_in(
+                subscription_tier_benefits_statement
+            ),
+            SubscriptionBenefitGrant.is_granted.is_(True),
+            SubscriptionBenefitGrant.deleted_at.is_(None),
+        )
+
+        result = await session.execute(statement)
+        return result.scalars().all()
 
     async def _get_by_subscription_and_benefit(
         self,

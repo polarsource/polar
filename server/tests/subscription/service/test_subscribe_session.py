@@ -101,12 +101,12 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: (
             MagicMock
-        ) = mock_stripe_service.create_subscription_checkout_session
+        ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -137,7 +137,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         user: User,
         organization_account: Account,
     ) -> None:
@@ -145,7 +145,7 @@ class TestCreateSubscribeSession:
 
         create_subscription_checkout_session_mock: (
             MagicMock
-        ) = mock_stripe_service.create_subscription_checkout_session
+        ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -181,7 +181,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         user: User,
         organization_account: Account,
     ) -> None:
@@ -189,7 +189,7 @@ class TestCreateSubscribeSession:
 
         create_subscription_checkout_session_mock: (
             MagicMock
-        ) = mock_stripe_service.create_subscription_checkout_session
+        ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -224,7 +224,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         user: User,
         organization_account: Account,
     ) -> None:
@@ -232,7 +232,7 @@ class TestCreateSubscribeSession:
 
         create_subscription_checkout_session_mock: (
             MagicMock
-        ) = mock_stripe_service.create_subscription_checkout_session
+        ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -269,7 +269,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         organization: Organization,
         user: User,
         organization_account: Account,
@@ -285,7 +285,7 @@ class TestCreateSubscribeSession:
 
         create_subscription_checkout_session_mock: (
             MagicMock
-        ) = mock_stripe_service.create_subscription_checkout_session
+        ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -318,10 +318,10 @@ class TestGetSubscribeSession:
     async def test_valid(
         self,
         session: AsyncSession,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        get_checkout_session_mock: MagicMock = mock_stripe_service.get_checkout_session
+        get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",

@@ -48,10 +48,11 @@ class TestSearch:
             session, Anonymous(), pagination=PaginationParams(1, 10)
         )
 
-        assert count == 2
-        assert len(results) == 2
+        assert count == 3
+        assert len(results) == 3
         assert results[0].id == subscription_tiers[0].id
         assert results[1].id == subscription_tiers[1].id
+        assert results[2].id == subscription_tiers[2].id
 
     async def test_user(
         self,
@@ -63,10 +64,11 @@ class TestSearch:
             session, user, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 2
-        assert len(results) == 2
+        assert count == 3
+        assert len(results) == 3
         assert results[0].id == subscription_tiers[0].id
         assert results[1].id == subscription_tiers[1].id
+        assert results[2].id == subscription_tiers[2].id
 
     async def test_user_organization(
         self,
@@ -79,8 +81,8 @@ class TestSearch:
             session, user, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 4
+        assert len(results) == 4
 
     async def test_filter_type(
         self,
@@ -112,14 +114,16 @@ class TestSearch:
         organization: Organization,
         subscription_tiers: list[SubscriptionTier],
         subscription_tier_organization: SubscriptionTier,
+        subscription_tier_organization_second: SubscriptionTier,
     ) -> None:
         results, count = await subscription_tier_service.search(
             session, user, organization=organization, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 1
-        assert len(results) == 1
+        assert count == 2
+        assert len(results) == 2
         assert results[0].id == subscription_tier_organization.id
+        assert results[1].id == subscription_tier_organization_second.id
 
     async def test_filter_organization_indirect(
         self,
@@ -137,8 +141,8 @@ class TestSearch:
             pagination=PaginationParams(1, 10),
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 4
+        assert len(results) == 4
 
     async def test_filter_repository(
         self,
@@ -316,11 +320,11 @@ class TestUserCreate:
         user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
             MagicMock
-        ) = mock_stripe_service.create_product_with_price
+        ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
             stripe_id="PRODUCT_ID", default_price="PRICE_ID"
         )
@@ -382,11 +386,11 @@ class TestUserCreate:
         user: User,
         repository: Repository,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
             MagicMock
-        ) = mock_stripe_service.create_product_with_price
+        ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
             stripe_id="PRODUCT_ID", default_price="PRICE_ID"
         )
@@ -414,11 +418,11 @@ class TestUserCreate:
         user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
             MagicMock
-        ) = mock_stripe_service.create_product_with_price
+        ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.side_effect = StripeError()
 
         create_schema = SubscriptionTierCreate(
@@ -449,7 +453,7 @@ class TestUserCreate:
         user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         highlighted_subscription_tier = await create_subscription_tier(
             session, organization=organization, is_highlighted=True
@@ -459,7 +463,7 @@ class TestUserCreate:
         )
         create_product_with_price_mock: (
             MagicMock
-        ) = mock_stripe_service.create_product_with_price
+        ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
             stripe_id="PRODUCT_ID", default_price="PRICE_ID"
         )
@@ -508,9 +512,9 @@ class TestUserUpdate:
         subscription_tier_organization: SubscriptionTier,
         organization: Organization,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        update_product_mock: MagicMock = mock_stripe_service.update_product
+        update_product_mock: MagicMock = stripe_service_mock.update_product
 
         update_schema = SubscriptionTierUpdate(name="Subscription Tier Update")
         updated_subscription_tier = await subscription_tier_service.user_update(
@@ -530,9 +534,9 @@ class TestUserUpdate:
         user: User,
         subscription_tier_organization: SubscriptionTier,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        update_product_mock: MagicMock = mock_stripe_service.update_product
+        update_product_mock: MagicMock = stripe_service_mock.update_product
 
         update_schema = SubscriptionTierUpdate(description="Description update")
         updated_subscription_tier = await subscription_tier_service.user_update(
@@ -552,15 +556,15 @@ class TestUserUpdate:
         user: User,
         subscription_tier_organization: SubscriptionTier,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         create_price_for_product_mock: (
             MagicMock
-        ) = mock_stripe_service.create_price_for_product
+        ) = stripe_service_mock.create_price_for_product
         create_price_for_product_mock.return_value = SimpleNamespace(
             stripe_id="NEW_PRICE_ID"
         )
-        archive_price_mock: MagicMock = mock_stripe_service.archive_price
+        archive_price_mock: MagicMock = stripe_service_mock.archive_price
 
         old_price_id = subscription_tier_organization.stripe_price_id
 
@@ -583,7 +587,7 @@ class TestUserUpdate:
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         highlighted_subscription_tier = await create_subscription_tier(
             session, organization=organization, is_highlighted=True
@@ -591,7 +595,7 @@ class TestUserUpdate:
 
         create_price_for_product_mock: (
             MagicMock
-        ) = mock_stripe_service.create_price_for_product
+        ) = stripe_service_mock.create_price_for_product
         create_price_for_product_mock.return_value = SimpleNamespace(
             stripe_id="NEW_PRICE_ID"
         )
@@ -815,9 +819,9 @@ class TestArchive:
         user: User,
         subscription_tier_organization: SubscriptionTier,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        archive_product_mock: MagicMock = mock_stripe_service.archive_product
+        archive_product_mock: MagicMock = stripe_service_mock.archive_product
 
         updated_subscription_tier = await subscription_tier_service.archive(
             session, authz, subscription_tier_organization, user

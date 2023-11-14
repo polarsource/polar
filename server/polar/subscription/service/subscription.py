@@ -9,9 +9,10 @@ import stripe as stripe_lib
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select, text
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
+from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.enums import AccountType, UserSignupType
-from polar.exceptions import PolarError
+from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
@@ -31,7 +32,10 @@ from polar.models.subscription_tier import SubscriptionTierType
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
-from ..schemas import SubscriptionsStatisticsPeriod
+from ..schemas import SubscriptionsStatisticsPeriod, SubscriptionUpgrade
+from .subscription_benefit_grant import (
+    subscription_benefit_grant as subscription_benefit_grant_service,
+)
 from .subscription_tier import subscription_tier as subscription_tier_service
 
 
@@ -57,6 +61,16 @@ class SubscriptionDoesNotExist(SubscriptionError):
         message = (
             f"Received a subscription update from Stripe for {stripe_subscription_id}, "
             f"but no associated Subscription exists."
+        )
+        super().__init__(message)
+
+
+class InvalidSubscriptionTierUpgrade(SubscriptionError):
+    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
+        self.subscription_tier_id = subscription_tier_id
+        message = (
+            "Can't upgrade to this subscription tier: either it doesn't exist "
+            "or it doesn't belong to the same organization or repository."
         )
         super().__init__(message)
 
@@ -376,6 +390,72 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_id=subscription.id,
                 subscription_benefit_id=benefit.id,
             )
+
+        # Handle granted benefits that are not part of this tier.
+        # It happens if the subscription has been upgraded/downgraded.
+        outdated_grants = await subscription_benefit_grant_service.get_outdated_grants(
+            session, subscription, subscription_tier
+        )
+        for outdated_grant in outdated_grants:
+            await enqueue_job(
+                "subscription.subscription_benefit.revoke",
+                subscription_id=subscription.id,
+                subscription_benefit_id=outdated_grant.subscription_benefit_id,
+            )
+
+    async def upgrade_subscription(
+        self,
+        session: AsyncSession,
+        *,
+        subscription: Subscription,
+        subscription_upgrade: SubscriptionUpgrade,
+        authz: Authz,
+        user: User,
+    ) -> Subscription:
+        if not await authz.can(user, AccessType.write, subscription):
+            raise NotPermitted()
+
+        new_subscription_tier = await subscription_tier_service.get_by_id(
+            session, user, subscription_upgrade.subscription_tier_id
+        )
+
+        if (
+            new_subscription_tier is None
+            or new_subscription_tier.stripe_price_id is None
+        ):
+            raise InvalidSubscriptionTierUpgrade(
+                subscription_upgrade.subscription_tier_id
+            )
+
+        await session.refresh(subscription, {"subscription_tier", "user"})
+
+        # Make sure the new tier belongs to the same organization/repository
+        old_subscription_tier = subscription.subscription_tier
+        if (
+            old_subscription_tier.organization_id
+            and old_subscription_tier.organization_id
+            != new_subscription_tier.organization_id
+        ) or (
+            old_subscription_tier.repository_id
+            and old_subscription_tier.repository_id
+            != new_subscription_tier.repository_id
+        ):
+            raise InvalidSubscriptionTierUpgrade(new_subscription_tier.id)
+
+        assert old_subscription_tier.stripe_price_id is not None
+        stripe_service.update_subscription_price(
+            subscription.stripe_subscription_id,
+            old_price=old_subscription_tier.stripe_price_id,
+            new_price=new_subscription_tier.stripe_price_id,
+        )
+
+        subscription.subscription_tier = new_subscription_tier
+        subscription.price_currency = new_subscription_tier.price_currency
+        subscription.price_amount = new_subscription_tier.price_amount
+        session.add(subscription)
+        await session.commit()
+
+        return subscription
 
     async def get_statistics_periods(
         self,

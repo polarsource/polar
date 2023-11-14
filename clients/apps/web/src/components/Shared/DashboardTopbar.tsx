@@ -105,7 +105,7 @@ const DashboardTopbar = ({
     'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-950 border-b border-gray-100 dark:border-polar-700',
   )
 
-  if (!hydrated || currentRoute.hideTopbar) {
+  if (!hydrated || currentRoute?.hideTopbar) {
     return <></>
   }
 

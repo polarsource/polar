@@ -184,7 +184,7 @@ const nextConfig = {
       },
       {
         source: '/dashboard/:org(.*)',
-        destination: '/maintainer/:org/issues',
+        destination: '/maintainer/:org/posts',
         permanent: false,
       },
       {

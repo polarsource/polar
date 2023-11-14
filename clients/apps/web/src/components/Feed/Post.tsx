@@ -11,6 +11,7 @@ import {
 import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { Avatar, Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import {
@@ -92,10 +93,6 @@ const PostBody = (props: FeedPost) => {
 }
 
 const PostFooter = (props: FeedPost) => {
-  const x = useSpring(0, { damping: 15, velocity: 5 })
-  const incomingX = useTransform(x, [0, 1], [-30, 0], { clamp: false })
-  const outgoingX = useTransform(x, [0, 1], [0, 30], { clamp: false })
-
   return (
     <div className="flex flex-row items-center justify-between gap-x-4">
       <div className="flex flex-row items-center gap-x-4">
@@ -121,26 +118,36 @@ const PostFooter = (props: FeedPost) => {
           </div>
         ) : null}
       </div>
-      <Button
-        size="icon"
-        className="h-8 w-8 overflow-hidden rounded-full"
-        onMouseEnter={(e) => x.set(1)}
-        onMouseLeave={(e) => x.set(0)}
-      >
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ x: incomingX }}
-        >
-          <ArrowForward fontSize="inherit" />
-        </motion.div>
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ x: outgoingX }}
-        >
-          <ArrowForward fontSize="inherit" />
-        </motion.div>
-      </Button>
+      <AnimatedIconButton children={<ArrowForward fontSize="inherit" />} />
     </div>
+  )
+}
+
+export const AnimatedIconButton = (props: PropsWithChildren) => {
+  const x = useSpring(0, { damping: 15, velocity: 5 })
+  const incomingX = useTransform(x, [0, 1], [-30, 0], { clamp: false })
+  const outgoingX = useTransform(x, [0, 1], [0, 30], { clamp: false })
+
+  return (
+    <Button
+      size="icon"
+      className="h-8 w-8 overflow-hidden rounded-full"
+      onMouseEnter={(e) => x.set(1)}
+      onMouseLeave={(e) => x.set(0)}
+    >
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ x: incomingX }}
+      >
+        {props.children}
+      </motion.div>
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ x: outgoingX }}
+      >
+        {props.children}
+      </motion.div>
+    </Button>
   )
 }
 

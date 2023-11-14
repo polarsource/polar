@@ -11,7 +11,8 @@ import {
 import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { Avatar, Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import { PropsWithChildren } from 'react'
+import { ButtonProps } from 'polarkit/components/ui/button'
+import { PropsWithChildren, useCallback, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import {
@@ -52,7 +53,7 @@ const PostHeader = (props: FeedPost) => {
             <VerifiedUser className="text-blue-500" fontSize="inherit" />
           )}
         </Link>
-        <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-400">
+        <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
           &middot;
           <div className="text-xs">
             <PolarTimeAgo date={props.createdAt} />
@@ -96,7 +97,7 @@ const PostFooter = (props: FeedPost) => {
   return (
     <div className="flex flex-row items-center justify-between gap-x-4">
       <div className="flex flex-row items-center gap-x-4">
-        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
+        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-lg">
           <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
             <FavoriteBorderOutlined fontSize="inherit" />
             <span>{props.likes.length}</span>
@@ -112,7 +113,7 @@ const PostFooter = (props: FeedPost) => {
         </div>
 
         {props.visibility !== 'public' ? (
-          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
+          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-lg">
             <SubscriptionGroupIcon type={props.visibility} />
             <span className="capitalize">{props.visibility}</span>
           </div>
@@ -123,17 +124,36 @@ const PostFooter = (props: FeedPost) => {
   )
 }
 
-export const AnimatedIconButton = (props: PropsWithChildren) => {
+export const AnimatedIconButton = (
+  props: PropsWithChildren<{
+    active?: boolean | undefined
+    variant?: ButtonProps['variant']
+  }>,
+) => {
   const x = useSpring(0, { damping: 15, velocity: 5 })
   const incomingX = useTransform(x, [0, 1], [-30, 0], { clamp: false })
   const outgoingX = useTransform(x, [0, 1], [0, 30], { clamp: false })
 
+  useEffect(() => {
+    x.set(props.active ? 1 : 0)
+  }, [props])
+
+  const handleMouse = useCallback(
+    (value: number) => () => {
+      if (typeof props.active === 'undefined') {
+        x.set(value)
+      }
+    },
+    [props],
+  )
+
   return (
     <Button
       size="icon"
+      variant={props.active ? 'default' : props.variant}
       className="h-8 w-8 overflow-hidden rounded-full"
-      onMouseEnter={(e) => x.set(1)}
-      onMouseLeave={(e) => x.set(0)}
+      onMouseEnter={handleMouse(1)}
+      onMouseLeave={handleMouse(0)}
     >
       <motion.div
         className="absolute inset-0 flex items-center justify-center"
@@ -192,7 +212,7 @@ const PostMetaVideo = (post: VideoPost) => {
           <h4 className="dark:text-polar-50 font-medium text-gray-950">
             {post.video.title}
           </h4>
-          <p className="dark:text-polar-500 truncate text-gray-400">
+          <p className="dark:text-polar-500 truncate text-gray-500">
             {post.video.description}
           </p>
         </div>
@@ -237,7 +257,7 @@ const PostMetaPoll = (post: PollPost) => {
                 'h-8 rounded-md',
                 winningOption.index === index
                   ? 'bg-blue-600'
-                  : 'dark:bg-polar-600 bg-gray-300',
+                  : 'dark:bg-polar-600 bg-gray-200',
               )}
               style={{
                 width: `${(option.votes / post.poll.totalVotes) * 100}%`,

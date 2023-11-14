@@ -75,6 +75,7 @@ export enum PostType {
 }
 
 export interface BasePost {
+  slug: string
   text: string
   type: PostType
   media?: string[]
@@ -120,6 +121,7 @@ export interface Comment {
 
 export const posts: Post[] = [
   {
+    slug: '123',
     text: `We're happy to announce the release of our SDK for JavaScript environments.
 
     It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
@@ -146,6 +148,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: '456',
     text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec.',
     type: PostType.Video,
     visibility: 'pro',
@@ -174,6 +177,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: '789',
     text: 'With GitHub actions, you can easily integrate Polar into your workflow. This action will populate your markdown files with avatars of your Polar backers.',
     type: PostType.Code,
     visibility: 'public',
@@ -222,6 +226,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'abc',
     text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec.`,
     visibility: 'public',
     author: {
@@ -243,6 +248,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'def',
     text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
     type: PostType.Poll,
     visibility: 'public',
@@ -282,6 +288,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'ghi',
     text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur.',
     type: PostType.Code,
     visibility: 'public',
@@ -307,6 +314,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'jkl',
     text: `We're happy to announce the release of our SDK for JavaScript environments.
 
     It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
@@ -333,6 +341,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'mno',
     text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec.',
     type: PostType.Video,
     visibility: 'pro',
@@ -361,6 +370,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'pqr',
     text: 'With GitHub actions, you can easily integrate Polar into your workflow. This action will populate your markdown files with avatars of your Polar backers.',
     type: PostType.Code,
     visibility: 'public',
@@ -409,6 +419,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'stu',
     text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec.`,
     visibility: 'public',
     author: {
@@ -430,6 +441,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'vwx',
     text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
     type: PostType.Poll,
     visibility: 'public',
@@ -469,6 +481,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
+    slug: 'yza',
     text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur.',
     type: PostType.Code,
     visibility: 'public',

@@ -31,6 +31,7 @@ export type Route = {
   readonly link: string
   readonly if: boolean | undefined
   readonly subs?: SubRoute[]
+  readonly hideTopbar?: boolean
 }
 
 export const maintainerRoutes = (org: Organization): Route[] => [
@@ -138,19 +139,26 @@ export const maintainerRoutes = (org: Organization): Route[] => [
 ]
 
 export const backerRoutes: Route[] = [
-  {
-    id: isFeatureEnabled('feed') ? 'feed' : 'funding',
-    title: isFeatureEnabled('feed') ? 'Feed' : 'Funding',
-    link: `/feed`,
-    icon: isFeatureEnabled('feed') ? (
-      <StreamOutlined className="h-6 w-6" />
-    ) : (
-      <FavoriteBorderOutlined className="h-6 w-6" />
-    ),
-    postIcon: undefined,
-    if: true,
-    subs: undefined,
-  },
+  isFeatureEnabled('feed')
+    ? {
+        id: 'feed',
+        title: 'Feed',
+        link: `/feed`,
+        icon: <StreamOutlined className="h-6 w-6" />,
+        postIcon: undefined,
+        if: true,
+        subs: undefined,
+        hideTopbar: true,
+      }
+    : {
+        id: 'funding',
+        title: 'Funding',
+        link: `/feed`,
+        icon: <FavoriteBorderOutlined className="h-6 w-6" />,
+        postIcon: undefined,
+        if: true,
+        subs: undefined,
+      },
   {
     id: 'rewards',
     title: 'Rewards',

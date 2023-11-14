@@ -9,7 +9,6 @@ import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
-import BackerConnectUpsell from '../Dashboard/BackerConnectUpsell'
 import SidebarNavigation from '../Dashboard/BackerNavigation'
 import MetaNavigation from '../Dashboard/MetaNavigation'
 import TeamsNavigation from '../Dashboard/TeamsNavigation'
@@ -94,9 +93,6 @@ const BackerLayout = (props: {
 
       <div className="dark:bg-polar-950 relative flex h-screen w-full translate-x-0 flex-row bg-gray-50">
         <DashboardTopbar isFixed useOrgFromURL />
-        <nav className="fixed z-10 w-full ">
-          {showBanner && <BackerConnectUpsell />}
-        </nav>
 
         <main className={twMerge('relative h-full w-full overflow-y-auto')}>
           <div

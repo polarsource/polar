@@ -26,37 +26,48 @@ const Editor = ({ value, onChange }: EditorProps) => {
       setMDXContent(
         MDXContent({
           components: {
-            h1: (props) => <h1 className="text-3xl font-bold" {...props} />,
-            h2: (props) => <h2 className="text-2xl font-bold" {...props} />,
-            h3: (props) => <h3 className="text-xl font-bold" {...props} />,
-            h4: (props) => <h4 className="text-lg font-bold" {...props} />,
-            h5: (props) => <h5 className="text-base font-bold" {...props} />,
-            h6: (props) => <h6 className="text-sm font-bold" {...props} />,
-            p: (props) => <p className="text-base" {...props} />,
-            a: (props) => <a className="text-base text-blue-500" {...props} />,
-            ul: (props) => <ul className="text-base" {...props} />,
-            ol: (props) => <ol className="text-base" {...props} />,
-            li: (props) => <li className="text-base" {...props} />,
-            blockquote: (props) => (
-              <blockquote className="text-base" {...props} />
+            wrapper: (props) => <div className="my-4 my-4" {...props} />,
+            h1: (props) => (
+              <h1 className="my-4 text-3xl font-bold" {...props} />
             ),
-            pre: (props) => <pre className="text-base" {...props} />,
-            code: (props) => <code className="text-base" {...props} />,
-            inlineCode: (props) => <code className="text-base" {...props} />,
-            hr: (props) => <hr className="text-base" {...props} />,
-            table: (props) => <table className="text-base" {...props} />,
-            thead: (props) => <thead className="text-base" {...props} />,
-            tbody: (props) => <tbody className="text-base" {...props} />,
-            tr: (props) => <tr className="text-base" {...props} />,
-            th: (props) => <th className="text-base" {...props} />,
-            td: (props) => <td className="text-base" {...props} />,
-            strong: (props) => <strong className="text-base" {...props} />,
-            em: (props) => <em className="text-base" {...props} />,
-            del: (props) => <del className="text-base" {...props} />,
-            img: (props) => <img className="text-base" {...props} />,
-            iframe: (props) => <iframe className="text-base" {...props} />,
-            span: (props) => <span className="text-base" {...props} />,
-            sup: (props) => <sup className="text-base" {...props} />,
+            h2: (props) => (
+              <h2 className="my-4 text-2xl font-bold" {...props} />
+            ),
+            h3: (props) => <h3 className="my-4 text-xl font-bold" {...props} />,
+            h4: (props) => <h4 className="my-4 text-lg font-bold" {...props} />,
+            h5: (props) => (
+              <h5 className="my-4 text-base font-bold" {...props} />
+            ),
+            h6: (props) => <h6 className="my-4 text-sm font-bold" {...props} />,
+            p: (props) => <p className="my-4 text-base" {...props} />,
+            a: (props) => (
+              <a className="my-4 text-base text-blue-500" {...props} />
+            ),
+            ul: (props) => <ul className="my-4 text-base" {...props} />,
+            ol: (props) => <ol className="my-4 text-base" {...props} />,
+            li: (props) => <li className="my-4 text-base" {...props} />,
+            blockquote: (props) => (
+              <blockquote className="my-4 text-base" {...props} />
+            ),
+            pre: (props) => <pre className="my-4 text-base" {...props} />,
+            code: (props) => <code className="my-4 text-base" {...props} />,
+            inlineCode: (props) => (
+              <code className="my-4 text-base" {...props} />
+            ),
+            hr: (props) => <hr className="my-4 text-base" {...props} />,
+            table: (props) => <table className="my-4 text-base" {...props} />,
+            thead: (props) => <thead className="my-4 text-base" {...props} />,
+            tbody: (props) => <tbody className="my-4 text-base" {...props} />,
+            tr: (props) => <tr className="my-4 text-base" {...props} />,
+            th: (props) => <th className="my-4 text-base" {...props} />,
+            td: (props) => <td className="my-4 text-base" {...props} />,
+            strong: (props) => <strong className="my-4 text-base" {...props} />,
+            em: (props) => <em className="my-4 text-base" {...props} />,
+            del: (props) => <del className="my-4 text-base" {...props} />,
+            img: (props) => <img className="my-4 text-base" {...props} />,
+            iframe: (props) => <iframe className="my-4 text-base" {...props} />,
+            span: (props) => <span className="my-4 text-base" {...props} />,
+            sup: (props) => <sup className="my-4 text-base" {...props} />,
           },
         }),
       )

@@ -1,11 +1,14 @@
 import {
+  ArrowForward,
   BookmarkBorderOutlined,
   ChatBubbleOutline,
   FavoriteBorderOutlined,
   LanguageOutlined,
   MoreVertOutlined,
   PlayArrow,
+  VerifiedUser,
 } from '@mui/icons-material'
+import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { Avatar, Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { twMerge } from 'tailwind-merge'
@@ -20,7 +23,7 @@ import {
 
 export const Post = (props: FeedPost) => {
   return (
-    <div className="relative flex w-full flex-row justify-start gap-x-6 py-8">
+    <div className="relative flex w-full flex-row justify-start gap-x-4 py-8">
       <Avatar
         className="h-12 w-12"
         avatar_url={props.author.avatar_url}
@@ -37,10 +40,16 @@ export const Post = (props: FeedPost) => {
 
 const PostHeader = (props: FeedPost) => {
   return (
-    <div className="flex w-full flex-row items-center justify-between text-sm">
+    <div className="-mt-2 flex w-full flex-row items-center justify-between text-sm">
       <div className="flex flex-row items-center gap-x-2">
-        <Link href={`/${props.author.username}`}>
+        <Link
+          className="flex flex-row items-center gap-x-2"
+          href={`/${props.author.username}`}
+        >
           <h3 className="text-blue-500">{props.author.username}</h3>
+          {props.author.verified && (
+            <VerifiedUser className="text-blue-500" fontSize="inherit" />
+          )}
         </Link>
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-400">
           &middot;
@@ -83,29 +92,54 @@ const PostBody = (props: FeedPost) => {
 }
 
 const PostFooter = (props: FeedPost) => {
-  return (
-    <div className="flex flex-row items-center gap-x-4">
-      <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
-        <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
-          <FavoriteBorderOutlined fontSize="inherit" />
-          <span>{props.likes.length}</span>
-        </div>
-        <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
-          <ChatBubbleOutline fontSize="inherit" />
-          <span>{props.likes.length}</span>
-        </div>
-        <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
-          <BookmarkBorderOutlined fontSize="inherit" />
-          <span>{props.likes.length}</span>
-        </div>
-      </div>
+  const x = useSpring(0, { damping: 15, velocity: 5 })
+  const incomingX = useTransform(x, [0, 1], [-30, 0], { clamp: false })
+  const outgoingX = useTransform(x, [0, 1], [0, 30], { clamp: false })
 
-      {props.visibility !== 'public' ? (
-        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
-          <SubscriptionGroupIcon type={props.visibility} />
-          <span className="capitalize">{props.visibility}</span>
+  return (
+    <div className="flex flex-row items-center justify-between gap-x-4">
+      <div className="flex flex-row items-center gap-x-4">
+        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
+          <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
+            <FavoriteBorderOutlined fontSize="inherit" />
+            <span>{props.likes.length}</span>
+          </div>
+          <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
+            <ChatBubbleOutline fontSize="inherit" />
+            <span>{props.likes.length}</span>
+          </div>
+          <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
+            <BookmarkBorderOutlined fontSize="inherit" />
+            <span>{props.likes.length}</span>
+          </div>
         </div>
-      ) : null}
+
+        {props.visibility !== 'public' ? (
+          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
+            <SubscriptionGroupIcon type={props.visibility} />
+            <span className="capitalize">{props.visibility}</span>
+          </div>
+        ) : null}
+      </div>
+      <Button
+        size="icon"
+        className="h-8 w-8 overflow-hidden rounded-full"
+        onMouseEnter={(e) => x.set(1)}
+        onMouseLeave={(e) => x.set(0)}
+      >
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ x: incomingX }}
+        >
+          <ArrowForward fontSize="inherit" />
+        </motion.div>
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ x: outgoingX }}
+        >
+          <ArrowForward fontSize="inherit" />
+        </motion.div>
+      </Button>
     </div>
   )
 }

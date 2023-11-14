@@ -122,7 +122,7 @@ const ProfileSelection = ({
               {orgs &&
                 orgs.map((org) => (
                   <Link
-                    href={`/maintainer/${org.name}/issues`}
+                    href={`/maintainer/${org.name}/posts`}
                     className="w-full"
                     key={org.id}
                   >

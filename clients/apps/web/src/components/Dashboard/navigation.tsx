@@ -13,6 +13,7 @@ import {
   HowToVoteOutlined,
   StreamOutlined,
   TuneOutlined,
+  ViewDayOutlined,
   WidthNormalOutlined,
   WifiTethering,
 } from '@mui/icons-material'
@@ -35,6 +36,19 @@ export type Route = {
 }
 
 export const maintainerRoutes = (org: Organization): Route[] => [
+  ...(isFeatureEnabled('feed')
+    ? [
+        {
+          id: 'posts',
+          title: 'Posts',
+          icon: <ViewDayOutlined className="h-6 w-6" />,
+          postIcon: undefined,
+          link: `/maintainer/${org.name}/posts`,
+          if: true,
+          subs: undefined,
+        },
+      ]
+    : []),
   {
     id: 'org-issues',
     title: 'Issues',

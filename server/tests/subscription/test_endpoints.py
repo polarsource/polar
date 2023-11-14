@@ -11,6 +11,7 @@ from polar.models import (
     Account,
     Organization,
     Repository,
+    Subscription,
     SubscriptionBenefit,
     SubscriptionTier,
     User,
@@ -62,10 +63,11 @@ class TestSearchSubscriptionTiers:
         assert response.status_code == 200
 
         json = response.json()
-        assert json["pagination"]["total_count"] == 1
+        assert json["pagination"]["total_count"] == 2
 
         items = json["items"]
         assert items[0]["id"] == str(subscription_tiers[0].id)
+        assert items[1]["id"] == str(subscription_tiers[1].id)
 
     async def test_anonymous_indirect_organization(
         self,
@@ -85,11 +87,12 @@ class TestSearchSubscriptionTiers:
         assert response.status_code == 200
 
         json = response.json()
-        assert json["pagination"]["total_count"] == 2
+        assert json["pagination"]["total_count"] == 3
 
         items = json["items"]
         assert items[0]["id"] == str(subscription_tiers[0].id)
         assert items[1]["id"] == str(subscription_tiers[1].id)
+        assert items[2]["id"] == str(subscription_tiers[2].id)
 
     async def test_anonymous_public_repository(
         self,
@@ -247,7 +250,7 @@ class TestCreateSubscriptionTier:
         organization: Organization,
         public_repository: Repository,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
@@ -267,7 +270,7 @@ class TestCreateSubscriptionTier:
         self,
         client: AsyncClient,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
@@ -300,11 +303,11 @@ class TestCreateSubscriptionTier:
         client: AsyncClient,
         organization: Organization,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
             MagicMock
-        ) = mock_stripe_service.create_product_with_price
+        ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
             stripe_id="PRODUCT_ID", default_price="PRICE_ID"
         )
@@ -328,11 +331,11 @@ class TestCreateSubscriptionTier:
         client: AsyncClient,
         organization: Organization,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
             MagicMock
-        ) = mock_stripe_service.create_product_with_price
+        ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
             stripe_id="PRODUCT_ID", default_price="PRICE_ID"
         )
@@ -689,7 +692,7 @@ class TestCreateSubscriptionBenefit:
         organization: Organization,
         public_repository: Repository,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         response = await client.post(
             "/api/v1/subscriptions/benefits/",
@@ -708,7 +711,7 @@ class TestCreateSubscriptionBenefit:
         self,
         client: AsyncClient,
         user_organization_admin: UserOrganization,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         response = await client.post(
             "/api/v1/subscriptions/benefits/",
@@ -947,12 +950,12 @@ class TestCreateSubscribeSession:
         self,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: (
             MagicMock
-        ) = mock_stripe_service.create_subscription_checkout_session
+        ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -979,12 +982,12 @@ class TestCreateSubscribeSession:
         self,
         client: AsyncClient,
         subscription_tier_repository: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
         organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: (
             MagicMock
-        ) = mock_stripe_service.create_subscription_checkout_session
+        ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -1014,9 +1017,9 @@ class TestGetSubscribeSession:
         self,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        get_checkout_session_mock: MagicMock = mock_stripe_service.get_checkout_session
+        get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -1042,9 +1045,9 @@ class TestGetSubscribeSession:
         self,
         client: AsyncClient,
         subscription_tier_repository: SubscriptionTier,
-        mock_stripe_service: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        get_checkout_session_mock: MagicMock = mock_stripe_service.get_checkout_session
+        get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -1162,6 +1165,58 @@ class TestSearchSubscriptions:
 
         json = response.json()
         assert json["pagination"]["total_count"] == 1
+
+
+@pytest.mark.asyncio
+class TestUpgradeSubscription:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        subscription: Subscription,
+        subscription_tier_organization_second: SubscriptionTier,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/subscriptions/{subscription.id}",
+            json={
+                "subscription_tier_id": str(subscription_tier_organization_second.id)
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization_second: SubscriptionTier,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/subscriptions/{uuid.uuid4()}",
+            json={
+                "subscription_tier_id": str(subscription_tier_organization_second.id)
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription: Subscription,
+        subscription_tier_organization_second: SubscriptionTier,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/subscriptions/{subscription.id}",
+            json={
+                "subscription_tier_id": str(subscription_tier_organization_second.id)
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(subscription.id)
 
 
 @pytest.mark.asyncio

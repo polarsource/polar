@@ -11,6 +11,7 @@ from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
+from polar.models.subscription import Subscription
 from polar.models.subscription_benefit import SubscriptionBenefit
 from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user import User
@@ -43,6 +44,7 @@ Object = (
     | Pledge
     | SubscriptionTier
     | SubscriptionBenefit
+    | Subscription
 )
 
 
@@ -199,6 +201,16 @@ class Authz:
                 )
             if object.repository:
                 return await self._can_user_write_repository(subject, object.repository)
+
+        #
+        # Subscription
+        #
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, Subscription)
+        ):
+            return object.user_id == subject.id
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501

@@ -484,6 +484,20 @@ Thank you for your support!
     def get_subscription(self, id: str) -> stripe_lib.Subscription:
         return stripe_lib.Subscription.retrieve(id, expand=["latest_invoice"])
 
+    def update_subscription_price(
+        self, id: str, *, old_price: str, new_price: str
+    ) -> stripe_lib.Subscription:
+        subscription = stripe_lib.Subscription.retrieve(id)
+
+        old_items = subscription["items"]
+        new_items = []
+        for item in old_items:
+            if item.price.stripe_id == old_price:
+                new_items.append({"id": item.id, "deleted": True})
+        new_items.append({"price": new_price, "quantity": 1})
+
+        return stripe_lib.Subscription.modify(id, items=new_items)
+
     def update_invoice(
         self, id: str, *, metadata: dict[str, Any] | None = None
     ) -> stripe_lib.Invoice:

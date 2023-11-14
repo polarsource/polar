@@ -84,9 +84,9 @@ const Editor = ({ value, onChange }: EditorProps) => {
   )
 
   return (
-    <Tabs defaultValue="edit">
+    <Tabs className="flex flex-col gap-y-6" defaultValue="edit">
       <TabsList>
-        <TabsTrigger value="edit">Edit</TabsTrigger>
+        <TabsTrigger value="edit">Markdown</TabsTrigger>
         <TabsTrigger value="preview">Preview</TabsTrigger>
       </TabsList>
       <TabsContent value="edit">

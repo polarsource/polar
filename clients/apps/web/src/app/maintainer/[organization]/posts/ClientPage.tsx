@@ -27,7 +27,7 @@ const ClientPage = () => {
         <div className="items mb-24 flex flex-row items-start gap-x-12">
           <div className="flex w-2/3 flex-col gap-y-12">
             <div className="flex w-full flex-row items-center justify-between">
-              <h3 className="dark:text-polar-50 text-lg text-gray-950">
+              <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Overview
               </h3>
               <Button className="h-8 w-8 rounded-full">
@@ -70,7 +70,7 @@ const PostItem = (post: Post) => {
 
   return (
     <Link ref={ref} href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}>
-      <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-row justify-between rounded-2xl bg-white p-8 shadow-sm transition-colors hover:bg-blue-50/50 dark:border">
+      <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-row justify-between rounded-2xl border border-gray-100 bg-white p-8 shadow-sm transition-colors hover:bg-blue-50/50">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-2">
             <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
@@ -91,7 +91,10 @@ const PostItem = (post: Post) => {
                 </div>
               ) : (
                 <div className="flex flex-row items-center gap-x-2 text-sm">
-                  <LanguageOutlined fontSize="small" />
+                  <LanguageOutlined
+                    className="text-blue-500"
+                    fontSize="inherit"
+                  />
                   <span className="capitalize">{post.visibility}</span>
                 </div>
               )}

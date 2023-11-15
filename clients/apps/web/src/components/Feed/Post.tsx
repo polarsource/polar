@@ -97,7 +97,7 @@ const PostFooter = (props: FeedPost) => {
   return (
     <div className="flex flex-row items-center justify-between gap-x-4">
       <div className="flex flex-row items-center gap-x-4">
-        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-lg">
+        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-sm">
           <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
             <FavoriteBorderOutlined fontSize="inherit" />
             <span>{props.likes.length}</span>
@@ -113,13 +113,15 @@ const PostFooter = (props: FeedPost) => {
         </div>
 
         {props.visibility !== 'public' ? (
-          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-lg">
+          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-sm">
             <SubscriptionGroupIcon type={props.visibility} />
             <span className="capitalize">{props.visibility}</span>
           </div>
         ) : null}
       </div>
-      <AnimatedIconButton children={<ArrowForward fontSize="inherit" />} />
+      <AnimatedIconButton>
+        <ArrowForward fontSize="inherit" />
+      </AnimatedIconButton>
     </div>
   )
 }
@@ -188,7 +190,7 @@ const PostMeta = (post: FeedPost) => {
   const children = metaResolver(post)
 
   return children ? (
-    <div className="dark:border-polar-700 dark:bg-polar-800 mb-2 flex w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white text-sm shadow-xl">
+    <div className="dark:border-polar-700 dark:bg-polar-800 mb-2 flex w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white text-sm shadow-sm">
       {children}
     </div>
   ) : null

@@ -102,17 +102,17 @@ const DashboardTopbar = ({
 
   const className = twMerge(
     props.isFixed !== false ? 'fixed z-20 left-0 top-0 right-0' : '',
-    'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-950 border-b border-gray-100 dark:border-polar-700',
+    'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 border-b border-gray-100 dark:border-polar-800',
   )
 
-  if (!hydrated || currentRoute?.hideTopbar) {
+  if (!hydrated) {
     return <></>
   }
 
   return (
     <>
       <div className={className}>
-        <div className="relative mx-auto flex w-full max-w-screen-2xl flex-row items-center justify-between px-4 sm:px-6 md:px-8">
+        <div className="relative mx-auto flex w-full max-w-screen-xl flex-row items-center justify-between px-4 sm:px-6 md:px-8">
           <div className="flex flex-row items-center gap-x-24">
             <h4 className="dark:text-polar-100 text-lg font-medium">
               {currentRoute?.title}

@@ -39,7 +39,7 @@ const BackerLayout = (props: {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="dark:bg-polar-950 dark:border-r-polar-700 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-100 bg-white">
+      <aside className="dark:bg-polar-900 dark:border-r-polar-800 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-100 bg-white">
         <div className="flex flex-col">
           <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
             <a
@@ -97,7 +97,7 @@ const BackerLayout = (props: {
         <main className={twMerge('relative h-full w-full overflow-y-auto')}>
           <div
             className={twMerge(
-              'relative mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8',
+              'relative mx-auto max-w-screen-xl px-4 sm:px-6 md:px-8',
             )}
             style={{
               marginTop: `107px`,

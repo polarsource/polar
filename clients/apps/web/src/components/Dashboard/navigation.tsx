@@ -32,7 +32,6 @@ export type Route = {
   readonly link: string
   readonly if: boolean | undefined
   readonly subs?: SubRoute[]
-  readonly hideTopbar?: boolean
 }
 
 export const maintainerRoutes = (org: Organization): Route[] => [
@@ -162,7 +161,6 @@ export const backerRoutes: Route[] = [
         postIcon: undefined,
         if: true,
         subs: undefined,
-        hideTopbar: true,
       }
     : {
         id: 'funding',

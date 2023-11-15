@@ -3,7 +3,7 @@ import { posts } from './data'
 
 export const Feed = () => {
   return (
-    <div className="dark:divide-polar-800 flex flex-col divide-y">
+    <div className="flex flex-col gap-y-2">
       {posts.map((post) => (
         <Post key={post.slug} {...post} />
       ))}

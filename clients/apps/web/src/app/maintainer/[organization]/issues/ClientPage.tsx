@@ -276,7 +276,7 @@ const OrganizationIssues = ({
         </RepoPickerHeader>
       </DashboardTopbar>
       <DashboardBody>
-        <div className="space-y-8">
+        <div className="-mx-6 space-y-8">
           {showAddBadgeBanner && <OnboardingAddBadge />}
 
           {haveIssues ? (

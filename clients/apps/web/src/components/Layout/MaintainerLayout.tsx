@@ -21,7 +21,7 @@ const MaintainerLayout = (props: { children: React.ReactNode }) => {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="dark:bg-polar-950 dark:border-r-polar-700 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between overflow-hidden border-r border-r-gray-100 bg-white">
+      <aside className="dark:bg-polar-900 dark:border-r-polar-800 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between overflow-hidden border-r border-r-gray-100 bg-white">
         <div className="flex flex-col">
           <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
             <a
@@ -52,7 +52,7 @@ const MaintainerLayout = (props: { children: React.ReactNode }) => {
         </div>
       </aside>
       <div className="dark:bg-polar-950 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden bg-gray-50">
-        <main className={twMerge('relative h-full w-full overflow-auto')}>
+        <main className={twMerge('relative mt-20 w-full overflow-auto')}>
           <Suspense>{props.children}</Suspense>
         </main>
       </div>
@@ -97,7 +97,7 @@ export const DashboardBody = (props: { children?: React.ReactNode }) => {
   return (
     <div
       className={twMerge(
-        'relative mx-auto max-w-screen-2xl px-4 pb-6 pt-28 sm:px-6 md:px-8',
+        'relative mx-auto mt-8 max-w-screen-xl px-4 pb-6 sm:px-6 md:px-8',
       )}
     >
       {props.children}

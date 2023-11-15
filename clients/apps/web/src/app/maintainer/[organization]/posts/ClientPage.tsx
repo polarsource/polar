@@ -34,7 +34,7 @@ const ClientPage = () => {
                 <AddOutlined fontSize="inherit" />
               </Button>
             </div>
-            <StaggerReveal className="flex w-full flex-col gap-y-4">
+            <StaggerReveal className="flex w-full flex-col gap-y-6">
               {posts.map((post) => (
                 <StaggerReveal.Child key={post.slug}>
                   <PostItem {...post} />
@@ -70,7 +70,7 @@ const PostItem = (post: Post) => {
 
   return (
     <Link ref={ref} href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}>
-      <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-row justify-between rounded-2xl border border-gray-100 bg-white p-8 shadow-sm transition-colors hover:bg-blue-50/50">
+      <div className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row justify-between rounded-3xl border border-gray-100 bg-white px-8 py-6 shadow-sm transition-colors hover:bg-blue-50/50">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-2">
             <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
@@ -110,11 +110,9 @@ const PostItem = (post: Post) => {
               </div>
             </div>
             <div className="flex flex-row items-center gap-x-4">
-              <AnimatedIconButton
-                active={isHovered}
-                variant="secondary"
-                children={<ArrowForward fontSize="inherit" />}
-              />
+              <AnimatedIconButton active={isHovered} variant="secondary">
+                <ArrowForward fontSize="inherit" />
+              </AnimatedIconButton>
             </div>
           </div>
         </div>

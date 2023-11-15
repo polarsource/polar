@@ -12,7 +12,8 @@ import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { Avatar, Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { ButtonProps } from 'polarkit/components/ui/button'
-import { PropsWithChildren, useCallback, useEffect } from 'react'
+import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
+import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import {
@@ -24,8 +25,19 @@ import {
 } from './data'
 
 export const Post = (props: FeedPost) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const isHovered = useHoverDirty(ref)
+
   return (
-    <div className="relative flex w-full flex-row justify-start gap-x-4 py-8">
+    <div
+      ref={ref}
+      className={twMerge(
+        'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl border px-6 pb-6 pt-8 transition-all duration-100',
+        isHovered
+          ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-100 bg-white shadow-sm'
+          : 'border-transparent bg-transparent dark:border-transparent dark:bg-transparent',
+      )}
+    >
       <Avatar
         className="h-12 w-12"
         avatar_url={props.author.avatar_url}
@@ -33,8 +45,8 @@ export const Post = (props: FeedPost) => {
       />
       <div className="flex w-full min-w-0 flex-col">
         <PostHeader {...props} />
-        <PostBody {...props} />
-        <PostFooter {...props} />
+        <PostBody {...props} isHovered={isHovered} />
+        <PostFooter {...props} isHovered={isHovered} />
       </div>
     </div>
   )
@@ -84,16 +96,23 @@ const PostHeader = (props: FeedPost) => {
   )
 }
 
-const PostBody = (props: FeedPost) => {
+const PostBody = (props: FeedPost & { isHovered: boolean }) => {
   return (
-    <div className="dark:text-polar-300 flex w-full flex-col gap-y-4 pb-5 pt-2 text-[15px] leading-relaxed text-gray-800">
+    <div
+      className={twMerge(
+        'flex w-full flex-col gap-y-4 pb-5 pt-2 text-[15px] leading-relaxed transition-colors duration-200',
+        props.isHovered
+          ? 'dark:text-polar-300 text-gray-800'
+          : 'dark:text-polar-500 text-gray-600',
+      )}
+    >
       <div className="flex flex-col flex-wrap">{props.text}</div>
       <PostMeta {...props} />
     </div>
   )
 }
 
-const PostFooter = (props: FeedPost) => {
+const PostFooter = (props: FeedPost & { isHovered: boolean }) => {
   return (
     <div className="flex flex-row items-center justify-between gap-x-4">
       <div className="flex flex-row items-center gap-x-4">
@@ -119,7 +138,7 @@ const PostFooter = (props: FeedPost) => {
           </div>
         ) : null}
       </div>
-      <AnimatedIconButton>
+      <AnimatedIconButton active={props.isHovered} variant="secondary">
         <ArrowForward fontSize="inherit" />
       </AnimatedIconButton>
     </div>
@@ -251,7 +270,7 @@ const PostMetaPoll = (post: PollPost) => {
         <h4 className="dark:text-polar-50 font-medium">{post.poll.question}</h4>
         <span className="text-xs">{post.poll.totalVotes} votes</span>
       </div>
-      <div className="flex flex-col gap-y-2 p-6">
+      <div className="bg-gray-75 dark:bg-polar-900 flex flex-col gap-y-2 p-6">
         {post.poll.options.map((option, index) => (
           <div key={option.text} className="relative flex flex-row">
             <div

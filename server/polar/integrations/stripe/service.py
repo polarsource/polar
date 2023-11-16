@@ -1,4 +1,5 @@
-from typing import Any, Literal, TypedDict, Unpack
+import uuid
+from typing import Any, Literal, TypedDict, Unpack, cast
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -6,6 +7,7 @@ from stripe import error as stripe_lib_error
 
 from polar.account.schemas import AccountCreate
 from polar.config import settings
+from polar.exceptions import PolarError
 from polar.integrations.stripe.schemas import PaymentIntentMetadata
 from polar.models.issue import Issue
 from polar.models.organization import Organization
@@ -24,6 +26,13 @@ class ProductUpdateKwargs(TypedDict, total=False):
     description: str
 
 
+class MissingOrganizationBillingEmail(PolarError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        message = f"The organization {organization_id} billing email is not set."
+        super().__init__(message)
+
+
 class StripeService:
     def create_anonymous_intent(
         self,
@@ -37,7 +46,7 @@ class StripeService:
             currency="USD",
             transfer_group=transfer_group,
             metadata={
-                "issue_id": issue.id,
+                "issue_id": str(issue.id),
                 "issue_title": issue.title,
                 "anonymous": "true",
                 "anonymous_email": anonymous_email,
@@ -124,7 +133,7 @@ class StripeService:
             id,
             amount=amount,
             receipt_email=receipt_email,
-            setup_future_usage=setup_future_usage,
+            setup_future_usage=setup_future_usage if setup_future_usage else "",
             metadata=metadata.dict(exclude_none=True),
         )
 
@@ -132,15 +141,14 @@ class StripeService:
         return stripe_lib.PaymentIntent.retrieve(id)
 
     def create_account(self, account: AccountCreate) -> stripe_lib.Account:
-        tos_acceptance = (
-            {"service_agreement": "recipient"} if account.country != "US" else None
-        )
-        return stripe_lib.Account.create(
-            country=account.country,
-            type="express",
-            tos_acceptance=tos_acceptance,
-            capabilities={"transfers": {"requested": True}},
-        )
+        create_params: stripe_lib.Account.CreateParams = {
+            "country": account.country,
+            "type": "express",
+            "capabilities": {"transfers": {"requested": True}},
+        }
+        if account.country != "US":
+            create_params["tos_acceptance"] = {"service_agreement": "recipient"}
+        return stripe_lib.Account.create(**create_params)
 
     def retrieve_account(self, id: str) -> stripe_lib.Account:
         return stripe_lib.Account.retrieve(id)
@@ -150,10 +158,10 @@ class StripeService:
         # there is no balance in other currencies for now)
         account = stripe_lib.Account.retrieve(id)
         balance = stripe_lib.Balance.retrieve(stripe_account=id)
-        for b in balance["available"]:
-            if b["currency"] == account.default_currency:
-                return (b["currency"], b["amount"])
-        return (account.default_currency, 0)
+        for b in balance.available:
+            if b.currency == account.default_currency:
+                return (b.currency, b.amount)
+        return (cast(str, account.default_currency), 0)
 
     def create_account_link(self, stripe_id: str) -> stripe_lib.AccountLink:
         refresh_url = settings.generate_external_url(
@@ -169,7 +177,7 @@ class StripeService:
             type="account_onboarding",
         )
 
-    def create_login_link(self, stripe_id: str) -> stripe_lib.AccountLink:
+    def create_login_link(self, stripe_id: str) -> stripe_lib.LoginLink:
         return stripe_lib.Account.create_login_link(stripe_id)
 
     def transfer(
@@ -181,14 +189,16 @@ class StripeService:
         source_transaction: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> stripe_lib.Transfer:
-        return stripe_lib.Transfer.create(
-            amount=amount,
-            currency="usd",
-            destination=destination_stripe_id,
-            transfer_group=transfer_group,
-            source_transaction=source_transaction,
-            metadata=metadata,
-        )
+        create_params: stripe_lib.Transfer.CreateParams = {
+            "amount": amount,
+            "currency": "usd",
+            "destination": destination_stripe_id,
+            "transfer_group": transfer_group,
+            "metadata": metadata or {},
+        }
+        if source_transaction is not None:
+            create_params["source_transaction"] = source_transaction
+        return stripe_lib.Transfer.create(**create_params)
 
     def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return stripe_lib.Customer.retrieve(customer_id)
@@ -205,7 +215,7 @@ class StripeService:
             name=user.username,
             email=user.email,
             metadata={
-                "user_id": user.id,
+                "user_id": str(user.id),
                 "email": user.email,
             },
         )
@@ -230,11 +240,14 @@ class StripeService:
         if org.stripe_customer_id:
             return self.get_customer(org.stripe_customer_id)
 
+        if org.billing_email is None:
+            raise MissingOrganizationBillingEmail(org.id)
+
         customer = stripe_lib.Customer.create(
             name=org.name,
             email=org.billing_email,
             metadata={
-                "org_id": org.id,
+                "org_id": str(org.id),
             },
         )
 
@@ -269,7 +282,7 @@ class StripeService:
         return payment_methods.data
 
     def detach_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
-        return stripe_lib.PaymentMethod.detach(id)  # type: ignore
+        return stripe_lib.PaymentMethod.detach(id)
 
     async def create_user_pledge_invoice(
         self,
@@ -312,6 +325,9 @@ class StripeService:
         if not customer:
             return None
 
+        if organization.billing_email is None:
+            raise MissingOrganizationBillingEmail(organization.id)
+
         # Sync billing email
         if not customer.email or customer.email != organization.billing_email:
             stripe_lib.Customer.modify(
@@ -343,7 +359,7 @@ class StripeService:
 Thank you for your support!
 """,  # noqa: E501
             metadata={
-                "pledge_id": pledge.id,
+                "pledge_id": str(pledge.id),
             },
             days_until_due=7,
             collection_method="send_invoice",
@@ -352,6 +368,8 @@ Thank you for your support!
             auto_advance=True,
         )
 
+        assert invoice.id is not None
+
         stripe_lib.InvoiceItem.create(
             invoice=invoice.id,
             customer=customer.id,
@@ -359,7 +377,7 @@ Thank you for your support!
             description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
             currency="USD",
             metadata={
-                "pledge_id": pledge.id,
+                "pledge_id": str(pledge.id),
             },
         )
 
@@ -406,18 +424,18 @@ Thank you for your support!
         description: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> stripe_lib.Product:
-        default_price_data = {
-            "currency": price_currency,
-            "unit_amount": price_amount,
-            "recurring": {"interval": "month"},
+        create_params: stripe_lib.Product.CreateParams = {
+            "name": name,
+            "default_price_data": {
+                "currency": price_currency,
+                "unit_amount": price_amount,
+                "recurring": {"interval": "month"},
+            },
+            "metadata": metadata or {},
         }
-        product = stripe_lib.Product.create(
-            name=name,
-            description=description,
-            default_price_data=default_price_data,
-            metadata=metadata or {},
-        )
-        return product
+        if description is not None:
+            create_params["description"] = description
+        return stripe_lib.Product.create(**create_params)
 
     def create_price_for_product(
         self,
@@ -434,7 +452,7 @@ Thank you for your support!
             recurring={"interval": "month"},
         )
         if set_default:
-            stripe_lib.Product.modify(product, default_price=price.stripe_id)
+            stripe_lib.Product.modify(product, default_price=price.id)
         return price
 
     def update_product(
@@ -458,25 +476,26 @@ Thank you for your support!
         customer_email: str | None = None,
         metadata: dict[str, str] | None = None,
     ) -> stripe_lib.checkout.Session:
-        return stripe_lib.checkout.Session.create(
-            success_url=success_url,
-            line_items=[
+        create_params: stripe_lib.checkout.Session.CreateParams = {
+            "success_url": success_url,
+            "line_items": [
                 {
                     "price": price,
                     "quantity": 1,
                 },
             ],
-            mode="subscription",
-            automatic_tax={"enabled": is_tax_applicable},
-            tax_id_collection={"enabled": is_tax_applicable},
-            customer_update={"name": "auto", "address": "auto"}
-            if customer is not None
-            else None,
-            customer=customer,
-            customer_email=customer_email,
-            payment_method_collection="if_required",
-            metadata=metadata,
-        )
+            "mode": "subscription",
+            "automatic_tax": {"enabled": is_tax_applicable},
+            "tax_id_collection": {"enabled": is_tax_applicable},
+            "payment_method_collection": "if_required",
+            "metadata": metadata or {},
+        }
+        if customer is not None:
+            create_params["customer"] = customer
+            create_params["customer_update"] = {"name": "auto", "address": "auto"}
+        if customer_email is not None:
+            create_params["customer_email"] = customer_email
+        return stripe_lib.checkout.Session.create(**create_params)
 
     def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
         return stripe_lib.checkout.Session.retrieve(id)
@@ -489,10 +508,10 @@ Thank you for your support!
     ) -> stripe_lib.Subscription:
         subscription = stripe_lib.Subscription.retrieve(id)
 
-        old_items = subscription["items"]
-        new_items = []
+        old_items = subscription.items
+        new_items: list[stripe_lib.Subscription.ModifyParamsItem] = []
         for item in old_items:
-            if item.price.stripe_id == old_price:
+            if item.price.id == old_price:
                 new_items.append({"id": item.id, "deleted": True})
         new_items.append({"price": new_price, "quantity": 1})
 
@@ -501,22 +520,17 @@ Thank you for your support!
     def update_invoice(
         self, id: str, *, metadata: dict[str, Any] | None = None
     ) -> stripe_lib.Invoice:
-        return stripe_lib.Invoice.modify(id, metadata=metadata)
+        return stripe_lib.Invoice.modify(id, metadata=metadata or {})
 
     def get_customer_credit_balance(self, customer_id: str) -> int:
         transactions = stripe_lib.Customer.list_balance_transactions(
             customer_id, limit=1
         )
 
-        if not transactions:
-            return 0
+        for transaction in transactions:
+            return transaction.ending_balance
 
-        data: list[stripe_lib.CustomerBalanceTransaction] = transactions
-
-        if len(data) == 0:
-            return 0
-
-        return data[0].ending_balance
+        return 0
 
     async def get_organization_credit_balance(
         self,
@@ -531,15 +545,16 @@ Thank you for your support!
             customer.id, limit=1
         )
 
-        if not transactions:
-            return 0
+        for transaction in transactions:
+            return transaction.ending_balance
 
-        data: list[stripe_lib.CustomerBalanceTransaction] = transactions["data"]
+        return 0
 
-        if len(data) == 0:
-            return 0
+    def get_balance_transaction(self, id: str) -> stripe_lib.BalanceTransaction:
+        return stripe_lib.BalanceTransaction.retrieve(id)
 
-        return data[0].ending_balance
+    def get_invoice(self, id: str) -> stripe_lib.Invoice:
+        return stripe_lib.Invoice.retrieve(id)
 
 
 stripe = StripeService()

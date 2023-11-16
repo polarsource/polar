@@ -84,7 +84,7 @@ async def test_list_rewards(
     @dataclass
     class Trans:
         @property
-        def stripe_id(self) -> str:
+        def id(self) -> str:
             return "transfer_id"
 
     transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")

@@ -3,7 +3,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
 from enum import StrEnum
-from typing import Any, overload
+from typing import Any, cast, overload
 
 import stripe as stripe_lib
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select, text
@@ -15,6 +15,7 @@ from polar.enums import AccountType, UserSignupType
 from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -241,7 +242,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def create_subscription(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
-        customer_id = stripe_subscription.customer
+        customer_id = get_expandable_id(stripe_subscription.customer)
 
         price = stripe_subscription["items"].data[0].price
         product_id = price.product
@@ -250,12 +251,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         if subscription_tier is None:
             raise AssociatedSubscriptionTierDoesNotExist(
-                stripe_subscription.stripe_id, product_id
+                stripe_subscription.id, product_id
             )
 
         user = await user_service.get_by_stripe_customer_id(session, customer_id)
         if user is None:
             customer = stripe_service.get_customer(customer_id)
+            assert customer.email is not None
             user = await user_service.get_by_email_or_signup(
                 session, customer.email, signup_type=UserSignupType.backer
             )
@@ -264,7 +266,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         await loops_service.user_update(user, isBacker=True)
 
         subscription = Subscription(
-            stripe_subscription_id=stripe_subscription.stripe_id,
+            stripe_subscription_id=stripe_subscription.id,
             status=stripe_subscription.status,
             current_period_start=_from_timestamp(
                 stripe_subscription.current_period_start
@@ -288,13 +290,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
         subscription = await self.get_by_stripe_subscription_id(
-            session, stripe_subscription.stripe_id
+            session, stripe_subscription.id
         )
 
         if subscription is None:
-            raise SubscriptionDoesNotExist(stripe_subscription.stripe_id)
+            raise SubscriptionDoesNotExist(stripe_subscription.id)
 
-        subscription.status = stripe_subscription.status
+        subscription.status = SubscriptionStatus(stripe_subscription.status)
         subscription.current_period_start = _from_timestamp(
             stripe_subscription.current_period_start
         )
@@ -326,12 +328,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         stripe_subscription = stripe_service.get_subscription(
             subscription.stripe_subscription_id
         )
-        invoice: stripe_lib.Invoice = stripe_subscription.latest_invoice
+        invoice = cast(stripe_lib.Invoice | None, stripe_subscription.latest_invoice)
 
         if invoice is None:
             return
 
-        if invoice.metadata.get("transferred_at") is not None:
+        if (
+            invoice.metadata is not None
+            and invoice.metadata.get("transferred_at") is not None
+        ):
             return
 
         await session.refresh(subscription, {"subscription_tier"})
@@ -340,15 +345,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         assert account is not None
 
+        tax = invoice.tax or 0
         transfer_amount = math.floor(
-            (invoice.total - invoice.tax)
-            * ((100 - settings.SUBSCRIPTION_FEE_PERCENT) / 100)
+            (invoice.total - tax) * ((100 - settings.SUBSCRIPTION_FEE_PERCENT) / 100)
         )
-        transfer_group = f"{subscription.id}.{invoice.stripe_id}"
+        transfer_group = f"{subscription.id}.{invoice.id}"
         transfer_metadata = {
             "subscription_id": str(subscription.id),
             "organization_id": str(account.organization_id),
-            "stripe_subscription_id": stripe_subscription.stripe_id,
+            "stripe_subscription_id": stripe_subscription.id,
             "stripe_product_id": subscription.subscription_tier.stripe_product_id,
         }
 
@@ -362,15 +367,18 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 account.stripe_id,
                 amount=transfer_amount,
                 transfer_group=transfer_group,
-                source_transaction=invoice.charge,
+                source_transaction=get_expandable_id(invoice.charge)
+                if invoice.charge
+                else None,
                 metadata=transfer_metadata,
             )
-            invoice_metadata["transfer_id"] = transfer.stripe_id
+            invoice_metadata["transfer_id"] = transfer.id
         elif account.account_type == AccountType.open_collective:
             # TODO: handle Open Collective
             pass
 
-        stripe_service.update_invoice(invoice.stripe_id, metadata=invoice_metadata)
+        assert invoice.id is not None
+        stripe_service.update_invoice(invoice.id, metadata=invoice_metadata)
 
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription

@@ -149,7 +149,7 @@ class TestCreateSubscription:
             session, stripe_subscription=stripe_subscription
         )
 
-        assert subscription.stripe_subscription_id == stripe_subscription.stripe_id
+        assert subscription.stripe_subscription_id == stripe_subscription.id
         assert subscription.subscription_tier_id == subscription_tier_organization.id
 
         user = await user_service.get(session, subscription.user_id)
@@ -174,7 +174,7 @@ class TestCreateSubscription:
             session, stripe_subscription=stripe_subscription
         )
 
-        assert subscription.stripe_subscription_id == stripe_subscription.stripe_id
+        assert subscription.stripe_subscription_id == stripe_subscription.id
         assert subscription.subscription_tier_id == subscription_tier_organization.id
 
         assert subscription.user_id == user.id
@@ -228,7 +228,7 @@ class TestUpdateSubscription:
             session,
             subscription_tier=subscription_tier_organization,
             user=user,
-            stripe_subscription_id=stripe_subscription.stripe_id,
+            stripe_subscription_id=stripe_subscription.id,
         )
         assert subscription.started_at is None
 

@@ -2,7 +2,7 @@ import uuid
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Subject
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import (
@@ -138,11 +138,21 @@ class SubscribeSessionService:
     ) -> SubscribeSession:
         checkout_session = stripe_service.get_checkout_session(id)
 
-        subscription_tier_id = checkout_session.metadata["subscription_tier_id"]
+        if checkout_session.metadata is None:
+            raise ResourceNotFound()
+
+        try:
+            subscription_tier_id = checkout_session.metadata["subscription_tier_id"]
+        except KeyError:
+            raise ResourceNotFound()
+
         subscription_tier = await subscription_tier_service.get(
             session, uuid.UUID(subscription_tier_id)
         )
-        assert subscription_tier is not None
+
+        if subscription_tier is None:
+            raise ResourceNotFound()
+
         subscription_tier = (
             await subscription_tier_service.with_organization_or_repository(
                 session, subscription_tier

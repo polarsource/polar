@@ -115,7 +115,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             user_id=user_id,
             admin_id=admin_id,
             account_type=account.account_type,
-            stripe_id=stripe_account.stripe_id,
+            stripe_id=stripe_account.id,
             email=stripe_account.email,
             country=stripe_account.country,
             currency=stripe_account.default_currency,
@@ -209,7 +209,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             amount=amount,
             transfer_group=transfer_group,
         )
-        return transfer.stripe_id
+        return transfer.id
 
 
 account = AccountService(Account)

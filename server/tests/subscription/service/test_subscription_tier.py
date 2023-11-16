@@ -326,7 +326,7 @@ class TestUserCreate:
             MagicMock
         ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
-            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+            id="PRODUCT_ID", default_price="PRICE_ID"
         )
 
         create_schema = SubscriptionTierCreate(
@@ -392,7 +392,7 @@ class TestUserCreate:
             MagicMock
         ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
-            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+            id="PRODUCT_ID", default_price="PRICE_ID"
         )
 
         create_schema = SubscriptionTierCreate(
@@ -465,7 +465,7 @@ class TestUserCreate:
             MagicMock
         ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
-            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+            id="PRODUCT_ID", default_price="PRICE_ID"
         )
 
         create_schema = SubscriptionTierCreate(
@@ -561,9 +561,7 @@ class TestUserUpdate:
         create_price_for_product_mock: (
             MagicMock
         ) = stripe_service_mock.create_price_for_product
-        create_price_for_product_mock.return_value = SimpleNamespace(
-            stripe_id="NEW_PRICE_ID"
-        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
         archive_price_mock: MagicMock = stripe_service_mock.archive_price
 
         old_price_id = subscription_tier_organization.stripe_price_id
@@ -596,9 +594,7 @@ class TestUserUpdate:
         create_price_for_product_mock: (
             MagicMock
         ) = stripe_service_mock.create_price_for_product
-        create_price_for_product_mock.return_value = SimpleNamespace(
-            stripe_id="NEW_PRICE_ID"
-        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
 
         update_schema = SubscriptionTierUpdate(is_highlighted=True)
         updated_subscription_tier = await subscription_tier_service.user_update(

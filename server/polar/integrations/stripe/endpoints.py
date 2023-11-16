@@ -30,6 +30,7 @@ class WebhookResponse(BaseModel):
 
 IMPLEMENTED_WEBHOOKS = {
     "payment_intent.succeeded",
+    "charge.succeeded",
     "charge.refunded",
     "charge.dispute.created",
     "customer.subscription.created",

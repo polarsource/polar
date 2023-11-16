@@ -91,7 +91,7 @@ export const Badge = ({
           >
             <div
               style={{
-                backgroundColor: darkmode ? '#4667CA' /*blue-500*/ : '#4667CA', // blue-600
+                backgroundColor: darkmode ? '#0062FF' /*blue-500*/ : '#0062FF', // blue-600
                 color: 'white',
                 padding: 4,
                 marginLeft: 6,
@@ -214,7 +214,7 @@ export const Badge = ({
                       style={{
                         width: `${progress}%`,
                         height: '4px',
-                        backgroundColor: '#4667CA', // blue-600
+                        backgroundColor: '#0062FF', // blue-600
 
                         transitionProperty: 'all',
                         transitionDuration: '200ms',
@@ -270,7 +270,7 @@ export const Badge = ({
                   <div
                     style={{
                       backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
-                      color: darkmode ? '#a6c7ea' : '#4667CA',
+                      color: darkmode ? '#a6c7ea' : '#0062FF',
                       height: 22,
                       width: 22,
                       borderRadius: 22,
@@ -362,7 +362,7 @@ export const Badge = ({
             style={{
               width: '100%',
               backgroundColor: darkmode ? '#222c49' : '#F3F5FC',
-              color: darkmode ? '#a6c7ea' : '#4667CA',
+              color: darkmode ? '#a6c7ea' : '#0062FF',
               fontSize: 10,
               padding: '4px 8px',
               borderTop: darkmode ? '1px solid #2e4070' : '1px solid #E1EAF8',
@@ -400,7 +400,7 @@ export const Badge = ({
             </div>
             <div
               style={{
-                color: darkmode ? '#a6c7ea' : '#4667CA',
+                color: darkmode ? '#a6c7ea' : '#0062FF',
                 background: darkmode ? '#464B64' : 'white',
                 border: darkmode ? '1px solid #5E637D' : '1px solid #C9DBF4',
                 borderRadius: 8,

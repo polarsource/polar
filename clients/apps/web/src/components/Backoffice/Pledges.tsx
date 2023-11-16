@@ -31,7 +31,7 @@ const Pledges = () => {
         <div key={i[0].id}>
           <div className="flex gap-2">
             <Link
-              className="text-blue-600"
+              className="text-blue-500"
               href={`/backoffice/issue/${i[0].issue.id}`}
             >
               {i[0].issue.repository.organization.name}/

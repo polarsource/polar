@@ -46,7 +46,7 @@ const Recommended = () => {
                   <>
                     <Link
                       href={`/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`}
-                      className="font-medium text-blue-600"
+                      className="font-medium text-blue-500"
                     >
                       <Button variant="secondary" size="sm">
                         <FavoriteBorderOutlined fontSize="inherit" />

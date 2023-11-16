@@ -193,7 +193,7 @@ const MaintainerPledgeCreated = ({
   return (
     <Item
       n={n}
-      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+      iconClasses="bg-blue-200 text-blue-500 dark:bg-blue-500/80 dark:text-blue-200"
     >
       {{
         text: (
@@ -363,7 +363,7 @@ export const MaintainerPledgeConfirmationPending = ({
   return (
     <Item
       n={n}
-      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+      iconClasses="bg-blue-200 text-blue-500 dark:bg-blue-500/80 dark:text-blue-200"
     >
       {{
         text: (
@@ -473,7 +473,7 @@ const MaintainerPledgePaid = ({
   return (
     <Item
       n={n}
-      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+      iconClasses="bg-blue-200 text-blue-500 dark:bg-blue-500/80 dark:text-blue-200"
     >
       {{
         text: (
@@ -504,7 +504,7 @@ const RewardPaid = ({
   return (
     <Item
       n={n}
-      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+      iconClasses="bg-blue-200 text-blue-500 dark:bg-blue-500/80 dark:text-blue-200"
     >
       {{
         text: (
@@ -533,7 +533,7 @@ const PledgerPledgePending = ({
   payload: PledgerPledgePendingNotification
 }) => {
   return (
-    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
+    <Item n={n} iconClasses="bg-blue-200 text-blue-500">
       {{
         text: (
           <>
@@ -560,7 +560,7 @@ const TeamAdminMemberPledged = ({
   payload: TeamAdminMemberPledgedNotification
 }) => {
   return (
-    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
+    <Item n={n} iconClasses="bg-blue-200 text-blue-500">
       {{
         text: (
           <>

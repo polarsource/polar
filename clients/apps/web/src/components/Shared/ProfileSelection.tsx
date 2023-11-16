@@ -146,7 +146,7 @@ const ProfileSelection = ({
                   <h3>Get funding for your public repositories.</h3>
                   <Link
                     href={CONFIG.GITHUB_INSTALLATION_URL}
-                    className="mt-2 text-blue-600 dark:text-blue-500"
+                    className="mt-2 text-blue-500 dark:text-blue-500"
                   >
                     Connect repositories
                   </Link>
@@ -156,9 +156,9 @@ const ProfileSelection = ({
               {showAddOrganization && (
                 <LinkItem
                   href={CONFIG.GITHUB_INSTALLATION_URL}
-                  icon={<AddOutlined className="h-5 w-5 text-blue-600" />}
+                  icon={<AddOutlined className="h-5 w-5 text-blue-500" />}
                 >
-                  <span className="mx-2 text-blue-600">Add organization</span>
+                  <span className="mx-2 text-blue-500">Add organization</span>
                 </LinkItem>
               )}
 
@@ -291,7 +291,7 @@ const ProfileBadge = (props: { type: 'backer' | 'maintainer' }) => {
         props.type === 'backer' &&
           'border-green-200 bg-green-100 text-green-600 dark:border-green-600 dark:bg-green-700 dark:text-green-300',
         props.type === 'maintainer' &&
-          'border-blue-200 bg-blue-100 text-blue-600 dark:border-blue-600 dark:bg-blue-700 dark:text-blue-300',
+          'border-blue-200 bg-blue-100 text-blue-500 dark:border-blue-600 dark:bg-blue-700 dark:text-blue-300',
         'shrink-0 rounded-lg border px-1.5 text-xs',
       )}
     >

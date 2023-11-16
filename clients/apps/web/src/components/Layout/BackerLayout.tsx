@@ -72,7 +72,7 @@ const BackerLayout = (props: {
               <p className="mb-2">Get funding for your public repositories.</p>
               <Link
                 href={CONFIG.GITHUB_INSTALLATION_URL}
-                className="font-medium text-blue-600"
+                className="font-medium text-blue-500"
               >
                 Connect repositories
               </Link>
@@ -82,7 +82,7 @@ const BackerLayout = (props: {
               <p className="mb-2">Waiting for a bug to be fixed?</p>
               <Link
                 href="/new"
-                className="font-medium text-blue-600 dark:text-blue-500"
+                className="font-medium text-blue-500 dark:text-blue-500"
               >
                 Fund a GitHub issue
               </Link>

@@ -47,7 +47,7 @@ const Progress = ({
   return (
     <div className="dark:bg-polar-600 h-2.5 w-full rounded-full bg-gray-200">
       <motion.div
-        className="h-2.5 w-[0%] rounded-full bg-blue-600 dark:bg-blue-500"
+        className="h-2.5 w-[0%] rounded-full bg-blue-500 dark:bg-blue-500"
         initial={isSettingPage ? false : 'hidden'}
         animate={{
           width: `${percent}%`,

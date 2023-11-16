@@ -8,7 +8,7 @@ const AuthorizationBanner = () => (
       href={`${CONFIG.WEB_URL}/settings/extension`}
       target="_blank"
       rel="noreferrer"
-      className="mr-2 inline-flex items-center space-x-2 rounded-lg bg-blue-500 p-2 px-3 text-center text-sm font-medium text-white transition-colors duration-100 hover:bg-blue-600 sm:mr-0"
+      className="mr-2 inline-flex items-center space-x-2 rounded-lg bg-blue-500 p-2 px-3 text-center text-sm font-medium text-white transition-colors duration-100 hover:bg-blue-500 sm:mr-0"
     >
       Connect Polar
     </a>

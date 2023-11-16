@@ -109,7 +109,7 @@ const OrganizationPublicPage = ({
                         <LanguageOutlined fontSize="inherit" />
                       </span>
                       <a
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-blue-500 hover:text-blue-700"
                         href={externalURL(organization.blog)}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -125,7 +125,7 @@ const OrganizationPublicPage = ({
                         <EmailOutlined fontSize="inherit" />
                       </span>
                       <a
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-blue-500 hover:text-blue-700"
                         href={`mailto:${organization.email}`}
                         rel="noopener noreferrer"
                       >
@@ -140,7 +140,7 @@ const OrganizationPublicPage = ({
                         <ShortTextOutlined fontSize="inherit" />
                       </span>
                       <a
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-blue-500 hover:text-blue-700"
                         href={`https://twitter.com/${organization.twitter_username}`}
                         target="_blank"
                         rel="noopener noreferrer"

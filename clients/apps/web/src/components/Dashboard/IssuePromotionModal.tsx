@@ -142,7 +142,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
           isBadged ? 'dark:bg-polar-800 bg-white' : '',
           isBadged
             ? 'border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
-            : 'dark:border-polar-600 dark:text-polar-400 border-blue-200 bg-white text-blue-600 transition ease-in-out hover:border-blue-600 hover:bg-blue-600 hover:text-white dark:bg-transparent dark:hover:border-blue-600 dark:hover:bg-blue-600 dark:hover:text-white',
+            : 'dark:border-polar-600 dark:text-polar-400 border-blue-200 bg-white text-blue-500 transition ease-in-out hover:border-blue-600 hover:bg-blue-500 hover:text-white dark:bg-transparent dark:hover:border-blue-600 dark:hover:bg-blue-500 dark:hover:text-white',
           'cursor-pointer items-center justify-center space-x-1 rounded-md border px-2 py-1 text-sm',
           'flex overflow-hidden whitespace-nowrap',
         )}
@@ -332,7 +332,7 @@ const PostCommentForm = (props: {
             disabled={posted || loading}
             className={twMerge(
               !posted
-                ? 'text-blue-600 dark:text-blue-300'
+                ? 'text-blue-500 dark:text-blue-300'
                 : 'text-gray-400 dark:text-blue-200/40',
               'font-medium',
             )}

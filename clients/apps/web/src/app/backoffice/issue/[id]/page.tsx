@@ -40,7 +40,7 @@ export default function Page({ params }: { params: { id: string } }) {
             <td className="font-bold">Issue</td>
             <td>
               <a
-                className="text-blue-600"
+                className="text-blue-500"
                 href={`https://github.com/${issue.data?.repository.organization.name}/${issue.data?.repository.name}/issues/${issue.data?.number}`}
               >
                 {issue.data?.title}

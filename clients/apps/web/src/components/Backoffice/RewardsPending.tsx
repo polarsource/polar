@@ -78,7 +78,7 @@ const Pledges = () => {
         <div key={i[0][0].pledge.issue.id}>
           <div className="flex gap-2">
             <Link
-              className="text-blue-600"
+              className="text-blue-500"
               href={`/backoffice/issue/${i[0][0].pledge.issue.id}`}
             >
               {i[0][0].pledge.issue.repository.organization.name}/
@@ -219,7 +219,7 @@ const Pledges = () => {
                     className="flex items-center gap-2"
                     key={r.issue_reward_id}
                   >
-                    <ArrowRightIcon className="h-4 w-4 text-blue-600" />
+                    <ArrowRightIcon className="h-4 w-4 text-blue-500" />
                     <div>
                       ${getCentsInDollarString(r.amount.amount, true, true)} to
                     </div>

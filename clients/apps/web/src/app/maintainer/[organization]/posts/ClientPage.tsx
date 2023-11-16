@@ -1,7 +1,13 @@
 'use client'
 
-import { AnimatedIconButton } from '@/components/Feed/Post'
-import { Post, posts } from '@/components/Feed/data'
+import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
+import {
+  NewsletterPost,
+  Post,
+  PostType,
+  getFeed,
+  isRecommendation,
+} from '@/components/Feed/data'
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
@@ -15,9 +21,10 @@ import {
   LanguageOutlined,
 } from '@mui/icons-material'
 import Link from 'next/link'
+import { api } from 'polarkit'
 import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { getCentsInDollarString } from 'polarkit/money'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useHoverDirty } from 'react-use'
 
 const sampleAnalyticsData = [
@@ -66,6 +73,17 @@ const sampleAnalyticsData = [
 ]
 
 const ClientPage = () => {
+  const [posts, setPosts] = useState<Post[]>([])
+  useEffect(() => {
+    getFeed(api).then((feed) =>
+      setPosts(
+        feed
+          .filter((entity) => !isRecommendation(entity))
+          .filter((post) => post.type === PostType.Newsletter) as Post[],
+      ),
+    )
+  }, [])
+
   return (
     <>
       <DashboardBody>
@@ -83,7 +101,7 @@ const ClientPage = () => {
               <StaggerReveal className="flex w-full flex-col gap-y-6">
                 {posts.map((post) => (
                   <StaggerReveal.Child key={post.slug}>
-                    <PostItem {...post} />
+                    <PostItem {...(post as NewsletterPost)} />
                   </StaggerReveal.Child>
                 ))}
               </StaggerReveal>
@@ -95,7 +113,7 @@ const ClientPage = () => {
                 Analytics
               </h3>
             </div>
-            <Card className="flex flex-col gap-y-4 p-4">
+            <Card className="flex flex-col gap-y-4 rounded-3xl p-4 ">
               <div className="flex w-full flex-grow flex-row items-center justify-between">
                 <h3 className="p-2 text-sm font-medium">Unique views</h3>
                 <h3 className="p-2 text-sm">322k this month</h3>
@@ -114,7 +132,7 @@ const ClientPage = () => {
                 }))}
               />
             </Card>
-            <Card className="flex flex-col gap-y-4 p-4">
+            <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
               <div className="flex w-full flex-grow flex-row items-center justify-between">
                 <h3 className="p-2 text-sm font-medium">Subscribers</h3>
                 <h3 className="p-2 text-sm">1,242</h3>
@@ -140,7 +158,7 @@ const ClientPage = () => {
 
 export default ClientPage
 
-const PostItem = (post: Post) => {
+const PostItem = (post: NewsletterPost) => {
   const ref = useRef<HTMLAnchorElement>(null)
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
@@ -148,19 +166,16 @@ const PostItem = (post: Post) => {
   const impressions = useMemo(() => Math.round(Math.random() * 100), [])
   const comments = useMemo(() => Math.round(Math.random() * 100), [])
 
-  const [title, ...descArray] = post.text.split('.')
-  const desc = descArray.join('.')
-
   return (
     <Link ref={ref} href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}>
-      <div className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row justify-between rounded-3xl border border-gray-100 bg-white px-8 py-6 shadow-sm transition-colors hover:bg-blue-50/50">
+      <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between rounded-3xl border border-gray-100 bg-white px-8 py-6 shadow-sm transition-colors hover:bg-blue-50/50">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-2">
             <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
-              {title}
+              {post.newsletter.title}
             </h3>
             <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
-              {desc}
+              {post.newsletter.description}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between">

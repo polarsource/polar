@@ -1,4 +1,11 @@
-import { PolarUserSchemasUser, SubscriptionTierType } from '@polar-sh/sdk'
+import {
+  Issue,
+  Platforms,
+  PolarAPI,
+  PolarUserSchemasUser,
+  SubscriptionTierType,
+} from '@polar-sh/sdk'
+import { Recommendation } from './Recommendations/Recommendation'
 
 export type Maintainer = {
   username: string
@@ -33,6 +40,11 @@ export enum CodeLanguage {
   Other = 'Other',
 }
 
+export interface Newsletter {
+  title: string
+  description: string
+}
+
 export interface Video {
   title: string
   description: string
@@ -63,6 +75,7 @@ export interface Poll {
 
 export enum PostType {
   Text = 'Text',
+  Newsletter = 'Newsletter',
   Video = 'Video',
   Audio = 'Audio',
   Code = 'Code',
@@ -87,6 +100,11 @@ export interface BasePost {
   updatedAt: Date
 }
 
+export interface NewsletterPost extends BasePost {
+  type: PostType.Newsletter
+  newsletter: Newsletter
+}
+
 export interface VideoPost extends BasePost {
   type: PostType.Video
   video: Video
@@ -107,7 +125,13 @@ export interface PollPost extends BasePost {
   poll: Poll
 }
 
-export type Post = BasePost | VideoPost | AudioPost | CodePost | PollPost
+export type Post =
+  | BasePost
+  | VideoPost
+  | AudioPost
+  | CodePost
+  | PollPost
+  | NewsletterPost
 
 export interface Like {
   user: User
@@ -119,16 +143,51 @@ export interface Comment {
   likes: Like[]
 }
 
-export const posts: Post[] = [
+export enum RecommendationType {
+  Issues = 'Issues',
+  Rewards = 'Rewards',
+  Jobs = 'Jobs',
+  Products = 'Products',
+  Event = 'Event',
+}
+
+interface BaseRecommendation {
+  id: string
+  type: RecommendationType
+}
+
+export interface IssuesRecommendation extends BaseRecommendation {
+  type: RecommendationType.Issues
+  issues: Issue[]
+}
+
+export interface RewardsRecommendation extends BaseRecommendation {
+  type: RecommendationType.Rewards
+  issues: Issue[]
+}
+
+export type Recommendation = IssuesRecommendation | RewardsRecommendation
+
+export const isRecommendation = (
+  entity: Post | Recommendation,
+): entity is Recommendation => entity.type in RecommendationType
+
+export const getFeed = async (
+  api: PolarAPI,
+): Promise<(Post | Recommendation)[]> => [
   {
     slug: '123',
-    text: `# We're happy to announce the release of our SDK for JavaScript environments.
+    text: 'I just launched a newsletter. Feel free to subscribe!',
+    type: PostType.Newsletter,
+    visibility: 'public',
+    newsletter: {
+      title: 'What to do when you get stuck on a problem?',
+      description: `# We're happy to announce the release of our SDK for JavaScript environments.
 
 It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
 
 Learn more over at the [README](https://polar.sh).`,
-    type: PostType.Text,
-    visibility: 'public',
+    },
     author: {
       username: 'emilwidlund',
       avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
@@ -175,6 +234,19 @@ Learn more over at the [README](https://polar.sh).`,
     comments: [],
     createdAt: new Date(),
     updatedAt: new Date(),
+  },
+  {
+    id: '1231231',
+    type: RecommendationType.Rewards,
+    issues:
+      (
+        await api.issues.search({
+          organizationName: 'emilwidlund',
+          platform: Platforms.GITHUB,
+        })
+      ).items
+        // ?.filter((issue) => issue.upfront_split_to_contributors ?? 0 > 0)
+        ?.slice(0, 3) ?? [],
   },
   {
     slug: '789',

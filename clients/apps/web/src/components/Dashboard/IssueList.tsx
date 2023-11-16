@@ -292,7 +292,7 @@ export const Header = (props: {
   const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <div className="flex w-full flex-row items-center justify-between pr-4">
+    <div className="flex w-full flex-row items-center justify-between">
       <div className="relative w-full min-w-[280px] max-w-[500px] py-2">
         <Input
           type="text"

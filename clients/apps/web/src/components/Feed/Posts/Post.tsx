@@ -1,3 +1,5 @@
+'use client'
+
 import {
   ArrowForward,
   BookmarkBorderOutlined,
@@ -5,48 +7,80 @@ import {
   FavoriteBorderOutlined,
   LanguageOutlined,
   MoreVertOutlined,
-  PlayArrow,
   VerifiedUser,
 } from '@mui/icons-material'
 import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { Avatar, Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { ButtonProps } from 'polarkit/components/ui/button'
-import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
+import {
+  MouseEventHandler,
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
-import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
-import {
-  CodePost,
-  Post as FeedPost,
-  PollPost,
-  PostType,
-  VideoPost,
-} from './data'
+import SubscriptionGroupIcon from '../../Subscriptions/SubscriptionGroupIcon'
+import { Post as FeedPost } from '../data'
+import { PostMeta } from './meta/Meta'
+
+function getDegree(x: number, y: number) {
+  let radian = Math.atan2(y, x)
+  let degree = radian * (180 / Math.PI)
+  if (degree < 0) {
+    degree = 360 + degree
+  }
+  return degree
+}
 
 export const Post = (props: FeedPost) => {
   const ref = useRef<HTMLDivElement>(null)
   const isHovered = useHoverDirty(ref)
 
+  const onMouseMove: MouseEventHandler<HTMLDivElement> = useCallback(
+    (e) => {
+      if (ref.current) {
+        const { x, y } = ref.current.getBoundingClientRect()
+        ref.current.style.setProperty('--x', String(e.clientX - x) + 'px')
+        ref.current.style.setProperty('--y', String(e.clientY - y) + 'px')
+      }
+    },
+    [ref],
+  )
+
   return (
     <div
       ref={ref}
       className={twMerge(
-        'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl border px-6 pb-6 pt-8 transition-all duration-100',
-        isHovered
-          ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-100 bg-white shadow-sm'
-          : 'border-transparent bg-transparent dark:border-transparent dark:bg-transparent',
+        'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl p-[1px] transition-colors',
       )}
+      style={{
+        background: isHovered
+          ? `radial-gradient(at var(--x, 0px) var(--y, 0px), #ffffff30, #ffffff08 100%)`
+          : 'transparent',
+      }}
+      onMouseMove={onMouseMove}
     >
-      <Avatar
-        className="h-12 w-12"
-        avatar_url={props.author.avatar_url}
-        name={props.author.username}
-      />
-      <div className="flex w-full min-w-0 flex-col">
-        <PostHeader {...props} />
-        <PostBody {...props} isHovered={isHovered} />
-        <PostFooter {...props} isHovered={isHovered} />
+      <div
+        className={twMerge(
+          'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl px-6 pb-6 pt-8 transition-all duration-150',
+          isHovered
+            ? 'dark:bg-polar-900 bg-white'
+            : 'dark:bg-polar-950 bg-gray-50',
+        )}
+      >
+        <Avatar
+          className="h-12 w-12"
+          avatar_url={props.author.avatar_url}
+          name={props.author.username}
+        />
+        <div className="flex w-full min-w-0 flex-col">
+          <PostHeader {...props} />
+          <PostBody {...props} isHovered={isHovered} />
+          <PostFooter {...props} isHovered={isHovered} />
+        </div>
       </div>
     </div>
   )
@@ -157,7 +191,7 @@ export const AnimatedIconButton = (
 
   useEffect(() => {
     x.set(props.active ? 1 : 0)
-  }, [props])
+  }, [x, props])
 
   const handleMouse = useCallback(
     (value: number) => () => {
@@ -165,7 +199,7 @@ export const AnimatedIconButton = (
         x.set(value)
       }
     },
-    [props],
+    [x, props],
   )
 
   return (
@@ -189,114 +223,5 @@ export const AnimatedIconButton = (
         {props.children}
       </motion.div>
     </Button>
-  )
-}
-
-const metaResolver = (post: FeedPost) => {
-  switch (post.type) {
-    case PostType.Video:
-      return <PostMetaVideo {...(post as VideoPost)} />
-    case PostType.Code:
-      return <PostMetaCode {...(post as CodePost)} />
-    case PostType.Poll:
-      return <PostMetaPoll {...(post as PollPost)} />
-    default:
-      return null
-  }
-}
-
-const PostMeta = (post: FeedPost) => {
-  const children = metaResolver(post)
-
-  return children ? (
-    <div className="dark:border-polar-700 dark:bg-polar-800 mb-2 flex w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white text-sm shadow-sm">
-      {children}
-    </div>
-  ) : null
-}
-
-const PostMetaVideo = (post: VideoPost) => {
-  return (
-    <div className="flex w-full flex-col">
-      <div
-        className="relative flex h-[260px] w-full flex-col items-center justify-center bg-cover bg-center text-white"
-        style={{ backgroundImage: `url(${post.video.thumbnailUrl})` }}
-      >
-        <span className="z-10 text-5xl">
-          <PlayArrow fontSize="inherit" />
-        </span>
-        <div className="absolute inset-0 bg-[rgba(0_0_0_/_.8)]" />
-      </div>
-
-      <div className="flex flex-col gap-y-3 p-4">
-        <div className="flex flex-col gap-y-1">
-          <h4 className="dark:text-polar-50 font-medium text-gray-950">
-            {post.video.title}
-          </h4>
-          <p className="dark:text-polar-500 truncate text-gray-500">
-            {post.video.description}
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const PostMetaCode = (post: CodePost) => {
-  return (
-    <pre className="max-h-[280px] w-full overflow-auto p-4 text-xs">
-      {post.code.code}
-    </pre>
-  )
-}
-
-const PostMetaPoll = (post: PollPost) => {
-  const winningOption = post.poll.options.reduce(
-    (acc, option, index) => {
-      if (option.votes > acc.votes) {
-        return { index, votes: option.votes }
-      }
-      return acc
-    },
-    {
-      index: 0,
-      votes: post.poll.options[0].votes,
-    },
-  )
-
-  return (
-    <div className="flex w-full flex-col">
-      <div className="dark:border-polar-700 flex flex-col gap-y-1 border-b border-gray-100 px-6 py-4">
-        <h4 className="dark:text-polar-50 font-medium">{post.poll.question}</h4>
-        <span className="text-xs">{post.poll.totalVotes} votes</span>
-      </div>
-      <div className="bg-gray-75 dark:bg-polar-900 flex flex-col gap-y-2 p-6">
-        {post.poll.options.map((option, index) => (
-          <div key={option.text} className="relative flex flex-row">
-            <div
-              className={twMerge(
-                'h-8 rounded-md',
-                winningOption.index === index
-                  ? 'bg-blue-600'
-                  : 'dark:bg-polar-600 bg-gray-200',
-              )}
-              style={{
-                width: `${(option.votes / post.poll.totalVotes) * 100}%`,
-              }}
-            />
-            <span
-              className={twMerge(
-                'absolute inset-x-3 inset-y-2 w-full text-xs',
-                winningOption.index === index && 'text-white',
-              )}
-            >
-              {`${Math.round((option.votes / post.poll.totalVotes) * 100)}% ${
-                option.text
-              }`}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
   )
 }

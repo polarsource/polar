@@ -100,7 +100,14 @@ const COMPONENTS: ReturnType<UseMdxComponents> = {
   h5: (props) => <h5 className="my-6 text-base font-bold" {...props} />,
   h6: (props) => <h6 className="my-6 text-sm font-bold" {...props} />,
   p: (props) => <p className="my-6 text-base" {...props} />,
-  a: (props) => <a className="my-6 text-base text-blue-500" {...props} />,
+  a: (props) => (
+    <a
+      className="my-6 text-base text-blue-500"
+      rel="noopener noreferrer"
+      target="_blank"
+      {...props}
+    />
+  ),
   ul: (props) => <ul className="my-6 text-base" {...props} />,
   ol: (props) => <ol className="my-6 text-base" {...props} />,
   li: (props) => <li className="my-6 text-base" {...props} />,

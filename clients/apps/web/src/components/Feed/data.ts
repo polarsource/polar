@@ -122,11 +122,11 @@ export interface Comment {
 export const posts: Post[] = [
   {
     slug: '123',
-    text: `We're happy to announce the release of our SDK for JavaScript environments.
+    text: `# We're happy to announce the release of our SDK for JavaScript environments.
 
-    It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
-    
-    Learn more over at the README.`,
+It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
+
+Learn more over at the [README](https://polar.sh).`,
     type: PostType.Text,
     visibility: 'public',
     author: {
@@ -315,11 +315,11 @@ export const posts: Post[] = [
   },
   {
     slug: 'jkl',
-    text: `We're happy to announce the release of our SDK for JavaScript environments.
+    text: `# We're happy to announce the release of our SDK for JavaScript environments.
 
-    It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
-    
-    Learn more over at the README.`,
+It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
+
+Learn more over at the [README](https://polar.sh).`,
     type: PostType.Text,
     visibility: 'public',
     author: {

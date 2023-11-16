@@ -13,74 +13,36 @@ import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { Avatar, Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { ButtonProps } from 'polarkit/components/ui/button'
-import {
-  MouseEventHandler,
-  PropsWithChildren,
-  useCallback,
-  useEffect,
-  useRef,
-} from 'react'
+import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../../Subscriptions/SubscriptionGroupIcon'
 import { Post as FeedPost } from '../data'
 import { PostMeta } from './meta/Meta'
 
-function getDegree(x: number, y: number) {
-  let radian = Math.atan2(y, x)
-  let degree = radian * (180 / Math.PI)
-  if (degree < 0) {
-    degree = 360 + degree
-  }
-  return degree
-}
-
 export const Post = (props: FeedPost) => {
   const ref = useRef<HTMLDivElement>(null)
   const isHovered = useHoverDirty(ref)
-
-  const onMouseMove: MouseEventHandler<HTMLDivElement> = useCallback(
-    (e) => {
-      if (ref.current) {
-        const { x, y } = ref.current.getBoundingClientRect()
-        ref.current.style.setProperty('--x', String(e.clientX - x) + 'px')
-        ref.current.style.setProperty('--y', String(e.clientY - y) + 'px')
-      }
-    },
-    [ref],
-  )
 
   return (
     <div
       ref={ref}
       className={twMerge(
-        'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl p-[1px] transition-colors',
+        'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl border px-6 pb-6 pt-8 transition-all duration-100',
+        isHovered
+          ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-100 bg-white shadow-sm'
+          : 'border-transparent bg-transparent dark:border-transparent dark:bg-transparent',
       )}
-      style={{
-        background: isHovered
-          ? `radial-gradient(at var(--x, 0px) var(--y, 0px), #ffffff30, #ffffff08 100%)`
-          : 'transparent',
-      }}
-      onMouseMove={onMouseMove}
     >
-      <div
-        className={twMerge(
-          'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl px-6 pb-6 pt-8 transition-all duration-150',
-          isHovered
-            ? 'dark:bg-polar-900 bg-white'
-            : 'dark:bg-polar-950 bg-gray-50',
-        )}
-      >
-        <Avatar
-          className="h-12 w-12"
-          avatar_url={props.author.avatar_url}
-          name={props.author.username}
-        />
-        <div className="flex w-full min-w-0 flex-col">
-          <PostHeader {...props} />
-          <PostBody {...props} isHovered={isHovered} />
-          <PostFooter {...props} isHovered={isHovered} />
-        </div>
+      <Avatar
+        className="h-12 w-12"
+        avatar_url={props.author.avatar_url}
+        name={props.author.username}
+      />
+      <div className="flex w-full min-w-0 flex-col">
+        <PostHeader {...props} />
+        <PostBody {...props} isHovered={isHovered} />
+        <PostFooter {...props} isHovered={isHovered} />
       </div>
     </div>
   )

@@ -45,10 +45,6 @@ class Invoice:
         return "inv_test"
 
     @property
-    def stripe_id(self) -> str:
-        return "inv_test"
-
-    @property
     def payment_intent(self) -> str:
         return "pi_text"
 
@@ -309,7 +305,7 @@ async def test_transfer_org(
     @dataclass
     class Trans:
         @property
-        def stripe_id(self) -> str:
+        def id(self) -> str:
             return "transfer_id"
 
     transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
@@ -356,7 +352,7 @@ async def test_transfer_org_no_account(
     @dataclass
     class Trans:
         @property
-        def stripe_id(self) -> str:
+        def id(self) -> str:
             return "transfer_id"
 
     transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
@@ -415,7 +411,7 @@ async def test_transfer_user(
     @dataclass
     class Trans:
         @property
-        def stripe_id(self) -> str:
+        def id(self) -> str:
             return "transfer_id"
 
     transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
@@ -462,7 +458,7 @@ async def test_transfer_user_no_account(
     @dataclass
     class Trans:
         @property
-        def stripe_id(self) -> str:
+        def id(self) -> str:
             return "transfer_id"
 
     transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")

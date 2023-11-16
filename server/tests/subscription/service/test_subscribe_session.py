@@ -1,3 +1,4 @@
+import uuid
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -5,6 +6,7 @@ import pytest
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Anonymous
+from polar.exceptions import ResourceNotFound
 from polar.models import (
     Account,
     Organization,
@@ -108,7 +110,7 @@ class TestCreateSubscribeSession:
             MagicMock
         ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details=None,
@@ -147,7 +149,7 @@ class TestCreateSubscribeSession:
             MagicMock
         ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},
@@ -191,7 +193,7 @@ class TestCreateSubscribeSession:
             MagicMock
         ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details=None,
@@ -234,7 +236,7 @@ class TestCreateSubscribeSession:
             MagicMock
         ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email="backer@example.com",
             customer_details=None,
@@ -287,7 +289,7 @@ class TestCreateSubscribeSession:
             MagicMock
         ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details=None,
@@ -315,6 +317,27 @@ class TestCreateSubscribeSession:
 
 @pytest.mark.asyncio
 class TestGetSubscribeSession:
+    @pytest.mark.parametrize(
+        "metadata", [None, {}, {"subscription_tier_id": str(uuid.uuid4())}]
+    )
+    async def test_invalid(
+        self,
+        metadata: dict[str, str] | None,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
+        get_checkout_session_mock.return_value = SimpleNamespace(
+            id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details={"name": "John", "email": "backer@example.com"},
+            metadata=metadata,
+        )
+
+        with pytest.raises(ResourceNotFound):
+            await subscribe_session_service.get_subscribe_session(session, "SESSION_ID")
+
     async def test_valid(
         self,
         session: AsyncSession,
@@ -323,7 +346,7 @@ class TestGetSubscribeSession:
     ) -> None:
         get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},

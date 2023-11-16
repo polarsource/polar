@@ -1,5 +1,6 @@
 import stripe
 import stripe.error
+import stripe.webhook
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -71,9 +72,9 @@ async def stripe_connect_return(
     account.email = stripe_account.email
     account.country = stripe_account.country
     account.currency = stripe_account.default_currency
-    account.is_details_submitted = stripe_account.details_submitted
-    account.is_charges_enabled = stripe_account.charges_enabled
-    account.is_payouts_enabled = stripe_account.payouts_enabled
+    account.is_details_submitted = stripe_account.details_submitted or False
+    account.is_charges_enabled = stripe_account.charges_enabled or False
+    account.is_payouts_enabled = stripe_account.payouts_enabled or False
     account.data = stripe_account.to_dict()
     await account.save(session)
 
@@ -105,7 +106,7 @@ async def webhook(request: Request) -> WebhookResponse:
     sig_header = request.headers["Stripe-Signature"]
 
     try:
-        event = stripe.Webhook.construct_event(
+        event = stripe.webhook.Webhook.construct_event(
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
     except ValueError as e:

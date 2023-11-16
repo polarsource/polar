@@ -309,7 +309,7 @@ class TestCreateSubscriptionTier:
             MagicMock
         ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
-            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+            id="PRODUCT_ID", default_price="PRICE_ID"
         )
 
         response = await client.post(
@@ -337,7 +337,7 @@ class TestCreateSubscriptionTier:
             MagicMock
         ) = stripe_service_mock.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
-            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+            id="PRODUCT_ID", default_price="PRICE_ID"
         )
 
         response = await client.post(
@@ -957,7 +957,7 @@ class TestCreateSubscribeSession:
             MagicMock
         ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details=None,
@@ -989,7 +989,7 @@ class TestCreateSubscribeSession:
             MagicMock
         ) = stripe_service_mock.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details=None,
@@ -1021,7 +1021,7 @@ class TestGetSubscribeSession:
     ) -> None:
         get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},
@@ -1049,7 +1049,7 @@ class TestGetSubscribeSession:
     ) -> None:
         get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(
-            stripe_id="SESSION_ID",
+            id="SESSION_ID",
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},

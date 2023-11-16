@@ -16,6 +16,7 @@ class PaymentMethod(Schema):
 
     @classmethod
     def from_stripe(cls, o: stripe_lib.PaymentMethod) -> Self:
+        assert o.card is not None
         return cls(
             stripe_payment_method_id=o.id,
             type="card" if o.type == "card" else None,

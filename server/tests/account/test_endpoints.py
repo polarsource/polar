@@ -259,7 +259,7 @@ async def test_create_personal_stripe(
     stripe_mock = mocker.patch.object(stripe_lib.Account, "create")
 
     class FakeStripeAccount:
-        stripe_id = "fake_stripe_id"
+        id = "fake_stripe_id"
         email = "foo@example.com"
         country = "SE"
         default_currency = "USD"

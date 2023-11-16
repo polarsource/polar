@@ -11,6 +11,7 @@ from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.stripe.service import ProductUpdateKwargs, StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -191,8 +192,9 @@ class SubscriptionTierService(
             await nested.rollback()
             raise
 
-        subscription_tier.stripe_product_id = product.stripe_id
-        subscription_tier.stripe_price_id = product.default_price
+        subscription_tier.stripe_product_id = product.id
+        assert product.default_price is not None
+        subscription_tier.stripe_price_id = get_expandable_id(product.default_price)
 
         await session.commit()
         return subscription_tier
@@ -244,7 +246,7 @@ class SubscriptionTierService(
                 set_default=True,
             )
             stripe_service.archive_price(subscription_tier.stripe_price_id)
-            subscription_tier.stripe_price_id = new_price.stripe_id
+            subscription_tier.stripe_price_id = new_price.id
 
         if update_schema.is_highlighted:
             await self._disable_other_highlights(

@@ -254,7 +254,7 @@ class SubscribeSession(Schema):
         subscription_tier: SubscriptionTierModel,
     ) -> Self:
         return cls(
-            id=checkout_session.stripe_id,
+            id=checkout_session.id,
             url=checkout_session.url,
             customer_email=checkout_session.customer_details["email"]
             if checkout_session.customer_details

@@ -1,10 +1,11 @@
 'use client'
 
 import Editor from '@/components/Feed/Editor'
-import { posts } from '@/components/Feed/data'
+import { NewsletterPost, getFeed } from '@/components/Feed/data'
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
 import { ExpandMoreOutlined } from '@mui/icons-material'
 import { useParams, useRouter } from 'next/navigation'
+import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
@@ -13,13 +14,25 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { useSubscriptionTiers } from 'polarkit/hooks'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { post: postId, organization } = useParams()
-  const post = posts.find((post) => post.slug === postId)
+  const [post, setPost] = useState<NewsletterPost>()
+  const [value, setValue] = useState(post?.newsletter.description || '')
+
+  useEffect(() => {
+    getFeed(api).then((feed) => {
+      const post = feed.find(
+        (post) => 'slug' in post && post.slug === postId,
+      ) as NewsletterPost
+
+      setPost(post)
+      setValue(post?.newsletter.description || '')
+    })
+  }, [postId])
+
   const router = useRouter()
-  const [value, setValue] = useState(post?.text || '')
 
   const handleSave = useCallback(() => {
     router.push(`/maintainer/${organization}/posts`)

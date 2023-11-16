@@ -117,7 +117,12 @@ const COMPONENTS: ReturnType<UseMdxComponents> = {
   li: (props) => <li className="my-6 text-base" {...props} />,
   blockquote: (props) => <blockquote className="my-6 text-base" {...props} />,
   pre: (props) => <pre className="my-6 text-base" {...props} />,
-  code: (props) => <code className="my-6 text-base" {...props} />,
+  code: (props) => (
+    <code
+      className="dark:bg-polar-900 dark:border-polar-800 my-6 border border-gray-100 bg-gray-500 text-base"
+      {...props}
+    />
+  ),
   inlineCode: (props) => <code className="my-6 text-base" {...props} />,
   hr: (props) => <hr className="my-6 text-base" {...props} />,
   table: (props) => <table className="my-6 text-base" {...props} />,

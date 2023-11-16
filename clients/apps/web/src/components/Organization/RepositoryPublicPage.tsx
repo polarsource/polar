@@ -47,7 +47,7 @@ const RepositoryPublicPage = ({
 
           {repository.homepage && (
             <a
-              className="text-blue-600 hover:text-blue-700"
+              className="text-blue-500 hover:text-blue-700"
               href={externalURL(repository.homepage)}
             >
               {prettyURL(repository.homepage)}

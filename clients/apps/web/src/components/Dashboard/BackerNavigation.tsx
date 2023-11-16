@@ -26,7 +26,7 @@ const BackerNavigation = (props: { classNames?: string }) => {
             className={twMerge(
               'flex items-center gap-x-4 rounded-xl border border-transparent px-5 py-3 transition-colors',
               n.isActive
-                ? 'dark:bg-polar-800 dark:border-polar-700 bg-blue-50 text-blue-600 dark:text-blue-500'
+                ? 'dark:bg-polar-800 dark:border-polar-700 bg-blue-50 text-blue-500 dark:text-blue-500'
                 : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-900 hover:text-blue-700',
             )}
             href={n.link}

@@ -31,7 +31,7 @@ const CopyToClipboardInput = (props: {
         readOnly={true}
       />
       <div
-        className="dark:bg-polar-500/30 dark:text-polar-300 flex cursor-pointer items-center justify-center bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600"
+        className="dark:bg-polar-500/30 dark:text-polar-300 flex cursor-pointer items-center justify-center bg-blue-50 px-3 py-2 text-sm font-medium text-blue-500"
         onClick={() => {
           copyToClipboard(props.id)
         }}

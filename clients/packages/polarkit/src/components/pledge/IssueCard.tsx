@@ -314,7 +314,7 @@ const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
         <Avatar avatar_url={r.avatar_url} name={r.name} />
       ))}
     </div>
-    <span className="flex-shrink-0 whitespace-nowrap text-blue-600">
+    <span className="flex-shrink-0 whitespace-nowrap text-blue-500">
       🎉 Rewarded
     </span>
   </div>
@@ -327,7 +327,7 @@ const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
         <Avatar avatar_url={a.avatar_url} name={a.login} />
       ))}
     </div>
-    <span className="flex-shrink-0 whitespace-nowrap text-sm text-blue-600">
+    <span className="flex-shrink-0 whitespace-nowrap text-sm text-blue-500">
       Assigned
     </span>
   </div>

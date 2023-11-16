@@ -65,7 +65,7 @@ const OnboardingInstallChromeExtension = () => {
               </Button>
               <button
                 type="button"
-                className="text-md text-blue-600 transition-colors duration-200 hover:text-blue-400"
+                className="text-md text-blue-500 transition-colors duration-200 hover:text-blue-400"
                 onClick={hideDashboardBanner}
               >
                 Skip

@@ -17,7 +17,7 @@ const Pill = ({
         'inline-flex items-center space-x-3 whitespace-nowrap rounded-full px-1.5 py-0.5 text-sm text-xs font-medium transition-all duration-200',
 
         color === 'blue'
-          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-200'
+          ? 'bg-blue-50 text-blue-500 dark:bg-blue-900 dark:text-blue-200'
           : '',
         color === 'gray'
           ? 'dark:bg-polar-700 dark:text-polar-300 bg-gray-100 text-gray-600'

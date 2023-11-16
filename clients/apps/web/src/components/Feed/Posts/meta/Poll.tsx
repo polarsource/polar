@@ -28,7 +28,7 @@ export const PollMeta = (post: PollPost) => {
               className={twMerge(
                 'h-8 rounded-md',
                 winningOption.index === index
-                  ? 'bg-blue-600'
+                  ? 'bg-blue-500'
                   : 'dark:bg-polar-600 bg-gray-200',
               )}
               style={{

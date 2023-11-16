@@ -142,7 +142,7 @@ const IssuesLookingForFunding = ({
                   right={
                     <Link
                       href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
-                      className="font-medium text-blue-600"
+                      className="font-medium text-blue-500"
                     >
                       <Button size="sm" variant="secondary" asChild>
                         <FavoriteBorderOutlined fontSize="inherit" />
@@ -336,7 +336,7 @@ export const IssuesFilter = ({
                 className={twMerge(
                   'dark:text-polar-300 mr-2 h-4 w-4 text-blue-300',
                   (filters?.badged === true || filters?.closed === undefined) &&
-                    'text-blue-600 dark:text-blue-600',
+                    'text-blue-500 dark:text-blue-500',
                 )}
               />
               <span>Filter</span>
@@ -370,7 +370,7 @@ export const IssuesFilter = ({
                 className={twMerge(
                   'dark:text-polar-300 mr-2 h-4 w-4 text-blue-300',
                   (filters?.sort?.length ?? 0) > 0 &&
-                    'text-blue-600 dark:text-blue-600',
+                    'text-blue-500 dark:text-blue-500',
                 )}
               />
               <span>Sort by</span>

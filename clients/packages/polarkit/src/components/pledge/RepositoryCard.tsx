@@ -48,7 +48,7 @@ const RepositoryCard = ({
 
           {repository.license && (
             <a
-              className="whitespace-pre text-xs text-blue-600 dark:text-blue-500"
+              className="whitespace-pre text-xs text-blue-500 dark:text-blue-500"
               href={repoURL}
             >
               {repository.license}
@@ -65,7 +65,7 @@ const RepositoryCard = ({
 
           {repository.homepage && (
             <a
-              className="text-xs text-blue-600 dark:text-blue-500"
+              className="text-xs text-blue-500 dark:text-blue-500"
               href={repository.homepage}
             >
               {prettyURL(repository.homepage)}

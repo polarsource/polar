@@ -25,7 +25,7 @@ const List = (props: {
       return <Icon classes="bg-green-200 text-green-600" icon={<CheckIcon />} />
     }
     return (
-      <Icon classes="bg-blue-200 text-blue-600" icon={<DollarSignIcon />} />
+      <Icon classes="bg-blue-200 text-blue-500" icon={<DollarSignIcon />} />
     )
   }
 
@@ -113,7 +113,7 @@ const List = (props: {
                     <span className="inline-flex flex-col">
                       <a
                         href={githubIssueLink(t.pledge.issue)}
-                        className="text-blue-600 dark:text-blue-500"
+                        className="text-blue-500 dark:text-blue-500"
                       >
                         {t.pledge.issue.repository.organization.name}/
                         {t.pledge.issue.repository.name}#{t.pledge.issue.number}

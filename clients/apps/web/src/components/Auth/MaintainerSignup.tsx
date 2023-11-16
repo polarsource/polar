@@ -36,7 +36,7 @@ const MaintainerSignup = () => {
             <div className="flex flex-1 flex-col gap-4">
               {steps.map((s) => (
                 <div className="flex items-center gap-4">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-600 font-semibold text-blue-600">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-600 font-semibold text-blue-500">
                     <span>{s.num}</span>
                   </div>
                   <div className="dark:text-polar-400 text-gray-600">
@@ -60,7 +60,7 @@ const MaintainerSignup = () => {
           <div className="overflow-hidden border-l border-l-[#C9DAF4]/60 bg-[#F2F5FC]  dark:border-blue-600/50 dark:bg-blue-500/20">
             <div className="grid grid-cols-2">
               <div className="flex flex-col space-y-2 border-b border-r border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
-                <h2 className="font-medium text-blue-600 dark:text-blue-400">
+                <h2 className="font-medium text-blue-500 dark:text-blue-400">
                   Funding goals
                 </h2>
                 <div className="flex flex-1 flex-col justify-center">
@@ -75,7 +75,7 @@ const MaintainerSignup = () => {
               </div>
 
               <div className="flex flex-col space-y-2 border-b border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
-                <h2 className="font-medium text-blue-600 dark:text-blue-400">
+                <h2 className="font-medium text-blue-500 dark:text-blue-400">
                   Reward contributors
                 </h2>
                 <div className="flex flex-1 flex-col justify-center">
@@ -97,13 +97,13 @@ const MaintainerSignup = () => {
               </div>
 
               <div className="flex flex-col space-y-2 border-b border-r border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
-                <h2 className="font-medium text-blue-600 dark:text-blue-400">
+                <h2 className="font-medium text-blue-500 dark:text-blue-400">
                   Better backlog
                 </h2>
                 <div className="flex flex-1 flex-col justify-center">
                   <div className="flex items-center gap-2">
                     <Progress50 />
-                    <span className="text-blue-400 dark:text-blue-600">
+                    <span className="text-blue-400 dark:text-blue-500">
                       In progress
                     </span>
                   </div>
@@ -111,11 +111,11 @@ const MaintainerSignup = () => {
               </div>
 
               <div className="flex flex-col space-y-2 border-b border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
-                <h2 className="font-medium text-blue-600 dark:text-blue-400">
+                <h2 className="font-medium text-blue-500 dark:text-blue-400">
                   Sponsorship 2.0
                 </h2>
                 <div className="flex flex-1 flex-col justify-center">
-                  <span className="font-mono text-blue-400 dark:text-blue-600">
+                  <span className="font-mono text-blue-400 dark:text-blue-500">
                     &#47;&#47; coming soon
                   </span>
                 </div>

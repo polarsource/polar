@@ -173,7 +173,7 @@ const IssueListItemDecoration = ({
                       e.preventDefault()
                       onClickDisputeButton(p)
                     }}
-                    className="text-blue-600 dark:text-blue-500"
+                    className="text-blue-500 dark:text-blue-500"
                   >
                     Dispute
                   </a>{' '}

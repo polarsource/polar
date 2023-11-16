@@ -15,7 +15,7 @@ const BackerConnectUpsell = () => {
         </span>
         <a
           href={CONFIG.GITHUB_INSTALLATION_URL}
-          className="whitespace-nowrap text-blue-600 hover:text-blue-700 dark:hover:text-blue-500"
+          className="whitespace-nowrap text-blue-500 hover:text-blue-700 dark:hover:text-blue-500"
         >
           Connect repositories
         </a>

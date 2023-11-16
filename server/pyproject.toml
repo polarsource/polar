@@ -99,7 +99,6 @@ no_implicit_reexport = true
 strict_equality = true
 disallow_untyped_defs = true
 skip_cache_mtime_checks = true
-enable_incomplete_feature = ["Unpack"]
 
 [[tool.mypy.overrides]]
 module = "polar.email.sender"

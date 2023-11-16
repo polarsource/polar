@@ -1,5 +1,6 @@
 'use client'
 
+// @ts-ignore
 import { evaluate, UseMdxComponents } from '@mdx-js/mdx'
 import { Root } from 'mdast'
 import {
@@ -11,7 +12,9 @@ import {
 } from 'polarkit/components/ui/atoms'
 import { ChangeEventHandler, useCallback, useEffect, useState } from 'react'
 import * as runtime from 'react/jsx-runtime'
+// @ts-ignore
 import { Plugin } from 'unified'
+// @ts-ignore
 import { visit } from 'unist-util-visit'
 
 interface EditorProps {
@@ -67,6 +70,7 @@ const rehypePlugin: Plugin<[], Root> = () => (ast) => {
   visit(ast, 'text', (node, index, parent) => {
     if ('value' in node && /(#\d+)/.test(node?.value)) {
       if (parent) {
+        // @ts-ignore
         parent.tagName = 'issue'
       }
     }

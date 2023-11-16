@@ -1,4 +1,5 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, InfoOutlined, LogoutOutlined } from '@mui/icons-material'
 import Link from 'next/link'
@@ -122,7 +123,11 @@ const ProfileSelection = ({
               {orgs &&
                 orgs.map((org) => (
                   <Link
-                    href={`/maintainer/${org.name}/posts`}
+                    href={
+                      isFeatureEnabled('feed')
+                        ? `/maintainer/${org.name}/posts`
+                        : `/maintainer/${org.name}/issues`
+                    }
                     className="w-full"
                     key={org.id}
                   >

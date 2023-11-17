@@ -1,10 +1,12 @@
+import uuid
+
 import stripe as stripe_lib
 
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.services import ResourceServiceReader
-from polar.models import Pledge, Subscription, Transaction
+from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
@@ -22,6 +24,16 @@ class SubscriptionDoesNotExist(TransactionError):
         message = (
             f"Received the charge {charge_id} from Stripe related to subscription "
             f"{stripe_subscription_id}, but no associated Subscription exists."
+        )
+        super().__init__(message)
+
+
+class StripeNotConfiguredOnDestinationAccount(TransactionError):
+    def __init__(self, account_id: uuid.UUID) -> None:
+        self.account_id = account_id
+        message = (
+            f"The destination account {account_id} "
+            "has no Stripe Connect account configured."
         )
         super().__init__(message)
 
@@ -83,6 +95,69 @@ class TransactionService(ResourceServiceReader[Transaction]):
         await session.commit()
 
         return transaction
+
+    async def create_stripe_transfer(
+        self,
+        session: AsyncSession,
+        *,
+        destination_account: Account,
+        currency: str,
+        amount: int,
+        transfer_group: str,
+        pledge: Pledge | None = None,
+        subscription: Subscription | None = None,
+        issue_reward: IssueReward | None = None,
+        transfer_source_transaction: str | None = None,
+        transfer_metadata: dict[str, str] | None = None,
+    ) -> tuple[Transaction, Transaction]:
+        if destination_account.stripe_id is None:
+            raise StripeNotConfiguredOnDestinationAccount(destination_account.id)
+
+        outgoing_transaction = Transaction(
+            account=None,  # Polar account
+            type=TransactionType.transfer,
+            processor=PaymentProcessor.stripe,
+            currency=currency,
+            amount=-amount,  # Subtract the amount
+            tax_amount=0,
+            processor_fee_amount=0,
+            pledge=pledge,
+            issue_reward=issue_reward,
+            subscription=subscription,
+        )
+        incoming_transaction = Transaction(
+            account=destination_account,  # User account
+            type=TransactionType.transfer,
+            processor=PaymentProcessor.stripe,
+            currency=currency,
+            amount=amount,  # Add the amount
+            tax_amount=0,
+            processor_fee_amount=0,
+            pledge=pledge,
+            issue_reward=issue_reward,
+            subscription=subscription,
+        )
+
+        stripe_transfer = stripe_service.transfer(
+            destination_account.stripe_id,
+            amount,
+            transfer_group,
+            source_transaction=transfer_source_transaction,
+            metadata={
+                "outgoing_transaction_id": str(outgoing_transaction.id),
+                "incoming_transaction_id": str(incoming_transaction.id),
+                **(transfer_metadata or {}),
+            },
+        )
+
+        outgoing_transaction.transfer_id = stripe_transfer.id
+        incoming_transaction.transfer_id = stripe_transfer.id
+
+        session.add(outgoing_transaction)
+        session.add(incoming_transaction)
+        await session.commit()
+
+        return (outgoing_transaction, incoming_transaction)
 
 
 transaction = TransactionService(Transaction)

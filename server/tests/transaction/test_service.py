@@ -1,14 +1,19 @@
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Organization, Pledge, User
+from polar.models import Account, Organization, Pledge, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service import SubscriptionDoesNotExist
+from polar.transaction.service import (
+    StripeNotConfiguredOnDestinationAccount,
+    SubscriptionDoesNotExist,
+)
 from polar.transaction.service import transaction as transaction_service
 from tests.subscription.conftest import create_subscription, create_subscription_tier
 
@@ -138,3 +143,75 @@ class TestReceiveStripePayment:
         assert transaction.charge_id == stripe_charge.id
         assert transaction.pledge_id == pledge.id
         assert transaction.subscription_id is None
+
+
+@pytest.mark.asyncio
+class TestCreateStripeTransfer:
+    async def test_stripe_not_configured_on_destination_account(
+        self, session: AsyncSession, organization: Organization, user: User
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=False,
+            is_charges_enabled=False,
+            is_payouts_enabled=False,
+            stripe_id=None,
+        )
+
+        with pytest.raises(StripeNotConfiguredOnDestinationAccount):
+            await transaction_service.create_stripe_transfer(
+                session,
+                destination_account=account,
+                currency="usd",
+                amount=1000,
+                transfer_group="TRANSFER_GROUP",
+            )
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        session.add(account)
+        await session.commit()
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID"
+        )
+
+        outgoing, incoming = await transaction_service.create_stripe_transfer(
+            session,
+            destination_account=account,
+            currency="usd",
+            amount=1000,
+            transfer_group="TRANSFER_GROUP",
+        )
+
+        assert outgoing.account_id is None
+        assert outgoing.type == TransactionType.transfer
+        assert outgoing.processor == PaymentProcessor.stripe
+        assert outgoing.amount == -1000
+        assert outgoing.transfer_id == "STRIPE_TRANSFER_ID"
+
+        assert incoming.account_id == account.id
+        assert incoming.type == TransactionType.transfer
+        assert incoming.processor == PaymentProcessor.stripe
+        assert incoming.amount == 1000
+        assert incoming.transfer_id == "STRIPE_TRANSFER_ID"

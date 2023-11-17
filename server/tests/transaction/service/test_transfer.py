@@ -113,6 +113,17 @@ class TestCreateTransfer:
         assert incoming.amount == 1000
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
 
+        assert outgoing.id is not None
+        assert incoming.id is not None
+
+        stripe_service_mock.transfer.assert_called_once()
+        assert stripe_service_mock.transfer.call_args[1]["metadata"][
+            "outgoing_transaction_id"
+        ] == str(outgoing.id)
+        assert stripe_service_mock.transfer.call_args[1]["metadata"][
+            "incoming_transaction_id"
+        ] == str(incoming.id)
+
     async def test_open_collective(
         self,
         session: AsyncSession,

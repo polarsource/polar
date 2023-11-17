@@ -126,13 +126,13 @@ const List = (props: {
                     </div>
 
                     {t.type === PledgeType.ON_COMPLETION && (
-                      <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                      <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-600 dark:bg-blue-800 dark:text-blue-200">
                         Pay on completion
                       </div>
                     )}
 
                     {t.type === PledgeType.UPFRONT && (
-                      <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                      <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-600 dark:bg-blue-800 dark:text-blue-200">
                         Pay upfront
                       </div>
                     )}

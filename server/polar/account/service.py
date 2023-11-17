@@ -227,15 +227,13 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return stripe.retrieve_balance(account.stripe_id)
 
     def transfer(
-        self, session: AsyncSession, account: Account, amount: int, transfer_group: str
+        self, session: AsyncSession, account: Account, amount: int
     ) -> str | None:
         if account.account_type != AccountType.stripe:
             return None
         assert account.stripe_id is not None
         transfer = stripe.transfer(
-            destination_stripe_id=account.stripe_id,
-            amount=amount,
-            transfer_group=transfer_group,
+            destination_stripe_id=account.stripe_id, amount=amount
         )
         return transfer.id
 

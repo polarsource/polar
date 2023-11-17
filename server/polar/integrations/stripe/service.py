@@ -202,7 +202,6 @@ class StripeService:
         self,
         destination_stripe_id: str,
         amount: int,
-        transfer_group: str,
         *,
         source_transaction: str | None = None,
         metadata: dict[str, str] | None = None,
@@ -211,7 +210,6 @@ class StripeService:
             "amount": amount,
             "currency": "usd",
             "destination": destination_stripe_id,
-            "transfer_group": transfer_group,
             "metadata": metadata or {},
         }
         if source_transaction is not None:

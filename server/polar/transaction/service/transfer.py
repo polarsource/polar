@@ -87,11 +87,9 @@ class TransferTransactionService(ResourceServiceReader[Transaction]):
         if processor == PaymentProcessor.stripe:
             if destination_account.stripe_id is None:
                 raise StripeNotConfiguredOnDestinationAccount(destination_account.id)
-            transfer_group = "TODO_TODO"
             stripe_transfer = stripe_service.transfer(
                 destination_account.stripe_id,
                 amount,
-                transfer_group,
                 source_transaction=transfer_source_transaction,
                 metadata={
                     "outgoing_transaction_id": str(outgoing_transaction.id),

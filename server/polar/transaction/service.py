@@ -39,7 +39,7 @@ class StripeNotConfiguredOnDestinationAccount(TransactionError):
 
 
 class TransactionService(ResourceServiceReader[Transaction]):
-    async def receive_stripe_payment(
+    async def stripe_handle_payment(
         self, session: AsyncSession, *, charge: stripe_lib.Charge
     ) -> Transaction:
         subscription: Subscription | None = None
@@ -96,7 +96,7 @@ class TransactionService(ResourceServiceReader[Transaction]):
 
         return transaction
 
-    async def create_stripe_transfer(
+    async def stripe_handle_transfer(
         self,
         session: AsyncSession,
         *,

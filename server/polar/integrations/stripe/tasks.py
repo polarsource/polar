@@ -35,7 +35,7 @@ async def charge_succeeded(
         async with AsyncSessionMaker(ctx) as session:
             charge = event["data"]["object"]
             try:
-                await transaction_service.receive_stripe_payment(
+                await transaction_service.stripe_handle_payment(
                     session=session, charge=charge
                 )
             except TransactionSubscriptionDoesNotExist as e:

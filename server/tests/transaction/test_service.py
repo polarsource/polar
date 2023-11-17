@@ -61,7 +61,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.mark.asyncio
-class TestReceiveStripePayment:
+class TestStripeHandlePayment:
     async def test_not_existing_subscription(
         self, session: AsyncSession, stripe_service_mock: MagicMock
     ) -> None:
@@ -71,7 +71,7 @@ class TestReceiveStripePayment:
         stripe_service_mock.get_invoice.return_value = stripe_invoice
 
         with pytest.raises(SubscriptionDoesNotExist):
-            await transaction_service.receive_stripe_payment(
+            await transaction_service.stripe_handle_payment(
                 session, charge=stripe_charge
             )
 
@@ -101,7 +101,7 @@ class TestReceiveStripePayment:
             stripe_balance_transaction
         )
 
-        transaction = await transaction_service.receive_stripe_payment(
+        transaction = await transaction_service.stripe_handle_payment(
             session, charge=stripe_charge
         )
 
@@ -131,7 +131,7 @@ class TestReceiveStripePayment:
             stripe_balance_transaction
         )
 
-        transaction = await transaction_service.receive_stripe_payment(
+        transaction = await transaction_service.stripe_handle_payment(
             session, charge=stripe_charge
         )
 
@@ -146,7 +146,7 @@ class TestReceiveStripePayment:
 
 
 @pytest.mark.asyncio
-class TestCreateStripeTransfer:
+class TestStripeHandleTransfer:
     async def test_stripe_not_configured_on_destination_account(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
@@ -163,7 +163,7 @@ class TestCreateStripeTransfer:
         )
 
         with pytest.raises(StripeNotConfiguredOnDestinationAccount):
-            await transaction_service.create_stripe_transfer(
+            await transaction_service.stripe_handle_transfer(
                 session,
                 destination_account=account,
                 currency="usd",
@@ -196,7 +196,7 @@ class TestCreateStripeTransfer:
             id="STRIPE_TRANSFER_ID"
         )
 
-        outgoing, incoming = await transaction_service.create_stripe_transfer(
+        outgoing, incoming = await transaction_service.stripe_handle_transfer(
             session,
             destination_account=account,
             currency="usd",

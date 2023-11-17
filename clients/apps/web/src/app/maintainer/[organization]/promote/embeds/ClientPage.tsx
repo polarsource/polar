@@ -100,10 +100,10 @@ export default function ClientPage() {
               <div className="max-w-[600px]">
                 <CopyToClipboardInput id="github-funding" value={fundingYAML} />
               </div>
-              <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-2 text-sm text-blue-500 dark:border-blue-700/50 dark:bg-blue-800/50">
+              <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-2 text-sm text-blue-500 dark:border-blue-500 dark:bg-blue-700 dark:text-blue-300">
                 Follow the instructions{' '}
                 <a
-                  className="font-bold text-blue-500"
+                  className="font-bold text-blue-500 dark:text-blue-200"
                   href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository"
                 >
                   here

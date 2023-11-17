@@ -85,7 +85,7 @@ interface SubscriptionsChartProps {
   hoveredIndex?: number | undefined
 }
 
-const primaryColor = 'rgb(92 140 213)'
+const primaryColor = 'rgb(0 98 255)'
 
 export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
   data,

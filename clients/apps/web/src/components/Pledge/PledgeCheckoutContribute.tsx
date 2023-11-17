@@ -26,7 +26,7 @@ const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {
           </div>
 
           <a
-            className="text-xs text-blue-700 hover:text-blue-800"
+            className="text-xs text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
             href={`https://github.com/${issue.repository.organization.name}/${issue.repository.name}/blob/main/CONTRIBUTING.md`}
           >
             Checkout CONTRIBUTING.md for {issue.repository.name}
@@ -48,7 +48,7 @@ const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {
             <Hashtag>Closes #{issue.number}</Hashtag>
           </div>
           <a
-            className="text-xs text-blue-700 hover:text-blue-800"
+            className="text-xs text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
             href="https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue"
           >
             Documentation on linking PRs
@@ -66,7 +66,7 @@ const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {
           </div>
 
           <a
-            className="text-xs text-blue-700 hover:text-blue-800"
+            className="text-xs text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
             href="https://polar.sh/faq"
           >
             Make sure you’re eligible to receive Stripe payouts.

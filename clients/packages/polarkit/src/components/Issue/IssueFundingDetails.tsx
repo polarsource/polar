@@ -29,7 +29,7 @@ const IssueFundingDetails: React.FC<IssueFundingDetailsProps> = ({
     <div className="flex flex-col items-center gap-4 md:flex-row">
       <FundingPill total={total} goal={fundingGoal} />
 
-      <div className="flex flex-row gap-4">
+      <div className="flex flex-row items-center gap-4">
         {pay_upfront.total.amount > 0 && (
           <PledgeSummaryPill.Funded summary={pay_upfront} />
         )}

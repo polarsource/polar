@@ -103,7 +103,7 @@ const MaintainerSignup = () => {
                 <div className="flex flex-1 flex-col justify-center">
                   <div className="flex items-center gap-2">
                     <Progress50 />
-                    <span className="text-blue-400 dark:text-blue-500">
+                    <span className="text-blue-400 dark:text-blue-400">
                       In progress
                     </span>
                   </div>
@@ -115,7 +115,7 @@ const MaintainerSignup = () => {
                   Sponsorship 2.0
                 </h2>
                 <div className="flex flex-1 flex-col justify-center">
-                  <span className="font-mono text-blue-400 dark:text-blue-500">
+                  <span className="font-mono text-blue-400 dark:text-blue-400">
                     &#47;&#47; coming soon
                   </span>
                 </div>

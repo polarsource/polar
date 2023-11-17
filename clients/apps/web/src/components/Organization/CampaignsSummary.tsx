@@ -35,7 +35,7 @@ const CampaignsSummary = () => {
                 style={{
                   width: `${80 / (i * 2 + 1)}%`,
                   height: '4px',
-                  backgroundColor: '#4667CA', // blue-600
+                  backgroundColor: '#0062FF',
                   transitionProperty: 'all',
                   transitionDuration: '200ms',
                 }}
@@ -48,7 +48,9 @@ const CampaignsSummary = () => {
                 }}
               ></div>
             </div>
-            <h4 className="text-xs text-blue-500">View Campaign</h4>
+            <h4 className="text-xs text-blue-500 dark:text-blue-400">
+              View Campaign
+            </h4>
           </div>
         ))}
       </div>

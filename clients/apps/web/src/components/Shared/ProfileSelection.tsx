@@ -146,7 +146,7 @@ const ProfileSelection = ({
                   <h3>Get funding for your public repositories.</h3>
                   <Link
                     href={CONFIG.GITHUB_INSTALLATION_URL}
-                    className="mt-2 text-blue-500 dark:text-blue-500"
+                    className="mt-2 text-blue-500 dark:text-blue-400"
                   >
                     Connect repositories
                   </Link>
@@ -156,9 +156,13 @@ const ProfileSelection = ({
               {showAddOrganization && (
                 <LinkItem
                   href={CONFIG.GITHUB_INSTALLATION_URL}
-                  icon={<AddOutlined className="h-5 w-5 text-blue-500" />}
+                  icon={
+                    <AddOutlined className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                  }
                 >
-                  <span className="mx-2 text-blue-500">Add organization</span>
+                  <span className="mx-2 text-blue-500 dark:text-blue-400">
+                    Add organization
+                  </span>
                 </LinkItem>
               )}
 

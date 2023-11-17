@@ -23,6 +23,7 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
+from polar.models.transaction import Transaction
 from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
 from polar.notifications.service import PartialNotification
@@ -302,14 +303,13 @@ async def test_transfer_org(
         session,
     )
 
-    @dataclass
-    class Trans:
-        @property
-        def id(self) -> str:
-            return "transfer_id"
-
-    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
-    transfer.return_value = Trans()
+    transfer = mocker.patch(
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+    )
+    transfer.return_value = (
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    )
 
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
@@ -349,14 +349,13 @@ async def test_transfer_org_no_account(
         session,
     )
 
-    @dataclass
-    class Trans:
-        @property
-        def id(self) -> str:
-            return "transfer_id"
-
-    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
-    transfer.return_value = Trans()
+    transfer = mocker.patch(
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+    )
+    transfer.return_value = (
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    )
 
     with pytest.raises(NotPermitted, match="Receiving organization has no account"):
         await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
@@ -408,14 +407,13 @@ async def test_transfer_user(
         session,
     )
 
-    @dataclass
-    class Trans:
-        @property
-        def id(self) -> str:
-            return "transfer_id"
-
-    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
-    transfer.return_value = Trans()
+    transfer = mocker.patch(
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+    )
+    transfer.return_value = (
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    )
 
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
@@ -455,14 +453,13 @@ async def test_transfer_user_no_account(
         session,
     )
 
-    @dataclass
-    class Trans:
-        @property
-        def id(self) -> str:
-            return "transfer_id"
-
-    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
-    transfer.return_value = Trans()
+    transfer = mocker.patch(
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+    )
+    transfer.return_value = (
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    )
 
     with pytest.raises(NotPermitted, match="Receiving user has no account"):
         await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)

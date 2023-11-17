@@ -226,17 +226,6 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         assert account.stripe_id is not None
         return stripe.retrieve_balance(account.stripe_id)
 
-    def transfer(
-        self, session: AsyncSession, account: Account, amount: int
-    ) -> str | None:
-        if account.account_type != AccountType.stripe:
-            return None
-        assert account.stripe_id is not None
-        transfer = stripe.transfer(
-            destination_stripe_id=account.stripe_id, amount=amount
-        )
-        return transfer.id
-
     async def sync_to_upstream(self, session: AsyncSession, account: Account) -> None:
         name = await self._build_stripe_account_name(
             session, organization_id=account.organization_id, user_id=account.user_id

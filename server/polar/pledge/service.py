@@ -849,7 +849,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             session=session,
             account=pay_to_account,
             amount=payout_amount,
-            transfer_group=f"{pledge.id}",
         )
 
         if transfer_id is None:

@@ -171,22 +171,22 @@ class SubscriptionTierService(
         assert subscription_tier.id is not None
 
         try:
+            metadata: dict[str, str] = {
+                "subscription_tier_id": str(subscription_tier.id)
+            }
+            if organization is not None:
+                metadata["organization_id"] = str(organization.id)
+                metadata["organization_name"] = organization.name
+            if repository is not None:
+                metadata["repository_id"] = str(repository.id)
+                metadata["repository_name"] = repository.name
+
             product = stripe_service.create_product_with_price(
                 subscription_tier.get_stripe_name(),
                 price_amount=subscription_tier.price_amount,
                 price_currency=subscription_tier.price_currency,
                 description=subscription_tier.description,
-                metadata={
-                    "subscription_tier_id": str(subscription_tier.id),
-                    "organization_id": str(subscription_tier.organization_id),
-                    "organization_name": organization.name
-                    if organization is not None
-                    else None,
-                    "repository_id": str(subscription_tier.repository_id),
-                    "repository_name": repository.name
-                    if repository is not None
-                    else None,
-                },
+                metadata=metadata,
             )
         except StripeError:
             await nested.rollback()

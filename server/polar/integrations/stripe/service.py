@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Literal, TypedDict, Unpack, cast
+from typing import Literal, TypedDict, Unpack, cast
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -205,7 +205,7 @@ class StripeService:
         transfer_group: str,
         *,
         source_transaction: str | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Transfer:
         create_params: stripe_lib.Transfer.CreateParams = {
             "amount": amount,
@@ -440,7 +440,7 @@ Thank you for your support!
         price_amount: int,
         price_currency: str,
         description: str | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Product:
         create_params: stripe_lib.Product.CreateParams = {
             "name": name,
@@ -536,7 +536,7 @@ Thank you for your support!
         return stripe_lib.Subscription.modify(id, items=new_items)
 
     def update_invoice(
-        self, id: str, *, metadata: dict[str, Any] | None = None
+        self, id: str, *, metadata: dict[str, str] | None = None
     ) -> stripe_lib.Invoice:
         return stripe_lib.Invoice.modify(id, metadata=metadata or {})
 

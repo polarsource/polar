@@ -336,7 +336,7 @@ export const IssuesFilter = ({
                 className={twMerge(
                   'dark:text-polar-300 mr-2 h-4 w-4 text-blue-300',
                   (filters?.badged === true || filters?.closed === undefined) &&
-                    'text-blue-500 dark:text-blue-500',
+                    'text-blue-500 dark:text-blue-400',
                 )}
               />
               <span>Filter</span>
@@ -370,7 +370,7 @@ export const IssuesFilter = ({
                 className={twMerge(
                   'dark:text-polar-300 mr-2 h-4 w-4 text-blue-300',
                   (filters?.sort?.length ?? 0) > 0 &&
-                    'text-blue-500 dark:text-blue-500',
+                    'text-blue-500 dark:text-blue-400',
                 )}
               />
               <span>Sort by</span>

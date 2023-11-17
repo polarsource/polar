@@ -104,7 +104,7 @@ const List = (props: {
                     <span className="inline-flex flex-col">
                       <a
                         href={githubIssueLink(t.issue)}
-                        className="text-blue-500 dark:text-blue-500"
+                        className="text-blue-500 dark:text-blue-400"
                       >
                         {t.issue.repository.organization.name}/
                         {t.issue.repository.name}#{t.issue.number}

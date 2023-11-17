@@ -137,7 +137,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
 
   return (
     <DashboardBody>
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl">Overview</h2>
           <div className="w-full md:w-1/6">
@@ -148,7 +148,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
             />
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {displayedPeriod && (
             <>
               <SubscribersMetric
@@ -193,10 +193,10 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
               </Card>
             ))}
         </div>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {statisticsPeriods.length > 0 && (
             <>
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <div className="text-lg font-medium">Subscribers</div>
                 </CardHeader>
@@ -237,7 +237,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
             ))}
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader>
               <div className="text-lg font-medium">Subscription Activity</div>
               <div className="dark:text-polar-500 text-gray-400">

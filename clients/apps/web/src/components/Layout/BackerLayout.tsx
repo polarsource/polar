@@ -78,7 +78,7 @@ const BackerLayout = (props: {
               </Link>
             </div>
           ) : (
-            <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
+            <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 mb-4 rounded-xl border border-transparent bg-blue-50 p-4 text-sm">
               <p className="mb-2">Waiting for a bug to be fixed?</p>
               <Link
                 href="/new"

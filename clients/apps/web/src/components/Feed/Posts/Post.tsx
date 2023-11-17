@@ -56,7 +56,9 @@ const PostHeader = (props: FeedPost) => {
           className="flex flex-row items-center gap-x-2"
           href={`/${props.author.username}`}
         >
-          <h3 className="text-blue-500">{props.author.username}</h3>
+          <h3 className="text-blue-500 dark:text-blue-400">
+            {props.author.username}
+          </h3>
           {props.author.verified && (
             <VerifiedUser className="text-blue-500" fontSize="inherit" />
           )}

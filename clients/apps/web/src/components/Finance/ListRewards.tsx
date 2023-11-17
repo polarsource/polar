@@ -113,7 +113,7 @@ const List = (props: {
                     <span className="inline-flex flex-col">
                       <a
                         href={githubIssueLink(t.pledge.issue)}
-                        className="text-blue-500 dark:text-blue-500"
+                        className="text-blue-500 dark:text-blue-400"
                       >
                         {t.pledge.issue.repository.organization.name}/
                         {t.pledge.issue.repository.name}#{t.pledge.issue.number}
@@ -175,13 +175,13 @@ const List = (props: {
                     <div className="flex flex-wrap items-center gap-2">
                       {t.pledge.type === PledgeType.ON_COMPLETION &&
                         t.pledge.state === PledgeState.CREATED && (
-                          <div className="w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                          <div className="w-fit whitespace-nowrap rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-800 dark:text-blue-200">
                             Pending payment from pledger
                           </div>
                         )}
 
                       {t.pledge.state === PledgeState.PENDING && (
-                        <div className="w-fit whitespace-nowrap rounded-full bg-green-200 px-1.5 py-0 text-green-700 dark:bg-green-800 dark:text-green-200">
+                        <div className="w-fit whitespace-nowrap rounded-full bg-green-100 px-2 py-1 text-xs text-green-700 dark:bg-green-800 dark:text-green-200">
                           Paid to Polar
                         </div>
                       )}

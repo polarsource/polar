@@ -127,7 +127,7 @@ const IssueCard = ({
           <div className="absolute bottom-0 left-0 h-12 w-full bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-950"></div>
         </div>
         <div className="mt-2">
-          <a href={url} className="text-blue-500">
+          <a href={url} className="text-blue-500 dark:text-blue-400">
             Read more
           </a>
         </div>
@@ -173,7 +173,7 @@ const IssueCard = ({
             <div className="hidden sm:block">
               <Alert color="blue">
                 <div className="flex items-center">
-                  <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
+                  <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-400" />
                   <div className="inline text-sm">
                     <span className="font-bold">Contributors</span> get{' '}
                     <span className="font-bold">{upfrontSplit}%</span> of

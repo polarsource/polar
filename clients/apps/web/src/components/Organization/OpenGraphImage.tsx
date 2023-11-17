@@ -208,7 +208,7 @@ const OpenGraphImage = (props: {
                               i.funding.funding_goal.amount) *
                             100
                           }%`,
-                          background: '#4667CA',
+                          background: '#0062FF',
                           height: '12px',
                         }}
                       ></div>
@@ -263,11 +263,11 @@ const OpenGraphImage = (props: {
                   )}
                   <div
                     style={{
-                      background: '#4667CA',
+                      background: '#0062FF',
                       color: 'white',
                       fontSize: '24px',
                       padding: '14px 28px',
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       lineHeight: '24px',
                     }}
                   >

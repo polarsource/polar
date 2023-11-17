@@ -4,6 +4,7 @@ from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.services import ResourceServiceReader
+from polar.kit.utils import generate_uuid
 from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
@@ -57,6 +58,7 @@ class TransferTransactionService(ResourceServiceReader[Transaction]):
             )
 
         outgoing_transaction = Transaction(
+            id=generate_uuid(),
             account=None,  # Polar account
             type=TransactionType.transfer,
             processor=processor,
@@ -69,6 +71,7 @@ class TransferTransactionService(ResourceServiceReader[Transaction]):
             subscription=subscription,
         )
         incoming_transaction = Transaction(
+            id=generate_uuid(),
             account=destination_account,  # User account
             type=TransactionType.transfer,
             processor=processor,

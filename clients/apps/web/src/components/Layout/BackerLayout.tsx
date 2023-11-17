@@ -82,7 +82,7 @@ const BackerLayout = (props: {
               <p className="mb-2">Waiting for a bug to be fixed?</p>
               <Link
                 href="/new"
-                className="font-medium text-blue-500 dark:text-blue-500"
+                className="font-medium text-blue-500 dark:text-blue-400"
               >
                 Fund a GitHub issue
               </Link>

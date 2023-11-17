@@ -13,6 +13,7 @@ from polar.postgres import AsyncSession
 from polar.transaction.service import (
     StripeNotConfiguredOnDestinationAccount,
     SubscriptionDoesNotExist,
+    UnsupportedAccountType,
 )
 from polar.transaction.service import transaction as transaction_service
 from tests.subscription.conftest import create_subscription, create_subscription_tier
@@ -146,7 +147,26 @@ class TestStripeHandlePayment:
 
 
 @pytest.mark.asyncio
-class TestStripeHandleTransfer:
+class TestHandleTransfer:
+    async def test_unsupported_account_type(
+        self, session: AsyncSession, organization: Organization, user: User
+    ) -> None:
+        account = Account(
+            account_type="UNKNOWN",
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+        )
+
+        with pytest.raises(UnsupportedAccountType):
+            await transaction_service.handle_transfer(
+                session,
+                destination_account=account,
+                currency="usd",
+                amount=1000,
+            )
+
     async def test_stripe_not_configured_on_destination_account(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
@@ -163,15 +183,14 @@ class TestStripeHandleTransfer:
         )
 
         with pytest.raises(StripeNotConfiguredOnDestinationAccount):
-            await transaction_service.stripe_handle_transfer(
+            await transaction_service.handle_transfer(
                 session,
                 destination_account=account,
                 currency="usd",
                 amount=1000,
-                transfer_group="TRANSFER_GROUP",
             )
 
-    async def test_valid(
+    async def test_stripe(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -196,12 +215,11 @@ class TestStripeHandleTransfer:
             id="STRIPE_TRANSFER_ID"
         )
 
-        outgoing, incoming = await transaction_service.stripe_handle_transfer(
+        outgoing, incoming = await transaction_service.handle_transfer(
             session,
             destination_account=account,
             currency="usd",
             amount=1000,
-            transfer_group="TRANSFER_GROUP",
         )
 
         assert outgoing.account_id is None
@@ -215,3 +233,41 @@ class TestStripeHandleTransfer:
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
+
+    async def test_open_collective(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            account_type=AccountType.open_collective,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=False,
+            is_charges_enabled=False,
+            is_payouts_enabled=False,
+            open_collective_slug="polarsource",
+        )
+        session.add(account)
+        await session.commit()
+
+        outgoing, incoming = await transaction_service.handle_transfer(
+            session,
+            destination_account=account,
+            currency="usd",
+            amount=1000,
+        )
+
+        assert outgoing.account_id is None
+        assert outgoing.type == TransactionType.transfer
+        assert outgoing.processor == PaymentProcessor.open_collective
+        assert outgoing.amount == -1000
+
+        assert incoming.account_id == account.id
+        assert incoming.type == TransactionType.transfer
+        assert incoming.processor == PaymentProcessor.open_collective
+        assert incoming.amount == 1000

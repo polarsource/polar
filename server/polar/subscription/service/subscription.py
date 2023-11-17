@@ -350,15 +350,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             (invoice.total - tax) * ((100 - settings.SUBSCRIPTION_FEE_PERCENT) / 100)
         )
         transfer_group = f"{subscription.id}.{invoice.id}"
-        transfer_metadata = {
+        transfer_metadata: dict[str, str] = {
             "subscription_id": str(subscription.id),
             "organization_id": str(account.organization_id),
             "stripe_subscription_id": stripe_subscription.id,
-            "stripe_product_id": subscription.subscription_tier.stripe_product_id,
+            "stripe_product_id": cast(
+                str, subscription.subscription_tier.stripe_product_id
+            ),
         }
 
-        invoice_metadata: dict[str, Any] = {
-            "transferred_at": int(utc_now().timestamp())
+        invoice_metadata: dict[str, str] = {
+            "transferred_at": str(int(utc_now().timestamp())),
         }
 
         if account.account_type == AccountType.stripe:

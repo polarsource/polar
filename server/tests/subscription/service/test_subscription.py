@@ -1,6 +1,5 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
-from typing import Any
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -94,7 +93,7 @@ def construct_stripe_invoice(
     total: int = 12000,
     tax: int = 2000,
     charge_id: str = "CHARGE_ID",
-    metadata: dict[str, Any] = {},
+    metadata: dict[str, str] = {},
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
         {
@@ -273,7 +272,7 @@ class TestTransferSubscriptionMoney:
         session: AsyncSession,
         subscription: Subscription,
     ) -> None:
-        stripe_invoice = construct_stripe_invoice(metadata={"transferred_at": 123})
+        stripe_invoice = construct_stripe_invoice(metadata={"transferred_at": "123"})
         stripe_subscription = construct_stripe_subscription(
             latest_invoice=stripe_invoice
         )

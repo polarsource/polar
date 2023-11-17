@@ -11,7 +11,7 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
-from polar.enums import AccountType, UserSignupType
+from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -30,6 +30,9 @@ from polar.models import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.transaction.service.transfer import (
+    transfer_transaction as transfer_transaction_service,
+)
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
@@ -349,7 +352,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         transfer_amount = math.floor(
             (invoice.total - tax) * ((100 - settings.SUBSCRIPTION_FEE_PERCENT) / 100)
         )
-        transfer_group = f"{subscription.id}.{invoice.id}"
         transfer_metadata: dict[str, str] = {
             "subscription_id": str(subscription.id),
             "organization_id": str(account.organization_id),
@@ -358,27 +360,23 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 str, subscription.subscription_tier.stripe_product_id
             ),
         }
-
         invoice_metadata: dict[str, str] = {
             "transferred_at": str(int(utc_now().timestamp())),
         }
 
-        if account.account_type == AccountType.stripe:
-            assert account.stripe_id is not None
-            transfer = stripe_service.transfer(
-                account.stripe_id,
-                amount=transfer_amount,
-                transfer_group=transfer_group,
-                source_transaction=get_expandable_id(invoice.charge)
-                if invoice.charge
-                else None,
-                metadata=transfer_metadata,
-            )
-            invoice_metadata["transfer_id"] = transfer.id
-        elif account.account_type == AccountType.open_collective:
-            # TODO: handle Open Collective
-            pass
+        incoming, _ = await transfer_transaction_service.create_transfer(
+            session,
+            destination_account=account,
+            currency=invoice.currency,
+            amount=transfer_amount,
+            subscription=subscription,
+            transfer_source_transaction=get_expandable_id(invoice.charge)
+            if invoice.charge
+            else None,
+            transfer_metadata=transfer_metadata,
+        )
 
+        invoice_metadata["transfer_id"] = cast(str, incoming.transfer_id)
         assert invoice.id is not None
         stripe_service.update_invoice(invoice.id, metadata=invoice_metadata)
 

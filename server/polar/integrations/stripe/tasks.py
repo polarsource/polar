@@ -6,10 +6,12 @@ from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.pledge.service import pledge as pledge_service
 from polar.subscription.service.subscription import SubscriptionDoesNotExist
 from polar.subscription.service.subscription import subscription as subscription_service
-from polar.transaction.service import (
-    SubscriptionDoesNotExist as TransactionSubscriptionDoesNotExist,
+from polar.transaction.service.payment import (
+    SubscriptionDoesNotExist as PaymentTransactionSubscriptionDoesNotExist,
 )
-from polar.transaction.service import transaction as transaction_service
+from polar.transaction.service.payment import (
+    payment_transaction as payment_transaction_service,
+)
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 
@@ -35,10 +37,10 @@ async def charge_succeeded(
         async with AsyncSessionMaker(ctx) as session:
             charge = event["data"]["object"]
             try:
-                await transaction_service.stripe_handle_payment(
+                await payment_transaction_service.create_payment(
                     session=session, charge=charge
                 )
-            except TransactionSubscriptionDoesNotExist as e:
+            except PaymentTransactionSubscriptionDoesNotExist as e:
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
                 MAX_RETRIES = 2

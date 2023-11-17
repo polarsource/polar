@@ -272,7 +272,7 @@ class TestTransferSubscriptionMoney:
 
         await subscription_service.transfer_subscription_money(session, subscription)
 
-        transaction_service_mock.handle_transfer.assert_not_called()
+        transaction_service_mock.create_transfer.assert_not_called()
 
     async def test_already_transferred(
         self,
@@ -296,7 +296,7 @@ class TestTransferSubscriptionMoney:
 
         await subscription_service.transfer_subscription_money(session, subscription)
 
-        transaction_service_mock.handle_transfer.assert_not_called()
+        transaction_service_mock.create_transfer.assert_not_called()
 
     async def test_valid(
         self,
@@ -318,21 +318,21 @@ class TestTransferSubscriptionMoney:
             "polar.subscription.service.subscription.transfer_transaction_service",
             spec=TransferTransactionService,
         )
-        transaction_service_mock.handle_transfer.return_value = (
+        transaction_service_mock.create_transfer.return_value = (
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         )
 
         await subscription_service.transfer_subscription_money(session, subscription)
 
-        transaction_service_mock.handle_transfer.assert_called_once()
+        transaction_service_mock.create_transfer.assert_called_once()
         assert (
-            transaction_service_mock.handle_transfer.call_args[1][
+            transaction_service_mock.create_transfer.call_args[1][
                 "destination_account"
             ].id
             == organization_account.id
         )
-        assert transaction_service_mock.handle_transfer.call_args[1]["amount"] == 9000
+        assert transaction_service_mock.create_transfer.call_args[1]["amount"] == 9000
 
         stripe_service_mock.update_invoice.assert_called_once()
 

@@ -1,5 +1,4 @@
 import uuid
-from dataclasses import dataclass
 from datetime import timedelta
 
 import pytest
@@ -13,6 +12,7 @@ from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
+from polar.models.transaction import Transaction
 from polar.models.user import OAuthAccount, User
 from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
@@ -81,14 +81,13 @@ async def test_list_rewards(
     assert org_tuple[2] is None  # no transfer
 
     # Create transfer to organization
-    @dataclass
-    class Trans:
-        @property
-        def id(self) -> str:
-            return "transfer_id"
-
-    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
-    transfer.return_value = Trans()
+    transfer = mocker.patch(
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+    )
+    transfer.return_value = (
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    )
 
     await pledge_service.transfer(session, pledge.id, issue_reward_id=org_tuple[1].id)
 

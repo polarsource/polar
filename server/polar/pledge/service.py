@@ -60,6 +60,9 @@ from polar.notifications.service import (
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
 from polar.repository.service import repository as repository_service
+from polar.transaction.service.transfer import (
+    transfer_transaction as transfer_transaction_service,
+)
 from polar.user.service import user as user_service
 
 from .hooks import (
@@ -845,20 +848,29 @@ class PledgeService(ResourceServiceReader[Pledge]):
         else:
             raise NotPermitted("Unexpected split receiver")
 
-        transfer_id = account_service.transfer(
-            session=session,
-            account=pay_to_account,
+        incoming, _ = await transfer_transaction_service.create_transfer(
+            session,
+            destination_account=pay_to_account,
+            currency="usd",
             amount=payout_amount,
+            pledge=pledge,
+            issue_reward=split,
+            transfer_metadata={
+                "pledge_id": str(pledge.id),
+                "issue_reward_id": str(issue_reward_id),
+                **(
+                    {"stripe_payment_id": pledge.payment_id}
+                    if pledge.payment_id
+                    else {}
+                ),
+            },
         )
-
-        if transfer_id is None:
-            raise NotPermitted("Transfer failed")  # TODO: Better error
 
         transaction = PledgeTransaction(
             pledge_id=pledge.id,
             type=PledgeTransactionType.transfer,
             amount=payout_amount,
-            transaction_id=transfer_id,
+            transaction_id=incoming.transfer_id,
             issue_reward_id=split.id,
         )
 

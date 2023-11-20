@@ -11,7 +11,6 @@ import {
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
-  StreamOutlined,
   TuneOutlined,
   ViewDayOutlined,
   WidthNormalOutlined,
@@ -152,25 +151,28 @@ export const maintainerRoutes = (org: Organization): Route[] => [
 ]
 
 export const backerRoutes: Route[] = [
-  isFeatureEnabled('feed')
-    ? {
-        id: 'feed',
-        title: 'Feed',
-        link: `/feed`,
-        icon: <StreamOutlined className="h-6 w-6" />,
-        postIcon: undefined,
-        if: true,
-        subs: undefined,
-      }
-    : {
-        id: 'funding',
-        title: 'Funding',
-        link: `/feed`,
-        icon: <FavoriteBorderOutlined className="h-6 w-6" />,
-        postIcon: undefined,
-        if: true,
-        subs: undefined,
-      },
+  ...(isFeatureEnabled('feed')
+    ? [
+        {
+          id: 'posts',
+          title: 'Posts',
+          link: `/posts`,
+          icon: <ViewDayOutlined className="h-6 w-6" />,
+          postIcon: undefined,
+          if: true,
+          subs: undefined,
+        },
+      ]
+    : []),
+  {
+    id: 'funding',
+    title: 'Funding',
+    link: `/feed`,
+    icon: <FavoriteBorderOutlined className="h-6 w-6" />,
+    postIcon: undefined,
+    if: true,
+    subs: undefined,
+  },
   {
     id: 'rewards',
     title: 'Rewards',

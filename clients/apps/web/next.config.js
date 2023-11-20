@@ -102,7 +102,7 @@ const nextConfig = {
 
       // Logged-out user redirection
       {
-        source: '/(feed|for-you|rewards|settings|backoffice|maintainer|team)(.*)',
+        source: '/(feed|for-you|posts|rewards|settings|backoffice|maintainer|team)(.*)',
         destination: '/login/init',
         missing: [
           {

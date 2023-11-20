@@ -572,5 +572,33 @@ Thank you for your support!
     def get_invoice(self, id: str) -> stripe_lib.Invoice:
         return stripe_lib.Invoice.retrieve(id)
 
+    def list_balance_transactions(
+        self,
+        *,
+        account_id: str | None = None,
+        payout: str | None = None,
+        type: str | None = None,
+    ) -> list[stripe_lib.BalanceTransaction]:
+        params: stripe_lib.BalanceTransaction.ListParams = {
+            "limit": 100,
+            "stripe_account": account_id,
+            "expand": ["data.source"],
+        }
+        if payout is not None:
+            params["payout"] = payout
+        if type is not None:
+            params["type"] = type
+
+        results: list[stripe_lib.BalanceTransaction] = []
+        has_more = True
+        while has_more:
+            page = stripe_lib.BalanceTransaction.list(**params)
+            results += page.data
+            has_more = page.has_more
+            if has_more:
+                params["starting_after"] = page.data[-1].id
+
+        return results
+
 
 stripe = StripeService()

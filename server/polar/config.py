@@ -67,8 +67,9 @@ class Settings(BaseSettings):
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""
-    # Stripe webhook secret
+    # Stripe webhook secrets
     STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
 
     # Open Collective
     OPEN_COLLECTIVE_PERSONAL_TOKEN: str | None = None

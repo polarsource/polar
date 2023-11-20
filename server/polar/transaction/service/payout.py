@@ -1,3 +1,5 @@
+import uuid
+
 import stripe as stripe_lib
 import structlog
 
@@ -7,7 +9,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
-from polar.models import Transaction
+from polar.models import Account, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
@@ -32,6 +34,13 @@ class UnknownAccount(PayoutTransactionError):
             "Received a payout event for an "
             f"unknown Stripe account {stripe_account_id}"
         )
+        super().__init__(message)
+
+
+class UnknownTransaction(PayoutTransactionError):
+    def __init__(self, transaction_id: uuid.UUID) -> None:
+        self.transaction_id = transaction_id
+        message = f"Unknown transaction {transaction_id}"
         super().__init__(message)
 
 
@@ -102,6 +111,38 @@ class PayoutTransactionService(ResourceServiceReader[Transaction]):
                         "An unknown type of transaction was paid out",
                         source_id=get_expandable_id(source),
                     )
+
+        await session.commit()
+
+        return transaction
+
+    async def create_manual_payout(
+        self,
+        session: AsyncSession,
+        *,
+        processor: PaymentProcessor,
+        account: Account,
+        paid_transaction_ids: list[uuid.UUID],
+    ) -> Transaction:
+        transaction = Transaction(
+            type=TransactionType.payout,
+            processor=processor,
+            currency=account.currency,
+            amount=0,
+            tax_amount=0,
+            processor_fee_amount=0,
+            account=account,
+        )
+
+        for paid_transaction_id in paid_transaction_ids:
+            paid_transaction = await self.get_by(
+                session, id=paid_transaction_id, account_id=account.id
+            )
+            if paid_transaction is None:
+                raise UnknownTransaction(paid_transaction_id)
+            transaction.amount -= paid_transaction.amount
+            paid_transaction.payout_transaction = transaction
+            session.add(paid_transaction)
 
         await session.commit()
 

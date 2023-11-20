@@ -3,7 +3,6 @@ import stripe.error
 import stripe.webhook
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
 from starlette.responses import RedirectResponse
 
 from polar.account.service import account as account_service
@@ -22,13 +21,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 router = APIRouter(prefix="/integrations/stripe", tags=["integrations"])
 
 
-class WebhookResponse(BaseModel):
-    success: bool
-    message: str | None = None
-    job_id: str | None = None
-
-
-IMPLEMENTED_WEBHOOKS = {
+DIRECT_IMPLEMENTED_WEBHOOKS = {
     "payment_intent.succeeded",
     "charge.succeeded",
     "charge.refunded",
@@ -36,25 +29,16 @@ IMPLEMENTED_WEBHOOKS = {
     "customer.subscription.created",
     "customer.subscription.updated",
 }
+CONNECT_IMPLEMENTED_WEBHOOKS = {
+    "payout.paid",
+}
 
 
-def not_implemented() -> WebhookResponse:
-    return WebhookResponse(success=False, message="Not implemented")
-
-
-async def enqueue(event: stripe.Event) -> WebhookResponse:
+async def enqueue(event: stripe.Event) -> None:
     event_type: str = event["type"]
-
-    if event_type not in IMPLEMENTED_WEBHOOKS:
-        return not_implemented()
-
     task_name = f"stripe.webhook.{event_type}"
-    enqueued = await enqueue_job(task_name, event)
-    if not enqueued:
-        return WebhookResponse(success=False, message="Failed to enqueue task")
-
+    await enqueue_job(task_name, event)
     log.info("stripe.webhook.queued", task_name=task_name)
-    return WebhookResponse(success=True, job_id=enqueued.job_id)
 
 
 @router.get("/return")
@@ -95,31 +79,42 @@ async def stripe_connect_return(
     )
 
 
-@router.get("/refresh")
-def stripe_connect_refresh() -> WebhookResponse:
-    return not_implemented()
+@router.get("/refresh", status_code=204)
+def stripe_connect_refresh() -> None:
+    return None
 
 
-@router.post("/webhook", response_model=WebhookResponse)
-async def webhook(request: Request) -> WebhookResponse:
-    event = None
-    payload = await request.body()
-    sig_header = request.headers["Stripe-Signature"]
+class WebhookEventGetter:
+    def __init__(self, secret: str) -> None:
+        self.secret = secret
 
-    try:
-        event = stripe.webhook.Webhook.construct_event(
-            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-        )
-    except ValueError as e:
-        # Invalid payload
-        raise e
-    except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
-        raise e
+    async def __call__(self, request: Request) -> stripe.Event:
+        payload = await request.body()
+        sig_header = request.headers["Stripe-Signature"]
 
-    # Handle the event
-    if event["type"] in IMPLEMENTED_WEBHOOKS:
+        try:
+            return stripe.webhook.Webhook.construct_event(
+                payload, sig_header, self.secret
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400) from e
+        except stripe.error.SignatureVerificationError as e:
+            raise HTTPException(status_code=401) from e
+
+
+@router.post("/webhook", status_code=202)
+async def webhook(
+    event: stripe.Event = Depends(WebhookEventGetter(settings.STRIPE_WEBHOOK_SECRET))
+) -> None:
+    if event["type"] in DIRECT_IMPLEMENTED_WEBHOOKS:
+        await enqueue(event)
+
+
+@router.post("/webhook-connect", status_code=202)
+async def webhook_connect(
+    event: stripe.Event = Depends(
+        WebhookEventGetter(settings.STRIPE_CONNECT_WEBHOOK_SECRET)
+    ),
+) -> None:
+    if event["type"] in CONNECT_IMPLEMENTED_WEBHOOKS:
         return await enqueue(event)
-    else:
-        # Respond with a healthy response so that Stripe doesn't block this event
-        raise HTTPException(status_code=200)

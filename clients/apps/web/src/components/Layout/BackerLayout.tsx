@@ -91,7 +91,7 @@ const BackerLayout = (props: {
         </div>
       </aside>
 
-      <div className="dark:bg-polar-950 relative flex h-screen w-full translate-x-0 flex-row bg-gray-50">
+      <div className="dark:bg-polar-950 bg-gray-75 relative flex h-screen w-full translate-x-0 flex-row">
         <DashboardTopbar isFixed useOrgFromURL />
 
         <main className={twMerge('relative h-full w-full overflow-y-auto')}>

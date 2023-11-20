@@ -4,7 +4,6 @@ import {
   ArrowForward,
   BookmarkBorderOutlined,
   ChatBubbleOutline,
-  FavoriteBorderOutlined,
   LanguageOutlined,
   MoreVertOutlined,
   VerifiedUser,
@@ -18,24 +17,22 @@ import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../../Subscriptions/SubscriptionGroupIcon'
 import { Post as FeedPost } from '../data'
-import { PostMeta } from './meta/Meta'
 
 export const Post = (props: FeedPost) => {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLAnchorElement>(null)
   const isHovered = useHoverDirty(ref)
 
   return (
-    <div
+    <Link
       ref={ref}
+      href={`/feed/${props.id}`}
       className={twMerge(
-        'relative flex w-full flex-row justify-start gap-x-4 rounded-3xl border px-6 pb-6 pt-8 transition-all duration-100',
-        isHovered
-          ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-100 bg-white shadow-sm'
-          : 'border-transparent bg-transparent dark:border-transparent dark:bg-transparent',
+        'dark:border-polar-800 relative flex w-full flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100',
+        isHovered ? 'dark:bg-polar-800/50' : 'dark:bg-polar-900',
       )}
     >
       <Avatar
-        className="h-12 w-12"
+        className="h-10 w-10"
         avatar_url={props.author.avatar_url}
         name={props.author.username}
       />
@@ -44,13 +41,13 @@ export const Post = (props: FeedPost) => {
         <PostBody {...props} isHovered={isHovered} />
         <PostFooter {...props} isHovered={isHovered} />
       </div>
-    </div>
+    </Link>
   )
 }
 
 const PostHeader = (props: FeedPost) => {
   return (
-    <div className="-mt-2 flex w-full flex-row items-center justify-between text-sm">
+    <div className="mt-1.5 flex w-full flex-row items-center justify-between text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <Link
           className="flex flex-row items-center gap-x-2"
@@ -99,38 +96,43 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
     <div
       className={twMerge(
         'flex w-full flex-col gap-y-4 pb-5 pt-2 text-[15px] leading-relaxed transition-colors duration-200',
-        props.isHovered
-          ? 'dark:text-polar-300 text-gray-800'
-          : 'dark:text-polar-400 text-gray-700',
       )}
     >
-      <div className="flex flex-col flex-wrap">{props.text}</div>
-      <PostMeta {...props} />
+      <div className="dark:text-polar-200 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950">
+        {props.title}
+      </div>
+      <div className="flex flex-col flex-wrap">
+        <p
+          className={twMerge(
+            'text-md line-clamp-4 w-full flex-wrap truncate whitespace-break-spaces break-words leading-loose text-gray-500',
+            props.isHovered
+              ? 'dark:text-polar-300 text-gray-800'
+              : 'dark:text-polar-400 text-gray-700',
+          )}
+        >
+          {props.body.replace('\n\n', '\n')}
+        </p>
+      </div>
     </div>
   )
 }
 
 const PostFooter = (props: FeedPost & { isHovered: boolean }) => {
   return (
-    <div className="flex flex-row items-center justify-between gap-x-4">
+    <div className="mt-2 flex flex-row items-center justify-between gap-x-4">
       <div className="flex flex-row items-center gap-x-4">
-        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-sm">
-          <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
-            <FavoriteBorderOutlined fontSize="inherit" />
-            <span>{props.likes.length}</span>
-          </div>
+        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-500">
           <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
             <ChatBubbleOutline fontSize="inherit" />
-            <span>{props.likes.length}</span>
+            <span>{props.comments.length}</span>
           </div>
           <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
             <BookmarkBorderOutlined fontSize="inherit" />
-            <span>{props.likes.length}</span>
           </div>
         </div>
 
         {props.visibility !== 'public' ? (
-          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-sm">
+          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-500">
             <SubscriptionGroupIcon type={props.visibility} />
             <span className="capitalize">{props.visibility}</span>
           </div>

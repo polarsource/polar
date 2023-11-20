@@ -1,29 +1,18 @@
-import {
-  CodePost,
-  Post as FeedPost,
-  NewsletterPost,
-  PollPost,
-  PostType,
-  VideoPost,
-} from '../../data'
-import { CodeMeta } from './Code'
-import { NewsletterMeta } from './Newsletter'
-import { PollMeta } from './Poll'
-import { VideoMeta } from './Video'
+import { Post as FeedPost } from '../../data'
 
 const metaResolver = (post: FeedPost) => {
-  switch (post.type) {
-    case PostType.Newsletter:
+  /*  switch (post.type) {
+   case PostType.Newsletter:
       return <NewsletterMeta {...(post as NewsletterPost)} />
     case PostType.Video:
       return <VideoMeta {...(post as VideoPost)} />
     case PostType.Code:
       return <CodeMeta {...(post as CodePost)} />
     case PostType.Poll:
-      return <PollMeta {...(post as PollPost)} />
-    default:
-      return null
-  }
+      return <PollMeta {...(post as PollPost)} /> 
+  }*/
+
+  return null
 }
 
 export const PostMeta = (post: FeedPost) => {

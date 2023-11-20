@@ -58,15 +58,15 @@ export default function Page() {
     accounts.data.items.length === 0
 
   return isFeatureEnabled('feed') ? (
-    <div className="relative flex flex-row items-start">
-      <div className="absolute -left-6 flex w-full max-w-xl flex-col gap-y-8 pb-12">
+    <div className="relative flex flex-row items-start gap-x-24">
+      <div className="flex w-full max-w-xl flex-col gap-y-8 pb-12">
         <Feed />
       </div>
-      <div className="absolute right-0 flex w-full max-w-md flex-col gap-y-6">
-        <h3 className="dark:text-polar-50 text-lg text-gray-950">
+      <div className="flex w-full max-w-sm flex-col gap-y-6 pt-6">
+        <h3 className="dark:text-polar-50 text-md text-gray-950">
           Maintainers you may know
         </h3>
-        <div className="dark:bg-polar-800 dark:border-polar-700 h-[160px] w-full rounded-xl border border-gray-100 bg-white" />
+        <div className="dark:bg-polar-900 dark:border-polar-800 h-[160px] w-full rounded-2xl border border-gray-100 bg-white" />
       </div>
     </div>
   ) : (

@@ -11,7 +11,7 @@ export const Recommendation = (props: FeedRecommendation) => {
     <div
       ref={ref}
       className={
-        'dark:bg-polar-900 dark:border-polar-800 relative my-4 flex w-full flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white shadow-sm transition-all duration-100'
+        'dark:bg-polar-900 dark:border-polar-800 relative flex w-full flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white shadow-sm transition-all duration-100'
       }
     >
       <RecommendationBody {...props} />

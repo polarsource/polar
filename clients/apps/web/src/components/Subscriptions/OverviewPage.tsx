@@ -196,7 +196,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {statisticsPeriods.length > 0 && (
             <>
-              <Card className="shadow-sm">
+              <Card>
                 <CardHeader>
                   <div className="text-lg font-medium">Subscribers</div>
                 </CardHeader>
@@ -237,7 +237,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
             ))}
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Card className="shadow-sm">
+          <Card>
             <CardHeader>
               <div className="text-lg font-medium">Subscription Activity</div>
               <div className="dark:text-polar-500 text-gray-400">

@@ -570,7 +570,7 @@ Thank you for your support!
         return stripe_lib.BalanceTransaction.retrieve(id)
 
     def get_invoice(self, id: str) -> stripe_lib.Invoice:
-        return stripe_lib.Invoice.retrieve(id)
+        return stripe_lib.Invoice.retrieve(id, expand=["total_tax_amounts.tax_rate"])
 
     def list_balance_transactions(
         self,

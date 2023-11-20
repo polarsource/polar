@@ -27,12 +27,19 @@ def build_stripe_invoice(
     *, tax: int | None = 100, subscription: str | None = None
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
-        {"id": "STRIPE_INVOICE_ID", "tax": tax, "subscription": subscription}, None
+        {
+            "id": "STRIPE_INVOICE_ID",
+            "tax": tax,
+            "subscription": subscription,
+            "total_tax_amounts": [{"tax_rate": {"country": "US", "state": "NY"}}],
+        },
+        None,
     )
 
 
 def build_stripe_charge(
     *,
+    customer: str | None = None,
     invoice: str | None = None,
     payment_intent: str | None = None,
     balance_transaction: str | None = None,
@@ -40,6 +47,7 @@ def build_stripe_charge(
     return stripe_lib.Charge.construct_from(
         {
             "id": "STRIPE_CHARGE_ID",
+            "customer": customer,
             "currency": "usd",
             "amount": 1100,
             "invoice": invoice,
@@ -71,6 +79,73 @@ class TestCreatePayment:
             await payment_transaction_service.create_payment(
                 session, charge=stripe_charge
             )
+
+    async def test_customer_user(
+        self,
+        session: AsyncSession,
+        pledge: Pledge,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
+        session.add(user)
+        pledge.payment_id = "STRIPE_PAYMENT_ID"
+        session.add(pledge)
+        await session.commit()
+
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            customer=user.stripe_customer_id,
+            payment_intent=pledge.payment_id,
+            balance_transaction=stripe_balance_transaction.id,
+        )
+
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_balance_transaction
+        )
+
+        transaction = await payment_transaction_service.create_payment(
+            session, charge=stripe_charge
+        )
+
+        assert transaction.type == TransactionType.payment
+        assert transaction.customer_id == user.stripe_customer_id
+        assert transaction.payment_user_id == user.id
+        assert transaction.payment_organization_id is None
+
+    async def test_customer_organization(
+        self,
+        session: AsyncSession,
+        pledge: Pledge,
+        organization: Organization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        organization.stripe_customer_id = "STRIPE_CUSTOMER_ID"
+        session.add(organization)
+        pledge.by_organization = organization
+        pledge.payment_id = "STRIPE_PAYMENT_ID"
+        session.add(pledge)
+        await session.commit()
+
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            customer=organization.stripe_customer_id,
+            payment_intent=pledge.payment_id,
+            balance_transaction=stripe_balance_transaction.id,
+        )
+
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_balance_transaction
+        )
+
+        transaction = await payment_transaction_service.create_payment(
+            session, charge=stripe_charge
+        )
+
+        assert transaction.type == TransactionType.payment
+        assert transaction.customer_id == organization.stripe_customer_id
+        assert transaction.payment_user_id is None
+        assert transaction.payment_organization_id == organization.id
 
     async def test_subscription(
         self,
@@ -106,6 +181,9 @@ class TestCreatePayment:
         assert transaction.processor == PaymentProcessor.stripe
         assert transaction.currency == stripe_charge.currency
         assert transaction.amount == stripe_charge.amount - (stripe_invoice.tax or 0)
+        assert transaction.tax_amount == stripe_invoice.tax
+        assert transaction.tax_country == "US"
+        assert transaction.tax_state == "NY"
         assert transaction.processor_fee_amount == stripe_balance_transaction.fee
         assert transaction.charge_id == stripe_charge.id
         assert transaction.subscription_id == subscription.id

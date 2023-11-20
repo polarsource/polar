@@ -1,3 +1,5 @@
+from typing import cast
+
 import stripe as stripe_lib
 
 from polar.exceptions import PolarError
@@ -6,9 +8,11 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.services import ResourceServiceReader
 from polar.models import Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import subscription as subscription_service
+from polar.user.service import user as user_service
 
 
 class PaymentTransactionError(PolarError):
@@ -33,14 +37,33 @@ class PaymentTransactionService(ResourceServiceReader[Transaction]):
         subscription: Subscription | None = None
         pledge: Pledge | None = None
 
-        # Retrieve tax amount
+        # Retrieve customer
+        customer_id = None
+        payment_user = None
+        payment_organization = None
+        if charge.customer:
+            customer_id = get_expandable_id(charge.customer)
+            payment_user = await user_service.get_by_stripe_customer_id(
+                session, customer_id
+            )
+            payment_organization = await organization_service.get_by(
+                session, stripe_customer_id=customer_id
+            )
+
+        # Retrieve tax amount and country
         tax_amount = 0
+        tax_country = None
+        tax_state = None
         if charge.invoice:
             stripe_invoice = stripe_service.get_invoice(
                 get_expandable_id(charge.invoice)
             )
             if stripe_invoice.tax is not None:
                 tax_amount = stripe_invoice.tax
+            for total_tax_amount in stripe_invoice.total_tax_amounts:
+                tax_rate = cast(stripe_lib.TaxRate, total_tax_amount.tax_rate)
+                tax_country = tax_rate.country
+                tax_state = tax_rate.state
 
             # Try to link with a Subscription
             if stripe_invoice.subscription:
@@ -73,7 +96,12 @@ class PaymentTransactionService(ResourceServiceReader[Transaction]):
             currency=charge.currency,
             amount=charge.amount - tax_amount,
             tax_amount=tax_amount,
+            tax_country=tax_country,
+            tax_state=tax_state,
             processor_fee_amount=processor_fee_amount,
+            customer_id=customer_id,
+            payment_user=payment_user,
+            payment_organization=payment_organization,
             charge_id=charge.id,
             pledge=pledge,
             subscription=subscription,

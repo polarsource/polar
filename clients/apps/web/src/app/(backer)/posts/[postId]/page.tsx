@@ -16,7 +16,7 @@ export default async function Page({
   const post = posts.find((post) => 'id' in post && post.id === params.postId)
 
   return (
-    <div className="relative my-16 flex flex-row items-start rounded-3xl bg-white p-12 shadow-lg">
+    <div className="dark:bg-polar-800 dark:border-polar-700 relative my-16 flex flex-row items-start rounded-3xl bg-white p-12 shadow-lg dark:border">
       <Link className="absolute left-16 top-16 flex-shrink" href="/posts">
         <Button
           size="sm"

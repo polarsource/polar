@@ -17,8 +17,10 @@ if TYPE_CHECKING:
     from polar.models import (
         Account,
         IssueReward,
+        Organization,
         Pledge,
         Subscription,
+        User,
     )
 
 
@@ -45,11 +47,14 @@ class Transaction(RecordModel):
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    tax_country: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
+    tax_state: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
     processor_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    charge_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    transfer_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    payout_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    customer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    payout_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
     account_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
@@ -61,6 +66,28 @@ class Transaction(RecordModel):
     @declared_attr
     def account(cls) -> Mapped["Account | None"]:
         return relationship("Account", lazy="raise")
+
+    payment_user_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def payment_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
+
+    payment_organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def payment_organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
 
     pledge_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

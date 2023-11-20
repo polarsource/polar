@@ -104,4 +104,11 @@ class Transaction(RecordModel):
 
     @declared_attr
     def payout_transaction(cls) -> Mapped["Transaction | None"]:
-        return relationship("Transaction", lazy="raise")
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
+            remote_side=[
+                cls.id,  # type: ignore
+            ],
+        )

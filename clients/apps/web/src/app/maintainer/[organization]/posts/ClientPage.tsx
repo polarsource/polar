@@ -1,13 +1,7 @@
 'use client'
 
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
-import {
-  NewsletterPost,
-  Post,
-  PostType,
-  getFeed,
-  isRecommendation,
-} from '@/components/Feed/data'
+import { Post, getFeed, isRecommendation } from '@/components/Feed/data'
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
@@ -74,13 +68,12 @@ const sampleAnalyticsData = [
 
 const ClientPage = () => {
   const [posts, setPosts] = useState<Post[]>([])
+
+  const organization = useCurrentOrgAndRepoFromURL().org
+
   useEffect(() => {
     getFeed(api).then((feed) =>
-      setPosts(
-        feed
-          .filter((entity) => !isRecommendation(entity))
-          .filter((post) => post.type === PostType.Newsletter) as Post[],
-      ),
+      setPosts(feed.filter((entity) => !isRecommendation(entity)) as Post[]),
     )
   }, [])
 
@@ -93,15 +86,17 @@ const ClientPage = () => {
               <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Overview
               </h3>
-              <Button className="h-8 w-8 rounded-full">
-                <AddOutlined fontSize="inherit" />
-              </Button>
+              <Link href={`/maintainer/${organization?.name}/posts/new`}>
+                <Button className="h-8 w-8 rounded-full">
+                  <AddOutlined fontSize="inherit" />
+                </Button>
+              </Link>
             </div>
             <div className="flex flex-col gap-y-12">
               <StaggerReveal className="flex w-full flex-col gap-y-6">
                 {posts.map((post) => (
-                  <StaggerReveal.Child key={post.slug}>
-                    <PostItem {...(post as NewsletterPost)} />
+                  <StaggerReveal.Child key={post.id}>
+                    <PostItem {...post} />
                   </StaggerReveal.Child>
                 ))}
               </StaggerReveal>
@@ -158,7 +153,7 @@ const ClientPage = () => {
 
 export default ClientPage
 
-const PostItem = (post: NewsletterPost) => {
+const PostItem = (post: Post) => {
   const ref = useRef<HTMLAnchorElement>(null)
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
@@ -166,16 +161,30 @@ const PostItem = (post: NewsletterPost) => {
   const impressions = useMemo(() => Math.round(Math.random() * 100), [])
   const comments = useMemo(() => Math.round(Math.random() * 100), [])
 
+  const description = useMemo(() => post.body.split('. ')[0], [post])
+
+  const image = post.body.match(/!\[.*?\]\((.*?)\)/)?.[1]
+
   return (
-    <Link ref={ref} href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}>
-      <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between rounded-3xl border border-gray-100 bg-white px-8 py-6 shadow-sm transition-colors hover:bg-blue-50/50">
-        <div className="flex w-full flex-col gap-y-6">
+    <Link
+      className="flex h-full w-full flex-col"
+      ref={ref}
+      href={`/maintainer/${currentOrg?.name}/posts/${post.id}`}
+    >
+      <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white px-8 py-6 shadow-sm transition-colors hover:bg-blue-50/50">
+        {image && (
+          <div
+            className="flex min-h-0 w-28 flex-shrink-0 flex-col rounded-2xl bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${image})` }}
+          />
+        )}
+        <div className="flex min-w-0 flex-grow flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-2">
             <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
-              {post.newsletter.title}
+              {post.title}
             </h3>
             <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
-              {post.newsletter.description}
+              {description}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between">

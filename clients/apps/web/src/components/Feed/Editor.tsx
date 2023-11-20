@@ -1,8 +1,5 @@
 'use client'
 
-// @ts-ignore
-import { evaluate, UseMdxComponents } from '@mdx-js/mdx'
-import { Root } from 'mdast'
 import {
   Tabs,
   TabsContent,
@@ -10,12 +7,9 @@ import {
   TabsTrigger,
   TextArea,
 } from 'polarkit/components/ui/atoms'
-import { ChangeEventHandler, useCallback, useEffect, useState } from 'react'
-import * as runtime from 'react/jsx-runtime'
+import { ChangeEventHandler, useCallback } from 'react'
 // @ts-ignore
-import { Plugin } from 'unified'
-// @ts-ignore
-import { visit } from 'unist-util-visit'
+import Markdown, { Components } from 'react-markdown'
 
 interface EditorProps {
   value: string
@@ -23,22 +17,6 @@ interface EditorProps {
 }
 
 const Editor = ({ value, onChange }: EditorProps) => {
-  /** @ts-ignore */
-  const [MDXContent, setMDXContent] = useState<MDXContent>()
-
-  useEffect(() => {
-    const asyncEvaluate = async () => {
-      const MDXContent = await evalMDX(value)
-      setMDXContent(
-        MDXContent({
-          components: COMPONENTS,
-        }),
-      )
-    }
-
-    asyncEvaluate()
-  }, [value])
-
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
     async (e) => {
       onChange?.(e.target.value)
@@ -47,56 +25,29 @@ const Editor = ({ value, onChange }: EditorProps) => {
   )
 
   return (
-    <Tabs className="flex flex-col gap-y-6" defaultValue="edit">
+    <Tabs className="flex h-full flex-col gap-y-6" defaultValue="edit">
       <TabsList className="dark:border-polar-700 dark:border">
         <TabsTrigger value="edit">Markdown</TabsTrigger>
         <TabsTrigger value="preview">Preview</TabsTrigger>
       </TabsList>
-      <TabsContent value="edit">
+      <TabsContent className="h-full" value="edit">
         <TextArea
-          className=" dark:bg-polar-800 dark:border-polar-700 text-md h-[400px] min-h-[400px] rounded-3xl border border-gray-100 bg-white p-8 shadow-xl"
+          className="text-md h-full min-h-[600px] rounded-3xl p-6"
+          resizable={false}
           value={value}
           onChange={handleChange}
         />
       </TabsContent>
-      <TabsContent value="preview">{MDXContent}</TabsContent>
+      <TabsContent value="preview">
+        <Markdown components={COMPONENTS}>{value}</Markdown>
+      </TabsContent>
     </Tabs>
   )
 }
 
 export default Editor
 
-const rehypePlugin: Plugin<[], Root> = () => (ast) => {
-  visit(ast, 'text', (node, index, parent) => {
-    if ('value' in node && /(#\d+)/.test(node?.value)) {
-      if (parent) {
-        // @ts-ignore
-        parent.tagName = 'issue'
-      }
-    }
-  })
-}
-
-const evalMDX = async (value: string) => {
-  // @ts-ignore
-  const { default: MDXContent } = await evaluate(value, {
-    ...runtime,
-    /** 
-     * Experimental plugin which can be used to inject custom elements into the MDX AST.
-    rehypePlugins: [rehypePlugin],
-    */
-  })
-
-  return MDXContent
-}
-
-const COMPONENTS: ReturnType<UseMdxComponents> = {
-  wrapper: (props) => (
-    <div
-      className="dark:bg-polar-800 dark:border-polar-700 min-h-[400px] rounded-3xl border border-gray-100 bg-white px-8 pb-8 pt-2 shadow-xl"
-      {...props}
-    />
-  ),
+const COMPONENTS: Components = {
   h1: (props) => <h1 className="my-6 text-3xl font-bold" {...props} />,
   h2: (props) => <h2 className="my-6 text-2xl font-bold" {...props} />,
   h3: (props) => <h3 className="my-6 text-xl font-bold" {...props} />,
@@ -112,18 +63,17 @@ const COMPONENTS: ReturnType<UseMdxComponents> = {
       {...props}
     />
   ),
-  ul: (props) => <ul className="my-6 text-base" {...props} />,
-  ol: (props) => <ol className="my-6 text-base" {...props} />,
-  li: (props) => <li className="my-6 text-base" {...props} />,
+  ul: (props) => <ul className="my-6 list-disc text-base" {...props} />,
+  ol: (props) => <ol className="my-6 list-decimal text-base" {...props} />,
+  li: (props) => <li className="my-1 text-base" {...props} />,
   blockquote: (props) => <blockquote className="my-6 text-base" {...props} />,
-  pre: (props) => <pre className="my-6 text-base" {...props} />,
-  code: (props) => (
-    <code
-      className="dark:bg-polar-900 dark:border-polar-800 my-6 border border-gray-100 bg-gray-500 text-base"
+  pre: (props) => (
+    <pre
+      className="dark:bg-polar-800 my-6 rounded-2xl bg-gray-50 p-6 text-base"
       {...props}
     />
   ),
-  inlineCode: (props) => <code className="my-6 text-base" {...props} />,
+  code: (props) => <code className="my-6 text-base" {...props} />,
   hr: (props) => <hr className="my-6 text-base" {...props} />,
   table: (props) => <table className="my-6 text-base" {...props} />,
   thead: (props) => <thead className="my-6 text-base" {...props} />,

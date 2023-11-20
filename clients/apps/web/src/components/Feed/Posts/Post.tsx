@@ -19,17 +19,13 @@ import SubscriptionGroupIcon from '../../Subscriptions/SubscriptionGroupIcon'
 import { Post as FeedPost } from '../data'
 
 export const Post = (props: FeedPost) => {
-  const ref = useRef<HTMLAnchorElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
   const isHovered = useHoverDirty(ref)
 
   return (
-    <Link
+    <div
+      className="dark:border-polar-800 hover:dark:bg-polar-800/50 dark:bg-polar-900 flex w-full flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100"
       ref={ref}
-      href={`/feed/${props.id}`}
-      className={twMerge(
-        'dark:border-polar-800 relative flex w-full flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100',
-        isHovered ? 'dark:bg-polar-800/50' : 'dark:bg-polar-900',
-      )}
     >
       <Avatar
         className="h-10 w-10"
@@ -41,7 +37,7 @@ export const Post = (props: FeedPost) => {
         <PostBody {...props} isHovered={isHovered} />
         <PostFooter {...props} isHovered={isHovered} />
       </div>
-    </Link>
+    </div>
   )
 }
 

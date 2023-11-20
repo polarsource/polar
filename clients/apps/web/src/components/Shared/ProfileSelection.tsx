@@ -1,3 +1,5 @@
+'use client'
+
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
@@ -94,7 +96,12 @@ const ProfileSelection = ({
             )}
           >
             <ul>
-              <Link href="/feed" className="w-full">
+              <Link
+                // /feed is actually the funding page
+                // /posts is the new feed
+                href={isFeatureEnabled('feed') ? `/posts` : `/feed`}
+                className="w-full"
+              >
                 <ListItem current={currentOrg === undefined}>
                   <Profile
                     name={loggedUser.username}

@@ -124,13 +124,87 @@ export const getFeed = async (
 ): Promise<(Post | Recommendation)[]> => [
   {
     id: '123',
-
     title: 'What to do when you get stuck on a problem?',
-    body: `# We're happy to announce the release of our SDK for JavaScript environments.
+    body: `Suo educta factas insuperabile circum ferarum alti. Consequitur feres tenuisse littera retentis cognita potest
 
-It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
+Lorem markdownum cuncta, per terra totoque; et et pariter revocare quos. Aera
+boves corpora: parentis adulantum paventem circum vestras. Dies sed regna tibi,
+tinxerat contendere lugebere quoque mensis inposita linguaque divus: me nuda
+eadem, auras novi.
 
-Learn more over at the [README](https://polar.sh).
+- Manibus repulsae
+- Tellure enim
+- Levibus pugnandi id incinxit uteri licet
+- Dictis et cum his neu edidit de
+
+\`\`\`javascript
+export default async function Page({
+  params,
+}: {
+  params: { organization: string; postId: string }
+}) {
+  const api = getServerSideAPI()
+  const posts = await getFeed(api)
+
+  const post = posts.find((post) => 'id' in post && post.id === params.postId)
+
+  return (
+    <div className="relative my-16 flex flex-row items-start rounded-3xl bg-white p-12 shadow-lg">
+      <Link className="absolute left-16 top-16 flex-shrink" href="/posts">
+        <Button
+          size="sm"
+          variant="secondary"
+          className="group flex h-8 w-8 flex-col items-center justify-center rounded-full border"
+        >
+          <ArrowBackOutlined fontSize="inherit" />
+        </Button>
+      </Link>
+      <div className="flex w-full flex-grow flex-col items-center gap-y-8 pb-12">
+        <LongformPost post={post as Post} />
+      </div>
+    </div>
+  )
+}
+\`\`\`
+
+## Ego ultra siquem et aditum sequuntur
+
+Satis Graecia pro unguibus pallor natis suis edendo, inter non, genetivaque
+vitae ipsisque Phiale! Manusque capillos in tantum hi prior tergoque finiat
+faciente essent, quod alto cognorat in regat. Alumno quid habet si **Hyaleque**
+clamore pugman in **dotabere temperie** gratia. Vela **residens**, Spercheides
+simus, quae missum!
+
+## Ille orat novissima patulos iacit reliquit
+
+Volanti nobis, nunc nati effuge telas noscit ipse operi. Partim pignus inmensum
+rupe, parientem naiadum corpus fuit ignibus thalamis dum. Elimat prope: frontem
+vino scilicet spatiis creaverat plangore nocte; quae.
+
+## Tu titulum potestis fletumque esse praecordia
+
+Voveam Isi et deceperit Phinea proelia an spem vitiaverit in Canache patent qui
+agebat locat adhuc Desine Lyaeo Saturnius lapidumque. Illam Solem haud clamore,
+[titulum tenuit](http://www.tu-sensit.org/)! Lancea sunt, qui Iunonem quaesitis
+amissa seque: esto ita. Tergo pleno titubantem imagine fecit nobis: curru
+umbrae, trabes.
+
+## Turpe ne socios
+
+[Mecum iubis](http://pia-non.net/) semiferos pars est sagittis satis. Hastam
+iacuit; a auctor minor, nam adsumus primus ora. Nec cum enodisque numen soceri
+sensisse Iphi, et huius, laedor, gentes modo haerentes.
+
+- Cuspide Assyrius vellent incessus vultus tendere montibus
+- Secutus impediebat colonos clausit inquit virgo favorem
+- Herculeo servitque eadem nam caeleste tellus
+
+Passis hic convertor herba circumtulit [silvis vix
+deus](http://detvincitur.net/) veni domitis foret, quae. Portasse obortis
+fertur. **Pestifero tamen** Amnis, adita loqui oppositumque decent inquit
+quaeque in *umentes quoque*. Coeunt concipit, artus populis subitis dea apta
+meum Cyclopum lege qui Iani conplexus cruore duplici votoque in cunctis. Illos
+latuerunt Thestius?
 
 ![](https://github.com/newfrgmnt/alma/raw/main/static/cover.png)`,
     visibility: 'public',
@@ -171,8 +245,56 @@ Learn more over at the [README](https://polar.sh).
   },
   {
     id: '789',
-    title: 'This is a post title!',
-    body: 'With GitHub actions, you can easily integrate Polar into your workflow. This action will populate your markdown files with avatars of your Polar backers.',
+    title: 'New funding page, method & a better backer experience',
+    body: `Excited to share another changelog post today of the efforts we’ve shipped over the last two weeks. Focusing on removing friction for backers to fund even more towards your impactful open source efforts. Let’s dig into it.
+
+### New funding page
+
+![](https://blog.polar.sh/content/images/2023/09/Frame-860--1-.jpg)
+
+We redesigned the funding page from the ground up and think it’s a pretty fantastic update. Supporting all the features mentioned below (and some easter eggs to come soon). [Check it out](https://polar.sh/polarsource/polar/issues/897?ref=blog.polar.sh).
+
+### **Fund on completion**
+
+![](https://blog.polar.sh/content/images/2023/09/Frame-862.jpg)
+
+Up until now, there has only been one way to fund open source issues with Polar: Upfront. Backers had to pay directly when they wanted to help fund a specific effort. Polar would then hold those funds until you - the maintainer - marked the issue as completed before paying it out (pending a review period for the backers).
+
+That’s great, but not always... As a maintainer, you might want it to reach a certain funding goal before backers part with their money. You also want it to be accessible to all potential backers and some of them are less comfortable paying upfront.
+
+So we’re introducing pledges. Now, backers can choose to fund an issue upon completion. Meaning they make a pledge upfront, but payment first once it’s due via invoicing - after the issue has been marked completed.
+
+![](https://blog.polar.sh/content/images/2023/09/Frame-858--1-.jpg)
+
+Backers will be required to have a connected GitHub account to use this funding method. So you can see who has made a pledge within your dashboard (spoiler alert - see below). Email-only (guest) funding is still available, but only with the upfront funding method.
+
+### Social funding
+
+![](https://blog.polar.sh/content/images/2023/09/Frame-859.jpg)
+
+We’ve updated the design of our dashboard and badge to highlight the awesome backers who are supporting your open source efforts. Some well-deserved recognition for them and some helpful insights to you.
+
+### Magic link sign-in for backers
+
+![](https://blog.polar.sh/content/images/2023/09/Frame-861.jpg)
+
+In our [last changelog](https://blog.polar.sh/funding-goals-reward-contributors-v1-backer-dashboard-api/), we announced a dedicated dashboard for backers to keep track of their funded issues, get personal recommendations on additional ones to fund and more. However, it required them to have signed up with a GitHub account.
+
+Not anymore. Backers can now sign in using magic links. Supporting a better experience and upgrade path to all of your backers.
+
+### Credit card on file
+
+Backers can now seamlessly & securely save their payment method details on file (via Stripe). Offering one-click funding in the future. Combined with quick payment of invoices for their pledges once they’re due.
+
+* * *
+
+Together, we believe these features remove a lot of friction for backers which in turn opens the door for more funding toward your awesome initiatives which is our mission here at Polar.
+
+Finally, this week we planned the [roadmap](https://github.com/polarsource/polar/issues?q=is%3Aopen+is%3Aissue+label%3Aepics&ref=blog.polar.sh) ahead for our next quarter based on our [North Star](https://github.com/polarsource/polar/issues/897?ref=blog.polar.sh), and we can’t wait to ship everything we have in store.
+
+Until next time,
+
+/ Polar Team`,
     visibility: 'public',
     author: {
       username: 'polarsource',
@@ -226,7 +348,7 @@ Learn more over at the [README](https://polar.sh).
     id: 'jkl',
 
     title: 'What to do when you get stuck on a problem?',
-    body: `# We're happy to announce the release of our SDK for JavaScript environments.
+    body: `### We're happy to announce the release of our SDK for JavaScript environments.
 
 It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
 

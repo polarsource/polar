@@ -51,7 +51,7 @@ const ClientPage = () => {
             </div>
             <Input className="min-w-[320px]" placeholder="Title" />
             <div className="flex h-full w-full flex-col">
-              <Editor value={body} onChange={setBody} />
+              {post && <Editor value={body} onChange={setBody} post={post} />}
             </div>
           </div>
         </div>

@@ -14,6 +14,19 @@ const revealVariants = {
   },
 }
 
+const staggerRevealVariants = {
+  hidden: {
+    opacity: 0,
+  },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.3,
+      ease: 'easeInOut',
+    },
+  },
+}
+
 export interface StaggerRevealProps extends HTMLMotionProps<'div'> {
   transition?: Partial<Transition>
 }
@@ -37,8 +50,22 @@ export const StaggerReveal = ({ transition, ...props }: StaggerRevealProps) => {
 
 StaggerReveal.displayName = 'StaggerReveal'
 
-StaggerReveal.Child = (props: HTMLMotionProps<'div'>) => {
-  return <motion.div {...props} variants={revealVariants} />
+StaggerReveal.Child = ({ transition, ...props }: StaggerRevealProps) => {
+  return (
+    <motion.div
+      {...props}
+      variants={{
+        ...staggerRevealVariants,
+        visible: {
+          ...staggerRevealVariants.visible,
+          transition: {
+            ...staggerRevealVariants.visible.transition,
+            ...transition,
+          },
+        },
+      }}
+    />
+  )
 }
 
 /** @ts-ignore */

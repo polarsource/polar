@@ -91,7 +91,10 @@ class TestCreateTransfer:
         await session.commit()
 
         stripe_service_mock.transfer.return_value = SimpleNamespace(
-            id="STRIPE_TRANSFER_ID"
+            id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
+        )
+        stripe_service_mock.get_balance_transaction.return_value = SimpleNamespace(
+            fee=100
         )
 
         outgoing, incoming = await transfer_transaction_service.create_transfer(
@@ -105,12 +108,14 @@ class TestCreateTransfer:
         assert outgoing.type == TransactionType.transfer
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.amount == -1000
+        assert outgoing.processor_fee_amount == 100
         assert outgoing.transfer_id == "STRIPE_TRANSFER_ID"
 
         assert incoming.account_id == account.id
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
+        assert outgoing.processor_fee_amount == 100
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
 
         assert outgoing.id is not None

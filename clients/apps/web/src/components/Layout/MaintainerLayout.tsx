@@ -51,7 +51,7 @@ const MaintainerLayout = (props: { children: React.ReactNode }) => {
           <MetaNavigation />
         </div>
       </aside>
-      <div className="dark:bg-polar-950 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden bg-gray-50">
+      <div className="dark:bg-polar-950 bg-gray-75 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden">
         <main className={twMerge('relative mt-20 w-full overflow-auto')}>
           <Suspense>{props.children}</Suspense>
         </main>

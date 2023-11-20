@@ -3,6 +3,7 @@ import uuid
 from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import generate_uuid
 from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
@@ -97,6 +98,14 @@ class TransferTransactionService(ResourceServiceReader[Transaction]):
                     **(transfer_metadata or {}),
                 },
             )
+
+            if stripe_transfer.balance_transaction is not None:
+                balance_transaction = stripe_service.get_balance_transaction(
+                    get_expandable_id(stripe_transfer.balance_transaction)
+                )
+                outgoing_transaction.processor_fee_amount = balance_transaction.fee
+                incoming_transaction.processor_fee_amount = balance_transaction.fee
+
             outgoing_transaction.transfer_id = stripe_transfer.id
             incoming_transaction.transfer_id = stripe_transfer.id
         elif processor == PaymentProcessor.open_collective:

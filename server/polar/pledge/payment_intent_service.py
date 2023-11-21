@@ -11,7 +11,9 @@ from polar.integrations.stripe.schemas import PaymentIntentMetadata
 from polar.integrations.stripe.service import stripe
 from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
+from polar.models.organization import Organization
 from polar.models.pledge import Pledge
+from polar.models.repository import Repository
 from polar.models.user import User
 from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import PledgeHook, pledge_created
@@ -34,27 +36,37 @@ log = structlog.get_logger()
 class PaymentIntentService:
     async def create_payment_intent(
         self,
+        *,
         user: User | None,
         intent: PledgeStripePaymentIntentCreate,
-        issue: Issue,
+        pledge_issue: Issue,
+        pledge_issue_org: Organization,
+        pledge_issue_repo: Repository,
         session: AsyncSession,
     ) -> PledgeStripePaymentIntentMutationResponse:
         if user:
             return await self.create_user_payment_intent(
-                issue=issue,
+                pledge_issue=pledge_issue,
+                pledge_issue_org=pledge_issue_org,
+                pledge_issue_repo=pledge_issue_repo,
                 intent=intent,
                 user=user,
                 session=session,
             )
 
         return await self.create_anonymous_payment_intent(
-            issue,
-            intent,
+            pledge_issue=pledge_issue,
+            pledge_issue_org=pledge_issue_org,
+            pledge_issue_repo=pledge_issue_repo,
+            intent=intent,
         )
 
     async def create_anonymous_payment_intent(
         self,
-        issue: Issue,
+        *,
+        pledge_issue: Issue,
+        pledge_issue_org: Organization,
+        pledge_issue_repo: Repository,
         intent: PledgeStripePaymentIntentCreate,
     ) -> PledgeStripePaymentIntentMutationResponse:
         if not intent.email:
@@ -69,7 +81,9 @@ class PaymentIntentService:
             payment_intent = stripe.create_anonymous_intent(
                 amount=amount_including_fee,
                 transfer_group=str(intent.issue_id),
-                issue=issue,
+                pledge_issue=pledge_issue,
+                pledge_issue_org=pledge_issue_org,
+                pledge_issue_repo=pledge_issue_repo,
                 anonymous_email=intent.email,
             )
         except stripe_lib_error.InvalidRequestError as e:
@@ -85,7 +99,10 @@ class PaymentIntentService:
 
     async def create_user_payment_intent(
         self,
-        issue: Issue,
+        *,
+        pledge_issue: Issue,
+        pledge_issue_org: Organization,
+        pledge_issue_repo: Repository,
         intent: PledgeStripePaymentIntentCreate,
         user: User,
         session: AsyncSession,
@@ -99,7 +116,9 @@ class PaymentIntentService:
             session=session,
             amount=amount_including_fee,
             transfer_group=str(intent.issue_id),
-            issue=issue,
+            pledge_issue=pledge_issue,
+            pledge_issue_org=pledge_issue_org,
+            pledge_issue_repo=pledge_issue_repo,
             user=user,
         )
 

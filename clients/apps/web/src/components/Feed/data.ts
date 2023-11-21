@@ -121,6 +121,7 @@ export const isRecommendation = (
 
 export const getFeed = async (
   api: PolarAPI,
+  demoEmbedIssuesOrganizationName: string,
 ): Promise<(Post | Recommendation)[]> => [
   {
     id: '123',
@@ -301,7 +302,7 @@ The Polar maintainers`,
     issues:
       (
         await api.issues.search({
-          organizationName: 'emilwidlund',
+          organizationName: demoEmbedIssuesOrganizationName,
           platform: Platforms.GITHUB,
         })
       ).items
@@ -581,7 +582,7 @@ Learn more over at the [README](https://polar.sh).`,
     issues:
       (
         await api.issues.search({
-          organizationName: 'emilwidlund',
+          organizationName: demoEmbedIssuesOrganizationName,
           platform: Platforms.GITHUB,
         })
       ).items

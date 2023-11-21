@@ -1,5 +1,6 @@
 'use client'
 
+import { useRequireAuth } from '@/hooks'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -16,10 +17,11 @@ export const Feed = () => {
   const [feed, setFeed] = useState<(Recommendation | Post)[]>([])
   const params = useSearchParams()
   const router = useRouter()
+  const { currentUser } = useRequireAuth()
 
   useEffect(() => {
-    getFeed(api).then((feed) => setFeed(feed))
-  }, [])
+    getFeed(api, currentUser?.username || '').then((feed) => setFeed(feed))
+  }, [currentUser])
 
   const post = feed.find(
     (post) => 'id' in post && post.id === params.get('post'),

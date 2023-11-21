@@ -72,10 +72,15 @@ const ClientPage = () => {
   const organization = useCurrentOrgAndRepoFromURL().org
 
   useEffect(() => {
-    getFeed(api).then((feed) =>
+    if (!organization) {
+      setPosts([])
+      return
+    }
+
+    getFeed(api, organization.name).then((feed) =>
       setPosts(feed.filter((entity) => !isRecommendation(entity)) as Post[]),
     )
-  }, [])
+  }, [organization])
 
   return (
     <>

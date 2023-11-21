@@ -79,7 +79,7 @@ export default async function Page({
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
   const api = getServerSideAPI()
-  const post = await (await getFeed(api))
+  const post = await (await getFeed(api, params.organization))
     .filter((value): value is Post => !isRecommendation(value))
     .find((post) => post.id === params.postId)
 

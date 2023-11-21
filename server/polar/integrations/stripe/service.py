@@ -1,5 +1,6 @@
 import uuid
-from typing import Literal, TypedDict, Unpack, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Literal, TypedDict, Unpack, cast
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -18,6 +19,10 @@ from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
+
+if TYPE_CHECKING:
+    from stripe.api_resources.list_object import ListObject, T
+    from stripe.request_options import RequestOptions
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
@@ -218,6 +223,19 @@ class StripeService:
         if source_transaction is not None:
             create_params["source_transaction"] = source_transaction
         return stripe_lib.Transfer.create(**create_params)
+
+    def reverse_transfer(
+        self,
+        transfer_id: str,
+        amount: int,
+        *,
+        metadata: dict[str, str] | None = None,
+    ) -> stripe_lib.Reversal:
+        create_params: stripe_lib.Transfer.CreateReversalParams = {
+            "amount": amount,
+            "metadata": metadata or {},
+        }
+        return stripe_lib.Transfer.create_reversal(transfer_id, **create_params)
 
     def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return stripe_lib.Customer.retrieve(customer_id)
@@ -596,14 +614,30 @@ Thank you for your support!
         if type is not None:
             params["type"] = type
 
-        results: list[stripe_lib.BalanceTransaction] = []
+        return self._list_all(stripe_lib.BalanceTransaction.list, params)
+
+    def list_refunds(
+        self,
+        *,
+        charge: str | None = None,
+    ) -> list[stripe_lib.Refund]:
+        params: stripe_lib.Refund.ListParams = {"limit": 100}
+        if charge is not None:
+            params["charge"] = charge  # type: ignore
+
+        return self._list_all(stripe_lib.Refund.list, params)
+
+    def _list_all(
+        self, method: Callable[..., "ListObject[T]"], params: "RequestOptions"
+    ) -> list["T"]:
+        results: list["T"] = []
         has_more = True
         while has_more:
-            page = stripe_lib.BalanceTransaction.list(**params)
+            page = method(**params)
             results += page.data
             has_more = page.has_more
             if has_more:
-                params["starting_after"] = page.data[-1].id
+                params["starting_after"] = page.data[-1].id  # type: ignore
 
         return results
 

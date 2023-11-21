@@ -848,7 +848,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         else:
             raise NotPermitted("Unexpected split receiver")
 
-        incoming, _ = await transfer_transaction_service.create_transfer(
+        outgoing, _ = await transfer_transaction_service.create_transfer(
             session,
             destination_account=pay_to_account,
             currency="usd",
@@ -870,7 +870,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             pledge_id=pledge.id,
             type=PledgeTransactionType.transfer,
             amount=payout_amount,
-            transaction_id=incoming.transfer_id,
+            transaction_id=outgoing.transfer_id,
             issue_reward_id=split.id,
         )
 

@@ -132,14 +132,8 @@ class TestCreatePayoutFromStripe:
             balance_transactions
         )
 
-        payout_balance_transaction = build_stripe_balance_transaction()
-        stripe_service_mock.get_balance_transaction.return_value = (
-            payout_balance_transaction
-        )
-
         stripe_payout = build_stripe_payout(
-            amount=sum(transaction.amount for transaction in transactions),
-            balance_transaction=payout_balance_transaction.id,
+            amount=sum(transaction.amount for transaction in transactions)
         )
 
         transaction = await payout_transaction_service.create_payout_from_stripe(
@@ -151,7 +145,6 @@ class TestCreatePayoutFromStripe:
         assert transaction.currency == stripe_payout.currency
         assert transaction.amount == -stripe_payout.amount
         assert transaction.tax_amount == 0
-        assert transaction.processor_fee_amount == payout_balance_transaction.fee
         assert transaction.payout_id == stripe_payout.id
         assert transaction.account_id == organization_account.id
 

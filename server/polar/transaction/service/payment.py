@@ -5,7 +5,6 @@ import stripe as stripe_lib
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.kit.services import ResourceServiceReader
 from polar.models import Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
@@ -13,6 +12,8 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.user.service import user as user_service
+
+from .base import BaseTransactionService
 
 
 class PaymentTransactionError(PolarError):
@@ -30,7 +31,7 @@ class SubscriptionDoesNotExist(PaymentTransactionError):
         super().__init__(message)
 
 
-class PaymentTransactionService(ResourceServiceReader[Transaction]):
+class PaymentTransactionService(BaseTransactionService):
     async def create_payment(
         self, session: AsyncSession, *, charge: stripe_lib.Charge
     ) -> Transaction:

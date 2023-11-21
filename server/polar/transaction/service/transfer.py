@@ -4,11 +4,12 @@ from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import generate_uuid
 from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
+
+from .base import BaseTransactionService
 
 
 class TransferTransactionError(PolarError):
@@ -35,7 +36,7 @@ class StripeNotConfiguredOnDestinationAccount(TransferTransactionError):
         super().__init__(message)
 
 
-class TransferTransactionService(ResourceServiceReader[Transaction]):
+class TransferTransactionService(BaseTransactionService):
     async def create_transfer(
         self,
         session: AsyncSession,

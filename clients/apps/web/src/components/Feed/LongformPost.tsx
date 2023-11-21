@@ -3,7 +3,10 @@
 import { COMPONENTS } from '@/components/Feed/Editor'
 import { Post } from '@/components/Feed/data'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { Avatar } from 'polarkit/components/ui/atoms'
+import Link from 'next/link'
+import { LogoIcon } from 'polarkit/components/brand'
+import { Avatar, Button } from 'polarkit/components/ui/atoms'
+import { useOrganizationLookup } from 'polarkit/hooks'
 // @ts-ignore
 import Markdown from 'react-markdown'
 import { twMerge } from 'tailwind-merge'
@@ -19,9 +22,14 @@ const revealTransition = {
 }
 
 export default function LongformPost({ post }: { post: Post }) {
+  const organization = useOrganizationLookup(post.author.username)
+
   return (
     <StaggerReveal className="max-w-2xl" transition={staggerTransition}>
-      <div className="flex flex-col items-center gap-y-16 pb-16 pt-8">
+      <div className="flex flex-col items-center gap-y-16 pb-16 pt-4">
+        <StaggerReveal.Child transition={revealTransition}>
+          <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
+        </StaggerReveal.Child>
         <StaggerReveal.Child transition={revealTransition}>
           <span className="dark:text-polar-500 text-gray-500">
             {post.createdAt.toLocaleString('en-US', {
@@ -49,7 +57,10 @@ export default function LongformPost({ post }: { post: Post }) {
           </div>
         </StaggerReveal.Child>
       </div>
-      <StaggerReveal.Child transition={revealTransition}>
+      <StaggerReveal.Child
+        className="flex flex-col gap-y-16"
+        transition={revealTransition}
+      >
         <Markdown
           className="relative leading-relaxed"
           components={COMPONENTS}
@@ -73,6 +84,24 @@ export default function LongformPost({ post }: { post: Post }) {
         >
           {post.body}
         </Markdown>
+        <div className="dark:bg-polar-700 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 px-16 py-12">
+          <Avatar
+            className="h-12 w-12"
+            avatar_url={post.author.avatar_url}
+            name={post.author.username}
+          />
+          <h2 className="text-xl font-medium">
+            Subscribe to {post.author.username}
+          </h2>
+          <p className="dark:text-polar-300 text-center text-gray-500">
+            {organization.data?.bio
+              ? organization.data?.bio
+              : `Support ${post.author.username} by subscribing to their work and get access to exclusive content.`}
+          </p>
+          <Link href={`/${organization.data?.name}?tab=subscriptions`}>
+            <Button className="mt-4">Subscribe</Button>
+          </Link>
+        </div>
       </StaggerReveal.Child>
     </StaggerReveal>
   )

@@ -20,7 +20,7 @@ const TopbarRight = (props: { useOrgFromURL: boolean }) => {
           <ProfileSelection
             showBackerLinks
             useOrgFromURL={props.useOrgFromURL}
-            className="dark:bg-polar-700 border border-gray-100"
+            className="dark:bg-polar-700 border border-gray-100 shadow-sm"
           />
         </div>
       )}

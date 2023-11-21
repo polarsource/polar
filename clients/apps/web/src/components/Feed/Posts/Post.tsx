@@ -62,13 +62,23 @@ const PostHeader = (props: FeedPost) => {
             <PolarTimeAgo date={props.createdAt} />
           </div>
           &middot;
-          {props.visibility === 'public' && (
+          {props.visibility === 'public' ? (
             <>
               <div className="flex flex-row items-center gap-x-1">
                 <span className="flex items-center text-blue-500">
                   <LanguageOutlined fontSize="inherit" />
                 </span>
                 <span className="text-xs">Public</span>
+              </div>
+              &middot;
+            </>
+          ) : (
+            <>
+              <div className="flex flex-row items-center gap-x-1">
+                <span className="flex items-center text-blue-500">
+                  <SubscriptionGroupIcon type={props.visibility} />
+                </span>
+                <span className="text-xs capitalize">{props.visibility}</span>
               </div>
               &middot;
             </>
@@ -126,13 +136,6 @@ const PostFooter = (props: FeedPost & { isHovered: boolean }) => {
             <BookmarkBorderOutlined fontSize="inherit" />
           </div>
         </div>
-
-        {props.visibility !== 'public' ? (
-          <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-500">
-            <SubscriptionGroupIcon type={props.visibility} />
-            <span className="capitalize">{props.visibility}</span>
-          </div>
-        ) : null}
       </div>
       <AnimatedIconButton active={props.isHovered} variant="secondary">
         <ArrowForward fontSize="inherit" />

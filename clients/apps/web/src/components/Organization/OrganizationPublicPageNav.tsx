@@ -5,7 +5,7 @@ import {
   Bolt,
   DragIndicatorOutlined,
   HiveOutlined,
-  LandscapeOutlined,
+  HowToVoteOutlined,
 } from '@mui/icons-material'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
@@ -46,6 +46,18 @@ export const OrganizationPublicPageNav = ({
           </div>
           <span>Overview</span>
         </TabsTrigger>
+        {isFeatureEnabled('feed') && (
+          <TabsTrigger
+            value="issues"
+            size="small"
+            onClick={handleTabChange('issues')}
+          >
+            <div className="text-[18px]">
+              <HowToVoteOutlined fontSize="inherit" />
+            </div>
+            <span>Issues</span>
+          </TabsTrigger>
+        )}
         <TabsTrigger
           value="repositories"
           size="small"
@@ -68,25 +80,13 @@ export const OrganizationPublicPageNav = ({
             <span>Subscriptions</span>
           </TabsTrigger>
         )}
-        {isFeatureEnabled('subscriptions') && (
-          <TabsTrigger
-            value="campaigns"
-            size="small"
-            onClick={handleTabChange('campaigns')}
-          >
-            <div className="text-[18px]">
-              <LandscapeOutlined fontSize="inherit" />
-            </div>
-            <span>Campaigns</span>
-          </TabsTrigger>
-        )}
       </TabsList>
       <div className="z-50 w-full md:w-[280px]">
         <ProfileSelection
           narrow
           showBackerLinks
           useOrgFromURL={false}
-          className="border border-gray-100"
+          className="border border-gray-100 shadow-sm"
         />
       </div>
     </div>

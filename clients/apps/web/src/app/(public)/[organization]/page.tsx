@@ -1,6 +1,7 @@
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   Organization,
   Platforms,
@@ -11,6 +12,7 @@ import {
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import { api } from 'polarkit/api'
+import { Post, getFeed, isRecommendation } from '../../../components/Feed/data'
 
 const cacheConfig = {
   next: {
@@ -137,9 +139,18 @@ export default async function Page({
 
   const currentTab = searchParams.tab as string | undefined
 
+  const posts = isFeatureEnabled('feed')
+    ? ((await getFeed(api)).filter(
+        (entry) =>
+          !isRecommendation(entry) &&
+          entry.author.username === organization.name,
+      ) as Post[])
+    : []
+
   return (
     <>
       <OrganizationPublicPage
+        posts={posts}
         organization={organization}
         repositories={repositories.items || []}
         subscriptionTiers={subscriptionTiers}

@@ -130,6 +130,9 @@ async def dashboard_link(
             detail="Unauthorized",
         )
 
+    # update stripe account details
+    await account_service.sync_to_upstream(session, acc)
+
     link = await account_service.dashboard_link(acc)
     if not link:
         raise HTTPException(status_code=500, detail="Failed to create link")

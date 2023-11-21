@@ -53,7 +53,11 @@ class Transaction(RecordModel):
 
     customer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    refund_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    transfer_reversal_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
     payout_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
     account_id: Mapped[UUID | None] = mapped_column(

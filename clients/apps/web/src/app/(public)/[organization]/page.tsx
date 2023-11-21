@@ -1,7 +1,6 @@
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   Organization,
   Platforms,
@@ -139,13 +138,10 @@ export default async function Page({
 
   const currentTab = searchParams.tab as string | undefined
 
-  const posts = isFeatureEnabled('feed')
-    ? ((await getFeed(api)).filter(
-        (entry) =>
-          !isRecommendation(entry) &&
-          entry.author.username === organization.name,
-      ) as Post[])
-    : []
+  const posts = (await getFeed(api)).filter(
+    (entry) =>
+      !isRecommendation(entry) && entry.author.username === organization.name,
+  ) as Post[]
 
   return (
     <>

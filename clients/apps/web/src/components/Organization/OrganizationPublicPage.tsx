@@ -1,4 +1,3 @@
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   BusinessOutlined,
   EmailOutlined,
@@ -13,18 +12,16 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
-import { Avatar, Tabs, TabsContent } from 'polarkit/components/ui/atoms'
+import { Avatar, Tabs } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
-import { Post as PostComponent } from '../Feed/Posts/Post'
 import { Post } from '../Feed/data'
 import HowItWorks from '../Pledge/HowItWorks'
-import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSubscriptionsPublicPage'
-import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
 import Footer from './Footer'
-import IssuesLookingForFunding from './IssuesLookingForFunding'
-import { OrganizationPublicPageNav } from './OrganizationPublicPageNav'
-import { RepositoriesOverivew } from './RepositoriesOverview'
+import {
+  OrganizationPublicPageContent,
+  OrganizationPublicPageNav,
+} from './OrganizationPublicPageNav'
 
 const OrganizationPublicPage = ({
   posts,
@@ -185,52 +182,12 @@ const OrganizationPublicPage = ({
               </div>
             )}
           </div>
-          <div className="mt-12 flex h-full w-full flex-col md:mt-0">
-            {isFeatureEnabled('feed') && (
-              <TabsContent className="w-full" value="overview">
-                <div className="flex max-w-xl flex-col gap-y-6">
-                  {posts.map((post) => (
-                    <Link href={`/${organization.name}/posts/${post.id}`}>
-                      <PostComponent {...post} />
-                    </Link>
-                  ))}
-                </div>
-              </TabsContent>
-            )}
-            <TabsContent
-              className="w-full"
-              value={isFeatureEnabled('feed') ? 'issues' : 'overview'}
-            >
-              <div className="flex w-full flex-col gap-y-8">
-                {subscriptionTiers.length > 0 && (
-                  <PublicSubscriptionUpsell
-                    organization={organization}
-                    subscriptionTiers={subscriptionTiers}
-                    subscribePath="/subscribe"
-                  />
-                )}
-
-                <div className="flex flex-row items-start justify-between">
-                  <h2 className="text-lg">Issues looking for funding</h2>
-                </div>
-                <IssuesLookingForFunding organization={organization} />
-              </div>
-            </TabsContent>
-            <TabsContent className="w-full" value="repositories">
-              <RepositoriesOverivew
-                organization={organization}
-                repositories={repositories}
-              />
-            </TabsContent>
-            {subscriptionTiers.length > 0 && (
-              <TabsContent className="w-full" value="subscriptions">
-                <OrganizationSubscriptionsPublicPage
-                  organization={organization}
-                  subscriptionTiers={subscriptionTiers}
-                />
-              </TabsContent>
-            )}
-          </div>
+          <OrganizationPublicPageContent
+            organization={organization}
+            posts={posts}
+            repositories={repositories}
+            subscriptionTiers={subscriptionTiers}
+          />
         </div>
       </div>
       <div>

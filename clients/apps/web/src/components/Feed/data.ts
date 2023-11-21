@@ -564,7 +564,7 @@ Learn more over at the [README](https://polar.sh).`,
     updatedAt: new Date(),
   },
   {
-    id: 'åäö',
+    id: 'asd',
     title: 'How I make code videos',
     body: `A deepdive into my video production process, from recording to editing to publishing. I'll show you how I make my code videos, and how you can make your own!`,
     visibility: 'pro',

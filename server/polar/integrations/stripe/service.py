@@ -495,6 +495,7 @@ Thank you for your support!
         customer: str | None = None,
         customer_email: str | None = None,
         metadata: dict[str, str] | None = None,
+        subscription_metadata: dict[str, str] | None = None,
     ) -> stripe_lib.checkout.Session:
         create_params: stripe_lib.checkout.Session.CreateParams = {
             "success_url": success_url,
@@ -515,6 +516,8 @@ Thank you for your support!
             create_params["customer_update"] = {"name": "auto", "address": "auto"}
         if customer_email is not None:
             create_params["customer_email"] = customer_email
+        if subscription_metadata is not None:
+            create_params["subscription_data"] = {"metadata": subscription_metadata}
         return stripe_lib.checkout.Session.create(**create_params)
 
     def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:

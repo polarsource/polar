@@ -129,6 +129,7 @@ class SubscribeSessionService:
             is_tax_applicable=subscription_tier.is_tax_applicable,
             **customer_options,
             metadata=metadata,
+            subscription_metadata=metadata,
         )
 
         return SubscribeSession.from_db(checkout_session, subscription_tier)

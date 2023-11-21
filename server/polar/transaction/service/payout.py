@@ -64,21 +64,13 @@ class PayoutTransactionService(BaseTransactionService):
         if account is None:
             raise UnknownAccount(stripe_account_id)
 
-        # Retrieve Stripe fee
-        processor_fee_amount = 0
-        if payout.balance_transaction is not None:
-            stripe_balance_transaction = stripe_service.get_balance_transaction(
-                get_expandable_id(payout.balance_transaction)
-            )
-            processor_fee_amount = stripe_balance_transaction.fee
-
         transaction = Transaction(
             type=TransactionType.payout,
             processor=PaymentProcessor.stripe,
             currency=payout.currency,
             amount=-payout.amount,  # Subtract the amount from the balance
             tax_amount=0,
-            processor_fee_amount=processor_fee_amount,
+            processor_fee_amount=0,  # No way to know the fee on a per payout basis
             payout_id=payout.id,
             account=account,
         )

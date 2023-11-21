@@ -17,7 +17,9 @@ from polar.integrations.stripe.service import stripe
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.services import ResourceService
 from polar.models.account import Account
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.user.service import user as user_service
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -95,6 +97,23 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         raise AccountServiceError("Unknown account type")
 
+    async def _build_stripe_account_name(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: UUID | None,
+        user_id: UUID | None,
+    ) -> str | None:
+        if organization_id:
+            org = await organization_service.get(session, organization_id)
+            if org:
+                return f"github.com/{org.name} (org)"
+        if user_id:
+            user = await user_service.get(session, user_id)
+            if user:
+                return f"github.com/{user.username} (user)"
+        return None
+
     async def _create_stripe_account(
         self,
         session: AsyncSession,
@@ -104,10 +123,19 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         admin_id: UUID,
         account: AccountCreate,
     ) -> Account:
+        account_name = await self._build_stripe_account_name(
+            session,
+            organization_id=organization_id,
+            user_id=user_id,
+        )
+
         try:
-            stripe_account = stripe.create_account(account)
+            stripe_account = stripe.create_account(account, name=account_name)
         except stripe_lib_error.StripeError as e:
-            raise AccountServiceError(e.user_message) from e
+            if e.user_message:
+                raise AccountServiceError(e.user_message) from e
+            else:
+                raise AccountServiceError("An unexpected Stripe error happened") from e
 
         return await Account.create(
             session=session,
@@ -210,6 +238,14 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             transfer_group=transfer_group,
         )
         return transfer.id
+
+    async def sync_to_upstream(self, session: AsyncSession, account: Account) -> None:
+        name = await self._build_stripe_account_name(
+            session, organization_id=account.organization_id, user_id=account.user_id
+        )
+
+        if account.account_type == AccountType.stripe and account.stripe_id:
+            stripe.update_account(account.stripe_id, name)
 
 
 account = AccountService(Account)

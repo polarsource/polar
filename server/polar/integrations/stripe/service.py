@@ -146,15 +146,27 @@ class StripeService:
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.retrieve(id)
 
-    def create_account(self, account: AccountCreate) -> stripe_lib.Account:
+    def create_account(
+        self, account: AccountCreate, name: str | None
+    ) -> stripe_lib.Account:
         create_params: stripe_lib.Account.CreateParams = {
             "country": account.country,
             "type": "express",
             "capabilities": {"transfers": {"requested": True}},
         }
+
+        if name:
+            create_params["business_profile"] = {"name": name}
+
         if account.country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
         return stripe_lib.Account.create(**create_params)
+
+    def update_account(self, id: str, name: str | None) -> None:
+        obj = {}
+        if name:
+            obj["business_profile"] = {"name": name}
+        stripe_lib.Account.modify(id, **obj)
 
     def retrieve_account(self, id: str) -> stripe_lib.Account:
         return stripe_lib.Account.retrieve(id)

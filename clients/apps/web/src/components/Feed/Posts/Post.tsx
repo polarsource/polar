@@ -10,7 +10,7 @@ import {
 } from '@mui/icons-material'
 import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
-import { Avatar, Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { ButtonProps } from 'polarkit/components/ui/button'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
@@ -59,7 +59,17 @@ const PostHeader = (props: FeedPost) => {
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
           &middot;
           <div className="text-xs">
-            <PolarTimeAgo date={props.createdAt} />
+            {props.createdAt.toLocaleString('en-US', {
+              year:
+                props.createdAt.getFullYear() === new Date().getFullYear()
+                  ? undefined
+                  : 'numeric',
+              month:
+                props.createdAt.getFullYear() === new Date().getFullYear()
+                  ? 'long'
+                  : 'short',
+              day: 'numeric',
+            })}
           </div>
           &middot;
           {props.visibility === 'public' ? (

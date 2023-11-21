@@ -32,7 +32,7 @@ const ClientPage = () => {
 
               <div className="flex flex-row items-center gap-x-4">
                 <Button variant="secondary" onClick={handleSave}>
-                  Save
+                  Save Draft
                 </Button>
                 <Button onClick={handleSave}>Publish</Button>
               </div>

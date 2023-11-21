@@ -3,6 +3,7 @@ import {
   Organization,
   OrganizationBadgeSettingsUpdate,
   OrganizationUpdate,
+  Platforms,
 } from '@polar-sh/sdk'
 import {
   UseMutationResult,
@@ -23,6 +24,17 @@ export const useListAdminOrganizations: () => UseQueryResult<ListResourceOrganiz
         }),
       retry: defaultRetry,
     })
+
+export const useOrganizationLookup: (
+  name: string,
+  platform?: Platforms,
+) => UseQueryResult<Organization> = (name, platform = Platforms.GITHUB) =>
+  useQuery({
+    queryKey: ['organizations', name],
+    queryFn: () =>
+      api.organizations.lookup({ organizationName: name, platform }),
+    retry: defaultRetry,
+  })
 
 export const useListAllOrganizations: () => UseQueryResult<ListResourceOrganization> =
   () =>

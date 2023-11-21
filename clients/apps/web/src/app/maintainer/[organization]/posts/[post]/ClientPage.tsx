@@ -15,7 +15,7 @@ const ClientPage = () => {
   const [body, setBody] = useState(post?.body || '')
 
   useEffect(() => {
-    getFeed(api).then((feed) => {
+    getFeed(api, organization as string).then((feed) => {
       const post = feed.find(
         (post) => 'id' in post && post.id === postId,
       ) as Post

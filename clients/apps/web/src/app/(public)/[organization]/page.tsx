@@ -138,7 +138,7 @@ export default async function Page({
 
   const currentTab = searchParams.tab as string | undefined
 
-  const posts = (await getFeed(api)).filter(
+  const posts = (await getFeed(api, params.organization)).filter(
     (entry) =>
       !isRecommendation(entry) && entry.author.username === organization.name,
   ) as Post[]

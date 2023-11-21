@@ -1,19 +1,32 @@
+'use client'
+
 import LongformPost from '@/components/Feed/LongformPost'
-import { Post, getFeed } from '@/components/Feed/data'
-import { getServerSideAPI } from '@/utils/api'
+import { Post, Recommendation, getFeed } from '@/components/Feed/data'
+import { useRequireAuth } from '@/hooks'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import Link from 'next/link'
+import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/atoms'
+import { useEffect, useState } from 'react'
 
-export default async function Page({
-  params,
-}: {
-  params: { organization: string; postId: string }
-}) {
-  const api = getServerSideAPI()
-  const posts = await getFeed(api)
+export default function Page({ params }: { params: { postId: string } }) {
+  const { currentUser } = useRequireAuth()
 
-  const post = posts.find((post) => 'id' in post && post.id === params.postId)
+  const [post, setPost] = useState<Post | Recommendation | undefined>()
+
+  useEffect(() => {
+    if (!currentUser?.username) {
+      setPost(undefined)
+      return
+    }
+
+    getFeed(api, currentUser.username).then((feed) => {
+      const post = feed.find(
+        (post) => 'id' in post && post.id === params.postId,
+      )
+      setPost(post)
+    })
+  }, [currentUser, params.postId])
 
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 relative my-16 flex flex-row items-start rounded-3xl bg-white p-12 shadow-lg dark:border">
@@ -27,7 +40,7 @@ export default async function Page({
         </Button>
       </Link>
       <div className="flex w-full flex-grow flex-col items-center gap-y-8 pb-12">
-        <LongformPost post={post as Post} />
+        {post ? <LongformPost post={post as Post} /> : null}
       </div>
     </div>
   )

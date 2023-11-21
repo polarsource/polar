@@ -3,10 +3,16 @@ from arq import Retry
 from pydantic import parse_obj_as
 
 from polar.exceptions import PolarError
-from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
+from polar.integrations.stripe.schemas import (
+    PaymentIntentSuccessWebhook,
+    ProductType,
+)
 from polar.pledge.service import pledge as pledge_service
 from polar.subscription.service.subscription import SubscriptionDoesNotExist
 from polar.subscription.service.subscription import subscription as subscription_service
+from polar.transaction.service.payment import (
+    PledgeDoesNotExist as PaymentTransactionPledgeDoesNotExist,
+)
 from polar.transaction.service.payment import (
     SubscriptionDoesNotExist as PaymentTransactionSubscriptionDoesNotExist,
 )
@@ -40,11 +46,12 @@ async def payment_intent_succeeded(
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             payment_intent = event["data"]["object"]
-            payload = parse_obj_as(PaymentIntentSuccessWebhook, payment_intent)
-            await pledge_service.handle_payment_intent_success(
-                session=session,
-                payload=payload,
-            )
+            if payment_intent.metadata.get("type") == ProductType.pledge:
+                payload = parse_obj_as(PaymentIntentSuccessWebhook, payment_intent)
+                await pledge_service.handle_payment_intent_success(
+                    session=session,
+                    payload=payload,
+                )
 
 
 @task("stripe.webhook.charge.succeeded")
@@ -58,9 +65,12 @@ async def charge_succeeded(
                 await payment_transaction_service.create_payment(
                     session=session, charge=charge
                 )
-            except PaymentTransactionSubscriptionDoesNotExist as e:
-                # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle subscription.created yet!
+            except (
+                PaymentTransactionPledgeDoesNotExist,
+                PaymentTransactionSubscriptionDoesNotExist,
+            ) as e:
+                # Retry because we might not have been able to handle other events
+                # triggering the creation of Pledge and Subscription
                 MAX_RETRIES = 2
                 if ctx["job_try"] <= MAX_RETRIES:
                     raise Retry(2 ** ctx["job_try"]) from e

@@ -4,11 +4,15 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, Pledge, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.payment import SubscriptionDoesNotExist
+from polar.transaction.service.payment import (
+    PledgeDoesNotExist,
+    SubscriptionDoesNotExist,
+)
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
@@ -43,6 +47,7 @@ def build_stripe_charge(
     invoice: str | None = None,
     payment_intent: str | None = None,
     balance_transaction: str | None = None,
+    type: ProductType | None = None,
 ) -> stripe_lib.Charge:
     return stripe_lib.Charge.construct_from(
         {
@@ -53,6 +58,7 @@ def build_stripe_charge(
             "invoice": invoice,
             "payment_intent": payment_intent,
             "balance_transaction": balance_transaction,
+            "metadata": {"type": type} if type is not None else {},
         },
         None,
     )
@@ -67,19 +73,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.mark.asyncio
 class TestCreatePayment:
-    async def test_not_existing_subscription(
-        self, session: AsyncSession, stripe_service_mock: MagicMock
-    ) -> None:
-        stripe_invoice = build_stripe_invoice(subscription="NOT_EXISTING_SUBSCRIPTION")
-        stripe_charge = build_stripe_charge(invoice=stripe_invoice.id)
-
-        stripe_service_mock.get_invoice.return_value = stripe_invoice
-
-        with pytest.raises(SubscriptionDoesNotExist):
-            await payment_transaction_service.create_payment(
-                session, charge=stripe_charge
-            )
-
     async def test_customer_user(
         self,
         session: AsyncSession,
@@ -147,6 +140,19 @@ class TestCreatePayment:
         assert transaction.payment_user_id is None
         assert transaction.payment_organization_id == organization.id
 
+    async def test_not_existing_subscription(
+        self, session: AsyncSession, stripe_service_mock: MagicMock
+    ) -> None:
+        stripe_invoice = build_stripe_invoice(subscription="NOT_EXISTING_SUBSCRIPTION")
+        stripe_charge = build_stripe_charge(invoice=stripe_invoice.id)
+
+        stripe_service_mock.get_invoice.return_value = stripe_invoice
+
+        with pytest.raises(SubscriptionDoesNotExist):
+            await payment_transaction_service.create_payment(
+                session, charge=stripe_charge
+            )
+
     async def test_subscription(
         self,
         session: AsyncSession,
@@ -189,6 +195,25 @@ class TestCreatePayment:
         assert transaction.subscription_id == subscription.id
         assert transaction.pledge_id is None
 
+    async def test_not_existing_pledge(
+        self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
+    ) -> None:
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            payment_intent="NOT_EXISTING_PAYMENT_INTENT",
+            balance_transaction=stripe_balance_transaction.id,
+            type=ProductType.pledge,
+        )
+
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_balance_transaction
+        )
+
+        with pytest.raises(PledgeDoesNotExist):
+            await payment_transaction_service.create_payment(
+                session, charge=stripe_charge
+            )
+
     async def test_pledge(
         self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
     ) -> None:
@@ -200,6 +225,7 @@ class TestCreatePayment:
         stripe_charge = build_stripe_charge(
             payment_intent=pledge.payment_id,
             balance_transaction=stripe_balance_transaction.id,
+            type=ProductType.pledge,
         )
 
         stripe_service_mock.get_balance_transaction.return_value = (

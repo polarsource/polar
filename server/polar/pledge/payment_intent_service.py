@@ -7,7 +7,7 @@ import structlog
 
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.integrations.loops.service import loops as loops_service
-from polar.integrations.stripe.schemas import PaymentIntentMetadata
+from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
 from polar.integrations.stripe.service import stripe
 from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
@@ -171,7 +171,7 @@ class PaymentIntentService:
         if not intent:
             raise ResourceNotFound()
 
-        metadata = PaymentIntentMetadata.parse_obj(intent["metadata"])
+        metadata = PledgePaymentIntentMetadata.parse_obj(intent["metadata"])
 
         issue_id = metadata.issue_id
         if not issue_id:

@@ -3,6 +3,7 @@ from typing import cast
 import stripe as stripe_lib
 
 from polar.exceptions import PolarError
+from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Pledge, Subscription, Transaction
@@ -27,6 +28,17 @@ class SubscriptionDoesNotExist(PaymentTransactionError):
         message = (
             f"Received the charge {charge_id} from Stripe related to subscription "
             f"{stripe_subscription_id}, but no associated Subscription exists."
+        )
+        super().__init__(message)
+
+
+class PledgeDoesNotExist(PaymentTransactionError):
+    def __init__(self, charge_id: str, payment_intent_id: str) -> None:
+        self.charge_id = charge_id
+        self.payment_intent_id = payment_intent_id
+        message = (
+            f"Received a ledge charge {charge_id} ({payment_intent_id} from Stripe "
+            "but no such Pledge exists."
         )
         super().__init__(message)
 
@@ -78,10 +90,13 @@ class PaymentTransactionService(BaseTransactionService):
                     raise SubscriptionDoesNotExist(charge.id, stripe_subscription_id)
 
         # Try to link with a Pledge
-        if charge.payment_intent:
-            pledge = await pledge_service.get_by_payment_id(
-                session, get_expandable_id(charge.payment_intent)
-            )
+        if charge.metadata.get("type") == ProductType.pledge:
+            assert charge.payment_intent is not None
+            payment_intent = get_expandable_id(charge.payment_intent)
+            pledge = await pledge_service.get_by_payment_id(session, payment_intent)
+            # Give a chance to retry this later in case we didn't create the Pledge yet.
+            if pledge is None:
+                raise PledgeDoesNotExist(charge.id, payment_intent)
 
         # Retrieve Stripe fee
         processor_fee_amount = 0

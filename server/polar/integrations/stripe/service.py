@@ -8,7 +8,10 @@ from stripe import error as stripe_lib_error
 from polar.account.schemas import AccountCreate
 from polar.config import settings
 from polar.exceptions import PolarError
-from polar.integrations.stripe.schemas import PaymentIntentMetadata
+from polar.integrations.stripe.schemas import (
+    PledgePaymentIntentMetadata,
+    ProductType,
+)
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -72,7 +75,7 @@ class StripeService:
         if not customer:
             raise Exception("failed to get/create customer")
 
-        metadata = PaymentIntentMetadata(
+        metadata = PledgePaymentIntentMetadata(
             issue_id=pledge_issue.id,
             issue_title=pledge_issue.title,
             user_id=user.id,
@@ -101,7 +104,7 @@ class StripeService:
         organization: Organization,
         user: User,
     ) -> stripe_lib.PaymentIntent:
-        metadata = PaymentIntentMetadata(
+        metadata = PledgePaymentIntentMetadata(
             issue_id=issue.id,
             issue_title=issue.title,
             user_id=user.id,
@@ -127,7 +130,7 @@ class StripeService:
         setup_future_usage: Literal["off_session", "on_session"] | None,
         on_behalf_of_organization_id: UUID | None = None,
     ) -> stripe_lib.PaymentIntent:
-        metadata = PaymentIntentMetadata(
+        metadata = PledgePaymentIntentMetadata(
             on_behalf_of_organization_id=on_behalf_of_organization_id
             if on_behalf_of_organization_id
             else "",  # Set to empty string to unset the value on Stripe.
@@ -375,6 +378,7 @@ class StripeService:
 Thank you for your support!
 """,  # noqa: E501
             metadata={
+                "type": ProductType.pledge,
                 "pledge_id": str(pledge.id),
             },
             days_until_due=7,

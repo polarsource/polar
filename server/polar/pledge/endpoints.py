@@ -461,10 +461,21 @@ async def create_payment_intent(
         if not member:
             raise Unauthorized()
 
+    # get org and repo
+    pledge_issue_org = await organization_service.get(session, issue.organization_id)
+    if not pledge_issue_org:
+        raise ResourceNotFound()
+
+    pledge_issue_repo = await repository_service.get(session, issue.repository_id)
+    if not pledge_issue_repo:
+        raise ResourceNotFound()
+
     return await payment_intent_service.create_payment_intent(
         session=session,
         user=auth.user,
-        issue=issue,
+        pledge_issue=issue,
+        pledge_issue_org=pledge_issue_org,
+        pledge_issue_repo=pledge_issue_repo,
         intent=intent,
     )
 

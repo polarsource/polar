@@ -38,7 +38,9 @@ class StripeService:
         self,
         amount: int,
         transfer_group: str,
-        issue: Issue,
+        pledge_issue: Issue,
+        pledge_issue_org: Organization,
+        pledge_issue_repo: Repository,
         anonymous_email: str,
     ) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.create(
@@ -46,12 +48,13 @@ class StripeService:
             currency="USD",
             transfer_group=transfer_group,
             metadata={
-                "issue_id": str(issue.id),
-                "issue_title": issue.title,
+                "issue_id": str(pledge_issue.id),
+                "issue_title": pledge_issue.title,
                 "anonymous": "true",
                 "anonymous_email": anonymous_email,
             },
             receipt_email=anonymous_email,
+            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
 
     async def create_user_intent(
@@ -59,7 +62,9 @@ class StripeService:
         session: AsyncSession,
         amount: int,
         transfer_group: str,
-        issue: Issue,
+        pledge_issue: Issue,
+        pledge_issue_org: Organization,
+        pledge_issue_repo: Repository,
         user: User,
         on_behalf_of_organization_id: UUID | None = None,
     ) -> stripe_lib.PaymentIntent:
@@ -68,8 +73,8 @@ class StripeService:
             raise Exception("failed to get/create customer")
 
         metadata = PaymentIntentMetadata(
-            issue_id=issue.id,
-            issue_title=issue.title,
+            issue_id=pledge_issue.id,
+            issue_title=pledge_issue.title,
             user_id=user.id,
             user_username=user.username,
             user_email=user.email,
@@ -85,6 +90,7 @@ class StripeService:
             customer=customer.id,
             metadata=metadata.dict(exclude_none=True),
             receipt_email=user.email,
+            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
 
     def create_organization_intent(

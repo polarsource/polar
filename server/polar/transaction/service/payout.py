@@ -67,6 +67,7 @@ class PayoutTransactionService(BaseTransactionService):
         transaction = Transaction(
             type=TransactionType.payout,
             processor=PaymentProcessor.stripe,
+            currency="usd",  # FIXME: Main Polar currency
             amount=0,
             account_currency=payout.currency,
             account_amount=-payout.amount,  # Subtract the amount from the balance

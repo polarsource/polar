@@ -25,42 +25,74 @@ if TYPE_CHECKING:
 
 
 class TransactionType(StrEnum):
+    """
+    Type of transactions.
+    """
+
     payment = "payment"
+    """Polar received a payment."""
     refund = "refund"
+    """Polar refunded a payment (totally or partially)."""
     transfer = "transfer"
+    """Money transfer between Polar and a user's account."""
     payout = "payout"
+    """Money paid to the user's bank account."""
 
 
 class PaymentProcessor(StrEnum):
+    """
+    Supported payment processors.
+    """
+
     stripe = "stripe"
     open_collective = "open_collective"
 
 
 class Transaction(RecordModel):
+    """
+    Represent a money flow in the Polar system.
+    """
+
     __tablename__ = "transactions"
 
     type: Mapped[TransactionType] = mapped_column(String, nullable=False, index=True)
+    """Type of transaction."""
     processor: Mapped[PaymentProcessor] = mapped_column(
         String, nullable=False, index=True
     )
+    """Payment processor."""
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    """Currency of this transaction from Polar's perspective. Should be `usd`."""
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    """Amount in cents of this transaction from Polar's perspective."""
     account_currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    """Currency of this transaction from user's account perspective. Might not be `usd`."""
     account_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    """Amount in cents of this transaction from user's account perspective."""
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    """Amount of tax collected by Polar for this payment."""
     tax_country: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
+    """Country for which Polar collected the tax."""
     tax_state: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
+    """State for which Polar collected the tax."""
     processor_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    """Fee collected by the payment processor for this transaction."""
 
     customer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    """ID of the customer in the payment processor system."""
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    """ID of the charge (payment) in the payment processor system."""
     refund_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    """ID of the refund in the payment processor system."""
     transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    """ID of the transfer in the payment processor system."""
     transfer_reversal_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
+    """ID of the transfer reversal in the payment processor system."""
     payout_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    """ID of the payout in the payment processor system."""
 
     account_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
@@ -68,6 +100,11 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
+    """
+    ID of the `Account` concerned by this transaction.
+
+    If `None`, this transaction concerns Polar directly.
+    """
 
     @declared_attr
     def account(cls) -> Mapped["Account | None"]:
@@ -79,6 +116,7 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
+    """ID of the `User` who made the payment."""
 
     @declared_attr
     def payment_user(cls) -> Mapped["User | None"]:
@@ -90,6 +128,7 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
+    """ID of the `Organization` who made the payment."""
 
     @declared_attr
     def payment_organization(cls) -> Mapped["Organization | None"]:
@@ -101,6 +140,7 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
+    """ID of the `Pledge` related to this transaction."""
 
     @declared_attr
     def pledge(cls) -> Mapped["Pledge | None"]:
@@ -112,6 +152,7 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
+    """ID of the `Subscription` related to this transaction."""
 
     @declared_attr
     def subscription(cls) -> Mapped["Subscription | None"]:
@@ -123,6 +164,7 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
+    """ID of the `IssueReward` related to this transaction."""
 
     @declared_attr
     def issue_reward(cls) -> Mapped["IssueReward | None"]:
@@ -134,6 +176,7 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
+    """ID of the transaction that paid out this transation."""
 
     @declared_attr
     def payout_transaction(cls) -> Mapped["Transaction | None"]:

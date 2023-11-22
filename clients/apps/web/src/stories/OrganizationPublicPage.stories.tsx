@@ -35,6 +35,7 @@ export const Default: Story = {
   },
 
   args: {
+    posts: [],
     organization: orgWithBio,
     repositories: [repo],
     subscriptionTiers: [],

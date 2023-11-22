@@ -2,7 +2,7 @@
 
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { Post, getFeed, isRecommendation } from '@/components/Feed/data'
-import { DashboardBody } from '@/components/Layout/MaintainerLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'

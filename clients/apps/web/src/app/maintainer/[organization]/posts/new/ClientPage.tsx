@@ -1,7 +1,7 @@
 'use client'
 
 import Editor from '@/components/Feed/Editor'
-import { DashboardBody } from '@/components/Layout/MaintainerLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useParams, useRouter } from 'next/navigation'
 import { Button, Input } from 'polarkit/components/ui/atoms'
 import { useSubscriptionTiers } from 'polarkit/hooks'

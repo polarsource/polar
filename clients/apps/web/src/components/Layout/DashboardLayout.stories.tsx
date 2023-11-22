@@ -1,16 +1,16 @@
 import { PolarQueryClientProvider } from '@/app/providers'
 import type { Meta, StoryObj } from '@storybook/react'
 import { repo } from 'polarkit/testdata'
-import BackerLayout from './BackerLayout'
-import MaintainerLayout, {
+import {
   DashboardBody,
   DashboardHeader,
+  default as DashboardLayout,
   RepoPickerHeader,
-} from './MaintainerLayout'
+} from './DashboardLayout'
 
-const meta: Meta<typeof MaintainerLayout> = {
-  title: 'Layouts/MaintainerLayout',
-  component: BackerLayout,
+const meta: Meta<typeof DashboardLayout> = {
+  title: 'Layouts/DashboardLayout',
+  component: DashboardLayout,
   parameters: {
     nextjs: {
       appDirectory: true,
@@ -20,7 +20,7 @@ const meta: Meta<typeof MaintainerLayout> = {
 
 export default meta
 
-type Story = StoryObj<typeof MaintainerLayout>
+type Story = StoryObj<typeof DashboardLayout>
 
 export const Default: Story = {
   parameters: {
@@ -29,11 +29,11 @@ export const Default: Story = {
   },
   render: (args) => (
     <PolarQueryClientProvider>
-      <MaintainerLayout {...args}>
+      <DashboardLayout {...args}>
         <DashboardBody>
           <div className="bg-red-200 text-black">Content</div>
         </DashboardBody>
-      </MaintainerLayout>
+      </DashboardLayout>
     </PolarQueryClientProvider>
   ),
 }
@@ -58,11 +58,11 @@ export const Header: Story = {
   render: (args) => {
     return (
       <PolarQueryClientProvider>
-        <MaintainerLayout {...args}>
+        <DashboardLayout {...args}>
           <DashboardHeader>
             <div className="bg-blue-200">Hello from header</div>,
           </DashboardHeader>
-        </MaintainerLayout>
+        </DashboardLayout>
       </PolarQueryClientProvider>
     )
   },
@@ -80,7 +80,7 @@ export const RepoPicker: Story = {
   render: (args) => {
     return (
       <PolarQueryClientProvider>
-        <MaintainerLayout {...args}>
+        <DashboardLayout {...args}>
           <DashboardHeader>
             <RepoPickerHeader currentRepository={repo} repositories={[repo]}>
               <input
@@ -92,7 +92,7 @@ export const RepoPicker: Story = {
               />
             </RepoPickerHeader>
           </DashboardHeader>
-        </MaintainerLayout>
+        </DashboardLayout>
       </PolarQueryClientProvider>
     )
   },

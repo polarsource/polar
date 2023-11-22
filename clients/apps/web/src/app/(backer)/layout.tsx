@@ -1,14 +1,18 @@
 'use client'
 
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import BackerLayout from '@/components/Layout/BackerLayout'
+import DashboardLayout, {
+  DashboardBody,
+} from '@/components/Layout/DashboardLayout'
+import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <Gatekeeper>
-      <BackerLayout>
-        <>{children}</>
-      </BackerLayout>
+      <DashboardLayout>
+        <DashboardTopbar isFixed useOrgFromURL />
+        <DashboardBody>{children}</DashboardBody>
+      </DashboardLayout>
     </Gatekeeper>
   )
 }

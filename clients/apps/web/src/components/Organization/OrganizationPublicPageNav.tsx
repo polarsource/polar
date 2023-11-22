@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuth } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   Bolt,
@@ -7,7 +8,12 @@ import {
   HiveOutlined,
   HowToVoteOutlined,
 } from '@mui/icons-material'
-import { Organization, Repository, SubscriptionTier } from '@polar-sh/sdk'
+import {
+  Organization,
+  Repository,
+  SubscriptionTier,
+  UserSignupType,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -18,7 +24,8 @@ import {
 import { useCallback } from 'react'
 import { Post as PostComponent } from '../Feed/Posts/Post'
 import { Post } from '../Feed/data'
-import ProfileSelection from '../Shared/ProfileSelection'
+import GithubLoginButton from '../Shared/GithubLoginButton'
+import { ProfileMenu } from '../Shared/ProfileSelection'
 import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSubscriptionsPublicPage'
 import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
@@ -31,6 +38,7 @@ interface OrganizationPublicPageNavProps {
 export const OrganizationPublicPageNav = ({
   shouldRenderSubscriptionsTab,
 }: OrganizationPublicPageNavProps) => {
+  const { currentUser } = useAuth()
   const router = useRouter()
 
   const search = useSearchParams()
@@ -93,14 +101,18 @@ export const OrganizationPublicPageNav = ({
           </TabsTrigger>
         )}
       </TabsList>
-      <div className="z-50 w-full md:w-[280px]">
-        <ProfileSelection
-          narrow
-          showBackerLinks
-          useOrgFromURL={false}
-          className="border border-gray-100 shadow-sm"
+      {currentUser ? (
+        <ProfileMenu className="z-50" />
+      ) : (
+        <GithubLoginButton
+          userSignupType={UserSignupType.BACKER}
+          posthogProps={{
+            view: 'Maintainer Page',
+          }}
+          text="Sign in with GitHub"
+          gotoUrl={window.location.href}
         />
-      </div>
+      )}
     </div>
   )
 }

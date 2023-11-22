@@ -3,9 +3,15 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
-import { AddOutlined, InfoOutlined, LogoutOutlined } from '@mui/icons-material'
+import {
+  AddOutlined,
+  LogoutOutlined,
+  ShortTextOutlined,
+} from '@mui/icons-material'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Avatar } from 'polarkit/components/ui/atoms'
+import { Separator } from 'polarkit/components/ui/separator'
 import { CONFIG } from 'polarkit/config'
 import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
@@ -17,7 +23,6 @@ import { backerRoutes } from '../Dashboard/navigation'
 const ProfileSelection = ({
   useOrgFromURL = true,
   className = '',
-  narrow = true,
   showBackerLinks = false,
 }) => {
   const classNames = twMerge(
@@ -30,6 +35,10 @@ const ProfileSelection = ({
   const [isOpen, setOpen] = useState<boolean>(false)
 
   const orgs = listOrganizationQuery?.data?.items
+
+  const organizationsExceptSelf = orgs?.filter(
+    (org) => org.name !== loggedUser?.username,
+  )
 
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
 
@@ -56,12 +65,10 @@ const ProfileSelection = ({
 
   const current = currentOrg
     ? ({
-        type: 'maintainer',
         name: currentOrg.name,
         avatar_url: currentOrg.avatar_url,
       } as const)
     : ({
-        type: 'backer',
         name: loggedUser.username,
         avatar_url: loggedUser.avatar_url,
       } as const)
@@ -74,16 +81,11 @@ const ProfileSelection = ({
       <div className={classNames}>
         <div
           className={twMerge(
-            'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 px-4 transition-colors',
-            narrow ? 'py-1.5' : 'py-3',
+            'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 px-4 py-3 transition-colors',
           )}
           onClick={() => setOpen(true)}
         >
-          <Profile
-            name={current.name}
-            avatar_url={current.avatar_url}
-            type={current.type}
-          />
+          <Profile name={current.name} avatar_url={current.avatar_url} />
           <ChevronUpDownIcon className="dark:text-polar-500 h-5 w-5 flex-shrink-0 text-gray-400" />
         </div>
 
@@ -91,44 +93,61 @@ const ProfileSelection = ({
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-800 dark:text-polar-400 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
-              narrow ? '-top-2.5' : '-top-1',
+              'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute -left-2 -right-2 -top-1 overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
-            <ul>
-              <Link
-                // /feed is actually the funding page
-                // /posts is the new feed
-                href={isFeatureEnabled('feed') ? `/posts` : `/feed`}
-                className="w-full"
+            <Link
+              // /feed is actually the funding page
+              // /posts is the new feed
+              href={isFeatureEnabled('feed') ? `/posts` : `/feed`}
+              className="w-full"
+            >
+              <ListItem
+                current={
+                  currentOrg === undefined ||
+                  currentOrg.name === loggedUser.username
+                }
               >
-                <ListItem current={currentOrg === undefined}>
-                  <Profile
-                    name={loggedUser.username}
-                    avatar_url={loggedUser.avatar_url}
-                    type="backer"
-                  />
-                </ListItem>
-              </Link>
+                <Profile
+                  name={loggedUser.username}
+                  avatar_url={loggedUser.avatar_url}
+                />
+              </ListItem>
+            </Link>
 
+            <ul className="mt-2 flex w-full flex-col">
               {showBackerLinks && (
                 <>
                   {backerRoutes.map((n) => {
                     return (
                       <LinkItem href={n.link} icon={n.icon}>
-                        <span className="dark:text-polar-400 mx-1.5 text-gray-600">
-                          {n.title}
-                        </span>
+                        <span className="mx-1.5 font-medium">{n.title}</span>
                       </LinkItem>
                     )
                   })}
-
-                  <hr className="dark:border-polar-600 my-2 ml-4 mr-4" />
                 </>
               )}
 
-              {orgs &&
-                orgs.map((org) => (
+              <TextItem
+                onClick={onLogout}
+                icon={<LogoutOutlined fontSize="small" />}
+              >
+                <span className="mx-3">Log out</span>
+              </TextItem>
+            </ul>
+
+            <div className="mt-2 flex w-full flex-row items-center gap-x-2 py-4">
+              <div
+                className="dark:text-polar-400 px-3 py-1 text-[10px] uppercase tracking-widest text-gray-500"
+                style={{ fontFeatureSettings: `"ss02" on` }}
+              >
+                Organizations
+              </div>
+            </div>
+
+            <div className="mb-2 flex flex-col">
+              {organizationsExceptSelf &&
+                organizationsExceptSelf.map((org) => (
                   <Link
                     href={
                       isFeatureEnabled('feed')
@@ -139,64 +158,39 @@ const ProfileSelection = ({
                     key={org.id}
                   >
                     <ListItem current={currentOrg?.id === org.id}>
-                      <Profile
-                        name={org.name}
-                        avatar_url={org.avatar_url}
-                        type="maintainer"
-                      />
+                      <Profile name={org.name} avatar_url={org.avatar_url} />
                     </ListItem>
                   </Link>
                 ))}
+            </div>
 
-              {showConnectUpsell && (
-                <div className="dark:bg-polar-800 dark:text-polar-400 mx-4 my-4 flex flex-col rounded-lg border-blue-100 bg-blue-50 p-4 text-sm">
-                  <h3>Get funding for your public repositories.</h3>
-                  <Link
-                    href={CONFIG.GITHUB_INSTALLATION_URL}
-                    className="mt-2 text-blue-500 dark:text-blue-400"
-                  >
-                    Connect repositories
-                  </Link>
-                </div>
-              )}
-
-              {showAddOrganization && (
-                <LinkItem
-                  href={CONFIG.GITHUB_INSTALLATION_URL}
-                  icon={
-                    <AddOutlined className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                  }
-                >
-                  <span className="mx-2 text-blue-500 dark:text-blue-400">
-                    Add organization
-                  </span>
-                </LinkItem>
-              )}
-
-              <hr className="dark:border-polar-600 my-2 ml-4 mr-4" />
-
+            {showAddOrganization && (
               <LinkItem
-                href={'https://polar.sh/faq'}
+                href={CONFIG.GITHUB_INSTALLATION_URL}
                 icon={
-                  <InfoOutlined className="dark:text-polar-400 text-gray-600" />
+                  <AddOutlined
+                    fontSize="small"
+                    className="h-5 w-5 text-blue-500 dark:text-blue-400"
+                  />
                 }
               >
-                <span className="dark:text-polar-400 mx-1.5 text-gray-600">
-                  Support
+                <span className="mx-2 text-blue-500 dark:text-blue-400">
+                  Add organization
                 </span>
               </LinkItem>
+            )}
 
-              <TextItem
-                onClick={onLogout}
-                icon={
-                  <LogoutOutlined className="dark:text-polar-400 text-gray-600" />
-                }
-              >
-                <span className="dark:text-polar-400 mx-1.5 text-gray-600">
-                  Log out
-                </span>
-              </TextItem>
-            </ul>
+            {showConnectUpsell && (
+              <div className="dark:bg-polar-800 dark:text-polar-400 mx-4 my-4 flex flex-col rounded-lg border-blue-100 bg-blue-50 p-4 text-sm">
+                <h3>Get funding for your public repositories.</h3>
+                <Link
+                  href={CONFIG.GITHUB_INSTALLATION_URL}
+                  className="mt-2 text-blue-500 dark:text-blue-400"
+                >
+                  Connect repositories
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -206,27 +200,107 @@ const ProfileSelection = ({
 
 export default ProfileSelection
 
+export const ProfileMenu = ({ className = '' }) => {
+  const classNames = twMerge('relative', className)
+  const { currentUser: loggedUser, logout } = useAuth()
+
+  const [isOpen, setOpen] = useState<boolean>(false)
+
+  const ref = useRef(null)
+
+  useOutsideClick([ref], () => {
+    setOpen(false)
+  })
+
+  const onLogout = async () => {
+    await logout()
+    window.location.href = '/'
+  }
+
+  if (!loggedUser) {
+    return <></>
+  }
+
+  return (
+    <>
+      <div className={classNames}>
+        <div
+          className={twMerge(
+            'dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 dark:text-polar-400 dark:hover:text-polar-200 relative flex cursor-pointer flex-row items-center gap-x-2 rounded-full border border-gray-100 bg-white p-1.5 pl-4 text-gray-400 transition-colors hover:text-gray-950',
+          )}
+          onClick={() => setOpen(true)}
+        >
+          <ShortTextOutlined fontSize="small" />
+          <Avatar
+            className="h-8 w-8"
+            name={loggedUser.username}
+            avatar_url={loggedUser.avatar_url}
+          />
+        </div>
+
+        {isOpen && (
+          <div
+            ref={ref}
+            className={twMerge(
+              'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-14 w-[300px] overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
+            )}
+          >
+            <Link
+              // /feed is actually the funding page
+              // /posts is the new feed
+              href={isFeatureEnabled('feed') ? `/posts` : `/feed`}
+              className="w-full"
+            >
+              <ListItem current={true}>
+                <Profile
+                  name={loggedUser.username}
+                  avatar_url={loggedUser.avatar_url}
+                />
+              </ListItem>
+            </Link>
+
+            <ul className="mt-2 flex w-full flex-col">
+              {backerRoutes.map((n) => {
+                return (
+                  <LinkItem href={n.link} icon={n.icon}>
+                    <span className="mx-2 text-sm">{n.title}</span>
+                  </LinkItem>
+                )
+              })}
+
+              <Separator className="my-2" />
+
+              <TextItem
+                onClick={onLogout}
+                icon={<LogoutOutlined fontSize="small" />}
+              >
+                <span className="mx-3 py-2">Log out</span>
+              </TextItem>
+            </ul>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
 const ListItem = (props: {
   children: React.ReactElement
   current: boolean
   className?: string
 }) => {
   const className = twMerge(
-    'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full',
+    'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full rounded-lg transition-colors',
     props.current
-      ? 'bg-blue-50 dark:bg-polar-700'
-      : 'hover:bg-gray-100/50 dark:hover:bg-polar-700',
+      ? 'bg-blue-50 dark:bg-polar-700 text-blue-500 dark:text-blue-50'
+      : 'hover:text-blue-500 dark:hover:text-polar-50',
     props.className ?? '',
   )
 
   return <li className={className}>{props.children}</li>
 }
 
-const Profile = (props: {
-  name: string
-  avatar_url: string | undefined
-  type: 'backer' | 'maintainer'
-}) => {
+const Profile = (props: { name: string; avatar_url: string | undefined }) => {
   return (
     <>
       <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-sm">
@@ -238,11 +312,8 @@ const Profile = (props: {
               alt={props.name}
             />
           )}
-          <p className="dark:text-polar-300 ml-4 truncate text-gray-600 ">
-            {props.name}
-          </p>
+          <p className="ml-4 truncate">{props.name}</p>
         </div>
-        <ProfileBadge type={props.type} />
       </div>
     </>
   )
@@ -255,15 +326,9 @@ const LinkItem = (props: {
 }) => {
   return (
     <a href={props.href}>
-      <ListItem current={false} className="px-6">
-        <div className="flex flex-row items-center gap-x-2 text-sm">
-          {props.icon && (
-            <div className="text-[20px]">
-              {React.cloneElement(props.icon, {
-                fontSize: 'inherit',
-              })}
-            </div>
-          )}
+      <ListItem current={false} className="rounded-lg px-6">
+        <div className="flex flex-row items-center gap-x-3 text-sm">
+          <span className="text-lg">{props.icon}</span>
           {props.children}
         </div>
       </ListItem>
@@ -281,33 +346,12 @@ const TextItem = (props: {
       className="flex cursor-pointer items-center text-sm"
       onClick={props.onClick}
     >
-      <ListItem current={false} className="px-6">
+      <ListItem current={false} className="px-6 py-0">
         <>
-          <div className="text-[20px]">
-            {React.cloneElement(props.icon, {
-              fontSize: 'inherit',
-            })}
-          </div>
+          <span className="text-lg">{props.icon}</span>
           {props.children}
         </>
       </ListItem>
     </div>
-  )
-}
-
-const ProfileBadge = (props: { type: 'backer' | 'maintainer' }) => {
-  return (
-    <span
-      className={twMerge(
-        props.type === 'backer' &&
-          'border-green-200 bg-green-100 text-green-600 dark:border-green-600 dark:bg-green-700 dark:text-green-300',
-        props.type === 'maintainer' &&
-          'border-blue-200 bg-blue-100 text-blue-500 dark:border-blue-600 dark:bg-blue-700 dark:text-blue-300',
-        'shrink-0 rounded-lg border px-1.5 text-xs',
-      )}
-    >
-      {props.type === 'backer' && 'Backer'}
-      {props.type === 'maintainer' && 'Maintainer'}
-    </span>
   )
 }

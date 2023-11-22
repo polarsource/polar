@@ -1,6 +1,6 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/MaintainerLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Organization, Subscription, SubscriptionTierType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'

@@ -4,14 +4,25 @@ import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useListAdminOrganizations, useUser } from 'polarkit/hooks'
 import { twMerge } from 'tailwind-merge'
 import { maintainerRoutes } from './navigation'
 
 const MaintainerNavigation = () => {
+  const currentUser = useUser()
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const adminOrgs = useListAdminOrganizations()
+
+  const personalOrg = adminOrgs?.data?.items?.find(
+    (org) => org.name === currentUser?.data?.username,
+  )
 
   // All routes and conditions
-  const navs = org ? maintainerRoutes(org) : []
+  const navs = org
+    ? maintainerRoutes(org)
+    : personalOrg
+    ? maintainerRoutes(personalOrg)
+    : []
 
   const pathname = usePathname()
 
@@ -42,19 +53,30 @@ const MaintainerNavigation = () => {
     })
 
   return (
-    <div className="flex flex-col gap-2 px-4 py-6">
+    <div className="flex flex-col gap-2 px-4 py-3">
       {filteredNavs.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
           <Link
             className={twMerge(
-              'flex items-center gap-x-4 rounded-xl border border-transparent px-5 py-3 transition-colors',
+              'flex items-center gap-x-3 rounded-lg border border-transparent px-4 transition-colors',
               n.isActive
-                ? 'dark:bg-polar-800 dark:border-polar-700 bg-blue-50 text-blue-500 dark:text-blue-400'
-                : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-900 hover:text-blue-500',
+                ? 'text-blue-500 dark:text-blue-400'
+                : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-700 hover:text-blue-500',
             )}
             href={n.link}
           >
-            {'icon' in n && n.icon ? <span>{n.icon}</span> : undefined}
+            {'icon' in n && n.icon ? (
+              <span
+                className={twMerge(
+                  'flex h-8 w-8 flex-col items-center justify-center rounded-full bg-transparent text-[18px]',
+                  n.isActive
+                    ? 'bg-blue-50 dark:bg-blue-400 dark:text-blue-900'
+                    : 'bg-transparent',
+                )}
+              >
+                {n.icon}
+              </span>
+            ) : undefined}
             <span className="text-sm font-medium">{n.title}</span>
             {'postIcon' in n && n.postIcon ? (
               <span>{n.postIcon}</span>

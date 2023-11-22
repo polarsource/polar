@@ -2,7 +2,7 @@
 
 import Editor from '@/components/Feed/Editor'
 import { Post, getFeed } from '@/components/Feed/data'
-import { DashboardBody } from '@/components/Layout/MaintainerLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { Button, Input } from 'polarkit/components/ui/atoms'

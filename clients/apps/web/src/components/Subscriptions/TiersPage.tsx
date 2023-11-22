@@ -1,6 +1,6 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/MaintainerLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Bolt } from '@mui/icons-material'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'

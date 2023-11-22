@@ -39,7 +39,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
         {
           id: 'posts',
           title: 'Posts',
-          icon: <ViewDayOutlined className="h-6 w-6" />,
+          icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
           postIcon: undefined,
           link: `/maintainer/${org.name}/posts`,
           if: true,
@@ -50,7 +50,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   {
     id: 'org-issues',
     title: 'Issues',
-    icon: <HowToVoteOutlined className="h-6 w-6" />,
+    icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     link: `/maintainer/${org.name}/issues`,
     if: true,
@@ -61,7 +61,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
         {
           id: 'org-subscriptions',
           title: 'Subscriptions',
-          icon: <Bolt className="h-6 w-6" />,
+          icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
           postIcon: undefined,
           link: `/maintainer/${org.name}/subscriptions`,
           if: true,
@@ -88,7 +88,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   {
     id: 'org-finance',
     title: 'Finance',
-    icon: <AttachMoneyOutlined className="h-6 w-6" />,
+    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     link: `/maintainer/${org.name}/finance`,
     if: true,
@@ -97,7 +97,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   {
     id: 'org-promote',
     title: 'Promote',
-    icon: <WifiTethering className="h-6 w-6" />,
+    icon: <WifiTethering className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     link: `/maintainer/${org.name}/promote`,
     if: true,
@@ -119,7 +119,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     title: 'Public site',
     link: `/${org.name}`,
     postIcon: undefined,
-    icon: <ArrowUpRightIcon className="h-6 w-6" />,
+    icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: undefined,
   },
@@ -128,7 +128,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     title: org.name,
     link: `/team/${org.name}`,
     postIcon: undefined,
-    icon: <ArrowUpRightIcon className="h-6 w-6" />,
+    icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,
     if: false, // Hidden for now
     subs: [
       {
@@ -157,7 +157,7 @@ export const backerRoutes: Route[] = [
           id: 'posts',
           title: 'Posts',
           link: `/posts`,
-          icon: <ViewDayOutlined className="h-6 w-6" />,
+          icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
           postIcon: undefined,
           if: true,
           subs: undefined,
@@ -168,7 +168,7 @@ export const backerRoutes: Route[] = [
     id: 'funding',
     title: 'Funding',
     link: `/feed`,
-    icon: <FavoriteBorderOutlined className="h-6 w-6" />,
+    icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: undefined,
@@ -177,7 +177,7 @@ export const backerRoutes: Route[] = [
     id: 'rewards',
     title: 'Rewards',
     link: `/rewards`,
-    icon: <CardGiftcardOutlined className="h-6 w-6" />,
+    icon: <CardGiftcardOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: undefined,
@@ -186,7 +186,7 @@ export const backerRoutes: Route[] = [
     id: 'settings',
     title: 'Settings',
     link: `/settings`,
-    icon: <TuneOutlined className="h-6 w-6" />,
+    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: undefined,

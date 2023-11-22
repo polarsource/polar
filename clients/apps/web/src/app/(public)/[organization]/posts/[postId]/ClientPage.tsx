@@ -1,5 +1,5 @@
 import { Post } from '@/components/Feed/data'
-import ProfileSelection from '@/components/Shared/ProfileSelection'
+import { ProfileMenu } from '@/components/Shared/ProfileSelection'
 import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
 import LongformPost from '../../../../../components/Feed/LongformPost'
@@ -12,7 +12,7 @@ export default function Page({ post }: { post: Post }) {
           <LogoType />
         </Link>
         <div>
-          <ProfileSelection className="w-[300px] border border-gray-100 shadow-sm" />
+          <ProfileMenu />
         </div>
       </div>
       <LongformPost post={post} />

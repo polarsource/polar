@@ -39,9 +39,9 @@ const GithubLoginButton = (props: {
   }
 
   const largeStyle =
-    'bg-gray-900 text-white p-2.5 px-5 hover:bg-gray-700 rounded-xl text-md dark:bg-polar-100 dark:text-polar-900 dark:hover:bg-polar-300'
+    'bg-gray-900 text-white p-2.5 px-5 hover:bg-gray-700 rounded-xl text-md dark:bg-polar-700 dark:text-polar-200 dark:hover:bg-polar-600 dark:hover:text-polar-50'
   const smallStyle =
-    'bg-white text-gray-900 p-1 px-3 hover:bg-gray-100 rounded-lg border text-sm'
+    'bg-white text-gray-900 p-2 px-3 hover:bg-gray-100 rounded-lg border text-sm dark:bg-polar-700 dark:text-polar-200 dark:hover:bg-polar-600 dark:hover:text-polar-50'
 
   return (
     <>

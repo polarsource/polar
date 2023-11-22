@@ -18,7 +18,7 @@ class RefundTransactionError(PolarError):
     ...
 
 
-class RefundUnknownPaymentTransaction(PolarError):
+class RefundUnknownPaymentTransaction(RefundTransactionError):
     def __init__(self, charge_id: str) -> None:
         self.charge_id = charge_id
         message = (
@@ -28,7 +28,7 @@ class RefundUnknownPaymentTransaction(PolarError):
         super().__init__(message)
 
 
-class MoreThanTwoTransfersForSinglePayment(PolarError):
+class MoreThanTwoTransfersForSinglePayment(RefundTransactionError):
     def __init__(
         self,
         payment_transaction_id: uuid.UUID,

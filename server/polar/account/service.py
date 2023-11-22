@@ -191,7 +191,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             email=None,
             country=account.country,
             # For now, hard-code those values
-            currency="USD",
+            currency="usd",
             is_details_submitted=True,
             is_charges_enabled=True,
             is_payouts_enabled=True,

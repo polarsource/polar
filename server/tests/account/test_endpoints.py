@@ -214,7 +214,7 @@ async def test_create_open_collective(
     assert account is not None
     assert account.account_type == AccountType.open_collective
     assert account.open_collective_slug == "polar"
-    assert account.currency == "USD"
+    assert account.currency == "usd"
     assert account.is_details_submitted is True
     assert account.is_charges_enabled is True
     assert account.is_payouts_enabled is True

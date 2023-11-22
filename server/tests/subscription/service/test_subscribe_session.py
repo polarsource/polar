@@ -133,6 +133,9 @@ class TestCreateSubscribeSession:
             "SUCCESS_URL",
             is_tax_applicable=False,
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            subscription_metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id)
+            },
         )
 
     async def test_valid_user_cookie(
@@ -177,6 +180,9 @@ class TestCreateSubscribeSession:
             is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            subscription_metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id)
+            },
         )
 
     async def test_valid_pat(
@@ -220,6 +226,9 @@ class TestCreateSubscribeSession:
             "SUCCESS_URL",
             is_tax_applicable=False,
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            subscription_metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id)
+            },
         )
 
     async def test_valid_pat_customer_email(
@@ -265,6 +274,9 @@ class TestCreateSubscribeSession:
             is_tax_applicable=False,
             customer_email="backer@example.com",
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            subscription_metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id)
+            },
         )
 
     async def test_valid_tax_applicable(
@@ -312,6 +324,9 @@ class TestCreateSubscribeSession:
             "SUCCESS_URL",
             is_tax_applicable=True,
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            subscription_metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id)
+            },
         )
 
 

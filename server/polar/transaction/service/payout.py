@@ -67,14 +67,14 @@ class PayoutTransactionService(BaseTransactionService):
         transaction = Transaction(
             type=TransactionType.payout,
             processor=PaymentProcessor.stripe,
-            currency=payout.currency,
-            amount=-payout.amount,  # Subtract the amount from the balance
+            amount=0,
+            account_currency=payout.currency,
+            account_amount=-payout.amount,  # Subtract the amount from the balance
             tax_amount=0,
             processor_fee_amount=0,  # No way to know the fee on a per payout basis
             payout_id=payout.id,
             account=account,
         )
-        session.add(transaction)
 
         # Retrieve and mark all transactions paid by this payout
         balance_transactions = stripe_service.list_balance_transactions(
@@ -93,6 +93,10 @@ class PayoutTransactionService(BaseTransactionService):
                     if paid_transaction is not None:
                         paid_transaction.payout_transaction = transaction
                         session.add(paid_transaction)
+
+                        # Compute the amount in our main currency
+                        transaction.currency = paid_transaction.currency
+                        transaction.amount -= paid_transaction.amount
                     else:
                         bound_logger.warning(
                             "An unknown transaction was paid out",
@@ -105,6 +109,7 @@ class PayoutTransactionService(BaseTransactionService):
                         source_id=get_expandable_id(source),
                     )
 
+        session.add(transaction)
         await session.commit()
 
         return transaction
@@ -120,8 +125,9 @@ class PayoutTransactionService(BaseTransactionService):
         transaction = Transaction(
             type=TransactionType.payout,
             processor=processor,
-            currency=account.currency,
             amount=0,
+            account_currency=account.currency,
+            account_amount=0,
             tax_amount=0,
             processor_fee_amount=0,
             account=account,
@@ -133,10 +139,14 @@ class PayoutTransactionService(BaseTransactionService):
             )
             if paid_transaction is None:
                 raise UnknownTransaction(paid_transaction_id)
+
+            transaction.currency = paid_transaction.currency
             transaction.amount -= paid_transaction.amount
+            transaction.account_amount -= paid_transaction.account_amount
             paid_transaction.payout_transaction = transaction
             session.add(paid_transaction)
 
+        session.add(transaction)
         await session.commit()
 
         return transaction

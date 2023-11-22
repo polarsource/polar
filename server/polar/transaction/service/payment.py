@@ -111,6 +111,8 @@ class PaymentTransactionService(BaseTransactionService):
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
             amount=charge.amount - tax_amount,
+            account_currency=charge.currency,
+            account_amount=charge.amount - tax_amount,
             tax_amount=tax_amount,
             tax_country=tax_country,
             tax_state=tax_state,

@@ -851,7 +851,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         outgoing, _ = await transfer_transaction_service.create_transfer(
             session,
             destination_account=pay_to_account,
-            currency="usd",
+            source_currency="usd",
             amount=payout_amount,
             pledge=pledge,
             issue_reward=split,

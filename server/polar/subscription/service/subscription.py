@@ -367,7 +367,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         incoming, _ = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
-            currency=invoice.currency,
+            source_currency=invoice.currency,
             amount=transfer_amount,
             subscription=subscription,
             transfer_source_transaction=get_expandable_id(invoice.charge)

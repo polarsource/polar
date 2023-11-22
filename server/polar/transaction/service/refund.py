@@ -81,6 +81,8 @@ class RefundTransactionService(BaseTransactionService):
                 processor=PaymentProcessor.stripe,
                 currency=refund.currency,
                 amount=-refund.amount,
+                account_currency=refund.currency,
+                account_amount=-refund.amount,
                 tax_amount=0,  # TODO?: I don't know how VAT works when refunding
                 processor_fee_amount=processor_fee_amount,
                 customer_id=payment_transaction.customer_id,
@@ -103,6 +105,7 @@ class RefundTransactionService(BaseTransactionService):
                 await transfer_transaction_service.create_reversal_transfer(
                     session,
                     transfer_transactions=transfer_transactions,
+                    destination_currency=refund.currency,
                     amount=refund.amount,
                     reversal_transfer_metadata={
                         "stripe_charge_id": charge.id,

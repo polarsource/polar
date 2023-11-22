@@ -627,6 +627,28 @@ Thank you for your support!
 
         return self._list_all(stripe_lib.Refund.list, params)
 
+    def get_charge(
+        self,
+        id: str,
+        *,
+        stripe_account: str | None = None,
+        expand: list[str] | None = None,
+    ) -> stripe_lib.Charge:
+        return stripe_lib.Charge.retrieve(
+            id, stripe_account=stripe_account, expand=expand or []
+        )
+
+    def get_refund(
+        self,
+        id: str,
+        *,
+        stripe_account: str | None = None,
+        expand: list[str] | None = None,
+    ) -> stripe_lib.Refund:
+        return stripe_lib.Refund.retrieve(
+            id, stripe_account=stripe_account, expand=expand or []
+        )
+
     def _list_all(
         self, method: Callable[..., "ListObject[T]"], params: "RequestOptions"
     ) -> list["T"]:

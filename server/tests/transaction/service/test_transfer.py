@@ -16,6 +16,7 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transfer import (
     StripeNotConfiguredOnAccount,
+    UnsetAccountCurrency,
     UnsupportedAccountType,
 )
 from polar.transaction.service.transfer import (
@@ -40,14 +41,33 @@ class TestCreateTransfer:
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
-            currency="USD",
+            currency="usd",
         )
 
         with pytest.raises(UnsupportedAccountType):
             await transfer_transaction_service.create_transfer(
                 session,
                 destination_account=account,
-                currency="usd",
+                source_currency="usd",
+                amount=1000,
+            )
+
+    async def test_unset_account_currency(
+        self, session: AsyncSession, organization: Organization, user: User
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="US",
+            currency=None,
+        )
+
+        with pytest.raises(UnsetAccountCurrency):
+            await transfer_transaction_service.create_transfer(
+                session,
+                destination_account=account,
+                source_currency="usd",
                 amount=1000,
             )
 
@@ -59,7 +79,7 @@ class TestCreateTransfer:
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
-            currency="USD",
+            currency="usd",
             is_details_submitted=False,
             is_charges_enabled=False,
             is_payouts_enabled=False,
@@ -70,7 +90,7 @@ class TestCreateTransfer:
             await transfer_transaction_service.create_transfer(
                 session,
                 destination_account=account,
-                currency="usd",
+                source_currency="usd",
                 amount=1000,
             )
 
@@ -86,7 +106,7 @@ class TestCreateTransfer:
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
-            currency="USD",
+            currency="usd",
             is_details_submitted=True,
             is_charges_enabled=True,
             is_payouts_enabled=True,
@@ -98,14 +118,11 @@ class TestCreateTransfer:
         stripe_service_mock.transfer.return_value = SimpleNamespace(
             id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
         )
-        stripe_service_mock.get_balance_transaction.return_value = SimpleNamespace(
-            fee=100
-        )
 
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
-            currency="usd",
+            source_currency="usd",
             amount=1000,
         )
 
@@ -113,14 +130,12 @@ class TestCreateTransfer:
         assert outgoing.type == TransactionType.transfer
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.amount == -1000
-        assert outgoing.processor_fee_amount == 100
         assert outgoing.transfer_id == "STRIPE_TRANSFER_ID"
 
         assert incoming.account_id == account.id
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
-        assert outgoing.processor_fee_amount == 100
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
 
         assert outgoing.id is not None
@@ -134,6 +149,62 @@ class TestCreateTransfer:
             "incoming_transaction_id"
         ] == str(incoming.id)
 
+    async def test_stripe_different_currencies(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="FR",
+            currency="eur",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        session.add(account)
+        await session.commit()
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID",
+            balance_transaction="STRIPE_BALANCE_TRANSACTION_ID",
+            destination_payment="STRIPE_DESTINATION_CHARGE_ID",
+        )
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            id="STRIPE_DESTINATION_CHARGE_ID",
+            balance_transaction=SimpleNamespace(
+                amount=900, currency="eur", exchange_rate=0.9
+            ),
+        )
+
+        outgoing, incoming = await transfer_transaction_service.create_transfer(
+            session,
+            destination_account=account,
+            source_currency="usd",
+            amount=1000,
+        )
+
+        assert outgoing.account_id is None
+        assert outgoing.type == TransactionType.transfer
+        assert outgoing.processor == PaymentProcessor.stripe
+        assert outgoing.currency == "usd"
+        assert outgoing.amount == -1000
+        assert outgoing.transfer_id == "STRIPE_TRANSFER_ID"
+
+        assert incoming.account_id == account.id
+        assert incoming.type == TransactionType.transfer
+        assert incoming.processor == PaymentProcessor.stripe
+        assert incoming.currency == "usd"
+        assert incoming.amount == 1000
+        assert incoming.account_currency == "eur"
+        assert incoming.account_amount == 900
+        assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
+
     async def test_open_collective(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
@@ -142,7 +213,7 @@ class TestCreateTransfer:
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
-            currency="USD",
+            currency="usd",
             is_details_submitted=False,
             is_charges_enabled=False,
             is_payouts_enabled=False,
@@ -154,7 +225,7 @@ class TestCreateTransfer:
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
-            currency="usd",
+            source_currency="usd",
             amount=1000,
         )
 
@@ -189,6 +260,8 @@ async def create_transfer_transactions(
         processor=processor,
         currency=currency,
         amount=-amount,  # Subtract the amount
+        account_currency=currency,
+        account_amount=-amount,  # Subtract the amount
         tax_amount=0,
         processor_fee_amount=0,
     )
@@ -198,6 +271,8 @@ async def create_transfer_transactions(
         processor=processor,
         currency=currency,
         amount=amount,  # Add the amount
+        account_currency=currency,
+        account_amount=amount,  # Add the amount
         tax_amount=0,
         processor_fee_amount=0,
     )
@@ -211,6 +286,33 @@ async def create_transfer_transactions(
 
 @pytest.mark.asyncio
 class TestCreateReversalTransfer:
+    async def test_unset_account_currency(
+        self, session: AsyncSession, organization: Organization, user: User
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="US",
+            currency=None,
+            is_details_submitted=False,
+            is_charges_enabled=False,
+            is_payouts_enabled=False,
+            stripe_id=None,
+        )
+
+        transfer_transactions = await create_transfer_transactions(
+            session, destination_account=account
+        )
+
+        with pytest.raises(UnsetAccountCurrency):
+            await transfer_transaction_service.create_reversal_transfer(
+                session,
+                transfer_transactions=transfer_transactions,
+                destination_currency="usd",
+                amount=1000,
+            )
+
     async def test_stripe_not_configured_on_destination_account(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
@@ -219,7 +321,7 @@ class TestCreateReversalTransfer:
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
-            currency="USD",
+            currency="usd",
             is_details_submitted=False,
             is_charges_enabled=False,
             is_payouts_enabled=False,
@@ -232,7 +334,10 @@ class TestCreateReversalTransfer:
 
         with pytest.raises(StripeNotConfiguredOnAccount):
             await transfer_transaction_service.create_reversal_transfer(
-                session, transfer_transactions=transfer_transactions, amount=1000
+                session,
+                transfer_transactions=transfer_transactions,
+                destination_currency="usd",
+                amount=1000,
             )
 
     async def test_stripe(
@@ -247,7 +352,7 @@ class TestCreateReversalTransfer:
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
-            currency="USD",
+            currency="usd",
             is_details_submitted=True,
             is_charges_enabled=True,
             is_payouts_enabled=True,
@@ -268,7 +373,10 @@ class TestCreateReversalTransfer:
             outgoing,
             incoming,
         ) = await transfer_transaction_service.create_reversal_transfer(
-            session, transfer_transactions=transfer_transactions, amount=1000
+            session,
+            transfer_transactions=transfer_transactions,
+            destination_currency="usd",
+            amount=1000,
         )
 
         assert outgoing.account_id == account.id
@@ -282,8 +390,82 @@ class TestCreateReversalTransfer:
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
+        assert incoming.processor_fee_amount == 0
+        assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
+
+        assert outgoing.id is not None
+        assert incoming.id is not None
+
+        stripe_service_mock.reverse_transfer.assert_called_once()
+        assert stripe_service_mock.reverse_transfer.call_args[1]["metadata"][
+            "outgoing_transaction_id"
+        ] == str(outgoing.id)
+        assert stripe_service_mock.reverse_transfer.call_args[1]["metadata"][
+            "incoming_transaction_id"
+        ] == str(incoming.id)
+
+    async def test_stripe_different_currencies(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="FR",
+            currency="eur",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        session.add(account)
+        await session.commit()
+
+        stripe_service_mock.reverse_transfer.return_value = SimpleNamespace(
+            id="STRIPE_REVERSAL_TRANSFER_ID",
+            destination_payment_refund="CHARGE_REFUND_ID",
+        )
+        stripe_service_mock.get_refund.return_value = SimpleNamespace(
+            id="CHARGE_REFUND_ID",
+            balance_transaction=SimpleNamespace(
+                amount=-900, currency="eur", exchange_rate=0.9
+            ),
+        )
+
+        transfer_transactions = await create_transfer_transactions(
+            session, destination_account=account
+        )
+
+        (
+            outgoing,
+            incoming,
+        ) = await transfer_transaction_service.create_reversal_transfer(
+            session,
+            transfer_transactions=transfer_transactions,
+            destination_currency="usd",
+            amount=1000,
+        )
+
+        assert outgoing.account_id == account.id
+        assert outgoing.type == TransactionType.transfer
+        assert outgoing.processor == PaymentProcessor.stripe
+        assert outgoing.amount == -1000
+        assert outgoing.currency == "usd"
+        assert outgoing.account_currency == "eur"
+        assert outgoing.account_amount == -900
         assert outgoing.processor_fee_amount == 0
         assert outgoing.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
+
+        assert incoming.account_id is None
+        assert incoming.type == TransactionType.transfer
+        assert incoming.processor == PaymentProcessor.stripe
+        assert incoming.amount == 1000
+        assert incoming.processor_fee_amount == 0
+        assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
 
         assert outgoing.id is not None
         assert incoming.id is not None
@@ -304,7 +486,7 @@ class TestCreateReversalTransfer:
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
-            currency="USD",
+            currency="usd",
             is_details_submitted=False,
             is_charges_enabled=False,
             is_payouts_enabled=False,
@@ -321,7 +503,10 @@ class TestCreateReversalTransfer:
             outgoing,
             incoming,
         ) = await transfer_transaction_service.create_reversal_transfer(
-            session, transfer_transactions=transfer_transactions, amount=1000
+            session,
+            transfer_transactions=transfer_transactions,
+            destination_currency="usd",
+            amount=1000,
         )
 
         assert outgoing.account_id == account.id

@@ -50,6 +50,8 @@ class Transaction(RecordModel):
     tax_country: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
     tax_state: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
     processor_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    account_currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    account_amount: Mapped[int] = mapped_column(Integer, nullable=False)
 
     customer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)

@@ -1,3 +1,5 @@
+import math
+
 import stripe as stripe_lib
 
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -77,16 +79,25 @@ class RefundTransactionService(BaseTransactionService):
             session.add(refund_transaction)
             refund_transactions.append(refund_transaction)
 
-            # Create reversal transfer if it was already transferred
-            transfer_transactions = await self._get_transfer_transactions_for_payment(
-                session, payment_transaction=payment_transaction
+            # Create reversal transfers if it was already transferred
+            transfer_transactions_couples = (
+                await self._get_transfer_transactions_for_payment(
+                    session, payment_transaction=payment_transaction
+                )
             )
-            if transfer_transactions is not None:
+            refund_amount = refund.amount
+            total_amount = payment_transaction.amount
+            for transfer_transactions_couple in transfer_transactions_couples:
+                outgoing, _ = transfer_transactions_couple
+                # Refund each transfer proportionally
+                transfer_refund_amount = abs(
+                    int(math.floor(outgoing.amount * refund_amount) / total_amount)
+                )
                 await transfer_transaction_service.create_reversal_transfer(
                     session,
-                    transfer_transactions=transfer_transactions,
+                    transfer_transactions=transfer_transactions_couple,
                     destination_currency=refund.currency,
-                    amount=refund.amount,
+                    amount=transfer_refund_amount,
                     reversal_transfer_metadata={
                         "stripe_charge_id": charge.id,
                         "stripe_refund_id": refund.id,

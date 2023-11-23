@@ -109,7 +109,7 @@ class TransferTransactionService(BaseTransactionService):
             currency=source_currency,
             amount=amount,  # Add the amount
             account_currency=source_currency,
-            account_amount=-amount,
+            account_amount=amount,
             tax_amount=0,
             processor_fee_amount=0,
             transfer_correlation_key=transfer_correlation_key,

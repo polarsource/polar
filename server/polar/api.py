@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from polar.account.endpoints import router as accounts_router
+from polar.article.endpoints import router as articles_router
 from polar.backoffice.endpoints import router as backoffice_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.eventstream.endpoints import router as stream_router
@@ -65,3 +66,5 @@ router.include_router(stream_router)
 router.include_router(organization_router)
 # /subscriptions
 router.include_router(subscription_router)
+# /articles
+router.include_router(articles_router)

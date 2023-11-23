@@ -107,6 +107,68 @@ export type AccountType = typeof AccountType[keyof typeof AccountType];
 /**
  * 
  * @export
+ * @interface Article
+ */
+export interface Article {
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    slug: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    title: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    body: string;
+    /**
+     * 
+     * @type {Byline}
+     * @memberof Article
+     */
+    byline: Byline;
+}
+/**
+ * 
+ * @export
+ * @interface ArticleCreate
+ */
+export interface ArticleCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    title: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    body: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    organization_id: string;
+}
+/**
+ * 
+ * @export
  * @interface Assignee
  */
 export interface Assignee {
@@ -450,6 +512,25 @@ export interface BackofficeReward {
      * @memberof BackofficeReward
      */
     pledger_email?: string;
+}
+/**
+ * 
+ * @export
+ * @interface Byline
+ */
+export interface Byline {
+    /**
+     * 
+     * @type {string}
+     * @memberof Byline
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Byline
+     */
+    avatar_url: string;
 }
 /**
  * 
@@ -1240,6 +1321,25 @@ export interface ListResourceAccount {
      * 
      * @type {Pagination}
      * @memberof ListResourceAccount
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceArticle
+ */
+export interface ListResourceArticle {
+    /**
+     * 
+     * @type {Array<Article>}
+     * @memberof ListResourceArticle
+     */
+    items?: Array<Article>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceArticle
      */
     pagination: Pagination;
 }
@@ -2977,56 +3077,6 @@ export interface PledgesTypeSummaries {
 /**
  * 
  * @export
- * @interface PolarIntegrationsGithubEndpointsWebhookResponse
- */
-export interface PolarIntegrationsGithubEndpointsWebhookResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PolarIntegrationsGithubEndpointsWebhookResponse
-     */
-    success: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarIntegrationsGithubEndpointsWebhookResponse
-     */
-    message?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarIntegrationsGithubEndpointsWebhookResponse
-     */
-    job_id?: string;
-}
-/**
- * 
- * @export
- * @interface PolarIntegrationsStripeEndpointsWebhookResponse
- */
-export interface PolarIntegrationsStripeEndpointsWebhookResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PolarIntegrationsStripeEndpointsWebhookResponse
-     */
-    success: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarIntegrationsStripeEndpointsWebhookResponse
-     */
-    message?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarIntegrationsStripeEndpointsWebhookResponse
-     */
-    job_id?: string;
-}
-/**
- * 
- * @export
  * @interface PolarSubscriptionSchemasUser
  */
 export interface PolarSubscriptionSchemasUser {
@@ -4340,6 +4390,19 @@ export interface SubscriptionTierUpdate {
 /**
  * 
  * @export
+ * @interface SubscriptionUpgrade
+ */
+export interface SubscriptionUpgrade {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUpgrade
+     */
+    subscription_tier_id: string;
+}
+/**
+ * 
+ * @export
  * @interface SubscriptionsStatistics
  */
 export interface SubscriptionsStatistics {
@@ -4657,3 +4720,28 @@ export const Visibility = {
 } as const;
 export type Visibility = typeof Visibility[keyof typeof Visibility];
 
+/**
+ * 
+ * @export
+ * @interface WebhookResponse
+ */
+export interface WebhookResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookResponse
+     */
+    success: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookResponse
+     */
+    message?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookResponse
+     */
+    job_id?: string;
+}

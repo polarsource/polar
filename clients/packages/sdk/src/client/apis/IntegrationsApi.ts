@@ -22,10 +22,9 @@ import type {
   LoginResponse,
   LookupUserRequest,
   Organization,
-  PolarIntegrationsGithubEndpointsWebhookResponse,
-  PolarIntegrationsStripeEndpointsWebhookResponse,
   SynchronizeMembersResponse,
   UserSignupType,
+  WebhookResponse,
 } from '../models/index';
 
 export interface IntegrationsApiGithubAuthorizeRequest {
@@ -243,7 +242,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Stripe Connect Refresh
      */
-    async stripeConnectRefreshRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarIntegrationsStripeEndpointsWebhookResponse>> {
+    async stripeConnectRefreshRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -263,15 +262,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response);
+        return new runtime.VoidApiResponse(response);
     }
 
     /**
      * Stripe Connect Refresh
      */
-    async stripeConnectRefresh(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarIntegrationsStripeEndpointsWebhookResponse> {
-        const response = await this.stripeConnectRefreshRaw(initOverrides);
-        return await response.value();
+    async stripeConnectRefresh(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.stripeConnectRefreshRaw(initOverrides);
     }
 
     /**
@@ -365,7 +363,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Webhook
      */
-    async webhookRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarIntegrationsGithubEndpointsWebhookResponse>> {
+    async webhookRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookResponse>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -391,15 +389,53 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Webhook
      */
-    async webhook(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarIntegrationsGithubEndpointsWebhookResponse> {
+    async webhook(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookResponse> {
         const response = await this.webhookRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Webhook Connect
+     */
+    async webhookConnectRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/stripe/webhook-connect`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Webhook Connect
+     */
+    async webhookConnect(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.webhookConnectRaw(initOverrides);
         return await response.value();
     }
 
     /**
      * Webhook
      */
-    async webhook_1Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarIntegrationsStripeEndpointsWebhookResponse>> {
+    async webhook_1Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -419,13 +455,17 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response);
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
     }
 
     /**
      * Webhook
      */
-    async webhook_1(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarIntegrationsStripeEndpointsWebhookResponse> {
+    async webhook_1(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.webhook_1Raw(initOverrides);
         return await response.value();
     }

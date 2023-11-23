@@ -26,6 +26,7 @@ import type {
   ResponseSubscriptionsUpdateSubscriptionBenefit,
   SubscribeSession,
   SubscribeSessionCreate,
+  Subscription,
   SubscriptionBenefitCreate,
   SubscriptionBenefitType,
   SubscriptionBenefitUpdate,
@@ -34,6 +35,7 @@ import type {
   SubscriptionTierCreate,
   SubscriptionTierType,
   SubscriptionTierUpdate,
+  SubscriptionUpgrade,
   SubscriptionsStatistics,
 } from '../models/index';
 
@@ -135,6 +137,11 @@ export interface SubscriptionsApiUpdateSubscriptionTierRequest {
 export interface SubscriptionsApiUpdateSubscriptionTierBenefitsRequest {
     id: string;
     subscriptionTierBenefitsUpdate: SubscriptionTierBenefitsUpdate;
+}
+
+export interface SubscriptionsApiUpgradeSubscriptionRequest {
+    id: string;
+    subscriptionUpgrade: SubscriptionUpgrade;
 }
 
 /**
@@ -956,6 +963,51 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async updateSubscriptionTierBenefits(requestParameters: SubscriptionsApiUpdateSubscriptionTierBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionTier> {
         const response = await this.updateSubscriptionTierBenefitsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Upgrade Subscription
+     */
+    async upgradeSubscriptionRaw(requestParameters: SubscriptionsApiUpgradeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling upgradeSubscription.');
+        }
+
+        if (requestParameters.subscriptionUpgrade === null || requestParameters.subscriptionUpgrade === undefined) {
+            throw new runtime.RequiredError('subscriptionUpgrade','Required parameter requestParameters.subscriptionUpgrade was null or undefined when calling upgradeSubscription.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.subscriptionUpgrade,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Upgrade Subscription
+     */
+    async upgradeSubscription(requestParameters: SubscriptionsApiUpgradeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
+        const response = await this.upgradeSubscriptionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

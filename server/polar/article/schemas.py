@@ -1,10 +1,13 @@
+import datetime
 from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import Field
 
+from polar import organization
 from polar.kit.schemas import Schema
 from polar.models.article import Article as ArticleModel
+from polar.organization.schemas import Organization
 
 
 class Byline(Schema):
@@ -22,6 +25,8 @@ class Article(Schema):
     body: str
     byline: Byline
     visibility: Visibility
+    organization: Organization
+    published_at: datetime.datetime | None
 
     @classmethod
     def from_db(cls, i: ArticleModel) -> Self:
@@ -57,6 +62,8 @@ class Article(Schema):
             body=i.body,
             byline=byline,
             visibility=visibility,
+            organization=Organization.from_db(i.organization),
+            published_at=i.published_at,
         )
 
 
@@ -71,5 +78,19 @@ class ArticleCreate(Schema):
     visibility: Visibility = Field(default="private")
     paid_subscribers_only: bool = Field(
         default=False,
+        description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
+    )
+
+
+class ArticleUpdate(Schema):
+    title: str | None = None
+    body: str | None = None
+    byline: Literal["user", "organization"] | None = Field(
+        default=None,
+        description="If the user or organization should be credited in the byline.",
+    )
+    visibility: Visibility | None = Field(default=None)
+    paid_subscribers_only: bool | None = Field(
+        default=None,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
     )

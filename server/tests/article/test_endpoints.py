@@ -439,3 +439,49 @@ async def test_slug_collision(
     )
     assert create_2.status_code == 200
     assert create_2.json()["slug"] == "hello-world-2"
+
+
+@pytest.mark.asyncio
+async def test_update(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "visibility": "private",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["title"] == "Hello World!"
+    assert res["slug"] == "hello-world"
+
+    get = await client.put(
+        f"/api/v1/articles/{res['id']}",
+        json={
+            "body": "Here comes the post...",
+            "visibility": "public",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert get.status_code == 200
+
+    get_json = get.json()
+
+    assert get_json["id"] == res["id"]
+    assert get_json["title"] == "Hello World!"
+    assert get_json["visibility"] == "public"
+    assert get_json["body"] == "Here comes the post..."

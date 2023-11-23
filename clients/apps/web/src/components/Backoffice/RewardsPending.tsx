@@ -180,7 +180,10 @@ const Pledges = () => {
                   {p[0].pledge.type === PledgeType.ON_COMPLETION && (
                     <>
                       {p[0].pledge.hosted_invoice_url ? (
-                        <a href={p[0].pledge.hosted_invoice_url}>
+                        <a
+                          href={p[0].pledge.hosted_invoice_url}
+                          target="_blank"
+                        >
                           <Button size="sm">
                             <span>Open Invoice</span>
                             <ArrowTopRightOnSquareIcon />

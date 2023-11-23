@@ -34,7 +34,7 @@ const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
                 value={item.title}
                 size="small"
               >
-                <div className="text-[17px]">{item.icon}</div>
+                {item.icon && <div className="text-[17px]">{item.icon}</div>}
                 <div>{item.title}</div>
               </TabsTrigger>
             </Link>

@@ -28,7 +28,7 @@ const MaintainerNavigation = () => {
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs
-    .filter((n) => 'if' in n && n.if)
+    .filter((n) => ('if' in n ? n.if : true))
     .map((n) => {
       const isActive = pathname && pathname.startsWith(n.link)
 

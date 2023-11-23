@@ -2,11 +2,13 @@ import enum
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.models.organization import Organization
+from polar.models.user import User
 
 
 class Article(RecordModel):
@@ -40,3 +42,19 @@ class Article(RecordModel):
     visibility: Mapped[Visibility] = mapped_column(
         StringEnum(Visibility), nullable=False, default=Visibility.private
     )
+
+    @declared_attr
+    def organization(cls) -> Mapped[Organization]:
+        return relationship(
+            Organization,
+            lazy="raise",
+            primaryjoin=Organization.id == cls.organization_id,
+        )
+
+    @declared_attr
+    def created_by_user(cls) -> Mapped[User]:
+        return relationship(
+            User,
+            lazy="raise",
+            primaryjoin=User.id == cls.created_by,
+        )

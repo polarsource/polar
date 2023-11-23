@@ -109,14 +109,26 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         organization_id: UUID | None,
         user_id: UUID | None,
     ) -> str | None:
+        # The account name is visible for users and is used to differentiate accounts
+        # from the same Platform ("Polar") in Stripe Express.
+        #
+        # The names are:
+        # * NAME for non-personal organisations (example: polarsource)
+        # * org/NAME for personal organisations (example: org/zegl)
+        # * user/NAME for users (example: user/zegl).
         if organization_id:
             org = await organization_service.get(session, organization_id)
             if org:
-                return f"github.com/{org.name} (org)"
+                if org.is_personal:
+                    return f"org/{org.name}"
+                else:
+                    return org.name
+
         if user_id:
             user = await user_service.get(session, user_id)
             if user:
-                return f"github.com/{user.username} (user)"
+                return f"user/{user.username}"
+
         return None
 
     async def _create_stripe_account(

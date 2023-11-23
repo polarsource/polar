@@ -1,6 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
-import { isFeatureEnabled } from '@/utils/feature-flags'
+import { isFeatureEnabled, isPolarEmployee } from '@/utils/feature-flags'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AttachMoneyOutlined,
@@ -198,7 +198,7 @@ export const backerRoutes: Route[] = [
     link: `/backoffice`,
     icon: <Construction className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    if: true,
+    if: isPolarEmployee(),
     subs: [
       {
         title: 'Pledges',

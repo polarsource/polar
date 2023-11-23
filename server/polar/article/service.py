@@ -11,7 +11,7 @@ from polar.models.article import Article
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
 
-from .schemas import ArticleCreate
+from .schemas import ArticleCreate, ArticleUpdate, Visibility
 
 log = structlog.get_logger()
 
@@ -59,7 +59,8 @@ class ArticleService:
             created_by=subject.id,
             organization_id=create_schema.organization_id,
             byline=create_schema.byline,
-            visibility=create_schema.visibility,
+            visibility=self._visibility_to_model_visibility(create_schema.visibility),
+            paid_subscribers_only=create_schema.paid_subscribers_only,
         ).save(session, autocommit=autocommit)
 
     async def get_loaded(
@@ -123,6 +124,45 @@ class ArticleService:
         )
         res = await session.execute(statement)
         return res.scalars().unique().all()
+
+    async def update(
+        self,
+        session: AsyncSession,
+        article: Article,
+        update: ArticleUpdate,
+    ) -> Article:
+        if update.title is not None:
+            # TODO: Update slug if article is not published
+            article.title = update.title
+
+        if update.body is not None:
+            article.body = update.body
+
+        if update.byline is not None:
+            article.byline = (
+                Article.Byline.user
+                if update.byline == "user"
+                else Article.Byline.organization
+            )
+
+        if update.visibility is not None:
+            article.visibility = self._visibility_to_model_visibility(update.visibility)
+
+        if update.paid_subscribers_only is not None:
+            article.paid_subscribers_only = update.paid_subscribers_only
+
+        await article.save(session)
+
+        return article
+
+    def _visibility_to_model_visibility(self, v: Visibility) -> Article.Visibility:
+        match v:
+            case "hidden":
+                return Article.Visibility.hidden
+            case "private":
+                return Article.Visibility.private
+            case "public":
+                return Article.Visibility.public
 
 
 article_service = ArticleService()

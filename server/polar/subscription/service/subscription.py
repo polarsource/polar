@@ -325,22 +325,23 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         return subscription
 
-    async def transfer_subscription_money(
-        self, session: AsyncSession, subscription: Subscription
+    async def transfer_subscription_paid_invoice(
+        self,
+        session: AsyncSession,
+        *,
+        invoice: stripe_lib.Invoice,
     ) -> None:
-        stripe_subscription = stripe_service.get_subscription(
-            subscription.stripe_subscription_id
+        assert invoice.charge is not None
+
+        if invoice.subscription is None:
+            return
+
+        stripe_subscription_id = get_expandable_id(invoice.subscription)
+        subscription = await self.get_by_stripe_subscription_id(
+            session, stripe_subscription_id
         )
-        invoice = cast(stripe_lib.Invoice | None, stripe_subscription.latest_invoice)
-
-        if invoice is None:
-            return
-
-        if (
-            invoice.metadata is not None
-            and invoice.metadata.get("transferred_at") is not None
-        ):
-            return
+        if subscription is None:
+            raise SubscriptionDoesNotExist(stripe_subscription_id)
 
         await session.refresh(subscription, {"subscription_tier"})
         account = await subscription_tier_service.get_managing_organization_account(
@@ -355,7 +356,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         transfer_metadata: dict[str, str] = {
             "subscription_id": str(subscription.id),
             "organization_id": str(account.organization_id),
-            "stripe_subscription_id": stripe_subscription.id,
+            "stripe_subscription_id": subscription.stripe_subscription_id,
             "stripe_product_id": cast(
                 str, subscription.subscription_tier.stripe_product_id
             ),
@@ -364,15 +365,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             "transferred_at": str(int(utc_now().timestamp())),
         }
 
-        incoming, _ = await transfer_transaction_service.create_transfer(
+        incoming, _ = await transfer_transaction_service.create_transfer_from_charge(
             session,
             destination_account=account,
-            source_currency=invoice.currency,
+            charge_id=get_expandable_id(invoice.charge),
             amount=transfer_amount,
             subscription=subscription,
-            transfer_source_transaction=get_expandable_id(invoice.charge)
-            if invoice.charge
-            else None,
             transfer_metadata=transfer_metadata,
         )
 

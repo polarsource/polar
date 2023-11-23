@@ -1,7 +1,7 @@
 import enum
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -13,6 +13,8 @@ from polar.models.user import User
 
 class Article(RecordModel):
     __tablename__ = "articles"
+
+    __table_args__ = (UniqueConstraint("organization_id", "slug"),)
 
     slug: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)

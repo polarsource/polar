@@ -30,7 +30,27 @@ class ArticleService:
             word_boundary=True,
         )
 
+        orig_slug = slug
+
         # TODO: detect and handle duplicate slugs
+        for n in range(0, 100):
+            test_slug = orig_slug if n == 0 else f"{orig_slug}-{n}"
+
+            exists = await self.get_by_slug(
+                session, create_schema.organization_id, test_slug
+            )
+
+            # slug is unused, continue with creating an article with this slug
+            if exists is None:
+                slug = test_slug
+                break
+
+            # continue until a free slug has been found
+        else:
+            # if no free slug has been found in 100 attempts, error out
+            raise Exception(
+                "This slug has been used more than 100 times in this organization."
+            )
 
         return await Article(
             slug=slug,
@@ -50,6 +70,25 @@ class ArticleService:
         statement = (
             sql.select(Article)
             .where(Article.id == id)
+            .where(Article.deleted_at.is_(None))
+            .options(
+                joinedload(Article.created_by_user),
+                joinedload(Article.organization),
+            )
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
+    async def get_by_slug(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        slug: str,
+    ) -> Article | None:
+        statement = (
+            sql.select(Article)
+            .where(Article.organization_id == organization_id)
+            .where(Article.slug == slug)
             .where(Article.deleted_at.is_(None))
             .options(
                 joinedload(Article.created_by_user),

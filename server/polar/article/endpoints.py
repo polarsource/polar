@@ -17,6 +17,7 @@ from polar.tags.api import Tags
 from .schemas import Article as ArticleSchema
 from .schemas import (
     ArticleCreate,
+    ArticleUpdate,
 )
 from .service import article_service
 
@@ -146,5 +147,38 @@ async def get(
 
     if not await authz.can(auth.subject, AccessType.read, art):
         raise Unauthorized()
+
+    return ArticleSchema.from_db(art)
+
+
+@router.put(
+    "/articles/{id}",
+    response_model=ArticleSchema,
+    tags=[Tags.PUBLIC],
+    description="Update an article.",
+    summary="Update an article (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def update(
+    id: UUID,
+    update: ArticleUpdate,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticleSchema:
+    art = await article_service.get_loaded(session, id)
+    if not art:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, art):
+        raise Unauthorized()
+
+    await article_service.update(session, art, update)
+
+    # get for return
+    art = await article_service.get_loaded(session, id)
+    if not art:
+        raise ResourceNotFound()
 
     return ArticleSchema.from_db(art)

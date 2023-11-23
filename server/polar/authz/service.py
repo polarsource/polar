@@ -225,6 +225,13 @@ class Authz:
             return await self._can_user_read_article(subject, object)
 
         if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, Article)
+        ):
+            return await self._can_user_write_article(subject, object)
+
+        if (
             isinstance(subject, Anonymous)
             and accessType == AccessType.read
             and isinstance(object, Article)
@@ -478,6 +485,15 @@ class Authz:
 
         # If member of org
         if object.organization_id and await self._is_member(
+            subject.id, object.organization_id
+        ):
+            return True
+
+        return False
+
+    async def _can_user_write_article(self, subject: User, object: Article) -> bool:
+        # If member and admin of org
+        if object.organization_id and await self._is_member_and_admin(
             subject.id, object.organization_id
         ):
             return True

@@ -60,6 +60,37 @@ async def search(
     )
 
 
+@router.get(
+    "/articles/lookup",
+    response_model=ArticleSchema,
+    tags=[Tags.PUBLIC],
+    description="Lookup article.",
+    summary="Lookup article (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def lookup(
+    slug: str,
+    organization_name_platform: OrganizationNamePlatform,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticleSchema:
+    (organization_name, platform) = organization_name_platform
+    org = await organization_service.get_by_name(session, platform, organization_name)
+    if not org:
+        raise ResourceNotFound()
+
+    art = await article_service.get_by_slug(session, organization_id=org.id, slug=slug)
+    if not art:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.read, art):
+        raise Unauthorized()
+
+    return ArticleSchema.from_db(art)
+
+
 @router.post(
     "/articles",
     response_model=ArticleSchema,

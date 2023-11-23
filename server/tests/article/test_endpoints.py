@@ -375,3 +375,55 @@ async def test_list(
     assert get_authed.status_code == 200
     list_json_authed = get_authed.json()
     assert len(list_json_authed["items"]) == 4
+
+
+@pytest.mark.asyncio
+async def test_slug_collision(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    create_0 = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "visibility": "public",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert create_0.status_code == 200
+    assert create_0.json()["slug"] == "hello-world"
+
+    create_1 = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "visibility": "public",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert create_1.status_code == 200
+    assert create_1.json()["slug"] == "hello-world-1"
+
+    create_2 = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "visibility": "public",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert create_2.status_code == 200
+    assert create_2.json()["slug"] == "hello-world-2"

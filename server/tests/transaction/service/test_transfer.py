@@ -178,6 +178,8 @@ class TestCreateTransfer:
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
         assert incoming.payment_transaction == payment_transaction
 
+        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+
         assert outgoing.id is not None
         assert incoming.id is not None
 
@@ -248,6 +250,8 @@ class TestCreateTransfer:
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
         assert incoming.payment_transaction == payment_transaction
 
+        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+
     async def test_open_collective(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
@@ -279,11 +283,15 @@ class TestCreateTransfer:
         assert outgoing.amount == -1000
         assert outgoing.payment_transaction == payment_transaction
 
+        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+
         assert incoming.account_id == account.id
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.open_collective
         assert incoming.amount == 1000
         assert incoming.payment_transaction == payment_transaction
+
+        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
 
 
 @pytest.mark.asyncio
@@ -510,6 +518,8 @@ class TestCreateReversalTransfer:
         assert incoming.processor_fee_amount == 0
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
 
+        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+
         assert outgoing.id is not None
         assert incoming.id is not None
 
@@ -584,6 +594,8 @@ class TestCreateReversalTransfer:
         assert incoming.processor_fee_amount == 0
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
 
+        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+
         assert outgoing.id is not None
         assert incoming.id is not None
 
@@ -630,8 +642,9 @@ class TestCreateReversalTransfer:
         assert outgoing.type == TransactionType.transfer
         assert outgoing.processor == PaymentProcessor.open_collective
         assert outgoing.amount == -1000
-
         assert incoming.account_id is None
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.open_collective
         assert incoming.amount == 1000
+
+        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key

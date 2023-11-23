@@ -28,6 +28,7 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "charge.dispute.created",
     "customer.subscription.created",
     "customer.subscription.updated",
+    "invoice.paid",
 }
 CONNECT_IMPLEMENTED_WEBHOOKS = {
     "payout.paid",

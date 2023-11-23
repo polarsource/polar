@@ -46,18 +46,6 @@ class SubscriptionBenefitGrantDoesNotExist(PolarError):
         super().__init__(message, 500)
 
 
-@task("subscription.subscription.transfer_subscription_money")
-async def subscription_transfer_subscription_money(
-    ctx: JobContext, subscription_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        subscription = await subscription_service.get(session, subscription_id)
-        if subscription is None:
-            raise SubscriptionDoesNotExist(subscription_id)
-
-        await subscription_service.transfer_subscription_money(session, subscription)
-
-
 @task("subscription.subscription.enqueue_benefits_grants")
 async def subscription_enqueue_benefits_grants(
     ctx: JobContext, subscription_id: uuid.UUID, polar_context: PolarWorkerContext

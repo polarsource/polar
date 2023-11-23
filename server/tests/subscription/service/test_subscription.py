@@ -95,6 +95,7 @@ def construct_stripe_invoice(
     total: int = 12000,
     tax: int = 2000,
     charge_id: str = "CHARGE_ID",
+    subscription_id: str = "SUBSCRIPTION_ID",
     metadata: dict[str, str] = {},
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
@@ -104,6 +105,7 @@ def construct_stripe_invoice(
             "tax": tax,
             "currency": "usd",
             "charge": charge_id,
+            "subscription": subscription_id,
             "metadata": metadata,
         },
         None,
@@ -245,58 +247,16 @@ class TestUpdateSubscription:
             "subscription.subscription.enqueue_benefits_grants",
             updated_subscription.id,
         )
-        enqueue_job_mock.assert_any_await(
-            "subscription.subscription.transfer_subscription_money",
-            updated_subscription.id,
-        )
 
 
 @pytest.mark.asyncio
-class TestTransferSubscriptionMoney:
-    async def test_no_associated_invoice(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription: Subscription,
-    ) -> None:
-        stripe_subscription = construct_stripe_subscription()
-        stripe_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.stripe_service", spec=StripeService
-        )
-        stripe_service_mock.get_subscription.return_value = stripe_subscription
-
-        transaction_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.transfer_transaction_service",
-            spec=TransferTransactionService,
-        )
-
-        await subscription_service.transfer_subscription_money(session, subscription)
-
-        transaction_service_mock.create_transfer.assert_not_called()
-
-    async def test_already_transferred(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription: Subscription,
-    ) -> None:
-        stripe_invoice = construct_stripe_invoice(metadata={"transferred_at": "123"})
-        stripe_subscription = construct_stripe_subscription(
-            latest_invoice=stripe_invoice
-        )
-        stripe_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.stripe_service", spec=StripeService
-        )
-        stripe_service_mock.get_subscription.return_value = stripe_subscription
-
-        transaction_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.transfer_transaction_service",
-            spec=TransferTransactionService,
-        )
-
-        await subscription_service.transfer_subscription_money(session, subscription)
-
-        transaction_service_mock.create_transfer.assert_not_called()
+class TestTransferSubscriptionPaidInvoice:
+    async def test_not_existing_subscription(self, session: AsyncSession) -> None:
+        stripe_invoice = construct_stripe_invoice()
+        with pytest.raises(SubscriptionDoesNotExist):
+            await subscription_service.transfer_subscription_paid_invoice(
+                session, invoice=stripe_invoice
+            )
 
     async def test_valid(
         self,
@@ -305,34 +265,44 @@ class TestTransferSubscriptionMoney:
         subscription: Subscription,
         organization_account: Account,
     ) -> None:
-        stripe_invoice = construct_stripe_invoice()
-        stripe_subscription = construct_stripe_subscription(
-            latest_invoice=stripe_invoice
+        stripe_invoice = construct_stripe_invoice(
+            subscription_id=subscription.stripe_subscription_id
         )
+
         stripe_service_mock = mocker.patch(
             "polar.subscription.service.subscription.stripe_service", spec=StripeService
         )
-        stripe_service_mock.get_subscription.return_value = stripe_subscription
 
         transaction_service_mock = mocker.patch(
             "polar.subscription.service.subscription.transfer_transaction_service",
             spec=TransferTransactionService,
         )
-        transaction_service_mock.create_transfer.return_value = (
+        transaction_service_mock.create_transfer_from_charge.return_value = (
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         )
 
-        await subscription_service.transfer_subscription_money(session, subscription)
+        await subscription_service.transfer_subscription_paid_invoice(
+            session, invoice=stripe_invoice
+        )
 
-        transaction_service_mock.create_transfer.assert_called_once()
+        transaction_service_mock.create_transfer_from_charge.assert_called_once()
         assert (
-            transaction_service_mock.create_transfer.call_args[1][
+            transaction_service_mock.create_transfer_from_charge.call_args[1][
                 "destination_account"
             ].id
             == organization_account.id
         )
-        assert transaction_service_mock.create_transfer.call_args[1]["amount"] == 9000
+        assert (
+            transaction_service_mock.create_transfer_from_charge.call_args[1][
+                "charge_id"
+            ]
+            == stripe_invoice.charge
+        )
+        assert (
+            transaction_service_mock.create_transfer_from_charge.call_args[1]["amount"]
+            == 9000
+        )
 
         stripe_service_mock.update_invoice.assert_called_once()
 

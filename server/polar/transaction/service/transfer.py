@@ -82,6 +82,8 @@ class TransferTransactionService(BaseTransactionService):
                 destination_account.id, destination_account.account_type
             )
 
+        transfer_correlation_key = str(uuid.uuid4())
+
         outgoing_transaction = Transaction(
             id=generate_uuid(),
             account=None,  # Polar account
@@ -93,6 +95,7 @@ class TransferTransactionService(BaseTransactionService):
             account_amount=-amount,
             tax_amount=0,
             processor_fee_amount=0,
+            transfer_correlation_key=transfer_correlation_key,
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
@@ -109,6 +112,7 @@ class TransferTransactionService(BaseTransactionService):
             account_amount=-amount,
             tax_amount=0,
             processor_fee_amount=0,
+            transfer_correlation_key=transfer_correlation_key,
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
@@ -227,6 +231,8 @@ class TransferTransactionService(BaseTransactionService):
 
         processor = outgoing.processor
 
+        transfer_correlation_key = str(uuid.uuid4())
+
         outgoing_reversal = Transaction(
             id=generate_uuid(),
             account=source_account,  # User account
@@ -238,6 +244,7 @@ class TransferTransactionService(BaseTransactionService):
             account_amount=-amount,
             tax_amount=0,
             processor_fee_amount=0,
+            transfer_correlation_key=transfer_correlation_key,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,
@@ -253,6 +260,7 @@ class TransferTransactionService(BaseTransactionService):
             account_amount=amount,
             tax_amount=0,
             processor_fee_amount=0,
+            transfer_correlation_key=transfer_correlation_key,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,

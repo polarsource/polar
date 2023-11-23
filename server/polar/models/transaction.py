@@ -79,6 +79,14 @@ class Transaction(RecordModel):
     processor_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     """Fee collected by the payment processor for this transaction."""
 
+    transfer_correlation_key: Mapped[str] = mapped_column(
+        String, nullable=True, index=True
+    )
+    """
+    Internal key used to correlate a couple of transfer transactions:
+    the outgoing side and the incoming side.
+    """
+
     customer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the customer in the payment processor system."""
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)

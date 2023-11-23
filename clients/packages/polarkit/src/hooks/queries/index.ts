@@ -8,6 +8,7 @@ import {
 import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
 
+export * from './articles'
 export * from './backoffice'
 export * from './dashboard'
 export * from './funding'

@@ -4,6 +4,7 @@
 
 import {
   AccountsApi,
+  ArticlesApi,
   BackofficeApi,
   Configuration,
   DashboardApi,
@@ -28,6 +29,7 @@ import {
 
 export class PolarAPI {
   public readonly accounts: AccountsApi
+  public readonly articles: ArticlesApi
   public readonly backoffice: BackofficeApi
   public readonly dashboard: DashboardApi
   public readonly extension: ExtensionApi
@@ -50,6 +52,7 @@ export class PolarAPI {
 
   constructor(config: Configuration) {
     this.accounts = new AccountsApi(config)
+    this.articles = new ArticlesApi(config)
     this.backoffice = new BackofficeApi(config)
     this.dashboard = new DashboardApi(config)
     this.extension = new ExtensionApi(config)

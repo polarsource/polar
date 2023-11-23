@@ -6,6 +6,7 @@ from fastapi import Depends
 
 from polar.issue.service import issue as issue_service
 from polar.models.account import Account
+from polar.models.article import Article
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -45,6 +46,7 @@ Object = (
     | SubscriptionTier
     | SubscriptionBenefit
     | Subscription
+    | Article
 )
 
 
@@ -211,6 +213,23 @@ class Authz:
             and isinstance(object, Subscription)
         ):
             return object.user_id == subject.id
+
+        #
+        # Article
+        #
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.read
+            and isinstance(object, Article)
+        ):
+            return await self._can_user_read_article(subject, object)
+
+        if (
+            isinstance(subject, Anonymous)
+            and accessType == AccessType.read
+            and isinstance(object, Article)
+        ):
+            return self._can_anonymous_read_article(object)
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501
@@ -435,6 +454,30 @@ class Authz:
 
         # If admin of receiving org
         if object.organization_id and await self._is_member_and_admin(
+            subject.id, object.organization_id
+        ):
+            return True
+
+        return False
+
+    #
+    # Article
+    #
+    def _can_anonymous_read_article(self, object: Article) -> bool:
+        if object.visibility == "hidden":
+            return True
+        if object.visibility == "public":
+            return True
+        return False
+
+    async def _can_user_read_article(self, subject: User, object: Article) -> bool:
+        if self._can_anonymous_read_article(object):
+            return True
+
+        # visibility is private
+
+        # If member of org
+        if object.organization_id and await self._is_member(
             subject.id, object.organization_id
         ):
             return True

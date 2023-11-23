@@ -6,7 +6,6 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination
-from polar.models.article import Article
 from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import (
@@ -39,14 +38,24 @@ async def search(
     auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[ArticleSchema]:
-    articles: list[Article] = []
-    count = 0
+    (organization_name, platform) = organization_name_platform
+    org = await organization_service.get_by_name(session, platform, organization_name)
+    if not org:
+        raise ResourceNotFound()
+
+    allow_private_hidden = await authz.can(auth.subject, AccessType.write, org)
+
+    articles = await article_service.list(
+        session,
+        organization_id=org.id,
+        allow_hidden=allow_private_hidden,
+        allow_private=allow_private_hidden,
+    )
+
+    # TODO: pagination
+    count = len(articles)
     return ListResource(
-        items=[
-            ArticleSchema.from_db(a)
-            for a in articles
-            # if await authz.can(auth.subject, AccessType.read, a)
-        ],
+        items=[ArticleSchema.from_db(a) for a in articles],
         pagination=Pagination(total_count=count, max_page=1),
     )
 
@@ -73,7 +82,13 @@ async def create(
     if not await authz.can(auth.subject, AccessType.write, org):
         raise Unauthorized()
 
-    art = await article_service.create(session, auth.subject, create)
+    created = await article_service.create(session, auth.subject, create)
+
+    # get for return
+    art = await article_service.get_loaded(session, created.id)
+    if not art:
+        raise ResourceNotFound()
+
     return ArticleSchema.from_db(art)
 
 
@@ -90,11 +105,15 @@ async def get(
     id: UUID,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> ArticleSchema:
     # TODO: authz, private, hidden, access by benefits, etc...
 
     art = await article_service.get_loaded(session, id)
     if not art:
         raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.read, art):
+        raise Unauthorized()
 
     return ArticleSchema.from_db(art)

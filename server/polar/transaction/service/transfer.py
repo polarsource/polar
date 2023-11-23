@@ -47,24 +47,30 @@ class StripeNotConfiguredOnAccount(TransferTransactionError):
         super().__init__(message)
 
 
+class PaymentTransactionForChargeDoesNotExist(TransferTransactionError):
+    def __init__(self, charge_id: str) -> None:
+        self.charge_id = charge_id
+        message = f"No payment transaction exist for charge {charge_id}."
+        super().__init__(message)
+
+
 class TransferTransactionService(BaseTransactionService):
     async def create_transfer(
         self,
         session: AsyncSession,
         *,
         destination_account: Account,
-        source_currency: str,
+        payment_transaction: Transaction,
         amount: int,
         pledge: Pledge | None = None,
         subscription: Subscription | None = None,
         issue_reward: IssueReward | None = None,
-        transfer_source_transaction: str | None = None,
         transfer_metadata: dict[str, str] | None = None,
     ) -> tuple[Transaction, Transaction]:
         if destination_account.currency is None:
             raise UnsetAccountCurrency(destination_account.id)
 
-        source_currency = source_currency.lower()
+        source_currency = payment_transaction.currency.lower()
         destination_currency = destination_account.currency.lower()
 
         if destination_account.account_type == AccountType.stripe:
@@ -90,6 +96,7 @@ class TransferTransactionService(BaseTransactionService):
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
+            payment_transaction=payment_transaction,
         )
         incoming_transaction = Transaction(
             id=generate_uuid(),
@@ -105,6 +112,7 @@ class TransferTransactionService(BaseTransactionService):
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
+            payment_transaction=payment_transaction,
         )
 
         if processor == PaymentProcessor.stripe:
@@ -113,7 +121,7 @@ class TransferTransactionService(BaseTransactionService):
             stripe_transfer = stripe_service.transfer(
                 destination_account.stripe_id,
                 amount,
-                source_transaction=transfer_source_transaction,
+                source_transaction=payment_transaction.charge_id,
                 metadata={
                     "outgoing_transaction_id": str(outgoing_transaction.id),
                     "incoming_transaction_id": str(incoming_transaction.id),
@@ -166,6 +174,35 @@ class TransferTransactionService(BaseTransactionService):
         await session.commit()
 
         return (outgoing_transaction, incoming_transaction)
+
+    async def create_transfer_from_charge(
+        self,
+        session: AsyncSession,
+        *,
+        destination_account: Account,
+        charge_id: str,
+        amount: int,
+        pledge: Pledge | None = None,
+        subscription: Subscription | None = None,
+        issue_reward: IssueReward | None = None,
+        transfer_metadata: dict[str, str] | None = None,
+    ) -> tuple[Transaction, Transaction]:
+        payment_transaction = await self.get_by(
+            session, type=TransactionType.payment, charge_id=charge_id
+        )
+        if payment_transaction is None:
+            raise PaymentTransactionForChargeDoesNotExist(charge_id)
+
+        return await self.create_transfer(
+            session,
+            destination_account=destination_account,
+            payment_transaction=payment_transaction,
+            amount=amount,
+            pledge=pledge,
+            subscription=subscription,
+            issue_reward=issue_reward,
+            transfer_metadata=transfer_metadata,
+        )
 
     async def create_reversal_transfer(
         self,

@@ -8,13 +8,17 @@ from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Account,
+    IssueReward,
     Organization,
+    Pledge,
+    Subscription,
     Transaction,
     User,
 )
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transfer import (
+    PaymentTransactionForChargeDoesNotExist,
     StripeNotConfiguredOnAccount,
     UnsetAccountCurrency,
     UnsupportedAccountType,
@@ -31,6 +35,36 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
+async def create_payment_transaction(
+    session: AsyncSession,
+    *,
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    currency: str = "usd",
+    amount: int = 1000,
+    charge_id: str = "STRIPE_CHARGE_ID",
+    pledge: Pledge | None = None,
+    subscription: Subscription | None = None,
+    issue_reward: IssueReward | None = None,
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.payment,
+        processor=processor,
+        currency=currency,
+        amount=amount,
+        account_currency=currency,
+        account_amount=amount,
+        tax_amount=0,
+        processor_fee_amount=0,
+        charge_id=charge_id,
+        pledge=pledge,
+        subscription=subscription,
+        issue_reward=issue_reward,
+    )
+    session.add(transaction)
+    await session.commit()
+    return transaction
+
+
 @pytest.mark.asyncio
 class TestCreateTransfer:
     async def test_unsupported_account_type(
@@ -43,12 +77,13 @@ class TestCreateTransfer:
             country="US",
             currency="usd",
         )
+        payment_transaction = await create_payment_transaction(session)
 
         with pytest.raises(UnsupportedAccountType):
             await transfer_transaction_service.create_transfer(
                 session,
                 destination_account=account,
-                source_currency="usd",
+                payment_transaction=payment_transaction,
                 amount=1000,
             )
 
@@ -62,12 +97,13 @@ class TestCreateTransfer:
             country="US",
             currency=None,
         )
+        payment_transaction = await create_payment_transaction(session)
 
         with pytest.raises(UnsetAccountCurrency):
             await transfer_transaction_service.create_transfer(
                 session,
                 destination_account=account,
-                source_currency="usd",
+                payment_transaction=payment_transaction,
                 amount=1000,
             )
 
@@ -85,12 +121,13 @@ class TestCreateTransfer:
             is_payouts_enabled=False,
             stripe_id=None,
         )
+        payment_transaction = await create_payment_transaction(session)
 
         with pytest.raises(StripeNotConfiguredOnAccount):
             await transfer_transaction_service.create_transfer(
                 session,
                 destination_account=account,
-                source_currency="usd",
+                payment_transaction=payment_transaction,
                 amount=1000,
             )
 
@@ -114,6 +151,7 @@ class TestCreateTransfer:
         )
         session.add(account)
         await session.commit()
+        payment_transaction = await create_payment_transaction(session)
 
         stripe_service_mock.transfer.return_value = SimpleNamespace(
             id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
@@ -122,7 +160,7 @@ class TestCreateTransfer:
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
-            source_currency="usd",
+            payment_transaction=payment_transaction,
             amount=1000,
         )
 
@@ -131,12 +169,14 @@ class TestCreateTransfer:
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.amount == -1000
         assert outgoing.transfer_id == "STRIPE_TRANSFER_ID"
+        assert outgoing.payment_transaction == payment_transaction
 
         assert incoming.account_id == account.id
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
+        assert incoming.payment_transaction == payment_transaction
 
         assert outgoing.id is not None
         assert incoming.id is not None
@@ -169,6 +209,7 @@ class TestCreateTransfer:
         )
         session.add(account)
         await session.commit()
+        payment_transaction = await create_payment_transaction(session)
 
         stripe_service_mock.transfer.return_value = SimpleNamespace(
             id="STRIPE_TRANSFER_ID",
@@ -185,7 +226,7 @@ class TestCreateTransfer:
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
-            source_currency="usd",
+            payment_transaction=payment_transaction,
             amount=1000,
         )
 
@@ -195,6 +236,7 @@ class TestCreateTransfer:
         assert outgoing.currency == "usd"
         assert outgoing.amount == -1000
         assert outgoing.transfer_id == "STRIPE_TRANSFER_ID"
+        assert outgoing.payment_transaction == payment_transaction
 
         assert incoming.account_id == account.id
         assert incoming.type == TransactionType.transfer
@@ -204,6 +246,7 @@ class TestCreateTransfer:
         assert incoming.account_currency == "eur"
         assert incoming.account_amount == 900
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
+        assert incoming.payment_transaction == payment_transaction
 
     async def test_open_collective(
         self, session: AsyncSession, organization: Organization, user: User
@@ -221,11 +264,12 @@ class TestCreateTransfer:
         )
         session.add(account)
         await session.commit()
+        payment_transaction = await create_payment_transaction(session)
 
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
-            source_currency="usd",
+            payment_transaction=payment_transaction,
             amount=1000,
         )
 
@@ -233,11 +277,84 @@ class TestCreateTransfer:
         assert outgoing.type == TransactionType.transfer
         assert outgoing.processor == PaymentProcessor.open_collective
         assert outgoing.amount == -1000
+        assert outgoing.payment_transaction == payment_transaction
 
         assert incoming.account_id == account.id
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.open_collective
         assert incoming.amount == 1000
+        assert incoming.payment_transaction == payment_transaction
+
+
+@pytest.mark.asyncio
+class TestCreateTransferFromCharge:
+    async def test_not_existing_charge(
+        self, session: AsyncSession, organization: Organization, user: User
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="FR",
+            currency="eur",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+
+        with pytest.raises(PaymentTransactionForChargeDoesNotExist):
+            await transfer_transaction_service.create_transfer_from_charge(
+                session,
+                destination_account=account,
+                charge_id="STRIPE_CHARGE_ID",
+                amount=1000,
+            )
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="FR",
+            currency="eur",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        payment_transaction = await create_payment_transaction(session)
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID",
+            balance_transaction="STRIPE_BALANCE_TRANSACTION_ID",
+            destination_payment="STRIPE_DESTINATION_CHARGE_ID",
+        )
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            id="STRIPE_DESTINATION_CHARGE_ID",
+            balance_transaction=SimpleNamespace(
+                amount=900, currency="eur", exchange_rate=0.9
+            ),
+        )
+
+        (
+            incoming,
+            outgoing,
+        ) = await transfer_transaction_service.create_transfer_from_charge(
+            session,
+            destination_account=account,
+            charge_id="STRIPE_CHARGE_ID",
+            amount=1000,
+        )
+
+        assert incoming.payment_transaction == payment_transaction
+        assert outgoing.payment_transaction == payment_transaction
 
 
 async def create_transfer_transactions(

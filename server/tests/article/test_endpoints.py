@@ -109,18 +109,23 @@ async def test_get_public(
 
     get = await client.get(
         f"/api/v1/articles/{res['id']}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert get.status_code == 200
-
-    # TODO: test get non authed
-
     get_json = get.json()
-    print(get_json)
 
     assert get_json["id"] == res["id"]
     assert get_json["title"] == "Hello World!"
     assert get_json["visibility"] == "public"
+
+    # lookup
+    lookup = await client.get(
+        f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world",
+    )
+    assert lookup.status_code == 200
+    lookup_json = lookup.json()
+    assert lookup_json["id"] == res["id"]
+    assert lookup_json["title"] == "Hello World!"
+    assert lookup_json["visibility"] == "public"
 
 
 @pytest.mark.asyncio
@@ -153,14 +158,9 @@ async def test_get_hidden(
 
     get = await client.get(
         f"/api/v1/articles/{res['id']}",
-        # cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert get.status_code == 200
-
-    # TODO: test get non authed
-
     get_json = get.json()
-    print(get_json)
 
     assert get_json["id"] == res["id"]
     assert get_json["title"] == "Hello World!"
@@ -202,7 +202,6 @@ async def test_get_private(
     assert get.status_code == 200
 
     get_json = get.json()
-    print(get_json)
 
     assert get_json["id"] == res["id"]
     assert get_json["title"] == "Hello World!"
@@ -212,6 +211,19 @@ async def test_get_private(
         f"/api/v1/articles/{res['id']}",
     )
     assert get_anon.status_code == 401
+
+    # lookup anon
+    lookup = await client.get(
+        f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world",
+    )
+    assert lookup.status_code == 401
+
+    # lookup auth
+    lookup = await client.get(
+        f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert lookup.status_code == 200
 
 
 @pytest.mark.asyncio

@@ -10,13 +10,15 @@ const BackerNavigation = (props: { classNames?: string }) => {
   const navs = backerRoutes
 
   // Filter routes, set isActive, and if subs should be expanded
-  const filteredNavs = navs.map((n) => {
-    const isActive = path && path.startsWith(n.link)
-    return {
-      ...n,
-      isActive,
-    }
-  })
+  const filteredNavs = navs
+    .filter((n) => ('if' in n ? n.if : true))
+    .map((n) => {
+      const isActive = path && path.startsWith(n.link)
+      return {
+        ...n,
+        isActive,
+      }
+    })
 
   return (
     <div className="flex flex-col gap-2 px-4 py-3">

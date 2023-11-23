@@ -1,15 +1,15 @@
-import Topbar from '@/components/Shared/Topbar'
+import DashboardLayout, {
+  DashboardBody,
+} from '@/components/Layout/DashboardLayout'
+import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Topbar
-        logo={{ title: 'Backoffice', position: 'center' }}
-        isFixed={false}
-        hideProfile={true}
-        useOrgFromURL={false}
-      ></Topbar>
-      <div className="mx-auto max-w-7xl p-4">{children}</div>
+      <DashboardLayout>
+        <DashboardTopbar useOrgFromURL={false} hideProfile={false} isFixed />
+        <DashboardBody>{children}</DashboardBody>
+      </DashboardLayout>
     </>
   )
 }

@@ -2,7 +2,6 @@ from typing import cast
 
 import stripe as stripe_lib
 
-from polar.exceptions import PolarError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -14,10 +13,10 @@ from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.user.service import user as user_service
 
-from .base import BaseTransactionService
+from .base import BaseTransactionService, BaseTransactionServiceError
 
 
-class PaymentTransactionError(PolarError):
+class PaymentTransactionError(BaseTransactionServiceError):
     ...
 
 

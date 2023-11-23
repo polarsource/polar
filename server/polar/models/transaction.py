@@ -170,16 +170,17 @@ class Transaction(RecordModel):
     def issue_reward(cls) -> Mapped["IssueReward | None"]:
         return relationship("IssueReward", lazy="raise")
 
-    payout_transaction_id: Mapped[UUID | None] = mapped_column(
+    payment_transaction_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("transactions.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
-    """ID of the transaction that paid out this transation."""
+    """ID of the transaction that pays for this transaction."""
 
     @declared_attr
-    def payout_transaction(cls) -> Mapped["Transaction | None"]:
+    def payment_transaction(cls) -> Mapped["Transaction | None"]:
+        """Transaction that pays for this transaction."""
         return relationship(
             "Transaction",
             lazy="raise",
@@ -187,4 +188,37 @@ class Transaction(RecordModel):
             remote_side=[
                 cls.id,  # type: ignore
             ],
+            foreign_keys="[Transaction.payment_transaction_id]",
+            back_populates="transfer_transactions",
+        )
+
+    @declared_attr
+    def transfer_transactions(cls) -> Mapped[list["Transaction"]]:
+        """Transactions that transferred this payment transaction."""
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            back_populates="payment_transaction",
+            foreign_keys="[Transaction.payment_transaction_id]",
+        )
+
+    payout_transaction_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("transactions.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """ID of the transaction that paid out this transaction."""
+
+    @declared_attr
+    def payout_transaction(cls) -> Mapped["Transaction | None"]:
+        """Transaction that paid out this transaction."""
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
+            remote_side=[
+                cls.id,  # type: ignore
+            ],
+            foreign_keys="[Transaction.payout_transaction_id]",
         )

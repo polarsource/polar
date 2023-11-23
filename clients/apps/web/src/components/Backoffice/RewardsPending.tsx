@@ -183,6 +183,7 @@ const Pledges = () => {
                         <a
                           href={p[0].pledge.hosted_invoice_url}
                           target="_blank"
+                          rel="noopener noreferrer"
                         >
                           <Button size="sm">
                             <span>Open Invoice</span>

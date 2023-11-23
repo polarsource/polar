@@ -148,33 +148,69 @@ class TestCreateRefunds:
         )
         session.add(payment_transaction)
 
-        outgoing_transfer = Transaction(
+        outgoing_transfer_1 = Transaction(
             type=TransactionType.transfer,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
-            amount=-charge.amount,
+            amount=-charge.amount * 0.75,
             account_currency=charge.currency,
-            account_amount=-charge.amount,
+            account_amount=-charge.amount * 0.75,
             tax_amount=0,
             processor_fee_amount=0,
             pledge=pledge,
+            payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
+            transfer_correlation_key="TRANSFER_1",
         )
-        incoming_transfer = Transaction(
+        incoming_transfer_1 = Transaction(
             type=TransactionType.transfer,
             processor=PaymentProcessor.stripe,
             account=account,
             currency=charge.currency,
-            amount=charge.amount,
+            amount=charge.amount * 0.75,
             account_currency=charge.currency,
-            account_amount=charge.amount,
+            account_amount=charge.amount * 0.75,
             tax_amount=0,
             processor_fee_amount=0,
             pledge=pledge,
+            payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
+            transfer_correlation_key="TRANSFER_1",
         )
-        session.add(outgoing_transfer)
-        session.add(incoming_transfer)
+        session.add(outgoing_transfer_1)
+        session.add(incoming_transfer_1)
+
+        outgoing_transfer_2 = Transaction(
+            type=TransactionType.transfer,
+            processor=PaymentProcessor.stripe,
+            currency=charge.currency,
+            amount=-charge.amount * 0.25,
+            account_currency=charge.currency,
+            account_amount=-charge.amount * 0.25,
+            tax_amount=0,
+            processor_fee_amount=0,
+            pledge=pledge,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            transfer_correlation_key="TRANSFER_2",
+        )
+        incoming_transfer_2 = Transaction(
+            type=TransactionType.transfer,
+            processor=PaymentProcessor.stripe,
+            account=account,
+            currency=charge.currency,
+            amount=charge.amount * 0.25,
+            account_currency=charge.currency,
+            account_amount=charge.amount * 0.25,
+            tax_amount=0,
+            processor_fee_amount=0,
+            pledge=pledge,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            transfer_correlation_key="TRANSFER_2",
+        )
+        session.add(outgoing_transfer_2)
+        session.add(incoming_transfer_2)
 
         handled_refund_transaction = Transaction(
             type=TransactionType.refund,
@@ -202,13 +238,24 @@ class TestCreateRefunds:
         assert refund_transaction.processor == PaymentProcessor.stripe
         assert refund_transaction.amount == -new_refund.amount
 
-        transfer_transaction_service_mock.create_reversal_transfer.assert_called_once()
-        assert transfer_transaction_service_mock.create_reversal_transfer.call_args[1][
-            "transfer_transactions"
-        ] == (outgoing_transfer, incoming_transfer)
         assert (
-            transfer_transaction_service_mock.create_reversal_transfer.call_args[1][
-                "amount"
-            ]
-            == new_refund.amount
+            transfer_transaction_service_mock.create_reversal_transfer.call_count == 2
         )
+
+        first_call = (
+            transfer_transaction_service_mock.create_reversal_transfer.call_args_list[0]
+        )
+        assert first_call[1]["transfer_transactions"] == (
+            outgoing_transfer_1,
+            incoming_transfer_1,
+        )
+        assert first_call[1]["amount"] == new_refund.amount * 0.75
+
+        second_call = (
+            transfer_transaction_service_mock.create_reversal_transfer.call_args_list[1]
+        )
+        assert second_call[1]["transfer_transactions"] == (
+            outgoing_transfer_2,
+            incoming_transfer_2,
+        )
+        assert second_call[1]["amount"] == new_refund.amount * 0.25

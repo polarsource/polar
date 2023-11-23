@@ -1,4 +1,4 @@
-import uuid
+import itertools
 
 from sqlalchemy import select
 
@@ -13,49 +13,27 @@ class BaseTransactionServiceError(PolarError):
     ...
 
 
-class MoreThanTwoTransfersForSinglePayment(BaseTransactionServiceError):
-    def __init__(
-        self,
-        payment_transaction_id: uuid.UUID,
-        transfer_transaction_ids: list[uuid.UUID],
-    ) -> None:
-        self.payment_transaction_id = payment_transaction_id
-        self.transfer_transaction_ids = transfer_transaction_ids
-        message = (
-            f"More than two transfer transactions were found "
-            f"for payment {payment_transaction_id}: "
-            f"{', '.join([str(id) for id in transfer_transaction_ids])}"
-        )
-        super().__init__(message)
-
-
 class BaseTransactionService(ResourceServiceReader[Transaction]):
     async def _get_transfer_transactions_for_payment(
         self, session: AsyncSession, *, payment_transaction: Transaction
-    ) -> tuple[Transaction, Transaction] | None:
-        statement = select(Transaction).where(
-            Transaction.type == TransactionType.transfer,
-            Transaction.transfer_id.is_not(None),
-            Transaction.transfer_reversal_id.is_(None),
+    ) -> list[tuple[Transaction, Transaction]]:
+        statement = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.transfer,
+                Transaction.payment_transaction_id == payment_transaction.id,
+            )
+            .order_by(
+                Transaction.transfer_correlation_key,
+                Transaction.account_id.nulls_first(),
+            )
         )
-        if payment_transaction.subscription_id:
-            statement = statement.where(
-                Transaction.subscription_id == payment_transaction.subscription_id
-            )
-        elif payment_transaction.pledge_id:
-            statement = statement.where(
-                Transaction.pledge_id == payment_transaction.pledge_id
-            )
 
         result = await session.execute(statement)
-        transactions = result.scalars().all()
-
-        if len(transactions) == 0:
-            return None
-
-        if len(transactions) != 2:
-            raise MoreThanTwoTransfersForSinglePayment(
-                payment_transaction.id, [transaction.id for transaction in transactions]
+        transactions = list(result.scalars().all())
+        return [
+            (t1, t2)
+            for _, (t1, t2) in itertools.groupby(
+                transactions, key=lambda t: t.transfer_correlation_key
             )
-
-        return (transactions[0], transactions[1])
+        ]

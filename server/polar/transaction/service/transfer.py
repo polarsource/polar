@@ -6,7 +6,6 @@ import structlog
 
 from polar.account.service import account as account_service
 from polar.enums import AccountType
-from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
@@ -15,12 +14,12 @@ from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
-from .base import BaseTransactionService
+from .base import BaseTransactionService, BaseTransactionServiceError
 
 log: Logger = structlog.get_logger()
 
 
-class TransferTransactionError(PolarError):
+class TransferTransactionError(BaseTransactionServiceError):
     ...
 
 

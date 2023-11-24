@@ -365,6 +365,57 @@ class TestCreateTransferFromCharge:
         assert outgoing.payment_transaction == payment_transaction
 
 
+@pytest.mark.asyncio
+class TestCreateTransferFromPaymentIntent:
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            organization_id=organization.id,
+            admin_id=user.id,
+            country="FR",
+            currency="eur",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        payment_transaction = await create_payment_transaction(session)
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID",
+            balance_transaction="STRIPE_BALANCE_TRANSACTION_ID",
+            destination_payment="STRIPE_DESTINATION_CHARGE_ID",
+        )
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            id="STRIPE_DESTINATION_CHARGE_ID",
+            balance_transaction=SimpleNamespace(
+                amount=900, currency="eur", exchange_rate=0.9
+            ),
+        )
+        stripe_service_mock.retrieve_intent.return_value = SimpleNamespace(
+            id="STRIPE_PAYMENT_INTENT_ID", latest_charge="STRIPE_CHARGE_ID"
+        )
+
+        (
+            incoming,
+            outgoing,
+        ) = await transfer_transaction_service.create_transfer_from_payment_intent(
+            session,
+            destination_account=account,
+            payment_intent_id="STRIPE_PAYMENT_INTENT_ID",
+            amount=1000,
+        )
+
+        assert incoming.payment_transaction == payment_transaction
+        assert outgoing.payment_transaction == payment_transaction
+
+
 async def create_transfer_transactions(
     session: AsyncSession,
     *,

@@ -30,7 +30,6 @@ from polar.integrations.github.service.user import github_user as github_user_se
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.issue.service import issue as issue_service
 from polar.kit.hook import Hook
@@ -850,13 +849,14 @@ class PledgeService(ResourceServiceReader[Pledge]):
             raise NotPermitted("Unexpected split receiver")
 
         assert pledge.payment_id is not None
-        payment_intent = stripe_service.retrieve_intent(pledge.payment_id)
-        assert payment_intent.latest_charge is not None
 
-        outgoing, _ = await transfer_transaction_service.create_transfer_from_charge(
+        (
+            outgoing,
+            _,
+        ) = await transfer_transaction_service.create_transfer_from_payment_intent(
             session,
             destination_account=pay_to_account,
-            charge_id=get_expandable_id(payment_intent.latest_charge),
+            payment_intent_id=pledge.payment_id,
             amount=payout_amount,
             pledge=pledge,
             issue_reward=split,

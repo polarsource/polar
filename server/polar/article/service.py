@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 import structlog
@@ -53,6 +54,10 @@ class ArticleService:
                 "This slug has been used more than 100 times in this organization."
             )
 
+        published_at: datetime | None = None
+        if create_schema.visibility == "public":
+            published_at = utc_now()
+
         return await Article(
             slug=slug,
             title=create_schema.title,
@@ -62,6 +67,7 @@ class ArticleService:
             byline=create_schema.byline,
             visibility=self._visibility_to_model_visibility(create_schema.visibility),
             paid_subscribers_only=create_schema.paid_subscribers_only,
+            published_at=published_at,
         ).save(session, autocommit=autocommit)
 
     async def get_loaded(

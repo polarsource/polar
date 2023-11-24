@@ -140,7 +140,7 @@ export default async function Page({
         subscriptionTiers={subscriptionTiers.items || []}
         subscriptionSummary={subscriptionsSummary.items || []}
         subscribersCount={subscriptionsSummary.pagination.total_count}
-        currentTab={currentTab}
+        onFirstRenderTab={currentTab}
       />
     </>
   )

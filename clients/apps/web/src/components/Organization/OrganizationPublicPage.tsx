@@ -30,7 +30,7 @@ const OrganizationPublicPage = ({
   subscriptionTiers,
   subscriptionSummary,
   subscribersCount,
-  currentTab,
+  onFirstRenderTab,
 }: {
   posts: Article[]
   organization: Organization
@@ -38,7 +38,7 @@ const OrganizationPublicPage = ({
   subscriptionTiers: SubscriptionTier[]
   subscriptionSummary: SubscriptionSummary[]
   subscribersCount: number
-  currentTab?: string
+  onFirstRenderTab?: string
 }) => {
   const showMeta =
     organization.bio ||
@@ -59,7 +59,7 @@ const OrganizationPublicPage = ({
   return (
     <Tabs
       className="flex min-h-screen flex-col justify-between"
-      defaultValue={currentTab ?? 'overview'}
+      defaultValue={onFirstRenderTab ?? 'overview'}
     >
       <div className="flex flex-col">
         <div className="flex w-full flex-col items-center justify-between gap-6 px-4 md:flex-row md:justify-normal md:gap-24 md:px-0">

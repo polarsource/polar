@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging.config
+import uuid
 from functools import wraps
 from typing import Any, cast
 
@@ -144,6 +145,16 @@ async def sync_transactions(
                 created_at = datetime.datetime.fromtimestamp(
                     stripe_transfer.created, tz=datetime.UTC
                 )
+                transfer_correlation_key = str(uuid.uuid4())
+
+                assert pledge.payment_id is not None
+                payment_intent = stripe.retrieve_intent(pledge.payment_id)
+                transfer_payment_transaction = await payment_transaction_service.get_by(
+                    session,
+                    type=TransactionType.payment,
+                    charge_id=payment_intent.latest_charge,
+                )
+
                 outgoing_transaction = Transaction(
                     id=generate_uuid(),
                     created_at=created_at,
@@ -156,6 +167,8 @@ async def sync_transactions(
                     account_amount=-stripe_transfer.amount,
                     tax_amount=0,
                     processor_fee_amount=0,
+                    transfer_correlation_key=transfer_correlation_key,
+                    payment_transaction=transfer_payment_transaction,
                     transfer_id=stripe_transfer.id,
                     pledge_id=transfer.pledge_id,
                     issue_reward_id=transfer.issue_reward_id,
@@ -172,6 +185,8 @@ async def sync_transactions(
                     account_amount=stripe_transfer.amount,
                     tax_amount=0,
                     processor_fee_amount=0,
+                    transfer_correlation_key=transfer_correlation_key,
+                    payment_transaction=transfer_payment_transaction,
                     transfer_id=stripe_transfer.id,
                     pledge_id=transfer.pledge_id,
                     issue_reward_id=transfer.issue_reward_id,

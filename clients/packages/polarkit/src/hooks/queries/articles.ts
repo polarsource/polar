@@ -15,17 +15,18 @@ import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
 
 export const useOrganizationArticles = (
-  orgName: string,
+  orgName?: string,
   platform: Platforms = Platforms.GITHUB,
 ): UseQueryResult<ListResourceArticle> =>
   useQuery({
     queryKey: ['article', 'organization', orgName],
     queryFn: () =>
       api.articles.search({
-        organizationName: orgName,
+        organizationName: orgName || '',
         platform,
       }),
     retry: defaultRetry,
+    enabled: !!orgName,
   })
 
 export const useCreateArticle = (): UseMutationResult<

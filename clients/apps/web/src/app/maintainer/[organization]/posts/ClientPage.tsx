@@ -1,10 +1,8 @@
 'use client'
 
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
-import { Post, getFeed, isRecommendation } from '@/components/Feed/data'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { EyeIcon } from '@heroicons/react/24/outline'
@@ -14,11 +12,12 @@ import {
   ChatBubbleOutline,
   LanguageOutlined,
 } from '@mui/icons-material'
+import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { api } from 'polarkit'
 import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import { useOrganizationArticles } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
 const sampleAnalyticsData = [
@@ -67,20 +66,9 @@ const sampleAnalyticsData = [
 ]
 
 const ClientPage = () => {
-  const [posts, setPosts] = useState<Post[]>([])
+  const { org } = useCurrentOrgAndRepoFromURL()
 
-  const organization = useCurrentOrgAndRepoFromURL().org
-
-  useEffect(() => {
-    if (!organization) {
-      setPosts([])
-      return
-    }
-
-    getFeed(api, organization.name).then((feed) =>
-      setPosts(feed.filter((entity) => !isRecommendation(entity)) as Post[]),
-    )
-  }, [organization])
+  const posts = useOrganizationArticles(org?.name)
 
   return (
     <>
@@ -91,7 +79,7 @@ const ClientPage = () => {
               <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Overview
               </h3>
-              <Link href={`/maintainer/${organization?.name}/posts/new`}>
+              <Link href={`/maintainer/${org?.name}/posts/new`}>
                 <Button className="h-8 w-8 rounded-full">
                   <AddOutlined fontSize="inherit" />
                 </Button>
@@ -99,11 +87,13 @@ const ClientPage = () => {
             </div>
             <div className="flex flex-col gap-y-12">
               <StaggerReveal className="flex w-full flex-col gap-y-6">
-                {posts.map((post) => (
-                  <StaggerReveal.Child key={post.id}>
-                    <PostItem {...post} />
-                  </StaggerReveal.Child>
-                ))}
+                {posts?.data?.items
+                  ? posts.data.items.map((post) => (
+                      <StaggerReveal.Child key={post.id}>
+                        <PostItem {...post} />
+                      </StaggerReveal.Child>
+                    ))
+                  : null}
               </StaggerReveal>
             </div>
           </div>
@@ -158,7 +148,7 @@ const ClientPage = () => {
 
 export default ClientPage
 
-const PostItem = (post: Post) => {
+const PostItem = (post: Article) => {
   const ref = useRef<HTMLAnchorElement>(null)
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
@@ -174,7 +164,7 @@ const PostItem = (post: Post) => {
     <Link
       className="flex h-full w-full flex-col"
       ref={ref}
-      href={`/maintainer/${currentOrg?.name}/posts/${post.id}`}
+      href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}
     >
       <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white px-8 py-6 shadow-sm transition-colors hover:bg-blue-50/50">
         {image && (
@@ -194,11 +184,15 @@ const PostItem = (post: Post) => {
           </div>
           <div className="flex flex-row items-center justify-between">
             <div className="dark:text-polar-300 flex w-full flex-row gap-x-3 text-sm text-gray-500">
-              <PolarTimeAgo date={post.createdAt} />
+              {post.published_at ? (
+                <PolarTimeAgo date={new Date(post.published_at)} />
+              ) : (
+                <span>Not published</span>
+              )}
               &middot;
               {post.visibility !== 'public' ? (
                 <div className="flex flex-row items-center gap-x-2 text-sm">
-                  <SubscriptionGroupIcon type={post.visibility} />
+                  {/* <SubscriptionGroupIcon type={post.visibility} /> */}
                   <span className="capitalize">{post.visibility}</span>
                 </div>
               ) : (

@@ -61,3 +61,6 @@ class Account(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped[Organization | None]:
         return relationship("Organization")
+
+    def is_active(self) -> bool:
+        return self.status == Account.Status.ACTIVE

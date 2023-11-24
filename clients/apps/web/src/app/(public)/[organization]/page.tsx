@@ -1,7 +1,13 @@
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
-import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
+import {
+  Organization,
+  Platforms,
+  ResponseError,
+  SubscriptionSummary,
+  SubscriptionTier,
+} from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import { api } from 'polarkit/api'
@@ -80,13 +86,7 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [
-    organization,
-    repositories,
-    articles,
-    subscriptionTiers,
-    subscriptionsSummary,
-  ] = await Promise.all([
+  const [organization, repositories, articles] = await Promise.all([
     api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
@@ -101,29 +101,43 @@ export default async function Page({
       },
       cacheConfig,
     ),
-    api.articles.search(
+    await api.articles.search(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
-      },
-      cacheConfig,
-    ),
-    api.subscriptions.searchSubscriptionTiers(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    ),
-    api.subscriptions.searchSubscriptionsSummary(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        limit: 20,
       },
       cacheConfig,
     ),
   ])
+
+  // TODO: move subscription data loading into Promise.all above!
+  let subscriptionTiers: SubscriptionTier[] = []
+  let subscriptionsSummary: SubscriptionSummary[] = []
+  let subscribersCount = 0
+  try {
+    const subscriptionGroupsResponse =
+      await api.subscriptions.searchSubscriptionTiers(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: organization.name,
+        },
+        cacheConfig,
+      )
+    subscriptionTiers = subscriptionGroupsResponse.items ?? []
+
+    const subscriptionSummaryResponse =
+      await api.subscriptions.searchSubscriptionsSummary(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          limit: 20,
+        },
+        cacheConfig,
+      )
+
+    subscriptionsSummary = subscriptionSummaryResponse.items ?? []
+    subscribersCount = subscriptionSummaryResponse.pagination.total_count
+  } catch (err) {}
 
   if (organization === undefined || repositories === undefined) {
     return <PageNotFound />
@@ -137,9 +151,9 @@ export default async function Page({
         posts={articles.items || []}
         organization={organization}
         repositories={repositories.items || []}
-        subscriptionTiers={subscriptionTiers.items || []}
-        subscriptionSummary={subscriptionsSummary.items || []}
-        subscribersCount={subscriptionsSummary.pagination.total_count}
+        subscriptionTiers={subscriptionTiers}
+        subscriptionSummary={subscriptionsSummary}
+        subscribersCount={subscribersCount}
         onFirstRenderTab={currentTab}
       />
     </>

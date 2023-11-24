@@ -7,6 +7,7 @@ import structlog
 from slugify import slugify
 from sqlalchemy.orm import joinedload
 
+from polar.kit.utils import utc_now
 from polar.models.article import Article
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
@@ -155,6 +156,15 @@ class ArticleService:
             )
 
         if update.visibility is not None:
+            # if article was not already visible, and it's changed to visible:
+            # set published at
+            if (
+                article.visibility != Article.Visibility.public
+                and update.visibility == "public"
+                and article.published_at is None
+            ):
+                article.published_at = utc_now()
+
             article.visibility = self._visibility_to_model_visibility(update.visibility)
 
         if update.paid_subscribers_only is not None:

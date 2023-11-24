@@ -40,7 +40,7 @@ export const Default: Story = {
     repositories: [repo],
     subscriptionTiers: [],
     subscriptionSummary: [],
-    currentTab: 'overview',
+    onFirstRenderTab: 'overview',
   },
   render: (args) => {
     return (

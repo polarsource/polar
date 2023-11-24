@@ -134,7 +134,7 @@ export const OrganizationPublicPageContent = ({
         <TabsContent className="w-full" value="overview">
           <div className="flex max-w-xl flex-col gap-y-6">
             {posts.map((post) => (
-              <Link href={`/${organization.name}/posts/${post.id}`}>
+              <Link href={`/${organization.name}/posts/${post.slug}`}>
                 <PostComponent article={post} />
               </Link>
             ))}

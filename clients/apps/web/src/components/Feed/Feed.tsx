@@ -1,33 +1,28 @@
 'use client'
 
-import { useRequireAuth } from '@/hooks'
 import Link from 'next/link'
-import { api } from 'polarkit'
-import { useEffect, useState } from 'react'
+import { useListArticles } from 'polarkit/hooks'
 import { StaggerReveal } from '../Shared/StaggerReveal'
 import { Post as PostComponent } from './Posts/Post'
-import { Recommendation as RecommendationComponent } from './Recommendations/Recommendation'
-import { Post, Recommendation, getFeed, isRecommendation } from './data'
 
 export const Feed = () => {
-  const [feed, setFeed] = useState<(Recommendation | Post)[]>([])
-  const { currentUser } = useRequireAuth()
+  const articles = useListArticles()
 
-  useEffect(() => {
-    getFeed(api, currentUser?.username || '').then((feed) => setFeed(feed))
-  }, [currentUser])
+  if (!articles.data || !articles.data.items) {
+    return <></>
+  }
 
-  return feed.length > 0 ? (
+  return articles.data.items.length > 0 ? (
     <StaggerReveal className="flex flex-col gap-y-6">
-      {feed.map((entity) => (
+      {articles.data.items.map((entity) => (
         <StaggerReveal.Child key={entity.id}>
-          {isRecommendation(entity) ? (
+          {/* {isRecommendation(entity) ? (
             <RecommendationComponent {...entity} />
-          ) : (
-            <Link href={`/posts/${entity.id}`}>
-              <PostComponent {...entity} />
-            </Link>
-          )}
+          ) : ( */}
+          <Link href={`/${entity.organization.name}/posts/${entity.slug}`}>
+            <PostComponent article={entity} />
+          </Link>
+          {/* )} */}
         </StaggerReveal.Child>
       ))}
     </StaggerReveal>

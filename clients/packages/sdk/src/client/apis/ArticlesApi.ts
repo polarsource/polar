@@ -136,6 +136,42 @@ export class ArticlesApi extends runtime.BaseAPI {
     }
 
     /**
+     * List articles.
+     * List articles (Public API)
+     */
+    async listRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List articles.
+     * List articles (Public API)
+     */
+    async list(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
+        const response = await this.listRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Lookup article.
      * Lookup article (Public API)
      */

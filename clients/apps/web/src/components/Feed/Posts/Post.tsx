@@ -8,6 +8,7 @@ import {
   MoreVertOutlined,
   VerifiedUser,
 } from '@mui/icons-material'
+import { Article } from '@polar-sh/sdk'
 import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
@@ -15,8 +16,8 @@ import { ButtonProps } from 'polarkit/components/ui/button'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
-import SubscriptionGroupIcon from '../../Subscriptions/SubscriptionGroupIcon'
-import { Post as FeedPost } from '../data'
+
+type FeedPost = { article: Article }
 
 export const Post = (props: FeedPost) => {
   const ref = useRef<HTMLDivElement>(null)
@@ -29,8 +30,8 @@ export const Post = (props: FeedPost) => {
     >
       <Avatar
         className="h-10 w-10"
-        avatar_url={props.author.avatar_url}
-        name={props.author.username}
+        avatar_url={props.article.byline.avatar_url}
+        name={props.article.byline.name}
       />
       <div className="flex w-full min-w-0 flex-col">
         <PostHeader {...props} />
@@ -47,32 +48,37 @@ const PostHeader = (props: FeedPost) => {
       <div className="flex flex-row items-center gap-x-2">
         <Link
           className="flex flex-row items-center gap-x-2"
-          href={`/${props.author.username}`}
+          href={`/${props.article.organization.name}`}
         >
           <h3 className="text-blue-500 dark:text-blue-400">
-            {props.author.username}
+            {props.article.organization.pretty_name ||
+              props.article.organization.name}
           </h3>
-          {props.author.verified && (
-            <VerifiedUser className="text-blue-500" fontSize="inherit" />
-          )}
+          {/* {props.author.verified && ( */}
+          <VerifiedUser className="text-blue-500" fontSize="inherit" />
+          {/* )} */}
         </Link>
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
           &middot;
           <div className="text-xs">
-            {props.createdAt.toLocaleString('en-US', {
-              year:
-                props.createdAt.getFullYear() === new Date().getFullYear()
-                  ? undefined
-                  : 'numeric',
-              month:
-                props.createdAt.getFullYear() === new Date().getFullYear()
-                  ? 'long'
-                  : 'short',
-              day: 'numeric',
-            })}
+            {props.article.published_at
+              ? new Date(props.article.published_at).toLocaleString('en-US', {
+                  year:
+                    new Date(props.article.published_at).getFullYear() ===
+                    new Date().getFullYear()
+                      ? undefined
+                      : 'numeric',
+                  month:
+                    new Date(props.article.published_at).getFullYear() ===
+                    new Date().getFullYear()
+                      ? 'long'
+                      : 'short',
+                  day: 'numeric',
+                })
+              : null}
           </div>
           &middot;
-          {props.visibility === 'public' ? (
+          {props.article.visibility === 'public' ? (
             <>
               <div className="flex flex-row items-center gap-x-1">
                 <span className="flex items-center text-blue-500">
@@ -86,14 +92,16 @@ const PostHeader = (props: FeedPost) => {
             <>
               <div className="flex flex-row items-center gap-x-1">
                 <span className="flex items-center text-blue-500">
-                  <SubscriptionGroupIcon type={props.visibility} />
+                  {/* <SubscriptionGroupIcon type={props.visibility} /> */}
                 </span>
-                <span className="text-xs capitalize">{props.visibility}</span>
+                <span className="text-xs capitalize">
+                  {props.article.visibility}
+                </span>
               </div>
               &middot;
             </>
           )}
-          <Link href={`/${props.author.username}?tab=subscriptions`}>
+          <Link href={`/${props.article.organization.name}?tab=subscriptions`}>
             <Button className="px-0" variant="link" size="sm">
               Subscribe
             </Button>
@@ -115,7 +123,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
       )}
     >
       <div className="dark:text-polar-200 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950">
-        {props.title}
+        {props.article.title}
       </div>
       <div className="flex flex-col flex-wrap">
         <p
@@ -126,7 +134,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
               : 'dark:text-polar-400 text-gray-700',
           )}
         >
-          {props.body.replace('\n\n', '\n')}
+          {props.article.body.replace('\n\n', '\n')}
         </p>
       </div>
     </div>
@@ -140,7 +148,8 @@ const PostFooter = (props: FeedPost & { isHovered: boolean }) => {
         <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-500">
           <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
             <ChatBubbleOutline fontSize="inherit" />
-            <span>{props.comments.length}</span>
+            {/* <span>{props.comments.length}</span> */}
+            <span>0</span>
           </div>
           <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
             <BookmarkBorderOutlined fontSize="inherit" />

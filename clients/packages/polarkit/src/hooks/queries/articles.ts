@@ -29,6 +29,13 @@ export const useOrganizationArticles = (
     enabled: !!orgName,
   })
 
+export const useListArticles = (): UseQueryResult<ListResourceArticle> =>
+  useQuery({
+    queryKey: ['article', 'list'],
+    queryFn: () => api.articles.list(),
+    retry: defaultRetry,
+  })
+
 export const useCreateArticle = (): UseMutationResult<
   Article,
   Error,

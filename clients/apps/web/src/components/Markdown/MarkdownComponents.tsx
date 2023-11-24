@@ -1,5 +1,7 @@
 // @ts-ignore
 import { Components } from 'react-markdown'
+import SyntaxHighlighter from 'react-syntax-highlighter'
+import actionScript from 'react-syntax-highlighter/dist/esm/languages/hljs/actionscript'
 import { twMerge } from 'tailwind-merge'
 
 export const COMPONENTS: Components = {
@@ -114,8 +116,9 @@ export const COMPONENTS: Components = {
     />
   ),
   code: (props) => (
-    <code
-      {...props}
+    <SyntaxHighlighter
+      style={actionScript}
+      children={props.children as string}
       className={twMerge(
         'w-full min-w-0 text-sm leading-none',
         props.className,

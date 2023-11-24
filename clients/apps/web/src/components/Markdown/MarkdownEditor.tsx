@@ -2,12 +2,32 @@ import { upload } from '@vercel/blob/client'
 import { TextArea } from 'polarkit/components/ui/atoms'
 import { ChangeEventHandler, DragEventHandler, useCallback } from 'react'
 
+const uploadingText = 'Uploading...'
+
 interface MarkdownEditorProps {
   value: string
   onChange?: (value: string) => void
 }
 
 export const MarkdownEditor = ({ value, onChange }: MarkdownEditorProps) => {
+  const insertTextAtCursor = useCallback(
+    (text: string, element: HTMLTextAreaElement) => {
+      const cursorPosition = element.selectionStart
+
+      const textBeforeCursorPosition = element.value.substring(
+        0,
+        cursorPosition,
+      )
+      const textAfterCursorPosition = element.value.substring(
+        cursorPosition,
+        element.value.length,
+      )
+
+      element.value = textBeforeCursorPosition + text + textAfterCursorPosition
+    },
+    [],
+  )
+
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
     (e) => {
       onChange?.(e.target.value)
@@ -28,31 +48,25 @@ export const MarkdownEditor = ({ value, onChange }: MarkdownEditorProps) => {
 
         for (const file of e.dataTransfer.files) {
           try {
+            insertTextAtCursor(uploadingText, e.target)
+
             const newBlob = await upload(file.name, file, {
               access: 'public',
               handleUploadUrl: '/api/blob/upload',
             })
 
             const textToInsert = `![${newBlob.pathname}](${newBlob.url})`
-            const cursorPosition = e.target.selectionStart
 
-            const textBeforeCursorPosition = e.target.value.substring(
-              0,
-              cursorPosition,
-            )
-            const textAfterCursorPosition = e.target.value.substring(
-              cursorPosition,
-              e.target.value.length,
-            )
-
-            onChange?.(
-              textBeforeCursorPosition + textToInsert + textAfterCursorPosition,
-            )
-          } catch (err) {}
+            e.target.value = e.target.value.replace(uploadingText, textToInsert)
+          } catch (err) {
+            e.target.value = e.target.value.replace(uploadingText, '')
+          } finally {
+            onChange?.(e.target.value)
+          }
         }
       }
     },
-    [onChange],
+    [onChange, insertTextAtCursor],
   )
 
   const allow: DragEventHandler<HTMLTextAreaElement> = useCallback((e) => {

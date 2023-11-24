@@ -2,23 +2,41 @@
 
 import Editor from '@/components/Feed/Editor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useParams, useRouter } from 'next/navigation'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { ArticleCreate } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import { Button, Input } from 'polarkit/components/ui/atoms'
-import { useSubscriptionTiers } from 'polarkit/hooks'
-import { useCallback, useState } from 'react'
+import { useCreateArticle } from 'polarkit/hooks'
+import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
-  const { organization } = useParams()
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
+  const { org } = useCurrentOrgAndRepoFromURL()
+
+  const [article, setArticle] = useState<ArticleCreate>({
+    title: '',
+    body: '',
+    organization_id: org?.id || '',
+  })
+
+  useEffect(() => {
+    setArticle((a) => ({ ...a, organization_id: org?.id || '' }))
+  }, [org])
 
   const router = useRouter()
 
-  const handleSave = useCallback(async () => {
-    router.push(`/maintainer/${organization}/posts`)
-  }, [router, organization])
+  const create = useCreateArticle()
 
-  const subscriptionTiers = useSubscriptionTiers(organization as string)
+  const handleSave = async () => {
+    if (!org) {
+      return
+    }
+
+    const created = await create.mutateAsync(article)
+
+    router.push(
+      `/maintainer/${created.organization.name}/posts/${created.slug}`,
+    )
+  }
 
   return (
     <>
@@ -31,23 +49,33 @@ const ClientPage = () => {
               </h3>
 
               <div className="flex flex-row items-center gap-x-4">
-                <Button variant="secondary" onClick={handleSave}>
+                <Button
+                  variant="secondary"
+                  onClick={handleSave}
+                  loading={create.isPending}
+                >
                   Save Draft
                 </Button>
-                <Button onClick={handleSave}>Publish</Button>
+                <Button onClick={() => alert('todo!')}>Publish</Button>
               </div>
             </div>
             <Input
               className="min-w-[320px]"
               placeholder="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={article.title}
+              onChange={(e) =>
+                setArticle((a) => ({ ...a, title: e.target.value }))
+              }
             />
             <div className="flex h-full w-full flex-col">
-              <Editor value={body} onChange={setBody} />
+              <Editor
+                value={article.body}
+                onChange={(val) => setArticle((a) => ({ ...a, body: val }))}
+              />
             </div>
           </div>
         </div>
+        <pre>{JSON.stringify(article)}</pre>
       </DashboardBody>
     </>
   )

@@ -1,37 +1,49 @@
 'use client'
 
 import Editor from '@/components/Feed/Editor'
-import { Post, getFeed } from '@/components/Feed/data'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useParams, useRouter } from 'next/navigation'
-import { api } from 'polarkit'
+import Spinner from '@/components/Shared/Spinner'
+import { ArticleUpdate } from '@polar-sh/sdk'
+import { useParams } from 'next/navigation'
 import { Button, Input } from 'polarkit/components/ui/atoms'
-import { useSubscriptionTiers } from 'polarkit/hooks'
-import { useCallback, useEffect, useState } from 'react'
+import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
+import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
-  const { post: postId, organization } = useParams()
-  const [post, setPost] = useState<Post>()
-  const [body, setBody] = useState(post?.body || '')
+  const { post: postSlug, organization: organizationName } = useParams()
+
+  const post = useArticleLookup(organizationName as string, postSlug as string)
+
+  const [updateArticle, setUpdateArticle] = useState<ArticleUpdate>({})
 
   useEffect(() => {
-    getFeed(api, organization as string).then((feed) => {
-      const post = feed.find(
-        (post) => 'id' in post && post.id === postId,
-      ) as Post
+    setUpdateArticle((a) => ({
+      ...a,
+      body: post.data?.body,
+      title: post.data?.title,
+    }))
+  }, [post.data])
 
-      setPost(post)
-      setBody(post?.body || '')
+  const update = useUpdateArticle()
+
+  const handleSave = async () => {
+    if (!post?.data?.id) {
+      return
+    }
+
+    await update.mutateAsync({
+      id: post.data.id,
+      articleUpdate: updateArticle,
     })
-  }, [postId])
+  }
 
-  const router = useRouter()
-
-  const handleSave = useCallback(() => {
-    router.push(`/maintainer/${organization}/posts`)
-  }, [router, organization])
-
-  const subscriptionTiers = useSubscriptionTiers(organization as string)
+  if (!post.data) {
+    return (
+      <DashboardBody>
+        <Spinner />
+      </DashboardBody>
+    )
+  }
 
   return (
     <>
@@ -44,14 +56,39 @@ const ClientPage = () => {
               </h3>
 
               <div className="flex flex-row items-center gap-x-2">
-                <Button className="self-start" onClick={handleSave}>
+                <Button
+                  className="self-start"
+                  onClick={handleSave}
+                  loading={update.isPending}
+                >
                   Save Post
                 </Button>
               </div>
             </div>
-            <Input className="min-w-[320px]" placeholder="Title" />
+            <Input
+              className="min-w-[320px]"
+              placeholder="Title"
+              value={updateArticle?.title}
+              onChange={(e) =>
+                setUpdateArticle((a) => ({
+                  ...a,
+                  title: e.target.value,
+                }))
+              }
+            />
             <div className="flex h-full w-full flex-col">
-              {post && <Editor value={body} onChange={setBody} post={post} />}
+              {post && (
+                <Editor
+                  value={updateArticle?.body || ''}
+                  onChange={(value) =>
+                    setUpdateArticle((a) => ({
+                      ...a,
+                      body: value,
+                    }))
+                  }
+                  post={post.data}
+                />
+              )}
             </div>
           </div>
         </div>

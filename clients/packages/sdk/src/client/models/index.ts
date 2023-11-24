@@ -140,7 +140,37 @@ export interface Article {
      * @memberof Article
      */
     byline: Byline;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    visibility: ArticleVisibilityEnum;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof Article
+     */
+    organization: Organization;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    published_at?: string;
 }
+
+
+/**
+ * @export
+ */
+export const ArticleVisibilityEnum = {
+    PRIVATE: 'private',
+    HIDDEN: 'hidden',
+    PUBLIC: 'public'
+} as const;
+export type ArticleVisibilityEnum = typeof ArticleVisibilityEnum[keyof typeof ArticleVisibilityEnum];
+
 /**
  * 
  * @export
@@ -165,7 +195,104 @@ export interface ArticleCreate {
      * @memberof ArticleCreate
      */
     organization_id: string;
+    /**
+     * If the user or organization should be credited in the byline.
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    byline?: ArticleCreateBylineEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    visibility?: ArticleCreateVisibilityEnum;
+    /**
+     * Set to true to only make this article available for subscribers to a paid subscription tier in the organization.
+     * @type {boolean}
+     * @memberof ArticleCreate
+     */
+    paid_subscribers_only?: boolean;
 }
+
+
+/**
+ * @export
+ */
+export const ArticleCreateBylineEnum = {
+    USER: 'user',
+    ORGANIZATION: 'organization'
+} as const;
+export type ArticleCreateBylineEnum = typeof ArticleCreateBylineEnum[keyof typeof ArticleCreateBylineEnum];
+
+/**
+ * @export
+ */
+export const ArticleCreateVisibilityEnum = {
+    PRIVATE: 'private',
+    HIDDEN: 'hidden',
+    PUBLIC: 'public'
+} as const;
+export type ArticleCreateVisibilityEnum = typeof ArticleCreateVisibilityEnum[keyof typeof ArticleCreateVisibilityEnum];
+
+/**
+ * 
+ * @export
+ * @interface ArticleUpdate
+ */
+export interface ArticleUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    title?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    body?: string;
+    /**
+     * If the user or organization should be credited in the byline.
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    byline?: ArticleUpdateBylineEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    visibility?: ArticleUpdateVisibilityEnum;
+    /**
+     * Set to true to only make this article available for subscribers to a paid subscription tier in the organization.
+     * @type {boolean}
+     * @memberof ArticleUpdate
+     */
+    paid_subscribers_only?: boolean;
+}
+
+
+/**
+ * @export
+ */
+export const ArticleUpdateBylineEnum = {
+    USER: 'user',
+    ORGANIZATION: 'organization'
+} as const;
+export type ArticleUpdateBylineEnum = typeof ArticleUpdateBylineEnum[keyof typeof ArticleUpdateBylineEnum];
+
+/**
+ * @export
+ */
+export const ArticleUpdateVisibilityEnum = {
+    PRIVATE: 'private',
+    HIDDEN: 'hidden',
+    PUBLIC: 'public'
+} as const;
+export type ArticleUpdateVisibilityEnum = typeof ArticleUpdateVisibilityEnum[keyof typeof ArticleUpdateVisibilityEnum];
+
 /**
  * 
  * @export
@@ -530,7 +657,7 @@ export interface Byline {
      * @type {string}
      * @memberof Byline
      */
-    avatar_url: string;
+    avatar_url?: string;
 }
 /**
  * 

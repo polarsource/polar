@@ -77,8 +77,9 @@ export default function LongformPost({ post }: { post: Article }) {
               })
             },
           ]}
-          children={post.body}
-        />
+        >
+          {post.body}
+        </MarkdownPreview>
         <div className="dark:bg-polar-700 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 px-16 py-12">
           <Avatar
             className="h-12 w-12"

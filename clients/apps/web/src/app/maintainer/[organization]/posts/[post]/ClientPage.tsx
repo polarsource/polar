@@ -119,7 +119,7 @@ const ClientPage = () => {
                       />
                     </div>
                   ) : (
-                    <MarkdownPreview children={updateArticle.body} />
+                    <MarkdownPreview>{updateArticle.body}</MarkdownPreview>
                   )}
                 </TabsContent>
               </Tabs>

@@ -1,10 +1,10 @@
-import { Post } from '@/components/Feed/data'
+import LongformPost from '@/components/Feed/LongformPost'
 import { ProfileMenu } from '@/components/Shared/ProfileSelection'
+import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
-import LongformPost from '../../../../../components/Feed/LongformPost'
 
-export default function Page({ post }: { post: Post }) {
+export default function Page({ post }: { post: Article }) {
   return (
     <div className="flex w-full flex-col items-center gap-y-16">
       <div className="flex w-full flex-row items-center justify-between px-4">

@@ -2,6 +2,7 @@ import stripe
 from arq import Retry
 from pydantic import parse_obj_as
 
+from polar.account.service import account as account_service
 from polar.exceptions import PolarError
 from polar.integrations.stripe.schemas import (
     PaymentIntentSuccessWebhook,
@@ -48,6 +49,18 @@ class UnsetAccountOnPayoutEvent(StripeTaskError):
             "but the connected account is not set"
         )
         super().__init__(message)
+
+
+@task("stripe.webhook.account.updated")
+async def account_updated(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            account: stripe.Account = event["data"]["object"]
+            await account_service.update_account_from_stripe(
+                session, stripe_account=account
+            )
 
 
 @task("stripe.webhook.payment_intent.succeeded")

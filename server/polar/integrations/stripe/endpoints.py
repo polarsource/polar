@@ -12,8 +12,6 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 
-from .service import stripe as stripe_service
-
 log = structlog.get_logger()
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -32,6 +30,7 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "invoice.paid",
 }
 CONNECT_IMPLEMENTED_WEBHOOKS = {
+    "account.updated",
     "payout.paid",
 }
 
@@ -51,19 +50,6 @@ async def stripe_connect_return(
     account = await account_service.get_by(session, stripe_id=stripe_id)
     if not account or account.account_type != AccountType.stripe:
         raise HTTPException(status_code=404, detail="Account not found")
-
-    assert account.stripe_id
-
-    stripe_account = stripe_service.retrieve_account(account.stripe_id)
-
-    account.email = stripe_account.email
-    account.country = stripe_account.country
-    account.currency = stripe_account.default_currency
-    account.is_details_submitted = stripe_account.details_submitted or False
-    account.is_charges_enabled = stripe_account.charges_enabled or False
-    account.is_payouts_enabled = stripe_account.payouts_enabled or False
-    account.data = stripe_account.to_dict()
-    await account.save(session)
 
     if account.organization_id:
         org = await organization_service.get(session, account.organization_id)

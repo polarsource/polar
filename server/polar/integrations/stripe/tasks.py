@@ -10,6 +10,12 @@ from polar.integrations.stripe.schemas import (
 from polar.pledge.service import pledge as pledge_service
 from polar.subscription.service.subscription import SubscriptionDoesNotExist
 from polar.subscription.service.subscription import subscription as subscription_service
+from polar.transaction.service.dispute import (
+    DisputeUnknownPaymentTransaction,
+)
+from polar.transaction.service.dispute import (
+    dispute_transaction as dispute_transaction_service,
+)
 from polar.transaction.service.payment import (
     PledgeDoesNotExist as PaymentTransactionPledgeDoesNotExist,
 )
@@ -26,6 +32,8 @@ from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+
+from .service import stripe as stripe_service
 
 
 class StripeTaskError(PolarError):
@@ -107,11 +115,40 @@ async def charge_dispute_created(
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             dispute = event["data"]["object"]
-            await pledge_service.mark_charge_disputed_by_payment_id(
-                session=session,
-                payment_id=dispute["payment_intent"],
-                amount=dispute["amount"],
-                transaction_id=dispute["id"],
+
+            try:
+                await dispute_transaction_service.create_dispute(
+                    session, dispute=dispute
+                )
+            except DisputeUnknownPaymentTransaction as e:
+                # Retry because Stripe webhooks order is not guaranteed,
+                # so we might not have been able to handle charge.succeeded yet!
+                MAX_RETRIES = 2
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(2 ** ctx["job_try"]) from e
+                else:
+                    raise
+
+            charge = stripe_service.get_charge(dispute.charge)
+            if charge.metadata.get("type") == ProductType.pledge:
+                await pledge_service.mark_charge_disputed_by_payment_id(
+                    session=session,
+                    payment_id=dispute["payment_intent"],
+                    amount=dispute["amount"],
+                    transaction_id=dispute["id"],
+                )
+
+
+@task("stripe.webhook.charge.dispute.funds_reinstated")
+async def charge_dispute_funds_reinstated(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            dispute = event["data"]["object"]
+
+            await dispute_transaction_service.create_dispute_reversal(
+                session, dispute=dispute
             )
 
 

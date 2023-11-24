@@ -46,6 +46,21 @@ const ClientPage = () => {
     )
   }
 
+  const handlePublish = async () => {
+    if (!org) {
+      return
+    }
+
+    const created = await create.mutateAsync({
+      ...article,
+      visibility: 'public',
+    })
+
+    router.push(
+      `/maintainer/${created.organization.name}/posts/${created.slug}`,
+    )
+  }
+
   return (
     <>
       <DashboardBody>
@@ -64,7 +79,7 @@ const ClientPage = () => {
                 >
                   Save Draft
                 </Button>
-                <Button onClick={() => alert('todo!')}>Publish</Button>
+                <Button onClick={handlePublish}>Publish</Button>
               </div>
             </div>
             <Input
@@ -84,7 +99,7 @@ const ClientPage = () => {
                   <TabsTrigger value="edit">Markdown</TabsTrigger>
                   <TabsTrigger value="preview">Preview</TabsTrigger>
                 </TabsList>
-                <TabsContent className="h-full" value="edit">
+                <TabsContent className="h-full" value="edit" tabIndex={-1}>
                   <MarkdownEditor
                     value={article.body}
                     onChange={(val) => setArticle((a) => ({ ...a, body: val }))}

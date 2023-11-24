@@ -82,6 +82,10 @@ class ArticleCreate(Schema):
         default=False,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
     )
+    published_at: datetime.datetime | None = Field(
+        default=None,
+        description="Time of publishing. If this date is in the future, the post will be scheduled to publish at this time. If visibility is 'public', published_at will default to the current time.",
+    )
 
 
 class ArticleUpdate(Schema):
@@ -95,4 +99,12 @@ class ArticleUpdate(Schema):
     paid_subscribers_only: bool | None = Field(
         default=None,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
+    )
+    published_at: datetime.datetime | None = Field(
+        default=None,
+        description="Time of publishing. If this date is in the future, the post will be scheduled to publish at this time.",
+    )
+    set_published_at: bool | None = Field(
+        default=None,
+        description="Set to true for changes to published_at to take affect.",
     )

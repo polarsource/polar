@@ -24,26 +24,22 @@ class TransferTransactionError(BaseTransactionServiceError):
 
 
 class UnsupportedAccountType(TransferTransactionError):
-    def __init__(self, account_id: uuid.UUID, account_type: AccountType) -> None:
-        self.account_id = account_id
-        self.account_type = account_type
+    def __init__(self, account: Account) -> None:
+        self.account = account
         message = (
-            f"The destination account {account_id} is unsupported ({account_type})."
+            f"The destination account {account.id} "
+            f"is unsupported ({account.account_type})."
         )
         super().__init__(message)
 
 
-class UnsetAccountCurrency(TransferTransactionError):
-    def __init__(self, account_id: uuid.UUID) -> None:
-        self.account_id = account_id
-        message = f"The destination account {account_id} has no currency set."
-        super().__init__(message)
-
-
-class StripeNotConfiguredOnAccount(TransferTransactionError):
-    def __init__(self, account_id: uuid.UUID) -> None:
-        self.account_id = account_id
-        message = f"The account {account_id} has no Stripe Connect account configured."
+class InactiveAccount(TransferTransactionError):
+    def __init__(self, account: Account) -> None:
+        self.account = account
+        message = (
+            f"The destination account {account.id} is not active."
+            f"The owner should go through the onboarding on {account.account_type}"
+        )
         super().__init__(message)
 
 
@@ -67,20 +63,19 @@ class TransferTransactionService(BaseTransactionService):
         issue_reward: IssueReward | None = None,
         transfer_metadata: dict[str, str] | None = None,
     ) -> tuple[Transaction, Transaction]:
-        if destination_account.currency is None:
-            raise UnsetAccountCurrency(destination_account.id)
-
-        source_currency = payment_transaction.currency.lower()
-        destination_currency = destination_account.currency.lower()
-
         if destination_account.account_type == AccountType.stripe:
             processor = PaymentProcessor.stripe
         elif destination_account.account_type == AccountType.open_collective:
             processor = PaymentProcessor.open_collective
         else:
-            raise UnsupportedAccountType(
-                destination_account.id, destination_account.account_type
-            )
+            raise UnsupportedAccountType(destination_account)
+
+        if not destination_account.is_active():
+            raise InactiveAccount(destination_account)
+        assert destination_account.currency is not None
+
+        source_currency = payment_transaction.currency.lower()
+        destination_currency = destination_account.currency.lower()
 
         transfer_correlation_key = str(uuid.uuid4())
 
@@ -120,8 +115,7 @@ class TransferTransactionService(BaseTransactionService):
         )
 
         if processor == PaymentProcessor.stripe:
-            if destination_account.stripe_id is None:
-                raise StripeNotConfiguredOnAccount(destination_account.id)
+            assert destination_account.stripe_id is not None
             stripe_transfer = stripe_service.transfer(
                 destination_account.stripe_id,
                 amount,
@@ -250,8 +244,9 @@ class TransferTransactionService(BaseTransactionService):
         source_account = await account_service.get(session, source_account_id)
         assert source_account is not None
 
-        if source_account.currency is None:
-            raise UnsetAccountCurrency(source_account.id)
+        if not source_account.is_active():
+            raise InactiveAccount(source_account)
+        assert source_account.currency is not None
 
         source_currency = source_account.currency
         destination_currency = destination_currency
@@ -296,8 +291,7 @@ class TransferTransactionService(BaseTransactionService):
         )
 
         if processor == PaymentProcessor.stripe:
-            if source_account.stripe_id is None:
-                raise StripeNotConfiguredOnAccount(source_account.id)
+            assert source_account.stripe_id is not None
             stripe_reversal = stripe_service.reverse_transfer(
                 cast(str, incoming.transfer_id),
                 amount,

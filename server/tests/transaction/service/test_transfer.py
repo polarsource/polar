@@ -18,9 +18,8 @@ from polar.models import (
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transfer import (
+    InactiveAccount,
     PaymentTransactionForChargeDoesNotExist,
-    StripeNotConfiguredOnAccount,
-    UnsetAccountCurrency,
     UnsupportedAccountType,
 )
 from polar.transaction.service.transfer import (
@@ -71,6 +70,7 @@ class TestCreateTransfer:
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type="UNKNOWN",
             organization_id=organization.id,
             admin_id=user.id,
@@ -87,43 +87,20 @@ class TestCreateTransfer:
                 amount=1000,
             )
 
-    async def test_unset_account_currency(
+    async def test_inactive_account(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
         account = Account(
-            account_type=AccountType.stripe,
-            organization_id=organization.id,
-            admin_id=user.id,
-            country="US",
-            currency=None,
-        )
-        payment_transaction = await create_payment_transaction(session)
-
-        with pytest.raises(UnsetAccountCurrency):
-            await transfer_transaction_service.create_transfer(
-                session,
-                destination_account=account,
-                payment_transaction=payment_transaction,
-                amount=1000,
-            )
-
-    async def test_stripe_not_configured_on_destination_account(
-        self, session: AsyncSession, organization: Organization, user: User
-    ) -> None:
-        account = Account(
+            status=Account.Status.ONBOARDING_STARTED,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="usd",
-            is_details_submitted=False,
-            is_charges_enabled=False,
-            is_payouts_enabled=False,
-            stripe_id=None,
         )
         payment_transaction = await create_payment_transaction(session)
 
-        with pytest.raises(StripeNotConfiguredOnAccount):
+        with pytest.raises(InactiveAccount):
             await transfer_transaction_service.create_transfer(
                 session,
                 destination_account=account,
@@ -139,6 +116,7 @@ class TestCreateTransfer:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -199,6 +177,7 @@ class TestCreateTransfer:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -256,6 +235,7 @@ class TestCreateTransfer:
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.open_collective,
             organization_id=organization.id,
             admin_id=user.id,
@@ -300,6 +280,7 @@ class TestCreateTransferFromCharge:
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -327,6 +308,7 @@ class TestCreateTransferFromCharge:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -375,6 +357,7 @@ class TestCreateTransferFromPaymentIntent:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -462,10 +445,11 @@ async def create_transfer_transactions(
 
 @pytest.mark.asyncio
 class TestCreateReversalTransfer:
-    async def test_unset_account_currency(
+    async def test_inactive_account(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
         account = Account(
+            status=Account.Status.ONBOARDING_STARTED,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -481,34 +465,7 @@ class TestCreateReversalTransfer:
             session, destination_account=account
         )
 
-        with pytest.raises(UnsetAccountCurrency):
-            await transfer_transaction_service.create_reversal_transfer(
-                session,
-                transfer_transactions=transfer_transactions,
-                destination_currency="usd",
-                amount=1000,
-            )
-
-    async def test_stripe_not_configured_on_destination_account(
-        self, session: AsyncSession, organization: Organization, user: User
-    ) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            organization_id=organization.id,
-            admin_id=user.id,
-            country="US",
-            currency="usd",
-            is_details_submitted=False,
-            is_charges_enabled=False,
-            is_payouts_enabled=False,
-            stripe_id=None,
-        )
-
-        transfer_transactions = await create_transfer_transactions(
-            session, destination_account=account
-        )
-
-        with pytest.raises(StripeNotConfiguredOnAccount):
+        with pytest.raises(InactiveAccount):
             await transfer_transaction_service.create_reversal_transfer(
                 session,
                 transfer_transactions=transfer_transactions,
@@ -524,6 +481,7 @@ class TestCreateReversalTransfer:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -593,6 +551,7 @@ class TestCreateReversalTransfer:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             organization_id=organization.id,
             admin_id=user.id,
@@ -668,6 +627,7 @@ class TestCreateReversalTransfer:
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
         account = Account(
+            status=Account.Status.ACTIVE,
             account_type=AccountType.open_collective,
             organization_id=organization.id,
             admin_id=user.id,

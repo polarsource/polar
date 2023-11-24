@@ -260,13 +260,15 @@ export const ProfileMenu = ({ className = '' }) => {
             </Link>
 
             <ul className="mt-2 flex w-full flex-col">
-              {backerRoutes.map((n) => {
-                return (
-                  <LinkItem href={n.link} icon={n.icon}>
-                    <span className="mx-2 text-sm">{n.title}</span>
-                  </LinkItem>
-                )
-              })}
+              {backerRoutes
+                .filter((route) => ('if' in route ? route.if : true))
+                .map((n) => {
+                  return (
+                    <LinkItem href={n.link} icon={n.icon}>
+                      <span className="mx-2 text-sm">{n.title}</span>
+                    </LinkItem>
+                  )
+                })}
 
               <Separator className="my-2" />
 

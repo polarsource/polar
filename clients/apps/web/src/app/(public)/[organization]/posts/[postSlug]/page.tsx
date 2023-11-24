@@ -1,5 +1,10 @@
 import { getServerSideAPI } from '@/utils/api'
-import { Article, Platforms, ResponseError } from '@polar-sh/sdk'
+import {
+  Article,
+  Platforms,
+  ResponseError,
+  SubscriptionSummary,
+} from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -81,11 +86,48 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const post = await api.articles.lookup({
-    platform: Platforms.GITHUB,
-    organizationName: params.organization,
-    slug: params.postSlug,
-  })
+  const [post, organization] = await Promise.all([
+    api.articles.lookup({
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+      slug: params.postSlug,
+    }),
+    api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      cacheConfig,
+    ),
+  ])
 
-  return <>{post && <ClientPage post={post} />}</>
+  let subscriptionsSummary: SubscriptionSummary[] = []
+  let subscribersCount = 0
+  try {
+    const subscriptionSummaryResponse =
+      await api.subscriptions.searchSubscriptionsSummary(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          limit: 20,
+        },
+        cacheConfig,
+      )
+
+    subscriptionsSummary = subscriptionSummaryResponse.items ?? []
+    subscribersCount = subscriptionSummaryResponse.pagination.total_count
+  } catch (err) {}
+
+  return (
+    <>
+      {post && (
+        <ClientPage
+          post={post}
+          organization={organization}
+          subscribersCount={subscribersCount}
+          subscriptionSummary={subscriptionsSummary}
+        />
+      )}
+    </>
+  )
 }

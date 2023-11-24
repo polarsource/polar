@@ -9,13 +9,13 @@ import {
 } from 'polarkit/components/ui/atoms'
 import { ChangeEventHandler, useCallback } from 'react'
 // @ts-ignore
+import { Article } from '@polar-sh/sdk'
 import Markdown, { Components } from 'react-markdown'
 import { twMerge } from 'tailwind-merge'
 import LongformPost from './LongformPost'
-import { Post } from './data'
 
 interface EditorProps {
-  post?: Post
+  post?: Article
   value: string
   onChange?: (value: string) => void
 }
@@ -45,7 +45,7 @@ const Editor = ({ post, value, onChange }: EditorProps) => {
       <TabsContent value="preview">
         {post ? (
           <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full flex-col items-center rounded-3xl bg-white p-16 shadow-xl dark:border">
-            <LongformPost post={post} />
+            <LongformPost post={{ ...post, body: value }} />
           </div>
         ) : (
           <Markdown

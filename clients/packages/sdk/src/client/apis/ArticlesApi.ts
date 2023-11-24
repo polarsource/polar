@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   Article,
   ArticleCreate,
+  ArticleUpdate,
   HTTPValidationError,
   ListResourceArticle,
   Platforms,
@@ -30,9 +31,20 @@ export interface ArticlesApiGetRequest {
     id: string;
 }
 
+export interface ArticlesApiLookupRequest {
+    slug: string;
+    organizationName: string;
+    platform: Platforms;
+}
+
 export interface ArticlesApiSearchRequest {
     organizationName: string;
     platform: Platforms;
+}
+
+export interface ArticlesApiUpdateRequest {
+    id: string;
+    articleUpdate: ArticleUpdate;
 }
 
 /**
@@ -124,6 +136,66 @@ export class ArticlesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Lookup article.
+     * Lookup article (Public API)
+     */
+    async lookupRaw(requestParameters: ArticlesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
+        if (requestParameters.slug === null || requestParameters.slug === undefined) {
+            throw new runtime.RequiredError('slug','Required parameter requestParameters.slug was null or undefined when calling lookup.');
+        }
+
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling lookup.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling lookup.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.slug !== undefined) {
+            queryParameters['slug'] = requestParameters.slug;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/lookup`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Lookup article.
+     * Lookup article (Public API)
+     */
+    async lookup(requestParameters: ArticlesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
+        const response = await this.lookupRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Search articles.
      * Search articles (Public API)
      */
@@ -172,6 +244,53 @@ export class ArticlesApi extends runtime.BaseAPI {
      */
     async search(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
         const response = await this.searchRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update an article.
+     * Update an article (Public API)
+     */
+    async updateRaw(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        }
+
+        if (requestParameters.articleUpdate === null || requestParameters.articleUpdate === undefined) {
+            throw new runtime.RequiredError('articleUpdate','Required parameter requestParameters.articleUpdate was null or undefined when calling update.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'PUT',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.articleUpdate,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update an article.
+     * Update an article (Public API)
+     */
+    async update(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
+        const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

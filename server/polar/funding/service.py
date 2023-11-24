@@ -18,6 +18,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.authz.service import Anonymous, Subject
 from polar.funding.schemas import FundingResultType
+from polar.issue.search import search_query
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Issue, Organization, Pledge, Repository, UserOrganization
 from polar.pledge.schemas import PledgeState, PledgeType
@@ -57,20 +58,7 @@ class FundingService:
         order_by_clauses: list[UnaryExpression[Any]] = []
 
         if query is not None:
-            # Search in titles using the vector index
-            # https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES
-            #
-            # The index supports fast matching of words and prefix-matching of words
-            #
-            # Here we're converting a user query like "feat cli" to
-            # "feat:* | cli:*"
-            words = query.split(" ")
-            # remove empty words
-            words = [w for w in words if len(w.strip()) > 0]
-            # convert all words to prefix matches
-            words = [f"{w}:*" for w in words]
-            # OR all words
-            search = " | ".join(words)
+            search = search_query(query)
 
             statement = statement.where(
                 Issue.title_tsv.bool_op("@@")(func.to_tsquery(search))

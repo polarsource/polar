@@ -19,6 +19,7 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
+from polar.issue.search import search_query
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
@@ -244,23 +245,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         # free text search
         if text:
-            # Search in titles using the vector index
-            # https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES
-            #
-            # The index supports fast matching of words and prefix-matching of words
-            #
-            # Here we're converting a user query like "feat cli" to
-            # "feat:* | cli:*"
-            words = text.split(" ")
-
-            # remove empty words
-            words = [w for w in words if len(w.strip()) > 0]
-
-            # convert all words to prefix matches
-            words = [f"{w}:*" for w in words]
-
-            # OR all words
-            search = " | ".join(words)
+            search = search_query(text)
 
             statement = statement.where(
                 Issue.title_tsv.bool_op("@@")(func.to_tsquery(search))

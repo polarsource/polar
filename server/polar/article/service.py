@@ -57,6 +57,8 @@ class ArticleService:
         published_at: datetime | None = None
         if create_schema.visibility == "public":
             published_at = utc_now()
+        if create_schema.published_at is not None:
+            published_at = create_schema.published_at
 
         return await Article(
             slug=slug,
@@ -175,6 +177,10 @@ class ArticleService:
 
         if update.paid_subscribers_only is not None:
             article.paid_subscribers_only = update.paid_subscribers_only
+
+        # explicitly set published_at
+        if update.set_published_at:
+            article.published_at = update.published_at
 
         await article.save(session)
 

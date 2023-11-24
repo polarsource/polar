@@ -156,6 +156,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         return await Account.create(
             session=session,
+            status=Account.Status.ONBOARDING_STARTED,
             organization_id=organization_id,
             user_id=user_id,
             admin_id=admin_id,
@@ -196,6 +197,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         return await Account.create(
             session=session,
+            status=Account.Status.ACTIVE,
             organization_id=organization_id,
             admin_id=admin_id,
             account_type=account.account_type,

@@ -217,6 +217,29 @@ async def customer_subscription_updated(
                     raise
 
 
+@task("stripe.webhook.customer.subscription.deleted")
+async def customer_subscription_deleted(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            subscription = stripe.Subscription.construct_from(
+                event["data"]["object"], None
+            )
+            try:
+                await subscription_service.update_subscription(
+                    session, stripe_subscription=subscription
+                )
+            except SubscriptionDoesNotExist as e:
+                # Retry because Stripe webhooks order is not guaranteed,
+                # so we might not have been able to handle subscription.created yet!
+                MAX_RETRIES = 2
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(2 ** ctx["job_try"]) from e
+                else:
+                    raise
+
+
 @task("stripe.webhook.invoice.paid")
 async def invoice_paid(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext

@@ -102,10 +102,13 @@ class ArticleService:
     async def list(
         self,
         session: AsyncSession,
-        organization_id: UUID,
         allow_hidden: bool,
         allow_private: bool,
+        organization_id: UUID | None = None,
+        organization_ids: list[UUID] | None = None,
     ) -> Sequence[Article]:
+        # this is very hacky, find a better way later when we know how it's supposed
+        # to work
         visibility = ["public"]
         if allow_hidden:
             visibility.append("hidden")
@@ -114,7 +117,6 @@ class ArticleService:
 
         statement = (
             sql.select(Article)
-            .where(Article.organization_id == organization_id)
             .where(Article.deleted_at.is_(None))
             .where(Article.visibility.in_(visibility))
             .options(
@@ -122,6 +124,13 @@ class ArticleService:
                 joinedload(Article.organization),
             )
         )
+
+        if organization_id is not None:
+            statement = statement.where(Article.organization_id == organization_id)
+
+        if organization_ids is not None:
+            statement = statement.where(Article.organization_id.in_(organization_ids))
+
         res = await session.execute(statement)
         return res.scalars().unique().all()
 

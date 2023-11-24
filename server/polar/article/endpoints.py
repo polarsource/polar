@@ -13,6 +13,9 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.tags.api import Tags
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import Article as ArticleSchema
 from .schemas import (
@@ -22,6 +25,42 @@ from .schemas import (
 from .service import article_service
 
 router = APIRouter(tags=["articles"])
+
+
+@router.get(
+    "/articles",
+    response_model=ListResource[ArticleSchema],
+    tags=[Tags.PUBLIC],
+    description="List articles.",
+    summary="List articles (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def list(
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ListResource[ArticleSchema]:
+    # orgs that the user is a member of
+    org_memberships = await user_organization_service.list_by_user_id(
+        session, auth.subject.id
+    )
+
+    # TODO: list articles based on subscriptions/benefits/etc...
+
+    articles = await article_service.list(
+        session,
+        organization_ids=[o.organization_id for o in org_memberships],
+        allow_hidden=False,
+        allow_private=False,
+    )
+
+    # TODO: pagination
+    count = len(articles)
+    return ListResource(
+        items=[ArticleSchema.from_db(a) for a in articles],
+        pagination=Pagination(total_count=count, max_page=1),
+    )
 
 
 @router.get(

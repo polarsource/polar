@@ -133,7 +133,15 @@ class FundingService:
     def _get_readable_issues_statement(
         self, auth_subject: Subject
     ) -> Select[tuple[Issue]]:
-        statement = select(Issue).join(Issue.repository).join(Repository.organization)
+        statement = (
+            select(Issue)
+            .join(Issue.repository)
+            .join(Repository.organization)
+            .where(
+                Repository.deleted_at.is_(None),
+            )
+        )
+
         if isinstance(auth_subject, Anonymous):
             return statement.where(Repository.is_private.is_(False))
 
@@ -148,7 +156,7 @@ class FundingService:
             or_(
                 Repository.is_private.is_(False),
                 UserOrganization.user_id == auth_subject.id,
-            )
+            ),
         )
 
     def _apply_pledges_summary_statement(

@@ -270,7 +270,6 @@ async def test_transfer_org(
     paid_notification = mocker.patch(
         "polar.pledge.service.PledgeService.transfer_created_notification"
     )
-
     await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
@@ -304,7 +303,7 @@ async def test_transfer_org(
     )
 
     transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
     )
     transfer.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
@@ -350,7 +349,7 @@ async def test_transfer_org_no_account(
     )
 
     transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
     )
     transfer.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
@@ -408,7 +407,7 @@ async def test_transfer_user(
     )
 
     transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
     )
     transfer.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
@@ -454,7 +453,7 @@ async def test_transfer_user_no_account(
     )
 
     transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
     )
     transfer.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),

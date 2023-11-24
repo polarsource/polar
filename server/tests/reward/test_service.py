@@ -82,7 +82,7 @@ async def test_list_rewards(
 
     # Create transfer to organization
     transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer"
+        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
     )
     transfer.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),

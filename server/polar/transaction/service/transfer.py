@@ -208,6 +208,33 @@ class TransferTransactionService(BaseTransactionService):
             transfer_metadata=transfer_metadata,
         )
 
+    async def create_transfer_from_payment_intent(
+        self,
+        session: AsyncSession,
+        *,
+        destination_account: Account,
+        payment_intent_id: str,
+        amount: int,
+        pledge: Pledge | None = None,
+        subscription: Subscription | None = None,
+        issue_reward: IssueReward | None = None,
+        transfer_metadata: dict[str, str] | None = None,
+    ) -> tuple[Transaction, Transaction]:
+        payment_intent = stripe_service.retrieve_intent(payment_intent_id)
+        assert payment_intent.latest_charge is not None
+        charge_id = get_expandable_id(payment_intent.latest_charge)
+
+        return await self.create_transfer_from_charge(
+            session,
+            destination_account=destination_account,
+            charge_id=charge_id,
+            amount=amount,
+            pledge=pledge,
+            subscription=subscription,
+            issue_reward=issue_reward,
+            transfer_metadata=transfer_metadata,
+        )
+
     async def create_reversal_transfer(
         self,
         session: AsyncSession,

@@ -6,6 +6,7 @@ from uuid import UUID
 
 import structlog
 from slugify import slugify
+from sqlalchemy import desc, nullsfirst
 from sqlalchemy.orm import joinedload
 
 from polar.kit.utils import utc_now
@@ -132,6 +133,7 @@ class ArticleService:
                 joinedload(Article.created_by_user),
                 joinedload(Article.organization),
             )
+            .order_by(nullsfirst(desc(Article.published_at)))
         )
 
         if organization_id is not None:

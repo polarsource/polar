@@ -318,11 +318,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription.id,
         )
 
-        await enqueue_job(
-            "subscription.subscription.transfer_subscription_money",
-            subscription.id,
-        )
-
         return subscription
 
     async def transfer_subscription_paid_invoice(

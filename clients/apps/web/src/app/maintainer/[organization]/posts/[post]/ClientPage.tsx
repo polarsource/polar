@@ -110,7 +110,13 @@ const ClientPage = () => {
                 <TabsContent value="preview">
                   {post ? (
                     <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full flex-col items-center rounded-3xl bg-white p-16 shadow-xl dark:border">
-                      <LongformPost post={{ ...post.data, ...updateArticle }} />
+                      <LongformPost
+                        post={{
+                          ...post.data,
+                          title: updateArticle.title ?? '',
+                          body: updateArticle.body ?? '',
+                        }}
+                      />
                     </div>
                   ) : (
                     <MarkdownPreview children={updateArticle.body} />

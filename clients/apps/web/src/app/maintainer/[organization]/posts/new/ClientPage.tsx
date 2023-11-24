@@ -97,7 +97,6 @@ const ClientPage = () => {
             </div>
           </div>
         </div>
-        <pre>{JSON.stringify(article)}</pre>
       </DashboardBody>
     </>
   )

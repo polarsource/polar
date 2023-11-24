@@ -1,16 +1,15 @@
 'use client'
 
-import { COMPONENTS } from '@/components/Feed/Editor'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 // @ts-ignore
-import Markdown from 'react-markdown'
 import { twMerge } from 'tailwind-merge'
 // @ts-ignore
 import { visit } from 'unist-util-visit'
+import { MarkdownPreview } from '../Markdown/MarkdownPreview'
 
 const staggerTransition = {
   staggerChildren: 0.2,
@@ -60,9 +59,7 @@ export default function LongformPost({ post }: { post: Article }) {
         className="flex flex-col gap-y-16"
         transition={revealTransition}
       >
-        <Markdown
-          className="relative leading-relaxed"
-          components={COMPONENTS}
+        <MarkdownPreview
           rehypePlugins={[
             () => (tree) => {
               visit(tree, 'element', (node, index, parent) => {
@@ -80,9 +77,8 @@ export default function LongformPost({ post }: { post: Article }) {
               })
             },
           ]}
-        >
-          {post.body}
-        </Markdown>
+          children={post.body}
+        />
         <div className="dark:bg-polar-700 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 px-16 py-12">
           <Avatar
             className="h-12 w-12"

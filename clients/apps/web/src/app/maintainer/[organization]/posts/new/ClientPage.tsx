@@ -1,11 +1,19 @@
 'use client'
 
-import Editor from '@/components/Feed/Editor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { MarkdownEditor } from '@/components/Markdown/MarkdownEditor'
+import { MarkdownPreview } from '@/components/Markdown/MarkdownPreview'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import {
+  Button,
+  Input,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/atoms'
 import { useCreateArticle } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
 
@@ -68,10 +76,24 @@ const ClientPage = () => {
               }
             />
             <div className="flex h-full w-full flex-col">
-              <Editor
-                value={article.body}
-                onChange={(val) => setArticle((a) => ({ ...a, body: val }))}
-              />
+              <Tabs
+                className="flex h-full flex-col gap-y-6"
+                defaultValue="edit"
+              >
+                <TabsList className="dark:border-polar-700 dark:border">
+                  <TabsTrigger value="edit">Markdown</TabsTrigger>
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                </TabsList>
+                <TabsContent className="h-full" value="edit">
+                  <MarkdownEditor
+                    value={article.body}
+                    onChange={(val) => setArticle((a) => ({ ...a, body: val }))}
+                  />
+                </TabsContent>
+                <TabsContent value="preview">
+                  <MarkdownPreview children={article.body} />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </div>

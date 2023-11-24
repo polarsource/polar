@@ -1,66 +1,6 @@
-'use client'
-
-import { Article } from '@polar-sh/sdk'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  TextArea,
-} from 'polarkit/components/ui/atoms'
-import { ChangeEventHandler, useCallback } from 'react'
 // @ts-ignore
-import Markdown, { Components } from 'react-markdown'
+import { Components } from 'react-markdown'
 import { twMerge } from 'tailwind-merge'
-import LongformPost from './LongformPost'
-
-interface EditorProps {
-  post?: Article
-  value: string
-  onChange?: (value: string) => void
-}
-
-const Editor = ({ post, value, onChange }: EditorProps) => {
-  const handleChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
-    async (e) => {
-      onChange?.(e.target.value)
-    },
-    [onChange],
-  )
-
-  return (
-    <Tabs className="flex h-full flex-col gap-y-6" defaultValue="edit">
-      <TabsList className="dark:border-polar-700 dark:border">
-        <TabsTrigger value="edit">Markdown</TabsTrigger>
-        <TabsTrigger value="preview">Preview</TabsTrigger>
-      </TabsList>
-      <TabsContent className="h-full" value="edit">
-        <TextArea
-          className="h-full min-h-[600px] rounded-3xl p-6 text-lg"
-          resizable={false}
-          value={value}
-          onChange={handleChange}
-        />
-      </TabsContent>
-      <TabsContent value="preview">
-        {post ? (
-          <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full flex-col items-center rounded-3xl bg-white p-16 shadow-xl dark:border">
-            <LongformPost post={{ ...post, body: value }} />
-          </div>
-        ) : (
-          <Markdown
-            className="prose dark:prose-invert prose-headings:my-2 prose-pre:bg-gray-100 prose-pre:text-black dark:prose-pre:bg-gray-700 dark:prose-pre:text-white prose-code:before:content-[''] prose-code:after:content-[''] prose-code:bg-gray-100 dark:prose-code:bg-gray-700 prose-code:font-normal prose-code:p-1 prose-code:rounded relative max-w-none leading-relaxed"
-            components={COMPONENTS}
-          >
-            {value}
-          </Markdown>
-        )}
-      </TabsContent>
-    </Tabs>
-  )
-}
-
-export default Editor
 
 export const COMPONENTS: Components = {
   h1: (props) => (

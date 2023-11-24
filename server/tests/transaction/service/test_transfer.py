@@ -493,6 +493,7 @@ class TestCreateReversalTransfer:
         transfer_transactions = await create_transfer_transactions(
             session, destination_account=account
         )
+        transfer_outgoing, transfer_incoming = transfer_transactions
 
         (
             outgoing,
@@ -510,6 +511,7 @@ class TestCreateReversalTransfer:
         assert outgoing.amount == -1000
         assert outgoing.processor_fee_amount == 0
         assert outgoing.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
+        assert outgoing.transfer_reversal_transaction_id == transfer_incoming.id
 
         assert incoming.account_id is None
         assert incoming.type == TransactionType.transfer
@@ -517,6 +519,7 @@ class TestCreateReversalTransfer:
         assert incoming.amount == 1000
         assert incoming.processor_fee_amount == 0
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
+        assert incoming.transfer_reversal_transaction_id == transfer_outgoing.id
 
         assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
 
@@ -566,6 +569,7 @@ class TestCreateReversalTransfer:
         transfer_transactions = await create_transfer_transactions(
             session, destination_account=account
         )
+        transfer_outgoing, transfer_incoming = transfer_transactions
 
         (
             outgoing,
@@ -586,6 +590,7 @@ class TestCreateReversalTransfer:
         assert outgoing.account_amount == -900
         assert outgoing.processor_fee_amount == 0
         assert outgoing.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
+        assert outgoing.transfer_reversal_transaction_id == transfer_incoming.id
 
         assert incoming.account_id is None
         assert incoming.type == TransactionType.transfer
@@ -593,6 +598,7 @@ class TestCreateReversalTransfer:
         assert incoming.amount == 1000
         assert incoming.processor_fee_amount == 0
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
+        assert incoming.transfer_reversal_transaction_id == transfer_outgoing.id
 
         assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
 

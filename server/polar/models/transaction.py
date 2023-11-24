@@ -210,6 +210,27 @@ class Transaction(RecordModel):
             foreign_keys="[Transaction.payment_transaction_id]",
         )
 
+    transfer_reversal_transaction_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("transactions.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """ID of the transfer transaction that reverses this transaction."""
+
+    @declared_attr
+    def transfer_reversal_transaction(cls) -> Mapped["Transaction | None"]:
+        """Transfer transaction that reverses this transaction."""
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
+            remote_side=[
+                cls.id,  # type: ignore
+            ],
+            foreign_keys="[Transaction.transfer_reversal_transaction_id]",
+        )
+
     payout_transaction_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("transactions.id", ondelete="set null"),

@@ -248,6 +248,7 @@ class TransferTransactionService(BaseTransactionService):
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,
+            transfer_reversal_transaction=incoming,
         )
         incoming_reversal = Transaction(
             id=generate_uuid(),
@@ -264,6 +265,7 @@ class TransferTransactionService(BaseTransactionService):
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,
+            transfer_reversal_transaction=outgoing,
         )
 
         if processor == PaymentProcessor.stripe:

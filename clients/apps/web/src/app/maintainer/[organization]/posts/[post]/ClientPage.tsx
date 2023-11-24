@@ -5,12 +5,14 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MarkdownEditor } from '@/components/Markdown/MarkdownEditor'
 import { MarkdownPreview } from '@/components/Markdown/MarkdownPreview'
 import Spinner from '@/components/Shared/Spinner'
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { KeyboardArrowDownOutlined } from '@mui/icons-material'
 import {
   ArticleUpdate,
   ArticleUpdateVisibilityEnum,
   ArticleVisibilityEnum,
 } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
   Button,
@@ -35,31 +37,38 @@ const ClientPage = () => {
 
   const router = useRouter()
 
-  const [updateArticle, setUpdateArticle] = useState<ArticleUpdate>({})
+  const [updateArticle, setUpdateArticle] = useState<
+    ArticleUpdate & { title: string; body: string }
+  >({
+    title: '',
+    body: '',
+  })
 
   useEffect(() => {
     setUpdateArticle((a) => ({
       ...a,
-      body: post.data?.body,
-      title: post.data?.title,
+      body: post.data?.body || '',
+      title: post.data?.title || '',
       visibility: post.data?.visibility,
     }))
   }, [post.data])
 
   const update = useUpdateArticle()
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     if (!post?.data?.id) {
       return
     }
 
-    await update.mutateAsync({
+    const updated = await update.mutateAsync({
       id: post.data.id,
       articleUpdate: updateArticle,
     })
 
-    router.push(`/maintainer/${organizationName}/posts`)
-  }, [update, post, updateArticle])
+    router.push(
+      `/maintainer/${updated.organization.name}/posts/${updated.slug}`,
+    )
+  }
 
   const handleVisibilityChange = useCallback(
     (visibility: ArticleUpdateVisibilityEnum) => {
@@ -97,14 +106,25 @@ const ClientPage = () => {
                 >
                   Save Post
                 </Button>
+
+                <Link
+                  href={`/${post.data.organization.name}/posts/${post.data.slug}`}
+                  target="_blank"
+                >
+                  <Button className="secondary" variant={'outline'}>
+                    <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
+                    <span>Read</span>
+                  </Button>
+                </Link>
               </div>
             </div>
+
             <div className="flex flex-col gap-y-3">
               <span>Title</span>
               <Input
                 className="min-w-[320px]"
                 placeholder="Title"
-                value={updateArticle?.title}
+                value={updateArticle.title}
                 onChange={(e) =>
                   setUpdateArticle((a) => ({
                     ...a,
@@ -113,6 +133,7 @@ const ClientPage = () => {
                 }
               />
             </div>
+
             {updateArticle.visibility && (
               <VisibilityPicker
                 visibility={updateArticle.visibility}
@@ -131,7 +152,7 @@ const ClientPage = () => {
                 <TabsContent className="h-full" value="edit">
                   {post && (
                     <MarkdownEditor
-                      value={updateArticle?.body || ''}
+                      value={updateArticle.body || ''}
                       onChange={(value) =>
                         setUpdateArticle((a) => ({
                           ...a,
@@ -184,12 +205,10 @@ const VisibilityPicker = ({ visibility, onChange }: VisibilityPickerProps) => {
     }
   }, [visibility])
 
-  const handleVisibilityChange = useCallback(
+  const handleVisibilityChange =
     (visibility: ArticleUpdateVisibilityEnum) => () => {
       onChange(visibility)
-    },
-    [onChange],
-  )
+    }
 
   return (
     <div className="flex flex-col items-start gap-y-3">

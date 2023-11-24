@@ -68,6 +68,9 @@ export const useUpdateArticle = () =>
       queryClient.invalidateQueries({
         queryKey: ['article', 'id', result.id],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['article', 'lookup'],
+      })
     },
   })
 

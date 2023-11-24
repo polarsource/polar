@@ -1,8 +1,7 @@
 import { getServerSideAPI } from '@/utils/api'
-import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
+import { Article, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
-import { api } from 'polarkit/api'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -15,40 +14,43 @@ export async function generateMetadata(
   {
     params,
   }: {
-    params: { organization: string }
+    params: { organization: string; postSlug: string }
   },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  let organization: Organization | undefined
+  const api = getServerSideAPI()
+
+  let post: Article | undefined
 
   try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    )
+    post = await api.articles.lookup({
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+      slug: params.postSlug,
+    })
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
   }
 
-  if (!organization) {
+  if (!post) {
     notFound()
   }
 
   return {
-    title: `${organization.name}`, // " | Polar is added by the template"
+    title: {
+      absolute: `${post.title} by ${post.byline.name}`,
+    },
+
     openGraph: {
-      title: `${organization.name} seeks funding for issues`,
-      description: `${organization.name} seeks funding for issues on Polar`,
+      title: `${post.title}`,
+      description: `${post.title} by ${post.byline.name}`,
       siteName: 'Polar',
 
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${post.organization.name}`,
           width: 1200,
           height: 630,
         },
@@ -57,15 +59,15 @@ export async function generateMetadata(
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${post.organization.name}`,
           width: 1200,
           height: 630,
-          alt: `${organization.name} seeks funding for issues`,
+          alt: `${post.title}`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.name} seeks funding for issues`,
-      description: `${organization.name} seeks funding for issues on Polar`,
+      title: `${post.title}`,
+      description: `${post.title} by ${post.byline.name}`,
     },
   }
 }

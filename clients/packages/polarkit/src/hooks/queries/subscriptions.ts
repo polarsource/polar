@@ -262,3 +262,25 @@ export const useSubscriptionSummary = (
       }),
     retry: defaultRetry,
   })
+
+export const useSubscriptionStatistics = (
+  orgName: string,
+  startDate: Date,
+  endDate: Date,
+  platform: Platforms = Platforms.GITHUB,
+) =>
+  useQuery({
+    queryKey: [
+      'subscriptionStatistics',
+      orgName,
+      JSON.stringify({ startDate, endDate }),
+    ],
+    queryFn: () =>
+      api.subscriptions.getSubscriptionsStatistics({
+        organizationName: orgName,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        platform,
+      }),
+    retry: defaultRetry,
+  })

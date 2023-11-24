@@ -15,60 +15,34 @@ import {
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import { useOrganizationArticles } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
+import {
+  useOrganizationArticles,
+  useSubscriptionStatistics,
+  useSubscriptionSummary,
+} from 'polarkit/hooks'
 import { useMemo, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
-const sampleAnalyticsData = [
-  {
-    start_date: '2023-05-01',
-    end_date: '2023-06-01',
-    subscribers: 21,
-    mrr: 324,
-    cumulative: 2870,
-  },
-  {
-    start_date: '2023-06-01',
-    end_date: '2023-07-01',
-    subscribers: 36,
-    mrr: 563,
-    cumulative: 3670,
-  },
-  {
-    start_date: '2023-07-01',
-    end_date: '2023-08-01',
-    subscribers: 118,
-    mrr: 791,
-    cumulative: 4570,
-  },
-  {
-    start_date: '2023-08-01',
-    end_date: '2023-09-01',
-    subscribers: 72,
-    mrr: 1157,
-    cumulative: 5570,
-  },
-  {
-    start_date: '2023-09-01',
-    end_date: '2023-10-01',
-    subscribers: 55,
-    mrr: 391,
-    cumulative: 6670,
-  },
-  {
-    start_date: '2023-10-01',
-    end_date: '2023-11-01',
-    subscribers: 43,
-    mrr: 430,
-    cumulative: 7870,
-  },
-]
+const startOfMonth = new Date()
+startOfMonth.setUTCHours(0, 0, 0, 0)
+startOfMonth.setUTCDate(1)
+
+const startOfMonthSixMonthsAgo = new Date()
+startOfMonthSixMonthsAgo.setUTCHours(0, 0, 0, 0)
+startOfMonthSixMonthsAgo.setUTCDate(1)
+startOfMonthSixMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
 
   const posts = useOrganizationArticles(org?.name)
+
+  const summary = useSubscriptionSummary(org?.name ?? '')
+  const subscriptionStatistics = useSubscriptionStatistics(
+    org?.name ?? '',
+    startOfMonthSixMonthsAgo,
+    startOfMonth,
+  )
 
   return (
     <>
@@ -103,42 +77,27 @@ const ClientPage = () => {
                 Analytics
               </h3>
             </div>
-            <Card className="flex flex-col gap-y-4 rounded-3xl p-4 ">
-              <div className="flex w-full flex-grow flex-row items-center justify-between">
-                <h3 className="p-2 text-sm font-medium">Unique views</h3>
-                <h3 className="p-2 text-sm">322k this month</h3>
-              </div>
-              <SubscriptionsChart
-                y="mrr"
-                axisYOptions={{
-                  ticks: 'month',
-                  label: null,
-                  tickFormat: (t, i) =>
-                    `$${getCentsInDollarString(t, undefined, true)}`,
-                }}
-                data={sampleAnalyticsData.map((d) => ({
-                  ...d,
-                  parsedStartDate: new Date(d.start_date),
-                }))}
-              />
-            </Card>
-            <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-              <div className="flex w-full flex-grow flex-row items-center justify-between">
-                <h3 className="p-2 text-sm font-medium">Subscribers</h3>
-                <h3 className="p-2 text-sm">1,242</h3>
-              </div>
-              <SubscriptionsChart
-                y="subscribers"
-                axisYOptions={{
-                  ticks: 'month',
-                  label: null,
-                }}
-                data={sampleAnalyticsData.map((d) => ({
-                  ...d,
-                  parsedStartDate: new Date(d.start_date),
-                }))}
-              />
-            </Card>
+            {subscriptionStatistics.data && (
+              <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
+                <div className="flex w-full flex-grow flex-row items-center justify-between">
+                  <h3 className="p-2 text-sm font-medium">Subscribers</h3>
+                  <h3 className="p-2 text-sm">
+                    {summary.data?.pagination.total_count}
+                  </h3>
+                </div>
+                <SubscriptionsChart
+                  y="subscribers"
+                  axisYOptions={{
+                    ticks: 'month',
+                    label: null,
+                  }}
+                  data={subscriptionStatistics.data.periods.map((d) => ({
+                    ...d,
+                    parsedStartDate: new Date(d.start_date),
+                  }))}
+                />
+              </Card>
+            )}
           </div>
         </div>
       </DashboardBody>

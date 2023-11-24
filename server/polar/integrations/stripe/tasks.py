@@ -32,6 +32,7 @@ from polar.transaction.service.payout import (
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
+from polar.transaction.service.transfer import PaymentTransactionForChargeDoesNotExist
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import stripe as stripe_service
@@ -227,9 +228,13 @@ async def invoice_paid(
                 await subscription_service.transfer_subscription_paid_invoice(
                     session, invoice=invoice
                 )
-            except SubscriptionDoesNotExist as e:
+            except (
+                SubscriptionDoesNotExist,
+                PaymentTransactionForChargeDoesNotExist,
+            ) as e:
                 # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle subscription.created yet!
+                # so we might not have been able to handle subscription.created
+                # or charge.succeeded yet!
                 MAX_RETRIES = 2
                 if ctx["job_try"] <= MAX_RETRIES:
                     raise Retry(2 ** ctx["job_try"]) from e

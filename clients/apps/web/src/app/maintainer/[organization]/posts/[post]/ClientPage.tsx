@@ -1,11 +1,20 @@
 'use client'
 
-import Editor from '@/components/Feed/Editor'
+import LongformPost from '@/components/Feed/LongformPost'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { MarkdownEditor } from '@/components/Markdown/MarkdownEditor'
+import { MarkdownPreview } from '@/components/Markdown/MarkdownPreview'
 import Spinner from '@/components/Shared/Spinner'
 import { ArticleUpdate } from '@polar-sh/sdk'
 import { useParams } from 'next/navigation'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import {
+  Button,
+  Input,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/atoms'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
 
@@ -77,18 +86,37 @@ const ClientPage = () => {
               }
             />
             <div className="flex h-full w-full flex-col">
-              {post && (
-                <Editor
-                  value={updateArticle?.body || ''}
-                  onChange={(value) =>
-                    setUpdateArticle((a) => ({
-                      ...a,
-                      body: value,
-                    }))
-                  }
-                  post={post.data}
-                />
-              )}
+              <Tabs
+                className="flex h-full flex-col gap-y-6"
+                defaultValue="edit"
+              >
+                <TabsList className="dark:border-polar-700 dark:border">
+                  <TabsTrigger value="edit">Markdown</TabsTrigger>
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                </TabsList>
+                <TabsContent className="h-full" value="edit">
+                  {post && (
+                    <MarkdownEditor
+                      value={updateArticle?.body || ''}
+                      onChange={(value) =>
+                        setUpdateArticle((a) => ({
+                          ...a,
+                          body: value,
+                        }))
+                      }
+                    />
+                  )}
+                </TabsContent>
+                <TabsContent value="preview">
+                  {post ? (
+                    <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full flex-col items-center rounded-3xl bg-white p-16 shadow-xl dark:border">
+                      <LongformPost post={{ ...post.data, ...updateArticle }} />
+                    </div>
+                  ) : (
+                    <MarkdownPreview children={updateArticle.body} />
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </div>

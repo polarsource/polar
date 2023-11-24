@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
+import stripe as stripe_lib
 import stripe.error as stripe_lib_error
 import structlog
 
@@ -33,6 +34,13 @@ class AccountServiceError(PolarError):
 class AccountAlreadyExistsError(AccountServiceError):
     def __init__(self) -> None:
         super().__init__("An account already exists for this organization.")
+
+
+class AccountDoesNotExist(AccountServiceError):
+    def __init__(self, external_id: str) -> None:
+        self.external_id = external_id
+        message = f"No associated account exists with external ID {external_id}"
+        super().__init__(message)
 
 
 class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
@@ -212,6 +220,36 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             business_type="fiscal_host",
             data={},
         )
+
+    async def update_account_from_stripe(
+        self, session: AsyncSession, *, stripe_account: stripe_lib.Account
+    ) -> Account:
+        account = await self.get_by_stripe_id(session, stripe_account.id)
+        if account is None:
+            raise AccountDoesNotExist(stripe_account.id)
+
+        account.email = stripe_account.email
+        account.country = stripe_account.country
+        account.currency = stripe_account.default_currency
+        account.is_details_submitted = stripe_account.details_submitted or False
+        account.is_charges_enabled = stripe_account.charges_enabled or False
+        account.is_payouts_enabled = stripe_account.payouts_enabled or False
+        account.data = stripe_account.to_dict()
+
+        if all(
+            (
+                account.currency is not None,
+                account.is_details_submitted,
+                account.is_charges_enabled,
+                account.is_payouts_enabled,
+            )
+        ):
+            account.status = Account.Status.ACTIVE
+
+        session.add(account)
+        await session.commit()
+
+        return account
 
     async def onboarding_link(self, account: Account) -> AccountLink | None:
         if account.account_type == AccountType.stripe:

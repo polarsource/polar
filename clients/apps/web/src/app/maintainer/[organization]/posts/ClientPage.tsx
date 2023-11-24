@@ -166,7 +166,7 @@ const PostItem = (post: Article) => {
       ref={ref}
       href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}
     >
-      <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white px-8 py-6 shadow-sm transition-colors hover:bg-blue-50/50">
+      <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-blue-50/50">
         {image && (
           <div
             className="flex min-h-0 w-28 flex-shrink-0 flex-col rounded-2xl bg-cover bg-center bg-no-repeat"

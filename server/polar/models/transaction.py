@@ -33,6 +33,8 @@ class TransactionType(StrEnum):
     """Polar received a payment."""
     refund = "refund"
     """Polar refunded a payment (totally or partially)."""
+    dispute = "dispute"
+    """A Polar payment is disputed (totally or partially)."""
     transfer = "transfer"
     """Money transfer between Polar and a user's account."""
     payout = "payout"
@@ -93,6 +95,8 @@ class Transaction(RecordModel):
     """ID of the charge (payment) in the payment processor system."""
     refund_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the refund in the payment processor system."""
+    dispute_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    """ID of the dispute in the payment processor system."""
     transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the transfer in the payment processor system."""
     transfer_reversal_id: Mapped[str | None] = mapped_column(

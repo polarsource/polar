@@ -26,6 +26,7 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "charge.succeeded",
     "charge.refunded",
     "charge.dispute.created",
+    "charge.dispute.funds_reinstated",
     "customer.subscription.created",
     "customer.subscription.updated",
     "invoice.paid",

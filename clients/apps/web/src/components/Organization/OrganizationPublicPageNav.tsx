@@ -9,6 +9,7 @@ import {
   HowToVoteOutlined,
 } from '@mui/icons-material'
 import {
+  Article,
   Organization,
   Repository,
   SubscriptionTier,
@@ -23,7 +24,6 @@ import {
 } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
 import { Post as PostComponent } from '../Feed/Posts/Post'
-import { Post } from '../Feed/data'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import { ProfileMenu } from '../Shared/ProfileSelection'
 import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSubscriptionsPublicPage'
@@ -123,7 +123,7 @@ export const OrganizationPublicPageContent = ({
   repositories,
   subscriptionTiers,
 }: {
-  posts: Post[]
+  posts: Article[]
   organization: Organization
   repositories: Repository[]
   subscriptionTiers: SubscriptionTier[]
@@ -135,7 +135,7 @@ export const OrganizationPublicPageContent = ({
           <div className="flex max-w-xl flex-col gap-y-6">
             {posts.map((post) => (
               <Link href={`/${organization.name}/posts/${post.id}`}>
-                <PostComponent {...post} />
+                <PostComponent article={post} />
               </Link>
             ))}
           </div>

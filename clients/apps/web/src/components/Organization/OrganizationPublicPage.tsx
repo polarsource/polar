@@ -5,6 +5,7 @@ import {
   ShortTextOutlined,
 } from '@mui/icons-material'
 import {
+  Article,
   Organization,
   Repository,
   SubscriptionSummary,
@@ -15,7 +16,6 @@ import { LogoType } from 'polarkit/components/brand'
 import { Avatar, Tabs } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
-import { Post } from '../Feed/data'
 import HowItWorks from '../Pledge/HowItWorks'
 import Footer from './Footer'
 import {
@@ -32,7 +32,7 @@ const OrganizationPublicPage = ({
   subscribersCount,
   currentTab,
 }: {
-  posts: Post[]
+  posts: Article[]
   organization: Organization
   repositories: Repository[]
   subscriptionTiers: SubscriptionTier[]

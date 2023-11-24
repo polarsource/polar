@@ -67,7 +67,10 @@ class Article(Schema):
 
 
 class ArticleCreate(Schema):
-    title: str
+    title: str = Field(
+        description="Title of the article. A slug will be created automatically from the title.",
+        min_length=1,
+    )
     body: str
     organization_id: UUID
     byline: Literal["user", "organization"] = Field(

@@ -35,7 +35,10 @@ export default function Page({
           subscriptionSummary={subscriptionSummary}
         />
         <div className="dark:bg-polar-800 dark:border-polar-700 relative flex w-full flex-col items-center rounded-3xl bg-white p-12 shadow-xl dark:border">
-          <Link className="absolute left-16 top-16 flex-shrink" href="/posts">
+          <Link
+            className="absolute left-16 top-16 flex-shrink"
+            href={`/${organization.name}`}
+          >
             <Button
               size="sm"
               variant="secondary"

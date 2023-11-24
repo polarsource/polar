@@ -1,4 +1,3 @@
-import { Post, getFeed, isRecommendation } from '@/components/Feed/data'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
@@ -75,13 +74,16 @@ export default async function Page({
   params,
   searchParams,
 }: {
-  params: { organization: string; postId: string }
+  params: { organization: string; postSlug: string }
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
   const api = getServerSideAPI()
-  const post = await (await getFeed(api, params.organization))
-    .filter((value): value is Post => !isRecommendation(value))
-    .find((post) => post.id === params.postId)
+
+  const post = await api.articles.lookup({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+    slug: params.postSlug,
+  })
 
   return <>{post && <ClientPage post={post} />}</>
 }

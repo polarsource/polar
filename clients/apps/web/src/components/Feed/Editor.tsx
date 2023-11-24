@@ -1,5 +1,6 @@
 'use client'
 
+import { Article } from '@polar-sh/sdk'
 import {
   Tabs,
   TabsContent,
@@ -9,7 +10,6 @@ import {
 } from 'polarkit/components/ui/atoms'
 import { ChangeEventHandler, useCallback } from 'react'
 // @ts-ignore
-import { Article } from '@polar-sh/sdk'
 import Markdown, { Components } from 'react-markdown'
 import { twMerge } from 'tailwind-merge'
 import LongformPost from './LongformPost'

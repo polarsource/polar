@@ -13,17 +13,30 @@ log: Logger = structlog.get_logger()
 
 class EmailSender(ABC):
     @abstractmethod
-    def send_to_user(self, to_email_addr: str, subject: str, html_content: str) -> None:
+    def send_to_user(
+        self,
+        to_email_addr: str,
+        subject: str,
+        html_content: str,
+        from_name: str = "Polar",
+    ) -> None:
         pass
 
 
 class LoggingEmailSender(EmailSender):
-    def send_to_user(self, to_email_addr: str, subject: str, html_content: str) -> None:
+    def send_to_user(
+        self,
+        to_email_addr: str,
+        subject: str,
+        html_content: str,
+        from_name: str = "Polar",
+    ) -> None:
         log.info(
             "logging email",
             to_email_addr=to_email_addr,
             subject=subject,
             html_content=html_content,
+            from_name=from_name,
         )
 
 
@@ -32,8 +45,14 @@ class SendgridEmailSender(EmailSender):
         super().__init__()
         self.sg = sendgrid.SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
 
-    def send_to_user(self, to_email_addr: str, subject: str, html_content: str) -> None:
-        from_email = Email(email="notifications@polar.sh", name="Polar")
+    def send_to_user(
+        self,
+        to_email_addr: str,
+        subject: str,
+        html_content: str,
+        from_name: str = "Polar",
+    ) -> None:
+        from_email = Email(email="notifications@polar.sh", name=from_name)
         to_email = To(to_email_addr)
         content = Content("text/html", content=html_content)
         mail = Mail(from_email, to_email, subject, content)

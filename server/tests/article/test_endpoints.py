@@ -328,6 +328,7 @@ async def test_list(
             "body": "Body body",
             "organization_id": str(organization.id),
             "visibility": "public",
+            "published_at": "2023-11-26 00:00:00",  # a date in the past
         },
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
@@ -340,6 +341,7 @@ async def test_list(
             "body": "Body body",
             "organization_id": str(organization.id),
             "visibility": "public",
+            "published_at": "2023-11-26 00:00:00",  # a date in the past
         },
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
@@ -349,7 +351,7 @@ async def test_list(
     create_private = await client.post(
         "/api/v1/articles",
         json={
-            "title": "Hello Universe!",
+            "title": "Hello Private!",
             "body": "Body body",
             "organization_id": str(organization.id),
             "visibility": "private",
@@ -362,7 +364,7 @@ async def test_list(
     create_hidden = await client.post(
         "/api/v1/articles",
         json={
-            "title": "Hello Universe!",
+            "title": "Hello Hidden!",
             "body": "Body body",
             "organization_id": str(organization.id),
             "visibility": "hidden",
@@ -371,6 +373,20 @@ async def test_list(
     )
     assert create_hidden.status_code == 200
 
+    # not visible in response by default
+    create_future = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello Future!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "visibility": "public",
+            "published_at": "2030-11-27 00:00:00",  # a date in the future
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert create_future.status_code == 200
+
     # no auth
     get = await client.get(
         f"/api/v1/articles/search?platform=github&organization_name={organization.name}",
@@ -378,6 +394,8 @@ async def test_list(
     assert get.status_code == 200
     list_json = get.json()
     assert len(list_json["items"]) == 2
+    for art in list_json["items"]:
+        assert art["visibility"] == "public"
 
     # authed, expect can see private
     get_authed = await client.get(
@@ -386,7 +404,8 @@ async def test_list(
     )
     assert get_authed.status_code == 200
     list_json_authed = get_authed.json()
-    assert len(list_json_authed["items"]) == 4
+    print(list_json_authed)
+    assert len(list_json_authed["items"]) == 5
 
 
 @pytest.mark.asyncio

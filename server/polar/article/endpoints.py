@@ -52,8 +52,9 @@ async def list(
     articles = await article_service.list(
         session,
         organization_ids=[o.organization_id for o in org_memberships],
-        allow_hidden=False,
-        allow_private=False,
+        can_see_unpublished_in_organization_ids=[
+            o.organization_id for o in org_memberships
+        ],
     )
 
     # TODO: pagination
@@ -95,8 +96,9 @@ async def search(
     articles = await article_service.list(
         session,
         organization_id=org.id,
-        allow_hidden=allow_private_hidden,
-        allow_private=allow_private_hidden,
+        can_see_unpublished_in_organization_ids=[org.id]
+        if allow_private_hidden
+        else None,
     )
 
     # TODO: pagination

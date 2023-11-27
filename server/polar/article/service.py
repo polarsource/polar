@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import datetime
+from operator import and_, or_
 from uuid import UUID
 
 import structlog
@@ -98,9 +99,11 @@ class ArticleService:
     ) -> Article | None:
         statement = (
             sql.select(Article)
-            .where(Article.organization_id == organization_id)
-            .where(Article.slug == slug)
-            .where(Article.deleted_at.is_(None))
+            .where(
+                Article.organization_id == organization_id,
+                Article.slug == slug,
+                Article.deleted_at.is_(None),
+            )
             .options(
                 joinedload(Article.created_by_user),
                 joinedload(Article.organization),
@@ -112,23 +115,32 @@ class ArticleService:
     async def list(
         self,
         session: AsyncSession,
-        allow_hidden: bool,
-        allow_private: bool,
         organization_id: UUID | None = None,
         organization_ids: list[UUID] | None = None,
+        can_see_unpublished_in_organization_ids: list[UUID] | None = None,
     ) -> Sequence[Article]:
-        # this is very hacky, find a better way later when we know how it's supposed
-        # to work
-        visibility = ["public"]
-        if allow_hidden:
-            visibility.append("hidden")
-        if allow_private:
-            visibility.append("private")
+        post_can_see_stmts = [
+            and_(
+                Article.visibility == "public",
+                Article.published_at <= utc_now(),
+            ),
+        ]
+
+        if (
+            can_see_unpublished_in_organization_ids is not None
+            and len(can_see_unpublished_in_organization_ids) > 0
+        ):
+            post_can_see_stmts.append(
+                Article.organization_id.in_(can_see_unpublished_in_organization_ids),
+            )
+        else:
+            # dummy statement to make sure that we always pass at two statements to or_
+            post_can_see_stmts.append(False)
 
         statement = (
             sql.select(Article)
             .where(Article.deleted_at.is_(None))
-            .where(Article.visibility.in_(visibility))
+            .where(or_(*post_can_see_stmts))
             .options(
                 joinedload(Article.created_by_user),
                 joinedload(Article.organization),

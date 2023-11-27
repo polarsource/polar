@@ -35,6 +35,7 @@ posthog = "^3.0.1"
 sqlalchemy-citext = { git = "https://github.com/akolov/sqlalchemy-citext.git", rev = "15b3de84730bb4645c83d890a73f5c9b6b289531" }
 python-slugify = "^8.0.1"
 types-python-slugify = "^8.0.0.3"
+mistune = "^3.0.2"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.0"

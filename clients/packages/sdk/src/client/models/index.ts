@@ -158,6 +158,24 @@ export interface Article {
      * @memberof Article
      */
     published_at?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Article
+     */
+    notify_subscribers?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof Article
+     */
+    email_open_count?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Article
+     */
+    web_view_count?: number;
 }
 
 
@@ -178,7 +196,7 @@ export type ArticleVisibilityEnum = typeof ArticleVisibilityEnum[keyof typeof Ar
  */
 export interface ArticleCreate {
     /**
-     * 
+     * Title of the article. A slug will be created automatically from the title.
      * @type {string}
      * @memberof ArticleCreate
      */
@@ -213,6 +231,18 @@ export interface ArticleCreate {
      * @memberof ArticleCreate
      */
     paid_subscribers_only?: boolean;
+    /**
+     * Time of publishing. If this date is in the future, the post will be scheduled to publish at this time. If visibility is 'public', published_at will default to the current time.
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    published_at?: string;
+    /**
+     * Set to true to deliver this article via email and/or notifications to subscribers.
+     * @type {boolean}
+     * @memberof ArticleCreate
+     */
+    notify_subscribers?: boolean;
 }
 
 
@@ -271,6 +301,24 @@ export interface ArticleUpdate {
      * @memberof ArticleUpdate
      */
     paid_subscribers_only?: boolean;
+    /**
+     * Time of publishing. If this date is in the future, the post will be scheduled to publish at this time.
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    published_at?: string;
+    /**
+     * Set to true for changes to published_at to take affect.
+     * @type {boolean}
+     * @memberof ArticleUpdate
+     */
+    set_published_at?: boolean;
+    /**
+     * Set to true to deliver this article via email and/or notifications to subscribers.
+     * @type {boolean}
+     * @memberof ArticleUpdate
+     */
+    notify_subscribers?: boolean;
 }
 
 
@@ -293,6 +341,19 @@ export const ArticleUpdateVisibilityEnum = {
 } as const;
 export type ArticleUpdateVisibilityEnum = typeof ArticleUpdateVisibilityEnum[keyof typeof ArticleUpdateVisibilityEnum];
 
+/**
+ * 
+ * @export
+ * @interface ArticleViewedResponse
+ */
+export interface ArticleViewedResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ArticleViewedResponse
+     */
+    ok: boolean;
+}
 /**
  * 
  * @export

@@ -18,6 +18,7 @@ import type {
   Article,
   ArticleCreate,
   ArticleUpdate,
+  ArticleViewedResponse,
   HTTPValidationError,
   ListResourceArticle,
   Platforms,
@@ -45,6 +46,10 @@ export interface ArticlesApiSearchRequest {
 export interface ArticlesApiUpdateRequest {
     id: string;
     articleUpdate: ArticleUpdate;
+}
+
+export interface ArticlesApiViewedRequest {
+    id: string;
 }
 
 /**
@@ -327,6 +332,46 @@ export class ArticlesApi extends runtime.BaseAPI {
      */
     async update(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.updateRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Track article view
+     * Track article (Public API)
+     */
+    async viewedRaw(requestParameters: ArticlesApiViewedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleViewedResponse>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling viewed.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/{id}/viewed`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Track article view
+     * Track article (Public API)
+     */
+    async viewed(requestParameters: ArticlesApiViewedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleViewedResponse> {
+        const response = await this.viewedRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

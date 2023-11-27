@@ -2,7 +2,6 @@ import { IssueFunding, Organization, Repository } from '@polar-sh/sdk'
 import { formatStarsNumber } from 'polarkit/utils'
 import { externalURL, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
-import Footer from './Footer'
 import Header from './Header'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
@@ -62,8 +61,6 @@ const RepositoryPublicPage = ({
       />
 
       <HowItWorks />
-
-      <Footer />
     </>
   )
 }

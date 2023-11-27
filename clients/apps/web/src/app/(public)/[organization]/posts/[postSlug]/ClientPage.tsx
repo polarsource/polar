@@ -3,6 +3,7 @@
 import LongformPost from '@/components/Feed/LongformPost'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { ProfileMenu } from '@/components/Shared/ProfileSelection'
+import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { Article, Organization, SubscriptionSummary } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -42,8 +43,8 @@ export default function Page({
   }, [])
 
   return (
-    <div className="flex w-full flex-col items-center gap-y-16">
-      <div className="flex w-full flex-row items-center justify-between px-4">
+    <div className="flex w-full flex-col items-center gap-y-16 px-8">
+      <div className="flex w-full flex-row items-center justify-between">
         <Link href="/">
           <LogoType />
         </Link>
@@ -51,15 +52,15 @@ export default function Page({
           <ProfileMenu />
         </div>
       </div>
-      <div className="relative flex w-full flex-col gap-x-24 px-4 pb-16 md:flex-row">
+      <div className="relative flex w-full flex-col-reverse gap-x-24 pb-16 md:flex-row">
         <OrganizationPublicSidebar
           organization={organization}
           subscribersCount={subscribersCount}
           subscriptionSummary={subscriptionSummary}
         />
-        <div className="dark:bg-polar-800 dark:border-polar-700 relative flex w-full flex-col items-center rounded-3xl bg-white p-12 shadow-xl dark:border">
+        <StaggerReveal className="dark:md:bg-polar-800 dark:md:border-polar-700 relative flex w-full flex-col items-center rounded-3xl p-6 md:bg-white md:p-12 md:shadow-xl dark:md:border">
           <Link
-            className="absolute left-16 top-16 flex-shrink"
+            className="absolute left-16 top-16 hidden flex-shrink md:block"
             href={`/${organization.name}`}
           >
             <Button
@@ -71,7 +72,7 @@ export default function Page({
             </Button>
           </Link>
           <LongformPost post={post} />
-        </div>
+        </StaggerReveal>
       </div>
     </div>
   )

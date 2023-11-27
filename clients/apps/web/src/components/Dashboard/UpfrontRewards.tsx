@@ -88,7 +88,7 @@ const PublicRewardsSetting = (props: {
 
           <div>
             {/*
-              We currently don't support opting out a single issue from upfront splits if the organization has it enabled by default. 
+              We currently don't support opting out a single issue from upfront splits if the organization has it enabled by default.
               Disabling the switch if we're in issue mode and it's forced on by the org.
 
               Users can "disable" rewards by explicitly setting the share to 0.

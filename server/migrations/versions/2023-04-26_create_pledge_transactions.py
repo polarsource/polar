@@ -41,7 +41,7 @@ def upgrade() -> None:
     # in the db unfortunately.
     op.execute(
         """INSERT INTO pledge_transactions
-      (pledge_id, type, amount, transaction_id, id, created_at) 
+      (pledge_id, type, amount, transaction_id, id, created_at)
       SELECT id, 'pledge', amount, null, gen_random_uuid(), created_at
         FROM pledges WHERE state != 'initiated'"""
     )
@@ -50,7 +50,7 @@ def upgrade() -> None:
     # it could be modified multiple times, but it's close enough)
     op.execute(
         """INSERT INTO pledge_transactions
-      (pledge_id, type, amount, transaction_id, id, created_at) 
+      (pledge_id, type, amount, transaction_id, id, created_at)
       SELECT id, 'transfer', amount * 0.85, transfer_id, gen_random_uuid(), modified_at
         FROM pledges WHERE state != 'initiated' AND state != 'created'"""
     )

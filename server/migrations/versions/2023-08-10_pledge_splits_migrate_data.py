@@ -36,7 +36,7 @@ GROUP BY p.issue_id, p.organization_id
 
     # Connect pledge_transactions (transfers) with splits
     op.execute(
-        """      
+        """
 WITH sub AS (
     SELECT pt.id as pt_id, ps.id as ps_id
     FROM pledge_transactions pt
@@ -47,7 +47,7 @@ WITH sub AS (
 UPDATE pledge_transactions
 SET pledge_split_id=sub.ps_id
 FROM sub
-WHERE id=sub.pt_id;   
+WHERE id=sub.pt_id;
 """
     )
     pass

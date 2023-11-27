@@ -20,7 +20,7 @@ services:
       # CORS
       - key: POLAR_CORS_ORIGINS
         value: '["https://dashboard.polar.sh", "https://github.com" , "https://polar.sh", "https://polar-polar-sh.vercel.app"]'
-      
+
       # GitHub
       - key: POLAR_GITHUB_REDIRECT_URL
         value: "https://dashboard.polar.sh/github/session"

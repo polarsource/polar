@@ -78,12 +78,12 @@
 
   [data-md-color-scheme="polar-light"] .md-button {
     color: var(--blue);
-  } 
+  }
 
   [data-md-color-scheme="polar-light"] .md-button--primary {
     color: var(--white);
     background: var(--blue);
-  } 
+  }
 
   /*********************************************************************
    * DARK
@@ -115,7 +115,7 @@
 
   [data-md-color-scheme="polar-dark"] .md-button {
     color: var(--light-gray);
-  } 
+  }
 
   [data-md-color-scheme="polar-dark"] .md-annotation__index:before {
     background-color: var(--light-gray);

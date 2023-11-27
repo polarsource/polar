@@ -44,7 +44,7 @@ def upgrade() -> None:
         SET positive_reactions_count = A.positive_reactions_count,
         total_engagement_count = A.total_engagement_count
         FROM (
-            SELECT id, 
+            SELECT id,
             (reactions::json->>'plus_one')::int +
             (reactions::json->>'laugh')::int +
             (reactions::json->>'heart')::int +

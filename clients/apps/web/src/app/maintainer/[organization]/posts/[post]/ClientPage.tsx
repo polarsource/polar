@@ -4,16 +4,21 @@ import LongformPost from '@/components/Feed/LongformPost'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MarkdownEditor } from '@/components/Markdown/MarkdownEditor'
 import { MarkdownPreview } from '@/components/Markdown/MarkdownPreview'
+import { Modal } from '@/components/Modal'
 import Spinner from '@/components/Shared/Spinner'
+import { useRequireAuth } from '@/hooks'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { KeyboardArrowDownOutlined } from '@mui/icons-material'
 import {
+  Article,
   ArticleUpdate,
   ArticleUpdateVisibilityEnum,
   ArticleVisibilityEnum,
+  ResponseError,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { api } from 'polarkit/api'
 import {
   Button,
   Input,
@@ -80,6 +85,8 @@ const ClientPage = () => {
     [setUpdateArticle],
   )
 
+  const [showSendPreviewModal, setShowSendPreviewModal] = useState(false)
+
   if (!post.data) {
     return (
       <DashboardBody>
@@ -90,6 +97,16 @@ const ClientPage = () => {
 
   return (
     <>
+      <Modal
+        isShown={showSendPreviewModal}
+        hide={() => setShowSendPreviewModal(false)}
+        modalContent={
+          <>
+            <SendPreviewModal article={post.data} />
+          </>
+        }
+      />
+
       <DashboardBody>
         <div className="flex h-full flex-row">
           <div className="flex h-full w-full flex-col items-start gap-y-8">
@@ -99,6 +116,14 @@ const ClientPage = () => {
               </h3>
 
               <div className="flex flex-row items-center gap-x-2">
+                <Button
+                  className="secondary"
+                  variant={'outline'}
+                  onClick={() => setShowSendPreviewModal(true)}
+                >
+                  Preview
+                </Button>
+
                 <Button
                   className="self-start"
                   onClick={handleSave}
@@ -244,6 +269,57 @@ const VisibilityPicker = ({ visibility, onChange }: VisibilityPickerProps) => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+    </div>
+  )
+}
+
+const SendPreviewModal = (props: { article: Article }) => {
+  const { currentUser } = useRequireAuth()
+
+  const [email, setEmail] = useState<string>('')
+
+  useEffect(() => {
+    setEmail(currentUser?.email || '')
+  }, [currentUser])
+
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string>()
+
+  const onSend = async () => {
+    setSending(true)
+
+    try {
+      await api.articles.sendPreview({
+        id: props.article.id,
+        articlePreview: {
+          email: email,
+        },
+      })
+      setSent(true)
+    } catch (e) {
+      if (e instanceof ResponseError) {
+        const body = await e.response.json()
+        setError(body['detail'])
+      } else {
+        setError('Something went wrong')
+      }
+
+      setSent(false)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-8">
+      <h2>Send preview email to:</h2>
+      <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Button onClick={onSend} disabled={email.length < 2 || sending}>
+        Send
+      </Button>
+      {sent ? <div>Sent!</div> : null}
+      {error ? <div className="text-red-800">{error}</div> : null}
     </div>
   )
 }

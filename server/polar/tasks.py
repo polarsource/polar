@@ -1,3 +1,4 @@
+from polar.article import tasks as account
 from polar.integrations.github import tasks as github
 from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
@@ -12,4 +13,5 @@ __all__ = [
     "magic_link",
     "notifications",
     "subscriptions",
+    "account",
 ]

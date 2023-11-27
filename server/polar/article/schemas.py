@@ -28,6 +28,7 @@ class Article(Schema):
     published_at: datetime.datetime | None
 
     notify_subscribers: bool | None
+    notifications_sent_at: datetime.datetime | None
     email_open_count: int | None
     web_view_count: int | None
 
@@ -68,6 +69,9 @@ class Article(Schema):
             organization=Organization.from_db(i.organization),
             published_at=i.published_at,
             notify_subscribers=i.notify_subscribers if include_admin_fields else None,
+            notifications_sent_at=i.notifications_sent_at
+            if include_admin_fields
+            else None,
             email_open_count=i.email_open_count if include_admin_fields else None,
             web_view_count=i.web_view_count if include_admin_fields else None,
         )
@@ -127,3 +131,13 @@ class ArticleUpdate(Schema):
 
 class ArticleViewedResponse(Schema):
     ok: bool
+
+
+class ArticlePreviewResponse(Schema):
+    ok: bool
+
+
+class ArticlePreview(Schema):
+    email: str = Field(
+        description="Send a preview of the article to this email address"
+    )

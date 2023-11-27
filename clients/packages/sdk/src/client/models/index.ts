@@ -166,6 +166,12 @@ export interface Article {
     notify_subscribers?: boolean;
     /**
      * 
+     * @type {string}
+     * @memberof Article
+     */
+    notifications_sent_at?: string;
+    /**
+     * 
      * @type {number}
      * @memberof Article
      */
@@ -265,6 +271,32 @@ export const ArticleCreateVisibilityEnum = {
 } as const;
 export type ArticleCreateVisibilityEnum = typeof ArticleCreateVisibilityEnum[keyof typeof ArticleCreateVisibilityEnum];
 
+/**
+ * 
+ * @export
+ * @interface ArticlePreview
+ */
+export interface ArticlePreview {
+    /**
+     * Send a preview of the article to this email address
+     * @type {string}
+     * @memberof ArticlePreview
+     */
+    email: string;
+}
+/**
+ * 
+ * @export
+ * @interface ArticlePreviewResponse
+ */
+export interface ArticlePreviewResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ArticlePreviewResponse
+     */
+    ok: boolean;
+}
 /**
  * 
  * @export

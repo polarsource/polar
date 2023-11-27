@@ -71,6 +71,7 @@ export const Badge = ({
 
           overflow: 'hidden',
           backgroundColor: darkmode ? '#1D1E27' /*gray-700*/ : 'white',
+          fontFamily: 'var(--font-inter), Inter var, Inter, sans-serif',
         }}
       >
         <div

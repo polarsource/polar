@@ -9,11 +9,16 @@ import { ImageResponse, NextRequest } from 'next/server'
 
 import OpenGraphImageArticle from '@/components/Organization/OpenGraphImageArticle'
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
-import { Inter } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { getServerURL } from 'polarkit/api/url'
 
-const inter = Inter({ subsets: ['latin'] })
+const regularFont = fetch(
+  new URL('/public/fonts/Inter-Regular.ttf', import.meta.url),
+).then((res) => res.arrayBuffer())
+
+const mediumFont = fetch(
+  new URL('/public/fonts/Inter-Medium.ttf', import.meta.url),
+).then((res) => res.arrayBuffer())
 
 export const runtime = 'edge'
 
@@ -25,6 +30,11 @@ const renderFundingOG = async (
   issues: Issue[],
   largeIssue: boolean,
 ) => {
+  const [regularFontData, mediumFontData] = await Promise.all([
+    regularFont,
+    mediumFont,
+  ])
+
   return new ImageResponse(
     (
       <OpenGraphImageFunding
@@ -39,15 +49,45 @@ const renderFundingOG = async (
     {
       height: 630,
       width: 1200,
+      fonts: [
+        {
+          name: 'Inter',
+          data: regularFontData,
+          weight: 500,
+          style: 'normal',
+        },
+        {
+          name: 'Inter',
+          data: mediumFontData,
+          weight: 600,
+          style: 'medium',
+        },
+      ],
     },
   )
 }
 
 const renderArticleOG = async (article: Article) => {
+  const [regularFontData, mediumFontData] = await Promise.all([
+    regularFont,
+    mediumFont,
+  ])
+
   return new ImageResponse(<OpenGraphImageArticle article={article} />, {
     height: 630,
     width: 1200,
-    // fonts: await getFonts(),
+    fonts: [
+      {
+        name: 'Inter',
+        data: regularFontData,
+        weight: 500,
+      },
+      {
+        name: 'Inter',
+        data: mediumFontData,
+        weight: 600,
+      },
+    ],
   })
 }
 

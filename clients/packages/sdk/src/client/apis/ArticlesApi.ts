@@ -17,6 +17,8 @@ import * as runtime from '../runtime';
 import type {
   Article,
   ArticleCreate,
+  ArticlePreview,
+  ArticlePreviewResponse,
   ArticleUpdate,
   ArticleViewedResponse,
   HTTPValidationError,
@@ -41,6 +43,11 @@ export interface ArticlesApiLookupRequest {
 export interface ArticlesApiSearchRequest {
     organizationName: string;
     platform: Platforms;
+}
+
+export interface ArticlesApiSendPreviewRequest {
+    id: string;
+    articlePreview: ArticlePreview;
 }
 
 export interface ArticlesApiUpdateRequest {
@@ -285,6 +292,53 @@ export class ArticlesApi extends runtime.BaseAPI {
      */
     async search(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
         const response = await this.searchRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Send preview email
+     * Send preview email (Public API)
+     */
+    async sendPreviewRaw(requestParameters: ArticlesApiSendPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticlePreviewResponse>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling sendPreview.');
+        }
+
+        if (requestParameters.articlePreview === null || requestParameters.articlePreview === undefined) {
+            throw new runtime.RequiredError('articlePreview','Required parameter requestParameters.articlePreview was null or undefined when calling sendPreview.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/{id}/send_preview`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.articlePreview,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Send preview email
+     * Send preview email (Public API)
+     */
+    async sendPreview(requestParameters: ArticlesApiSendPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticlePreviewResponse> {
+        const response = await this.sendPreviewRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -13,13 +13,17 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.tags.api import Tags
+from polar.user.service import user as user_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
 
 from .schemas import Article as ArticleSchema
 from .schemas import (
     ArticleCreate,
+    ArticlePreview,
+    ArticlePreviewResponse,
     ArticleUpdate,
     ArticleViewedResponse,
 )
@@ -244,6 +248,44 @@ async def viewed(
     )
 
     return ArticleViewedResponse(ok=True)
+
+
+@router.post(
+    "/articles/{id}/send_preview",
+    response_model=ArticlePreviewResponse,
+    tags=[Tags.PUBLIC],
+    description="Send preview email",
+    summary="Send preview email (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def send_preview(
+    id: UUID,
+    preview: ArticlePreview,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticlePreviewResponse:
+    art = await article_service.get_loaded(session, id)
+    if not art:
+        raise ResourceNotFound()
+
+    # admin required
+    if not await authz.can(auth.subject, AccessType.write, art):
+        raise Unauthorized()
+
+    send_to_user = await user_service.get_by_email(session, preview.email)
+    if not send_to_user:
+        raise ResourceNotFound()
+
+    await enqueue_job(
+        "articles.send_to_user",
+        article_id=art.id,
+        user_id=send_to_user.id,
+        is_test=True,
+    )
+
+    return ArticlePreviewResponse(ok=True)
 
 
 @router.put(

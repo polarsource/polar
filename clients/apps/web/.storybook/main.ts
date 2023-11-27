@@ -18,5 +18,9 @@ const config: StorybookConfig = {
   docs: {
     autodocs: 'tag',
   },
+  previewHead: (head) => `
+  ${head}
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  `,
 }
 export default config

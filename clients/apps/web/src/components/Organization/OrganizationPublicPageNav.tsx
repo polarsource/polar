@@ -26,6 +26,7 @@ import { useCallback } from 'react'
 import { Post as PostComponent } from '../Feed/Posts/Post'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import { ProfileMenu } from '../Shared/ProfileSelection'
+import { StaggerReveal } from '../Shared/StaggerReveal'
 import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSubscriptionsPublicPage'
 import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
@@ -54,7 +55,7 @@ export const OrganizationPublicPageNav = ({
   )
 
   return (
-    <div className="flex w-full flex-row items-center md:grow-0 md:justify-between">
+    <div className="flex flex-row items-center justify-between md:w-full">
       <TabsList className="dark:border-polar-700 hidden dark:border md:flex">
         <TabsTrigger
           value="overview"
@@ -132,13 +133,15 @@ export const OrganizationPublicPageContent = ({
     <div className="mt-12 flex h-full w-full flex-col md:mt-0">
       {isFeatureEnabled('feed') && (
         <TabsContent className="w-full" value="overview">
-          <div className="flex max-w-xl flex-col gap-y-6">
+          <StaggerReveal className="flex max-w-xl flex-col gap-y-6">
             {posts.map((post) => (
-              <Link href={`/${organization.name}/posts/${post.slug}`}>
-                <PostComponent article={post} />
-              </Link>
+              <StaggerReveal.Child>
+                <Link href={`/${organization.name}/posts/${post.slug}`}>
+                  <PostComponent article={post} />
+                </Link>
+              </StaggerReveal.Child>
             ))}
-          </div>
+          </StaggerReveal>
         </TabsContent>
       )}
       <TabsContent

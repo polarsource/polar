@@ -1,13 +1,14 @@
+import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Footer from '../Organization/Footer'
 import EmptyLayout from './EmptyLayout'
 
 const PublicLayout = ({
   children,
   wide,
-}: {
-  children: React.ReactElement
+}: PropsWithChildren<{
   wide?: boolean
-}) => {
+}>) => {
   return (
     <EmptyLayout>
       <div
@@ -18,6 +19,7 @@ const PublicLayout = ({
       >
         {children}
       </div>
+      <Footer wide={wide} />
     </EmptyLayout>
   )
 }

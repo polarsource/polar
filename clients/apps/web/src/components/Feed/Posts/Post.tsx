@@ -6,7 +6,6 @@ import {
   ChatBubbleOutline,
   LanguageOutlined,
   MoreVertOutlined,
-  VerifiedUser,
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import { motion, useSpring, useTransform } from 'framer-motion'
@@ -54,9 +53,6 @@ const PostHeader = (props: FeedPost) => {
             {props.article.organization.pretty_name ||
               props.article.organization.name}
           </h3>
-          {/* {props.author.verified && ( */}
-          <VerifiedUser className="text-blue-500" fontSize="inherit" />
-          {/* )} */}
         </Link>
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
           &middot;

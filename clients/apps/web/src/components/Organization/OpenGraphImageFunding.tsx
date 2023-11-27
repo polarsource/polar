@@ -1,7 +1,7 @@
 import { Issue } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
 
-const OpenGraphImage = (props: {
+const OpenGraphImageFunding = (props: {
   org_name: string
   repo_name?: string
   issue_count: number
@@ -306,4 +306,4 @@ const OpenGraphImage = (props: {
   )
 }
 
-export default OpenGraphImage
+export default OpenGraphImageFunding

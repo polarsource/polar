@@ -25,10 +25,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const api = getServerSideAPI()
 
-  let post: Article | undefined
+  let article: Article | undefined
 
   try {
-    post = await api.articles.lookup({
+    article = await api.articles.lookup({
       platform: Platforms.GITHUB,
       organizationName: params.organization,
       slug: params.postSlug,
@@ -39,23 +39,23 @@ export async function generateMetadata(
     }
   }
 
-  if (!post) {
+  if (!article) {
     notFound()
   }
 
   return {
     title: {
-      absolute: `${post.title} by ${post.byline.name}`,
+      absolute: `${article.title} by ${article.byline.name}`,
     },
 
     openGraph: {
-      title: `${post.title}`,
-      description: `${post.title} by ${post.byline.name}`,
+      title: `${article.title}`,
+      description: `${article.title} by ${article.byline.name}`,
       siteName: 'Polar',
 
       images: [
         {
-          url: `https://polar.sh/og?org=${post.organization.name}`,
+          url: `https://polar.sh/og?articleId=${article.id}`,
           width: 1200,
           height: 630,
         },
@@ -64,15 +64,15 @@ export async function generateMetadata(
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${post.organization.name}`,
+          url: `https://polar.sh/og?articleId=${article.id}`,
           width: 1200,
           height: 630,
-          alt: `${post.title}`,
+          alt: `${article.title}`,
         },
       ],
       card: 'summary_large_image',
-      title: `${post.title}`,
-      description: `${post.title} by ${post.byline.name}`,
+      title: `${article.title}`,
+      description: `${article.title} by ${article.byline.name}`,
     },
   }
 }

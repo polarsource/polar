@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import OpenGraphImage from '@/components/Organization/OpenGraphImage'
+import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
 import { Reactions } from '@polar-sh/sdk'
 import { issue, org } from 'polarkit/testdata'
 
-const meta: Meta<typeof OpenGraphImage> = {
-  title: 'Organisms/OpenGraphImage',
-  component: OpenGraphImage,
+const meta: Meta<typeof OpenGraphImageFunding> = {
+  title: 'Organisms/OpenGraphImageFunding',
+  component: OpenGraphImageFunding,
   parameters: {
     themes: ['light'],
   },
@@ -14,7 +14,7 @@ const meta: Meta<typeof OpenGraphImage> = {
 
 export default meta
 
-type Story = StoryObj<typeof OpenGraphImage>
+type Story = StoryObj<typeof OpenGraphImageFunding>
 
 export const Default: Story = {
   args: {
@@ -26,7 +26,7 @@ export const Default: Story = {
   render: (args) => {
     return (
       <div className="absolute">
-        <OpenGraphImage {...args} />
+        <OpenGraphImageFunding {...args} />
       </div>
     )
   },
@@ -54,7 +54,7 @@ export const IssueToday: Story = {
   render: (args) => {
     return (
       <div className="absolute">
-        <OpenGraphImage {...args} />
+        <OpenGraphImageFunding {...args} />
       </div>
     )
   },
@@ -77,7 +77,7 @@ export const IssueLongTitle: Story = {
   render: (args) => {
     return (
       <div className="absolute">
-        <OpenGraphImage {...args} />
+        <OpenGraphImageFunding {...args} />
       </div>
     )
   },
@@ -101,7 +101,7 @@ export const Repository: Story = {
   render: (args) => {
     return (
       <div className="absolute">
-        <OpenGraphImage {...args} />
+        <OpenGraphImageFunding {...args} />
       </div>
     )
   },
@@ -125,7 +125,7 @@ export const RepositoryLongName: Story = {
   render: (args) => {
     return (
       <div className="absolute">
-        <OpenGraphImage {...args} />
+        <OpenGraphImageFunding {...args} />
       </div>
     )
   },
@@ -148,7 +148,7 @@ export const OneIssue: Story = {
         }}
       >
         <div className="absolute">
-          <OpenGraphImage {...args} />
+          <OpenGraphImageFunding {...args} />
         </div>
       </div>
     )
@@ -172,7 +172,7 @@ export const NoIssues: Story = {
         }}
       >
         <div className="absolute">
-          <OpenGraphImage {...args} />
+          <OpenGraphImageFunding {...args} />
         </div>
       </div>
     )
@@ -197,7 +197,7 @@ export const LargeIssue: Story = {
         }}
       >
         <div className="absolute">
-          <OpenGraphImage {...args} />
+          <OpenGraphImageFunding {...args} />
         </div>
       </div>
     )
@@ -230,7 +230,7 @@ export const LargeIssueNoReactions: Story = {
         }}
       >
         <div className="absolute">
-          <OpenGraphImage {...args} />
+          <OpenGraphImageFunding {...args} />
         </div>
       </div>
     )
@@ -263,7 +263,7 @@ export const LargeIssueFundingGoal: Story = {
         }}
       >
         <div className="absolute">
-          <OpenGraphImage {...args} />
+          <OpenGraphImageFunding {...args} />
         </div>
       </div>
     )

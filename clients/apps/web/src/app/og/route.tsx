@@ -1,5 +1,5 @@
-import OpenGraphImage from '@/components/Organization/OpenGraphImage'
 import {
+  Article,
   Issue,
   ListResourceIssue,
   Organization,
@@ -7,6 +7,8 @@ import {
 } from '@polar-sh/sdk'
 import { ImageResponse, NextRequest } from 'next/server'
 
+import OpenGraphImageArticle from '@/components/Organization/OpenGraphImageArticle'
+import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
 import { Inter } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { getServerURL } from 'polarkit/api/url'
@@ -15,7 +17,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const runtime = 'edge'
 
-const renderOG = async (
+const renderFundingOG = async (
   org_name: string,
   repository: Repository | undefined,
   issue_count: number,
@@ -25,7 +27,7 @@ const renderOG = async (
 ) => {
   return new ImageResponse(
     (
-      <OpenGraphImage
+      <OpenGraphImageFunding
         org_name={org_name}
         repo_name={repository?.name}
         issue_count={issue_count}
@@ -39,6 +41,14 @@ const renderOG = async (
       width: 1200,
     },
   )
+}
+
+const renderArticleOG = async (article: Article) => {
+  return new ImageResponse(<OpenGraphImageArticle article={article} />, {
+    height: 630,
+    width: 1200,
+    // fonts: await getFonts(),
+  })
 }
 
 const listIssues = async (
@@ -110,9 +120,35 @@ const getIssue = async (externalUrl: string): Promise<Issue> => {
   })
 }
 
+const getArticle = async (id: string): Promise<Article> => {
+  return await fetch(`${getServerURL()}/api/v1/articles/${id}`, {
+    method: 'GET',
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Unexpected ${response.status} status code`)
+    }
+    return response.json()
+  })
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
 
+  // Article image
+  try {
+    const articleId = searchParams.get('articleId')
+    if (articleId) {
+      const articleData = await getArticle(articleId)
+      return renderArticleOG(articleData)
+    }
+  } catch (error) {
+    console.log(error)
+    return new Response(`Failed to generate article OG image`, {
+      status: 500,
+    })
+  }
+
+  // Funding image
   try {
     const org = searchParams.get('org')
     if (!org) {
@@ -158,7 +194,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return await renderOG(
+    return await renderFundingOG(
       orgData.name,
       repoData,
       total_issue_count,

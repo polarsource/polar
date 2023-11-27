@@ -1,4 +1,5 @@
 import {
+  Article,
   Issue,
   IssueFunding,
   IssueStateEnum,
@@ -318,4 +319,19 @@ export const pullRequest: PullRequest = {
   deletions: 20,
   is_merged: true,
   is_closed: true,
+}
+
+export const article: Article = {
+  id: 'xxxx',
+  slug: 'xxxx',
+  organization: org,
+  title: 'Funding goals, reward contributors (v1), backer dashboard & API',
+  body: `Our team is growing and new features, enhancements and bug fixes are shipped daily. Since Polar is [open source](https://github.com/polarsource/polar) anyone can see, contribute and follow along our daily progress & backlog, but... It's a bit verbose :-)
+
+  So we'll start keeping a changelog to highlight some of the gems. Let's dive right into some of the highlights from the last month.`,
+  visibility: 'public',
+  byline: {
+    name: 'birkjernstrom',
+    avatar_url: 'https://avatars.githubusercontent.com/u/281715?v=4',
+  },
 }

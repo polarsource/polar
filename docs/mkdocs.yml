@@ -1,6 +1,8 @@
 site_name: Polar
 repo_url: https://github.com/polarsource/polar
 repo_name: polarsource/polar
+plugins:
+  - awesome-pages
 theme:
   name: material
   custom_dir: overrides
@@ -12,6 +14,10 @@ theme:
     code: Roboto Mono
   features:
     - navigation.footer
+    - navigation.tabs
+    - navigation.sticky
+    - navigation.expand
+    - navigation.indexes
     - header.autohide
   palette:
     - media: "(prefers-color-scheme: light)"

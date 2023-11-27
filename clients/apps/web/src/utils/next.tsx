@@ -1,5 +1,5 @@
-import type { ReactElement, ReactNode } from 'react'
 import type { NextPage } from 'next'
+import type { ReactElement, ReactNode } from 'react'
 
 /*
  * Typescript types for NextJS Page.getLayout feature

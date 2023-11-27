@@ -392,7 +392,7 @@ class StripeService:
         invoice = stripe_lib.Invoice.create(
             customer=customer.id,
             description=f"""You pledged to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
-            
+
 Thank you for your support!
 """,  # noqa: E501
             metadata={

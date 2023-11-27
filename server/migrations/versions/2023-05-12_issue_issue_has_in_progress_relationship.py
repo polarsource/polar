@@ -60,7 +60,7 @@ where id in (
 
     op.execute(
         """
-update issues set 
+update issues set
     issue_has_pull_request_relationship = 't'
 where id in (
     select i.id from issues i join issue_references ON issue_references.issue_id = i.id join pull_requests ON pull_requests.id = issue_references.pull_request_id where pull_requests.is_draft = False

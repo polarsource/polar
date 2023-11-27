@@ -3,7 +3,7 @@
 ## Getting started
 
 Before running Polar locally (specifically the API), you should set up a [GitHub app](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)
-and require necessary permissions. For a list of permissions needed, have a look 
+and require necessary permissions. For a list of permissions needed, have a look
 at [this file](https://github.com/polarsource/polar/blob/main/server/polar/integrations/github/verify.py#L16).
 You can then run ``poetry run task verify_github_app`` to verify everything is okay then run the commands below.
 

@@ -17,7 +17,7 @@ const TopbarLayout = ({
       <>
         <Topbar
           logo={{
-            position: logoPosition
+            position: logoPosition,
           }}
           isFixed={isFixed}
           useOrgFromURL={false}

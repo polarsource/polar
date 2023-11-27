@@ -55,17 +55,17 @@ export const GitHubIssue: Story = {
             </div>
             <div itemprop="text" class="Box-body p-0 blob-wrapper blob-wrapper-embedded data">
               <table class="highlight tab-size mb-0 js-file-line-container" data-tab-size="8" data-paste-markdown-skip="">
-          
+
                   <tbody><tr class="border-0">
                     <td id="L1" class="blob-num border-0 px-3 py-0 color-bg-default" data-line-number="1"></td>
                     <td id="LC1" class="blob-code border-0 px-3 py-0 color-bg-default blob-code-inner js-file-line"> <span class="pl-mh"># <span class="pl-en">test-repo-two</span></span> </td>
                   </tr>
-          
+
                   <tr class="border-0">
                     <td id="L2" class="blob-num border-0 px-3 py-0 color-bg-default" data-line-number="2"></td>
                     <td id="LC2" class="blob-code border-0 px-3 py-0 color-bg-default blob-code-inner js-file-line">  </td>
                   </tr>
-          
+
                   <tr class="border-0">
                     <td id="L3" class="blob-num border-0 px-3 py-0 color-bg-default" data-line-number="3"></td>
                     <td id="LC3" class="blob-code border-0 px-3 py-0 color-bg-default blob-code-inner js-file-line"> This is a test README! </td>

@@ -179,7 +179,7 @@ async def test_remove_badge_pre_2023_05_08(
         issue=predictable_issue,
     ).generate_body_without_badge(
         """This is what the badge used to look like pre 2023-05-08
-        
+
 <!-- POLAR PLEDGE BADGE -->
 [![Fund with Polar](http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg)](http://127.0.0.1:3000/testorg/testrepo/issues/123)"""
     )

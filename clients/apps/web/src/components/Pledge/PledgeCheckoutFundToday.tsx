@@ -437,7 +437,7 @@ const PledgeCheckoutFundToday = ({
                   <SelectValue
                     placeholder={`${prettyCardName(paymentMethod.brand)} (****${
                       paymentMethod.last4
-                    }) 
+                    })
                     ${paymentMethod.exp_month.toString().padStart(2, '0')}/${
                       paymentMethod.exp_year
                     }`}

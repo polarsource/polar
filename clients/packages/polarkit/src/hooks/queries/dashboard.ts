@@ -7,8 +7,8 @@ import {
 } from '@polar-sh/sdk'
 import {
   InfiniteData,
-  useInfiniteQuery,
   UseInfiniteQueryResult,
+  useInfiniteQuery,
 } from '@tanstack/react-query'
 import { api } from '../../api'
 import { defaultRetry } from './retry'

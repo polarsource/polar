@@ -13,13 +13,13 @@
 
 	// Configure tool-specific properties.
 	"customizations": {
-		
+
 		// Auto open these files whrn running on GitHub Codespaces
 		"codespaces": {
 			"openFiles": [
 			  ".devcontainer/README.md",
 			  "server/.env.devcontainer"
-			  
+
 			]
 		},
 
@@ -45,8 +45,8 @@
 			]
 		}
 	},
-	
-	
+
+
 	"remoteUser": "vscode",
 	"postStartCommand": "bash /workspace/.devcontainer/post_start_command.sh",
 

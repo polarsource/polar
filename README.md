@@ -9,7 +9,7 @@
 
 <hr />
 <div align="center">
-  
+
 <a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <span>Public Alpha - <a href="https://polar.sh/signup/maintainer">Get started</a></span>

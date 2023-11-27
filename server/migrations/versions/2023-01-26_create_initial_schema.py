@@ -1,7 +1,7 @@
 """create initial schema
 
 Revision ID: 8fb1fcc039a1
-Revises: 
+Revises:
 Create Date: 2023-01-26 23:01:23.923123
 
 The standard names for indexes in PostgreSQL are:

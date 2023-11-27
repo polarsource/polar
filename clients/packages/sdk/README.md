@@ -1,6 +1,6 @@
 # Polar SDK
 
-The Polar SDK is a JavaScript library with capabilities to interact with the Polar API. 
+The Polar SDK is a JavaScript library with capabilities to interact with the Polar API.
 
 The SDK is compatible with both browser & server-side runtimes. It is automatically generated from our OpenAPI implementation, making it up-to-date with the server-side API at any time.
 

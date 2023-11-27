@@ -284,7 +284,7 @@ We hope you share our excitement for rewards with Polar. We can't wait to see ho
 
 Don't hesitate to [join our Discord](https://discord.gg/XKVxpXQbWV?ref=blog.polar.sh) if you have any questions or feedback. Or submit discussions and issues to our [GitHub](https://github.com/polarsource/polar?ref=blog.polar.sh) (Polar is open source). We iterate quickly based on feedback.
 
-Our best,  
+Our best,
 The Polar maintainers`,
     visibility: 'pro',
     author: {
@@ -475,7 +475,7 @@ Today, Polar offers users the ability to seamlessly pledge behind impactful effo
 
 Our product is designed to empower maintainers with better insights on what their users want, seek to fund and progress in flight across their community of contributors. All available through our dashboard or directly on GitHub using our Chrome Extension.
 
-Once funded issues are marked completed, maintainers receive 90% of the capital pledged (our commission is 10%). Of course, in case such efforts were achieved together with contributors, maintainers can soon seamlessly split the rewards. Or leverage the capital for community merchandise or meetups to re-investing it behind their own issue dependencies.  
+Once funded issues are marked completed, maintainers receive 90% of the capital pledged (our commission is 10%). Of course, in case such efforts were achieved together with contributors, maintainers can soon seamlessly split the rewards. Or leverage the capital for community merchandise or meetups to re-investing it behind their own issue dependencies.
 
 ![](https://lh4.googleusercontent.com/Y8ewxSfPHvHgRM3Z3sHdiUZm6obQdedApQWY570856mf8WbJ15eHRYPerREW2T2dndbsGZBZaVbaaDVYIVWj_anCJGxh_WnqIeH8MT_492c2dU7KO7hTzL1eCHA9cnBBBkISNka4HyzmdPu5RADaJoI)
 
@@ -509,7 +509,7 @@ It’s time to change that. Equipping maintainers across the entire ecosystem wi
 
 That’s what we’re building towards.
 
-  
+
 **Shape Polar v1.0 with us – built in public & open source**
 
 We’re excited to be building Polar in public and open source ([GitHub](https://github.com/polarsource/polar?ref=blog.polar.sh)). Join our [Discord](https://discord.gg/STfRufb32V?ref=blog.polar.sh) to discuss ideas, early design proposals and upcoming features. We’d love your input and feedback: Let’s shape the future of Polar and the open source economy, together!

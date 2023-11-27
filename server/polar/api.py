@@ -20,6 +20,7 @@ from polar.pull_request.endpoints import router as pull_requests_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
 from polar.subscription.endpoints import router as subscription_router
+from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
 
 router = APIRouter(prefix="/api/v1")
@@ -68,3 +69,5 @@ router.include_router(organization_router)
 router.include_router(subscription_router)
 # /articles
 router.include_router(articles_router)
+# /transactions
+router.include_router(transaction_router)

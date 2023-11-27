@@ -1,4 +1,4 @@
-from polar.kit.schemas import TimestampedSchema
+from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.transaction import PaymentProcessor, TransactionType
 
 
@@ -16,3 +16,15 @@ class Transaction(TimestampedSchema):
     subscription_id: str | None
 
     payout_transaction_id: str | None
+
+
+class TransactionsBalance(Schema):
+    currency: str
+    amount: int
+    account_currency: str
+    account_amount: int
+
+
+class TransactionsSummary(Schema):
+    balance: TransactionsBalance
+    payout: TransactionsBalance

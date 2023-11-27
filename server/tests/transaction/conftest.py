@@ -11,14 +11,15 @@ async def create_transaction(
     *,
     account: Account | None = None,
     type: TransactionType = TransactionType.transfer,
+    amount: int = 1000,
 ) -> Transaction:
     transaction = Transaction(
         type=type,
         processor=PaymentProcessor.stripe,
         currency="usd",
-        amount=1000,
+        amount=amount,
         account_currency="eur",
-        account_amount=900,
+        account_amount=int(amount * 0.9),
         tax_amount=0,
         processor_fee_amount=0,
         account=account,
@@ -56,4 +57,7 @@ async def account_transactions(
         await create_transaction(session, account=account),
         await create_transaction(session, account=account),
         await create_transaction(session, account=account),
+        await create_transaction(
+            session, account=account, type=TransactionType.payout, amount=-3000
+        ),
     ]

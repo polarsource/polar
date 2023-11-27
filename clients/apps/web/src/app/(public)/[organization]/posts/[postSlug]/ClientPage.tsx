@@ -52,13 +52,13 @@ export default function Page({
           <ProfileMenu />
         </div>
       </div>
-      <div className="relative flex w-full flex-col-reverse gap-x-24 pb-16 md:flex-row">
+      <div className="relative flex w-full flex-col-reverse gap-24 pb-16 md:flex-row">
         <OrganizationPublicSidebar
           organization={organization}
           subscribersCount={subscribersCount}
           subscriptionSummary={subscriptionSummary}
         />
-        <StaggerReveal className="dark:md:bg-polar-800 dark:md:border-polar-700 relative flex w-full flex-col items-center rounded-3xl p-6 md:bg-white md:p-12 md:shadow-xl dark:md:border">
+        <StaggerReveal className="dark:md:bg-polar-800 dark:md:border-polar-700 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
           <Link
             className="absolute left-16 top-16 hidden flex-shrink md:block"
             href={`/${organization.name}`}

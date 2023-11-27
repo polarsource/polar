@@ -13,7 +13,7 @@ from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from .schemas import Transaction
+from .schemas import Transaction, TransactionsSummary
 from .service.transaction import SearchSortProperty
 from .service.transaction import transaction as transaction_service
 
@@ -26,11 +26,7 @@ SearchSorting = Annotated[
 ]
 
 
-@router.get(
-    "/search",
-    response_model=ListResource[Transaction],
-    tags=[Tags.PUBLIC],
-)
+@router.get("/search", response_model=ListResource[Transaction], tags=[Tags.PUBLIC])
 async def search_transactions(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
@@ -59,3 +55,17 @@ async def search_transactions(
         count,
         pagination,
     )
+
+
+@router.get("/summary", response_model=TransactionsSummary, tags=[Tags.PUBLIC])
+async def get_summary(
+    auth: UserRequiredAuth,
+    account_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> TransactionsSummary:
+    account = await account_service.get(session, account_id)
+    if account is None:
+        raise ResourceNotFound("Account not found")
+
+    return await transaction_service.get_summary(session, auth.subject, account, authz)

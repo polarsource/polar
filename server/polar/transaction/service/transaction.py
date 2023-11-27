@@ -1,16 +1,22 @@
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
-from sqlalchemy import UnaryExpression, asc, desc, select
+from sqlalchemy import UnaryExpression, asc, desc, func, select
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.models import Account, Transaction, User
+from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.base import BaseTransactionService
+
+from ..schemas import (
+    TransactionsBalance,
+    TransactionsSummary,
+)
+from .base import BaseTransactionService
 
 
 class SearchSortProperty(StrEnum):
@@ -51,6 +57,66 @@ class TransactionService(BaseTransactionService):
         results, count = await paginate(session, statement, pagination=pagination)
 
         return results, count
+
+    async def get_summary(
+        self, session: AsyncSession, user: User, account: Account, authz: Authz
+    ) -> TransactionsSummary:
+        if not await authz.can(user, AccessType.read, account):
+            raise NotPermitted()
+
+        statement = (
+            select(
+                Transaction.currency,
+                Transaction.account_currency,
+                cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),
+                cast(type[int], func.coalesce(func.sum(Transaction.account_amount), 0)),
+                cast(
+                    type[int],
+                    func.coalesce(
+                        func.sum(Transaction.amount).filter(
+                            Transaction.type == TransactionType.payout
+                        ),
+                        0,
+                    ),
+                ),
+                cast(
+                    type[int],
+                    func.coalesce(
+                        func.sum(Transaction.account_amount).filter(
+                            Transaction.type == TransactionType.payout
+                        ),
+                        0,
+                    ),
+                ),
+            )
+            .where(Transaction.account_id == account.id)
+            .group_by(Transaction.currency, Transaction.account_currency)
+        )
+
+        result = await session.execute(statement)
+        (
+            currency,
+            account_currency,
+            amount,
+            account_amount,
+            payout_amount,
+            account_payout_amount,
+        ) = result.one()._tuple()
+
+        return TransactionsSummary(
+            balance=TransactionsBalance(
+                currency=currency,
+                amount=amount,
+                account_currency=account_currency,
+                account_amount=account_amount,
+            ),
+            payout=TransactionsBalance(
+                currency=currency,
+                amount=payout_amount,
+                account_currency=account_currency,
+                account_amount=account_payout_amount,
+            ),
+        )
 
 
 transaction = TransactionService(Transaction)

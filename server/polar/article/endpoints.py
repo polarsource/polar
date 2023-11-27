@@ -21,6 +21,7 @@ from .schemas import Article as ArticleSchema
 from .schemas import (
     ArticleCreate,
     ArticleUpdate,
+    ArticleViewedResponse,
 )
 from .service import article_service
 
@@ -58,7 +59,13 @@ async def list(
     # TODO: pagination
     count = len(articles)
     return ListResource(
-        items=[ArticleSchema.from_db(a) for a in articles],
+        items=[
+            ArticleSchema.from_db(
+                a,
+                include_admin_fields=await authz.can(auth.subject, AccessType.write, a),
+            )
+            for a in articles
+        ],
         pagination=Pagination(total_count=count, max_page=1),
     )
 
@@ -95,7 +102,13 @@ async def search(
     # TODO: pagination
     count = len(articles)
     return ListResource(
-        items=[ArticleSchema.from_db(a) for a in articles],
+        items=[
+            ArticleSchema.from_db(
+                a,
+                include_admin_fields=await authz.can(auth.subject, AccessType.write, a),
+            )
+            for a in articles
+        ],
         pagination=Pagination(total_count=count, max_page=1),
     )
 
@@ -128,7 +141,10 @@ async def lookup(
     if not await authz.can(auth.subject, AccessType.read, art):
         raise Unauthorized()
 
-    return ArticleSchema.from_db(art)
+    return ArticleSchema.from_db(
+        art,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+    )
 
 
 @router.post(
@@ -160,7 +176,10 @@ async def create(
     if not art:
         raise ResourceNotFound()
 
-    return ArticleSchema.from_db(art)
+    return ArticleSchema.from_db(
+        art,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+    )
 
 
 @router.get(
@@ -187,7 +206,42 @@ async def get(
     if not await authz.can(auth.subject, AccessType.read, art):
         raise Unauthorized()
 
-    return ArticleSchema.from_db(art)
+    return ArticleSchema.from_db(
+        art,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+    )
+
+
+@router.post(
+    "/articles/{id}/viewed",
+    response_model=ArticleViewedResponse,
+    tags=[Tags.PUBLIC],
+    description="Track article view",
+    summary="Track article (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def viewed(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+    auth: Auth = Depends(Auth.optional_user),
+) -> ArticleViewedResponse:
+    art = await article_service.get_loaded(session, id)
+    if not art:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.read, art):
+        raise Unauthorized()
+
+    # Track view
+    # TODO: very simplistic for now, might need some improvements later :-)
+    await article_service.track_view(
+        session,
+        id,
+    )
+
+    return ArticleViewedResponse(ok=True)
 
 
 @router.put(
@@ -220,4 +274,7 @@ async def update(
     if not art:
         raise ResourceNotFound()
 
-    return ArticleSchema.from_db(art)
+    return ArticleSchema.from_db(
+        art,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+    )

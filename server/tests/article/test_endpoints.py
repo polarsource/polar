@@ -485,3 +485,50 @@ async def test_update(
     assert get_json["title"] == "Hello World!"
     assert get_json["visibility"] == "public"
     assert get_json["body"] == "Here comes the post..."
+
+
+@pytest.mark.asyncio
+async def test_view_counter(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "visibility": "private",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["title"] == "Hello World!"
+    assert res["slug"] == "hello-world"
+
+    for x in range(0, 3):
+        viewed = await client.post(
+            f"/api/v1/articles/{res['id']}/viewed",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+        assert viewed.status_code == 200
+
+    # get again
+    get = await client.get(
+        f"/api/v1/articles/{res['id']}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert get.status_code == 200
+
+    get_json = get.json()
+
+    assert get_json["web_view_count"] == 3

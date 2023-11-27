@@ -27,8 +27,12 @@ class Article(Schema):
     organization: Organization
     published_at: datetime.datetime | None
 
+    notify_subscribers: bool | None
+    email_open_count: int | None
+    web_view_count: int | None
+
     @classmethod
-    def from_db(cls, i: ArticleModel) -> Self:
+    def from_db(cls, i: ArticleModel, include_admin_fields: bool) -> Self:
         byline: Byline | None = None
 
         if i.byline == i.Byline.organization:
@@ -63,6 +67,9 @@ class Article(Schema):
             visibility=visibility,
             organization=Organization.from_db(i.organization),
             published_at=i.published_at,
+            notify_subscribers=i.notify_subscribers if include_admin_fields else None,
+            email_open_count=i.email_open_count if include_admin_fields else None,
+            web_view_count=i.web_view_count if include_admin_fields else None,
         )
 
 
@@ -86,6 +93,10 @@ class ArticleCreate(Schema):
         default=None,
         description="Time of publishing. If this date is in the future, the post will be scheduled to publish at this time. If visibility is 'public', published_at will default to the current time.",
     )
+    notify_subscribers: bool | None = Field(
+        default=None,
+        description="Set to true to deliver this article via email and/or notifications to subscribers.",
+    )
 
 
 class ArticleUpdate(Schema):
@@ -108,3 +119,11 @@ class ArticleUpdate(Schema):
         default=None,
         description="Set to true for changes to published_at to take affect.",
     )
+    notify_subscribers: bool | None = Field(
+        default=None,
+        description="Set to true to deliver this article via email and/or notifications to subscribers.",
+    )
+
+
+class ArticleViewedResponse(Schema):
+    ok: bool

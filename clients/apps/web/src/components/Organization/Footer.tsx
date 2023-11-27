@@ -2,17 +2,19 @@ import Link, { LinkProps } from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
 import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { UpsellFooter } from './UpsellFooter'
 
 const Footer = ({ wide }: { wide?: boolean }) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 dark:bg-polar-900 flex w-full flex-row justify-center space-y-8 bg-white py-24 dark:border-t md:py-32',
+        'dark:border-polar-800 dark:bg-polar-900 border-gray-75 flex w-full flex-col items-center space-y-24 border-t bg-white py-24 md:py-32',
       )}
     >
+      <UpsellFooter wide={wide} />
       <div
         className={twMerge(
-          'flex w-full flex-col gap-x-16 gap-y-12 px-8 md:flex-row md:justify-between',
+          'flex w-full flex-col gap-x-16 gap-y-24 px-8 md:flex-row md:justify-between md:gap-y-12',
           wide ? 'max-w-7xl' : 'max-w-[970px]',
         )}
       >
@@ -26,14 +28,14 @@ const Footer = ({ wide }: { wide?: boolean }) => {
         </div>
         <div
           className={twMerge(
-            'flex flex-col gap-y-12 md:flex-row',
-            wide ? 'md:gap-x-24 lg:gap-x-32' : 'gap-x-20',
+            'flex flex-row flex-wrap gap-y-12 md:flex-row md:flex-nowrap',
+            wide ? 'gap-x-24 lg:gap-x-32' : 'gap-x-20',
           )}
         >
           <div className="flex flex-col gap-y-6">
             <h3 className="dark:text-polar-50 text-lg">Funding</h3>
             <div className="flex flex-col gap-y-2">
-              <OutgoingLink href="/new">Fund an issue</OutgoingLink>
+              <InternalLink href="/new">Fund an issue</InternalLink>
               <InternalLink href="/feed">Dashboard</InternalLink>
               <InternalLink href="/rewards">Rewards</InternalLink>
               <OutgoingLink href="https://docs.polar.sh">
@@ -88,17 +90,18 @@ export default Footer
 const InternalLink = (props: PropsWithChildren<LinkProps>) => {
   return (
     <Link
-      className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+      className="flex flex-row items-center gap-x-1 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
       {...props}
-    />
+    >
+      {props.children}
+    </Link>
   )
 }
 
 const OutgoingLink = (props: ComponentProps<'a'>) => {
   return (
-    <a
-      className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-      {...props}
-    />
+    <a className="flex flex-row items-center gap-x-1 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">
+      {props.children}
+    </a>
   )
 }

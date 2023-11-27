@@ -33,7 +33,7 @@ const Footer = ({ wide }: { wide?: boolean }) => {
           )}
         >
           <div className="flex flex-col gap-y-6">
-            <h3 className="dark:text-polar-50 text-lg">Funding</h3>
+            <h3 className="dark:text-polar-50 text-base">Funding</h3>
             <div className="flex flex-col gap-y-2">
               <InternalLink href="/new">Fund an issue</InternalLink>
               <InternalLink href="/feed">Dashboard</InternalLink>
@@ -44,7 +44,7 @@ const Footer = ({ wide }: { wide?: boolean }) => {
             </div>
           </div>
           <div className="flex flex-col gap-y-6">
-            <h3 className="dark:text-polar-50 text-lg">Company</h3>
+            <h3 className="dark:text-polar-50 text-base">Company</h3>
             <div className="flex flex-col gap-y-2">
               <OutgoingLink href="/careers">Careers</OutgoingLink>
               <OutgoingLink href="https://blog.polar.sh">Blog</OutgoingLink>
@@ -71,7 +71,7 @@ const Footer = ({ wide }: { wide?: boolean }) => {
             </div>
           </div>
           <div className="flex flex-col gap-y-6">
-            <h3 className="dark:text-polar-50 text-lg">Support</h3>
+            <h3 className="dark:text-polar-50 text-base">Support</h3>
             <div className="flex flex-col gap-y-2">
               <OutgoingLink href="/faq">FAQ</OutgoingLink>
               <OutgoingLink href="mailto:support@polar.sh">

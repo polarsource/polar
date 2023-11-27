@@ -67,7 +67,7 @@ module.exports = {
         up: '-2px -2px 22px 0px rgba(61, 84, 171, 0.15)',
       },
       fontFamily: {
-        sans: ['Inter var', ...defaultTheme.fontFamily.sans],
+        sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
       },
       colors: {
         blue: {

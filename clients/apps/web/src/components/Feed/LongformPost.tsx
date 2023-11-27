@@ -40,7 +40,7 @@ export default function LongformPost({ post }: { post: Article }) {
           </span>
         </StaggerReveal.Child>
         <StaggerReveal.Child transition={revealTransition}>
-          <h1 className="text-center text-4xl font-bold leading-relaxed">
+          <h1 className="text-center text-4xl font-bold leading-normal md:leading-relaxed">
             {post.title}
           </h1>
         </StaggerReveal.Child>
@@ -80,7 +80,7 @@ export default function LongformPost({ post }: { post: Article }) {
         >
           {post.body}
         </MarkdownPreview>
-        <div className="dark:bg-polar-700 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 px-16 py-12">
+        <div className="dark:bg-polar-700 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16">
           <Avatar
             className="h-12 w-12"
             avatar_url={post.organization.avatar_url}

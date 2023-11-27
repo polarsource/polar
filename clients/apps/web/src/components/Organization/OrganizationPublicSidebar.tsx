@@ -38,7 +38,7 @@ export const OrganizationPublicSidebar = ({
   )
 
   return (
-    <div className="flex h-full w-full shrink-0 flex-col gap-y-10 md:w-64">
+    <div className="flex h-full w-full shrink-0 flex-col gap-y-10 md:sticky md:top-16 md:w-64">
       <div className="flex flex-col items-center gap-y-6 md:items-start">
         <div className="flex flex-col items-center gap-y-2 md:items-start">
           <Avatar

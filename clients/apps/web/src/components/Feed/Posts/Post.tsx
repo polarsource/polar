@@ -118,7 +118,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
         'flex w-full flex-col gap-y-4 pb-5 pt-2 text-[15px] leading-relaxed transition-colors duration-200',
       )}
     >
-      <div className="dark:text-polar-200 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950">
+      <div className="dark:text-polar-50 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950">
         {props.article.title}
       </div>
       <div className="flex flex-col flex-wrap">

@@ -197,5 +197,17 @@ class ArticleService:
             case "public":
                 return Article.Visibility.public
 
+    async def track_view(
+        self,
+        session: AsyncSession,
+        id: UUID,
+    ) -> None:
+        statement = (
+            sql.update(Article)
+            .where(Article.id == id)
+            .values({"web_view_count": Article.web_view_count + 1})
+        )
+        await session.execute(statement)
+
 
 article_service = ArticleService()

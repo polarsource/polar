@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -69,3 +69,11 @@ class Article(RecordModel):
     paid_subscribers_only: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
+
+    notify_subscribers: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
+    email_open_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    web_view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

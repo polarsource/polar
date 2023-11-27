@@ -207,7 +207,7 @@ module.exports = {
       const utilityStyles = {
         '.text-4xl': {
           fontWeight: '400',
-          fontFamily: ['Inter var', defaultTheme.fontFamily.sans].toString(),
+          fontFamily: ['var(--font-inter)', defaultTheme.fontFamily.sans].toString(),
         },
       }
       utilityStyles['.text-5xl'] = utilityStyles['.text-4xl']

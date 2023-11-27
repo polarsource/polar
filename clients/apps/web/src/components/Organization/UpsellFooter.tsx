@@ -27,10 +27,10 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
           wide ? 'max-w-7xl' : 'max-w-[970px]',
         )}
       >
-        <div className="flex w-full flex-col gap-y-6 md:w-1/2">
+        <div className="flex w-full flex-col gap-y-8 md:w-1/2">
           <LogoIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
           <h1 className="text-4xl !font-light leading-normal">
-            Your open source projects deserve more than just recognition
+            Turn your coding endeavors into a sustainable income
           </h1>
           <a
             className="flex flex-row items-center text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
@@ -41,10 +41,10 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
             <ArrowUpRightIcon className="ml-2 h-5 w-5" fontSize="inherit" />
           </a>
         </div>
-        <div className="mt-7 flex w-full flex-col gap-16 md:w-1/2 md:flex-row">
-          <div className="flex flex-col gap-y-6 text-sm">
+        <div className="mt-8 flex w-full flex-col gap-16 md:w-1/2 md:flex-row">
+          <div className="flex flex-col gap-y-7 text-sm">
             <HiveOutlined className="text-blue-500 dark:text-blue-400" />
-            <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col gap-y-3">
               <h3 className="dark:text-polar-50 text-base font-medium text-gray-950">
                 Maintainer
               </h3>
@@ -61,9 +61,9 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
               <ArrowForward className="ml-2" fontSize="inherit" />
             </Link>
           </div>
-          <div className="flex flex-col gap-y-6 text-sm">
+          <div className="flex flex-col gap-y-7 text-sm">
             <FavoriteBorderOutlined className="text-blue-500 dark:text-blue-400" />
-            <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col gap-y-3">
               <h3 className="dark:text-polar-50 text-base font-medium text-gray-950">
                 Backer
               </h3>

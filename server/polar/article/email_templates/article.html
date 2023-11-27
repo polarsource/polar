@@ -1,0 +1,14 @@
+{% extends "base.html" %} {% block body %} {{article_body}}
+
+<!-- Sub copy -->
+<table class="body-sub" role="presentation">
+  <tr>
+    <td>
+      <p class="f-fallback sub">
+        If you're having trouble reading the article, open it in your browser.
+      </p>
+      <p class="f-fallback sub"><a href="{{ url }}">{{ url }}</a></p>
+    </td>
+  </tr>
+</table>
+{% endblock %}

@@ -100,8 +100,9 @@ const InternalLink = (props: PropsWithChildren<LinkProps>) => {
 
 const OutgoingLink = (props: ComponentProps<'a'>) => {
   return (
-    <a className="flex flex-row items-center gap-x-1 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">
-      {props.children}
-    </a>
+    <a
+      className="flex flex-row items-center gap-x-1 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+      {...props}
+    />
   )
 }

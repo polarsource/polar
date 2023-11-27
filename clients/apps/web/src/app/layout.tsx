@@ -1,11 +1,20 @@
+import { Inter } from 'next/font/google'
 import '../styles/globals.scss'
 
 import { Metadata } from 'next'
+import { twMerge } from 'tailwind-merge'
 import {
   PolarPostHogProvider,
   PolarQueryClientProvider,
   PolarThemeProvider,
 } from './providers'
+
+// If loading a variable font, you don't need to specify the font weight
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: {
@@ -44,7 +53,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -54,7 +62,12 @@ export default function RootLayout({
         <link href="/favicon.png" rel="icon"></link>
       </head>
 
-      <body className="dark:bg-polar-950 dark:text-polar-50 h-full bg-gray-50">
+      <body
+        className={twMerge(
+          'dark:bg-polar-950 dark:text-polar-50 h-full bg-gray-50',
+          inter.className,
+        )}
+      >
         <PolarPostHogProvider>
           <PolarThemeProvider>
             <PolarQueryClientProvider>

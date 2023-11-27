@@ -12,6 +12,8 @@ import { LogoType } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useEffect } from 'react'
 
+const postViewKey = 'posts_viewed'
+
 export default function Page({
   post,
   organization,
@@ -25,21 +27,18 @@ export default function Page({
 }) {
   useEffect(() => {
     // Track view
-    const key = `post_viewed_${post.id}`
-    const viewed = localStorage.getItem(key)
+    const views = JSON.parse(localStorage.getItem(postViewKey) ?? '{}')
 
     // already viewed by user, skip tracking
-    if (viewed) {
-      console.log('already viewed')
+    if (views[post.id]) {
       return
     }
 
-    localStorage.setItem(key, '1')
+    views[post.id] = '1'
+    localStorage.setItem(postViewKey, JSON.stringify(views))
 
     // record page view
-    api.articles.viewed({ id: post.id }).then(() => {
-      console.log('tracked')
-    })
+    api.articles.viewed({ id: post.id })
   }, [])
 
   return (

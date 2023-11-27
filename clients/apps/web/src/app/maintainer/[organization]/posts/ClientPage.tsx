@@ -112,7 +112,6 @@ const PostItem = (post: Article) => {
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
 
-  const impressions = useMemo(() => Math.round(Math.random() * 100), [])
   const comments = useMemo(() => Math.round(Math.random() * 100), [])
 
   const description = useMemo(() => post.body.split('. ')[0], [post])
@@ -163,11 +162,18 @@ const PostItem = (post: Article) => {
                   <span className="capitalize">{post.visibility}</span>
                 </div>
               )}
-              &middot;
-              <div className="flex flex-row items-center gap-x-2 text-sm">
-                <EyeIcon className="h-4 w-4" />
-                <span>{impressions}k Impressions</span>
-              </div>
+              {post.web_view_count !== undefined ? (
+                <>
+                  &middot;
+                  <div className="flex flex-row items-center gap-x-2 text-sm">
+                    <EyeIcon className="h-4 w-4" />
+                    <span>
+                      {post.web_view_count}{' '}
+                      {post.web_view_count === 1 ? 'view' : 'views'}
+                    </span>
+                  </div>
+                </>
+              ) : null}
               &middot;
               <div className="flex flex-row items-center gap-x-2 text-sm">
                 <ChatBubbleOutline fontSize="inherit" />

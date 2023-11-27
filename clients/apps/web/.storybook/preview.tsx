@@ -55,6 +55,9 @@ export const decorators = [
 
     return (
       <div
+        style={{
+          fontFamily: 'Inter var, sans-serif',
+        }}
         className={classNames(
           'flex antialiased',
           themeLayout === 'side-by-side'

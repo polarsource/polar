@@ -42,7 +42,7 @@ export default function Page({
   }, [])
 
   return (
-    <div className="flex w-full flex-col items-center gap-y-16 px-8">
+    <div className="flex w-full flex-col items-center gap-y-16 px-4 md:px-8">
       <div className="flex w-full flex-row items-center justify-between">
         <Link href="/">
           <LogoType />

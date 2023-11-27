@@ -36,7 +36,7 @@ const OrganizationPublicPage = ({
         className="flex min-h-screen flex-col justify-between"
         defaultValue={onFirstRenderTab ?? 'overview'}
       >
-        <div className="flex flex-col px-8">
+        <div className="flex flex-col px-4 md:px-8">
           <div className="relative flex w-full flex-row items-center justify-between gap-x-24 md:justify-normal">
             <div className="shrink-0 md:w-64">
               <a href="/">

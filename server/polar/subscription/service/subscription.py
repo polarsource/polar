@@ -19,6 +19,7 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
+from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
@@ -105,9 +106,6 @@ class SearchSortProperty(StrEnum):
     subscription_tier = "subscription_tier"
 
 
-SearchSort = tuple[SearchSortProperty, bool]
-
-
 class SubscriptionService(ResourceServiceReader[Subscription]):
     async def search(
         self,
@@ -121,7 +119,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription_tier_id: uuid.UUID | None = None,
         subscriber_user_id: uuid.UUID | None = None,
         pagination: PaginationParams,
-        sorting: list[SearchSort] = [(SearchSortProperty.started_at, True)],
+        sorting: list[Sorting[SearchSortProperty]] = [
+            (SearchSortProperty.started_at, True)
+        ],
     ) -> tuple[Sequence[Subscription], int]:
         statement = self._get_readable_subscriptions_statement(user).where(
             Subscription.started_at.is_not(None)

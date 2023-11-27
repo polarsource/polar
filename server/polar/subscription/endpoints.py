@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import UUID4
@@ -7,6 +8,7 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import Authz
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Repository, Subscription, SubscriptionBenefit, SubscriptionTier
 from polar.models.organization import Organization
 from polar.models.subscription_benefit import SubscriptionBenefitType
@@ -22,7 +24,6 @@ from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
-from .dependencies import SearchSorting
 from .schemas import (
     SubscribeSession,
     SubscribeSessionCreate,
@@ -42,6 +43,7 @@ from .schemas import (
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscribe_session import subscribe_session as subscribe_session_service
+from .service.subscription import SearchSortProperty
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -422,6 +424,12 @@ async def get_subscriptions_statistics(
         subscription_tier_id=subscription_tier_id,
     )
     return SubscriptionsStatistics(periods=periods)
+
+
+SearchSorting = Annotated[
+    list[Sorting[SearchSortProperty]],
+    Depends(SortingGetter(SearchSortProperty, ["-started_at"])),
+]
 
 
 @router.get(

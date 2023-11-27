@@ -208,6 +208,7 @@ class ArticleService:
             .values({"web_view_count": Article.web_view_count + 1})
         )
         await session.execute(statement)
+        await session.commit()
 
 
 article_service = ArticleService()

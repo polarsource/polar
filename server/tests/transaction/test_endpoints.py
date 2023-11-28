@@ -43,6 +43,26 @@ class TestSearchTransactions:
         json = response.json()
         assert json["pagination"]["total_count"] == len(account_transactions)
 
+    @pytest.mark.authenticated
+    async def test_filter_type(
+        self,
+        client: AsyncClient,
+        account: Account,
+        user_organization: UserOrganization,
+        account_transactions: list[Transaction],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/transactions/search",
+            params={"account_id": str(account.id), "type": TransactionType.payout},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == len(
+            [t for t in account_transactions if t.type == TransactionType.payout]
+        )
+
 
 @pytest.mark.asyncio
 class TestLookupTransaction:

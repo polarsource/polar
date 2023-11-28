@@ -5,12 +5,10 @@ import pytest
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams
-from polar.models import Account, Transaction, User, UserOrganization
+from polar.models import Account, Pledge, Transaction, User, UserOrganization
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
-
-from ..conftest import create_transaction
 
 
 @pytest.fixture
@@ -34,20 +32,28 @@ class TestSearch:
         account: Account,
         user: User,
         user_organization: UserOrganization,
+        pledge: Pledge,
+        account_transactions: list[Transaction],
         authz: Authz,
     ) -> None:
-        await create_transaction(session)
-        t2 = await create_transaction(session, account=account)
-        t3 = await create_transaction(session, account=account)
+        session.expunge_all()
 
         results, count = await transaction_service.search(
             session, user, account, authz, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 2
-        assert len(results) == 2
-        assert results[0].id == t2.id
-        assert results[1].id == t3.id
+        assert count == len(account_transactions)
+        assert len(results) == len(account_transactions)
+
+        for result in results:
+            # Check that relationships are eagerly loaded
+            result.pledge
+            if result.pledge is not None:
+                result.pledge.issue
+            result.issue_reward
+            result.subscription
+            if result.subscription is not None:
+                result.subscription.subscription_tier
 
 
 @pytest.mark.asyncio

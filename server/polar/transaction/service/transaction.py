@@ -14,7 +14,6 @@ from polar.models import (
     Account,
     Issue,
     Pledge,
-    Repository,
     Subscription,
     Transaction,
     User,
@@ -51,7 +50,26 @@ class TransactionService(BaseTransactionService):
         if not await authz.can(user, AccessType.read, account):
             raise NotPermitted()
 
-        statement = select(Transaction).where(Transaction.account_id == account.id)
+        statement = (
+            select(Transaction)
+            .options(
+                # Pledge
+                subqueryload(Transaction.pledge).options(
+                    # Pledge.issue
+                    joinedload(Pledge.issue).options(
+                        joinedload(Issue.repository),
+                        joinedload(Issue.organization),
+                    )
+                ),
+                # IssueReward
+                subqueryload(Transaction.issue_reward),
+                # Subscription
+                subqueryload(Transaction.subscription).options(
+                    joinedload(Subscription.subscription_tier),
+                ),
+            )
+            .where(Transaction.account_id == account.id)
+        )
 
         if type is not None:
             statement = statement.where(Transaction.type == type)
@@ -84,24 +102,16 @@ class TransactionService(BaseTransactionService):
                 # Pledge
                 subqueryload(Transaction.pledge).options(
                     # Pledge.issue
-                    joinedload(Pledge.issue)
-                    .joinedload(Issue.repository)
-                    .joinedload(Repository.organization),
-                    # Pledge.user
-                    joinedload(Pledge.user),
-                    # Pledge.by_organization
-                    joinedload(Pledge.by_organization),
-                    # Pledge.created_by_user
-                    joinedload(Pledge.created_by_user),
-                    # Pledge.on_behalf_of_organization
-                    joinedload(Pledge.on_behalf_of_organization),
+                    joinedload(Pledge.issue).options(
+                        joinedload(Issue.repository),
+                        joinedload(Issue.organization),
+                    )
                 ),
                 # IssueReward
                 subqueryload(Transaction.issue_reward),
                 # Subscription
                 subqueryload(Transaction.subscription).options(
                     joinedload(Subscription.subscription_tier),
-                    joinedload(Subscription.user),
                 ),
                 # Paid transactions
                 subqueryload(Transaction.paid_transactions),

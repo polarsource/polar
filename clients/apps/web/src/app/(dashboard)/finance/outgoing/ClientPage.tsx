@@ -1,44 +1,18 @@
 'use client'
 
-import { usePagination } from '@/components/Shared/Pagination'
+import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth } from '@/hooks'
-import { TransactionType } from '@polar-sh/sdk'
-import { useRouter, useSearchParams } from 'next/navigation'
 import { Separator } from 'polarkit/components/ui/separator'
-import {
-  useListAccountsByOrganization,
-  useListAccountsByUser,
-  useListAdminOrganizations,
-  useSearchTransactions,
-} from 'polarkit/hooks'
-import { useCallback } from 'react'
+import { useUserPaymentTransactions } from 'polarkit/hooks'
 
 export default function ClientPage() {
-  const router = useRouter()
-  const params = useSearchParams()
   const { currentUser } = useAuth()
-  const organizations = useListAdminOrganizations()
-  const personalOrganization = organizations.data?.items?.find(
-    (org) => org.name === currentUser?.username,
-  )
   const { currentPage, setCurrentPage } = usePagination()
 
-  const setActiveTab = useCallback((value: string) => {
-    router.replace(`/finance/incoming?type=${value}`)
-  }, [])
-
-  const accounts = useListAccountsByUser(currentUser?.id ?? '')
-  const organizationAccounts = useListAccountsByOrganization(
-    personalOrganization?.id,
-  )
-  const [account] = accounts.data?.items ?? []
-  const [organizationAccount] = organizationAccounts.data?.items ?? []
-
-  const transactions = useSearchTransactions({
-    accountId: account.id,
+  const transactions = useUserPaymentTransactions({
+    userId: currentUser?.id,
     page: currentPage,
-    type: TransactionType.PAYMENT,
   })
 
   return (
@@ -46,16 +20,20 @@ export default function ClientPage() {
       <div className="flex flex-row items-center justify-between">
         <div className="flex flex-col gap-y-2">
           <h2 className="text-lg font-medium capitalize">Transactions</h2>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Payments made to maintainers on Polar
+          </p>
         </div>
       </div>
       <Separator className="my-8" />
-      {account && (
-        <TransactionsList
-          accountId={account.id}
-          type={TransactionType.PAYMENT}
-          pageSize={20}
-        />
-      )}
+      <Pagination
+        currentPage={currentPage}
+        totalCount={transactions.data?.pagination.total_count ?? 0}
+        pageSize={20}
+        onPageChange={setCurrentPage}
+      >
+        <TransactionsList transactions={transactions.data?.items ?? []} />
+      </Pagination>
     </div>
   )
 }

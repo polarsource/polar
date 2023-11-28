@@ -1,14 +1,19 @@
+import urllib.request
 from uuid import UUID
 
-import mistune
+import structlog
 
+from polar.auth.service import AuthService
 from polar.config import settings
-from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
+from polar.logging import Logger
+from polar.models.article import Article
 from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import article_service
+
+log: Logger = structlog.get_logger()
 
 
 @task("articles.send_to_user")
@@ -32,22 +37,32 @@ async def articles_send_to_user(
         subject = "[TEST] " if is_test else ""
         subject += article.title
 
-        article_html = mistune.html(article.body)
+        (jwt, _) = AuthService.generate_token(user)
 
-        email_renderer = get_email_renderer({"article": "polar.article"})
-        email_sender = get_email_sender()
-
-        subject, body = email_renderer.render_from_template(
-            subject,
-            "article/article.html",
-            {
-                "article_body": article_html,
-                "url": f"{settings.FRONTEND_BASE_URL}/{article.organization.name}/posts/{article.slug}",
-            },
+        # Authenticating to the renderer as the user we're sending the email to
+        req = urllib.request.Request(
+            f"{settings.FRONTEND_BASE_URL}/email/article/{article.id}",
         )
+        req.add_header("Cookie", f"polar_session={jwt};")
+
+        try:
+            res = urllib.request.urlopen(req)
+            rendered = res.read()
+        except Exception as error:
+            log.error(f"failed to get rendered article: {error}")
+            return None
+
+        from_name = ""
+        if article.byline == Article.Byline.organization:
+            from_name = article.organization.pretty_name or article.organization.name
+        else:
+            from_name = article.created_by_user.username
+
+        email_sender = get_email_sender()
 
         email_sender.send_to_user(
             to_email_addr=user.email,
             subject=subject,
-            html_content=body,
+            html_content=rendered.decode("utf8"),
+            from_name=from_name,
         )

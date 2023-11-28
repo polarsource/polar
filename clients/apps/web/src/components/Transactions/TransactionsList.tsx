@@ -1,19 +1,18 @@
 import { Transaction, TransactionType } from '@polar-sh/sdk'
 import { useSearchTransactions } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
+import { twMerge } from 'tailwind-merge'
 import Pagination, { usePagination } from '../Shared/Pagination'
 
 interface TransactionsListProps {
   accountId: string
   type: TransactionType
-  payoutsOnly?: boolean
   pageSize: number
 }
 
 const TransactionsList = ({
   accountId,
   type,
-  payoutsOnly,
   pageSize,
 }: TransactionsListProps) => {
   const { currentPage, setCurrentPage } = usePagination()
@@ -24,9 +23,6 @@ const TransactionsList = ({
     type,
   })
 
-  console.log(transactions.data?.items)
-  console.log(accountId)
-
   return (
     <Pagination
       currentPage={currentPage}
@@ -34,36 +30,30 @@ const TransactionsList = ({
       pageSize={pageSize}
       onPageChange={setCurrentPage}
     >
-      <table className="w-full text-left">
-        <thead className="dark:text-polar-400 text-gray-900">
-          <tr>
+      <table className="-mx-4 w-full text-left">
+        <thead className="dark:text-polar-500 text-gray-500">
+          <tr className="text-sm">
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-semibold"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
             >
               Description
             </th>
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-semibold"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
             >
-              Creation Date
+              Date
             </th>
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-semibold"
-            >
-              Type
-            </th>
-            <th
-              scope="col"
-              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
             >
               Amount
             </th>
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-sm font-semibold"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 font-normal"
             >
               Currency
             </th>
@@ -112,25 +102,32 @@ interface TransactionListItemProps {
 const TransactionListItem = ({ transaction }: TransactionListItemProps) => {
   const transactionMeta = useTransactionMeta(transaction)
 
+  const childClass = twMerge(
+    'dark:group-hover:bg-polar-700 p-4 capitalize transition-colors group-hover:bg-blue-50',
+  )
+
   return (
-    <tr>
-      <td className="capitalize">
+    <tr className="group text-sm">
+      <td className={twMerge(childClass, 'rounded-l-xl')}>
         <div className="flex flex-col gap-y-1">
           <h3 className="dark:text-polar-50 text-gray-950">
             {transactionMeta.type}
           </h3>
         </div>
       </td>
-      <td>
+      <td className={childClass}>
         {new Date(transaction.created_at).toLocaleString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
         })}
       </td>
-      <td className="capitalize">{transaction.type}</td>
-      <td>{getCentsInDollarString(transaction.amount, true, true)}</td>
-      <td className="uppercase">{transaction.currency}</td>
+      <td className={childClass}>
+        {getCentsInDollarString(transaction.amount, true, true)}
+      </td>
+      <td className={twMerge(childClass, 'rounded-r-xl uppercase')}>
+        {transaction.currency}
+      </td>
     </tr>
   )
 }

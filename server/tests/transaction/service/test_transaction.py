@@ -1,7 +1,9 @@
+import uuid
+
 import pytest
 
 from polar.authz.service import Authz
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Transaction, User, UserOrganization
 from polar.models.transaction import TransactionType
@@ -84,3 +86,45 @@ class TestGetSummary:
             for t in account_transactions
             if t.type == TransactionType.payout
         )
+
+
+@pytest.mark.asyncio
+class TestLookup:
+    async def test_not_existing(
+        self, session: AsyncSession, user_second: User, authz: Authz
+    ) -> None:
+        with pytest.raises(ResourceNotFound):
+            await transaction_service.lookup(session, uuid.uuid4(), user_second, authz)
+
+    async def test_account_not_permitted(
+        self,
+        session: AsyncSession,
+        account: Account,
+        user_second: User,
+        authz: Authz,
+        account_transactions: list[Transaction],
+    ) -> None:
+        with pytest.raises(ResourceNotFound):
+            await transaction_service.lookup(
+                session, account_transactions[0].id, user_second, authz
+            )
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        user: User,
+        authz: Authz,
+        account_transactions: list[Transaction],
+        account: Account,
+        user_organization: UserOrganization,
+    ) -> None:
+        transaction = await transaction_service.lookup(
+            session, account_transactions[0].id, user, authz
+        )
+
+        assert transaction.id == account_transactions[0].id
+        assert transaction.account is not None
+        # Check that relationships are eagerly loaded
+        transaction.pledge
+        transaction.issue_reward
+        transaction.subscription

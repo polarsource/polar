@@ -1,7 +1,15 @@
 import pytest_asyncio
 
 from polar.enums import AccountType
-from polar.models import Account, Organization, Transaction, User
+from polar.models import (
+    Account,
+    IssueReward,
+    Organization,
+    Pledge,
+    Subscription,
+    Transaction,
+    User,
+)
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
@@ -12,6 +20,10 @@ async def create_transaction(
     account: Account | None = None,
     type: TransactionType = TransactionType.transfer,
     amount: int = 1000,
+    pledge: Pledge | None = None,
+    issue_reward: IssueReward | None = None,
+    subscription: Subscription | None = None,
+    payout_transaction: Transaction | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=type,
@@ -23,6 +35,10 @@ async def create_transaction(
         tax_amount=0,
         processor_fee_amount=0,
         account=account,
+        pledge=pledge,
+        issue_reward=issue_reward,
+        subscription=subscription,
+        payout_transaction=payout_transaction,
     )
     session.add(transaction)
     await session.commit()

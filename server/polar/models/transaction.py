@@ -254,4 +254,15 @@ class Transaction(RecordModel):
                 cls.id,  # type: ignore
             ],
             foreign_keys="[Transaction.payout_transaction_id]",
+            back_populates="paid_transactions",
+        )
+
+    @declared_attr
+    def paid_transactions(cls) -> Mapped[list["Transaction"]]:
+        """Transactions that were paid out by this transaction."""
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            back_populates="payout_transaction",
+            foreign_keys="[Transaction.payout_transaction_id]",
         )

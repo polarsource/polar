@@ -9,10 +9,11 @@ import stripe as stripe_lib
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select, text
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
-from polar.authz.service import AccessType, Authz
+from polar.auth.dependencies import AuthMethod
+from polar.authz.service import AccessType, Authz, Subject
 from polar.config import settings
 from polar.enums import UserSignupType
-from polar.exceptions import NotPermitted, PolarError
+from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -37,7 +38,11 @@ from polar.transaction.service.transfer import (
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
-from ..schemas import SubscriptionsStatisticsPeriod, SubscriptionUpgrade
+from ..schemas import (
+    FreeSubscriptionCreate,
+    SubscriptionsStatisticsPeriod,
+    SubscriptionUpgrade,
+)
 from .subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
@@ -68,6 +73,22 @@ class SubscriptionDoesNotExist(SubscriptionError):
             f"but no associated Subscription exists."
         )
         super().__init__(message)
+
+
+class NotAFreeSubscriptionTier(SubscriptionError):
+    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
+        self.subscription_tier_id = subscription_tier_id
+        message = (
+            "Can't directly create a subscription to a non-free subscription tier. "
+            "You should create a subscribe session."
+        )
+        super().__init__(message, 403)
+
+
+class RequiredCustomerEmail(SubscriptionError):
+    def __init__(self) -> None:
+        message = "The customer email is required."
+        super().__init__(message, 422)
 
 
 class InvalidSubscriptionTierUpgrade(SubscriptionError):
@@ -241,6 +262,59 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         result = await session.execute(statement)
 
         return list(result.scalars().all())
+
+    async def create_free_subscription(
+        self,
+        session: AsyncSession,
+        *,
+        free_subscription_create: FreeSubscriptionCreate,
+        auth_subject: Subject,
+        auth_method: AuthMethod | None,
+    ) -> Subscription:
+        subscription_tier = await subscription_tier_service.get(
+            session, free_subscription_create.tier_id
+        )
+
+        if subscription_tier is None:
+            raise ResourceNotFound()
+
+        if subscription_tier.type != SubscriptionTierType.free:
+            raise NotAFreeSubscriptionTier(subscription_tier.id)
+
+        user: User | None = None
+        # Set the user directly only from a cookie-based authentication!
+        # With the PAT, it's probably a call from the maintainer who wants to subscribe
+        # a backer from their own website
+        if isinstance(auth_subject, User) and auth_method == AuthMethod.COOKIE:
+            user = auth_subject
+        else:
+            if free_subscription_create.customer_email is None:
+                raise RequiredCustomerEmail()
+            user = await user_service.get_by_email_or_signup(
+                session,
+                email=free_subscription_create.customer_email,
+                signup_type=UserSignupType.backer,
+            )
+
+        start = utc_now()
+        subscription = await self.model.create(
+            session,
+            status=SubscriptionStatus.active,
+            current_period_start=start,
+            cancel_at_period_end=False,
+            started_at=start,
+            price_currency=subscription_tier.price_currency,
+            price_amount=subscription_tier.price_amount,
+            user=user,
+            subscription_tier=subscription_tier,
+        )
+
+        await enqueue_job(
+            "subscription.subscription.enqueue_benefits_grants",
+            subscription.id,
+        )
+
+        return subscription
 
     async def create_subscription(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription

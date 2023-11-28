@@ -1188,6 +1188,29 @@ class TestSearchSubscriptions:
 
 
 @pytest.mark.asyncio
+class TestCreateFreeSubscription:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization_free: SubscriptionTier,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/subscriptions/",
+            json={
+                "tier_id": str(subscription_tier_organization_free.id),
+                "customer_email": "backer@example.com",
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["subscription_tier_id"] == str(
+            subscription_tier_organization_free.id
+        )
+
+
+@pytest.mark.asyncio
 class TestUpgradeSubscription:
     async def test_anonymous(
         self,

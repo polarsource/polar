@@ -25,6 +25,7 @@ from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
 from .schemas import (
+    FreeSubscriptionCreate,
     SubscribeSession,
     SubscribeSessionCreate,
     SubscriptionBenefitCreate,
@@ -487,6 +488,25 @@ async def search_subscriptions(
         [SubscriptionSchema.from_orm(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.post(
+    "/subscriptions/",
+    response_model=SubscriptionSchema,
+    status_code=201,
+    tags=[Tags.PUBLIC],
+)
+async def create_free_subscription(
+    free_subscription_create: FreeSubscriptionCreate,
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    return await subscription_service.create_free_subscription(
+        session,
+        free_subscription_create=free_subscription_create,
+        auth_subject=auth.subject,
+        auth_method=auth.auth_method,
     )
 
 

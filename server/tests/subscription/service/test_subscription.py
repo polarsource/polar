@@ -4,10 +4,12 @@ from unittest.mock import MagicMock, call
 
 import pytest
 import stripe as stripe_lib
+from pydantic import EmailStr
 from pytest_mock import MockerFixture
 
-from polar.authz.service import Authz
-from polar.exceptions import NotPermitted
+from polar.auth.dependencies import AuthMethod
+from polar.authz.service import Anonymous, Authz
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -25,10 +27,12 @@ from polar.models.repository import Repository
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
-from polar.subscription.schemas import SubscriptionUpgrade
+from polar.subscription.schemas import FreeSubscriptionCreate, SubscriptionUpgrade
 from polar.subscription.service.subscription import (
     AssociatedSubscriptionTierDoesNotExist,
     InvalidSubscriptionTierUpgrade,
+    NotAFreeSubscriptionTier,
+    RequiredCustomerEmail,
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service.subscription import subscription as subscription_service
@@ -123,6 +127,113 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+@pytest.mark.asyncio
+class TestCreateFreeSubscription:
+    async def test_not_existing_subscription_tier(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        with pytest.raises(ResourceNotFound):
+            await subscription_service.create_free_subscription(
+                session,
+                free_subscription_create=FreeSubscriptionCreate(
+                    tier_id=uuid.uuid4(), customer_email=None
+                ),
+                auth_subject=user,
+                auth_method=AuthMethod.COOKIE,
+            )
+
+    async def test_not_free_subscription_tier(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        with pytest.raises(NotAFreeSubscriptionTier):
+            await subscription_service.create_free_subscription(
+                session,
+                free_subscription_create=FreeSubscriptionCreate(
+                    tier_id=subscription_tier_organization.id, customer_email=None
+                ),
+                auth_subject=user,
+                auth_method=AuthMethod.COOKIE,
+            )
+
+    async def test_new_user_no_customer_email(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+    ) -> None:
+        with pytest.raises(RequiredCustomerEmail):
+            await subscription_service.create_free_subscription(
+                session,
+                free_subscription_create=FreeSubscriptionCreate(
+                    tier_id=subscription_tier_organization_free.id, customer_email=None
+                ),
+                auth_subject=Anonymous(),
+                auth_method=None,
+            )
+
+    async def test_new_user(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        subscription = await subscription_service.create_free_subscription(
+            session,
+            free_subscription_create=FreeSubscriptionCreate(
+                tier_id=subscription_tier_organization_free.id,
+                customer_email=EmailStr("backer@example.com"),
+            ),
+            auth_subject=Anonymous(),
+            auth_method=None,
+        )
+
+        assert (
+            subscription.subscription_tier_id == subscription_tier_organization_free.id
+        )
+        assert subscription.user.email == "backer@example.com"
+
+        enqueue_job_mock.assert_any_await(
+            "subscription.subscription.enqueue_benefits_grants", subscription.id
+        )
+
+    async def test_authenticated_user(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+        user: User,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        subscription = await subscription_service.create_free_subscription(
+            session,
+            free_subscription_create=FreeSubscriptionCreate(
+                tier_id=subscription_tier_organization_free.id, customer_email=None
+            ),
+            auth_subject=user,
+            auth_method=AuthMethod.COOKIE,
+        )
+
+        assert (
+            subscription.subscription_tier_id == subscription_tier_organization_free.id
+        )
+        assert subscription.user_id == user.id
+
+        enqueue_job_mock.assert_any_await(
+            "subscription.subscription.enqueue_benefits_grants", subscription.id
+        )
 
 
 @pytest.mark.asyncio

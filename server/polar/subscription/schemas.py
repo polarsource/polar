@@ -288,16 +288,33 @@ class Subscription(TimestampedSchema):
     id: UUID4
     status: SubscriptionStatus
     current_period_start: datetime
-    current_period_end: datetime
+    current_period_end: datetime | None = None
     cancel_at_period_end: bool
-    started_at: datetime | None
-    ended_at: datetime | None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
 
     price_currency: str
     price_amount: int
 
+    user_id: UUID4
+    subscription_tier_id: UUID4
+
     user: User
     subscription_tier: SubscriptionTier
+
+
+class FreeSubscriptionCreate(Schema):
+    tier_id: UUID4 = Field(
+        ...,
+        description="ID of the free Subscription Tier to subscribe to.",
+    )
+    customer_email: EmailStr | None = Field(
+        None,
+        description=(
+            "Email of your backer. "
+            "This field is required if the API is called outside the Polar app."
+        ),
+    )
 
 
 class SubscriptionUpgrade(Schema):

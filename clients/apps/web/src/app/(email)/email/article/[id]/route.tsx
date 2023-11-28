@@ -202,16 +202,23 @@ export async function GET(
             <Section>
               <Row>
                 <Column>
-                  <h1>{article.title}</h1>
+                  <h1>
+                    <a
+                      href={`https://polar.sh/${post.organization.name}/posts/${post.slug}`}
+                      target="_blank"
+                    >
+                      {article.title}
+                    </a>
+                  </h1>
                 </Column>
               </Row>
               <Row>
-                <Column className="flex items-center gap-2">
+                <Column className="flex items-center">
                   <Img
                     className="h-6 w-6 rounded-full"
                     src={article.byline.avatar_url}
                   />
-                  <div>{article.byline.name}</div>
+                  <div className="pl-4">{article.byline.name}</div>
                 </Column>
               </Row>
 
@@ -243,6 +250,54 @@ export async function GET(
                   >
                     {post.body}
                   </Markdown>
+                </Column>
+              </Row>
+
+              <Row>
+                <Column className="dark:bg-polar-700 rounded-3xl bg-gray-100 p-8 py-12 md:px-16">
+                  <Section>
+                    <Row>
+                      <center>
+                        <Img
+                          className="h-12 w-12 rounded-full"
+                          src={post.organization.avatar_url}
+                        />
+                      </center>
+                    </Row>
+                    <Row className="mt-4">
+                      <center>
+                        <h2 className="text-xl font-medium">
+                          Subscribe to{' '}
+                          {post.organization.pretty_name ||
+                            post.organization.name}
+                        </h2>
+                      </center>
+                    </Row>
+                    <Row className="mt-4">
+                      <center>
+                        <p className="dark:text-polar-300 text-center text-gray-500">
+                          {post.organization?.bio
+                            ? post.organization?.bio
+                            : `Support ${
+                                post.organization.pretty_name ||
+                                post.organization.name
+                              } by subscribing to their work and get access to exclusive content.`}
+                        </p>
+                      </center>
+                    </Row>
+                    <Row className="mt-4">
+                      <center>
+                        <a
+                          href={`https://polar.sh/${post.organization.name}?tab=subscriptions`}
+                          target="_blank"
+                        >
+                          <div className="bg-polar-500 inline-block overflow-hidden rounded-xl px-2 py-1 text-sm text-white">
+                            Subscribe
+                          </div>
+                        </a>
+                      </center>
+                    </Row>
+                  </Section>
                 </Column>
               </Row>
             </Section>

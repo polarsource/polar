@@ -193,8 +193,8 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/finance(.*)',
-        destination: '/maintainer',
+        source: '/finance',
+        destination: '/finance/incoming',
         permanent: false,
       },
       {

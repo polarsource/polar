@@ -15,6 +15,7 @@ import {
   Route,
   SubRoute,
   backerRoutes,
+  dashboardRoutes,
   maintainerRoutes,
 } from '../Dashboard/navigation'
 
@@ -91,7 +92,7 @@ const DashboardTopbar = ({
       return maintainerRoutes(currentOrg)
     }
 
-    return backerRoutes
+    return [...backerRoutes, ...dashboardRoutes]
   }
 
   const routes = getRoutes(pathname, currentOrg)

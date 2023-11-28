@@ -10,6 +10,7 @@ import { useListAdminOrganizations } from 'polarkit/hooks'
 import { PropsWithChildren, Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
 import BackerNavigation from '../Dashboard/BackerNavigation'
+import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
@@ -76,6 +77,8 @@ const DashboardLayout = (props: PropsWithChildren) => {
               <MaintainerNavigation />
             </>
           )}
+
+          <DashboardNavigation />
 
           <TeamsNavigation />
         </div>

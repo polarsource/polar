@@ -183,14 +183,26 @@ export const backerRoutes: Route[] = [
     if: true,
     subs: undefined,
   },
+]
+
+export const dashboardRoutes: Route[] = [
   {
-    id: 'settings',
-    title: 'Settings',
-    link: `/settings`,
-    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+    id: 'finance',
+    title: 'Finance',
+    link: `/finance`,
+    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
-    subs: undefined,
+    subs: [
+      {
+        title: 'Incoming',
+        link: `/finance/incoming`,
+      },
+      {
+        title: 'Outgoing',
+        link: '/finance/outgoing',
+      },
+    ],
   },
   {
     id: 'backoffice',
@@ -217,6 +229,15 @@ export const backerRoutes: Route[] = [
         link: `/backoffice/rebadge`,
       },
     ],
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    link: `/settings`,
+    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: true,
+    subs: undefined,
   },
 ]
 

@@ -1,8 +1,8 @@
 'use client'
 
+import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth } from '@/hooks'
-import { TransactionType } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
@@ -11,6 +11,8 @@ import {
   useListAccountsByOrganization,
   useListAccountsByUser,
   useListAdminOrganizations,
+  usePayoutTransactions,
+  useTransferTransactions,
 } from 'polarkit/hooks'
 import { useCallback } from 'react'
 
@@ -18,6 +20,7 @@ export default function ClientPage() {
   const router = useRouter()
   const params = useSearchParams()
   const { currentUser } = useAuth()
+  const { currentPage, setCurrentPage } = usePagination()
   const organizations = useListAdminOrganizations()
   const personalOrganization = organizations.data?.items?.find(
     (org) => org.name === currentUser?.username,
@@ -33,6 +36,18 @@ export default function ClientPage() {
   )
   const [account] = accounts.data?.items ?? []
   const [organizationAccount] = organizationAccounts.data?.items ?? []
+
+  const transfers = useTransferTransactions({
+    accountId: organizationAccount?.id,
+    page: currentPage,
+    limit: 20,
+  })
+
+  const payouts = usePayoutTransactions({
+    accountId: organizationAccount?.id,
+    page: currentPage,
+    limit: 20,
+  })
 
   return (
     <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-3xl border border-gray-100 bg-white p-12">
@@ -60,18 +75,24 @@ export default function ClientPage() {
           </div>
           <Separator className="my-8" />
           <TabsContent value="transactions">
-            <TransactionsList
-              accountId={organizationAccount.id}
-              type={TransactionType.TRANSFER}
+            <Pagination
+              currentPage={currentPage}
+              totalCount={transfers.data?.pagination.total_count ?? 0}
               pageSize={20}
-            />
+              onPageChange={setCurrentPage}
+            >
+              <TransactionsList transactions={transfers.data?.items ?? []} />
+            </Pagination>
           </TabsContent>
           <TabsContent value="payouts">
-            <TransactionsList
-              accountId={organizationAccount.id}
-              type={TransactionType.PAYOUT}
+            <Pagination
+              currentPage={currentPage}
+              totalCount={transfers.data?.pagination.total_count ?? 0}
               pageSize={20}
-            />
+              onPageChange={setCurrentPage}
+            >
+              <TransactionsList transactions={payouts.data?.items ?? []} />
+            </Pagination>
           </TabsContent>
         </Tabs>
       )}

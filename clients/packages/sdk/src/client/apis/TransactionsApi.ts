@@ -31,8 +31,10 @@ export interface TransactionsApiLookupTransactionRequest {
 }
 
 export interface TransactionsApiSearchTransactionsRequest {
-    accountId: string;
     type?: TransactionType;
+    accountId?: string;
+    paymentUserId?: string;
+    paymentOrganizationId?: string;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
@@ -131,18 +133,22 @@ export class TransactionsApi extends runtime.BaseAPI {
      * Search Transactions
      */
     async searchTransactionsRaw(requestParameters: TransactionsApiSearchTransactionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceTransaction>> {
-        if (requestParameters.accountId === null || requestParameters.accountId === undefined) {
-            throw new runtime.RequiredError('accountId','Required parameter requestParameters.accountId was null or undefined when calling searchTransactions.');
-        }
-
         const queryParameters: any = {};
+
+        if (requestParameters.type !== undefined) {
+            queryParameters['type'] = requestParameters.type;
+        }
 
         if (requestParameters.accountId !== undefined) {
             queryParameters['account_id'] = requestParameters.accountId;
         }
 
-        if (requestParameters.type !== undefined) {
-            queryParameters['type'] = requestParameters.type;
+        if (requestParameters.paymentUserId !== undefined) {
+            queryParameters['payment_user_id'] = requestParameters.paymentUserId;
+        }
+
+        if (requestParameters.paymentOrganizationId !== undefined) {
+            queryParameters['payment_organization_id'] = requestParameters.paymentOrganizationId;
         }
 
         if (requestParameters.page !== undefined) {
@@ -180,7 +186,7 @@ export class TransactionsApi extends runtime.BaseAPI {
     /**
      * Search Transactions
      */
-    async searchTransactions(requestParameters: TransactionsApiSearchTransactionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceTransaction> {
+    async searchTransactions(requestParameters: TransactionsApiSearchTransactionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceTransaction> {
         const response = await this.searchTransactionsRaw(requestParameters, initOverrides);
         return await response.value();
     }

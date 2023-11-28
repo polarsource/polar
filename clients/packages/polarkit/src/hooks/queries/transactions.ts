@@ -9,7 +9,7 @@ export const useSearchTransactions = ({
   page = 1,
   limit = 20,
 }: {
-  accountId: string
+  accountId?: string
   type?: TransactionType
   page?: number
   limit?: number
@@ -36,7 +36,7 @@ export const usePayoutTransactions = ({
   page = 1,
   limit = 20,
 }: {
-  accountId: string
+  accountId?: string
   page?: number
   limit?: number
 }): UseQueryResult<ListResourceTransaction> =>
@@ -63,7 +63,7 @@ export const useTransferTransactions = ({
   page = 1,
   limit = 20,
 }: {
-  accountId: string
+  accountId?: string
   page?: number
   limit?: number
 }): UseQueryResult<ListResourceTransaction> =>
@@ -90,7 +90,7 @@ export const useUserPaymentTransactions = ({
   page = 1,
   limit = 20,
 }: {
-  userId: string
+  userId?: string
   page?: number
   limit?: number
 }): UseQueryResult<ListResourceTransaction> =>
@@ -104,10 +104,37 @@ export const useUserPaymentTransactions = ({
     queryFn: () =>
       api.transactions.searchTransactions({
         paymentUserId: userId,
-        type: TransactionType.TRANSFER,
+        type: TransactionType.PAYMENT,
         page,
         limit,
       }),
     retry: defaultRetry,
     enabled: !!userId,
+  })
+
+export const useOrganizationPaymentTransactions = ({
+  organizationId,
+  page = 1,
+  limit = 20,
+}: {
+  organizationId?: string
+  page?: number
+  limit?: number
+}): UseQueryResult<ListResourceTransaction> =>
+  useQuery({
+    queryKey: [
+      'transactions',
+      'payments',
+      organizationId,
+      JSON.stringify({ page, limit }),
+    ],
+    queryFn: () =>
+      api.transactions.searchTransactions({
+        paymentOrganizationId: organizationId,
+        type: TransactionType.TRANSFER,
+        page,
+        limit,
+      }),
+    retry: defaultRetry,
+    enabled: !!organizationId,
   })

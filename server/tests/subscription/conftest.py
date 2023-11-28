@@ -174,6 +174,15 @@ async def create_active_subscription(
 
 
 @pytest_asyncio.fixture
+async def subscription_tier_organization_free(
+    session: AsyncSession, organization: Organization
+) -> SubscriptionTier:
+    return await create_subscription_tier(
+        session, type=SubscriptionTierType.free, organization=organization
+    )
+
+
+@pytest_asyncio.fixture
 async def subscription_tier_organization(
     session: AsyncSession, organization: Organization
 ) -> SubscriptionTier:
@@ -207,10 +216,12 @@ async def subscription_tier_private_repository(
 async def subscription_tiers(
     subscription_tier_organization: SubscriptionTier,
     subscription_tier_organization_second: SubscriptionTier,
+    subscription_tier_organization_free: SubscriptionTier,
     subscription_tier_repository: SubscriptionTier,
     subscription_tier_private_repository: SubscriptionTier,
 ) -> list[SubscriptionTier]:
     return [
+        subscription_tier_organization_free,
         subscription_tier_organization,
         subscription_tier_organization_second,
         subscription_tier_repository,

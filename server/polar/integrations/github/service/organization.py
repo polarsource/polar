@@ -25,6 +25,7 @@ from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
 
 from .. import client as github
 from .repository import github_repository
@@ -116,6 +117,9 @@ class GithubOrganizationService(OrganizationService):
         await github_repository.install_for_organization(
             session, organization, installation_id
         )
+
+        await enqueue_job("organization.post_install", organization_id=organization.id)
+
         return organization
 
     async def suspend(

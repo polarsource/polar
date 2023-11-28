@@ -131,7 +131,11 @@ subscription_benefit_schema_map: dict[
 
 
 class SubscriptionTierCreate(Schema):
-    type: SubscriptionTierType
+    type: Literal[
+        SubscriptionTierType.hobby,
+        SubscriptionTierType.pro,
+        SubscriptionTierType.business,
+    ]
     name: str = Field(
         ..., min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
     )

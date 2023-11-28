@@ -60,6 +60,13 @@ class SubscriptionBenefitDoesNotExist(SubscriptionTierError):
         super().__init__(message, 422)
 
 
+class FreeTierIsNotArchivable(SubscriptionTierError):
+    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
+        self.subscription_tier_id = subscription_tier_id
+        message = "The Free Subscription Tier is not archivable"
+        super().__init__(message, 403)
+
+
 class SubscriptionTierService(
     ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
@@ -260,6 +267,32 @@ class SubscriptionTierService(
             session, **update_schema.dict(exclude_unset=True)
         )
 
+    async def create_free(
+        self,
+        session: AsyncSession,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+    ) -> SubscriptionTier:
+        free_subscription_tier = await self.get_by(
+            session,
+            type=SubscriptionTierType.free,
+            organization_id=organization.id if organization else None,
+            repository_id=repository.id if repository else None,
+        )
+
+        if free_subscription_tier is not None:
+            return free_subscription_tier
+
+        return await self.model.create(
+            session,
+            type=SubscriptionTierType.free,
+            name="Free",
+            price_amount=0,
+            price_currency="usd",
+            organization_id=organization.id if organization else None,
+            repository_id=repository.id if repository else None,
+        )
+
     async def update_benefits(
         self,
         session: AsyncSession,
@@ -316,6 +349,9 @@ class SubscriptionTierService(
         )
         if not await authz.can(user, AccessType.write, subscription_tier):
             raise NotPermitted()
+
+        if subscription_tier.type == SubscriptionTierType.free:
+            raise FreeTierIsNotArchivable(subscription_tier.id)
 
         if subscription_tier.stripe_product_id is not None:
             stripe_service.archive_product(subscription_tier.stripe_product_id)

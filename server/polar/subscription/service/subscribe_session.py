@@ -9,6 +9,7 @@ from polar.models import (
     SubscriptionTier,
     User,
 )
+from polar.models.subscription_tier import SubscriptionTierType
 
 from ..schemas import SubscribeSession
 from .subscription import subscription as subscription_service
@@ -17,6 +18,17 @@ from .subscription_tier import subscription_tier as subscription_tier_service
 
 class SubscribeSessionError(PolarError):
     ...
+
+
+class FreeSubscriptionTier(SubscribeSessionError):
+    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
+        self.subscription_tier_id = subscription_tier_id
+        message = (
+            "The free subscription tier can't be subscribed "
+            "through a subscribe session. "
+            "You should directly create a subscription with this tier."
+        )
+        super().__init__(message, 403)
 
 
 class ArchivedSubscriptionTier(SubscribeSessionError):
@@ -77,6 +89,9 @@ class SubscribeSessionService:
                 session, subscription_tier
             )
         )
+
+        if subscription_tier.type == SubscriptionTierType.free:
+            raise FreeSubscriptionTier(subscription_tier.id)
 
         if subscription_tier.is_archived:
             raise ArchivedSubscriptionTier(subscription_tier.id)

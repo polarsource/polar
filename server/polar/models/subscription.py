@@ -32,7 +32,7 @@ class Subscription(RecordModel):
     __tablename__ = "subscriptions"
 
     stripe_subscription_id: Mapped[str] = mapped_column(
-        String, nullable=False, index=True
+        String, nullable=True, index=True, default=None
     )
 
     status: Mapped[SubscriptionStatus] = mapped_column(String, nullable=False)
@@ -40,14 +40,14 @@ class Subscription(RecordModel):
         TIMESTAMP(timezone=True), nullable=False
     )
     current_period_end: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
     ended_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     price_currency: Mapped[str] = mapped_column(String(3), nullable=False)

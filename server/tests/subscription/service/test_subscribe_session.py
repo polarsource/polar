@@ -18,6 +18,7 @@ from polar.postgres import AsyncSession
 from polar.subscription.service.subscribe_session import (
     AlreadySubscribed,
     ArchivedSubscriptionTier,
+    FreeSubscriptionTier,
     NoAssociatedPayoutAccount,
     NotAddedToStripeSubscriptionTier,
 )
@@ -34,6 +35,20 @@ from ..conftest import (
 
 @pytest.mark.asyncio
 class TestCreateSubscribeSession:
+    async def test_free_subscription_tier(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+    ) -> None:
+        with pytest.raises(FreeSubscriptionTier):
+            await subscribe_session_service.create_subscribe_session(
+                session,
+                subscription_tier_organization_free,
+                "SUCCESS_URL",
+                Anonymous(),
+                None,
+            )
+
     async def test_archived_subscription_tier(
         self, session: AsyncSession, subscription_tier_organization: SubscriptionTier
     ) -> None:

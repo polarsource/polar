@@ -63,11 +63,12 @@ class TestSearchSubscriptionTiers:
         assert response.status_code == 200
 
         json = response.json()
-        assert json["pagination"]["total_count"] == 2
+        assert json["pagination"]["total_count"] == 3
 
         items = json["items"]
         assert items[0]["id"] == str(subscription_tiers[0].id)
         assert items[1]["id"] == str(subscription_tiers[1].id)
+        assert items[2]["id"] == str(subscription_tiers[2].id)
 
     async def test_anonymous_indirect_organization(
         self,
@@ -87,7 +88,7 @@ class TestSearchSubscriptionTiers:
         assert response.status_code == 200
 
         json = response.json()
-        assert json["pagination"]["total_count"] == 3
+        assert json["pagination"]["total_count"] == 4
 
         items = json["items"]
         assert items[0]["id"] == str(subscription_tiers[0].id)
@@ -275,6 +276,25 @@ class TestCreateSubscriptionTier:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={"type": "hobby", "name": "Subscription Tier", "price_amount": 1000},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.authenticated
+    async def test_cant_create_free_type_tier(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/tiers/",
+            json={
+                "type": "free",
+                "name": "Subscription Tier",
+                "price_amount": 1000,
+                "organization_id": str(organization.id),
+            },
         )
 
         assert response.status_code == 422

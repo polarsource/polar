@@ -4,7 +4,8 @@ from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
 from polar.magic_link import tasks as magic_link
 from polar.notifications import tasks as notifications
-from polar.subscription import tasks as subscriptions
+from polar.organization import tasks as organization
+from polar.subscription import tasks as subscription
 
 __all__ = [
     "github",
@@ -12,6 +13,7 @@ __all__ = [
     "stripe",
     "magic_link",
     "notifications",
-    "subscriptions",
+    "organization",
+    "subscription",
     "account",
 ]

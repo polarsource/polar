@@ -20,6 +20,7 @@ from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import SubscriptionTierCreate, SubscriptionTierUpdate
 from polar.subscription.service.subscription_tier import (
+    FreeTierIsNotArchivable,
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
     SubscriptionBenefitDoesNotExist,
@@ -48,8 +49,8 @@ class TestSearch:
             session, Anonymous(), pagination=PaginationParams(1, 10)
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 4
+        assert len(results) == 4
         assert results[0].id == subscription_tiers[0].id
         assert results[1].id == subscription_tiers[1].id
         assert results[2].id == subscription_tiers[2].id
@@ -64,8 +65,8 @@ class TestSearch:
             session, user, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 4
+        assert len(results) == 4
         assert results[0].id == subscription_tiers[0].id
         assert results[1].id == subscription_tiers[1].id
         assert results[2].id == subscription_tiers[2].id
@@ -81,8 +82,8 @@ class TestSearch:
             session, user, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 4
-        assert len(results) == 4
+        assert count == 5
+        assert len(results) == 5
 
     async def test_filter_type(
         self,
@@ -113,6 +114,7 @@ class TestSearch:
         user: User,
         organization: Organization,
         subscription_tiers: list[SubscriptionTier],
+        subscription_tier_organization_free: SubscriptionTier,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_organization_second: SubscriptionTier,
     ) -> None:
@@ -120,10 +122,11 @@ class TestSearch:
             session, user, organization=organization, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 2
-        assert len(results) == 2
-        assert results[0].id == subscription_tier_organization.id
-        assert results[1].id == subscription_tier_organization_second.id
+        assert count == 3
+        assert len(results) == 3
+        assert results[0].id == subscription_tier_organization_free.id
+        assert results[1].id == subscription_tier_organization.id
+        assert results[2].id == subscription_tier_organization_second.id
 
     async def test_filter_organization_indirect(
         self,
@@ -141,8 +144,8 @@ class TestSearch:
             pagination=PaginationParams(1, 10),
         )
 
-        assert count == 4
-        assert len(results) == 4
+        assert count == 5
+        assert len(results) == 5
 
     async def test_filter_repository(
         self,
@@ -611,6 +614,32 @@ class TestUserUpdate:
 
 
 @pytest.mark.asyncio
+class TestCreateFree:
+    async def test_already_exists(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        subscription_tier_organization_free: SubscriptionTier,
+    ) -> None:
+        subscription_tier = await subscription_tier_service.create_free(
+            session, organization
+        )
+
+        assert subscription_tier.id == subscription_tier_organization_free.id
+
+    async def test_create(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        free_subscription_tier = await subscription_tier_service.create_free(
+            session, organization=organization
+        )
+
+        assert free_subscription_tier.type == SubscriptionTierType.free
+        assert free_subscription_tier.organization_id == organization.id
+        assert free_subscription_tier.price_amount == 0
+
+
+@pytest.mark.asyncio
 class TestUpdateBenefits:
     async def test_not_writable_subscription_tier(
         self,
@@ -806,6 +835,19 @@ class TestArchive:
         with pytest.raises(NotPermitted):
             await subscription_tier_service.archive(
                 session, authz, subscription_tier_organization, user
+            )
+
+    async def test_free_tier(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        subscription_tier_organization_free: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        with pytest.raises(FreeTierIsNotArchivable):
+            await subscription_tier_service.archive(
+                session, authz, subscription_tier_organization_free, user
             )
 
     async def test_valid(

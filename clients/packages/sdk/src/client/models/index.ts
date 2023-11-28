@@ -1125,6 +1125,7 @@ export interface HTTPValidationError {
  * @export
  */
 export type Id = string;
+
 /**
  * 
  * @export
@@ -1492,6 +1493,7 @@ export interface IssueUpdateBadgeMessage {
  * @export
  */
 export type ItemsInner = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+
 /**
  * 
  * @export
@@ -1832,6 +1834,25 @@ export interface ListResourceSubscriptionTier {
 /**
  * 
  * @export
+ * @interface ListResourceTransaction
+ */
+export interface ListResourceTransaction {
+    /**
+     * 
+     * @type {Array<Transaction>}
+     * @memberof ListResourceTransaction
+     */
+    items?: Array<Transaction>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceTransaction
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom
  */
 export interface ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom {
@@ -1853,6 +1874,7 @@ export interface ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitC
  * @export
  */
 export type LocationInner = number | string;
+
 /**
  * 
  * @export
@@ -2828,6 +2850,17 @@ export const PaymentMethodTypeEnum = {
 } as const;
 export type PaymentMethodTypeEnum = typeof PaymentMethodTypeEnum[keyof typeof PaymentMethodTypeEnum];
 
+
+/**
+ * Supported payment processors.
+ * @export
+ */
+export const PaymentProcessor = {
+    STRIPE: 'stripe',
+    OPEN_COLLECTIVE: 'open_collective'
+} as const;
+export type PaymentProcessor = typeof PaymentProcessor[keyof typeof PaymentProcessor];
+
 /**
  * 
  * @export
@@ -3716,16 +3749,19 @@ export interface RepositoryBadgeSettingsUpdate {
  * @export
  */
 export type ResponseSubscriptionsCreateSubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+
 /**
  * @type ResponseSubscriptionsLookupSubscriptionBenefit
  * @export
  */
 export type ResponseSubscriptionsLookupSubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+
 /**
  * @type ResponseSubscriptionsUpdateSubscriptionBenefit
  * @export
  */
 export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+
 /**
  * 
  * @export
@@ -4162,6 +4198,7 @@ export interface SubscriptionBenefitBuiltinUpdate {
  * @export
  */
 export type SubscriptionBenefitCreate = SubscriptionBenefitBuiltinCreate | SubscriptionBenefitCustomCreate;
+
 /**
  * 
  * @export
@@ -4321,6 +4358,7 @@ export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeo
  * @export
  */
 export type SubscriptionBenefitUpdate = SubscriptionBenefitBuiltinUpdate | SubscriptionBenefitCustomUpdate;
+
 
 /**
  * An enumeration.
@@ -4762,6 +4800,497 @@ export interface TeamAdminMemberPledgedNotification {
      * @memberof TeamAdminMemberPledgedNotification
      */
     pledge_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface Transaction
+ */
+export interface Transaction {
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    id: string;
+    /**
+     * 
+     * @type {TransactionType}
+     * @memberof Transaction
+     */
+    type: TransactionType;
+    /**
+     * 
+     * @type {PaymentProcessor}
+     * @memberof Transaction
+     */
+    processor: PaymentProcessor;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof Transaction
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    account_currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof Transaction
+     */
+    account_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    pledge_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    issue_reward_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    subscription_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    payout_transaction_id?: string;
+    /**
+     * 
+     * @type {TransactionPledge}
+     * @memberof Transaction
+     */
+    pledge?: TransactionPledge;
+    /**
+     * 
+     * @type {TransactionIssueReward}
+     * @memberof Transaction
+     */
+    issue_reward?: TransactionIssueReward;
+    /**
+     * 
+     * @type {TransactionSubscription}
+     * @memberof Transaction
+     */
+    subscription?: TransactionSubscription;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionDetails
+ */
+export interface TransactionDetails {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    id: string;
+    /**
+     * 
+     * @type {TransactionType}
+     * @memberof TransactionDetails
+     */
+    type: TransactionType;
+    /**
+     * 
+     * @type {PaymentProcessor}
+     * @memberof TransactionDetails
+     */
+    processor: PaymentProcessor;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    account_currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    account_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    pledge_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    issue_reward_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    subscription_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    payout_transaction_id?: string;
+    /**
+     * 
+     * @type {TransactionPledge}
+     * @memberof TransactionDetails
+     */
+    pledge?: TransactionPledge;
+    /**
+     * 
+     * @type {TransactionIssueReward}
+     * @memberof TransactionDetails
+     */
+    issue_reward?: TransactionIssueReward;
+    /**
+     * 
+     * @type {TransactionSubscription}
+     * @memberof TransactionDetails
+     */
+    subscription?: TransactionSubscription;
+    /**
+     * 
+     * @type {Array<Transaction>}
+     * @memberof TransactionDetails
+     */
+    paid_transactions: Array<Transaction>;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionIssue
+ */
+export interface TransactionIssue {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssue
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssue
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssue
+     */
+    id: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof TransactionIssue
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssue
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssue
+     */
+    repository_id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionIssue
+     */
+    number: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssue
+     */
+    title: string;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionIssueReward
+ */
+export interface TransactionIssueReward {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssueReward
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssueReward
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssueReward
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionIssueReward
+     */
+    issue_id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionIssueReward
+     */
+    share_thousands: number;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionPledge
+ */
+export interface TransactionPledge {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionPledge
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionPledge
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionPledge
+     */
+    id: string;
+    /**
+     * 
+     * @type {PledgeState}
+     * @memberof TransactionPledge
+     */
+    state: PledgeState;
+    /**
+     * 
+     * @type {TransactionIssue}
+     * @memberof TransactionPledge
+     */
+    issue: TransactionIssue;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionSubscription
+ */
+export interface TransactionSubscription {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscription
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscription
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscription
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof TransactionSubscription
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscription
+     */
+    price_currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionSubscription
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {TransactionSubscriptionTier}
+     * @memberof TransactionSubscription
+     */
+    subscription_tier: TransactionSubscriptionTier;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionSubscriptionTier
+ */
+export interface TransactionSubscriptionTier {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionTier
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionTier
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionTier
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof TransactionSubscriptionTier
+     */
+    type: SubscriptionTierType;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionTier
+     */
+    name: string;
+}
+
+/**
+ * Type of transactions.
+ * @export
+ */
+export const TransactionType = {
+    PAYMENT: 'payment',
+    REFUND: 'refund',
+    DISPUTE: 'dispute',
+    TRANSFER: 'transfer',
+    PAYOUT: 'payout'
+} as const;
+export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
+
+/**
+ * 
+ * @export
+ * @interface TransactionsBalance
+ */
+export interface TransactionsBalance {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionsBalance
+     */
+    currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionsBalance
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionsBalance
+     */
+    account_currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionsBalance
+     */
+    account_amount: number;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionsSummary
+ */
+export interface TransactionsSummary {
+    /**
+     * 
+     * @type {TransactionsBalance}
+     * @memberof TransactionsSummary
+     */
+    balance: TransactionsBalance;
+    /**
+     * 
+     * @type {TransactionsBalance}
+     * @memberof TransactionsSummary
+     */
+    payout: TransactionsBalance;
 }
 /**
  * 

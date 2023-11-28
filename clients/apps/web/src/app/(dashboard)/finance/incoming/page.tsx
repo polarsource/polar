@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/api'
 import { Metadata, ResolvingMetadata } from 'next'
 import ClientPage from './ClientPage'
 
@@ -16,7 +15,5 @@ export async function generateMetadata(
 }
 
 export default async function Page() {
-  const api = getServerSideAPI()
-
   return <ClientPage />
 }

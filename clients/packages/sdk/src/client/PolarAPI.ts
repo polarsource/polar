@@ -24,6 +24,7 @@ import {
   RewardsApi,
   StreamApi,
   SubscriptionsApi,
+  TransactionsApi,
   UsersApi,
 } from '.'
 
@@ -48,6 +49,7 @@ export class PolarAPI {
   public readonly rewards: RewardsApi
   public readonly stream: StreamApi
   public readonly subscriptions: SubscriptionsApi
+  public readonly transactions: TransactionsApi
   public readonly users: UsersApi
 
   constructor(config: Configuration) {
@@ -71,6 +73,7 @@ export class PolarAPI {
     this.rewards = new RewardsApi(config)
     this.stream = new StreamApi(config)
     this.subscriptions = new SubscriptionsApi(config)
+    this.transactions = new TransactionsApi(config)
     this.users = new UsersApi(config)
   }
 }

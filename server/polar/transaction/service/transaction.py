@@ -1,14 +1,24 @@
+import uuid
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
 from sqlalchemy import UnaryExpression, asc, desc, func, select
+from sqlalchemy.orm import joinedload, subqueryload
 
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
-from polar.models import Account, Transaction, User
+from polar.models import (
+    Account,
+    Issue,
+    Pledge,
+    Repository,
+    Subscription,
+    Transaction,
+    User,
+)
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 
@@ -57,6 +67,56 @@ class TransactionService(BaseTransactionService):
         results, count = await paginate(session, statement, pagination=pagination)
 
         return results, count
+
+    async def lookup(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        user: User,
+        authz: Authz,
+    ) -> Transaction:
+        statement = (
+            select(Transaction)
+            .where(Transaction.id == id, Transaction.account_id.is_not(None))
+            .options(
+                # Account
+                joinedload(Transaction.account),
+                # Pledge
+                subqueryload(Transaction.pledge).options(
+                    # Pledge.issue
+                    joinedload(Pledge.issue)
+                    .joinedload(Issue.repository)
+                    .joinedload(Repository.organization),
+                    # Pledge.user
+                    joinedload(Pledge.user),
+                    # Pledge.by_organization
+                    joinedload(Pledge.by_organization),
+                    # Pledge.created_by_user
+                    joinedload(Pledge.created_by_user),
+                    # Pledge.on_behalf_of_organization
+                    joinedload(Pledge.on_behalf_of_organization),
+                ),
+                # IssueReward
+                subqueryload(Transaction.issue_reward),
+                # Subscription
+                subqueryload(Transaction.subscription).options(
+                    joinedload(Subscription.subscription_tier),
+                    joinedload(Subscription.user),
+                ),
+                # Paid transactions
+                subqueryload(Transaction.paid_transactions),
+            )
+        )
+        result = await session.execute(statement)
+        transaction = result.scalar_one_or_none()
+        if transaction is None:
+            raise ResourceNotFound()
+
+        assert transaction.account is not None
+        if not await authz.can(user, AccessType.read, transaction.account):
+            raise ResourceNotFound()
+
+        return transaction
 
     async def get_summary(
         self, session: AsyncSession, user: User, account: Account, authz: Authz

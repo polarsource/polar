@@ -9,11 +9,12 @@ from polar.authz.service import Authz
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from .schemas import Transaction, TransactionsSummary
+from .schemas import Transaction, TransactionDetails, TransactionsSummary
 from .service.transaction import SearchSortProperty
 from .service.transaction import transaction as transaction_service
 
@@ -54,6 +55,18 @@ async def search_transactions(
         [Transaction.from_orm(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.get("/lookup", response_model=TransactionDetails, tags=[Tags.PUBLIC])
+async def lookup_transaction(
+    transaction_id: UUID4,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> TransactionModel:
+    return await transaction_service.lookup(
+        session, transaction_id, auth.subject, authz
     )
 
 

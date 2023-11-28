@@ -24,6 +24,7 @@ from .schemas import (
     ArticleCreate,
     ArticlePreview,
     ArticlePreviewResponse,
+    ArticleSentResponse,
     ArticleUpdate,
     ArticleViewedResponse,
 )
@@ -286,6 +287,33 @@ async def send_preview(
     )
 
     return ArticlePreviewResponse(ok=True)
+
+
+@router.post(
+    "/articles/{id}/send",
+    response_model=ArticleSentResponse,
+    tags=[Tags.PUBLIC],
+    description="Send email to all subscribers",
+    summary="Send email to all subscribers (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def send(
+    id: UUID,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticleSentResponse:
+    art = await article_service.get_loaded(session, id)
+    if not art:
+        raise ResourceNotFound()
+
+    # admin required
+    if not await authz.can(auth.subject, AccessType.write, art):
+        raise Unauthorized()
+
+    await article_service.send_to_subscribers(session, art)
+    return ArticleSentResponse(ok=True)
 
 
 @router.put(

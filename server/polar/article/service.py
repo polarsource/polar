@@ -10,10 +10,15 @@ from slugify import slugify
 from sqlalchemy import desc, nullsfirst
 from sqlalchemy.orm import joinedload
 
+from polar.exceptions import BadRequest
 from polar.kit.utils import utc_now
 from polar.models.article import Article
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
+from polar.worker import enqueue_job
 
 from .schemas import ArticleCreate, ArticleUpdate, Visibility
 
@@ -220,6 +225,42 @@ class ArticleService:
             .values({"web_view_count": Article.web_view_count + 1})
         )
         await session.execute(statement)
+        await session.commit()
+
+    async def receivers(
+        self, session: AsyncSession, article: Article
+    ) -> Sequence[UUID]:
+        # for now: send to members of the org
+        # TODO: send to subscribers!
+        members = await user_organization_service.list_by_org(
+            session, article.organization_id
+        )
+        return [m.user_id for m in members]
+
+    async def send_to_subscribers(
+        self, session: AsyncSession, article: Article
+    ) -> None:
+        if article.notifications_sent_at is not None:
+            # already sent
+            raise BadRequest("this post has already been sent")
+
+        article.notifications_sent_at = utc_now()
+        await article.save(session)
+        await session.commit()
+
+        receivers = await article_service.receivers(session, article)
+
+        for receiver_user_id in receivers:
+            await enqueue_job(
+                "articles.send_to_user",
+                article_id=article.id,
+                user_id=receiver_user_id,
+                is_test=False,
+            )
+
+        # after scheduling is complete
+        article.email_sent_to_count = len(receivers)
+        await article.save(session)
         await session.commit()
 
 

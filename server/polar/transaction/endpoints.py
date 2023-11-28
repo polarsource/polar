@@ -32,21 +32,19 @@ async def search_transactions(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     auth: UserRequiredAuth,
-    account_id: UUID4,
     type: TransactionType | None = Query(None),
+    account_id: UUID4 | None = Query(None),
+    payment_user_id: UUID4 | None = Query(None),
+    payment_organization_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> ListResource[Transaction]:
-    account = await account_service.get(session, account_id)
-    if account is None:
-        raise ResourceNotFound("Account not found")
-
     results, count = await transaction_service.search(
         session,
         auth.subject,
-        account,
-        authz,
         type=type,
+        account_id=account_id,
+        payment_user_id=payment_user_id,
+        payment_organization_id=payment_organization_id,
         pagination=pagination,
         sorting=sorting,
     )
@@ -63,11 +61,8 @@ async def lookup_transaction(
     transaction_id: UUID4,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> TransactionModel:
-    return await transaction_service.lookup(
-        session, transaction_id, auth.subject, authz
-    )
+    return await transaction_service.lookup(session, transaction_id, auth.subject)
 
 
 @router.get("/summary", response_model=TransactionsSummary, tags=[Tags.PUBLIC])

@@ -12,19 +12,9 @@ from tests.transaction.conftest import create_transaction
 @pytest.mark.asyncio
 class TestSearchTransactions:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/transactions/search", params={"account_id": str(uuid.uuid4())}
-        )
+        response = await client.get("/api/v1/transactions/search")
 
         assert response.status_code == 401
-
-    @pytest.mark.authenticated
-    async def test_not_existing_account(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/transactions/search", params={"account_id": str(uuid.uuid4())}
-        )
-
-        assert response.status_code == 404
 
     @pytest.mark.authenticated
     async def test_valid(
@@ -32,36 +22,15 @@ class TestSearchTransactions:
         client: AsyncClient,
         account: Account,
         user_organization: UserOrganization,
-        account_transactions: list[Transaction],
+        readable_user_transactions: list[Transaction],
+        all_transactions: list[Transaction],
     ) -> None:
-        response = await client.get(
-            "/api/v1/transactions/search", params={"account_id": str(account.id)}
-        )
+        response = await client.get("/api/v1/transactions/search")
 
         assert response.status_code == 200
 
         json = response.json()
-        assert json["pagination"]["total_count"] == len(account_transactions)
-
-    @pytest.mark.authenticated
-    async def test_filter_type(
-        self,
-        client: AsyncClient,
-        account: Account,
-        user_organization: UserOrganization,
-        account_transactions: list[Transaction],
-    ) -> None:
-        response = await client.get(
-            "/api/v1/transactions/search",
-            params={"account_id": str(account.id), "type": TransactionType.payout},
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == len(
-            [t for t in account_transactions if t.type == TransactionType.payout]
-        )
+        assert json["pagination"]["total_count"] == len(readable_user_transactions)
 
 
 @pytest.mark.asyncio

@@ -22,6 +22,8 @@ async def create_transaction(
     session: AsyncSession,
     *,
     account: Account | None = None,
+    payment_user: User | None = None,
+    payment_organization: Organization | None = None,
     type: TransactionType = TransactionType.transfer,
     amount: int = 1000,
     pledge: Pledge | None = None,
@@ -39,6 +41,8 @@ async def create_transaction(
         tax_amount=0,
         processor_fee_amount=0,
         account=account,
+        payment_user=payment_user,
+        payment_organization=payment_organization,
         pledge=pledge,
         issue_reward=issue_reward,
         subscription=subscription,
@@ -124,4 +128,46 @@ async def account_transactions(
         await create_transaction(
             session, account=account, type=TransactionType.payout, amount=-3000
         ),
+    ]
+
+
+@pytest_asyncio.fixture
+async def user_transactions(session: AsyncSession, user: User) -> list[Transaction]:
+    return [
+        await create_transaction(
+            session, type=TransactionType.payment, payment_user=user
+        ),
+    ]
+
+
+@pytest_asyncio.fixture
+async def organization_transactions(
+    session: AsyncSession, organization: Organization
+) -> list[Transaction]:
+    return [
+        await create_transaction(
+            session, type=TransactionType.payment, payment_organization=organization
+        ),
+    ]
+
+
+@pytest_asyncio.fixture
+async def readable_user_transactions(
+    session: AsyncSession,
+    account_transactions: list[Transaction],
+    user_transactions: list[Transaction],
+    organization_transactions: list[Transaction],
+) -> list[Transaction]:
+    return [*account_transactions, *user_transactions, *organization_transactions]
+
+
+@pytest_asyncio.fixture
+async def all_transactions(
+    session: AsyncSession, readable_user_transactions: list[Transaction]
+) -> list[Transaction]:
+    return [
+        *readable_user_transactions,
+        await create_transaction(session),
+        await create_transaction(session),
+        await create_transaction(session),
     ]

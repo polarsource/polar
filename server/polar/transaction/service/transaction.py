@@ -3,8 +3,8 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import UnaryExpression, asc, desc, func, select
-from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
+from sqlalchemy.orm import aliased, joinedload, subqueryload
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
@@ -19,6 +19,7 @@ from polar.models import (
     User,
 )
 from polar.models.transaction import TransactionType
+from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
 
 from ..schemas import (
@@ -38,41 +39,45 @@ class TransactionService(BaseTransactionService):
         self,
         session: AsyncSession,
         user: User,
-        account: Account,
-        authz: Authz,
         *,
         type: TransactionType | None = None,
+        account_id: uuid.UUID | None = None,
+        payment_user_id: uuid.UUID | None = None,
+        payment_organization_id: uuid.UUID | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SearchSortProperty]] = [
             (SearchSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Transaction], int]:
-        if not await authz.can(user, AccessType.read, account):
-            raise NotPermitted()
+        statement = self._get_readable_transactions_statement(user)
 
-        statement = (
-            select(Transaction)
-            .options(
-                # Pledge
-                subqueryload(Transaction.pledge).options(
-                    # Pledge.issue
-                    joinedload(Pledge.issue).options(
-                        joinedload(Issue.repository),
-                        joinedload(Issue.organization),
-                    )
-                ),
-                # IssueReward
-                subqueryload(Transaction.issue_reward),
-                # Subscription
-                subqueryload(Transaction.subscription).options(
-                    joinedload(Subscription.subscription_tier),
-                ),
-            )
-            .where(Transaction.account_id == account.id)
+        statement = statement.options(
+            # Pledge
+            subqueryload(Transaction.pledge).options(
+                # Pledge.issue
+                joinedload(Pledge.issue).options(
+                    joinedload(Issue.repository),
+                    joinedload(Issue.organization),
+                )
+            ),
+            # IssueReward
+            subqueryload(Transaction.issue_reward),
+            # Subscription
+            subqueryload(Transaction.subscription).options(
+                joinedload(Subscription.subscription_tier),
+            ),
         )
 
         if type is not None:
             statement = statement.where(Transaction.type == type)
+        if account_id is not None:
+            statement = statement.where(Transaction.account_id == account_id)
+        if payment_user_id is not None:
+            statement = statement.where(Transaction.payment_user_id == payment_user_id)
+        if payment_organization_id is not None:
+            statement = statement.where(
+                Transaction.payment_organization_id == payment_organization_id
+            )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -87,18 +92,11 @@ class TransactionService(BaseTransactionService):
         return results, count
 
     async def lookup(
-        self,
-        session: AsyncSession,
-        id: uuid.UUID,
-        user: User,
-        authz: Authz,
+        self, session: AsyncSession, id: uuid.UUID, user: User
     ) -> Transaction:
         statement = (
-            select(Transaction)
-            .where(Transaction.id == id, Transaction.account_id.is_not(None))
+            self._get_readable_transactions_statement(user)
             .options(
-                # Account
-                joinedload(Transaction.account),
                 # Pledge
                 subqueryload(Transaction.pledge).options(
                     # Pledge.issue
@@ -116,14 +114,11 @@ class TransactionService(BaseTransactionService):
                 # Paid transactions
                 subqueryload(Transaction.paid_transactions),
             )
+            .where(Transaction.id == id)
         )
         result = await session.execute(statement)
         transaction = result.scalar_one_or_none()
         if transaction is None:
-            raise ResourceNotFound()
-
-        assert transaction.account is not None
-        if not await authz.can(user, AccessType.read, transaction.account):
             raise ResourceNotFound()
 
         return transaction
@@ -187,6 +182,35 @@ class TransactionService(BaseTransactionService):
                 account_amount=account_payout_amount,
             ),
         )
+
+    def _get_readable_transactions_statement(self, user: User) -> Select[Any]:
+        PaymentUserOrganization = aliased(UserOrganization)
+        statement = (
+            select(Transaction)
+            .join(Transaction.account, isouter=True)
+            .join(Account.organization, isouter=True)
+            .join(
+                UserOrganization,
+                onclause=Account.organization_id == UserOrganization.organization_id,
+                isouter=True,
+            )
+            .join(
+                PaymentUserOrganization,
+                onclause=Transaction.payment_organization_id
+                == PaymentUserOrganization.organization_id,
+                isouter=True,
+            )
+            .where(
+                or_(
+                    Account.user_id == user.id,
+                    UserOrganization.user_id == user.id,
+                    Transaction.payment_user_id == user.id,
+                    PaymentUserOrganization.user_id == user.id,
+                )
+            )
+        )
+
+        return statement
 
 
 transaction = TransactionService(Transaction)

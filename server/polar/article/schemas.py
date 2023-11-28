@@ -141,3 +141,7 @@ class ArticlePreview(Schema):
     email: str = Field(
         description="Send a preview of the article to this email address"
     )
+
+
+class ArticleSentResponse(Schema):
+    ok: bool

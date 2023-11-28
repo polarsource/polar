@@ -78,6 +78,9 @@ class Article(RecordModel):
         Boolean, nullable=False, default=False
     )
 
+    email_sent_to_count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
     email_open_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     web_view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -18,6 +18,7 @@ apis/RepositoriesApi.ts
 apis/RewardsApi.ts
 apis/StreamApi.ts
 apis/SubscriptionsApi.ts
+apis/TransactionsApi.ts
 apis/UsersApi.ts
 apis/index.ts
 models/index.ts

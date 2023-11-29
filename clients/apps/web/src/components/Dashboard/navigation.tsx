@@ -162,19 +162,15 @@ export const backerRoutes = (
           subs: undefined,
         },
       ]),
-  ...(isFeatureEnabled('teams')
-    ? [
-        {
-          id: 'members',
-          title: 'Members',
-          link: `/maintainer/${org?.name}/members`,
-          icon: <Face fontSize="inherit" />,
-          postIcon: undefined,
-          if: !isPersonal && org?.is_teams_enabled,
-          subs: undefined,
-        },
-      ]
-    : []),
+  {
+    id: 'members',
+    title: 'Members',
+    link: `/maintainer/${org?.name}/members`,
+    icon: <Face fontSize="inherit" />,
+    postIcon: undefined,
+    if: !isPersonal && org?.is_teams_enabled,
+    subs: undefined,
+  },
 ]
 
 export const dashboardRoutes = (
@@ -246,29 +242,15 @@ export const dashboardRoutes = (
       },
     ],
   },
-  ...(isFeatureEnabled('teams')
-    ? [
-        {
-          id: 'settings',
-          title: 'Settings',
-          link: isPersonal ? `/settings` : `/maintainer/${org?.name}/settings`,
-          icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: isPersonal ? true : org?.is_teams_enabled && isOrgAdmin,
-          subs: undefined,
-        },
-      ]
-    : [
-        {
-          id: 'settings',
-          title: 'Settings',
-          link: `/settings`,
-          icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: isPersonal,
-          subs: undefined,
-        },
-      ]),
+  {
+    id: 'settings',
+    title: 'Settings',
+    link: isPersonal ? `/settings` : `/maintainer/${org?.name}/settings`,
+    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: isPersonal ? true : org?.is_teams_enabled && isOrgAdmin,
+    subs: undefined,
+  },
 ]
 
 export const metaRoutes: Route[] = [

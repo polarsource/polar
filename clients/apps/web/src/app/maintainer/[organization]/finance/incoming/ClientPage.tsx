@@ -3,7 +3,7 @@
 import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
-import { usePersonalOrganization } from '@/hooks'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
@@ -19,14 +19,17 @@ export default function ClientPage() {
   const router = useRouter()
   const params = useSearchParams()
   const { currentPage, setCurrentPage } = usePagination()
-  const personalOrganization = usePersonalOrganization()
+  const { org } = useCurrentOrgAndRepoFromURL()
 
-  const setActiveTab = useCallback((value: string) => {
-    router.replace(`/finance/incoming?type=${value}`)
-  }, [])
+  const setActiveTab = useCallback(
+    (value: string) => {
+      router.replace(`/maintainer/${org?.name}/finance/incoming?type=${value}`)
+    },
+    [org],
+  )
 
   const organizationAccounts =
-    useListAccountsByOrganization(personalOrganization?.id).data?.items ?? []
+    useListAccountsByOrganization(org?.id).data?.items ?? []
   const [organizationAccount] = organizationAccounts
 
   const transfers = useTransferTransactions({
@@ -43,12 +46,7 @@ export default function ClientPage() {
 
   return (
     <div className="flex flex-col gap-y-6">
-      {personalOrganization && (
-        <AccountBanner
-          accounts={organizationAccounts}
-          org={personalOrganization}
-        />
-      )}
+      {org && <AccountBanner accounts={organizationAccounts} org={org} />}
       <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-3xl border border-gray-100 bg-white p-12">
         <Tabs
           defaultValue={params.get('type') ?? 'transactions'}

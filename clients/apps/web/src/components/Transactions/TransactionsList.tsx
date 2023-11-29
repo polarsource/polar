@@ -39,7 +39,7 @@ const TransactionsList = ({ transactions }: TransactionsListProps) => {
       </thead>
       <tbody>
         {transactions.map((transaction) => (
-          <TransactionListItem transaction={transaction} />
+          <TransactionListItem key={transaction.id} transaction={transaction} />
         ))}
       </tbody>
     </table>
@@ -66,7 +66,7 @@ const useTransactionMeta = (transaction: Transaction) => {
     }
   } else {
     return {
-      type: 'Transaction',
+      type: transaction.type,
       meta: undefined,
     }
   }

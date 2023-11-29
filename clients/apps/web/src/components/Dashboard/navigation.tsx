@@ -87,15 +87,6 @@ export const maintainerRoutes = (org: Organization): Route[] => [
       ]
     : []),
   {
-    id: 'org-finance',
-    title: 'Finance',
-    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    link: `/maintainer/${org.name}/finance`,
-    if: true,
-    subs: undefined,
-  },
-  {
     id: 'org-promote',
     title: 'Promote',
     icon: <WifiTethering className="h-5 w-5" fontSize="inherit" />,
@@ -185,22 +176,26 @@ export const backerRoutes: Route[] = [
   },
 ]
 
-export const dashboardRoutes: Route[] = [
+export const dashboardRoutes = (org?: Organization): Route[] => [
   {
     id: 'finance',
     title: 'Finance',
-    link: `/finance`,
+    link: org ? `/maintainer/${org.name}/finance` : `/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: [
       {
         title: 'Incoming',
-        link: `/finance/incoming`,
+        link: org
+          ? `/maintainer/${org.name}/finance/incoming`
+          : `/finance/incoming`,
       },
       {
         title: 'Outgoing',
-        link: '/finance/outgoing',
+        link: org
+          ? `/maintainer/${org.name}/finance/outgoing`
+          : `/finance/outgoing`,
       },
     ],
   },

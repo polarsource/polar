@@ -10,7 +10,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
   return {
-    title: `Finance - Outgoing`, // " | Polar is added by the template"
+    title: `Finance - Incoming`, // " | Polar is added by the template"
   }
 }
 

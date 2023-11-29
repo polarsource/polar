@@ -70,6 +70,7 @@ const Paginator = ({
         // Render our Page Pills
         return (
           <Button
+            key={pageNumber}
             variant={pageNumber === currentPage ? 'default' : 'secondary'}
             size="sm"
             onClick={() =>

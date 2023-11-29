@@ -212,6 +212,11 @@ const nextConfig = {
         destination: '/maintainer/:organization/promote/issues',
         permanent: false
       },
+      {
+        source: '/maintainer/:organization/finance',
+        destination: '/maintainer/:organization/finance/incoming',
+        permanent: false
+      },
 
       // Access tokens redirect
       {

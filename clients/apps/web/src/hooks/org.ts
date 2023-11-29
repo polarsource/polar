@@ -2,8 +2,13 @@
 
 import type { Organization, Repository } from '@polar-sh/sdk'
 import { useParams, usePathname, useSearchParams } from 'next/navigation'
-import { useListAllOrganizations, useListRepositories } from 'polarkit/hooks'
+import {
+  useListAdminOrganizations,
+  useListAllOrganizations,
+  useListRepositories,
+} from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
+import { useAuth } from '.'
 
 export const useCurrentOrgAndRepoFromURL = (): {
   org: Organization | undefined
@@ -140,4 +145,13 @@ export const useCurrentTeamFromURL = (): {
     org,
     isLoaded,
   }
+}
+
+export const usePersonalOrganization = () => {
+  const { currentUser } = useAuth()
+  const listOrganizationsQuery = useListAdminOrganizations()
+
+  return listOrganizationsQuery.data?.items?.find(
+    (o) => o.name === currentUser?.username,
+  )
 }

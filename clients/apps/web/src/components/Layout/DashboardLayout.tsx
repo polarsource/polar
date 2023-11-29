@@ -2,7 +2,6 @@
 
 import { useCurrentOrgAndRepoFromURL, useIsOrganizationAdmin } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
@@ -28,8 +27,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
   const isOrgAdmin = useIsOrganizationAdmin(currentOrg)
 
   const shouldRenderBackerNavigation = currentOrg
-    ? currentOrg.name === currentUser?.username ||
-      (currentOrg.is_teams_enabled && isFeatureEnabled('teams'))
+    ? currentOrg.name === currentUser?.username || currentOrg.is_teams_enabled
     : true
 
   const shouldRenderMaintainerNavigation = currentOrg

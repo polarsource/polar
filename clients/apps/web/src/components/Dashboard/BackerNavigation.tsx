@@ -1,4 +1,4 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useCurrentOrgAndRepoFromURL, usePersonalOrganization } from '@/hooks'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
@@ -7,9 +7,10 @@ import { backerRoutes } from './navigation'
 const BackerNavigation = (props: { classNames?: string }) => {
   const path = usePathname()
   const { org } = useCurrentOrgAndRepoFromURL()
+  const personalOrg = usePersonalOrganization()
 
   // All routes and conditions
-  const navs = backerRoutes(org)
+  const navs = backerRoutes(org, org ? org?.id === personalOrg?.id : true)
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs

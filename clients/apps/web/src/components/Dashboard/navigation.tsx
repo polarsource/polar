@@ -117,7 +117,10 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   },
 ]
 
-export const backerRoutes = (org?: Organization): Route[] => [
+export const backerRoutes = (
+  org?: Organization,
+  isPersonal?: boolean,
+): Route[] => [
   ...(org
     ? []
     : [
@@ -131,7 +134,7 @@ export const backerRoutes = (org?: Organization): Route[] => [
                   <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />
                 ),
                 postIcon: undefined,
-                if: true,
+                if: isPersonal,
                 subs: undefined,
               },
             ]
@@ -140,7 +143,7 @@ export const backerRoutes = (org?: Organization): Route[] => [
   {
     id: 'funding',
     title: 'Funding',
-    link: org ? `/team/${org.name}/funding` : `/feed`,
+    link: isPersonal ? `/feed` : `/team/${org?.name}/funding`,
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
@@ -152,13 +155,13 @@ export const backerRoutes = (org?: Organization): Route[] => [
     link: `/rewards`,
     icon: <CardGiftcardOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    if: true,
+    if: isPersonal,
     subs: undefined,
   },
   {
     id: 'members',
     title: 'Members',
-    link: org ? `/team/${org.name}/members` : '',
+    link: `/team/${org?.name}/members`,
     icon: <Face fontSize="inherit" />,
     postIcon: undefined,
     if: !!org?.is_teams_enabled,
@@ -167,7 +170,7 @@ export const backerRoutes = (org?: Organization): Route[] => [
   {
     id: 'team-settings',
     title: 'Settings',
-    link: org ? `/team/${org.name}/settings` : '',
+    link: `/team/${org?.name}/settings`,
     icon: <TuneOutlined fontSize="inherit" />,
     postIcon: undefined,
     if: !!org?.is_teams_enabled,

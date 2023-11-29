@@ -147,7 +147,7 @@ const ClientPage = () => {
                       />
                     </div>
                   ) : (
-                    <MarkdownPreview>{updateArticle.body}</MarkdownPreview>
+                    <MarkdownPreview body={updateArticle.body} />
                   )}
                 </TabsContent>
               </Tabs>

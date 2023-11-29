@@ -1,14 +1,22 @@
 // @ts-ignore
-import Markdown, { Options } from 'react-markdown'
-import { twMerge } from 'tailwind-merge'
-import { COMPONENTS } from './MarkdownComponents'
 
-export const MarkdownPreview = (props: Options) => {
+import { twMerge } from 'tailwind-merge'
+
+// @ts-ignore
+import Markdown from 'markdown-to-jsx'
+import { markdownOpts } from '../Feed/Posts/markdown'
+
+export const MarkdownPreview = (props: {
+  body: string
+  className?: string
+}) => {
   return (
     <Markdown
-      {...props}
       className={twMerge('relative w-full leading-relaxed', props.className)}
-      components={COMPONENTS}
-    />
+      // @ts-ignore
+      options={{ ...markdownOpts }}
+    >
+      {props.body}
+    </Markdown>
   )
 }

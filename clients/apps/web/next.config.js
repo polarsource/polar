@@ -33,7 +33,7 @@ const nextConfig = {
           {
             type: 'cookie',
             key: POLAR_AUTH_COOKIE_KEY,
-          }
+          },
         ],
       },
       {
@@ -102,7 +102,8 @@ const nextConfig = {
 
       // Logged-out user redirection
       {
-        source: '/(feed|for-you|posts|rewards|settings|backoffice|maintainer)(.*)',
+        source:
+          '/(feed|for-you|posts|rewards|settings|backoffice|maintainer)(.*)',
         destination: '/login/init',
         missing: [
           {
@@ -125,7 +126,7 @@ const nextConfig = {
           {
             type: 'cookie',
             key: POLAR_AUTH_COOKIE_KEY,
-          }
+          },
         ],
         missing: [
           {
@@ -142,7 +143,7 @@ const nextConfig = {
           {
             type: 'cookie',
             key: POLAR_AUTH_COOKIE_KEY,
-          }
+          },
         ],
         permanent: false,
       },
@@ -210,30 +211,29 @@ const nextConfig = {
       {
         source: '/maintainer/:organization/promote',
         destination: '/maintainer/:organization/promote/issues',
-        permanent: false
+        permanent: false,
       },
       {
         source: '/maintainer/:organization/finance_new',
         destination: '/maintainer/:organization/finance_new/incoming',
-        permanent: false
+        permanent: false,
       },
 
       // Access tokens redirect
       {
         source: '/settings/tokens',
         destination: '/settings',
-        permanent: false
-      }
+        permanent: false,
+      },
     ]
   },
 }
 
 module.exports = nextConfig
 
-
 // Injected content via Sentry wizard below
 
-const { withSentryConfig } = require("@sentry/nextjs");
+const { withSentryConfig } = require('@sentry/nextjs')
 
 module.exports = withSentryConfig(
   module.exports,
@@ -244,8 +244,8 @@ module.exports = withSentryConfig(
     // Suppresses source map uploading logs during build
     silent: true,
 
-    org: "polar-sh",
-    project: "dashboard",
+    org: 'polar-sh',
+    project: 'dashboard',
   },
   {
     // For all available options, see:
@@ -258,12 +258,12 @@ module.exports = withSentryConfig(
     transpileClientSDK: true,
 
     // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
-    tunnelRoute: "/monitoring",
+    tunnelRoute: '/monitoring',
 
     // Hides source maps from generated client bundles
     hideSourceMaps: true,
 
     // Automatically tree-shake Sentry logger statements to reduce bundle size
     disableLogger: true,
-  }
-);
+  },
+)

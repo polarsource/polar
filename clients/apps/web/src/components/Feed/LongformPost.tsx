@@ -5,11 +5,10 @@ import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
+
 // @ts-ignore
-import { twMerge } from 'tailwind-merge'
-// @ts-ignore
-import { visit } from 'unist-util-visit'
-import { MarkdownPreview } from '../Markdown/MarkdownPreview'
+import Markdown from 'markdown-to-jsx'
+import { markdownOpts } from './Posts/markdown'
 
 const staggerTransition = {
   staggerChildren: 0.2,
@@ -55,31 +54,20 @@ export default function LongformPost({ post }: { post: Article }) {
           </div>
         </StaggerReveal.Child>
       </div>
+
+      <div className="prose space-y-16">
+        <Markdown
+          // @ts-ignore
+          options={{ ...markdownOpts }}
+        >
+          {post.body}
+        </Markdown>
+      </div>
+
       <StaggerReveal.Child
         className="flex flex-col gap-y-16"
         transition={revealTransition}
       >
-        <MarkdownPreview
-          rehypePlugins={[
-            () => (tree) => {
-              visit(tree, 'element', (node, index, parent) => {
-                node.properties = {
-                  ...node.properties,
-                  className: twMerge(
-                    node.properties?.className,
-                    node.tagName === 'img' ||
-                      (node.tagName === 'p' &&
-                        node.children[0].tagName === 'img')
-                      ? 'w-full my-12'
-                      : undefined,
-                  ),
-                }
-              })
-            },
-          ]}
-        >
-          {post.body}
-        </MarkdownPreview>
         <div className="dark:bg-polar-700 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16">
           <Avatar
             className="h-12 w-12"

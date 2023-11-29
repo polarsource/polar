@@ -78,6 +78,15 @@ const DashboardLayout = (props: PropsWithChildren) => {
             </>
           )}
 
+          <div className="flex w-full flex-row items-center gap-x-2 px-7 pt-2">
+            <div
+              className="dark:text-polar-400 px-3 py-1 text-[10px] uppercase tracking-widest text-gray-500"
+              style={{ fontFeatureSettings: `"ss02" on` }}
+            >
+              {shouldRenderBackerNavigation ? 'Account' : 'Organization'}
+            </div>
+          </div>
+
           <DashboardNavigation />
 
           <TeamsNavigation />

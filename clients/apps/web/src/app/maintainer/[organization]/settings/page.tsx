@@ -5,12 +5,12 @@ export async function generateMetadata(
   {
     params,
   }: {
-    params: { team: string }
+    params: { organization: string }
   },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
   return {
-    title: `${params.team}`, // " | Polar is added by the template"
+    title: `${params.organization}`, // " | Polar is added by the template"
   }
 }
 

@@ -1,15 +1,16 @@
 'use client'
 
 import IssueListItem from '@/components/Dashboard/IssueListItem'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Spinner from '@/components/Shared/Spinner'
-import { useCurrentTeamFromURL } from '@/hooks/org'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { Pledge } from '@polar-sh/sdk'
 
 import { useSearchPledges } from 'polarkit/hooks'
 
 export default function ClientPage() {
-  const { org, isLoaded } = useCurrentTeamFromURL()
+  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   const pledges = useSearchPledges({
     byOrganizationId: org?.id,
@@ -44,11 +45,15 @@ export default function ClientPage() {
   const havePledges = (pledges.data?.items?.length || 0) > 0
 
   if (!isLoaded || !org) {
-    return <Spinner />
+    return (
+      <DashboardBody>
+        <Spinner />
+      </DashboardBody>
+    )
   }
 
   return (
-    <>
+    <DashboardBody>
       {pledges.isFetched && !havePledges ? (
         <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
           <span className="text-6xl">
@@ -97,6 +102,6 @@ export default function ClientPage() {
           ))}
         </div>
       ) : null}
-    </>
+    </DashboardBody>
   )
 }

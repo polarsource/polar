@@ -3,14 +3,13 @@
 import {
   useAuth,
   useCurrentOrgAndRepoFromURL,
-  useCurrentTeamFromURL,
   usePersonalOrganization,
 } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
-import { PropsWithChildren, useMemo } from 'react'
+import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   Route,
@@ -57,28 +56,11 @@ const DashboardTopbar = ({
   isFixed?: boolean
 }>) => {
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
-  const { org: currentTeamFromURL } = useCurrentTeamFromURL()
   const personalOrg = usePersonalOrganization()
 
   const { hydrated } = useAuth()
 
   const useOrgFromURL = props.useOrgFromURL
-
-  const currentOrg = useMemo(() => {
-    if (!useOrgFromURL) {
-      return undefined
-    }
-
-    if (currentTeamFromURL) {
-      return currentTeamFromURL
-    }
-
-    if (currentOrgFromURL) {
-      return currentOrgFromURL
-    }
-
-    return undefined
-  }, [currentOrgFromURL, useOrgFromURL, currentTeamFromURL])
 
   const pathname = usePathname()
 
@@ -96,7 +78,7 @@ const DashboardTopbar = ({
     ]
   }
 
-  const routes = getRoutes(pathname, currentOrg)
+  const routes = getRoutes(pathname, currentOrgFromURL)
 
   const [currentRoute] = routes.filter((route) =>
     pathname?.startsWith(route.link),

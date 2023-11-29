@@ -1,8 +1,9 @@
 'use client'
 
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import Spinner from '@/components/Shared/Spinner'
-import { useCurrentTeamFromURL } from '@/hooks/org'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { CreditBalance, Organization } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
@@ -26,28 +27,34 @@ import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 
 export default function ClientPage() {
-  const { org, isLoaded } = useCurrentTeamFromURL()
+  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   const credits = useOrganizationCredits(org?.id)
 
   if (!isLoaded || !org) {
-    return <Spinner />
+    return (
+      <DashboardBody>
+        <Spinner />
+      </DashboardBody>
+    )
   }
 
   return (
-    <div className="dark:divide-polar-700 divide-y divide-gray-200">
-      <Section>
-        <SectionDescription
-          title="Payment"
-          description="Manage team invoicing, spending limits and payment methods"
-        />
-        <PaymentMethodSettings org={org} credits={credits.data} />
-      </Section>
-    </div>
+    <DashboardBody>
+      <div className="dark:divide-polar-700 divide-y divide-gray-200">
+        <Section>
+          <SectionDescription
+            title="Payment"
+            description="Manage organization invoicing, spending limits and payment methods"
+          />
+          <PaymentMethodSettings org={org} credits={credits.data} />
+        </Section>
+      </div>
+    </DashboardBody>
   )
 }
 
-interface TeamSettingsForm {
+interface OrganizationSettingsForm {
   billing_email: string
   total_monthly_spending_limit: number
   per_user_monthly_spending_limit: number
@@ -77,7 +84,7 @@ const PaymentMethodSettings = ({
 
   const updateOrganization = useUpdateOrganization()
 
-  const form = useForm<TeamSettingsForm>({
+  const form = useForm<OrganizationSettingsForm>({
     defaultValues: {
       billing_email: org.billing_email,
       total_monthly_spending_limit: org.total_monthly_spending_limit,
@@ -90,13 +97,13 @@ const PaymentMethodSettings = ({
   const [didSave, setDidSave] = useState(false)
 
   const onSubmit = useCallback(
-    async (teamSettings: TeamSettingsForm) => {
+    async (organizationSettings: OrganizationSettingsForm) => {
       await updateOrganization.mutateAsync({
         id: org.id,
         settings: {
           set_per_user_monthly_spending_limit: true,
           set_total_monthly_spending_limit: true,
-          ...teamSettings,
+          ...organizationSettings,
         },
       })
       setDidSave(true)
@@ -148,7 +155,7 @@ const PaymentMethodSettings = ({
 }
 
 const BillingEmail = () => {
-  const { control } = useFormContext<TeamSettingsForm>()
+  const { control } = useFormContext<OrganizationSettingsForm>()
 
   return (
     <>
@@ -189,7 +196,7 @@ const BillingEmail = () => {
 }
 
 const TotalMonthlySpendingLimit = () => {
-  const { control } = useFormContext<TeamSettingsForm>()
+  const { control } = useFormContext<OrganizationSettingsForm>()
 
   return (
     <>
@@ -231,7 +238,7 @@ const TotalMonthlySpendingLimit = () => {
 }
 
 const PerUserMonthlySpendingLimit = () => {
-  const { control } = useFormContext<TeamSettingsForm>()
+  const { control } = useFormContext<OrganizationSettingsForm>()
 
   return (
     <>

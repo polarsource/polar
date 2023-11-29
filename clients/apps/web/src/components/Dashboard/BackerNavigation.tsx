@@ -10,7 +10,11 @@ const BackerNavigation = (props: { classNames?: string }) => {
   const personalOrg = usePersonalOrganization()
 
   // All routes and conditions
-  const navs = backerRoutes(org, org ? org?.id === personalOrg?.id : true)
+  const navs = org
+    ? backerRoutes(org, personalOrg?.id === org.id)
+    : personalOrg
+    ? backerRoutes(personalOrg, true)
+    : []
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs

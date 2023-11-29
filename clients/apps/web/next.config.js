@@ -213,8 +213,8 @@ const nextConfig = {
         permanent: false
       },
       {
-        source: '/maintainer/:organization/finance',
-        destination: '/maintainer/:organization/finance/incoming',
+        source: '/maintainer/:organization/finance_new',
+        destination: '/maintainer/:organization/finance_new/incoming',
         permanent: false
       },
 

@@ -3,6 +3,7 @@
 import {
   useAuth,
   useCurrentOrgAndRepoFromURL,
+  useIsOrganizationAdmin,
   usePersonalOrganization,
 } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
@@ -59,8 +60,8 @@ const DashboardTopbar = ({
   const personalOrg = usePersonalOrganization()
 
   const { hydrated } = useAuth()
-
-  const useOrgFromURL = props.useOrgFromURL
+  const isOrgAdmin = useIsOrganizationAdmin(currentOrgFromURL)
+  const isPersonal = currentOrgFromURL?.name === personalOrg?.name
 
   const pathname = usePathname()
 
@@ -69,12 +70,13 @@ const DashboardTopbar = ({
     currentOrg?: Organization,
   ): Route[] => {
     return [
-      ...backerRoutes(
-        currentOrg,
-        currentOrg ? currentOrg?.name === personalOrg?.name : true,
-      ),
+      ...backerRoutes(currentOrg, currentOrg ? isPersonal : true),
       ...(currentOrg ? maintainerRoutes(currentOrg) : []),
-      ...dashboardRoutes(currentOrg),
+      ...dashboardRoutes(
+        currentOrg,
+        currentOrg ? isPersonal : true,
+        isOrgAdmin,
+      ),
     ]
   }
 

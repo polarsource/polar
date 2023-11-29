@@ -1,4 +1,8 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import {
+  useCurrentOrgAndRepoFromURL,
+  useIsOrganizationAdmin,
+  usePersonalOrganization,
+} from '@/hooks'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
@@ -7,9 +11,16 @@ import { dashboardRoutes } from './navigation'
 const DashboardNavigation = (props: { classNames?: string }) => {
   const path = usePathname()
   const { org } = useCurrentOrgAndRepoFromURL()
+  const isOrgAdmin = useIsOrganizationAdmin(org)
+
+  const personalOrg = usePersonalOrganization()
 
   // All routes and conditions
-  const navs = dashboardRoutes(org)
+  const navs = org
+    ? dashboardRoutes(org, org.id === personalOrg?.id, isOrgAdmin)
+    : personalOrg
+    ? dashboardRoutes(personalOrg, true, true)
+    : []
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs

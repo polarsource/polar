@@ -1,21 +1,19 @@
 'use client'
 
-import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
+import {
+  useCurrentOrgAndRepoFromURL,
+  usePersonalOrganization,
+} from '@/hooks/org'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useListAdminOrganizations, useUser } from 'polarkit/hooks'
 import { twMerge } from 'tailwind-merge'
 import { maintainerRoutes } from './navigation'
 
 const MaintainerNavigation = () => {
-  const currentUser = useUser()
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
-  const adminOrgs = useListAdminOrganizations()
 
-  const personalOrg = adminOrgs?.data?.items?.find(
-    (org) => org.name === currentUser?.data?.username,
-  )
+  const personalOrg = usePersonalOrganization()
 
   // All routes and conditions
   const navs = org

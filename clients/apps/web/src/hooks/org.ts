@@ -112,3 +112,8 @@ export const usePersonalOrganization = () => {
     (o) => o.name === currentUser?.username,
   )
 }
+
+export const useIsOrganizationAdmin = (org?: Organization) => {
+  const listOrganizationsQuery = useListAdminOrganizations()
+  return listOrganizationsQuery.data?.items?.some((o) => o.id === org?.id)
+}

@@ -1,7 +1,8 @@
 'use client'
 
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useCurrentOrgAndRepoFromURL, useIsOrganizationAdmin } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
@@ -20,17 +21,23 @@ import ProfileSelection from '../Shared/ProfileSelection'
 const DashboardLayout = (props: PropsWithChildren) => {
   const { currentUser, hydrated } = useAuth()
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
-
   const listOrganizationQuery = useListAdminOrganizations()
 
   const orgs = listOrganizationQuery?.data?.items
 
+  const isOrgAdmin = useIsOrganizationAdmin(currentOrg)
+
   const shouldRenderBackerNavigation = currentOrg
-    ? currentOrg.name === currentUser?.username || currentOrg.is_teams_enabled
+    ? currentOrg.name === currentUser?.username ||
+      (currentOrg.is_teams_enabled && isFeatureEnabled('teams'))
     : true
 
   const shouldRenderMaintainerNavigation = currentOrg
-    ? true
+    ? isOrgAdmin
+    : orgs?.some((org) => org.name === currentUser?.username)
+
+  const shouldRenderDashboardNavigation = currentOrg
+    ? isOrgAdmin
     : orgs?.some((org) => org.name === currentUser?.username)
 
   const showConnectUpsell = orgs && orgs.length === 0
@@ -63,7 +70,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
 
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
 
-          <DashboardNavigation />
+          {shouldRenderDashboardNavigation && <DashboardNavigation />}
         </div>
 
         <div className="flex flex-col gap-y-2">

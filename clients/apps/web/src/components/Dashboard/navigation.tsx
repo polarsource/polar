@@ -121,9 +121,8 @@ export const backerRoutes = (
   org?: Organization,
   isPersonal?: boolean,
 ): Route[] => [
-  ...(org
-    ? []
-    : [
+  ...(isPersonal
+    ? [
         ...(isFeatureEnabled('feed')
           ? [
               {
@@ -139,7 +138,8 @@ export const backerRoutes = (
               },
             ]
           : []),
-      ]),
+      ]
+    : []),
   {
     id: 'funding',
     title: 'Funding',
@@ -149,49 +149,77 @@ export const backerRoutes = (
     if: true,
     subs: undefined,
   },
-  {
-    id: 'rewards',
-    title: 'Rewards',
-    link: `/rewards`,
-    icon: <CardGiftcardOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    if: isPersonal,
-    subs: undefined,
-  },
-  {
-    id: 'members',
-    title: 'Members',
-    link: `/maintainer/${org?.name}/members`,
-    icon: <Face fontSize="inherit" />,
-    postIcon: undefined,
-    if: !!org?.is_teams_enabled,
-    subs: undefined,
-  },
+  ...(isFeatureEnabled('finance')
+    ? []
+    : [
+        {
+          id: 'rewards',
+          title: 'Rewards',
+          link: `/rewards`,
+          icon: <CardGiftcardOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: isPersonal,
+          subs: undefined,
+        },
+      ]),
+  ...(isFeatureEnabled('teams')
+    ? [
+        {
+          id: 'members',
+          title: 'Members',
+          link: `/maintainer/${org?.name}/members`,
+          icon: <Face fontSize="inherit" />,
+          postIcon: undefined,
+          if: !isPersonal && org?.is_teams_enabled,
+          subs: undefined,
+        },
+      ]
+    : []),
 ]
 
-export const dashboardRoutes = (org?: Organization): Route[] => [
-  {
-    id: 'finance',
-    title: 'Finance',
-    link: org ? `/maintainer/${org.name}/finance` : `/finance`,
-    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    if: true,
-    subs: [
-      {
-        title: 'Incoming',
-        link: org
-          ? `/maintainer/${org.name}/finance/incoming`
-          : `/finance/incoming`,
-      },
-      {
-        title: 'Outgoing',
-        link: org
-          ? `/maintainer/${org.name}/finance/outgoing`
-          : `/finance/outgoing`,
-      },
-    ],
-  },
+export const dashboardRoutes = (
+  org?: Organization,
+  isPersonal?: boolean,
+  isOrgAdmin?: boolean,
+): Route[] => [
+  ...(isFeatureEnabled('finance')
+    ? [
+        {
+          id: 'finance',
+          title: 'Finance',
+          link: isPersonal
+            ? `/finance`
+            : `/maintainer/${org?.name}/finance_new`,
+          icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: isOrgAdmin,
+          subs: [
+            {
+              title: 'Incoming',
+              link: isPersonal
+                ? `/finance/incoming`
+                : `/maintainer/${org?.name}/finance_new/incoming`,
+            },
+            {
+              title: 'Outgoing',
+              link: isPersonal
+                ? `/finance/outgoing`
+                : `/maintainer/${org?.name}/finance_new/outgoing`,
+            },
+          ],
+        },
+      ]
+    : [
+        {
+          id: 'finance',
+          title: 'Finance',
+          link: `/maintainer/${org?.name}/finance`,
+          icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: isOrgAdmin,
+          subs: undefined,
+        },
+      ]),
   {
     id: 'backoffice',
     title: 'Backoffice',
@@ -218,15 +246,29 @@ export const dashboardRoutes = (org?: Organization): Route[] => [
       },
     ],
   },
-  {
-    id: 'settings',
-    title: 'Settings',
-    link: org ? `/maintainer/${org?.name}/settings` : `/settings`,
-    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    if: org ? org?.is_teams_enabled : true,
-    subs: undefined,
-  },
+  ...(isFeatureEnabled('teams')
+    ? [
+        {
+          id: 'settings',
+          title: 'Settings',
+          link: isPersonal ? `/settings` : `/maintainer/${org?.name}/settings`,
+          icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: isPersonal ? true : org?.is_teams_enabled && isOrgAdmin,
+          subs: undefined,
+        },
+      ]
+    : [
+        {
+          id: 'settings',
+          title: 'Settings',
+          link: `/settings`,
+          icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: isPersonal,
+          subs: undefined,
+        },
+      ]),
 ]
 
 export const metaRoutes: Route[] = [

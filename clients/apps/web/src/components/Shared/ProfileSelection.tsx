@@ -9,11 +9,10 @@ import {
   ShortTextOutlined,
 } from '@mui/icons-material'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { CONFIG } from 'polarkit/config'
-import { useListAdminOrganizations } from 'polarkit/hooks'
+import { useListAllOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -30,13 +29,13 @@ const ProfileSelection = ({
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()
-  const listOrganizationQuery = useListAdminOrganizations()
+  const listOrganizationQuery = useListAllOrganizations()
 
   const [isOpen, setOpen] = useState<boolean>(false)
 
-  const orgs = listOrganizationQuery?.data?.items
+  const orgs = listOrganizationQuery?.data?.items ?? []
 
-  const organizationsExceptSelf = orgs?.filter(
+  const organizationsExceptSelf = orgs.filter(
     (org) => org.name !== loggedUser?.username,
   )
 
@@ -51,8 +50,6 @@ const ProfileSelection = ({
   const currentOrg = useMemo(() => {
     return currentOrgFromURL && useOrgFromURL ? currentOrgFromURL : undefined
   }, [currentOrgFromURL, useOrgFromURL])
-
-  const router = useRouter()
 
   const onLogout = async () => {
     await logout()
@@ -118,7 +115,7 @@ const ProfileSelection = ({
             <ul className="mt-2 flex w-full flex-col">
               {showBackerLinks && (
                 <>
-                  {backerRoutes.map((n) => {
+                  {backerRoutes(currentOrg).map((n) => {
                     return (
                       <LinkItem href={n.link} icon={n.icon}>
                         <span className="mx-1.5 font-medium">{n.title}</span>

@@ -21,7 +21,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
   return (
     <div className="flex flex-col">
       <div className="flex flex-row items-start justify-between">
-        <h2 className="text-lg">Subscriptions</h2>
+        <h2 className="text-lg font-medium">Subscriptions</h2>
         <Link
           href={{
             pathname: `/${organization.name}`,

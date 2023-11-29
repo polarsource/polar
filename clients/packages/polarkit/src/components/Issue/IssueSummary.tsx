@@ -44,7 +44,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
   const markdownTitle = generateMarkdownTitle(title)
 
   return (
-    <div className="dark:md:hover:bg-polar-800 duration-50 dark:text-polar-50 group flex flex-col items-start justify-between gap-4 overflow-hidden px-6 py-4 pb-5 md:flex-row md:items-center md:rounded-2xl md:hover:bg-blue-50">
+    <div className="dark:md:hover:bg-polar-800 duration-50 dark:text-polar-50 md:hover:bg-gray-75 group flex flex-col items-start justify-between gap-4 overflow-hidden px-6 py-4 pb-5 md:flex-row md:items-center md:rounded-2xl">
       <div className="flex flex-row items-center">
         {showLogo && (
           <div className="mr-4 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">

@@ -43,7 +43,7 @@ export const RepositoriesOverivew = ({
     <>
       {repositories.length > 0 ? (
         <>
-          <h2 className="text-lg">Repositories</h2>
+          <h2 className="text-lg font-medium">Repositories</h2>
           <div className="mt-6 flex w-full flex-col gap-y-8">
             <StaggerReveal className="relative grid w-full grid-cols-2 justify-stretch gap-6">
               {repositoriesAsCards.map((repository) => (

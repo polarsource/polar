@@ -18,7 +18,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
 } => {
   // org and repo from router params "/foo/[organization]/bar"
   const params = useParams()
-  const paramsOrg = params?.organization || params.team
+  const paramsOrg = params?.organization
   const paramsRepo = params?.repo
 
   // repo can also be set as a query arg
@@ -101,49 +101,6 @@ export const useCurrentOrgAndRepoFromURL = (): {
     repo,
     isLoaded,
     haveOrgs,
-  }
-}
-
-export const useCurrentTeamFromURL = (): {
-  org: Organization | undefined
-  isLoaded: boolean
-} => {
-  // org from router params "/foo/[team]/"
-  const params = useParams()
-  const paramsOrg = params?.team
-
-  const listOrganizationsQuery = useListAllOrganizations()
-
-  const [org, setOrg] = useState<Organization | undefined>(undefined)
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  const pathname = usePathname()
-
-  useEffect(() => {
-    let orgSlug = ''
-
-    if (typeof paramsOrg === 'string') {
-      orgSlug = paramsOrg
-    }
-
-    let nextOrg: Organization | undefined
-
-    // Get org if no org found above
-    if (orgSlug && listOrganizationsQuery.data?.items) {
-      nextOrg = listOrganizationsQuery.data.items.find(
-        (o) => o.name === orgSlug,
-      )
-    }
-
-    // local state
-    setOrg(nextOrg)
-
-    setIsLoaded(listOrganizationsQuery.isSuccess)
-  }, [listOrganizationsQuery, paramsOrg, pathname])
-
-  return {
-    org,
-    isLoaded,
   }
 }
 

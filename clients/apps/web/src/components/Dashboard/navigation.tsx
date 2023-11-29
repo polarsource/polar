@@ -143,7 +143,7 @@ export const backerRoutes = (
   {
     id: 'funding',
     title: 'Funding',
-    link: isPersonal ? `/feed` : `/team/${org?.name}/funding`,
+    link: isPersonal ? `/feed` : `/maintainer/${org?.name}/funding`,
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
@@ -161,17 +161,8 @@ export const backerRoutes = (
   {
     id: 'members',
     title: 'Members',
-    link: `/team/${org?.name}/members`,
+    link: `/maintainer/${org?.name}/members`,
     icon: <Face fontSize="inherit" />,
-    postIcon: undefined,
-    if: !!org?.is_teams_enabled,
-    subs: undefined,
-  },
-  {
-    id: 'team-settings',
-    title: 'Settings',
-    link: `/team/${org?.name}/settings`,
-    icon: <TuneOutlined fontSize="inherit" />,
     postIcon: undefined,
     if: !!org?.is_teams_enabled,
     subs: undefined,
@@ -230,10 +221,10 @@ export const dashboardRoutes = (org?: Organization): Route[] => [
   {
     id: 'settings',
     title: 'Settings',
-    link: `/settings`,
+    link: org ? `/maintainer/${org?.name}/settings` : `/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    if: !org,
+    if: org ? org?.is_teams_enabled : true,
     subs: undefined,
   },
 ]

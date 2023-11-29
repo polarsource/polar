@@ -118,7 +118,7 @@ const ClientPage = () => {
               <div className="flex flex-row items-center gap-x-2">
                 <Button
                   className="secondary"
-                  variant={'outline'}
+                  variant={'secondary'}
                   onClick={() => setShowSendPreviewModal(true)}
                 >
                   Preview
@@ -136,7 +136,7 @@ const ClientPage = () => {
                   href={`/${post.data.organization.name}/posts/${post.data.slug}`}
                   target="_blank"
                 >
-                  <Button className="secondary" variant={'outline'}>
+                  <Button className="secondary" variant={'secondary'}>
                     <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
                     <span>Read</span>
                   </Button>

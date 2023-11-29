@@ -157,10 +157,14 @@ export const OrganizationPublicPageContent = ({
             />
           )}
 
-          <div className="flex flex-row items-start justify-between">
-            <h2 className="text-lg">Issues looking for funding</h2>
+          <div className="dark:bg-polar-900 dark:border-polar-800 flex min-h-[480px] w-full flex-col gap-y-8 rounded-3xl border border-gray-100 bg-white p-12">
+            <div className="flex flex-row items-start justify-between">
+              <h2 className="text-lg font-medium">
+                Issues looking for funding
+              </h2>
+            </div>
+            <IssuesLookingForFunding organization={organization} />
           </div>
-          <IssuesLookingForFunding organization={organization} />
         </div>
       </TabsContent>
       <TabsContent className="w-full" value="repositories">

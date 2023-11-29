@@ -45,7 +45,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
 
   const style = {
     '--var-bg-color': hexToRGBA(subscriptionColor, 0.2),
-    '--var-border-color': hexToRGBA(subscriptionColor, 0.3),
+    '--var-border-color': hexToRGBA(subscriptionColor, 0.2),
     '--var-muted-color': hexToRGBA(subscriptionColor, 0.7),
     '--var-fg-color': subscriptionColor,
     '--var-dark-glow-color': hexToRGBA(subscriptionColor, 0.07),
@@ -97,7 +97,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     <Card
       ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-transparent bg-white shadow-xl dark:shadow-none',
+        'dark:bg-polar-900 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:shadow-none',
         variantStyles[variant]['card'],
         className,
       )}

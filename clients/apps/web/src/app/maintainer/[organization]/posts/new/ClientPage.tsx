@@ -110,7 +110,7 @@ const ClientPage = () => {
                   />
                 </TabsContent>
                 <TabsContent value="preview">
-                  <MarkdownPreview>{article.body}</MarkdownPreview>
+                  <MarkdownPreview body={article.body} />
                 </TabsContent>
               </Tabs>
             </div>

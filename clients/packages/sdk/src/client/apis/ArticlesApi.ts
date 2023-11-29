@@ -19,6 +19,7 @@ import type {
   ArticleCreate,
   ArticlePreview,
   ArticlePreviewResponse,
+  ArticleSentResponse,
   ArticleUpdate,
   ArticleViewedResponse,
   HTTPValidationError,
@@ -43,6 +44,10 @@ export interface ArticlesApiLookupRequest {
 export interface ArticlesApiSearchRequest {
     organizationName: string;
     platform: Platforms;
+}
+
+export interface ArticlesApiSendRequest {
+    id: string;
 }
 
 export interface ArticlesApiSendPreviewRequest {
@@ -292,6 +297,46 @@ export class ArticlesApi extends runtime.BaseAPI {
      */
     async search(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
         const response = await this.searchRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Send email to all subscribers
+     * Send email to all subscribers (Public API)
+     */
+    async sendRaw(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleSentResponse>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling send.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/{id}/send`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Send email to all subscribers
+     * Send email to all subscribers (Public API)
+     */
+    async send(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleSentResponse> {
+        const response = await this.sendRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

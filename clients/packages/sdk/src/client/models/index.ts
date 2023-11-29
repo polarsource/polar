@@ -300,6 +300,19 @@ export interface ArticlePreviewResponse {
 /**
  * 
  * @export
+ * @interface ArticleSentResponse
+ */
+export interface ArticleSentResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ArticleSentResponse
+     */
+    ok: boolean;
+}
+/**
+ * 
+ * @export
  * @interface ArticleUpdate
  */
 export interface ArticleUpdate {
@@ -5067,6 +5080,18 @@ export interface TransactionIssue {
      * @memberof TransactionIssue
      */
     title: string;
+    /**
+     * 
+     * @type {TransactionOrganization}
+     * @memberof TransactionIssue
+     */
+    organization: TransactionOrganization;
+    /**
+     * 
+     * @type {TransactionRepository}
+     * @memberof TransactionIssue
+     */
+    repository: TransactionRepository;
 }
 /**
  * 
@@ -5108,6 +5133,55 @@ export interface TransactionIssueReward {
 /**
  * 
  * @export
+ * @interface TransactionOrganization
+ */
+export interface TransactionOrganization {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrganization
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrganization
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrganization
+     */
+    id: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof TransactionOrganization
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrganization
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrganization
+     */
+    avatar_url: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof TransactionOrganization
+     */
+    is_personal: boolean;
+}
+/**
+ * 
+ * @export
  * @interface TransactionPledge
  */
 export interface TransactionPledge {
@@ -5141,6 +5215,49 @@ export interface TransactionPledge {
      * @memberof TransactionPledge
      */
     issue: TransactionIssue;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionRepository
+ */
+export interface TransactionRepository {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionRepository
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionRepository
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionRepository
+     */
+    id: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof TransactionRepository
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionRepository
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionRepository
+     */
+    name: string;
 }
 /**
  * 
@@ -5227,6 +5344,30 @@ export interface TransactionSubscriptionTier {
      * @memberof TransactionSubscriptionTier
      */
     name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionTier
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionTier
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {TransactionOrganization}
+     * @memberof TransactionSubscriptionTier
+     */
+    organization?: TransactionOrganization;
+    /**
+     * 
+     * @type {TransactionRepository}
+     * @memberof TransactionSubscriptionTier
+     */
+    repository?: TransactionRepository;
 }
 
 /**

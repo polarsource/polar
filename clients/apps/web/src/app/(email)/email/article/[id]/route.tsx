@@ -12,11 +12,15 @@ import {
   Row,
   Section,
 } from '@react-email/components'
-import { Markdown } from '@react-email/markdown'
 import { render } from '@react-email/render'
 import { Tailwind } from '@react-email/tailwind'
 import { notFound } from 'next/navigation'
 import { NextRequest, NextResponse } from 'next/server'
+
+// @ts-ignore
+import Markdown from 'markdown-to-jsx'
+
+import { markdownOpts } from '@/components/Feed/Posts/markdown'
 
 // used by the renderer
 import 'postcss'
@@ -227,28 +231,10 @@ export async function GET(
               <Row>
                 <Column>
                   <Markdown
-                    markdownCustomStyles={{
-                      h1: { color: '#14161A' },
-                      h2: {
-                        color: '#14161A',
-                        fontWeight: 600,
-                        fontSize: '1.5rem',
-                        lineHeight: '2rem',
-                      },
-                      codeInline: { background: '#FCFCFD' },
-                      image: { maxWidth: '100%' },
-                      p: { color: '#4A5363' },
-                      codeBlock: {
-                        fontSize: '100%',
-                        background: '#FCFCFD',
-                        padding: '12px',
-                      },
-                    }}
-                    markdownContainerStyles={{
-                      maxWidth: '100%',
-                    }}
+                    // @ts-ignore
+                    options={{ ...markdownOpts }}
                   >
-                    {post.body}
+                    {article.body}
                   </Markdown>
                 </Column>
               </Row>

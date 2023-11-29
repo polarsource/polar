@@ -4,6 +4,7 @@ import {
   useAuth,
   useCurrentOrgAndRepoFromURL,
   useCurrentTeamFromURL,
+  usePersonalOrganization,
 } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -57,6 +58,7 @@ const DashboardTopbar = ({
 }>) => {
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
   const { org: currentTeamFromURL } = useCurrentTeamFromURL()
+  const personalOrg = usePersonalOrganization()
 
   const { hydrated } = useAuth()
 
@@ -85,7 +87,10 @@ const DashboardTopbar = ({
     currentOrg?: Organization,
   ): Route[] => {
     return [
-      ...backerRoutes(currentOrg),
+      ...backerRoutes(
+        currentOrg,
+        currentOrg ? currentOrg?.name === personalOrg?.name : true,
+      ),
       ...(currentOrg ? maintainerRoutes(currentOrg) : []),
       ...dashboardRoutes(currentOrg),
     ]

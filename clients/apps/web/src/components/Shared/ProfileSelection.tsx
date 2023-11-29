@@ -134,10 +134,7 @@ const ProfileSelection = ({
             </ul>
 
             <div className="mt-2 flex w-full flex-row items-center gap-x-2 py-4">
-              <div
-                className="dark:text-polar-400 px-3 py-1 text-[10px] uppercase tracking-widest text-gray-500"
-                style={{ fontFeatureSettings: `"ss02" on` }}
-              >
+              <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
                 Organizations
               </div>
             </div>

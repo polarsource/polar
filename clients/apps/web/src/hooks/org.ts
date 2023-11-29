@@ -18,7 +18,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
 } => {
   // org and repo from router params "/foo/[organization]/bar"
   const params = useParams()
-  const paramsOrg = params?.organization
+  const paramsOrg = params?.organization || params.team
   const paramsRepo = params?.repo
 
   // repo can also be set as a query arg

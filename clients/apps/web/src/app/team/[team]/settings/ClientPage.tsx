@@ -35,21 +35,15 @@ export default function ClientPage() {
   }
 
   return (
-    <>
-      <div>
-        <h2 className="text-xl font-medium">Team settings</h2>
-      </div>
-
-      <div className="dark:divide-polar-700 divide-y divide-gray-200">
-        <Section>
-          <SectionDescription
-            title="Payment"
-            description="Manage team invoicing, spending limits and payment methods"
-          />
-          <PaymentMethodSettings org={org} credits={credits.data} />
-        </Section>
-      </div>
-    </>
+    <div className="dark:divide-polar-700 divide-y divide-gray-200">
+      <Section>
+        <SectionDescription
+          title="Payment"
+          description="Manage team invoicing, spending limits and payment methods"
+        />
+        <PaymentMethodSettings org={org} credits={credits.data} />
+      </Section>
+    </div>
   )
 }
 

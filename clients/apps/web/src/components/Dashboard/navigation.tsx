@@ -115,51 +115,32 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     if: true,
     subs: undefined,
   },
-  {
-    id: 'team',
-    title: org.name,
-    link: `/team/${org.name}`,
-    postIcon: undefined,
-    icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,
-    if: false, // Hidden for now
-    subs: [
-      {
-        title: 'Funding',
-        link: `/team/${org.name}/funding`,
-        icon: <FavoriteBorderOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Members',
-        link: `/team/${org.name}/members`,
-        icon: <Face fontSize="inherit" />,
-      },
-      {
-        title: 'Settings',
-        link: `/team/${org.name}/settings`,
-        icon: <TuneOutlined fontSize="inherit" />,
-      },
-    ],
-  },
 ]
 
-export const backerRoutes: Route[] = [
-  ...(isFeatureEnabled('feed')
-    ? [
-        {
-          id: 'posts',
-          title: 'Posts',
-          link: `/posts`,
-          icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: true,
-          subs: undefined,
-        },
-      ]
-    : []),
+export const backerRoutes = (org?: Organization): Route[] => [
+  ...(org
+    ? []
+    : [
+        ...(isFeatureEnabled('feed')
+          ? [
+              {
+                id: 'posts',
+                title: 'Posts',
+                link: `/posts`,
+                icon: (
+                  <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />
+                ),
+                postIcon: undefined,
+                if: true,
+                subs: undefined,
+              },
+            ]
+          : []),
+      ]),
   {
     id: 'funding',
     title: 'Funding',
-    link: `/feed`,
+    link: org ? `/team/${org.name}/funding` : `/feed`,
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
@@ -172,6 +153,24 @@ export const backerRoutes: Route[] = [
     icon: <CardGiftcardOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
+    subs: undefined,
+  },
+  {
+    id: 'members',
+    title: 'Members',
+    link: org ? `/team/${org.name}/members` : '',
+    icon: <Face fontSize="inherit" />,
+    postIcon: undefined,
+    if: !!org?.is_teams_enabled,
+    subs: undefined,
+  },
+  {
+    id: 'team-settings',
+    title: 'Settings',
+    link: org ? `/team/${org.name}/settings` : '',
+    icon: <TuneOutlined fontSize="inherit" />,
+    postIcon: undefined,
+    if: !!org?.is_teams_enabled,
     subs: undefined,
   },
 ]
@@ -231,7 +230,7 @@ export const dashboardRoutes = (org?: Organization): Route[] => [
     link: `/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    if: true,
+    if: !org,
     subs: undefined,
   },
 ]

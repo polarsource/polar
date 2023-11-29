@@ -42,13 +42,10 @@ export default function ClientPage() {
   return (
     <div className="flex flex-col gap-y-8">
       <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-y-2">
-          <h2 className="text-xl font-medium">Members</h2>
-          <p className="dark:text-polar-500 text-sm text-gray-400">
-            Members & their roles are synced from the underlying GitHub
-            organization
-          </p>
-        </div>
+        <p className="dark:text-polar-500 text-sm text-gray-400">
+          Members & their roles are synced from the underlying GitHub
+          organization
+        </p>
         <Button
           variant="secondary"
           size="sm"

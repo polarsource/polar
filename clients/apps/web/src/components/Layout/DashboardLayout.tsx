@@ -14,7 +14,6 @@ import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
-import TeamsNavigation from '../Dashboard/TeamsNavigation'
 import Popover from '../Notifications/Popover'
 import ProfileSelection from '../Shared/ProfileSelection'
 
@@ -27,7 +26,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
   const orgs = listOrganizationQuery?.data?.items
 
   const shouldRenderBackerNavigation = currentOrg
-    ? currentOrg.name === currentUser?.username
+    ? currentOrg.name === currentUser?.username || currentOrg.is_teams_enabled
     : true
 
   const shouldRenderMaintainerNavigation = currentOrg
@@ -54,7 +53,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
 
             <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
           </div>
-          <div className="mt-8 flex px-4">
+          <div className="mb-4 mt-8 flex px-4">
             {currentUser && (
               <ProfileSelection useOrgFromURL={true} className="shadow-xl" />
             )}
@@ -62,34 +61,9 @@ const DashboardLayout = (props: PropsWithChildren) => {
 
           {shouldRenderBackerNavigation && <BackerNavigation />}
 
-          {shouldRenderMaintainerNavigation && (
-            <>
-              {shouldRenderBackerNavigation && (
-                <div className="flex w-full flex-row items-center gap-x-2 px-7 pt-2">
-                  <div
-                    className="dark:text-polar-400 px-3 py-1 text-[10px] uppercase tracking-widest text-gray-500"
-                    style={{ fontFeatureSettings: `"ss02" on` }}
-                  >
-                    Maintainer
-                  </div>
-                </div>
-              )}
-              <MaintainerNavigation />
-            </>
-          )}
-
-          <div className="flex w-full flex-row items-center gap-x-2 px-7 pt-2">
-            <div
-              className="dark:text-polar-400 px-3 py-1 text-[10px] uppercase tracking-widest text-gray-500"
-              style={{ fontFeatureSettings: `"ss02" on` }}
-            >
-              {shouldRenderBackerNavigation ? 'Account' : 'Organization'}
-            </div>
-          </div>
+          {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
 
           <DashboardNavigation />
-
-          <TeamsNavigation />
         </div>
 
         <div className="flex flex-col gap-y-2">

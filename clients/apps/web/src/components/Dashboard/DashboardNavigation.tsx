@@ -36,10 +36,7 @@ const DashboardNavigation = (props: { classNames?: string }) => {
   return (
     <>
       <div className="flex w-full flex-row items-center gap-x-2 px-7 pt-2">
-        <div
-          className="dark:text-polar-400 px-3 py-1 text-[10px] uppercase tracking-widest text-gray-500"
-          style={{ fontFeatureSettings: `"ss02" on` }}
-        >
+        <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
           {org ? 'Organization' : 'Account'}
         </div>
       </div>

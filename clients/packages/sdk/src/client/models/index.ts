@@ -1091,6 +1091,25 @@ export interface ExternalGitHubPullRequestReference {
 /**
  * 
  * @export
+ * @interface FreeSubscriptionCreate
+ */
+export interface FreeSubscriptionCreate {
+    /**
+     * ID of the free Subscription Tier to subscribe to.
+     * @type {string}
+     * @memberof FreeSubscriptionCreate
+     */
+    tier_id: string;
+    /**
+     * Email of your backer. This field is required if the API is called outside the Polar app.
+     * @type {string}
+     * @memberof FreeSubscriptionCreate
+     */
+    customer_email?: string;
+}
+/**
+ * 
+ * @export
  * @interface Funding
  */
 export interface Funding {
@@ -4037,7 +4056,7 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    current_period_end: string;
+    current_period_end?: string;
     /**
      * 
      * @type {boolean}
@@ -4068,6 +4087,18 @@ export interface Subscription {
      * @memberof Subscription
      */
     price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    subscription_tier_id: string;
     /**
      * 
      * @type {PolarSubscriptionSchemasUser}
@@ -4568,10 +4599,10 @@ export interface SubscriptionTierBenefitsUpdate {
 export interface SubscriptionTierCreate {
     /**
      * 
-     * @type {SubscriptionTierType}
+     * @type {string}
      * @memberof SubscriptionTierCreate
      */
-    type: SubscriptionTierType;
+    type: SubscriptionTierCreateTypeEnum;
     /**
      * 
      * @type {string}
@@ -4616,11 +4647,24 @@ export interface SubscriptionTierCreate {
     repository_id?: string;
 }
 
+
+/**
+ * @export
+ */
+export const SubscriptionTierCreateTypeEnum = {
+    HOBBY: 'hobby',
+    PRO: 'pro',
+    BUSINESS: 'business'
+} as const;
+export type SubscriptionTierCreateTypeEnum = typeof SubscriptionTierCreateTypeEnum[keyof typeof SubscriptionTierCreateTypeEnum];
+
+
 /**
  * An enumeration.
  * @export
  */
 export const SubscriptionTierType = {
+    FREE: 'free',
     HOBBY: 'hobby',
     PRO: 'pro',
     BUSINESS: 'business'

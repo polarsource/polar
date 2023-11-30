@@ -232,6 +232,7 @@ export const useDeleteSubscriptionBenefit = (orgName?: string) =>
 export const useUserSubscriptions = (
   userId: string,
   orgName?: string,
+  active?: boolean,
   limit = 30,
   platform = Platforms.GITHUB,
 ) =>
@@ -240,6 +241,7 @@ export const useUserSubscriptions = (
     queryFn: () =>
       api.subscriptions.searchSubscriptions({
         organizationName: orgName,
+        active,
         limit,
         platform,
         subscriberUserId: userId,

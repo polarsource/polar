@@ -8,6 +8,7 @@ import { Button } from 'polarkit/components/ui/atoms'
 import { useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
+import FreeSubscriptionGroup from './FreeSubscriptionGroup'
 import SubscriptionGroup from './SubscriptionGroup'
 import { getSubscriptionTiersByType } from './utils'
 
@@ -45,6 +46,12 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
 
   return (
     <DashboardBody>
+      <FreeSubscriptionGroup
+        title="Free"
+        description="Built-in free tier so people can follow your news on Polar"
+        tier={subscriptionTiersByType.free[0]}
+        organization={organization}
+      />
       <div className="dark:divide-polar-700 flex flex-col gap-4 divide-y">
         <SubscriptionGroup
           title="Hobby"

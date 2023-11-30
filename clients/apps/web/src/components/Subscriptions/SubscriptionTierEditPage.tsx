@@ -5,6 +5,7 @@ import {
   Organization,
   SubscriptionTier,
   SubscriptionTierBenefit,
+  SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -68,6 +69,7 @@ const SubscriptionTierEdit = ({
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     SubscriptionTierBenefit['id'][]
   >(subscriptionTier.benefits.map((benefit) => benefit.id) ?? [])
+  const isFreeTier = subscriptionTier.type === SubscriptionTierType.FREE
 
   const form = useForm<SubscriptionTierUpdate>({
     defaultValues: subscriptionTier,
@@ -167,7 +169,7 @@ const SubscriptionTierEdit = ({
             </div>
             <div className="relative flex flex-row justify-between gap-x-24">
               <div className="flex w-1/2 flex-col gap-y-6">
-                <SubscriptionTierForm update={true} />
+                <SubscriptionTierForm update={true} isFreeTier={isFreeTier} />
               </div>
               <div className="absolute right-0 top-0 flex flex-col">
                 <SubscriptionTierCard
@@ -188,28 +190,32 @@ const SubscriptionTierEdit = ({
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
         />
-        <Separator className="w-1/2" />
-        <div className="flex w-1/2 flex-row items-start justify-between">
-          <div>
-            <h3 className="max-w-1/2">Archive Subscription Tier</h3>
-            <p className="dark:text-polar-500 mb-6 mt-2 w-3/4 text-sm  text-gray-400">
-              Archiving a subscription tier will not affect its current
-              subscribers, only prevent new subscribers.
-            </p>
-          </div>
-          <Button variant="destructive" onClick={showArchiveModal}>
-            Archive
-          </Button>
-        </div>
-        <ConfirmModal
-          title="Archive Subscription Tier"
-          description="Archiving a subscription tier will not affect its current subscribers, only prevent new subscribers. An archived subscription tier is permanently archived."
-          onConfirm={handleArchiveSubscriptionTier}
-          isShown={isArchiveModalShown}
-          hide={hideArchiveModal}
-          destructiveText="Archive"
-          destructive
-        />
+        {!isFreeTier && (
+          <>
+            <Separator className="w-1/2" />
+            <div className="flex w-1/2 flex-row items-start justify-between">
+              <div>
+                <h3 className="max-w-1/2">Archive Subscription Tier</h3>
+                <p className="dark:text-polar-500 mb-6 mt-2 w-3/4 text-sm  text-gray-400">
+                  Archiving a subscription tier will not affect its current
+                  subscribers, only prevent new subscribers.
+                </p>
+              </div>
+              <Button variant="destructive" onClick={showArchiveModal}>
+                Archive
+              </Button>
+            </div>
+            <ConfirmModal
+              title="Archive Subscription Tier"
+              description="Archiving a subscription tier will not affect its current subscribers, only prevent new subscribers. An archived subscription tier is permanently archived."
+              onConfirm={handleArchiveSubscriptionTier}
+              isShown={isArchiveModalShown}
+              hide={hideArchiveModal}
+              destructiveText="Archive"
+              destructive
+            />
+          </>
+        )}
       </div>
     </DashboardBody>
   )

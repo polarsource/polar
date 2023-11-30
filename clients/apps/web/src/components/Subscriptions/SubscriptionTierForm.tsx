@@ -29,10 +29,12 @@ import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 
 interface SubscriptionTierFormProps {
   update?: boolean
+  isFreeTier?: boolean
 }
 
 const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
   update,
+  isFreeTier,
 }) => {
   const { control } = useFormContext<
     SubscriptionTierCreate | SubscriptionTierUpdate
@@ -108,47 +110,51 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
           )}
         />
       )}
-      <FormField
-        control={control}
-        name="is_highlighted"
-        render={({ field }) => {
-          return (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  defaultChecked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <FormLabel className="text-sm leading-none">
-                Highlight this tier
-              </FormLabel>
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name="price_amount"
-        rules={{ required: 'This field is required', min: 0 }}
-        render={({ field }) => {
-          return (
-            <FormItem className="max-w-[300px]">
-              <FormLabel>Monthly Price</FormLabel>
-              <FormControl>
-                <MoneyInput
-                  id="monthly-price"
-                  name={field.name}
-                  value={field.value}
-                  onAmountChangeInCents={field.onChange}
-                  placeholder={0}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
+      {!isFreeTier && (
+        <>
+          <FormField
+            control={control}
+            name="is_highlighted"
+            render={({ field }) => {
+              return (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      defaultChecked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="text-sm leading-none">
+                    Highlight this tier
+                  </FormLabel>
+                </FormItem>
+              )
+            }}
+          />
+          <FormField
+            control={control}
+            name="price_amount"
+            rules={{ required: 'This field is required', min: 0 }}
+            render={({ field }) => {
+              return (
+                <FormItem className="max-w-[300px]">
+                  <FormLabel>Monthly Price</FormLabel>
+                  <FormControl>
+                    <MoneyInput
+                      id="monthly-price"
+                      name={field.name}
+                      value={field.value}
+                      onAmountChangeInCents={field.onChange}
+                      placeholder={0}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        </>
+      )}
       <FormField
         control={control}
         name="description"

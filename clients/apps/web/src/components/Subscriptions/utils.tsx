@@ -13,23 +13,28 @@ import {
 } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
 
-export const getSubscriptionColorByType = (type?: SubscriptionTierType) => {
+export const getSubscriptionColorByType = (
+  type?: SubscriptionTierType,
+): string => {
   switch (type) {
     case SubscriptionTierType.BUSINESS:
       return '#e18f79' as const
     case SubscriptionTierType.PRO:
       return '#29dea5' as const
     case SubscriptionTierType.HOBBY:
-    default:
       return '#79A2E1' as const
+    case SubscriptionTierType.FREE:
+    default:
+      return '#8e44ad' as const
   }
 }
 
 export type SubscriptionTiersByType = {
-  [key in SubscriptionTierType]: SubscriptionTier[]
+  [key in SubscriptionTierType]: (SubscriptionTier & { type: key })[]
 }
 
 const defaultSubscriptionTiersByType: SubscriptionTiersByType = {
+  [SubscriptionTierType.FREE]: [],
   [SubscriptionTierType.HOBBY]: [],
   [SubscriptionTierType.PRO]: [],
   [SubscriptionTierType.BUSINESS]: [],
@@ -38,6 +43,7 @@ const defaultSubscriptionTiersByType: SubscriptionTiersByType = {
 export const tiersTypeDisplayNames: {
   [key in SubscriptionTierType]: string
 } = {
+  [SubscriptionTierType.FREE]: 'Free',
   [SubscriptionTierType.HOBBY]: 'Hobby',
   [SubscriptionTierType.PRO]: 'Pro',
   [SubscriptionTierType.BUSINESS]: 'Business',

@@ -1,6 +1,6 @@
 import SubscriptionTierCreatePage from '@/components/Subscriptions/SubscriptionTierCreatePage'
 import { getServerSideAPI } from '@/utils/api'
-import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
+import { Platforms, SubscriptionTierCreateTypeEnum } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 
 export async function generateMetadata(
@@ -21,7 +21,7 @@ export default async function Page({
   searchParams,
 }: {
   params: { organization: string }
-  searchParams: { type?: SubscriptionTierType }
+  searchParams: { type?: SubscriptionTierCreateTypeEnum }
 }) {
   const api = getServerSideAPI()
 

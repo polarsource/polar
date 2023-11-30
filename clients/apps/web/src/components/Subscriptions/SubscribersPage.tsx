@@ -195,9 +195,10 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Renewal date" />
       ),
-      cell: (props) => (
-        <FormattedDateTime datetime={props.getValue() as string} />
-      ),
+      cell: (props) => {
+        const datetime = props.getValue() as string | null
+        return datetime ? <FormattedDateTime datetime={datetime} /> : '—'
+      },
     },
     {
       accessorKey: 'price_amount',

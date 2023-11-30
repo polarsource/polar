@@ -5,7 +5,7 @@ import {
   Organization,
   SubscriptionTierBenefit,
   SubscriptionTierCreate,
-  SubscriptionTierType,
+  SubscriptionTierCreateTypeEnum,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button } from 'polarkit/components/ui/atoms'
@@ -22,7 +22,7 @@ import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
 
 interface SubscriptionTierCreatePageProps {
-  type?: SubscriptionTierType
+  type?: SubscriptionTierCreateTypeEnum
   organization: Organization
 }
 
@@ -48,7 +48,7 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
 export default SubscriptionTierCreatePage
 
 interface SubscriptionTierCreateProps {
-  type?: SubscriptionTierType
+  type?: SubscriptionTierCreateTypeEnum
   organization: Organization
   organizationBenefits: SubscriptionTierBenefit[]
 }

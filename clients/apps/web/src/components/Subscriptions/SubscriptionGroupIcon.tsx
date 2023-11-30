@@ -1,4 +1,4 @@
-import { Business, Stream, Verified } from '@mui/icons-material'
+import { Bookmark, Business, Stream, Verified } from '@mui/icons-material'
 import { SubscriptionTierType } from '@polar-sh/sdk'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -15,6 +15,8 @@ const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({
 }) => {
   const IconComponent = useMemo(() => {
     switch (type) {
+      case SubscriptionTierType.FREE:
+        return Bookmark
       case SubscriptionTierType.HOBBY:
         return Stream
       case SubscriptionTierType.PRO:

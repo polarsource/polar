@@ -157,6 +157,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
         subscriber_user_id: uuid.UUID | None = None,
+        active: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SearchSortProperty]] = [
             (SearchSortProperty.started_at, True)
@@ -185,6 +186,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if subscriber_user_id is not None:
             statement = statement.where(Subscription.user_id == subscriber_user_id)
+
+        if active is not None:
+            if active:
+                statement = statement.where(Subscription.active.is_(True))
+            else:
+                statement = statement.where(Subscription.canceled.is_(True))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -231,7 +238,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 joinedload(Subscription.user),
                 contains_eager(Subscription.subscription_tier),
             )
-        )
+        ).where(Subscription.active.is_(True))
 
         if organization is not None:
             statement = statement.where(
@@ -261,12 +268,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = (
             select(Subscription)
             .join(Subscription.subscription_tier)
-            .where(
-                Subscription.user_id == user.id,
-                Subscription.status.in_(
-                    [SubscriptionStatus.trialing, SubscriptionStatus.active]
-                ),
-            )
+            .where(Subscription.user_id == user.id, Subscription.active.is_(True))
         )
 
         if organization_id is not None:
@@ -489,7 +491,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription.is_incomplete():
             return
 
-        task = "grant" if subscription.is_active() else "revoke"
+        task = "grant" if subscription.active else "revoke"
         for benefit in subscription_tier.benefits:
             await enqueue_job(
                 f"subscription.subscription_benefit.{task}",

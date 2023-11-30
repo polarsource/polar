@@ -448,6 +448,7 @@ async def search_subscriptions(
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     subscriber_user_id: UUID4 | None = Query(None),
+    active: bool | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionSchema]:
     organization: Organization | None = None
@@ -480,6 +481,7 @@ async def search_subscriptions(
         direct_organization=direct_organization,
         subscription_tier_id=subscription_tier_id,
         subscriber_user_id=subscriber_user_id,
+        active=active,
         pagination=pagination,
         sorting=sorting,
     )

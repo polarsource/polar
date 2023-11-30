@@ -8,6 +8,21 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.pledge.schemas import PledgeState
 
 
+class TransactionRepository(TimestampedSchema):
+    id: UUID4
+    platform: Platforms
+    organization_id: UUID4
+    name: str
+
+
+class TransactionOrganization(TimestampedSchema):
+    id: UUID4
+    platform: Platforms
+    name: str
+    avatar_url: str
+    is_personal: bool
+
+
 class TransactionIssue(TimestampedSchema):
     id: UUID4
     platform: Platforms
@@ -15,6 +30,9 @@ class TransactionIssue(TimestampedSchema):
     repository_id: UUID4
     number: int
     title: str
+
+    organization: TransactionOrganization
+    repository: TransactionRepository
 
 
 class TransactionPledge(TimestampedSchema):
@@ -33,6 +51,11 @@ class TransactionSubscriptionTier(TimestampedSchema):
     id: UUID4
     type: SubscriptionTierType
     name: str
+    organization_id: UUID4 | None = None
+    repository_id: UUID4 | None = None
+
+    organization: TransactionOrganization | None = None
+    repository: TransactionRepository | None = None
 
 
 class TransactionSubscription(TimestampedSchema):

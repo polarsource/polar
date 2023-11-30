@@ -15,6 +15,7 @@ from polar.models import (
     Issue,
     Pledge,
     Subscription,
+    SubscriptionTier,
     Transaction,
     User,
 )
@@ -64,7 +65,10 @@ class TransactionService(BaseTransactionService):
             subqueryload(Transaction.issue_reward),
             # Subscription
             subqueryload(Transaction.subscription).options(
-                joinedload(Subscription.subscription_tier),
+                joinedload(Subscription.subscription_tier).options(
+                    joinedload(SubscriptionTier.organization),
+                    joinedload(SubscriptionTier.repository),
+                ),
             ),
         )
 

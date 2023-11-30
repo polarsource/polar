@@ -41,12 +41,14 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
                   {tiersTypeDisplayNames[type as SubscriptionTierType]}
                 </div>
               </SelectItem>
-              {tiers.map((tier) => (
-                <SelectItem key={tier.id} value={tier.id}>
-                  {tier.name} ($
-                  {getCentsInDollarString(tier.price_amount, undefined, true)})
-                </SelectItem>
-              ))}
+              {type !== SubscriptionTierType.FREE &&
+                tiers.map((tier) => (
+                  <SelectItem key={tier.id} value={tier.id}>
+                    {tier.name} ($
+                    {getCentsInDollarString(tier.price_amount, undefined, true)}
+                    )
+                  </SelectItem>
+                ))}
             </SelectGroup>
             {index < Object.entries(tiersByType).length - 1 && (
               <SelectSeparator />

@@ -134,7 +134,7 @@ async def create_subscription(
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
-    stripe_subscription_id: str = "SUBSCRIPTION_ID",
+    stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
 ) -> Subscription:
     now = datetime.now(UTC)
     subscription = Subscription(

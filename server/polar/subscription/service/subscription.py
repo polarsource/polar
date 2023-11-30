@@ -91,6 +91,24 @@ class RequiredCustomerEmail(SubscriptionError):
         super().__init__(message, 422)
 
 
+class AlreadySubscribed(SubscriptionError):
+    def __init__(
+        self,
+        *,
+        user_id: uuid.UUID,
+        organization_id: uuid.UUID | None = None,
+        repository_id: uuid.UUID | None = None,
+    ) -> None:
+        self.user_id = user_id
+        self.organization_id = organization_id
+        self.repository_id = repository_id
+        message = (
+            "You're already subscribed to one of the tier "
+            "of this organization or repository."
+        )
+        super().__init__(message, 400)
+
+
 class InvalidSubscriptionTierUpgrade(SubscriptionError):
     def __init__(self, subscription_tier_id: uuid.UUID) -> None:
         self.subscription_tier_id = subscription_tier_id
@@ -237,8 +255,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         user: User,
         *,
-        organization: Organization | None = None,
-        repository: Repository | None = None,
+        organization_id: uuid.UUID | None = None,
+        repository_id: uuid.UUID | None = None,
     ) -> list[Subscription]:
         statement = (
             select(Subscription)
@@ -251,13 +269,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
         )
 
-        if organization is not None:
+        if organization_id is not None:
             statement = statement.where(
-                SubscriptionTier.organization_id == organization.id
+                SubscriptionTier.organization_id == organization_id
             )
 
-        if repository is not None:
-            statement = statement.where(SubscriptionTier.repository_id == repository.id)
+        if repository_id is not None:
+            statement = statement.where(SubscriptionTier.repository_id == repository_id)
 
         result = await session.execute(statement)
 
@@ -294,6 +312,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 session,
                 email=free_subscription_create.customer_email,
                 signup_type=UserSignupType.backer,
+            )
+
+        existing_subscriptions = await self.get_active_user_subscriptions(
+            session,
+            user,
+            organization_id=subscription_tier.organization_id,
+            repository_id=subscription_tier.repository_id,
+        )
+        if len(existing_subscriptions) > 0:
+            raise AlreadySubscribed(
+                user_id=user.id,
+                organization_id=subscription_tier.organization_id,
+                repository_id=subscription_tier.repository_id,
             )
 
         start = utc_now()

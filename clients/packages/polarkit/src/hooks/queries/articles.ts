@@ -94,3 +94,14 @@ export const useArticleLookup = (organization_name?: string, slug?: string) =>
     retry: defaultRetry,
     enabled: !!organization_name && !!slug,
   })
+
+export const useSendArticlePreview = () =>
+  useMutation({
+    mutationFn: ({ id, email }: { id: string; email: string }) =>
+      api.articles.sendPreview({
+        id,
+        articlePreview: {
+          email,
+        },
+      }),
+  })

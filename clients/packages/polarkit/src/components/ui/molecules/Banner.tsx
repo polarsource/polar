@@ -26,10 +26,10 @@ const Banner = ({
           ? 'border bg-red-100 text-red-600  dark:border-red-800 dark:bg-red-900 dark:text-red-600'
           : '',
         color === 'green'
-          ? 'border bg-green-100 text-green-600  dark:border-green-800 dark:bg-green-900 dark:text-green-200'
+          ? 'border bg-green-100 text-green-600 dark:border-green-800 dark:bg-green-900 dark:text-green-200'
           : '',
         color === 'blue'
-          ? 'border bg-blue-100 text-blue-500 dark:border-blue-800 dark:bg-blue-900 dark:text-blue-400'
+          ? 'border border-blue-100 bg-blue-50 text-blue-500 dark:border-blue-700 dark:bg-blue-900 dark:text-blue-300'
           : '',
       )}
     >

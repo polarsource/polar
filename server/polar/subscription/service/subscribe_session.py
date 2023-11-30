@@ -112,8 +112,8 @@ class SubscribeSessionService:
                 await subscription_service.get_active_user_subscriptions(
                     session,
                     auth_subject,
-                    organization=subscription_tier.organization,
-                    repository=subscription_tier.repository,
+                    organization_id=subscription_tier.organization_id,
+                    repository_id=subscription_tier.repository_id,
                 )
             )
             if len(existing_subscriptions) > 0:

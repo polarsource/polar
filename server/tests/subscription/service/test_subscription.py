@@ -29,6 +29,7 @@ from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import FreeSubscriptionCreate, SubscriptionUpgrade
 from polar.subscription.service.subscription import (
+    AlreadySubscribed,
     AssociatedSubscriptionTierDoesNotExist,
     InvalidSubscriptionTierUpgrade,
     NotAFreeSubscriptionTier,
@@ -157,6 +158,55 @@ class TestCreateFreeSubscription:
                 session,
                 free_subscription_create=FreeSubscriptionCreate(
                     tier_id=subscription_tier_organization.id, customer_email=None
+                ),
+                auth_subject=user,
+                auth_method=AuthMethod.COOKIE,
+            )
+
+    async def test_already_subscribed_email(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+        user: User,
+    ) -> None:
+        await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_free,
+            user=user,
+            status=SubscriptionStatus.active,
+            stripe_subscription_id=None,
+        )
+
+        with pytest.raises(AlreadySubscribed):
+            await subscription_service.create_free_subscription(
+                session,
+                free_subscription_create=FreeSubscriptionCreate(
+                    tier_id=subscription_tier_organization_free.id,
+                    customer_email=EmailStr(user.email),
+                ),
+                auth_subject=Anonymous(),
+                auth_method=None,
+            )
+
+    async def test_already_subscribed_user(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+        user: User,
+    ) -> None:
+        await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_free,
+            user=user,
+            status=SubscriptionStatus.active,
+            stripe_subscription_id=None,
+        )
+
+        with pytest.raises(AlreadySubscribed):
+            await subscription_service.create_free_subscription(
+                session,
+                free_subscription_create=FreeSubscriptionCreate(
+                    tier_id=subscription_tier_organization_free.id, customer_email=None
                 ),
                 auth_subject=user,
                 auth_method=AuthMethod.COOKIE,

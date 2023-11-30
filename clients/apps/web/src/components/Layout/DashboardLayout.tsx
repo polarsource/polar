@@ -129,11 +129,15 @@ export const DashboardHeader = (props: { children?: React.ReactNode }) => {
   )
 }
 
-export const DashboardBody = (props: { children?: React.ReactNode }) => {
+export const DashboardBody = (props: {
+  children?: React.ReactNode
+  className?: string
+}) => {
   return (
     <div
       className={twMerge(
         'relative mx-auto mt-8 max-w-screen-xl px-4 pb-6 sm:px-6 md:px-8',
+        props.className,
       )}
     >
       {props.children}

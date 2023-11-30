@@ -1,15 +1,21 @@
 import { upload } from '@vercel/blob/client'
 import { TextArea } from 'polarkit/components/ui/atoms'
 import { ChangeEventHandler, DragEventHandler, useCallback } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const uploadingText = 'Uploading...'
 
 interface MarkdownEditorProps {
+  className?: string
   value: string
   onChange?: (value: string) => void
 }
 
-export const MarkdownEditor = ({ value, onChange }: MarkdownEditorProps) => {
+export const MarkdownEditor = ({
+  value,
+  className,
+  onChange,
+}: MarkdownEditorProps) => {
   const insertTextAtCursor = useCallback(
     (text: string, element: HTMLTextAreaElement) => {
       const cursorPosition = element.selectionStart
@@ -76,7 +82,11 @@ export const MarkdownEditor = ({ value, onChange }: MarkdownEditorProps) => {
 
   return (
     <TextArea
-      className="h-full min-h-[600px] rounded-3xl p-6 text-lg"
+      className={twMerge(
+        'h-full min-h-[600px] rounded-3xl p-6 text-lg',
+        className,
+      )}
+      placeholder="# Hello World!"
       resizable={false}
       value={value}
       onChange={handleChange}

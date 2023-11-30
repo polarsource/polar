@@ -49,9 +49,11 @@ const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
 
 const DashboardTopbar = ({
   children,
+  title,
   hideProfile,
   ...props
 }: PropsWithChildren<{
+  title?: string
   useOrgFromURL: boolean
   hideProfile?: boolean
   isFixed?: boolean
@@ -101,7 +103,7 @@ const DashboardTopbar = ({
         <div className="relative mx-auto flex w-full max-w-screen-xl flex-row items-center justify-between px-4 sm:px-6 md:px-8">
           <div className="flex flex-row items-center gap-x-24">
             <h4 className="dark:text-polar-100 text-lg font-medium">
-              {currentRoute?.title}
+              {title ?? currentRoute?.title}
             </h4>
             {currentRoute &&
               'subs' in currentRoute &&

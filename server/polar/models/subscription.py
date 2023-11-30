@@ -3,7 +3,16 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    ColumnElement,
+    ForeignKey,
+    Integer,
+    String,
+    type_coerce,
+)
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
     declared_attr,
@@ -81,20 +90,44 @@ class Subscription(RecordModel):
             SubscriptionStatus.incomplete_expired,
         ]
 
-    def is_active(self) -> bool:
+    @hybrid_property
+    def active(self) -> bool:
         return self.status in [SubscriptionStatus.trialing, SubscriptionStatus.active]
 
-    def is_canceled(self) -> bool:
+    @active.inplace.expression
+    @classmethod
+    def _active_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(
+            cls.status.in_([SubscriptionStatus.trialing, SubscriptionStatus.active]),
+            Boolean,
+        )
+
+    @hybrid_property
+    def canceled(self) -> bool:
         return self.status in [
             SubscriptionStatus.past_due,
             SubscriptionStatus.canceled,
             SubscriptionStatus.unpaid,
         ]
 
+    @canceled.inplace.expression
+    @classmethod
+    def _canceled_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(
+            cls.status.in_(
+                [
+                    SubscriptionStatus.past_due,
+                    SubscriptionStatus.canceled,
+                    SubscriptionStatus.unpaid,
+                ]
+            ),
+            Boolean,
+        )
+
     def set_started_at(self) -> None:
         """
         Stores the starting date when the subscription
         becomes active for the first time.
         """
-        if self.is_active() and self.started_at is None:
+        if self.active and self.started_at is None:
             self.started_at = datetime.now(UTC)

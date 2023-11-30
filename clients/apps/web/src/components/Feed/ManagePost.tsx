@@ -100,9 +100,7 @@ const ManagePost = () => {
                 />
               </TabsContent>
               <TabsContent value="preview">
-                <MarkdownPreview className="h-full">
-                  {article.body}
-                </MarkdownPreview>
+                <MarkdownPreview className="h-full" body={article.body} />
               </TabsContent>
             </div>
           </div>

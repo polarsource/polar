@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 
 // @ts-ignore
 import Markdown from 'markdown-to-jsx'
-import { markdownOpts } from '../Feed/Posts/markdown'
+import { markdownBrowserOpts } from '../Feed/Posts/markdownBrowser'
 
 export const MarkdownPreview = (props: {
   body: string
@@ -14,7 +14,7 @@ export const MarkdownPreview = (props: {
     <Markdown
       className={twMerge('relative w-full leading-relaxed', props.className)}
       // @ts-ignore
-      options={{ ...markdownOpts }}
+      options={{ ...markdownBrowserOpts }}
     >
       {props.body}
     </Markdown>

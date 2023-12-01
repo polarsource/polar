@@ -8,7 +8,7 @@ import { Avatar, Button } from 'polarkit/components/ui/atoms'
 
 // @ts-ignore
 import Markdown from 'markdown-to-jsx'
-import { markdownOpts } from './Posts/markdown'
+import { markdownBrowserOpts } from './Posts/markdownBrowser'
 
 const staggerTransition = {
   staggerChildren: 0.2,
@@ -66,7 +66,7 @@ export default function LongformPost({ post }: LongformPostProps) {
         <div className="prose dark:prose-invert dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-3xl dark:prose-p:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline space-y-16">
           <Markdown
             // @ts-ignore
-            options={{ ...markdownOpts }}
+            options={{ ...markdownBrowserOpts }}
           >
             {post.body}
           </Markdown>

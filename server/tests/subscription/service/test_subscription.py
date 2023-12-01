@@ -29,6 +29,7 @@ from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import FreeSubscriptionCreate, SubscriptionUpgrade
 from polar.subscription.service.subscription import (
+    AlreadyCanceledSubscription,
     AlreadySubscribed,
     AssociatedSubscriptionTierDoesNotExist,
     InvalidSubscriptionTierUpgrade,
@@ -787,6 +788,115 @@ class TestUpgradeSubscription:
             subscription.stripe_subscription_id,
             old_price=subscription_tier_organization.stripe_price_id,
             new_price=subscription_tier_organization_second.stripe_price_id,
+        )
+
+
+@pytest.mark.asyncio
+class TestCancelSubscription:
+    async def test_not_permitted(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription: Subscription,
+        user_second: User,
+    ) -> None:
+        with pytest.raises(NotPermitted):
+            await subscription_service.cancel_subscription(
+                session, subscription=subscription, authz=authz, user=user_second
+            )
+
+    async def test_already_canceled(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription: Subscription,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        subscription = await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            status=SubscriptionStatus.canceled,
+        )
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.cancel_subscription(
+                session, subscription=subscription, authz=authz, user=user
+            )
+
+    async def test_cancel_at_period_end(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription: Subscription,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        subscription = await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            status=SubscriptionStatus.active,
+        )
+        subscription.cancel_at_period_end = True
+
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.cancel_subscription(
+                session, subscription=subscription, authz=authz, user=user
+            )
+
+    async def test_free_subscription(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        authz: Authz,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        subscription = await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            status=SubscriptionStatus.active,
+            stripe_subscription_id=None,
+        )
+
+        updated_subscription = await subscription_service.cancel_subscription(
+            session, subscription=subscription, authz=authz, user=user
+        )
+
+        assert updated_subscription.id == subscription.id
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.cancel_at_period_end is True
+        assert updated_subscription.ended_at is not None
+
+        stripe_service_mock.cancel_subscription.assert_not_called()
+
+    async def test_stripe_subscription(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        authz: Authz,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        subscription = await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            status=SubscriptionStatus.active,
+        )
+
+        updated_subscription = await subscription_service.cancel_subscription(
+            session, subscription=subscription, authz=authz, user=user
+        )
+
+        assert updated_subscription.id == subscription.id
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.ended_at is None
+
+        stripe_service_mock.cancel_subscription.assert_called_once_with(
+            subscription.stripe_subscription_id
         )
 
 

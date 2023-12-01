@@ -53,10 +53,11 @@ const PostHeader = (props: FeedPost) => {
           </h3>
         </Link>
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
-          &middot;
-          <div className="text-xs">
-            {props.article.published_at
-              ? new Date(props.article.published_at).toLocaleString('en-US', {
+          {props.article.published_at ? (
+            <>
+              &middot;
+              <div className="text-xs">
+                {new Date(props.article.published_at).toLocaleString('en-US', {
                   year:
                     new Date(props.article.published_at).getFullYear() ===
                     new Date().getFullYear()
@@ -68,9 +69,10 @@ const PostHeader = (props: FeedPost) => {
                       ? 'long'
                       : 'short',
                   day: 'numeric',
-                })
-              : null}
-          </div>
+                })}
+              </div>
+            </>
+          ) : null}
           &middot;
           {props.article.visibility === 'public' ? (
             <>

@@ -31,6 +31,7 @@ class Article(Schema):
     notifications_sent_at: datetime.datetime | None
     email_open_count: int | None
     web_view_count: int | None
+    paid_subscribers_only: bool | None
 
     @classmethod
     def from_db(cls, i: ArticleModel, include_admin_fields: bool) -> Self:
@@ -74,6 +75,9 @@ class Article(Schema):
             else None,
             email_open_count=i.email_open_count if include_admin_fields else None,
             web_view_count=i.web_view_count if include_admin_fields else None,
+            paid_subscribers_only=i.paid_subscribers_only
+            if include_admin_fields
+            else None,
         )
 
 

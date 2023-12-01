@@ -4,7 +4,10 @@ const InvalidPoll = () => (
   </div>
 )
 
-const Poll = (props: { children?: React.ReactNode }) => {
+const Poll = (props: {
+  children?: React.ReactNode
+  renderer?: typeof BrowserPoll
+}) => {
   if (!props.children || typeof props.children !== 'object') {
     return <InvalidPoll />
   }
@@ -52,9 +55,18 @@ const Poll = (props: { children?: React.ReactNode }) => {
     return <InvalidPoll />
   }
 
+  if (props.renderer) {
+    const C = props.renderer
+    return <C options={options} />
+  }
+
+  return <BrowserPoll options={options} />
+}
+
+const BrowserPoll = (props: { options: string[] }) => {
   return (
     <div className="my-2 flex flex-col space-y-2 bg-blue-300 p-8">
-      {options.map((s) => (
+      {props.options.map((s) => (
         <div className="item-center flex justify-between bg-black/20 p-2">
           <div>{s}</div>
           <div>123 votes (10%)</div>

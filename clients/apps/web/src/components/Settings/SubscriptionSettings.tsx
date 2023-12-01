@@ -20,13 +20,22 @@ export type Settings = {
 const SubscriptionSettings = () => {
   const user = useUser()
 
-  const subscriptions = useUserSubscriptions(user.data?.id ?? '')
+  const subscriptions = useUserSubscriptions(
+    user.data?.id ?? '',
+    undefined,
+    true,
+  )
 
   return (
     <ShadowListGroup>
       {subscriptions.data?.items && subscriptions.data.items.length > 0 ? (
         subscriptions.data?.items?.map((subscription) => {
-          return <SubscriptionItem subscription={subscription} />
+          return (
+            <SubscriptionItem
+              key={subscription.id}
+              subscription={subscription}
+            />
+          )
         })
       ) : (
         <ShadowListGroup.Item>
@@ -84,20 +93,28 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
                 subscriptionTier={subscription.subscription_tier}
               />
             </Link>
-            &middot;
-            <span
-              className={
-                subscription.cancel_at_period_end ? 'text-red-500' : undefined
-              }
-            >
-              <span>
-                {subscription.cancel_at_period_end ? 'Ends on ' : 'Renews on '}
-              </span>
-              <FormattedDateTime
-                datetime={new Date(subscription.current_period_end ?? '')}
-                dateStyle="long"
-              />
-            </span>
+            {subscription.current_period_end && (
+              <>
+                &middot;
+                <span
+                  className={
+                    subscription.cancel_at_period_end
+                      ? 'text-red-500'
+                      : undefined
+                  }
+                >
+                  <span>
+                    {subscription.cancel_at_period_end
+                      ? 'Ends on '
+                      : 'Renews on '}
+                  </span>
+                  <FormattedDateTime
+                    datetime={new Date(subscription.current_period_end ?? '')}
+                    dateStyle="long"
+                  />
+                </span>
+              </>
+            )}
           </div>
         </div>
         <div className="flex flex-row gap-x-2">

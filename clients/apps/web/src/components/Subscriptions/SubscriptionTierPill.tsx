@@ -1,4 +1,4 @@
-import { SubscriptionTier } from '@polar-sh/sdk'
+import { SubscriptionTier, SubscriptionTierType } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
 import { getSubscriptionColorByType } from './utils'
 
@@ -20,9 +20,11 @@ const SubscriptionTierPill: React.FC<SubscriptionTierPillProps> = ({
       >
         {subscriptionTier.name}
       </div>
-      <div className="text-sm">
-        ${getCentsInDollarString(amount, undefined, true)}
-      </div>
+      {subscriptionTier.type !== SubscriptionTierType.FREE && (
+        <div className="text-sm">
+          ${getCentsInDollarString(amount, undefined, true)}
+        </div>
+      )}
     </div>
   )
 }

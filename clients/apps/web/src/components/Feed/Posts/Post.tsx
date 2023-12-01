@@ -2,8 +2,6 @@
 
 import {
   ArrowForward,
-  BookmarkBorderOutlined,
-  ChatBubbleOutline,
   LanguageOutlined,
   MoreVertOutlined,
 } from '@mui/icons-material'
@@ -139,19 +137,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
 
 const PostFooter = (props: FeedPost & { isHovered: boolean }) => {
   return (
-    <div className="mt-2 flex flex-row items-center justify-between gap-x-4">
-      <div className="flex flex-row items-center gap-x-4">
-        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-500">
-          <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
-            <ChatBubbleOutline fontSize="inherit" />
-            {/* <span>{props.comments.length}</span> */}
-            <span>0</span>
-          </div>
-          <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
-            <BookmarkBorderOutlined fontSize="inherit" />
-          </div>
-        </div>
-      </div>
+    <div className="mt-2 flex flex-row items-center justify-end gap-x-4">
       <AnimatedIconButton active={props.isHovered} variant="secondary">
         <ArrowForward fontSize="inherit" />
       </AnimatedIconButton>

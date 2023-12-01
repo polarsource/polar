@@ -4,9 +4,11 @@ import {
   Repository,
   SubscriptionSummary,
   SubscriptionTier,
+  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { LogoType } from 'polarkit/components/brand'
 import { Tabs } from 'polarkit/components/ui/atoms'
+import { useMemo } from 'react'
 import {
   OrganizationPublicPageContent,
   OrganizationPublicPageNav,
@@ -30,6 +32,11 @@ const OrganizationPublicPage = ({
   subscribersCount: number
   onFirstRenderTab?: string
 }) => {
+  const freeSubscriptionTier = useMemo(
+    () =>
+      subscriptionTiers.find((tier) => tier.type === SubscriptionTierType.FREE),
+    [subscriptionTiers],
+  )
   return (
     <>
       <Tabs
@@ -51,6 +58,7 @@ const OrganizationPublicPage = ({
           <div className="relative flex w-full flex-col gap-x-24 py-16 md:flex-row">
             <OrganizationPublicSidebar
               organization={organization}
+              freeSubscriptionTier={freeSubscriptionTier}
               subscribersCount={subscribersCount}
               subscriptionSummary={subscriptionSummary}
             />

@@ -4,6 +4,8 @@ import {
   Platforms,
   ResponseError,
   SubscriptionSummary,
+  SubscriptionTier,
+  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -118,12 +120,28 @@ export default async function Page({
     subscribersCount = subscriptionSummaryResponse.pagination.total_count
   } catch (err) {}
 
+  let freeSubscriptionTier: SubscriptionTier | undefined = undefined
+  try {
+    const subscriptionGroupsResponse =
+      await api.subscriptions.searchSubscriptionTiers(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: organization.name,
+        },
+        cacheConfig,
+      )
+    freeSubscriptionTier = subscriptionGroupsResponse.items?.find(
+      (tier) => tier.type === SubscriptionTierType.FREE,
+    )
+  } catch (err) {}
+
   return (
     <>
       {post && (
         <ClientPage
           post={post}
           organization={organization}
+          freeSubscriptionTier={freeSubscriptionTier}
           subscribersCount={subscribersCount}
           subscriptionSummary={subscriptionsSummary}
         />

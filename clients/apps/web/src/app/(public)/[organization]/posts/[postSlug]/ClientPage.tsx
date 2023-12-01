@@ -5,7 +5,12 @@ import { OrganizationPublicSidebar } from '@/components/Organization/Organizatio
 import { ProfileMenu } from '@/components/Shared/ProfileSelection'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { Article, Organization, SubscriptionSummary } from '@polar-sh/sdk'
+import {
+  Article,
+  Organization,
+  SubscriptionSummary,
+  SubscriptionTier,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
 import { LogoType } from 'polarkit/components/brand'
@@ -17,11 +22,13 @@ const postViewKey = 'posts_viewed'
 export default function Page({
   post,
   organization,
+  freeSubscriptionTier,
   subscribersCount,
   subscriptionSummary,
 }: {
   post: Article
   organization: Organization
+  freeSubscriptionTier: SubscriptionTier | undefined
   subscribersCount: number
   subscriptionSummary: SubscriptionSummary[]
 }) {
@@ -54,6 +61,7 @@ export default function Page({
       <div className="relative flex w-full flex-col-reverse gap-24 pb-16 md:flex-row">
         <OrganizationPublicSidebar
           organization={organization}
+          freeSubscriptionTier={freeSubscriptionTier}
           subscribersCount={subscribersCount}
           subscriptionSummary={subscriptionSummary}
         />

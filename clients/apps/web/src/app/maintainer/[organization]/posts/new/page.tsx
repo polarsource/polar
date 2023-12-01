@@ -1,5 +1,5 @@
-import ManagePost from '@/components/Feed/ManagePost'
 import { Metadata, ResolvingMetadata } from 'next'
+import ClientPage from './ClientPage'
 
 export async function generateMetadata(
   {
@@ -15,5 +15,5 @@ export async function generateMetadata(
 }
 
 export default function Page() {
-  return <ManagePost />
+  return <ClientPage />
 }

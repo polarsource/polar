@@ -18,7 +18,14 @@ const revealTransition = {
   duration: 1,
 }
 
-export default function LongformPost({ post }: { post: Article }) {
+interface LongformPostProps {
+  post: Pick<
+    Article,
+    'title' | 'body' | 'published_at' | 'byline' | 'organization'
+  >
+}
+
+export default function LongformPost({ post }: LongformPostProps) {
   const organization = post.organization
 
   return (

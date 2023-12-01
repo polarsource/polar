@@ -76,7 +76,7 @@ export const PublishModalContent = ({
     <>
       <ModalHeader className="px-8 py-4" hide={hide}>
         <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
-          Publish Post
+          {article.published_at ? 'Settings' : 'Publish Post'}
         </h3>
       </ModalHeader>
       <div className="flex flex-col gap-y-6 p-8">
@@ -93,7 +93,7 @@ export const PublishModalContent = ({
             onChange={setVisibility}
           />
         </div>
-        {!article.published_at && (
+        {!article.notifications_sent_at && (
           <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
             <div className="flex flex-col gap-y-4">
               <div className="flex flex-col gap-y-2">

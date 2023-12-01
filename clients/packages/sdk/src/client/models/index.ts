@@ -182,6 +182,12 @@ export interface Article {
      * @memberof Article
      */
     web_view_count?: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Article
+     */
+    paid_subscribers_only?: boolean;
 }
 
 

@@ -6,7 +6,7 @@ const InvalidPoll = () => (
 
 const Poll = (props: {
   children?: React.ReactNode
-  renderer?: typeof BrowserPoll
+  renderer?: (props: { options: string[] }) => JSX.Element
 }) => {
   if (!props.children || typeof props.children !== 'object') {
     return <InvalidPoll />
@@ -60,20 +60,7 @@ const Poll = (props: {
     return <C options={options} />
   }
 
-  return <BrowserPoll options={options} />
-}
-
-const BrowserPoll = (props: { options: string[] }) => {
-  return (
-    <div className="my-2 flex flex-col space-y-2 bg-blue-300 p-8">
-      {props.options.map((s) => (
-        <div className="item-center flex justify-between bg-black/20 p-2">
-          <div>{s}</div>
-          <div>123 votes (10%)</div>
-        </div>
-      ))}
-    </div>
-  )
+  throw new Error('No Poll renderer configured')
 }
 
 export default Poll

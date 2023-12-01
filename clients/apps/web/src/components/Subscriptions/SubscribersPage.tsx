@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import {
   Avatar,
+  Button,
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
@@ -27,6 +28,9 @@ import {
 import { useSubscriptionTiers } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import React, { useEffect, useMemo, useState } from 'react'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
+import ImportSubscribersModal from './ImportSubscribersModal'
 import SubscriptionTiersSelect from './SubscriptionTiersSelect'
 import {
   getSubscriptionTiersByType,
@@ -245,11 +249,20 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
     },
   ]
 
+  const {
+    isShown: importSubscribersIsShow,
+    hide: hideImportSubscribers,
+    show: showImportSubscribers,
+  } = useModal()
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
           <h2 className="text-xl">Subscribers</h2>
+
+          <Button onClick={showImportSubscribers}>Import</Button>
+
           <div className="w-1/3 md:w-1/6">
             <SubscriptionTiersSelect
               tiersByType={subscriptionTiersByType}
@@ -270,6 +283,12 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
           />
         )}
       </div>
+
+      <Modal
+        isShown={importSubscribersIsShow}
+        hide={hideImportSubscribers}
+        modalContent={<ImportSubscribersModal />}
+      />
     </DashboardBody>
   )
 }

@@ -9,7 +9,6 @@ import { EyeIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
   ArrowForward,
-  ChatBubbleOutline,
   LanguageOutlined,
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
@@ -112,8 +111,6 @@ const PostItem = (post: Article) => {
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
 
-  const comments = useMemo(() => Math.round(Math.random() * 100), [])
-
   const description = useMemo(() => post.body.split('. ')[0], [post])
 
   const image = post.body.match(/!\[.*?\]\((.*?)\)/)?.[1]
@@ -174,11 +171,6 @@ const PostItem = (post: Article) => {
                   </div>
                 </>
               ) : null}
-              &middot;
-              <div className="flex flex-row items-center gap-x-2 text-sm">
-                <ChatBubbleOutline fontSize="inherit" />
-                <span>{comments} Comments</span>
-              </div>
             </div>
             <div className="flex flex-row items-center gap-x-4">
               <AnimatedIconButton active={isHovered} variant="secondary">

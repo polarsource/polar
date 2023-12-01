@@ -62,7 +62,7 @@ export default function LongformPost({ post }: LongformPostProps) {
         </StaggerReveal.Child>
       </div>
 
-      <div className="prose space-y-16">
+      <div className="prose dark:prose-invert dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-500 prose-img:rounded-3xl dark:prose-p:text-polar-300 prose-a:text-blue-500 dark:prose-a:text-blue-400 space-y-16">
         <Markdown
           // @ts-ignore
           options={{ ...markdownOpts }}

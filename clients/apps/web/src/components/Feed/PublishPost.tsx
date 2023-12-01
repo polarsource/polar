@@ -37,7 +37,7 @@ export const PublishModalContent = ({
 }: PublishModalContentProps) => {
   const { currentUser } = useAuth()
   const [paidSubscribersOnly, setPaidSubscribersOnly] = useState(
-    article.paid_subscribers_only,
+    article.paid_subscribers_only ?? false,
   )
   const [visibility, setVisibility] = useState(article.visibility)
   const [sendEmail, setSendEmail] = useState(article.notify_subscribers)

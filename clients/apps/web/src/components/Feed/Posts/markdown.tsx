@@ -1,4 +1,5 @@
 import React from 'react'
+import Paywall from './Paywall'
 import Poll from './Poll'
 
 // strictCreateElement removes unsupported types and attributes
@@ -44,6 +45,7 @@ const strictCreateElement = (
     'input',
     // our custom components
     'poll',
+    'paywall',
   ]
 
   // clean up props, only pass down a limited set of safe props
@@ -111,6 +113,8 @@ export const markdownOpts = {
   disableParsingRawHTML: false,
   overrides: {
     poll: Poll,
+    paywall: Paywall,
+
     // example style overrides
     img: (args: any) => <img {...args} style={{ maxWidth: '100%' }} />,
   },

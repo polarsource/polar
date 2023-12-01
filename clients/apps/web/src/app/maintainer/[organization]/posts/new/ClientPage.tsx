@@ -62,7 +62,7 @@ const ClientPage = () => {
   }, [handleContinue])
 
   if (!org) {
-    return
+    return null
   }
 
   return (

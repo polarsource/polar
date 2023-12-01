@@ -4,11 +4,16 @@ import {
   LanguageOutlined,
   ShortTextOutlined,
 } from '@mui/icons-material'
-import { Organization, SubscriptionSummary } from '@polar-sh/sdk'
+import {
+  Organization,
+  SubscriptionSummary,
+  SubscriptionTier,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
+import { FreeTierSubscribe } from './FreeTierSubscribe'
 
 function parseGitHubUsernameLinks(text: string) {
   const words = text.split(' ')
@@ -44,12 +49,14 @@ function parseGitHubUsernameLinks(text: string) {
 
 interface OrganizationPublicSidebarProps {
   organization: Organization
+  freeSubscriptionTier: SubscriptionTier | undefined
   subscriptionSummary: SubscriptionSummary[]
   subscribersCount: number
 }
 
 export const OrganizationPublicSidebar = ({
   organization,
+  freeSubscriptionTier,
   subscriptionSummary,
   subscribersCount,
 }: OrganizationPublicSidebarProps) => {
@@ -85,6 +92,12 @@ export const OrganizationPublicSidebar = ({
             @{organization.name}
           </h3>
         </div>
+        {freeSubscriptionTier && (
+          <FreeTierSubscribe
+            subscriptionTier={freeSubscriptionTier}
+            organization={organization}
+          />
+        )}
         {organization.bio && (
           <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-500 md:text-start">
             {parseGitHubUsernameLinks(organization.bio)}
@@ -158,6 +171,7 @@ export const OrganizationPublicSidebar = ({
           <div className="flex flex-row flex-wrap gap-3">
             {subscriberUsers.map((user) => (
               <Link
+                key={user.username}
                 href={`https://github.com/${user.username}`}
                 target="_blank"
               >

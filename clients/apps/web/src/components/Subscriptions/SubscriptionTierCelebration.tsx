@@ -10,6 +10,8 @@ const SubscriptionTierCelebration: React.FC<
 > = ({ type }) => {
   const [gradientColorStart, gradientColorEnd] = useMemo(() => {
     switch (type) {
+      case SubscriptionTierType.FREE:
+        return ['#b075c9', '#cfacdf']
       case SubscriptionTierType.HOBBY:
         return ['#DBF2FF', '#B1C7FF']
       case SubscriptionTierType.PRO:

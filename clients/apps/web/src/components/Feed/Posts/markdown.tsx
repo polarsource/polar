@@ -110,7 +110,6 @@ const strictCreateElement = (
 export const markdownOpts = {
   disableParsingRawHTML: false,
   overrides: {
-    Poll,
     poll: Poll,
     // example style overrides
     img: (args: any) => <img {...args} style={{ maxWidth: '100%' }} />,

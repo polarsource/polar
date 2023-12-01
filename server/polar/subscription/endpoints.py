@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from pydantic import UUID4
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
@@ -517,6 +517,51 @@ async def create_free_subscription(
         auth_subject=auth.subject,
         auth_method=auth.auth_method,
     )
+
+
+@router.post(
+    "/subscriptions/import",
+    response_model=dict,
+    tags=[Tags.PUBLIC],
+)
+async def subscriptions_import(
+    # pagination: PaginationParamsQuery,
+    file: UploadFile,
+    organization_name_platform: OrganizationNamePlatform,
+    repository_name: OptionalRepositoryNameQuery = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    contents = await file.read()
+    print("zegl:::", contents)
+    return {}
+
+    # organization_name, platform = organization_name_platform
+    # organization = await organization_service.get_by_name(
+    #     session, platform, organization_name
+    # )
+    # if organization is None:
+    #     raise ResourceNotFound("Organization not found")
+
+    # repository: Repository | None = None
+    # if repository_name is not None:
+    #     repository = await repository_service.get_by_org_and_name(
+    #         session, organization.id, repository_name
+    #     )
+    #     if repository is None:
+    #         raise ResourceNotFound("Repository not found")
+
+    # results, count = await subscription_service.search_summary(
+    #     session,
+    #     organization=organization,
+    #     repository=repository,
+    #     pagination=pagination,
+    # )
+
+    # return ListResource.from_paginated_results(
+    #     [SubscriptionSummary.from_orm(result) for result in results],
+    #     count,
+    #     pagination,
+    # )
 
 
 @router.post(

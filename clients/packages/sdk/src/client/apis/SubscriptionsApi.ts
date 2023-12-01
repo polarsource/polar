@@ -134,6 +134,13 @@ export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
     limit?: number;
 }
 
+export interface SubscriptionsApiSubscriptionsImportRequest {
+    organizationName: string;
+    platform: Platforms;
+    file: Blob;
+    repositoryName?: string;
+}
+
 export interface SubscriptionsApiUpdateSubscriptionBenefitRequest {
     id: string;
     subscriptionBenefitUpdate: SubscriptionBenefitUpdate;
@@ -921,6 +928,85 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async searchSubscriptionsSummary(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSummary> {
         const response = await this.searchSubscriptionsSummaryRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Subscriptions Import
+     */
+    async subscriptionsImportRaw(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling subscriptionsImport.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling subscriptionsImport.');
+        }
+
+        if (requestParameters.file === null || requestParameters.file === undefined) {
+            throw new runtime.RequiredError('file','Required parameter requestParameters.file was null or undefined when calling subscriptionsImport.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.repositoryName !== undefined) {
+            queryParameters['repository_name'] = requestParameters.repositoryName;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const consumes: runtime.Consume[] = [
+            { contentType: 'multipart/form-data' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        // use FormData to transmit files using content-type "multipart/form-data"
+        useForm = canConsumeForm;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters.file !== undefined) {
+            formParams.append('file', requestParameters.file as any);
+        }
+
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscriptions/import`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: formParams,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     * Subscriptions Import
+     */
+    async subscriptionsImport(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.subscriptionsImportRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

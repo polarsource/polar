@@ -40,6 +40,7 @@ uvloop = "^0.19.0"
 python-dateutil = {  git = "https://github.com/dateutil/dateutil.git", rev = "0586f4afa26fc6799128d98d4f97a49c7d6ab314" }
 requests = "^2.31.0"
 types-requests = "^2.31.0.10"
+python-multipart = "^0.0.6"
 
 
 [tool.poetry.group.dev.dependencies]

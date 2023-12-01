@@ -24,7 +24,7 @@ export const BadgeRepositories = ({
       <h2
         className={twMerge(
           isSettingPage ? 'text-left' : 'text-center',
-          'dark:text-polar-100 text-lg text-gray-500',
+          'dark:text-polar-50 text-lg font-medium text-gray-950',
         )}
       >
         Add badge to issues

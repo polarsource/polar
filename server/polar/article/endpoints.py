@@ -69,6 +69,8 @@ async def list(
             ArticleSchema.from_db(
                 a,
                 include_admin_fields=await authz.can(auth.subject, AccessType.write, a),
+                # TODO
+                is_paid_subscriber=await authz.can(auth.subject, AccessType.write, a),
             )
             for a in articles
         ],
@@ -113,6 +115,8 @@ async def search(
             ArticleSchema.from_db(
                 a,
                 include_admin_fields=await authz.can(auth.subject, AccessType.write, a),
+                # TODO
+                is_paid_subscriber=await authz.can(auth.subject, AccessType.write, a),
             )
             for a in articles
         ],
@@ -151,6 +155,8 @@ async def lookup(
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        # TODO
+        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
     )
 
 
@@ -186,6 +192,8 @@ async def create(
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        # TODO
+        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
     )
 
 
@@ -216,6 +224,8 @@ async def get(
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        # TODO
+        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
     )
 
 
@@ -349,4 +359,6 @@ async def update(
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        # TODO
+        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
     )

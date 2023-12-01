@@ -1,4 +1,5 @@
 import datetime
+import re
 from typing import Literal, Self
 from uuid import UUID
 
@@ -7,6 +8,8 @@ from pydantic import Field
 from polar.kit.schemas import Schema
 from polar.models.article import Article as ArticleModel
 from polar.organization.schemas import Organization
+
+paywall_regex = r"<paywall>((.|\n)*?)<\/paywall>"
 
 
 class Byline(Schema):
@@ -34,7 +37,23 @@ class Article(Schema):
     paid_subscribers_only: bool | None
 
     @classmethod
-    def from_db(cls, i: ArticleModel, include_admin_fields: bool) -> Self:
+    def strip_paywalled_content(cls, body: str, is_paid_subscriber: bool) -> str:
+        """
+        strip_paywalled_content removes paywalled content between <paywall></paywall> tags from the body
+
+        For paying subscribers, no changes to the body are made.
+
+        If the user is not paying, empty <paywall></paywall> tags are left in it's place.
+        """
+        if is_paid_subscriber:
+            return body
+
+        return re.sub(paywall_regex, "<paywall></paywall>", body, 0, re.MULTILINE)
+
+    @classmethod
+    def from_db(
+        cls, i: ArticleModel, include_admin_fields: bool, is_paid_subscriber: bool
+    ) -> Self:
         byline: Byline | None = None
 
         if i.byline == i.Byline.organization:
@@ -64,7 +83,7 @@ class Article(Schema):
             id=i.id,
             slug=i.slug,
             title=i.title,
-            body=i.body,
+            body=cls.strip_paywalled_content(i.body, is_paid_subscriber),
             byline=byline,
             visibility=visibility,
             organization=Organization.from_db(i.organization),

@@ -22,6 +22,7 @@ import {
   Repository,
 } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { ShadowBox } from 'polarkit/components/ui/atoms'
 import { useDashboard, useListRepositories, useSSE } from 'polarkit/hooks'
 import {
   Dispatch,
@@ -276,34 +277,36 @@ const OrganizationIssues = ({
         </RepoPickerHeader>
       </DashboardTopbar>
       <DashboardBody>
-        <div className="-mx-6 space-y-8">
-          {showAddBadgeBanner && <OnboardingAddBadge />}
+        <ShadowBox className="rounded-3xl px-12 py-8">
+          <div className="-mx-6 space-y-8">
+            {showAddBadgeBanner && <OnboardingAddBadge />}
 
-          {haveIssues ? (
-            <IssueList
-              totalCount={totalCount}
-              loading={dashboardQuery.isLoading}
-              dashboard={dashboard}
-              filters={filters}
-              onSetFilters={onSetFilters}
-              isInitialLoading={dashboardQuery.isInitialLoading}
-              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-              hasNextPage={dashboardQuery.hasNextPage || false}
-              fetchNextPage={dashboardQuery.fetchNextPage}
-            />
-          ) : null}
+            {haveIssues ? (
+              <IssueList
+                totalCount={totalCount}
+                loading={dashboardQuery.isLoading}
+                dashboard={dashboard}
+                filters={filters}
+                onSetFilters={onSetFilters}
+                isInitialLoading={dashboardQuery.isInitialLoading}
+                isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+                hasNextPage={dashboardQuery.hasNextPage || false}
+                fetchNextPage={dashboardQuery.fetchNextPage}
+              />
+            ) : null}
 
-          {!haveIssues && dashboardQuery.isFetched ? (
-            <EmptyLayout>
-              <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
-                <span className="text-6xl">
-                  <HowToVoteOutlined fontSize="inherit" />
-                </span>
-                <h2 className="text-lg">No issues found</h2>
-              </div>
-            </EmptyLayout>
-          ) : null}
-        </div>
+            {!haveIssues && dashboardQuery.isFetched ? (
+              <EmptyLayout>
+                <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
+                  <span className="text-6xl">
+                    <HowToVoteOutlined fontSize="inherit" />
+                  </span>
+                  <h2 className="text-lg">No issues found</h2>
+                </div>
+              </EmptyLayout>
+            ) : null}
+          </div>
+        </ShadowBox>
       </DashboardBody>
     </>
   )

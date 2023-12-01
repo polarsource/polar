@@ -62,7 +62,7 @@ async def is_feature_flag_enabled(auth: UserRequiredAuth) -> None:
 router = APIRouter(
     prefix="/subscriptions",
     tags=["subscriptions"],
-    dependencies=[Depends(is_feature_flag_enabled)],
+    # dependencies=[Depends(is_feature_flag_enabled)],
 )
 
 
@@ -532,6 +532,24 @@ async def upgrade_subscription(
         subscription_upgrade=subscription_upgrade,
         authz=authz,
         user=auth.subject,
+    )
+
+
+@router.delete(
+    "/subscriptions/{id}", response_model=SubscriptionSchema, tags=[Tags.PUBLIC]
+)
+async def cancel_subscription(
+    id: UUID4,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    subscription = await subscription_service.get(session, id)
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await subscription_service.cancel_subscription(
+        session, subscription=subscription, authz=authz, user=auth.subject
     )
 
 

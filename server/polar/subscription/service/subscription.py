@@ -109,6 +109,15 @@ class AlreadySubscribed(SubscriptionError):
         super().__init__(message, 400)
 
 
+class AlreadyCanceledSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = (
+            "This subscription is already canceled or will be at the end of the period."
+        )
+        super().__init__(message)
+
+
 class InvalidSubscriptionTierUpgrade(SubscriptionError):
     def __init__(self, subscription_tier_id: uuid.UUID) -> None:
         self.subscription_tier_id = subscription_tier_id
@@ -560,6 +569,34 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.subscription_tier = new_subscription_tier
         subscription.price_currency = new_subscription_tier.price_currency
         subscription.price_amount = new_subscription_tier.price_amount
+        session.add(subscription)
+        await session.commit()
+
+        return subscription
+
+    async def cancel_subscription(
+        self,
+        session: AsyncSession,
+        *,
+        subscription: Subscription,
+        authz: Authz,
+        user: User,
+    ) -> Subscription:
+        await session.refresh(subscription, {"subscription_tier", "user"})
+
+        if not await authz.can(user, AccessType.write, subscription):
+            raise NotPermitted()
+
+        if not subscription.active or subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.stripe_subscription_id is not None:
+            stripe_service.cancel_subscription(subscription.stripe_subscription_id)
+        else:
+            subscription.ended_at = utc_now()
+            subscription.cancel_at_period_end = True
+            subscription.status = SubscriptionStatus.canceled
+
         session.add(subscription)
         await session.commit()
 

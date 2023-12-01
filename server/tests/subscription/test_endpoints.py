@@ -17,6 +17,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 
 from .conftest import add_subscription_benefits, create_active_subscription
@@ -1254,6 +1255,43 @@ class TestUpgradeSubscription:
             json={
                 "subscription_tier_id": str(subscription_tier_organization_second.id)
             },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(subscription.id)
+
+
+@pytest.mark.asyncio
+class TestCancelSubscription:
+    async def test_anonymous(
+        self, client: AsyncClient, subscription: Subscription
+    ) -> None:
+        response = await client.delete(
+            f"/api/v1/subscriptions/subscriptions/{subscription.id}"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.delete(
+            f"/api/v1/subscriptions/subscriptions/{uuid.uuid4()}"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self, session: AsyncSession, client: AsyncClient, subscription: Subscription
+    ) -> None:
+        subscription.status = SubscriptionStatus.active
+        session.add(subscription)
+        await session.commit()
+
+        response = await client.delete(
+            f"/api/v1/subscriptions/subscriptions/{subscription.id}"
         )
 
         assert response.status_code == 200

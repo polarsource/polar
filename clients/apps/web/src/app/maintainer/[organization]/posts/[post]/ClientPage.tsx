@@ -123,7 +123,13 @@ const ClientPage = () => {
         body={updateArticle.body}
         onTitleChange={(title) => setUpdateArticle((a) => ({ ...a, title }))}
         onBodyChange={(body) => setUpdateArticle((a) => ({ ...a, body }))}
-        previewProps={{ post: post.data }}
+        previewProps={{
+          post: {
+            ...post.data,
+            title: updateArticle.title,
+            body: updateArticle.body,
+          },
+        }}
       />
       <Modal
         isShown={isModalShown}

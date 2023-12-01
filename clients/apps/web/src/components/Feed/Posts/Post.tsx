@@ -87,9 +87,6 @@ const PostHeader = (props: FeedPost) => {
           ) : (
             <>
               <div className="flex flex-row items-center gap-x-1">
-                <span className="flex items-center text-blue-500">
-                  {/* <SubscriptionGroupIcon type={props.visibility} /> */}
-                </span>
                 <span className="text-xs capitalize">
                   {props.article.visibility}
                 </span>

@@ -95,7 +95,7 @@ const ClientPage = () => {
   }
 
   return (
-    <Tabs className="flex h-full flex-col gap-y-6" defaultValue="edit">
+    <Tabs className="flex flex-col" defaultValue="edit">
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
           {post.data.visibility !== 'hidden' && (

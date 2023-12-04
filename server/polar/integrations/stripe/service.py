@@ -549,7 +549,7 @@ Thank you for your support!
     ) -> stripe_lib.Subscription:
         subscription = stripe_lib.Subscription.retrieve(id)
 
-        old_items = subscription.items
+        old_items = subscription["items"]
         new_items: list[stripe_lib.Subscription.ModifyParamsItem] = []
         for item in old_items:
             if item.price.id == old_price:

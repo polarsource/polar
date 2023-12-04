@@ -212,7 +212,7 @@ export const dashboardRoutes = (
           link: `/maintainer/${org?.name}/finance`,
           icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
           postIcon: undefined,
-          if: isOrgAdmin,
+          if: isOrgAdmin && !isPersonal,
           subs: undefined,
         },
       ]),

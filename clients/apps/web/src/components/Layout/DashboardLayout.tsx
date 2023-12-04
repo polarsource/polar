@@ -34,9 +34,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
     ? isOrgAdmin
     : orgs?.some((org) => org.name === currentUser?.username)
 
-  const shouldRenderDashboardNavigation = currentOrg
-    ? isOrgAdmin
-    : orgs?.some((org) => org.name === currentUser?.username)
+  const shouldRenderDashboardNavigation = currentOrg ? isOrgAdmin : true
 
   const showConnectUpsell = orgs && orgs.length === 0
 

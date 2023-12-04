@@ -365,8 +365,17 @@ const ScheduledPostPicker = ({
 }: ScheduledPostPickerProps) => {
   return (
     <div className="flex flex-col gap-y-4">
-      <div className="flex flex-col gap-y-2">
+      <div className="flex items-start justify-between gap-y-2">
         <span className="font-medium">Scheduled publishing</span>
+        {publishAt ? (
+          <Button
+            onClick={() => onChange(undefined)}
+            variant={'ghost'}
+            className="m-0 h-auto p-0"
+          >
+            Reset
+          </Button>
+        ) : null}
       </div>
       <div className="flex flex-col gap-y-6">
         <DateTimePicker date={publishAt} onChange={onChange} />

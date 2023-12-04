@@ -14,13 +14,12 @@ const DashboardNavigation = (props: { classNames?: string }) => {
   const isOrgAdmin = useIsOrganizationAdmin(org)
 
   const personalOrg = usePersonalOrganization()
+  const isPersonal = org?.id === personalOrg?.id
 
   // All routes and conditions
   const navs = org
-    ? dashboardRoutes(org, org.id === personalOrg?.id, isOrgAdmin)
-    : personalOrg
-    ? dashboardRoutes(personalOrg, true, true)
-    : []
+    ? dashboardRoutes(org, isPersonal, isOrgAdmin)
+    : dashboardRoutes(personalOrg, true, true)
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs

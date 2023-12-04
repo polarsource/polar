@@ -62,7 +62,7 @@ async def is_feature_flag_enabled(auth: UserRequiredAuth) -> None:
 router = APIRouter(
     prefix="/subscriptions",
     tags=["subscriptions"],
-    # dependencies=[Depends(is_feature_flag_enabled)],
+    dependencies=[Depends(is_feature_flag_enabled)],
 )
 
 

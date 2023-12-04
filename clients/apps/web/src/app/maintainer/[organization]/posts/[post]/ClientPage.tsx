@@ -18,7 +18,7 @@ import {
 } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
@@ -53,23 +53,21 @@ const ClientPage = () => {
 
   const update = useUpdateArticle()
 
-  const handleSave = useCallback(
-    async (modal?: boolean) => {
-      if (!post?.data?.id) {
-        return
-      }
+  const handleSave = async () => {
+    if (!post?.data?.id) {
+      return
+    }
 
-      await update.mutateAsync({
-        id: post.data.id,
-        articleUpdate: updateArticle,
-      })
+    await update.mutateAsync({
+      id: post.data.id,
+      articleUpdate: updateArticle,
+    })
+  }
 
-      if (modal) {
-        showModal()
-      }
-    },
-    [post, update, updateArticle, showModal],
-  )
+  const handlePublish = async () => {
+    await handleSave()
+    showModal()
+  }
 
   useEffect(() => {
     const savePost = (e: KeyboardEvent) => {
@@ -103,7 +101,7 @@ const ClientPage = () => {
               href={`/${post.data.organization.name}/posts/${post.data.slug}`}
               target="_blank"
             >
-              <Button className="secondary" variant={'secondary'}>
+              <Button variant={'outline'}>
                 <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
                 <span>Read</span>
               </Button>
@@ -111,9 +109,13 @@ const ClientPage = () => {
           )}
           <Button
             className="self-start"
-            onClick={() => handleSave(true)}
+            onClick={handleSave}
+            variant={'secondary'}
             loading={update.isPending}
           >
+            Save
+          </Button>
+          <Button className="self-start" onClick={handlePublish}>
             {post.data.published_at ? 'Settings' : 'Publish'}
           </Button>
         </div>

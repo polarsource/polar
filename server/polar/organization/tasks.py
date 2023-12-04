@@ -29,4 +29,5 @@ async def organization_post_install(
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
+        return  # TODO: disable this until we have the built-in free posts benefits and migration
         await subscription_tier_service.create_free(session, organization=organization)

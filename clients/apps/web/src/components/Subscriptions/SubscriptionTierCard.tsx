@@ -79,14 +79,14 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const variantStyles = {
     default: {
       name: 'text-lg',
-      card: 'p-8 md:min-w-[280px] md:max-w-[350px]',
+      card: 'p-8 md:min-w-[280px] md:max-w-[320px] min-h-[360px]',
       priceLabel: 'text-5xl !font-[200]',
       description: 'text-sm',
       footer: 'mt-4',
     },
     small: {
       name: 'text-md',
-      card: 'p-6 md:min-w-[230px] md:max-w-[300px] min-w-[260px] max-w-[260px]',
+      card: 'p-6 md:min-w-[230px] md:max-w-[300px] min-w-[260px] max-w-[260px] min-h-[340px]',
       priceLabel: 'text-4xl !font-[200]',
       description: 'text-sm',
       footer: 'mt-none',
@@ -97,7 +97,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     <Card
       ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-none',
+        'dark:bg-polar-800 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm',
         variantStyles[variant]['card'],
         className,
       )}
@@ -144,7 +144,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <p
               className={twMerge(
                 variantStyles[variant].description,
-                'leading-relaxed text-gray-500 dark:text-[--var-dark-muted-color]',
+                'line-clamp-4 leading-relaxed text-gray-500 dark:text-[--var-dark-muted-color]',
               )}
             >
               {subscriptionTier.description}

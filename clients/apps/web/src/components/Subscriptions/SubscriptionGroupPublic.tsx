@@ -24,34 +24,36 @@ const SubscriptionGroupPublic = ({
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="flex flex-row items-center text-xl">
+          <h2 className="flex flex-row items-center text-lg font-medium">
             <SubscriptionGroupIcon type={type} className="!h-6 !w-6" />
             <span className="dark:text-polar-50 ml-2">{title}</span>
           </h2>
         </div>
-        <p className="dark:text-polar-500 mt-4 text-gray-400">{description}</p>
+        <p className="dark:text-polar-500 mt-2 text-gray-500">{description}</p>
       </div>
-      <div className="-mx-10 flex h-fit gap-6 overflow-x-auto px-10 py-6 md:mx-0 md:overflow-x-visible md:px-0 ">
+
+      <div className="-mx-10 flex h-fit flex-row gap-6 overflow-x-auto px-10 py-6 md:mx-0 md:grid md:grid-cols-3 md:overflow-x-visible md:px-0 md:py-2">
         {tiers.map((tier) => (
           <SubscriptionTierCard
-            className="h-full self-stretch"
+            className="self-stretch md:h-full"
             key={tier.id}
             subscriptionTier={tier}
             variant="small"
           >
             <Link
-              className="w-full"
+              className="flex w-full flex-col gap-y-4"
               href={{
                 pathname: subscribePath,
                 query: { tier: tier.id },
               }}
             >
               <Button
+                className="transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]"
                 size="lg"
-                className="bg-[--var-border-color] text-[--var-fg-color] transition-colors hover:bg-[--var-border-color] hover:text-white dark:border-none dark:bg-[--var-dark-border-color] dark:text-[--var-dark-fg-color] dark:hover:text-white"
+                variant="outline"
                 fullWidth
               >
                 Subscribe

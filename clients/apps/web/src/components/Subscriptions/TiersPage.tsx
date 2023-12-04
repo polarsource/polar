@@ -55,7 +55,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
 
   return (
     <DashboardBody>
-      <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-y-12 rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+      <div className="flex flex-col gap-y-12 py-2">
         <div className="flex flex-row justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium">Subscription Tiers</h2>
@@ -76,7 +76,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
             </Link>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-10">
+        <div className="grid grid-cols-4 gap-6">
           {tiers.map((tier) => (
             <SubscriptionTierCard
               className="h-full"

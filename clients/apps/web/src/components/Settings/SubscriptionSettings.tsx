@@ -10,6 +10,7 @@ import {
 } from 'polarkit/components/ui/atoms'
 import { useOrganization, useUser, useUserSubscriptions } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
+import { ConfirmModal } from '../Shared/ConfirmModal'
 import SubscriptionTierPill from '../Subscriptions/SubscriptionTierPill'
 
 export type Settings = {
@@ -55,18 +56,14 @@ interface SubscriptionItemProps {
 }
 
 const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
-  const [stripePortalLoading, setStripePortalLoading] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [canceled, setCanceled] = useState(false)
 
-  const onGotoStripeCustomerPortal = useCallback(async () => {
-    setStripePortalLoading(true)
-
-    const portal = await api.users.createStripeCustomerPortal()
-    if (portal) {
-      window.open(portal.url, '_blank')
-    }
-
-    setStripePortalLoading(false)
-  }, [])
+  const cancelSubscription = useCallback(async () => {
+    await api.subscriptions.cancelSubscription({ id: subscription.id })
+    setShowCancelModal(false)
+    setCanceled(true)
+  }, [subscription])
 
   const organization = useOrganization(
     subscription.subscription_tier.organization_id ?? '',
@@ -118,15 +115,28 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
           </div>
         </div>
         <div className="flex flex-row gap-x-2">
-          <Button
-            className="text-sm"
-            size="sm"
-            variant="secondary"
-            onClick={onGotoStripeCustomerPortal}
-            loading={stripePortalLoading}
-          >
-            Manage
-          </Button>
+          {!canceled && (
+            <>
+              <Button
+                className="text-sm"
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowCancelModal(true)}
+              >
+                Unsubscribe
+              </Button>
+              <ConfirmModal
+                isShown={showCancelModal}
+                hide={() => setShowCancelModal(false)}
+                title={`Unsubscribe from ${subscription.subscription_tier.name}?`}
+                description={`At the end of your billing period, you won't have access to your benefits anymore.`}
+                destructiveText="Unsubscribe"
+                onConfirm={() => cancelSubscription()}
+                destructive
+              />
+            </>
+          )}
+          {canceled && <p className="text-sm text-red-500">Unsubscribed</p>}
         </div>
       </div>
     </ShadowListGroup.Item>

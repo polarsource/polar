@@ -13,9 +13,11 @@ import {
   ArticleVisibilityEnum,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
+import { api } from 'polarkit/api'
 import {
   Button,
   Input,
+  PolarTimeAgo,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -39,7 +41,9 @@ export const PublishModalContent = ({
   const [paidSubscribersOnly, setPaidSubscribersOnly] = useState(
     article.paid_subscribers_only ?? false,
   )
-  const [visibility, setVisibility] = useState(article.visibility)
+  const [visibility, setVisibility] = useState<ArticleUpdateVisibilityEnum>(
+    article.visibility,
+  )
   const [sendEmail, setSendEmail] = useState(article.notify_subscribers)
   const [previewEmailAddress, setPreviewEmailAddress] = useState('')
   const [previewSent, setPreviewSent] = useState<string>()
@@ -53,16 +57,20 @@ export const PublishModalContent = ({
   const update = useUpdateArticle()
   const sendPreview = useSendArticlePreview()
 
-  const handleSendPreview = useCallback(async () => {
+  const handleSendPreview = async () => {
     await sendPreview.mutateAsync({
       id: article.id,
       email: previewEmailAddress,
     })
 
     setPreviewSent(previewEmailAddress)
-  }, [article, previewEmailAddress, sendPreview])
+  }
 
-  const handlePublish = useCallback(async () => {
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSave = async () => {
+    setIsSaving(true)
+
     const updated = await update.mutateAsync({
       id: article.id,
       articleUpdate: {
@@ -71,8 +79,32 @@ export const PublishModalContent = ({
       },
     })
 
+    if (sendEmail) {
+      await api.articles.send({
+        id: article.id,
+      })
+    }
+
+    setIsSaving(false)
+
     router.push(`/maintainer/${updated.organization.name}/posts`)
-  }, [article, update, router, paidSubscribersOnly, visibility])
+  }
+
+  const [didAutoChangeVisibility, setDidAutoChangeVisibility] = useState(false)
+
+  const onChangeSendEmail = (checked: boolean) => {
+    setSendEmail(checked)
+
+    if (checked && visibility === ArticleVisibilityEnum.PRIVATE) {
+      setVisibility(ArticleVisibilityEnum.HIDDEN)
+      setDidAutoChangeVisibility(true)
+    }
+  }
+
+  const onVisibilityChange = (visibility: ArticleUpdateVisibilityEnum) => {
+    setVisibility(visibility)
+    setDidAutoChangeVisibility(false)
+  }
 
   return (
     <>
@@ -92,73 +124,98 @@ export const PublishModalContent = ({
           <VisibilityPicker
             paidSubscribersOnly={paidSubscribersOnly}
             visibility={visibility}
-            onChange={setVisibility}
+            privateVisibilityAllowed={!sendEmail}
+            onChange={onVisibilityChange}
           />
         </div>
-        {!article.notifications_sent_at && (
-          <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
-            <div className="flex flex-col gap-y-4">
-              <div className="flex flex-col gap-y-2">
-                <span className="font-medium">Email</span>
-              </div>
-              <div className="flex flex-col gap-y-6">
+
+        <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+          <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col gap-y-2">
+              <span className="font-medium">Email</span>
+            </div>
+            <div className="flex flex-col gap-y-6">
+              {!article.notifications_sent_at ? (
                 <div className="flex flex-row items-center gap-x-2">
                   <Checkbox
                     checked={sendEmail}
                     onCheckedChange={(checked) =>
-                      setSendEmail(Boolean(checked))
+                      onChangeSendEmail(Boolean(checked))
                     }
                   />
                   <span className="text-sm">
                     Send post as email to subscribers
                   </span>
                 </div>
-                {sendEmail && (
-                  <div className="flex flex-col gap-y-4">
-                    <span className="text-sm font-medium">Send Preview</span>
-                    <div className="flex flex-row items-center gap-x-2">
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={previewEmailAddress}
-                        onChange={(e) => setPreviewEmailAddress(e.target.value)}
-                      />
-                      <Button variant="secondary" onClick={handleSendPreview}>
-                        Send
-                      </Button>
-                    </div>
-                    {previewSent && (
-                      <Banner color="green">
-                        Email preview sent to {previewSent}
-                      </Banner>
-                    )}
-                  </div>
+              ) : (
+                <div className="flex flex-row items-center gap-x-2">
+                  <Checkbox checked={true} disabled={true} />
+                  <span className="text-sm">
+                    This post was sent via email{' '}
+                    <PolarTimeAgo
+                      date={new Date(article.notifications_sent_at)}
+                    />
+                  </span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-y-4">
+                <span className="text-sm font-medium">Send Preview</span>
+                <div className="flex flex-row items-center gap-x-2">
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={previewEmailAddress}
+                    onChange={(e) => setPreviewEmailAddress(e.target.value)}
+                  />
+                  <Button variant="secondary" onClick={handleSendPreview}>
+                    Send
+                  </Button>
+                </div>
+                {previewSent && (
+                  <Banner color="green">
+                    Email preview sent to {previewSent}
+                  </Banner>
                 )}
               </div>
+
+              {didAutoChangeVisibility && (
+                <Banner color="blue">
+                  The visibility has been changed to <em>Link</em>
+                </Banner>
+              )}
             </div>
           </div>
-        )}
+        </div>
+
         <div className="flex flex-row items-center justify-end gap-x-2">
           <Button variant="ghost" onClick={hide}>
             Cancel
           </Button>
-          <Button onClick={handlePublish}>
-            {article.published_at ? 'Save' : 'Publish'}
+          <Button onClick={handleSave} loading={isSaving}>
+            {article.published_at ? (
+              <>{sendEmail ? 'Save & send' : 'Save'}</>
+            ) : (
+              <>{sendEmail ? 'Publish & send' : 'Publish'}</>
+            )}
           </Button>
         </div>
       </div>
     </>
   )
 }
+
 interface VisibilityPickerProps {
   visibility: ArticleUpdateVisibilityEnum
   paidSubscribersOnly: boolean
+  privateVisibilityAllowed: boolean
   onChange: (visibility: ArticleUpdateVisibilityEnum) => void
 }
 
 const VisibilityPicker = ({
   paidSubscribersOnly,
   visibility,
+  privateVisibilityAllowed,
   onChange,
 }: VisibilityPickerProps) => {
   const visibilityDescription = useMemo(() => {
@@ -193,7 +250,10 @@ const VisibilityPicker = ({
       </div>
       <Tabs value={visibility} onValueChange={handleVisibilityChange}>
         <TabsList className="dark:border-polar-700 dark:border">
-          <TabsTrigger value={ArticleVisibilityEnum.PRIVATE}>
+          <TabsTrigger
+            value={ArticleVisibilityEnum.PRIVATE}
+            disabled={!privateVisibilityAllowed}
+          >
             <LockOutlined
               className={twMerge(
                 visibility === ArticleUpdateVisibilityEnum.PRIVATE &&

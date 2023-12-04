@@ -9,7 +9,12 @@ import {
   SubscriptionTierCreate,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
-import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  UseMutationResult,
+  UseQueryResult,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 
 import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
@@ -43,7 +48,15 @@ export const useSubscriptionTier = (
     enabled: !!id,
   })
 
-export const useUpdateSubscriptionTier = (orgName?: string) =>
+export const useUpdateSubscriptionTier: (orgName?: string) => UseMutationResult<
+  SubscriptionTier,
+  Error,
+  {
+    id: string
+    subscriptionTierUpdate: SubscriptionTierUpdate
+  },
+  unknown
+> = (orgName?: string) =>
   useMutation({
     mutationFn: ({
       id,
@@ -230,7 +243,7 @@ export const useDeleteSubscriptionBenefit = (orgName?: string) =>
   })
 
 export const useUserSubscriptions = (
-  userId: string,
+  userId?: string,
   orgName?: string,
   active?: boolean,
   limit = 30,
@@ -247,6 +260,7 @@ export const useUserSubscriptions = (
         subscriberUserId: userId,
       }),
     retry: defaultRetry,
+    enabled: !!userId,
   })
 
 export const useSubscriptionSummary = (

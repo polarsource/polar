@@ -131,48 +131,47 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 
   return (
     <DashboardBody>
-      <div className="flex flex-col gap-y-12">
-        <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="mb-16 flex items-center justify-between">
-              <h1 className="text-lg font-medium">New Subscription Tier</h1>
-              <div className="flex flex-row gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => router.back()}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Save Tier</Button>
+      <Form {...form}>
+        <div className="flex flex-row items-start justify-between gap-x-12">
+          <div className="dark:bg-polar-900 dark:border-polar-800 relative flex w-2/3 flex-col gap-y-12 rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="mb-16 flex items-center justify-between">
+                <h1 className="text-lg font-medium">New Subscription Tier</h1>
               </div>
+              <div className="relative flex w-full flex-row justify-between gap-x-24">
+                <div className="flex w-full flex-col gap-y-6">
+                  <SubscriptionTierForm update={false} />
+                </div>
+              </div>
+            </form>
+            <SubscriptionTierBenefitsForm
+              benefits={enabledBenefits}
+              organization={organization}
+              organizationBenefits={organizationBenefits}
+              onSelectBenefit={onSelectBenefit}
+              onRemoveBenefit={onRemoveBenefit}
+            />
+            <div className="flex flex-row gap-2">
+              <Button onClick={handleSubmit(onSubmit)}>Save Tier</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => router.back()}
+              >
+                Cancel
+              </Button>
             </div>
-            <div className="relative flex flex-row justify-between gap-x-24">
-              <div className="flex w-1/2 flex-col gap-y-6">
-                <SubscriptionTierForm update={false} />
-              </div>
-              <div className="absolute right-0 top-0 flex flex-col">
-                {selectedSubscriptionTierType && (
-                  <SubscriptionTierCard
-                    subscriptionTier={{
-                      ...newSubscriptionTier,
-                      benefits: enabledBenefits,
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </form>
-        </Form>
-        <SubscriptionTierBenefitsForm
-          className="w-1/2"
-          benefits={enabledBenefits}
-          organization={organization}
-          organizationBenefits={organizationBenefits}
-          onSelectBenefit={onSelectBenefit}
-          onRemoveBenefit={onRemoveBenefit}
-        />
-      </div>
+          </div>
+          {selectedSubscriptionTierType && (
+            <SubscriptionTierCard
+              subscriptionTier={{
+                ...newSubscriptionTier,
+                benefits: enabledBenefits,
+              }}
+            />
+          )}
+        </div>
+      </Form>
     </DashboardBody>
   )
 }

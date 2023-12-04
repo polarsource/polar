@@ -40,6 +40,8 @@ const ProfileSelection = ({
   )
 
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
+  const personalOrg = usePersonalOrganization()
+  const isPersonalOrg = currentOrgFromURL?.id === personalOrg?.id
 
   const ref = useRef(null)
 
@@ -115,7 +117,7 @@ const ProfileSelection = ({
             <ul className="mt-2 flex w-full flex-col">
               {showBackerLinks && (
                 <>
-                  {backerRoutes(currentOrg).map((n) => {
+                  {backerRoutes(currentOrg, isPersonalOrg).map((n) => {
                     return (
                       <LinkItem href={n.link} icon={n.icon}>
                         <span className="mx-1.5 font-medium">{n.title}</span>

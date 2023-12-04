@@ -78,7 +78,7 @@ export default function Page({
               <ArrowBackOutlined fontSize="inherit" />
             </Button>
           </Link>
-          <LongformPost post={post} />
+          <LongformPost article={post} />
         </StaggerReveal>
       </div>
     </div>

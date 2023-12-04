@@ -11,7 +11,7 @@ export default function Page({
 }: {
   params: { publisherOrg: string; postSlug: string }
 }) {
-  const post = useArticleLookup(params.publisherOrg, params.postSlug)
+  const article = useArticleLookup(params.publisherOrg, params.postSlug)
 
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 relative my-16 flex flex-row items-start rounded-3xl bg-white p-12 shadow-lg dark:border">
@@ -25,7 +25,7 @@ export default function Page({
         </Button>
       </Link>
       <div className="flex w-full flex-grow flex-col items-center gap-y-8 pb-12">
-        {post.data ? <LongformPost post={post.data} /> : null}
+        {article.data ? <LongformPost article={article.data} /> : null}
       </div>
     </div>
   )

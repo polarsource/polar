@@ -124,7 +124,7 @@ const ClientPage = () => {
         onTitleChange={(title) => setUpdateArticle((a) => ({ ...a, title }))}
         onBodyChange={(body) => setUpdateArticle((a) => ({ ...a, body }))}
         previewProps={{
-          post: {
+          article: {
             ...post.data,
             title: updateArticle.title,
             body: updateArticle.body,

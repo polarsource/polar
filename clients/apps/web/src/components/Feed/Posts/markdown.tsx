@@ -1,9 +1,14 @@
 import { Article } from '@polar-sh/sdk'
 import React from 'react'
 
+export type RenderArticle = Pick<
+  Article,
+  'title' | 'body' | 'published_at' | 'byline' | 'organization'
+>
+
 // strictCreateElement removes unsupported types and attributes
 export const wrapStrictCreateElement = (
-  article: Article,
+  article: RenderArticle,
 ): ((
   type:
     | string

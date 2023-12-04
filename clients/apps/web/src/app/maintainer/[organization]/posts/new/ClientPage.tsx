@@ -83,7 +83,9 @@ const ClientPage = () => {
         body={article.body}
         onTitleChange={(title) => setArticle((a) => ({ ...a, title }))}
         onBodyChange={(body) => setArticle((a) => ({ ...a, body }))}
-        previewProps={{ post: { ...article, organization: org, byline: org } }}
+        previewProps={{
+          article: { ...article, organization: org, byline: org },
+        }}
       />
     </Tabs>
   )

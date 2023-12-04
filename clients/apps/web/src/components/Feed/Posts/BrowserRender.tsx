@@ -1,12 +1,14 @@
-import { Article } from '@polar-sh/sdk'
-
 // @ts-ignore
 import Markdown from 'markdown-to-jsx'
 import BrowserPoll from './BrowserPoll'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import SubscribeNow from './SubscribeNow'
-import { markdownOpts, wrapStrictCreateElement } from './markdown'
+import {
+  RenderArticle,
+  markdownOpts,
+  wrapStrictCreateElement,
+} from './markdown'
 
 export const opts = {
   ...markdownOpts,
@@ -20,7 +22,7 @@ export const opts = {
   },
 } as const
 
-const BrowserRender = (props: { article: Article }) => {
+const BrowserRender = (props: { article: RenderArticle }) => {
   return (
     <Markdown
       options={{

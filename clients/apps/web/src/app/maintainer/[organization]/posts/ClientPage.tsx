@@ -5,7 +5,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { EyeIcon } from '@heroicons/react/24/outline'
+import { EyeIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
   ArrowForward,
@@ -122,11 +122,15 @@ const PostItem = (post: Article) => {
       href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}
     >
       <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-blue-50/50">
-        {image && (
+        {image ? (
           <div
             className="flex min-h-0 w-28 flex-shrink-0 flex-col rounded-2xl bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${image})` }}
           />
+        ) : (
+          <div className="bg-polar-100 flex min-h-0 w-28 flex-shrink-0 flex-col items-center justify-center rounded-2xl bg-cover bg-center bg-no-repeat">
+            <PhotoIcon className="text-polar-400 h-8 w-8" />
+          </div>
         )}
         <div className="flex min-w-0 flex-grow flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-2">
@@ -170,6 +174,12 @@ const PostItem = (post: Article) => {
                     </span>
                   </div>
                 </>
+              ) : null}
+              {post.notifications_sent_at ? (
+                <div>sent_at={post.notifications_sent_at}</div>
+              ) : null}
+              {post.email_sent_to_count ? (
+                <div>email_sent_to_count={post.email_sent_to_count}</div>
               ) : null}
             </div>
             <div className="flex flex-row items-center gap-x-4">

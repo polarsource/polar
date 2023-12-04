@@ -175,7 +175,7 @@ export interface Article {
      * @type {number}
      * @memberof Article
      */
-    email_open_count?: number;
+    email_sent_to_count?: number;
     /**
      * 
      * @type {number}

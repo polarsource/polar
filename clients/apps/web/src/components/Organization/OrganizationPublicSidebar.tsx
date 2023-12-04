@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
+import GitHubIcon from '../Icons/GitHubIcon'
 import { FreeTierSubscribe } from './FreeTierSubscribe'
 
 function parseGitHubUsernameLinks(text: string) {
@@ -60,12 +61,6 @@ export const OrganizationPublicSidebar = ({
   subscriptionSummary,
   subscribersCount,
 }: OrganizationPublicSidebarProps) => {
-  const showMeta =
-    organization.bio ||
-    organization.company ||
-    organization.email ||
-    organization.twitter_username
-
   const subscriberUsers = useMemo(
     () => subscriptionSummary.slice(0, 9).map((summary) => summary.user),
     [subscriptionSummary],
@@ -103,70 +98,84 @@ export const OrganizationPublicSidebar = ({
             {parseGitHubUsernameLinks(organization.bio)}
           </p>
         )}
-        {showMeta && (
-          <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
-            {organization.company && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <BusinessOutlined fontSize="inherit" />
-                </span>
-                <span>{organization.company}</span>
-              </div>
-            )}
-            {organization.blog && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <LanguageOutlined fontSize="inherit" />
-                </span>
-                <a
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  href={externalURL(organization.blog)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {prettyURL(organization.blog)}
-                </a>
-              </div>
-            )}
 
-            {organization.email && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <EmailOutlined fontSize="inherit" />
-                </span>
-                <a
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  href={`mailto:${organization.email}`}
-                  rel="noopener noreferrer"
-                >
-                  {organization.email}
-                </a>
-              </div>
-            )}
-
-            {organization.twitter_username && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <ShortTextOutlined fontSize="inherit" />
-                </span>
-                <a
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  href={`https://twitter.com/${organization.twitter_username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  @{organization.twitter_username}
-                </a>
-              </div>
-            )}
+        <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
+          {organization.company && (
+            <div className="flex flex-row items-center gap-x-3">
+              <span className="text-[17px]">
+                <BusinessOutlined fontSize="inherit" />
+              </span>
+              <span>{organization.company}</span>
+            </div>
+          )}
+          <div className="flex flex-row items-center gap-x-3">
+            <span className="text-[17px]">
+              <GitHubIcon width={16} height={16} />
+            </span>
+            <a
+              className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              href={`https://github.com/${organization.name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {organization.name}
+            </a>
           </div>
-        )}
+          {organization.blog && (
+            <div className="flex flex-row items-center gap-x-3">
+              <span className="text-[17px]">
+                <LanguageOutlined fontSize="inherit" />
+              </span>
+              <a
+                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                href={externalURL(organization.blog)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {prettyURL(organization.blog)}
+              </a>
+            </div>
+          )}
+          {organization.email && (
+            <div className="flex flex-row items-center gap-x-3">
+              <span className="text-[17px]">
+                <EmailOutlined fontSize="inherit" />
+              </span>
+              <a
+                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                href={`mailto:${organization.email}`}
+                rel="noopener noreferrer"
+              >
+                {organization.email}
+              </a>
+            </div>
+          )}
+          {organization.twitter_username && (
+            <div className="flex flex-row items-center gap-x-3">
+              <span className="text-[17px]">
+                <ShortTextOutlined fontSize="inherit" />
+              </span>
+              <a
+                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                href={`https://twitter.com/${organization.twitter_username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {organization.twitter_username}
+              </a>
+            </div>
+          )}
+        </div>
       </div>
       {subscriberUsers.length > 0 && (
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row items-start justify-between">
-            <h3>Subscribers</h3>
-            <h3>{subscribersCount}</h3>
+            <h3 className="dark:text-polar-50 text-sm text-gray-950">
+              Subscribers
+            </h3>
+            <h3 className="dark:text-polar-500 text-sm text-gray-500">
+              {subscribersCount}
+            </h3>
           </div>
           <div className="flex flex-row flex-wrap gap-3">
             {subscriberUsers.map((user) => (

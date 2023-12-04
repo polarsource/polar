@@ -7,7 +7,7 @@ import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import { useCreateArticle } from 'polarkit/hooks'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -22,29 +22,26 @@ const ClientPage = () => {
   const router = useRouter()
   const create = useCreateArticle()
 
-  const handleContinue = useCallback(
-    async (openModal?: boolean) => {
-      if (!org) {
-        return
-      }
+  const handleContinue = async (openModal?: boolean) => {
+    if (!org) {
+      return
+    }
 
-      const created = await create.mutateAsync({
-        ...article,
-        organization_id: org.id,
-      })
+    const created = await create.mutateAsync({
+      ...article,
+      organization_id: org.id,
+    })
 
-      if (openModal) {
-        router.push(
-          `/maintainer/${created.organization.name}/posts/${created.slug}?settings=true`,
-        )
-      } else {
-        router.push(
-          `/maintainer/${created.organization.name}/posts/${created.slug}`,
-        )
-      }
-    },
-    [article, create, org, router],
-  )
+    if (openModal) {
+      router.push(
+        `/maintainer/${created.organization.name}/posts/${created.slug}?settings=true`,
+      )
+    } else {
+      router.push(
+        `/maintainer/${created.organization.name}/posts/${created.slug}`,
+      )
+    }
+  }
 
   useEffect(() => {
     const savePost = (e: KeyboardEvent) => {

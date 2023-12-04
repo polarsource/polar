@@ -79,7 +79,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const variantStyles = {
     default: {
       name: 'text-lg',
-      card: 'p-8 md:min-w-[280px] md:max-w-[320px]',
+      card: 'p-8 md:min-w-[280px] md:max-w-[350px]',
       priceLabel: 'text-5xl !font-[200]',
       description: 'text-sm',
       footer: 'mt-4',
@@ -97,7 +97,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     <Card
       ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:shadow-none',
+        'dark:bg-polar-800 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-none',
         variantStyles[variant]['card'],
         className,
       )}
@@ -126,7 +126,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             type={subscriptionTier.type}
           />
         </div>
-        <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
+        <div className="flex flex-col gap-y-8 text-gray-950 dark:text-[--var-dark-fg-color]">
           <div className={variantStyles[variant]['priceLabel']}>
             {
               <>
@@ -138,15 +138,13 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
                 )}
               </>
             }
-            <span className="ml-4 text-xl font-normal text-[--var-muted-color]">
-              /mo
-            </span>
+            <span className="ml-4 text-xl font-normal text-gray-500">/mo</span>
           </div>
           {subscriptionTier.description ? (
             <p
               className={twMerge(
-                'leading-loose text-[--var-muted-color] dark:text-[--var-dark-muted-color]',
                 variantStyles[variant].description,
+                'leading-relaxed text-gray-500 dark:text-[--var-dark-muted-color]',
               )}
             >
               {subscriptionTier.description}
@@ -161,13 +159,13 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         </div>
       </CardHeader>
       {benefitsToDisplay.length > 0 && subscriptionTier.description && (
-        <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
+        <Separator className="bg-gray-200 dark:bg-[--var-dark-border-color]" />
       )}
       <CardContent className="flex h-full grow flex-col gap-y-2 p-0">
         {benefitsToDisplay.map((benefit) => (
           <div
             key={benefit.id}
-            className="flex flex-row items-start text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
+            className="flex flex-row items-start text-gray-950 dark:text-[--var-dark-fg-color]"
           >
             {resolveBenefitIcon(benefit, false)}
             <span className="-mt-[2px] ml-3 text-sm">
@@ -176,7 +174,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           </div>
         ))}
         {additionalBenefits.length > 0 && (
-          <div className="dark:text-polar-400 mt-2 flex flex-row items-center text-[--var-muted-color]">
+          <div className="dark:text-polar-400 mt-2 flex flex-row items-center text-gray-500">
             <AddOutlined className="h-4 w-4" fontSize="small" />
             <span className="ml-2 text-sm">
               {additionalBenefits.length} more{' '}

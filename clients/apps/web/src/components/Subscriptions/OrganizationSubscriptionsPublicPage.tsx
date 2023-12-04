@@ -35,6 +35,7 @@ const OrganizationSubscriptionsPublicPage: React.FC<
         description="Tiers for individuals & fans who want to say thanks"
         type={SubscriptionTierType.HOBBY}
         tiers={subscriptionTiersByType.hobby}
+        organization={organization}
         subscribePath="/subscribe"
       />
       <SubscriptionGroupPublic
@@ -42,6 +43,7 @@ const OrganizationSubscriptionsPublicPage: React.FC<
         description="Tiers best suited for indie hackers & startups"
         type={SubscriptionTierType.PRO}
         tiers={subscriptionTiersByType?.pro}
+        organization={organization}
         subscribePath="/subscribe"
       />
       <SubscriptionGroupPublic
@@ -49,6 +51,7 @@ const OrganizationSubscriptionsPublicPage: React.FC<
         description="The most exclusive tiers for business customers"
         type={SubscriptionTierType.BUSINESS}
         tiers={subscriptionTiersByType?.business}
+        organization={organization}
         subscribePath="/subscribe"
       />
     </motion.div>

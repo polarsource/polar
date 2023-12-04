@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
 import SubscriptionTierCard from './SubscriptionTierCard'
-import { useSubscriptionCardAction } from './useSubscriptionCardAction'
+import SubscriptionTierSubscribeButton from './SubscriptionTierSubscribeButton'
 
 interface PublicSubscriptionUpsellProps {
   organization: Organization
@@ -66,8 +66,6 @@ const SubscriptionCard = ({
   subscribePath: string
   organization: Organization
 }) => {
-  const action = useSubscriptionCardAction(tier, organization, subscribePath)
-
   return (
     <SubscriptionTierCard
       className="w-full"
@@ -75,15 +73,11 @@ const SubscriptionCard = ({
       subscriptionTier={tier}
       variant="small"
     >
-      <Link className="w-full" href={action.link}>
-        <Button
-          variant="outline"
-          className="transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]"
-          fullWidth
-        >
-          {action.label}
-        </Button>
-      </Link>
+      <SubscriptionTierSubscribeButton
+        organization={organization}
+        subscriptionTier={tier}
+        subscribePath={subscribePath}
+      />
     </SubscriptionTierCard>
   )
 }

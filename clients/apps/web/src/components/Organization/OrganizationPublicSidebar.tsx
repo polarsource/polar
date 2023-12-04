@@ -10,6 +10,38 @@ import { Avatar } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
 
+function parseGitHubUsernameLinks(text: string) {
+  const words = text.split(' ')
+
+  const parsedWords = words.map((word) => {
+    if (word.startsWith('@')) {
+      const username = word.slice(1).replace(/\./g, '')
+      const link = `https://github.com/${username}`
+
+      return (
+        <a
+          className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+          href={link}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {word}
+        </a>
+      )
+    } else {
+      return word
+    }
+  })
+
+  return (
+    <p>
+      {parsedWords.reduce<(string | JSX.Element)[]>((prev, curr, index) => {
+        return index === 0 ? [curr] : [...prev, ' ', curr]
+      }, [])}
+    </p>
+  )
+}
+
 interface OrganizationPublicSidebarProps {
   organization: Organization
   subscriptionSummary: SubscriptionSummary[]
@@ -55,7 +87,7 @@ export const OrganizationPublicSidebar = ({
         </div>
         {organization.bio && (
           <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-500 md:text-start">
-            {organization.bio}
+            {parseGitHubUsernameLinks(organization.bio)}
           </p>
         )}
         {showMeta && (

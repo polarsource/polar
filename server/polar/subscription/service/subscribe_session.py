@@ -105,8 +105,8 @@ class SubscribeSessionService:
         if account is None:
             raise NoAssociatedPayoutAccount(subscription_tier.managing_organization_id)
 
-        # Prevent authenticated user to subscribe to another plan
-        # from the same organization/repository
+        metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
+
         if auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
             existing_subscriptions = (
                 await subscription_service.get_active_user_subscriptions(
@@ -116,12 +116,26 @@ class SubscribeSessionService:
                     repository_id=subscription_tier.repository_id,
                 )
             )
+            # Trying to upgrade from a Free subscription, set it in metadata for
+            # reconciliation when receiving Stripe Webhook
             if len(existing_subscriptions) > 0:
-                raise AlreadySubscribed(
-                    user_id=auth_subject.id,
-                    organization_id=subscription_tier.organization_id,
-                    repository_id=subscription_tier.repository_id,
-                )
+                try:
+                    free_subscription_upgrade = next(
+                        subscription
+                        for subscription in existing_subscriptions
+                        if subscription.subscription_tier.type
+                        == SubscriptionTierType.free
+                    )
+                except StopIteration as e:
+                    # Prevent authenticated user to subscribe to another plan
+                    # from the same organization/repository
+                    raise AlreadySubscribed(
+                        user_id=auth_subject.id,
+                        organization_id=subscription_tier.organization_id,
+                        repository_id=subscription_tier.repository_id,
+                    ) from e
+                else:
+                    metadata["subscription_id"] = str(free_subscription_upgrade.id)
 
         customer_options: dict[str, str] = {}
         # Set the customer only from a cookie-based authentication!
@@ -135,8 +149,6 @@ class SubscribeSessionService:
             customer_options["customer"] = auth_subject.stripe_customer_id
         elif customer_email is not None:
             customer_options["customer_email"] = customer_email
-
-        metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
 
         checkout_session = stripe_service.create_subscription_checkout_session(
             subscription_tier.stripe_price_id,

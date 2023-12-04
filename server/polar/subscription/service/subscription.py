@@ -118,6 +118,17 @@ class AlreadyCanceledSubscription(SubscriptionError):
         super().__init__(message)
 
 
+class FreeSubscriptionUpgrade(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = (
+            "Can't upgrade from free to paid subscription tier to paid directly. "
+            "You should start a subscribe session and specify you want to upgrade this "
+            "subscription."
+        )
+        super().__init__(message)
+
+
 class InvalidSubscriptionTierUpgrade(SubscriptionError):
     def __init__(self, subscription_tier_id: uuid.UUID) -> None:
         self.subscription_tier_id = subscription_tier_id
@@ -278,6 +289,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             select(Subscription)
             .join(Subscription.subscription_tier)
             .where(Subscription.user_id == user.id, Subscription.active.is_(True))
+            .options(contains_eager(Subscription.subscription_tier))
         )
 
         if organization_id is not None:
@@ -372,35 +384,56 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise AssociatedSubscriptionTierDoesNotExist(
                 stripe_subscription.id, product_id
             )
+        subscription: Subscription | None = None
 
-        user = await user_service.get_by_stripe_customer_id(session, customer_id)
-        if user is None:
-            customer = stripe_service.get_customer(customer_id)
-            assert customer.email is not None
-            user = await user_service.get_by_email_or_signup(
-                session, customer.email, signup_type=UserSignupType.backer
+        # Upgrade from free subscription tier sets the origin subscription in metadata
+        existing_subscription_id = stripe_subscription.metadata.get("subscription_id")
+        if existing_subscription_id is not None:
+            statement = (
+                select(Subscription)
+                .where(Subscription.id == uuid.UUID(existing_subscription_id))
+                .options(joinedload(Subscription.user))
             )
-            user.stripe_customer_id = customer_id
-            session.add(user)
-        await loops_service.user_update(user, isBacker=True)
+            result = await session.execute(statement)
+            subscription = result.unique().scalar_one_or_none()
 
-        subscription = Subscription(
-            stripe_subscription_id=stripe_subscription.id,
-            status=stripe_subscription.status,
-            current_period_start=_from_timestamp(
-                stripe_subscription.current_period_start
-            ),
-            current_period_end=_from_timestamp(stripe_subscription.current_period_end),
-            cancel_at_period_end=stripe_subscription.cancel_at_period_end,
-            ended_at=_from_timestamp(stripe_subscription.ended_at),
-            price_currency=price.currency,
-            price_amount=price.unit_amount,
-            user_id=user.id,
-            subscription_tier_id=subscription_tier.id,
+        # New subscription
+        if subscription is None:
+            subscription = Subscription(user=None)
+
+        subscription.stripe_subscription_id = stripe_subscription.id
+        subscription.status = SubscriptionStatus(stripe_subscription.status)
+        subscription.current_period_start = _from_timestamp(
+            stripe_subscription.current_period_start
         )
-        subscription.set_started_at()
-        session.add(subscription)
+        subscription.current_period_end = _from_timestamp(
+            stripe_subscription.current_period_end
+        )
+        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
+        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
+        subscription.price_currency = price.currency
+        subscription.price_amount = price.unit_amount
+        subscription.subscription_tier_id = subscription_tier.id
 
+        subscription.set_started_at()
+
+        # Take user from existing subscription, or get it from Stripe customer ID
+        user: User | None = subscription.user
+        if user is None:
+            user = await user_service.get_by_stripe_customer_id(session, customer_id)
+            if user is None:
+                customer = stripe_service.get_customer(customer_id)
+                assert customer.email is not None
+                user = await user_service.get_by_email_or_signup(
+                    session, customer.email, signup_type=UserSignupType.backer
+                )
+            subscription.user = user
+
+        user.stripe_customer_id = customer_id
+        await loops_service.user_update(user, isBacker=True)
+        session.add(user)
+
+        session.add(subscription)
         await session.commit()
 
         return subscription
@@ -532,6 +565,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if not await authz.can(user, AccessType.write, subscription):
             raise NotPermitted()
 
+        await session.refresh(subscription, {"subscription_tier", "user"})
+
+        if subscription.subscription_tier.type == SubscriptionTierType.free:
+            raise FreeSubscriptionUpgrade(subscription)
+
         new_subscription_tier = await subscription_tier_service.get_by_id(
             session, user, subscription_upgrade.subscription_tier_id
         )
@@ -543,8 +581,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise InvalidSubscriptionTierUpgrade(
                 subscription_upgrade.subscription_tier_id
             )
-
-        await session.refresh(subscription, {"subscription_tier", "user"})
 
         # Make sure the new tier belongs to the same organization/repository
         old_subscription_tier = subscription.subscription_tier

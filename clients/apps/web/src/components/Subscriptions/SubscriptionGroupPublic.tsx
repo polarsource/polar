@@ -1,14 +1,18 @@
-import { SubscriptionTier, SubscriptionTierType } from '@polar-sh/sdk'
-import Link from 'next/link'
-import { Button } from 'polarkit/components/ui/atoms'
+import {
+  Organization,
+  SubscriptionTier,
+  SubscriptionTierType,
+} from '@polar-sh/sdk'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import SubscriptionTierCard from './SubscriptionTierCard'
+import SubscriptionTierSubscribeButton from './SubscriptionTierSubscribeButton'
 
 interface SubscriptionGroupPublicProps {
   title: string
   description: string
   type: SubscriptionTierType
   tiers: SubscriptionTier[]
+  organization: Organization
   subscribePath: string
 }
 
@@ -17,6 +21,7 @@ const SubscriptionGroupPublic = ({
   description,
   type,
   tiers,
+  organization,
   subscribePath,
 }: SubscriptionGroupPublicProps) => {
   if (tiers.length < 1) {
@@ -43,22 +48,11 @@ const SubscriptionGroupPublic = ({
             subscriptionTier={tier}
             variant="small"
           >
-            <Link
-              className="flex w-full flex-col gap-y-4"
-              href={{
-                pathname: subscribePath,
-                query: { tier: tier.id },
-              }}
-            >
-              <Button
-                className="transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]"
-                size="lg"
-                variant="outline"
-                fullWidth
-              >
-                Subscribe
-              </Button>
-            </Link>
+            <SubscriptionTierSubscribeButton
+              organization={organization}
+              subscriptionTier={tier}
+              subscribePath={subscribePath}
+            />
           </SubscriptionTierCard>
         ))}
       </div>

@@ -11,7 +11,6 @@ import {
 import { useRouter } from 'next/navigation'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
-import { Separator } from 'polarkit/components/ui/separator'
 import {
   useArchiveSubscriptionTier,
   useSubscriptionBenefits,
@@ -151,72 +150,73 @@ const SubscriptionTierEdit = ({
 
   return (
     <DashboardBody>
-      <div className="flex flex-col gap-y-12">
-        <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="mb-8 flex items-center justify-between">
-              <h1 className="text-lg font-medium">Edit Subscription Tier</h1>
-              <div className="flex flex-row gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => router.back()}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Save Tier</Button>
+      <Form {...form}>
+        <div className="flex flex-row items-start justify-between gap-x-12">
+          <div className="dark:bg-polar-900 dark:border-polar-800 relative flex w-2/3 flex-col gap-y-12 rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="mb-8 flex items-center justify-between">
+                <h1 className="text-lg font-medium">Edit Subscription Tier</h1>
               </div>
-            </div>
-            <div className="relative flex flex-row justify-between gap-x-24">
-              <div className="flex w-1/2 flex-col gap-y-6">
-                <SubscriptionTierForm update={true} isFreeTier={isFreeTier} />
+              <div className="relative flex flex-row justify-between gap-x-24">
+                <div className="flex w-full flex-col gap-y-6">
+                  <SubscriptionTierForm update={true} isFreeTier={isFreeTier} />
+                </div>
               </div>
-              <div className="absolute right-0 top-0 flex flex-col">
-                <SubscriptionTierCard
-                  subscriptionTier={{
-                    ...editingSubscriptionTier,
-                    benefits: enabledBenefits,
-                  }}
+            </form>
+            <SubscriptionTierBenefitsForm
+              className="max-w-2/3 w-full"
+              organization={organization}
+              organizationBenefits={organizationBenefits}
+              benefits={enabledBenefits}
+              onSelectBenefit={onSelectBenefit}
+              onRemoveBenefit={onRemoveBenefit}
+            />
+            {!isFreeTier && (
+              <>
+                <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full flex-row items-start justify-between rounded-2xl border border-gray-200 bg-white p-6">
+                  <div className="flex flex-col gap-y-2">
+                    <h3 className="max-w-1/3">Archive Subscription Tier</h3>
+                    <p className="dark:text-polar-500 w-3/4 text-sm text-gray-400">
+                      Archiving a subscription tier will not affect its current
+                      subscribers, only prevent new subscribers.
+                    </p>
+                  </div>
+                  <Button variant="destructive" onClick={showArchiveModal}>
+                    Archive
+                  </Button>
+                </div>
+                <ConfirmModal
+                  title="Archive Subscription Tier"
+                  description="Archiving a subscription tier will not affect its current subscribers, only prevent new subscribers. An archived subscription tier is permanently archived."
+                  onConfirm={handleArchiveSubscriptionTier}
+                  isShown={isArchiveModalShown}
+                  hide={hideArchiveModal}
+                  destructiveText="Archive"
+                  destructive
                 />
-              </div>
-            </div>
-          </form>
-        </Form>
-        <SubscriptionTierBenefitsForm
-          className="w-1/2"
-          organization={organization}
-          organizationBenefits={organizationBenefits}
-          benefits={enabledBenefits}
-          onSelectBenefit={onSelectBenefit}
-          onRemoveBenefit={onRemoveBenefit}
-        />
-        {!isFreeTier && (
-          <>
-            <Separator className="w-1/2" />
-            <div className="flex w-1/2 flex-row items-start justify-between">
-              <div>
-                <h3 className="max-w-1/2">Archive Subscription Tier</h3>
-                <p className="dark:text-polar-500 mb-6 mt-2 w-3/4 text-sm  text-gray-400">
-                  Archiving a subscription tier will not affect its current
-                  subscribers, only prevent new subscribers.
-                </p>
-              </div>
-              <Button variant="destructive" onClick={showArchiveModal}>
-                Archive
+              </>
+            )}
+
+            <div className="flex flex-row gap-2">
+              <Button type="submit">Save Tier</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => router.back()}
+              >
+                Cancel
               </Button>
             </div>
-            <ConfirmModal
-              title="Archive Subscription Tier"
-              description="Archiving a subscription tier will not affect its current subscribers, only prevent new subscribers. An archived subscription tier is permanently archived."
-              onConfirm={handleArchiveSubscriptionTier}
-              isShown={isArchiveModalShown}
-              hide={hideArchiveModal}
-              destructiveText="Archive"
-              destructive
-            />
-          </>
-        )}
-      </div>
+          </div>
+          <SubscriptionTierCard
+            className="w-full shadow-sm"
+            subscriptionTier={{
+              ...editingSubscriptionTier,
+              benefits: enabledBenefits,
+            }}
+          />
+        </div>
+      </Form>
     </DashboardBody>
   )
 }

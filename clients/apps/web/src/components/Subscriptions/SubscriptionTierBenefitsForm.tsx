@@ -5,7 +5,7 @@ import {
   SubscriptionBenefitUpdate,
   SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
-import { Button, Input, ShadowBox, Switch } from 'polarkit/components/ui/atoms'
+import { Button, Input, Switch } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   DropdownMenu,
@@ -71,9 +71,9 @@ const BenefitRow = ({
       <div className="flex flex-row items-center gap-x-4">
         <div
           className={twMerge(
-            'dark:bg-polar-700 dark:text-polar-400 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-300 shadow',
+            'dark:bg-polar-700 dark:text-polar-400 flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-300',
             checked &&
-              'bg-blue-500 text-blue-500 dark:border dark:border-blue-400 dark:bg-blue-500',
+              'bg-blue-500 text-blue-500 shadow dark:border dark:border-blue-400 dark:bg-blue-500',
           )}
         >
           {resolveBenefitIcon(benefit, checked)}
@@ -178,7 +178,7 @@ const SubscriptionTierBenefitsForm = ({
             New Benefit
           </Button>
         </div>
-        <ShadowBox>
+        <div className="dark:bg-polar-800 dark:border-polar-700 rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-4">
               <div className="flex flex-col">
@@ -203,7 +203,7 @@ const SubscriptionTierBenefitsForm = ({
               </div>
             </div>
           </div>
-        </ShadowBox>
+        </div>
       </div>
       <Modal
         className="overflow-visible"

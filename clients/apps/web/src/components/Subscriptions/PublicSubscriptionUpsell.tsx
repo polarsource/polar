@@ -34,7 +34,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
         </Link>
       </div>
       <motion.div
-        className="-mx-6 flex h-fit flex-row gap-6 overflow-x-auto px-6 py-6 md:mx-0 md:overflow-x-visible md:px-0"
+        className="-mx-6 flex h-fit flex-row gap-6 overflow-x-auto px-6 py-6 md:mx-0 md:grid md:grid-cols-3 md:overflow-x-visible md:px-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -77,7 +77,8 @@ const SubscriptionCard = ({
     >
       <Link className="w-full" href={action.link}>
         <Button
-          className="bg-[--var-border-color] text-[--var-fg-color] transition-colors hover:bg-[--var-border-color] hover:text-white dark:border-none dark:bg-[--var-dark-border-color] dark:text-[--var-dark-fg-color] dark:hover:text-white"
+          variant="outline"
+          className="transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]"
           fullWidth
         >
           {action.label}

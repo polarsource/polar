@@ -11,6 +11,7 @@ from pytest_mock import MockerFixture
 from polar.app import app
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
+from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     Organization,
@@ -160,16 +161,18 @@ async def create_active_subscription(
     *,
     subscription_tier: SubscriptionTier,
     user: User,
-    started_at: datetime,
+    started_at: datetime | None = None,
     ended_at: datetime | None = None,
+    stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
 ) -> Subscription:
     return await create_subscription(
         session,
         subscription_tier=subscription_tier,
         user=user,
         status=SubscriptionStatus.active,
-        started_at=started_at,
+        started_at=started_at or utc_now(),
         ended_at=ended_at,
+        stripe_subscription_id=stripe_subscription_id,
     )
 
 

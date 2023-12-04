@@ -32,6 +32,7 @@ from polar.subscription.service.subscription import (
     AlreadyCanceledSubscription,
     AlreadySubscribed,
     AssociatedSubscriptionTierDoesNotExist,
+    FreeSubscriptionUpgrade,
     InvalidSubscriptionTierUpgrade,
     NotAFreeSubscriptionTier,
     RequiredCustomerEmail,
@@ -55,6 +56,7 @@ def construct_stripe_subscription(
     product_id: str = "PRODUCT_ID",
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     latest_invoice: stripe_lib.Invoice | None = None,
+    metadata: dict[str, str] = {},
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
     return stripe_lib.Subscription.construct_from(
@@ -78,6 +80,7 @@ def construct_stripe_subscription(
             "cancel_at_period_end": False,
             "ended_at": None,
             "latest_invoice": latest_invoice,
+            "metadata": metadata,
         },
         None,
     )
@@ -170,11 +173,10 @@ class TestCreateFreeSubscription:
         subscription_tier_organization_free: SubscriptionTier,
         user: User,
     ) -> None:
-        await create_subscription(
+        await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization_free,
             user=user,
-            status=SubscriptionStatus.active,
             stripe_subscription_id=None,
         )
 
@@ -195,11 +197,10 @@ class TestCreateFreeSubscription:
         subscription_tier_organization_free: SubscriptionTier,
         user: User,
     ) -> None:
-        await create_subscription(
+        await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization_free,
             user=user,
-            status=SubscriptionStatus.active,
             stripe_subscription_id=None,
         )
 
@@ -365,6 +366,36 @@ class TestCreateSubscription:
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.started_at is not None
+
+    async def test_subscription_upgrade(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        existing_subscription = await create_active_subscription(
+            session, subscription_tier=subscription_tier_organization_free, user=user
+        )
+
+        assert subscription_tier_organization.stripe_product_id is not None
+        stripe_subscription = construct_stripe_subscription(
+            product_id=subscription_tier_organization.stripe_product_id,
+            status=SubscriptionStatus.active,
+            metadata={"subscription_id": str(existing_subscription.id)},
+        )
+
+        subscription = await subscription_service.create_subscription(
+            session, stripe_subscription=stripe_subscription
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.id == existing_subscription.id
+        assert subscription.subscription_tier_id == subscription_tier_organization.id
+        assert subscription.started_at == existing_subscription.started_at
+
+        await session.refresh(user)
+        assert user.stripe_customer_id == stripe_subscription.customer
 
 
 @pytest.mark.asyncio
@@ -714,6 +745,27 @@ class TestUpgradeSubscription:
                 user=user_second,
             )
 
+    async def test_free_subscription(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription_tier_organization_free: SubscriptionTier,
+        user: User,
+    ) -> None:
+        subscription = await create_subscription(
+            session, subscription_tier=subscription_tier_organization_free, user=user
+        )
+        with pytest.raises(FreeSubscriptionUpgrade):
+            await subscription_service.upgrade_subscription(
+                session,
+                subscription=subscription,
+                subscription_upgrade=SubscriptionUpgrade(
+                    subscription_tier_id=uuid.uuid4()
+                ),
+                authz=authz,
+                user=user,
+            )
+
     async def test_not_existing_tier(
         self,
         session: AsyncSession,
@@ -832,11 +884,8 @@ class TestCancelSubscription:
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
-        subscription = await create_subscription(
-            session,
-            subscription_tier=subscription_tier_organization,
-            user=user,
-            status=SubscriptionStatus.active,
+        subscription = await create_active_subscription(
+            session, subscription_tier=subscription_tier_organization, user=user
         )
         subscription.cancel_at_period_end = True
 
@@ -853,11 +902,10 @@ class TestCancelSubscription:
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
-        subscription = await create_subscription(
+        subscription = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user,
-            status=SubscriptionStatus.active,
             stripe_subscription_id=None,
         )
 
@@ -880,11 +928,10 @@ class TestCancelSubscription:
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
-        subscription = await create_subscription(
+        subscription = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user,
-            status=SubscriptionStatus.active,
         )
 
         updated_subscription = await subscription_service.cancel_subscription(

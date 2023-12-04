@@ -13,7 +13,6 @@ from polar.models import (
     SubscriptionTier,
     User,
 )
-from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscribe_session import (
     AlreadySubscribed,
@@ -28,7 +27,7 @@ from polar.subscription.service.subscribe_session import (
 
 from ..conftest import (
     add_subscription_benefits,
-    create_subscription,
+    create_active_subscription,
     create_subscription_benefit,
 )
 
@@ -97,13 +96,9 @@ class TestCreateSubscribeSession:
         organization_account: Account,
         user: User,
     ) -> None:
-        subscription = await create_subscription(
-            session,
-            status=SubscriptionStatus.active,
-            subscription_tier=subscription_tier_organization,
-            user=user,
+        subscription = await create_active_subscription(
+            session, subscription_tier=subscription_tier_organization, user=user
         )
-        assert subscription.started_at is None
 
         with pytest.raises(AlreadySubscribed):
             await subscribe_session_service.create_subscribe_session(
@@ -341,6 +336,54 @@ class TestCreateSubscribeSession:
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
             subscription_metadata={
                 "subscription_tier_id": str(subscription_tier_organization.id)
+            },
+        )
+
+    async def test_valid_free_subscription_upgrade(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_tier_organization_free: SubscriptionTier,
+        stripe_service_mock: MagicMock,
+        user: User,
+        organization_account: Account,
+    ) -> None:
+        free_subscription = await create_active_subscription(
+            session, subscription_tier=subscription_tier_organization_free, user=user
+        )
+
+        user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
+
+        create_subscription_checkout_session_mock: (
+            MagicMock
+        ) = stripe_service_mock.create_subscription_checkout_session
+        create_subscription_checkout_session_mock.return_value = SimpleNamespace(
+            id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details={"name": "John", "email": "backer@example.com"},
+        )
+
+        subscribe_session = await subscribe_session_service.create_subscribe_session(
+            session,
+            subscription_tier_organization,
+            "SUCCESS_URL",
+            user,
+            AuthMethod.COOKIE,
+        )
+
+        create_subscription_checkout_session_mock.assert_called_once_with(
+            subscription_tier_organization.stripe_price_id,
+            "SUCCESS_URL",
+            is_tax_applicable=False,
+            customer="STRIPE_CUSTOMER_ID",
+            metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_id": str(free_subscription.id),
+            },
+            subscription_metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_id": str(free_subscription.id),
             },
         )
 

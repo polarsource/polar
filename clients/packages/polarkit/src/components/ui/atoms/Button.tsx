@@ -13,7 +13,7 @@ const buttonVariants = cva(
         destructive:
           'bg-red-500 dark:bg-red-600 text-white dark:border dark:border-red-500 hover:bg-red-400 dark:hover:bg-red-500',
         outline:
-          'text-gray-400 border border-gray-400 hover:border-gray-600 hover:text-gray-600 dark:text-polar-300 dark:border-polar-300 dark:hover:border-polar-100 dark:hover:text-polar-100 bg-transparent hover:bg-transparent',
+          'text-blue-500 dark:text-polar-200 hover:bg-blue-50 dark:bg-transparent dark:hover:bg-polar-600 border-transparent hover:border-blue-100 border dark:border-polar-600 bg-transparent border-blue-100',
         secondary:
           'text-blue-500 dark:text-polar-200 hover:bg-blue-50 dark:bg-polar-700 dark:hover:bg-polar-600 border-transparent hover:border-blue-100 border dark:border-polar-600 bg-transparent border-blue-100',
         ghost:

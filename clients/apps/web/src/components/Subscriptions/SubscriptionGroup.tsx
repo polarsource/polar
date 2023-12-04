@@ -29,7 +29,7 @@ const SubscriptionGroup: React.FC<SubscriptionGroupProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-8 py-8">
+    <div className="flex flex-col gap-8">
       <div>
         <div className="flex items-center justify-between">
           <h2 className="flex flex-row items-center text-2xl">

@@ -1,15 +1,14 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Bolt } from '@mui/icons-material'
-import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
+import { Add, Bolt } from '@mui/icons-material'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
-import FreeSubscriptionGroup from './FreeSubscriptionGroup'
-import SubscriptionGroup from './SubscriptionGroup'
+import SubscriptionTierCard from './SubscriptionTierCard'
 import { getSubscriptionTiersByType } from './utils'
 
 interface TiersPageProps {
@@ -22,6 +21,16 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   const subscriptionTiersByType = useMemo(
     () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
     [subscriptionTiers.data],
+  )
+
+  const tiers = useMemo(
+    () => [
+      ...subscriptionTiersByType.free,
+      ...subscriptionTiersByType.hobby,
+      ...subscriptionTiersByType.pro,
+      ...subscriptionTiersByType.business,
+    ],
+    [subscriptionTiers.data?.items],
   )
 
   if (!subscriptionTiers.data?.items?.length) {
@@ -46,36 +55,46 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
 
   return (
     <DashboardBody>
-      {subscriptionTiersByType.free.length > 0 && (
-        <FreeSubscriptionGroup
-          title="Free"
-          description="Built-in free tier so people can follow your news on Polar"
-          tier={subscriptionTiersByType.free[0]}
-          organization={organization}
-        />
-      )}
-      <div className="dark:divide-polar-700 flex flex-col gap-4 divide-y">
-        <SubscriptionGroup
-          title="Hobby"
-          description="Tiers for individuals & fans who want to say thanks"
-          type={SubscriptionTierType.HOBBY}
-          tiers={subscriptionTiersByType.hobby}
-          organization={organization}
-        />
-        <SubscriptionGroup
-          title="Pro"
-          description="Tiers best suited for indie hackers & startups"
-          type={SubscriptionTierType.PRO}
-          tiers={subscriptionTiersByType?.pro}
-          organization={organization}
-        />
-        <SubscriptionGroup
-          title="Business"
-          description="Your most exclusive tiers for business customers"
-          type={SubscriptionTierType.BUSINESS}
-          tiers={subscriptionTiersByType?.business}
-          organization={organization}
-        />
+      <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-y-12 rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+        <div className="flex flex-row justify-between">
+          <div className="flex flex-col gap-y-2">
+            <h2 className="text-lg font-medium">Subscription Tiers</h2>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              Manage your subscription tiers & benefits
+            </p>
+          </div>
+          <div>
+            <Link
+              href={{
+                pathname: `/maintainer/${organization.name}/subscriptions/tiers/new`,
+              }}
+            >
+              <Button>
+                <Add className="mr-2" fontSize="small" />
+                New Tier
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-10">
+          {tiers.map((tier) => (
+            <SubscriptionTierCard
+              className="h-full"
+              key={tier.id}
+              subscriptionTier={tier}
+            >
+              <Link
+                key={tier.id}
+                href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
+                className="w-full"
+              >
+                <Button variant="outline" fullWidth>
+                  Edit Tier
+                </Button>
+              </Link>
+            </SubscriptionTierCard>
+          ))}
+        </div>
       </div>
     </DashboardBody>
   )

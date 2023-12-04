@@ -8,6 +8,7 @@ const BrowserPoll = (props: { options: string[] }) => {
     <div className="my-2 flex flex-col space-y-2 bg-blue-300 p-8">
       {props.options.map((s) => (
         <div
+          key={s}
           className={twMerge(
             'item-center flex cursor-pointer justify-between bg-black/20 p-2',
             clicked === s ? 'bg-green-300' : '',

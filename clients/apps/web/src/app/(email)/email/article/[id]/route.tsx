@@ -1,3 +1,4 @@
+import EmailRender from '@/components/Feed/Posts/EmailRender'
 import { getServerSideAPI } from '@/utils/api'
 import { Article } from '@polar-sh/sdk'
 
@@ -18,11 +19,6 @@ import { notFound } from 'next/navigation'
 import { NextRequest, NextResponse } from 'next/server'
 
 // @ts-ignore
-import Markdown from 'markdown-to-jsx'
-
-import { markdownOpts } from '@/components/Feed/Posts/markdown'
-
-import Poll from '@/components/Feed/Posts/Poll'
 
 // used by the renderer
 import 'postcss'
@@ -232,22 +228,7 @@ export async function GET(
 
               <Row>
                 <Column>
-                  <Markdown
-                    // @ts-ignore
-                    options={{
-                      ...markdownOpts,
-                      overrides: {
-                        ...markdownOpts.overrides,
-
-                        // custom email overrides
-                        poll: (args: any) => (
-                          <Poll {...args} renderer={EmailPoll} />
-                        ),
-                      },
-                    }}
-                  >
-                    {article.body}
-                  </Markdown>
+                  <EmailRender article={article} />
                 </Column>
               </Row>
 
@@ -312,19 +293,4 @@ export async function GET(
     status: 200,
     headers: { 'Content-Type': 'text/html' },
   })
-}
-
-const EmailPoll = (props: { options: string[] }) => {
-  return (
-    <Container className="my-2 bg-green-300 p-8">
-      <table className="w-full">
-        {props.options.map((s) => (
-          <tr>
-            <td>{s}</td>
-            <td className="text-right">123 votes (10%)</td>
-          </tr>
-        ))}
-      </table>
-    </Container>
-  )
 }

@@ -216,32 +216,36 @@ export const dashboardRoutes = (
           subs: undefined,
         },
       ]),
-  {
-    id: 'backoffice',
-    title: 'Backoffice',
-    link: `/backoffice`,
-    icon: <Construction className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    if: false,
-    subs: [
-      {
-        title: 'Pledges',
-        link: `/backoffice/pledges`,
-      },
-      {
-        title: 'Rewards Pending',
-        link: `/backoffice/rewards_pending`,
-      },
-      {
-        title: 'Issue Badge',
-        link: `/backoffice/badge`,
-      },
-      {
-        title: 'Rebadge',
-        link: `/backoffice/rebadge`,
-      },
-    ],
-  },
+  ...(isFeatureEnabled('backoffice')
+    ? [
+        {
+          id: 'backoffice',
+          title: 'Backoffice',
+          link: `/backoffice`,
+          icon: <Construction className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: true,
+          subs: [
+            {
+              title: 'Pledges',
+              link: `/backoffice/pledges`,
+            },
+            {
+              title: 'Rewards Pending',
+              link: `/backoffice/rewards_pending`,
+            },
+            {
+              title: 'Issue Badge',
+              link: `/backoffice/badge`,
+            },
+            {
+              title: 'Rebadge',
+              link: `/backoffice/rebadge`,
+            },
+          ],
+        },
+      ]
+    : []),
   {
     id: 'settings',
     title: 'Settings',

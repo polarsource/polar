@@ -198,7 +198,7 @@ const SubscriptionTierEdit = ({
             )}
 
             <div className="flex flex-row gap-2">
-              <Button type="submit">Save Tier</Button>
+              <Button onClick={handleSubmit(onSubmit)}>Save Tier</Button>
               <Button
                 type="button"
                 variant="ghost"

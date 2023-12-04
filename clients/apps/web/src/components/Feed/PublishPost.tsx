@@ -2,6 +2,7 @@
 
 import { ModalHeader } from '@/components/Modal'
 import { useAuth } from '@/hooks'
+import { CalendarIcon } from '@heroicons/react/24/outline'
 import {
   LanguageOutlined,
   LinkOutlined,
@@ -12,6 +13,7 @@ import {
   ArticleUpdateVisibilityEnum,
   ArticleVisibilityEnum,
 } from '@polar-sh/sdk'
+import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
@@ -22,8 +24,14 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
+import { Calendar } from 'polarkit/components/ui/calendar'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { Banner } from 'polarkit/components/ui/molecules'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from 'polarkit/components/ui/popover'
 import { useSendArticlePreview, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -47,6 +55,10 @@ export const PublishModalContent = ({
   const [sendEmail, setSendEmail] = useState(article.notify_subscribers)
   const [previewEmailAddress, setPreviewEmailAddress] = useState('')
   const [previewSent, setPreviewSent] = useState<string>()
+
+  const [publishAt, setPublishAt] = useState<Date | undefined>(
+    article.published_at ? new Date(article.published_at) : undefined,
+  )
 
   useEffect(() => {
     setPreviewEmailAddress(currentUser?.email || '')
@@ -76,6 +88,8 @@ export const PublishModalContent = ({
       articleUpdate: {
         paid_subscribers_only: paidSubscribersOnly,
         visibility,
+        set_published_at: true,
+        published_at: publishAt?.toISOString(),
       },
     })
 
@@ -127,6 +141,10 @@ export const PublishModalContent = ({
             privateVisibilityAllowed={!sendEmail}
             onChange={onVisibilityChange}
           />
+        </div>
+
+        <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+          <ScheduledPostPicker publishAt={publishAt} onChange={setPublishAt} />
         </div>
 
         <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
@@ -332,6 +350,188 @@ const AudiencePicker = ({
           </TabsTrigger>
         </TabsList>
       </Tabs>
+    </div>
+  )
+}
+
+interface ScheduledPostPickerProps {
+  publishAt: Date | undefined
+  onChange: (v: Date | undefined) => void
+}
+
+const ScheduledPostPicker = ({
+  publishAt,
+  onChange,
+}: ScheduledPostPickerProps) => {
+  return (
+    <div className="flex flex-col gap-y-4">
+      <div className="flex flex-col gap-y-2">
+        <span className="font-medium">Scheduled publishing</span>
+      </div>
+      <div className="flex flex-col gap-y-6">
+        <DateTimePicker date={publishAt} onChange={onChange} />
+        {publishAt ? (
+          <div>
+            <span className="text-sm font-medium">
+              {publishAt < new Date() ? 'Published' : 'Publishing'}{' '}
+              <PolarTimeAgo date={publishAt} />
+            </span>
+            <div className="grid w-fit grid-cols-2 text-sm">
+              <div className="font-medium">Your time zone</div>
+              <div className="text-gray-500">
+                {publishAt.toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}{' '}
+                at{' '}
+                {publishAt.toLocaleTimeString(undefined, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZoneName: 'short',
+                })}
+              </div>
+
+              <div className="font-medium">UTC</div>
+              <div className="text-gray-500">
+                {publishAt.toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  timeZone: 'UTC',
+                })}{' '}
+                at{' '}
+                {publishAt.toLocaleTimeString(undefined, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZoneName: 'short',
+                  timeZone: 'UTC',
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+interface DateTimePickerProps {
+  date: Date | undefined
+  onChange: (v: Date) => void
+}
+
+type Time = { hour?: number; min?: number }
+
+const DateTimePicker = ({ date, onChange }: DateTimePickerProps) => {
+  const [datePickerDate, setDatePickerDate] = useState<Date>(date || new Date())
+
+  const [time, setTime] = useState<Time>({
+    hour: 0,
+    min: 0,
+  })
+
+  const changed = (date: Date, time: Time) => {
+    let d = new Date()
+
+    d.setFullYear(date.getFullYear())
+    d.setMonth(date.getMonth())
+    d.setDate(date.getDate())
+    d.setHours(time.hour || 0)
+    d.setMinutes(time.min || 0)
+    d.setSeconds(0)
+    d.setMilliseconds(0)
+
+    onChange(d)
+  }
+
+  const onChangeDate = (v?: Date) => {
+    if (!v) {
+      v = new Date()
+    }
+    setDatePickerDate(v)
+    changed(v || new Date(), time)
+  }
+
+  const onChangeTime = (v: Time) => {
+    setTime(v)
+    changed(datePickerDate || new Date(), v)
+  }
+
+  return (
+    <div className="flex items-center gap-4 ">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant={'outline'}
+            className={twMerge(
+              'w-[280px] justify-start text-left font-normal',
+              !date && 'text-muted-foreground',
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date ? format(date, 'PPP') : <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            classNames={{
+              day_today: 'bg-gray-200',
+              cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20',
+            }}
+            mode="single"
+            selected={date}
+            onSelect={onChangeDate}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+
+      <span className="text-sm">at</span>
+
+      <div className="flex items-center gap-1 text-sm">
+        <Input
+          className="w-[80px]"
+          type="number"
+          min={0}
+          max={23}
+          value={time.hour}
+          onChange={(e) => {
+            const h = parseInt(e.target.value)
+            const hour =
+              !isNaN(h) && isFinite(h)
+                ? Math.max(0, Math.min(23, h))
+                : undefined
+
+            const n = {
+              ...time,
+              hour,
+            }
+            onChangeTime(n)
+          }}
+        />
+        <span>:</span>
+        <Input
+          className="w-[80px]"
+          type="number"
+          min={0}
+          max={59}
+          value={time.min}
+          onChange={(e) => {
+            const m = parseInt(e.target.value)
+            const minute =
+              !isNaN(m) && isFinite(m)
+                ? Math.max(0, Math.min(59, m))
+                : undefined
+
+            const n = {
+              ...time,
+              min: minute,
+            }
+            onChangeTime(n)
+          }}
+        />
+      </div>
     </div>
   )
 }

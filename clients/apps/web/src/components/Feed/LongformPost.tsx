@@ -5,10 +5,7 @@ import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
-
-// @ts-ignore
-import Markdown from 'markdown-to-jsx'
-import { markdownBrowserOpts } from './Posts/markdownBrowser'
+import BrowserRender from './Posts/BrowserRender'
 
 const staggerTransition = {
   staggerChildren: 0.2,
@@ -19,10 +16,7 @@ const revealTransition = {
 }
 
 interface LongformPostProps {
-  post: Pick<
-    Article,
-    'title' | 'body' | 'published_at' | 'byline' | 'organization'
-  >
+  post: Article
 }
 
 export default function LongformPost({ post }: LongformPostProps) {
@@ -64,12 +58,7 @@ export default function LongformPost({ post }: LongformPostProps) {
 
       <StaggerReveal.Child transition={revealTransition}>
         <div className="prose dark:prose-invert dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-3xl dark:prose-p:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline space-y-16">
-          <Markdown
-            // @ts-ignore
-            options={{ ...markdownBrowserOpts }}
-          >
-            {post.body}
-          </Markdown>
+          <BrowserRender article={post} />
         </div>
       </StaggerReveal.Child>
 

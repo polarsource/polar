@@ -244,6 +244,16 @@ class ArticleService:
             # already sent
             raise BadRequest("this post has already been sent")
 
+        if article.notify_subscribers is False:
+            # not allowed to send
+            raise BadRequest("notify_subscribers is not enabled")
+
+        if not article.published_at:
+            raise BadRequest("article is not published")
+
+        if article.published_at > utc_now():
+            raise BadRequest("article is scheduled to be published in the future")
+
         article.notifications_sent_at = utc_now()
         await article.save(session)
         await session.commit()

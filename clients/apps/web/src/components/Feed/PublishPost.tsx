@@ -70,6 +70,12 @@ export const PublishModalContent = ({
   const sendPreview = useSendArticlePreview()
 
   const handleSendPreview = async () => {
+    // visibility must be at least link to send emails
+    if (visibility === ArticleVisibilityEnum.PRIVATE) {
+      setVisibility(ArticleVisibilityEnum.HIDDEN)
+      setDidAutoChangeVisibility(true)
+    }
+
     await sendPreview.mutateAsync({
       id: article.id,
       email: previewEmailAddress,
@@ -109,8 +115,8 @@ export const PublishModalContent = ({
   const onChangeSendEmail = (checked: boolean) => {
     setSendEmail(checked)
 
-    if (checked && visibility === ArticleVisibilityEnum.PRIVATE) {
-      setVisibility(ArticleVisibilityEnum.HIDDEN)
+    if (checked && visibility !== ArticleVisibilityEnum.PUBLIC) {
+      setVisibility(ArticleVisibilityEnum.PUBLIC)
       setDidAutoChangeVisibility(true)
     }
   }
@@ -147,6 +153,7 @@ export const PublishModalContent = ({
             paidSubscribersOnly={paidSubscribersOnly}
             visibility={visibility}
             privateVisibilityAllowed={!sendEmail}
+            linkVisibilityAllowed={!sendEmail}
             onChange={onVisibilityChange}
           />
         </div>
@@ -211,7 +218,8 @@ export const PublishModalContent = ({
 
               {didAutoChangeVisibility && (
                 <Banner color="blue">
-                  The visibility has been changed to <em>Link</em>
+                  The visibility has been changed to{' '}
+                  <em className="capitalize">{visibility}</em>
                 </Banner>
               )}
             </div>
@@ -252,6 +260,7 @@ interface VisibilityPickerProps {
   visibility: ArticleUpdateVisibilityEnum
   paidSubscribersOnly: boolean
   privateVisibilityAllowed: boolean
+  linkVisibilityAllowed: boolean
   onChange: (visibility: ArticleUpdateVisibilityEnum) => void
 }
 
@@ -259,6 +268,7 @@ const VisibilityPicker = ({
   paidSubscribersOnly,
   visibility,
   privateVisibilityAllowed,
+  linkVisibilityAllowed,
   onChange,
 }: VisibilityPickerProps) => {
   const visibilityDescription = useMemo(() => {
@@ -272,7 +282,7 @@ const VisibilityPicker = ({
       case ArticleVisibilityEnum.HIDDEN:
         return `${audience} with the link can see this post`
       case ArticleVisibilityEnum.PUBLIC:
-        return `${audience} can see this post`
+        return `${audience} can see this post on the web`
     }
   }, [visibility, paidSubscribersOnly])
 
@@ -306,7 +316,10 @@ const VisibilityPicker = ({
             />
             <span>Private</span>
           </TabsTrigger>
-          <TabsTrigger value={ArticleVisibilityEnum.HIDDEN}>
+          <TabsTrigger
+            value={ArticleVisibilityEnum.HIDDEN}
+            disabled={!linkVisibilityAllowed}
+          >
             <LinkOutlined
               className={twMerge(
                 visibility === ArticleUpdateVisibilityEnum.HIDDEN &&

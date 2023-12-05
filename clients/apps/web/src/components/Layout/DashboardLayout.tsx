@@ -70,7 +70,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
             )}
           </div>
 
-          <GitHubAuthUpsell />
+          {shouldShowGitHubAuthUpsell && <GitHubAuthUpsell />}
 
           {shouldRenderBackerNavigation && <BackerNavigation />}
 

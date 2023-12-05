@@ -1,8 +1,12 @@
 'use client'
 
-import { useCurrentOrgAndRepoFromURL, useIsOrganizationAdmin } from '@/hooks'
+import {
+  useCurrentOrgAndRepoFromURL,
+  useGitHubAccount,
+  useIsOrganizationAdmin,
+} from '@/hooks'
 import { useAuth } from '@/hooks/auth'
-import { Repository } from '@polar-sh/sdk'
+import { Repository, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
 import { LogoIcon } from 'polarkit/components/brand'
@@ -15,6 +19,7 @@ import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
 import Popover from '../Notifications/Popover'
+import GithubLoginButton from '../Shared/GithubLoginButton'
 import ProfileSelection from '../Shared/ProfileSelection'
 
 const DashboardLayout = (props: PropsWithChildren) => {
@@ -37,6 +42,9 @@ const DashboardLayout = (props: PropsWithChildren) => {
   const shouldRenderDashboardNavigation = currentOrg ? isOrgAdmin : true
 
   const showConnectUpsell = orgs && orgs.length === 0
+
+  const githubAccount = useGitHubAccount()
+  const shouldShowGitHubAuthUpsell = !githubAccount
 
   if (!hydrated) {
     return <></>
@@ -61,6 +69,8 @@ const DashboardLayout = (props: PropsWithChildren) => {
               <ProfileSelection useOrgFromURL={true} className="shadow-xl" />
             )}
           </div>
+
+          {shouldShowGitHubAuthUpsell && <GitHubAuthUpsell />}
 
           {shouldRenderBackerNavigation && <BackerNavigation />}
 
@@ -95,6 +105,23 @@ const DashboardLayout = (props: PropsWithChildren) => {
 }
 
 export default DashboardLayout
+
+const GitHubAuthUpsell = () => {
+  return (
+    <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 mb-4 flex flex-col gap-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
+      <h3 className="font-medium text-blue-500">Connect with GitHub</h3>
+      <p className="text-blue-400">
+        Unlock more features by connecting your account with GitHub
+      </p>
+      <GithubLoginButton
+        className="border-none bg-blue-500 text-white hover:bg-blue-400"
+        text="Connect with GitHub"
+        gotoUrl={window.location.href}
+        userSignupType={UserSignupType.BACKER}
+      />
+    </div>
+  )
+}
 
 export const RepoPickerHeader = (props: {
   currentRepository?: Repository

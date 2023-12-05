@@ -5,8 +5,10 @@ import { useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
 import posthog from 'posthog-js'
 import { MouseEvent } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const GithubLoginButton = (props: {
+  className?: string
   gotoUrl?: string
   userSignupType?: UserSignupType
   size?: 'large' | 'small'
@@ -48,10 +50,13 @@ const GithubLoginButton = (props: {
       <button
         onClick={signin}
         type="button"
-        className={`flex content-center items-center justify-center space-x-2 transition-colors duration-200
-          ${props.size === 'large' ? largeStyle : smallStyle}
-          ${props.fullWidth ? 'w-full' : ''}
-        `}
+        className={twMerge(
+          `flex content-center items-center justify-center space-x-2 transition-colors duration-200
+        ${props.size === 'large' ? largeStyle : smallStyle}
+        ${props.fullWidth ? 'w-full' : ''}
+      `,
+          props.className,
+        )}
       >
         <svg
           className={`${props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4'}`}

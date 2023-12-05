@@ -5,7 +5,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { EyeIcon, PhotoIcon } from '@heroicons/react/24/outline'
+import { EnvelopeIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
   ArrowForward,
@@ -46,9 +46,9 @@ const ClientPage = () => {
   return (
     <>
       <DashboardBody>
-        <div className="items mb-24 flex flex-row items-start gap-x-12">
-          <div className="flex w-2/3 flex-col gap-y-8">
-            <div className="flex w-full flex-row items-center justify-between">
+        <div className="items mb-24 flex w-full flex-col-reverse items-start gap-y-12  xl:flex-row xl:gap-x-12 xl:gap-y-0">
+          <div className="flex flex-col gap-y-8 overflow-hidden ">
+            <div className="flex flex-row items-center justify-between">
               <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Overview
               </h3>
@@ -70,7 +70,7 @@ const ClientPage = () => {
               </StaggerReveal>
             </div>
           </div>
-          <div className="flex w-1/3 flex-col gap-y-8">
+          <div className="flex-shrink-0 flex-col gap-y-8 xl:w-1/3">
             <div className="flex w-full flex-grow flex-row items-center justify-between">
               <h3 className="dark:text-polar-50 text-lg text-gray-950">
                 Analytics
@@ -117,7 +117,7 @@ const PostItem = (post: Article) => {
 
   return (
     <Link
-      className="flex h-full w-full flex-col"
+      className="flex h-full flex-col overflow-hidden"
       ref={ref}
       href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}
     >
@@ -141,8 +141,8 @@ const PostItem = (post: Article) => {
               {description}
             </p>
           </div>
-          <div className="flex flex-row items-center justify-between">
-            <div className="dark:text-polar-300 flex w-full flex-row gap-x-3 text-sm text-gray-500">
+          <div className="flex flex-row items-center justify-between whitespace-nowrap">
+            <div className="dark:text-polar-300  flex w-full flex-row flex-wrap gap-x-3 text-sm text-gray-500">
               {post.published_at ? (
                 <PolarTimeAgo date={new Date(post.published_at)} />
               ) : (
@@ -151,16 +151,24 @@ const PostItem = (post: Article) => {
               &middot;
               {post.visibility !== 'public' ? (
                 <div className="flex flex-row items-center gap-x-2 text-sm">
-                  {/* <SubscriptionGroupIcon type={post.visibility} /> */}
                   <span className="capitalize">{post.visibility}</span>
                 </div>
               ) : (
                 <div className="flex flex-row items-center gap-x-2 text-sm">
-                  <LanguageOutlined
-                    className="text-blue-500"
-                    fontSize="inherit"
-                  />
-                  <span className="capitalize">{post.visibility}</span>
+                  {post.paid_subscribers_only ? (
+                    <>
+                      <span className="text-green-500">$</span>
+                      <span className="capitalize">Paid subscribers</span>
+                    </>
+                  ) : (
+                    <>
+                      <LanguageOutlined
+                        className="text-blue-500"
+                        fontSize="inherit"
+                      />
+                      <span className="capitalize">Public</span>
+                    </>
+                  )}
                 </div>
               )}
               {post.web_view_count !== undefined ? (
@@ -175,14 +183,23 @@ const PostItem = (post: Article) => {
                   </div>
                 </>
               ) : null}
-              {post.notifications_sent_at ? (
-                <div>sent_at={post.notifications_sent_at}</div>
-              ) : null}
               {post.email_sent_to_count ? (
-                <div>email_sent_to_count={post.email_sent_to_count}</div>
+                <>
+                  &middot;
+                  <div className="flex flex-row items-center gap-x-2 text-sm">
+                    <EnvelopeIcon className="h-4 w-4" />
+                    <span>
+                      {post.email_sent_to_count}{' '}
+                      {post.email_sent_to_count === 1
+                        ? 'receiver'
+                        : 'receivers'}
+                    </span>
+                  </div>
+                </>
               ) : null}
             </div>
-            <div className="flex flex-row items-center gap-x-4">
+
+            <div className="hidden flex-row items-center gap-x-4 lg:flex">
               <AnimatedIconButton active={isHovered} variant="secondary">
                 <ArrowForward fontSize="inherit" />
               </AnimatedIconButton>

@@ -4,12 +4,14 @@ import {
   useCurrentOrgAndRepoFromURL,
   useGitHubAccount,
   useIsOrganizationAdmin,
+  usePersonalOrganization,
 } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
 import { Repository, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
 import { LogoIcon } from 'polarkit/components/brand'
+import { Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
 import { PropsWithChildren, Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -26,6 +28,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
   const { currentUser, hydrated } = useAuth()
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()
+  const personalOrg = usePersonalOrganization()
 
   const orgs = listOrganizationQuery?.data?.items
 
@@ -41,10 +44,10 @@ const DashboardLayout = (props: PropsWithChildren) => {
 
   const shouldRenderDashboardNavigation = currentOrg ? isOrgAdmin : true
 
-  const showConnectUpsell = orgs && orgs.length === 0
-
   const githubAccount = useGitHubAccount()
   const shouldShowGitHubAuthUpsell = !githubAccount
+
+  const shouldShowMaintainerUpsell = !currentOrg && !personalOrg
 
   if (!hydrated) {
     return <></>
@@ -70,29 +73,23 @@ const DashboardLayout = (props: PropsWithChildren) => {
             )}
           </div>
 
-          {shouldShowGitHubAuthUpsell && <GitHubAuthUpsell />}
-
           {shouldRenderBackerNavigation && <BackerNavigation />}
 
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
 
           {shouldRenderDashboardNavigation && <DashboardNavigation />}
+
+          <div className="flex flex-col pt-4">
+            {shouldShowGitHubAuthUpsell ? (
+              <GitHubAuthUpsell />
+            ) : shouldShowMaintainerUpsell ? (
+              <MaintainerUpsell />
+            ) : null}
+          </div>
         </div>
 
         <div className="flex flex-col gap-y-2">
           <MetaNavigation />
-
-          {showConnectUpsell && (
-            <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
-              <p className="mb-2">Get funding for your public repositories.</p>
-              <Link
-                href={CONFIG.GITHUB_INSTALLATION_URL}
-                className="font-medium text-blue-500"
-              >
-                Connect repositories
-              </Link>
-            </div>
-          )}
         </div>
       </aside>
       <div className="dark:bg-polar-950 bg-gray-75 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden">
@@ -108,19 +105,48 @@ export default DashboardLayout
 
 const GitHubAuthUpsell = () => {
   return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 mb-4 flex flex-col gap-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
-      <h3 className="dark:text-polar-50 font-medium text-blue-500">
-        Connect with GitHub
-      </h3>
-      <p className="dark:text-polar-300 text-blue-400">
-        Unlock more features by connecting your account with GitHub
-      </p>
+    <Upsell
+      title="Connect with GitHub"
+      description="Unlock more features by connecting your account with GitHub"
+    >
       <GithubLoginButton
         className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
         text="Connect with GitHub"
         gotoUrl={window.location.href}
         userSignupType={UserSignupType.BACKER}
       />
+    </Upsell>
+  )
+}
+
+const MaintainerUpsell = () => {
+  return (
+    <Upsell
+      title="Become a maintainer"
+      description="Supercharge your community with Posts & enable funding on your issues"
+    >
+      <Link
+        href={CONFIG.GITHUB_INSTALLATION_URL}
+        className="font-medium text-blue-500"
+      >
+        <Button className="-z-1" fullWidth>
+          Connect Repositories
+        </Button>
+      </Link>
+    </Upsell>
+  )
+}
+
+const Upsell = ({
+  title,
+  description,
+  children,
+}: PropsWithChildren<{ title: string; description: string }>) => {
+  return (
+    <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 flex flex-col gap-y-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
+      <h3 className="dark:text-polar-50 font-medium text-blue-500">{title}</h3>
+      <p className="dark:text-polar-300 -mt-2 text-blue-400">{description}</p>
+      {children}
     </div>
   )
 }

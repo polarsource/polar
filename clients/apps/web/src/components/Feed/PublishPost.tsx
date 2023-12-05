@@ -96,6 +96,7 @@ export const PublishModalContent = ({
         visibility,
         set_published_at: true,
         published_at: publishAt?.toISOString(),
+        notify_subscribers: sendEmail,
       },
     })
 

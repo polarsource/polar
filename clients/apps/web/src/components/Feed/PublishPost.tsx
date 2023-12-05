@@ -93,15 +93,15 @@ export const PublishModalContent = ({
       articleUpdate: {
         paid_subscribers_only: paidSubscribersOnly,
         visibility,
-        set_published_at: true,
-        published_at: publishAt?.toISOString(),
+        set_published_at: publishAt ? true : false,
+        published_at: publishAt ? publishAt.toISOString() : undefined,
         notify_subscribers: sendEmail,
       },
     })
 
     setIsSaving(false)
 
-    router.push(`/maintainer/${updated.organization.name}/posts`)
+    hide()
   }
 
   const [didAutoChangeVisibility, setDidAutoChangeVisibility] = useState(false)
@@ -113,11 +113,24 @@ export const PublishModalContent = ({
       setVisibility(ArticleVisibilityEnum.PUBLIC)
       setDidAutoChangeVisibility(true)
     }
+
+    if (checked && publishAt === undefined) {
+      setPublishAt(new Date())
+    }
   }
 
   const onVisibilityChange = (visibility: ArticleUpdateVisibilityEnum) => {
     setVisibility(visibility)
     setDidAutoChangeVisibility(false)
+  }
+
+  const onChangePublishAt = (v: Date | undefined) => {
+    setPublishAt(v)
+
+    if (v && visibility !== ArticleVisibilityEnum.PUBLIC) {
+      setVisibility(ArticleVisibilityEnum.PUBLIC)
+      setDidAutoChangeVisibility(true)
+    }
   }
 
   const onPublishAtReset = () => {
@@ -127,6 +140,39 @@ export const PublishModalContent = ({
       setPublishAt(undefined)
     }
   }
+
+  const saveVerb = useMemo(() => {
+    // Already published
+    if (article.published_at && new Date(article.published_at) <= new Date()) {
+      // already sent via email
+      if (article.email_sent_to_count) {
+        return 'Save'
+      }
+
+      if (sendEmail) {
+        return 'Save & send'
+      }
+
+      return 'Save'
+    }
+
+    if (publishAt && publishAt > new Date()) {
+      if (sendEmail) {
+        return 'Save and send later'
+      }
+      return 'Save and publish later'
+    }
+
+    if (visibility === ArticleVisibilityEnum.PUBLIC) {
+      if (sendEmail) {
+        return 'Publish now & send'
+      }
+
+      return 'Publish now'
+    }
+
+    return 'Save'
+  }, [article, sendEmail, visibility, publishAt])
 
   return (
     <>
@@ -147,8 +193,9 @@ export const PublishModalContent = ({
             <VisibilityPicker
               paidSubscribersOnly={paidSubscribersOnly}
               visibility={visibility}
-              privateVisibilityAllowed={!sendEmail}
-              linkVisibilityAllowed={!sendEmail}
+              privateVisibilityAllowed={!sendEmail && !publishAt}
+              linkVisibilityAllowed={!sendEmail && !publishAt}
+              article={article}
               onChange={onVisibilityChange}
             />
           </div>
@@ -156,7 +203,8 @@ export const PublishModalContent = ({
           <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
             <ScheduledPostPicker
               publishAt={publishAt}
-              onChange={setPublishAt}
+              article={article}
+              onChange={onChangePublishAt}
               onReset={onPublishAtReset}
             />
           </div>
@@ -191,9 +239,13 @@ export const PublishModalContent = ({
                   </div>
                 )}
 
-                {article.published_at && !article.notifications_sent_at ? (
+                {article.published_at &&
+                new Date(article.published_at) < new Date() &&
+                article.visibility === ArticleVisibilityEnum.PUBLIC &&
+                !article.notifications_sent_at ? (
                   <Banner color="blue">
-                    This article is public, but has not been sent over email.
+                    This article is published and public, but has not been sent
+                    over email.
                   </Banner>
                 ) : null}
 
@@ -232,25 +284,7 @@ export const PublishModalContent = ({
               Cancel
             </Button>
             <Button onClick={handleSave} loading={isSaving}>
-              {article.published_at &&
-              new Date(article.published_at) <= new Date() ? (
-                // Already published
-                <>{sendEmail ? 'Save & send' : 'Save'}</>
-              ) : (
-                <>
-                  {publishAt && publishAt > new Date() ? (
-                    // Not yet published
-                    <>
-                      {sendEmail
-                        ? 'Save and send later'
-                        : 'Save and publish later'}
-                    </>
-                  ) : (
-                    // Published in the past
-                    <>{sendEmail ? 'Publish now & send' : 'Publish now'}</>
-                  )}
-                </>
-              )}
+              {saveVerb}
             </Button>
           </div>
         </div>
@@ -264,6 +298,7 @@ interface VisibilityPickerProps {
   paidSubscribersOnly: boolean
   privateVisibilityAllowed: boolean
   linkVisibilityAllowed: boolean
+  article: Article
   onChange: (visibility: ArticleUpdateVisibilityEnum) => void
 }
 
@@ -272,6 +307,7 @@ const VisibilityPicker = ({
   visibility,
   privateVisibilityAllowed,
   linkVisibilityAllowed,
+  article,
   onChange,
 }: VisibilityPickerProps) => {
   const visibilityDescription = useMemo(() => {
@@ -281,7 +317,7 @@ const VisibilityPicker = ({
 
     switch (visibility) {
       case ArticleVisibilityEnum.PRIVATE:
-        return `Only members of this organization can see this post`
+        return `Only members of ${article.organization.name} can see this post`
       case ArticleVisibilityEnum.HIDDEN:
         return `${audience} with the link can see this post`
       case ArticleVisibilityEnum.PUBLIC:
@@ -397,23 +433,30 @@ const AudiencePicker = ({
 
 interface ScheduledPostPickerProps {
   publishAt: Date | undefined
+  article: Article
   onChange: (v: Date | undefined) => void
   onReset: () => void
 }
 
 const ScheduledPostPicker = ({
   publishAt,
+  article,
   onChange,
   onReset,
 }: ScheduledPostPickerProps) => {
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex items-start justify-between gap-y-2">
-        <span className="font-medium">Scheduled publishing</span>
+        <span className="font-medium">Publishing date & time</span>
       </div>
       <div className="flex flex-col gap-y-6">
         <div className="flex flex-row justify-between">
-          <DateTimePicker date={publishAt} onChange={onChange} />
+          <DateTimePicker
+            date={publishAt}
+            canSelectFuture={true}
+            canSelectPast={true}
+            onChange={onChange}
+          />
           {publishAt ? (
             <div className="flex items-center gap-2">
               <Button
@@ -484,11 +527,18 @@ const ScheduledPostPicker = ({
 interface DateTimePickerProps {
   date: Date | undefined
   onChange: (v: Date) => void
+  canSelectFuture: boolean
+  canSelectPast: boolean
 }
 
 type Time = { hour?: number; min?: number }
 
-const DateTimePicker = ({ date, onChange }: DateTimePickerProps) => {
+const DateTimePicker = ({
+  date,
+  onChange,
+  canSelectFuture,
+  canSelectPast,
+}: DateTimePickerProps) => {
   const [datePickerDate, setDatePickerDate] = useState<Date>(date || new Date())
 
   const [time, setTime] = useState<Time>({
@@ -548,6 +598,8 @@ const DateTimePicker = ({ date, onChange }: DateTimePickerProps) => {
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
           <Calendar
+            toDate={!canSelectFuture ? new Date() : undefined}
+            fromDate={!canSelectPast ? new Date() : undefined}
             classNames={{
               day_today: 'bg-gray-200',
               cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20',

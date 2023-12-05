@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import React, { FunctionComponent, MouseEvent, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
@@ -42,35 +41,29 @@ export const Modal: FunctionComponent<ModalProps> = ({
     <React.Fragment>
       <FocusLock>
         <div
-          className="fixed bottom-0 left-0 right-0 top-0 z-50"
+          className="fixed bottom-0 left-0 right-0 top-0 z-50 overflow-hidden"
           aria-modal
           tabIndex={-1}
           role="dialog"
         >
           <div
-            className="flex h-full w-full flex-col items-center bg-black/50 py-2"
+            className="flex h-full w-full flex-col items-center bg-black/50 p-2"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               hide()
             }}
           >
-            <div className="flex-shrink-1 block h-[20%] w-2"></div>
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.15,
-                easings: 'easeInOut',
-              }}
+            <div className="block w-2 lg:h-full lg:max-h-[10%] lg:grow-[2]"></div>
+            <div
               className={twMerge(
-                'h-content dark:bg-polar-800 z-10 min-w-[800px] flex-shrink-0 overflow-hidden rounded-2xl bg-white shadow',
+                'dark:bg-polar-800 z-10 flex max-h-full max-w-full flex-col rounded-2xl bg-white shadow lg:min-w-[800px]',
                 className,
               )}
               onClick={onInnerClick}
             >
               {modalContent}
-            </motion.div>
+            </div>
           </div>
         </div>
       </FocusLock>

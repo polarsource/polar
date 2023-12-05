@@ -121,17 +121,16 @@ const ClientPage = () => {
             Archive
           </Button>
 
-          {post.data.visibility !== 'hidden' && (
-            <Link
-              href={`/${post.data.organization.name}/posts/${post.data.slug}`}
-              target="_blank"
-            >
-              <Button variant={'outline'}>
-                <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
-                <span>Read</span>
-              </Button>
-            </Link>
-          )}
+          <Link
+            href={`/${post.data.organization.name}/posts/${post.data.slug}`}
+            target="_blank"
+          >
+            <Button variant={'outline'}>
+              <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
+              <span>Read</span>
+            </Button>
+          </Link>
+
           <Button
             className="self-start"
             onClick={handleSave}

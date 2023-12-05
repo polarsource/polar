@@ -70,7 +70,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
             )}
           </div>
 
-          {shouldShowGitHubAuthUpsell && <GitHubAuthUpsell />}
+          <GitHubAuthUpsell />
 
           {shouldRenderBackerNavigation && <BackerNavigation />}
 
@@ -109,12 +109,14 @@ export default DashboardLayout
 const GitHubAuthUpsell = () => {
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 mb-4 flex flex-col gap-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
-      <h3 className="font-medium text-blue-500">Connect with GitHub</h3>
-      <p className="text-blue-400">
+      <h3 className="dark:text-polar-50 font-medium text-blue-500">
+        Connect with GitHub
+      </h3>
+      <p className="dark:text-polar-300 text-blue-400">
         Unlock more features by connecting your account with GitHub
       </p>
       <GithubLoginButton
-        className="border-none bg-blue-500 text-white hover:bg-blue-400"
+        className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
         text="Connect with GitHub"
         gotoUrl={window.location.href}
         userSignupType={UserSignupType.BACKER}

@@ -230,6 +230,19 @@ class ArticleService:
         await session.execute(statement)
         await session.commit()
 
+    async def list_scheduled_unsent_posts(
+        self, session: AsyncSession
+    ) -> Sequence[Article]:
+        statement = sql.select(Article).where(
+            Article.notifications_sent_at.is_(None),
+            Article.notify_subscribers.is_(True),
+            Article.deleted_at.is_(None),
+            Article.visibility == Article.Visibility.public,
+            Article.published_at < utc_now(),
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().all()
+
     async def receivers(
         self, session: AsyncSession, article: Article
     ) -> Sequence[UUID]:

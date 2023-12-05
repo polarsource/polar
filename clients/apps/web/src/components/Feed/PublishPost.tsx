@@ -191,7 +191,7 @@ export const PublishModalContent = ({
                   </div>
                 )}
 
-                {article.published_at && !article.notify_subscribers ? (
+                {article.published_at && !article.notifications_sent_at ? (
                   <Banner color="blue">
                     This article is public, but has not been sent over email.
                   </Banner>

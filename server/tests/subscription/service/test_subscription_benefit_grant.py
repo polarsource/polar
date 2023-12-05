@@ -3,7 +3,12 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.models import Subscription, SubscriptionBenefit, SubscriptionBenefitGrant
+from polar.models import (
+    Subscription,
+    SubscriptionBenefit,
+    SubscriptionBenefitGrant,
+    User,
+)
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import SubscriptionBenefitCustomUpdate
 from polar.subscription.service.benefits import (
@@ -18,6 +23,8 @@ from polar.subscription.service.subscription_benefit_grant import (
 @pytest.fixture(autouse=True)
 def subscription_benefit_service_mock(mocker: MockerFixture) -> MagicMock:
     service_mock = MagicMock(spec=SubscriptionBenefitServiceProtocol)
+    service_mock.grant.return_value = {}
+    service_mock.revoke.return_value = {}
     mock = mocker.patch(
         "polar.subscription.service.subscription_benefit_grant"
         ".get_subscription_benefit_service"
@@ -32,34 +39,41 @@ class TestGrantBenefit:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
+        subscription_benefit_service_mock.grant.return_value = {"external_id": "abc"}
+
         grant = await subscription_benefit_grant_service.grant_benefit(
-            session, subscription, subscription_benefit_organization
+            session, subscription, user, subscription_benefit_organization
         )
 
         assert grant.subscription_id == subscription.id
+        assert grant.user_id == user.id
         assert grant.subscription_benefit_id == subscription_benefit_organization.id
         assert grant.is_granted
+        assert grant.properties == {"external_id": "abc"}
         subscription_benefit_service_mock.grant.assert_called_once()
 
     async def test_existing_grant_not_granted(
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
+            user_id=user.id,
             subscription_benefit_id=subscription_benefit_organization.id,
         )
         session.add(grant)
         await session.commit()
 
         updated_grant = await subscription_benefit_grant_service.grant_benefit(
-            session, subscription, subscription_benefit_organization
+            session, subscription, user, subscription_benefit_organization
         )
 
         assert updated_grant.id == grant.id
@@ -70,11 +84,13 @@ class TestGrantBenefit:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
+            user_id=user.id,
             subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_granted()
@@ -82,7 +98,7 @@ class TestGrantBenefit:
         await session.commit()
 
         updated_grant = await subscription_benefit_grant_service.grant_benefit(
-            session, subscription, subscription_benefit_organization
+            session, subscription, user, subscription_benefit_organization
         )
 
         assert updated_grant.id == grant.id
@@ -93,6 +109,7 @@ class TestGrantBenefit:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
@@ -101,7 +118,7 @@ class TestGrantBenefit:
         )
 
         grant = await subscription_benefit_grant_service.grant_benefit(
-            session, subscription, subscription_benefit_organization
+            session, subscription, user, subscription_benefit_organization
         )
 
         assert not grant.is_granted
@@ -113,11 +130,12 @@ class TestRevokeBenefit:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = await subscription_benefit_grant_service.revoke_benefit(
-            session, subscription, subscription_benefit_organization
+            session, subscription, user, subscription_benefit_organization
         )
 
         assert grant.subscription_id == subscription.id
@@ -129,33 +147,41 @@ class TestRevokeBenefit:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
+        subscription_benefit_service_mock.revoke.return_value = {"message": "ok"}
+
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
+            user_id=user.id,
             subscription_benefit_id=subscription_benefit_organization.id,
+            properties={"external_id": "abc"},
         )
         session.add(grant)
         await session.commit()
 
         updated_grant = await subscription_benefit_grant_service.revoke_benefit(
-            session, subscription, subscription_benefit_organization
+            session, subscription, user, subscription_benefit_organization
         )
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
+        assert updated_grant.properties == {"message": "ok"}
         subscription_benefit_service_mock.revoke.assert_called_once()
 
     async def test_existing_grant_already_revoked(
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
+            user_id=user.id,
             subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_revoked()
@@ -163,7 +189,7 @@ class TestRevokeBenefit:
         await session.commit()
 
         updated_grant = await subscription_benefit_grant_service.revoke_benefit(
-            session, subscription, subscription_benefit_organization
+            session, subscription, user, subscription_benefit_organization
         )
 
         assert updated_grant.id == grant.id
@@ -198,12 +224,14 @@ class TestEnqueueBenefitGrantUpdates:
         mocker: MockerFixture,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_repository: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         granted_grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         granted_grant.set_granted()
@@ -211,6 +239,7 @@ class TestEnqueueBenefitGrantUpdates:
 
         revoked_grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         revoked_grant.set_revoked()
@@ -218,6 +247,7 @@ class TestEnqueueBenefitGrantUpdates:
 
         other_benefit_grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_repository,
         )
         other_benefit_grant.set_granted()
@@ -248,11 +278,13 @@ class TestUpdateBenefitGrant:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_revoked()
@@ -270,12 +302,17 @@ class TestUpdateBenefitGrant:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
+        subscription_benefit_service_mock.grant.return_value = {"external_id": "xyz"}
+
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
+            properties={"external_id": "abc"},
         )
         grant.set_granted()
         session.add(grant)
@@ -287,17 +324,21 @@ class TestUpdateBenefitGrant:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
+        assert updated_grant.properties == {"external_id": "xyz"}
         subscription_benefit_service_mock.grant.assert_called_once()
+        assert subscription_benefit_service_mock.grant.call_args[1]["update"] is True
 
     async def test_precondition_error(
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
@@ -322,11 +363,13 @@ class TestEnqueueBenefitGrantDeletions:
         mocker: MockerFixture,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_repository: SubscriptionBenefit,
     ) -> None:
         granted_grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         granted_grant.set_granted()
@@ -334,6 +377,7 @@ class TestEnqueueBenefitGrantDeletions:
 
         revoked_grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         revoked_grant.set_revoked()
@@ -341,6 +385,7 @@ class TestEnqueueBenefitGrantDeletions:
 
         other_benefit_grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_repository,
         )
         other_benefit_grant.set_granted()
@@ -368,11 +413,13 @@ class TestDeleteBenefitGrant:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_revoked()
@@ -390,11 +437,13 @@ class TestDeleteBenefitGrant:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
+            user=user,
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
@@ -427,12 +476,13 @@ class TestHandlePreconditionError:
         session: AsyncSession,
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
+        user: User,
         email_sender_mock: MagicMock,
     ) -> None:
         error = SubscriptionBenefitPreconditionError("Error")
 
         await subscription_benefit_grant_service.handle_precondition_error(
-            session, error, subscription, subscription_benefit_organization
+            session, error, subscription, user, subscription_benefit_organization
         )
 
         email_sender_mock.assert_not_called()
@@ -442,6 +492,7 @@ class TestHandlePreconditionError:
         session: AsyncSession,
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
+        user: User,
         email_sender_mock: MagicMock,
     ) -> None:
         error = SubscriptionBenefitPreconditionError(
@@ -452,11 +503,11 @@ class TestHandlePreconditionError:
         )
 
         await subscription_benefit_grant_service.handle_precondition_error(
-            session, error, subscription, subscription_benefit_organization
+            session, error, subscription, user, subscription_benefit_organization
         )
 
         send_to_user_mock: MagicMock = email_sender_mock.send_to_user
         assert send_to_user_mock.called
         to_email_addr = send_to_user_mock.call_args[0][0]
 
-        assert subscription.user.email == to_email_addr
+        assert user.email == to_email_addr

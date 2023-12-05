@@ -1,8 +1,9 @@
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, ColumnElement, ForeignKey, type_coerce
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -10,7 +11,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Subscription, SubscriptionBenefit
+    from polar.models import Subscription, SubscriptionBenefit, User
 
 
 class SubscriptionBenefitGrant(RecordModel):
@@ -21,6 +22,9 @@ class SubscriptionBenefitGrant(RecordModel):
     )
     revoked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
+    )
+    properties: Mapped[dict[str, Any]] = mapped_column(
+        "properties", JSONB, nullable=False, default=dict
     )
 
     subscription_id: Mapped[UUID] = mapped_column(
@@ -33,6 +37,17 @@ class SubscriptionBenefitGrant(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription"]:
         return relationship("Subscription", lazy="raise")
+
+    user_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+
+    @declared_attr
+    def user(cls) -> Mapped["User"]:
+        return relationship("User", lazy="raise")
 
     subscription_benefit_id: Mapped[UUID] = mapped_column(
         PostgresUUID,

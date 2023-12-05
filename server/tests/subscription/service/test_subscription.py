@@ -559,6 +559,7 @@ class TestEnqueueBenefitsGrants:
                 call(
                     "subscription.subscription_benefit.grant",
                     subscription_id=subscription.id,
+                    user_id=subscription.user_id,
                     subscription_benefit_id=benefit.id,
                 )
                 for benefit in subscription_benefits
@@ -600,6 +601,7 @@ class TestEnqueueBenefitsGrants:
                 call(
                     "subscription.subscription_benefit.revoke",
                     subscription_id=subscription.id,
+                    user_id=subscription.user_id,
                     subscription_benefit_id=benefit.id,
                 )
                 for benefit in subscription_benefits
@@ -613,6 +615,7 @@ class TestEnqueueBenefitsGrants:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
         subscription: Subscription,
+        user: User,
     ) -> None:
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription.enqueue_job"
@@ -620,6 +623,7 @@ class TestEnqueueBenefitsGrants:
 
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
+            user_id=user.id,
             subscription_benefit_id=subscription_benefits[0].id,
         )
         grant.set_granted()
@@ -638,6 +642,7 @@ class TestEnqueueBenefitsGrants:
         enqueue_job_mock.assert_any_await(
             "subscription.subscription_benefit.revoke",
             subscription_id=subscription.id,
+            user_id=subscription.user_id,
             subscription_benefit_id=subscription_benefits[0].id,
         )
 

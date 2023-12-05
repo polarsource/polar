@@ -1,7 +1,11 @@
 from typing import Any, Protocol, TypeVar
 
 from polar.exceptions import PolarError
-from polar.models import Subscription, SubscriptionBenefit
+from polar.models import (
+    Subscription,
+    SubscriptionBenefit,
+    User,
+)
 from polar.postgres import AsyncSession
 
 from ...schemas import SubscriptionBenefitUpdate
@@ -84,17 +88,35 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         self.session = session
 
     async def grant(
-        self, benefit: SB, subscription: Subscription, *, attempt: int = 1
-    ) -> None:
+        self,
+        benefit: SB,
+        subscription: Subscription,
+        user: User,
+        grant_properties: dict[str, Any],
+        *,
+        update: bool = False,
+        attempt: int = 1,
+    ) -> dict[str, Any]:
         """
         Executes the logic to grant a benefit to a backer.
 
         Args:
             benefit: The SubscriptionBenefit to grant.
             subscription: The Subscription we should grant this benefit to.
-            Use it to access the underlying backer user.
+            user: The backer user.
+            grant_properties: Stored properties for this specific benefit and user.
+            Might be available at this stage if we're updating
+            an already granted benefit.
+            update: Whether we are updating an already granted benefit.
             attempt: Number of times we attempted to grant the benefit.
             Useful for the worker to implement retry logic.
+
+        Returns:
+            A dictionary with data to store for this specific benefit and user.
+            For example, it can be useful to store external identifiers
+            that may help when updating the grant or revoking it.
+            **Existing properties will be overriden, so be sure to include all the data
+            you want to keep.**
 
         Raises:
             SubscriptionBenefitRetriableError: An temporary error occured,
@@ -105,17 +127,31 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         ...
 
     async def revoke(
-        self, benefit: SB, subscription: Subscription, *, attempt: int = 1
-    ) -> None:
+        self,
+        benefit: SB,
+        subscription: Subscription,
+        user: User,
+        grant_properties: dict[str, Any],
+        *,
+        attempt: int = 1,
+    ) -> dict[str, Any]:
         """
         Executes the logic to revoke a benefit from a backer.
 
         Args:
             benefit: The SubscriptionBenefit to revoke.
             subscription: The Subscription we should revoke this benefit from.
-            Use it to access the underlying backer user.
+            user: The backer user.
+            grant_properties: Stored properties for this specific benefit and user.
             attempt: Number of times we attempted to revoke the benefit.
             Useful for the worker to implement retry logic.
+
+        Returns:
+            A dictionary with data to store for this specific benefit and user.
+            For example, it can be useful to store external identifiers
+            that may help when updating the grant or revoking it.
+            **Existing properties will be overriden, so be sure to include all the data
+            you want to keep.**
 
         Raises:
             SubscriptionBenefitRetriableError: An temporary error occured,
@@ -128,7 +164,8 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         Determines if a benefit update requires to trigger the granting logic again.
 
         This method is called whenever a benefit is updated. If it returns `True`, the
-        granting logic will be re-executed again for all the backers.
+        granting logic will be re-executed again for all the backers, i.e. the `grant`
+        method will be called with the `update` argument set to `True`.
 
         Args:
             benefit: The updated SubscriptionBenefit.

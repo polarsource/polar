@@ -120,6 +120,14 @@ export const PublishModalContent = ({
     setDidAutoChangeVisibility(false)
   }
 
+  const onPublishAtReset = () => {
+    if (article.published_at) {
+      setPublishAt(new Date(article.published_at))
+    } else {
+      setPublishAt(undefined)
+    }
+  }
+
   return (
     <>
       <ModalHeader className="px-8 py-4" hide={hide}>
@@ -144,7 +152,11 @@ export const PublishModalContent = ({
         </div>
 
         <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
-          <ScheduledPostPicker publishAt={publishAt} onChange={setPublishAt} />
+          <ScheduledPostPicker
+            publishAt={publishAt}
+            onChange={setPublishAt}
+            onReset={onPublishAtReset}
+          />
         </div>
 
         <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
@@ -212,9 +224,22 @@ export const PublishModalContent = ({
           </Button>
           <Button onClick={handleSave} loading={isSaving}>
             {article.published_at ? (
+              // Already published
               <>{sendEmail ? 'Save & send' : 'Save'}</>
             ) : (
-              <>{sendEmail ? 'Publish & send' : 'Publish'}</>
+              <>
+                {publishAt && publishAt > new Date() ? (
+                  // Not yet published
+                  <>
+                    {sendEmail
+                      ? 'Save and send later'
+                      : 'Save and publish later'}
+                  </>
+                ) : (
+                  // Published in the past
+                  <>{sendEmail ? 'Publish now & send' : 'Publish now'}</>
+                )}
+              </>
             )}
           </Button>
         </div>
@@ -357,28 +382,43 @@ const AudiencePicker = ({
 interface ScheduledPostPickerProps {
   publishAt: Date | undefined
   onChange: (v: Date | undefined) => void
+  onReset: () => void
 }
 
 const ScheduledPostPicker = ({
   publishAt,
   onChange,
+  onReset,
 }: ScheduledPostPickerProps) => {
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex items-start justify-between gap-y-2">
         <span className="font-medium">Scheduled publishing</span>
-        {publishAt ? (
-          <Button
-            onClick={() => onChange(undefined)}
-            variant={'ghost'}
-            className="m-0 h-auto p-0"
-          >
-            Reset
-          </Button>
-        ) : null}
       </div>
       <div className="flex flex-col gap-y-6">
-        <DateTimePicker date={publishAt} onChange={onChange} />
+        <div className="flex flex-row justify-between">
+          <DateTimePicker date={publishAt} onChange={onChange} />
+          {publishAt ? (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={onReset}
+                variant={'ghost'}
+                className="m-0 h-auto p-0"
+              >
+                Reset
+              </Button>
+
+              <Button
+                onClick={() => onChange(new Date())}
+                variant={'outline'}
+                className="m-0 h-auto "
+              >
+                Now
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
         {publishAt ? (
           <div>
             <span className="text-sm font-medium">
@@ -439,6 +479,14 @@ const DateTimePicker = ({ date, onChange }: DateTimePickerProps) => {
     hour: 0,
     min: 0,
   })
+
+  useEffect(() => {
+    setDatePickerDate(date || new Date())
+    setTime({
+      hour: date ? date.getHours() : 0,
+      min: date ? date.getMinutes() : 0,
+    })
+  }, [date])
 
   const changed = (date: Date, time: Time) => {
     let d = new Date()

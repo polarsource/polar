@@ -23,6 +23,8 @@ from polar.subscription.service.subscription_benefit_grant import (
 @pytest.fixture(autouse=True)
 def subscription_benefit_service_mock(mocker: MockerFixture) -> MagicMock:
     service_mock = MagicMock(spec=SubscriptionBenefitServiceProtocol)
+    service_mock.grant.return_value = {}
+    service_mock.revoke.return_value = {}
     mock = mocker.patch(
         "polar.subscription.service.subscription_benefit_grant"
         ".get_subscription_benefit_service"
@@ -41,6 +43,8 @@ class TestGrantBenefit:
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
+        subscription_benefit_service_mock.grant.return_value = {"external_id": "abc"}
+
         grant = await subscription_benefit_grant_service.grant_benefit(
             session, subscription, user, subscription_benefit_organization
         )
@@ -49,6 +53,7 @@ class TestGrantBenefit:
         assert grant.user_id == user.id
         assert grant.subscription_benefit_id == subscription_benefit_organization.id
         assert grant.is_granted
+        assert grant.properties == {"external_id": "abc"}
         subscription_benefit_service_mock.grant.assert_called_once()
 
     async def test_existing_grant_not_granted(
@@ -146,10 +151,13 @@ class TestRevokeBenefit:
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
+        subscription_benefit_service_mock.revoke.return_value = {"message": "ok"}
+
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
             subscription_benefit_id=subscription_benefit_organization.id,
+            properties={"external_id": "abc"},
         )
         session.add(grant)
         await session.commit()
@@ -160,6 +168,7 @@ class TestRevokeBenefit:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
+        assert updated_grant.properties == {"message": "ok"}
         subscription_benefit_service_mock.revoke.assert_called_once()
 
     async def test_existing_grant_already_revoked(
@@ -297,10 +306,13 @@ class TestUpdateBenefitGrant:
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
+        subscription_benefit_service_mock.grant.return_value = {"external_id": "xyz"}
+
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
             subscription_benefit=subscription_benefit_organization,
+            properties={"external_id": "abc"},
         )
         grant.set_granted()
         session.add(grant)
@@ -312,7 +324,9 @@ class TestUpdateBenefitGrant:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
+        assert updated_grant.properties == {"external_id": "xyz"}
         subscription_benefit_service_mock.grant.assert_called_once()
+        assert subscription_benefit_service_mock.grant.call_args[1]["update"] is True
 
     async def test_precondition_error(
         self,

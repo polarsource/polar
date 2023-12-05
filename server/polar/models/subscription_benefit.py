@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, TypedDict, TypeVar
+from typing import TYPE_CHECKING, TypedDict
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
@@ -45,9 +45,6 @@ class SubscriptionBenefitCustomProperties(SubscriptionBenefitProperties):
 
 class SubscriptionBenefitBuiltinProperties(SubscriptionBenefitProperties):
     ...
-
-
-M = TypeVar("M", bound=SubscriptionBenefitProperties)
 
 
 class SubscriptionBenefit(RecordModel):

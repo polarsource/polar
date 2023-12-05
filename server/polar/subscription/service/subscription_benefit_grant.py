@@ -55,8 +55,12 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             subscription_benefit.type, session
         )
         try:
-            await benefit_service.grant(
-                subscription_benefit, subscription, user, attempt=attempt
+            properties = await benefit_service.grant(
+                subscription_benefit,
+                subscription,
+                user,
+                grant.properties,
+                attempt=attempt,
             )
         except SubscriptionBenefitPreconditionError as e:
             await self.handle_precondition_error(
@@ -64,6 +68,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             )
             grant.granted_at = None
         else:
+            grant.properties = properties
             grant.set_granted()
 
         session.add(grant)
@@ -96,10 +101,11 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         benefit_service = get_subscription_benefit_service(
             subscription_benefit.type, session
         )
-        await benefit_service.revoke(
-            subscription_benefit, subscription, user, attempt=attempt
+        properties = await benefit_service.revoke(
+            subscription_benefit, subscription, user, grant.properties, attempt=attempt
         )
 
+        grant.properties = properties
         grant.set_revoked()
 
         session.add(grant)
@@ -150,8 +156,13 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             subscription_benefit.type, session
         )
         try:
-            await benefit_service.grant(
-                subscription_benefit, subscription, user, attempt=attempt
+            properties = await benefit_service.grant(
+                subscription_benefit,
+                subscription,
+                user,
+                grant.properties,
+                update=True,
+                attempt=attempt,
             )
         except SubscriptionBenefitPreconditionError as e:
             await self.handle_precondition_error(
@@ -159,6 +170,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             )
             grant.granted_at = None
         else:
+            grant.properties = properties
             grant.set_granted()
 
         session.add(grant)
@@ -197,10 +209,11 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         benefit_service = get_subscription_benefit_service(
             subscription_benefit.type, session
         )
-        await benefit_service.revoke(
-            subscription_benefit, subscription, user, attempt=attempt
+        properties = await benefit_service.revoke(
+            subscription_benefit, subscription, user, grant.properties, attempt=attempt
         )
 
+        grant.properties = properties
         grant.set_revoked()
 
         session.add(grant)

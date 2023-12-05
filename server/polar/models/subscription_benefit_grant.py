@@ -1,8 +1,9 @@
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, ColumnElement, ForeignKey, type_coerce
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -21,6 +22,9 @@ class SubscriptionBenefitGrant(RecordModel):
     )
     revoked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
+    )
+    properties: Mapped[dict[str, Any]] = mapped_column(
+        "properties", JSONB, nullable=False, default=dict
     )
 
     subscription_id: Mapped[UUID] = mapped_column(

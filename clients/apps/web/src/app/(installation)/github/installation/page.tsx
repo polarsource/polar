@@ -28,7 +28,7 @@ export default function Page() {
   const [showLogin, setShowLogin] = useState(false)
 
   const redirectToDashboard = () => {
-    router.push('/maintainer')
+    router.push('/')
     return
   }
 

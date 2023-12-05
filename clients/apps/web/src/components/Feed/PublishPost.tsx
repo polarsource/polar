@@ -135,122 +135,124 @@ export const PublishModalContent = ({
           {article.published_at ? 'Settings' : 'Publish Post'}
         </h3>
       </ModalHeader>
-      <div className="flex flex-col gap-y-6 p-8">
-        <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-6">
-          <AudiencePicker
-            paidSubscribersOnly={paidSubscribersOnly}
-            onChange={setPaidSubscribersOnly}
-          />
-        </div>
-        <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-6">
-          <VisibilityPicker
-            paidSubscribersOnly={paidSubscribersOnly}
-            visibility={visibility}
-            privateVisibilityAllowed={!sendEmail}
-            linkVisibilityAllowed={!sendEmail}
-            onChange={onVisibilityChange}
-          />
-        </div>
+      <div className="overflow-scroll p-8">
+        <div className="flex flex-col gap-y-6">
+          <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-6">
+            <AudiencePicker
+              paidSubscribersOnly={paidSubscribersOnly}
+              onChange={setPaidSubscribersOnly}
+            />
+          </div>
+          <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-6">
+            <VisibilityPicker
+              paidSubscribersOnly={paidSubscribersOnly}
+              visibility={visibility}
+              privateVisibilityAllowed={!sendEmail}
+              linkVisibilityAllowed={!sendEmail}
+              onChange={onVisibilityChange}
+            />
+          </div>
 
-        <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
-          <ScheduledPostPicker
-            publishAt={publishAt}
-            onChange={setPublishAt}
-            onReset={onPublishAtReset}
-          />
-        </div>
+          <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+            <ScheduledPostPicker
+              publishAt={publishAt}
+              onChange={setPublishAt}
+              onReset={onPublishAtReset}
+            />
+          </div>
 
-        <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
-          <div className="flex flex-col gap-y-4">
-            <div className="flex flex-col gap-y-2">
-              <span className="font-medium">Email</span>
-            </div>
-            <div className="flex flex-col gap-y-6">
-              {!article.notifications_sent_at ? (
-                <div className="flex flex-row items-center gap-x-2">
-                  <Checkbox
-                    checked={sendEmail}
-                    onCheckedChange={(checked) =>
-                      onChangeSendEmail(Boolean(checked))
-                    }
-                  />
-                  <span className="text-sm">
-                    Send post as email to subscribers
-                  </span>
-                </div>
-              ) : (
-                <div className="flex flex-row items-center gap-x-2">
-                  <Checkbox checked={true} disabled={true} />
-                  <span className="text-sm">
-                    This post was sent via email{' '}
-                    <PolarTimeAgo
-                      date={new Date(article.notifications_sent_at)}
+          <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col gap-y-2">
+                <span className="font-medium">Email</span>
+              </div>
+              <div className="flex flex-col gap-y-6">
+                {!article.notifications_sent_at ? (
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox
+                      checked={sendEmail}
+                      onCheckedChange={(checked) =>
+                        onChangeSendEmail(Boolean(checked))
+                      }
                     />
-                  </span>
-                </div>
-              )}
+                    <span className="text-sm">
+                      Send post as email to subscribers
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox checked={true} disabled={true} />
+                    <span className="text-sm">
+                      This post was sent via email{' '}
+                      <PolarTimeAgo
+                        date={new Date(article.notifications_sent_at)}
+                      />
+                    </span>
+                  </div>
+                )}
 
-              {article.published_at && !article.notify_subscribers ? (
-                <Banner color="blue">
-                  This article is public, but has not been sent over email.
-                </Banner>
-              ) : null}
+                {article.published_at && !article.notify_subscribers ? (
+                  <Banner color="blue">
+                    This article is public, but has not been sent over email.
+                  </Banner>
+                ) : null}
 
-              <div className="flex flex-col gap-y-4">
-                <span className="text-sm font-medium">Send Preview</span>
-                <div className="flex flex-row items-center gap-x-2">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={previewEmailAddress}
-                    onChange={(e) => setPreviewEmailAddress(e.target.value)}
-                  />
-                  <Button variant="secondary" onClick={handleSendPreview}>
-                    Send
-                  </Button>
+                <div className="flex flex-col gap-y-4">
+                  <span className="text-sm font-medium">Send Preview</span>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={previewEmailAddress}
+                      onChange={(e) => setPreviewEmailAddress(e.target.value)}
+                    />
+                    <Button variant="secondary" onClick={handleSendPreview}>
+                      Send
+                    </Button>
+                  </div>
+                  {previewSent && (
+                    <Banner color="green">
+                      Email preview sent to {previewSent}
+                    </Banner>
+                  )}
                 </div>
-                {previewSent && (
-                  <Banner color="green">
-                    Email preview sent to {previewSent}
+
+                {didAutoChangeVisibility && (
+                  <Banner color="blue">
+                    The visibility has been changed to{' '}
+                    <em className="capitalize">{visibility}</em>
                   </Banner>
                 )}
               </div>
-
-              {didAutoChangeVisibility && (
-                <Banner color="blue">
-                  The visibility has been changed to{' '}
-                  <em className="capitalize">{visibility}</em>
-                </Banner>
-              )}
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-row items-center justify-end gap-x-2">
-          <Button variant="ghost" onClick={hide}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} loading={isSaving}>
-            {article.published_at &&
-            new Date(article.published_at) <= new Date() ? (
-              // Already published
-              <>{sendEmail ? 'Save & send' : 'Save'}</>
-            ) : (
-              <>
-                {publishAt && publishAt > new Date() ? (
-                  // Not yet published
-                  <>
-                    {sendEmail
-                      ? 'Save and send later'
-                      : 'Save and publish later'}
-                  </>
-                ) : (
-                  // Published in the past
-                  <>{sendEmail ? 'Publish now & send' : 'Publish now'}</>
-                )}
-              </>
-            )}
-          </Button>
+          <div className="flex flex-row items-center justify-end gap-x-2">
+            <Button variant="ghost" onClick={hide}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} loading={isSaving}>
+              {article.published_at &&
+              new Date(article.published_at) <= new Date() ? (
+                // Already published
+                <>{sendEmail ? 'Save & send' : 'Save'}</>
+              ) : (
+                <>
+                  {publishAt && publishAt > new Date() ? (
+                    // Not yet published
+                    <>
+                      {sendEmail
+                        ? 'Save and send later'
+                        : 'Save and publish later'}
+                    </>
+                  ) : (
+                    // Published in the past
+                    <>{sendEmail ? 'Publish now & send' : 'Publish now'}</>
+                  )}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </>

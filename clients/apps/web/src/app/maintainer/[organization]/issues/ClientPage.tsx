@@ -48,7 +48,7 @@ export default function ClientPage() {
 
   useEffect(() => {
     if (isLoaded && !org) {
-      router.push('/')
+      router.push('/maintainer')
       return
     }
   }, [isLoaded, org, router])

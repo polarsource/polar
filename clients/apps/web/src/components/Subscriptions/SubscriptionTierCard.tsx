@@ -48,7 +48,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     '--var-border-color': hexToRGBA(subscriptionColor, 0.2),
     '--var-muted-color': hexToRGBA(subscriptionColor, 0.7),
     '--var-fg-color': subscriptionColor,
-    '--var-dark-glow-color': hexToRGBA(subscriptionColor, 0.07),
+    '--var-dark-glow-color': hexToRGBA(subscriptionColor, 0.05),
     '--var-dark-border-color': hexToRGBA(subscriptionColor, 0.15),
     '--var-dark-muted-color': hexToRGBA(subscriptionColor, 0.5),
     '--var-dark-fg-color': subscriptionColor,
@@ -97,7 +97,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     <Card
       ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm',
+        'dark:bg-polar-900 dark:border-polar-800 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm',
         variantStyles[variant]['card'],
         className,
       )}
@@ -144,7 +144,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <p
               className={twMerge(
                 variantStyles[variant].description,
-                'line-clamp-4 leading-relaxed text-gray-500 dark:text-[--var-dark-muted-color]',
+                'dark:text-polar-500 line-clamp-4 leading-relaxed text-gray-500',
               )}
             >
               {subscriptionTier.description}
@@ -159,7 +159,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         </div>
       </CardHeader>
       {benefitsToDisplay.length > 0 && subscriptionTier.description && (
-        <Separator className="bg-gray-200 dark:bg-[--var-dark-border-color]" />
+        <Separator className="dark:bg-polar-700 bg-gray-200" />
       )}
       <CardContent className="flex h-full grow flex-col gap-y-2 p-0">
         {benefitsToDisplay.map((benefit) => (

@@ -168,3 +168,7 @@ class ArticlePreview(Schema):
 
 class ArticleSentResponse(Schema):
     ok: bool
+
+
+class ArticleDeleteResponse(Schema):
+    ok: bool

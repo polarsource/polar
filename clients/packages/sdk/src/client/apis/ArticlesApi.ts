@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   Article,
   ArticleCreate,
+  ArticleDeleteResponse,
   ArticlePreview,
   ArticlePreviewResponse,
   ArticleSentResponse,
@@ -26,6 +27,10 @@ import type {
   ListResourceArticle,
   Platforms,
 } from '../models/index';
+
+export interface ArticlesApiDeleteRequest {
+    id: string;
+}
 
 export interface ArticlesApiCreateRequest {
     articleCreate: ArticleCreate;
@@ -68,6 +73,46 @@ export interface ArticlesApiViewedRequest {
  * 
  */
 export class ArticlesApi extends runtime.BaseAPI {
+
+    /**
+     * Delete an article.
+     * Delete an article (Public API)
+     */
+    async _deleteRaw(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleDeleteResponse>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling _delete.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Delete an article.
+     * Delete an article (Public API)
+     */
+    async _delete(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleDeleteResponse> {
+        const response = await this._deleteRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Create a new article.

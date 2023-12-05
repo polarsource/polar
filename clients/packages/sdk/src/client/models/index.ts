@@ -280,6 +280,19 @@ export type ArticleCreateVisibilityEnum = typeof ArticleCreateVisibilityEnum[key
 /**
  * 
  * @export
+ * @interface ArticleDeleteResponse
+ */
+export interface ArticleDeleteResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ArticleDeleteResponse
+     */
+    ok: boolean;
+}
+/**
+ * 
+ * @export
  * @interface ArticlePreview
  */
 export interface ArticlePreview {

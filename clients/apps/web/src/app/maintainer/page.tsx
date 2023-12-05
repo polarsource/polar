@@ -3,7 +3,6 @@
 import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
 import { useRouter } from 'next/navigation'
-import { CONFIG } from 'polarkit/config'
 import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useEffect } from 'react'
 
@@ -27,10 +26,9 @@ export default function Page() {
       const gotoOrg = orgs[0]
       router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
+    } else {
+      router.push('/')
     }
-
-    // This user have no orgs, send to GitHub for installation
-    router.push(CONFIG.GITHUB_INSTALLATION_URL)
   }, [listOrganizationsQuery, orgs, router, authenticated, hasChecked])
 
   return <LoadingScreen animate={true}>Setting you up...</LoadingScreen>

@@ -175,18 +175,6 @@ const ProfileSelection = ({
                 </span>
               </LinkItem>
             )}
-
-            {showConnectUpsell && (
-              <div className="dark:bg-polar-800 dark:text-polar-400 mx-4 my-4 flex flex-col rounded-lg border-blue-100 bg-blue-50 p-4 text-sm">
-                <h3>Get funding for your public repositories.</h3>
-                <Link
-                  href={CONFIG.GITHUB_INSTALLATION_URL}
-                  className="mt-2 text-blue-500 dark:text-blue-400"
-                >
-                  Connect repositories
-                </Link>
-              </div>
-            )}
           </div>
         )}
       </div>

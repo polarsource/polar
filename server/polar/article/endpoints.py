@@ -6,6 +6,7 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination
+from polar.kit.utils import utc_now
 from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import (
@@ -22,6 +23,7 @@ from polar.worker import enqueue_job
 from .schemas import Article as ArticleSchema
 from .schemas import (
     ArticleCreate,
+    ArticleDeleteResponse,
     ArticlePreview,
     ArticlePreviewResponse,
     ArticleSentResponse,
@@ -362,3 +364,31 @@ async def update(
         # TODO
         is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
     )
+
+
+@router.delete(
+    "/articles/{id}",
+    response_model=ArticleDeleteResponse,
+    tags=[Tags.PUBLIC],
+    description="Delete an article.",
+    summary="Delete an article (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def delete(
+    id: UUID,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticleDeleteResponse:
+    art = await article_service.get_loaded(session, id)
+    if not art:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, art):
+        raise Unauthorized()
+
+    art.deleted_at = utc_now()
+    await art.save(session)
+
+    return ArticleDeleteResponse(ok=True)

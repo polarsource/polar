@@ -17,7 +17,11 @@ import {
   useSearchParams,
 } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
-import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
+import {
+  useArticleLookup,
+  useDeleteArticle,
+  useUpdateArticle,
+} from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
@@ -84,6 +88,18 @@ const ClientPage = () => {
     }
   }, [handleSave])
 
+  const archive = useDeleteArticle()
+
+  const handleArchive = async () => {
+    if (!post?.data?.id) {
+      return
+    }
+
+    await archive.mutateAsync({ id: post.data.id })
+
+    router.push(`/maintainer/${post.data.organization.name}/posts`)
+  }
+
   if (!post.data) {
     return (
       <DashboardBody>
@@ -96,6 +112,15 @@ const ClientPage = () => {
     <Tabs className="flex flex-col" defaultValue="edit">
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
+          <Button
+            className="self-start"
+            onClick={handleArchive}
+            variant={'destructive'}
+            loading={archive.isPending}
+          >
+            Archive
+          </Button>
+
           {post.data.visibility !== 'hidden' && (
             <Link
               href={`/${post.data.organization.name}/posts/${post.data.slug}`}

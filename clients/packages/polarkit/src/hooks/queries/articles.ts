@@ -51,6 +51,9 @@ export const useCreateArticle = (): UseMutationResult<
       queryClient.invalidateQueries({
         queryKey: ['article', 'organization', result.organization.name],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['article', 'list'],
+      })
     },
   })
 
@@ -70,6 +73,22 @@ export const useUpdateArticle = () =>
       })
       queryClient.invalidateQueries({
         queryKey: ['article', 'lookup'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['article', 'list'],
+      })
+    },
+  })
+
+export const useDeleteArticle = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) =>
+      api.articles._delete({
+        id: variables.id,
+      }),
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['article'],
       })
     },
   })

@@ -538,6 +538,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             await enqueue_job(
                 f"subscription.subscription_benefit.{task}",
                 subscription_id=subscription.id,
+                user_id=subscription.user_id,
                 subscription_benefit_id=benefit.id,
             )
 
@@ -550,6 +551,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             await enqueue_job(
                 "subscription.subscription_benefit.revoke",
                 subscription_id=subscription.id,
+                user_id=subscription.user_id,
                 subscription_benefit_id=outdated_grant.subscription_benefit_id,
             )
 

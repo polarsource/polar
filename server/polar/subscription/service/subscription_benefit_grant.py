@@ -13,8 +13,10 @@ from polar.models import (
     SubscriptionBenefitGrant,
     SubscriptionTier,
     SubscriptionTierBenefit,
+    User,
 )
 from polar.postgres import AsyncSession
+from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
 from ..schemas import SubscriptionBenefitUpdate
@@ -31,17 +33,20 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit: SubscriptionBenefit,
         *,
         attempt: int = 1,
     ) -> SubscriptionBenefitGrant:
-        grant = await self._get_by_subscription_and_benefit(
-            session, subscription, subscription_benefit
+        grant = await self._get_by_subscription_user_and_benefit(
+            session, subscription, user, subscription_benefit
         )
 
         if grant is None:
             grant = SubscriptionBenefitGrant(
-                subscription=subscription, subscription_benefit=subscription_benefit
+                subscription=subscription,
+                user=user,
+                subscription_benefit=subscription_benefit,
             )
         elif grant.is_granted:
             return grant
@@ -51,11 +56,11 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         )
         try:
             await benefit_service.grant(
-                subscription_benefit, subscription, attempt=attempt
+                subscription_benefit, subscription, user, attempt=attempt
             )
         except SubscriptionBenefitPreconditionError as e:
             await self.handle_precondition_error(
-                session, e, subscription, subscription_benefit
+                session, e, subscription, user, subscription_benefit
             )
             grant.granted_at = None
         else:
@@ -70,17 +75,20 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit: SubscriptionBenefit,
         *,
         attempt: int = 1,
     ) -> SubscriptionBenefitGrant:
-        grant = await self._get_by_subscription_and_benefit(
-            session, subscription, subscription_benefit
+        grant = await self._get_by_subscription_user_and_benefit(
+            session, subscription, user, subscription_benefit
         )
 
         if grant is None:
             grant = SubscriptionBenefitGrant(
-                subscription=subscription, subscription_benefit=subscription_benefit
+                subscription=subscription,
+                user=user,
+                subscription_benefit=subscription_benefit,
             )
         elif grant.is_revoked:
             return grant
@@ -89,7 +97,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             subscription_benefit.type, session
         )
         await benefit_service.revoke(
-            subscription_benefit, subscription, attempt=attempt
+            subscription_benefit, subscription, user, attempt=attempt
         )
 
         grant.set_revoked()
@@ -135,16 +143,19 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         subscription = grant.subscription
         subscription_benefit = grant.subscription_benefit
 
+        user = await user_service.get(session, grant.user_id)
+        assert user is not None
+
         benefit_service = get_subscription_benefit_service(
             subscription_benefit.type, session
         )
         try:
             await benefit_service.grant(
-                subscription_benefit, subscription, attempt=attempt
+                subscription_benefit, subscription, user, attempt=attempt
             )
         except SubscriptionBenefitPreconditionError as e:
             await self.handle_precondition_error(
-                session, e, subscription, subscription_benefit
+                session, e, subscription, user, subscription_benefit
             )
             grant.granted_at = None
         else:
@@ -180,11 +191,14 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         subscription = grant.subscription
         subscription_benefit = grant.subscription_benefit
 
+        user = await user_service.get(session, grant.user_id)
+        assert user is not None
+
         benefit_service = get_subscription_benefit_service(
             subscription_benefit.type, session
         )
         await benefit_service.revoke(
-            subscription_benefit, subscription, attempt=attempt
+            subscription_benefit, subscription, user, attempt=attempt
         )
 
         grant.set_revoked()
@@ -199,6 +213,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         session: AsyncSession,
         error: SubscriptionBenefitPreconditionError,
         subscription: Subscription,
+        user: User,
         subscription_benefit: SubscriptionBenefit,
     ) -> None:
         if error.email_subject is None or error.email_body_template is None:
@@ -222,12 +237,12 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
                 "subscription": subscription,
                 "subscription_tier": subscription.subscription_tier,
                 "subscription_benefit": subscription_benefit,
-                "user": subscription.user,
+                "user": user,
                 **error.email_extra_context,
             },
         )
 
-        email_sender.send_to_user(subscription.user.email, subject, body)
+        email_sender.send_to_user(user.email, subject, body)
 
     async def get_outdated_grants(
         self,
@@ -256,14 +271,16 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         result = await session.execute(statement)
         return result.scalars().all()
 
-    async def _get_by_subscription_and_benefit(
+    async def _get_by_subscription_user_and_benefit(
         self,
         session: AsyncSession,
         subscription: Subscription,
+        user: User,
         subscription_benefit: SubscriptionBenefit,
     ) -> SubscriptionBenefitGrant | None:
         statement = select(SubscriptionBenefitGrant).where(
             SubscriptionBenefitGrant.subscription_id == subscription.id,
+            SubscriptionBenefitGrant.user_id == user.id,
             SubscriptionBenefitGrant.subscription_benefit_id == subscription_benefit.id,
             SubscriptionBenefitGrant.deleted_at.is_(None),
         )

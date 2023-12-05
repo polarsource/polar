@@ -1,7 +1,7 @@
 from typing import Any, Protocol, TypeVar
 
 from polar.exceptions import PolarError
-from polar.models import Subscription, SubscriptionBenefit
+from polar.models import Subscription, SubscriptionBenefit, User
 from polar.postgres import AsyncSession
 
 from ...schemas import SubscriptionBenefitUpdate
@@ -84,7 +84,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         self.session = session
 
     async def grant(
-        self, benefit: SB, subscription: Subscription, *, attempt: int = 1
+        self, benefit: SB, subscription: Subscription, user: User, *, attempt: int = 1
     ) -> None:
         """
         Executes the logic to grant a benefit to a backer.
@@ -92,7 +92,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         Args:
             benefit: The SubscriptionBenefit to grant.
             subscription: The Subscription we should grant this benefit to.
-            Use it to access the underlying backer user.
+            user: The backer user.
             attempt: Number of times we attempted to grant the benefit.
             Useful for the worker to implement retry logic.
 
@@ -105,7 +105,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         ...
 
     async def revoke(
-        self, benefit: SB, subscription: Subscription, *, attempt: int = 1
+        self, benefit: SB, subscription: Subscription, user: User, *, attempt: int = 1
     ) -> None:
         """
         Executes the logic to revoke a benefit from a backer.
@@ -113,7 +113,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         Args:
             benefit: The SubscriptionBenefit to revoke.
             subscription: The Subscription we should revoke this benefit from.
-            Use it to access the underlying backer user.
+            user: The backer user.
             attempt: Number of times we attempted to revoke the benefit.
             Useful for the worker to implement retry logic.
 

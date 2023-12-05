@@ -3,6 +3,7 @@ import uuid
 from arq import Retry
 
 from polar.exceptions import PolarError
+from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service.benefits import SubscriptionBenefitRetriableError
@@ -19,14 +20,21 @@ class SubscriptionTaskError(PolarError):
     ...
 
 
-class SubscriptionDoesNotExist(PolarError):
+class SubscriptionDoesNotExist(SubscriptionTaskError):
     def __init__(self, subscription_id: uuid.UUID) -> None:
         self.subscription_id = subscription_id
         message = f"The subscription with id {subscription_id} does not exist."
         super().__init__(message, 500)
 
 
-class SubscriptionBenefitDoesNotExist(PolarError):
+class UserDoesNotExist(SubscriptionTaskError):
+    def __init__(self, user_id: uuid.UUID) -> None:
+        self.user_id = user_id
+        message = f"The user with id {user_id} does not exist."
+        super().__init__(message, 500)
+
+
+class SubscriptionBenefitDoesNotExist(SubscriptionTaskError):
     def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
         self.subscription_benefit_id = subscription_benefit_id
         message = (
@@ -36,7 +44,7 @@ class SubscriptionBenefitDoesNotExist(PolarError):
         super().__init__(message, 500)
 
 
-class SubscriptionBenefitGrantDoesNotExist(PolarError):
+class SubscriptionBenefitGrantDoesNotExist(SubscriptionTaskError):
     def __init__(self, subscription_benefit_grant_id: uuid.UUID) -> None:
         self.subscription_benefit_grant_id = subscription_benefit_grant_id
         message = (
@@ -62,6 +70,7 @@ async def subscription_enqueue_benefits_grants(
 async def subscription_benefit_grant(
     ctx: JobContext,
     subscription_id: uuid.UUID,
+    user_id: uuid.UUID,
     subscription_benefit_id: uuid.UUID,
     polar_context: PolarWorkerContext,
 ) -> None:
@@ -69,6 +78,10 @@ async def subscription_benefit_grant(
         subscription = await subscription_service.get(session, subscription_id)
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
+
+        user = await user_service.get(session, user_id)
+        if user is None:
+            raise UserDoesNotExist(user_id)
 
         subscription_benefit = await subscription_benefit_service.get(
             session, subscription_benefit_id
@@ -78,7 +91,11 @@ async def subscription_benefit_grant(
 
         try:
             await subscription_benefit_grant_service.grant_benefit(
-                session, subscription, subscription_benefit, attempt=ctx["job_try"]
+                session,
+                subscription,
+                user,
+                subscription_benefit,
+                attempt=ctx["job_try"],
             )
         except SubscriptionBenefitRetriableError as e:
             raise Retry(e.defer_seconds) from e
@@ -88,6 +105,7 @@ async def subscription_benefit_grant(
 async def subscription_benefit_revoke(
     ctx: JobContext,
     subscription_id: uuid.UUID,
+    user_id: uuid.UUID,
     subscription_benefit_id: uuid.UUID,
     polar_context: PolarWorkerContext,
 ) -> None:
@@ -95,6 +113,10 @@ async def subscription_benefit_revoke(
         subscription = await subscription_service.get(session, subscription_id)
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
+
+        user = await user_service.get(session, user_id)
+        if user is None:
+            raise UserDoesNotExist(user_id)
 
         subscription_benefit = await subscription_benefit_service.get(
             session, subscription_benefit_id
@@ -104,7 +126,11 @@ async def subscription_benefit_revoke(
 
         try:
             await subscription_benefit_grant_service.revoke_benefit(
-                session, subscription, subscription_benefit, attempt=ctx["job_try"]
+                session,
+                subscription,
+                user,
+                subscription_benefit,
+                attempt=ctx["job_try"],
             )
         except SubscriptionBenefitRetriableError as e:
             raise Retry(e.defer_seconds) from e

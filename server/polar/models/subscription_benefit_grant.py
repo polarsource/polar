@@ -10,7 +10,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Subscription, SubscriptionBenefit
+    from polar.models import Subscription, SubscriptionBenefit, User
 
 
 class SubscriptionBenefitGrant(RecordModel):
@@ -33,6 +33,17 @@ class SubscriptionBenefitGrant(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription"]:
         return relationship("Subscription", lazy="raise")
+
+    user_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+
+    @declared_attr
+    def user(cls) -> Mapped["User"]:
+        return relationship("User", lazy="raise")
 
     subscription_benefit_id: Mapped[UUID] = mapped_column(
         PostgresUUID,

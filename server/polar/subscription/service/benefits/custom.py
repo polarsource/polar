@@ -1,4 +1,4 @@
-from polar.models import Subscription
+from polar.models import Subscription, User
 from polar.models.subscription_benefit import SubscriptionBenefitCustom
 
 from ...schemas import SubscriptionBenefitCustomUpdate
@@ -14,6 +14,7 @@ class SubscriptionBenefitCustomService(
         self,
         benefit: SubscriptionBenefitCustom,
         subscription: Subscription,
+        user: User,
         *,
         attempt: int = 1,
     ) -> None:
@@ -23,6 +24,7 @@ class SubscriptionBenefitCustomService(
         self,
         benefit: SubscriptionBenefitCustom,
         subscription: Subscription,
+        user: User,
         *,
         attempt: int = 1,
     ) -> None:

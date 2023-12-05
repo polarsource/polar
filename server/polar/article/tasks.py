@@ -9,7 +9,13 @@ from polar.email.sender import get_email_sender
 from polar.logging import Logger
 from polar.models.article import Article
 from polar.user.service import user as user_service
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.worker import (
+    AsyncSessionMaker,
+    JobContext,
+    PolarWorkerContext,
+    interval,
+    task,
+)
 
 from .service import article_service
 
@@ -66,3 +72,13 @@ async def articles_send_to_user(
             html_content=rendered.decode("utf8"),
             from_name=from_name,
         )
+
+
+@interval(second=0)
+async def articles_send_scheduled(
+    ctx: JobContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        articles = await article_service.list_scheduled_unsent_posts(session)
+        for article in articles:
+            await article_service.send_to_subscribers(session, article)

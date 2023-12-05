@@ -201,6 +201,9 @@ class ArticleService:
         if update.set_published_at:
             article.published_at = update.published_at
 
+        if update.notify_subscribers is not None:
+            article.notify_subscribers = update.notify_subscribers
+
         await article.save(session)
 
         return article

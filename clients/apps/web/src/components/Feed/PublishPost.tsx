@@ -15,7 +15,6 @@ import {
 } from '@polar-sh/sdk'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit/api'
 import {
   Button,
   Input,
@@ -99,12 +98,6 @@ export const PublishModalContent = ({
         notify_subscribers: sendEmail,
       },
     })
-
-    if (sendEmail) {
-      await api.articles.send({
-        id: article.id,
-      })
-    }
 
     setIsSaving(false)
 
@@ -197,6 +190,12 @@ export const PublishModalContent = ({
                 </div>
               )}
 
+              {article.published_at && !article.notify_subscribers ? (
+                <Banner color="blue">
+                  This article is public, but has not been sent over email.
+                </Banner>
+              ) : null}
+
               <div className="flex flex-col gap-y-4">
                 <span className="text-sm font-medium">Send Preview</span>
                 <div className="flex flex-row items-center gap-x-2">
@@ -232,7 +231,8 @@ export const PublishModalContent = ({
             Cancel
           </Button>
           <Button onClick={handleSave} loading={isSaving}>
-            {article.published_at ? (
+            {article.published_at &&
+            new Date(article.published_at) <= new Date() ? (
               // Already published
               <>{sendEmail ? 'Save & send' : 'Save'}</>
             ) : (

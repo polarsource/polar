@@ -52,8 +52,15 @@ from .service.subscription_benefit import (
 from .service.subscription_tier import subscription_tier as subscription_tier_service
 
 
-async def is_feature_flag_enabled(auth: UserRequiredAuth) -> None:
-    if posthog.client and not posthog.client.feature_enabled(
+async def is_feature_flag_enabled(auth: Auth = Depends(Auth.optional_user)) -> None:
+    if not posthog.client:
+        # allowed
+        return None
+
+    if auth.subject is None or auth.user is None:
+        raise HTTPException(403, "You don't have access to this feature.")
+
+    if not posthog.client.feature_enabled(
         "subscriptions", auth.user.posthog_distinct_id
     ):
         raise HTTPException(403, "You don't have access to this feature.")

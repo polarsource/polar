@@ -15,7 +15,7 @@ import {
   TuneOutlined,
   ViewDayOutlined,
   WidthNormalOutlined,
-  WifiTethering,
+  WifiTetheringOutlined,
 } from '@mui/icons-material'
 
 export type SubRoute = {
@@ -55,7 +55,23 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     postIcon: undefined,
     link: `/maintainer/${org.name}/issues`,
     if: true,
-    subs: undefined,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/issues`,
+        icon: <HowToVoteOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Promote',
+        link: `/maintainer/${org.name}/issues/promote`,
+        icon: <WifiTetheringOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Embeds',
+        link: `/maintainer/${org.name}/issues/embeds`,
+        icon: <CropFreeOutlined fontSize="inherit" />,
+      },
+    ],
   },
   ...(isFeatureEnabled('subscriptions')
     ? [
@@ -86,26 +102,6 @@ export const maintainerRoutes = (org: Organization): Route[] => [
         },
       ]
     : []),
-  {
-    id: 'org-promote',
-    title: 'Promote',
-    icon: <WifiTethering className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    link: `/maintainer/${org.name}/promote`,
-    if: true,
-    subs: [
-      {
-        title: 'Issues',
-        link: `/maintainer/${org.name}/promote/issues`,
-        icon: <HowToVoteOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Embeds',
-        link: `/maintainer/${org.name}/promote/embeds`,
-        icon: <CropFreeOutlined fontSize="inherit" />,
-      },
-    ],
-  },
   {
     id: 'public-site',
     title: 'Public site',

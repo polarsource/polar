@@ -348,6 +348,12 @@ export interface ArticleUpdate {
      */
     body?: string;
     /**
+     * 
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    slug?: string;
+    /**
      * If the user or organization should be credited in the byline.
      * @type {string}
      * @memberof ArticleUpdate

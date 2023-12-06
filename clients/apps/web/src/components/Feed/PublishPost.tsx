@@ -59,14 +59,16 @@ export const PublishModalContent = ({
     article.published_at ? new Date(article.published_at) : undefined,
   )
 
+  const [slug, setSlug] = useState<string>(article.slug)
+
   useEffect(() => {
     setPreviewEmailAddress(currentUser?.email || '')
   }, [currentUser])
 
-  const router = useRouter()
-
   const update = useUpdateArticle()
   const sendPreview = useSendArticlePreview()
+
+  const router = useRouter()
 
   const handleSendPreview = async () => {
     // visibility must be at least link to send emails
@@ -96,12 +98,19 @@ export const PublishModalContent = ({
         set_published_at: publishAt ? true : false,
         published_at: publishAt ? publishAt.toISOString() : undefined,
         notify_subscribers: sendEmail,
+        slug,
       },
     })
 
     setIsSaving(false)
 
     hide()
+
+    if (updated.slug !== article.slug) {
+      router.push(
+        `/maintainer/${updated.organization.name}/posts/${updated.slug}`,
+      )
+    }
   }
 
   const [didAutoChangeVisibility, setDidAutoChangeVisibility] = useState(false)
@@ -174,6 +183,17 @@ export const PublishModalContent = ({
     return 'Save'
   }, [article, sendEmail, visibility, publishAt])
 
+  const showNoEmailSentBanner =
+    article.published_at &&
+    new Date(article.published_at) < new Date() &&
+    article.visibility === ArticleVisibilityEnum.PUBLIC &&
+    !article.notifications_sent_at
+
+  const formatAndSetSlug = (slug: string) => {
+    slug = slug.replace(/[^a-zA-Z0-9]/g, '-').replaceAll('--', '-')
+    setSlug(slug)
+  }
+
   return (
     <>
       <ModalHeader className="px-8 py-4" hide={hide}>
@@ -239,10 +259,7 @@ export const PublishModalContent = ({
                   </div>
                 )}
 
-                {article.published_at &&
-                new Date(article.published_at) < new Date() &&
-                article.visibility === ArticleVisibilityEnum.PUBLIC &&
-                !article.notifications_sent_at ? (
+                {showNoEmailSentBanner ? (
                   <Banner color="blue">
                     This article is published and public, but has not been sent
                     over email.
@@ -276,6 +293,25 @@ export const PublishModalContent = ({
                   </Banner>
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col  gap-2">
+                <span className="font-medium">Slug</span>
+                <p className="text-polar-500 dark:text-polar-500 text-sm">
+                  Change the slug of the article. The slug is used in public
+                  URLs.
+                </p>
+              </div>
+              <Input
+                type="text"
+                value={slug}
+                onChange={(e) => formatAndSetSlug(e.target.value)}
+                className="font-mono"
+                maxLength={64}
+              />
             </div>
           </div>
 

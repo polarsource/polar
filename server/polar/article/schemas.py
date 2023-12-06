@@ -167,6 +167,12 @@ class ArticlePreview(Schema):
     )
 
 
+class ArticleReceiversResponse(Schema):
+    free_subscribers: int
+    premium_subscribers: int
+    organization_members: int
+
+
 class ArticleSentResponse(Schema):
     ok: bool
 

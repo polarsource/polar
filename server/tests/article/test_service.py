@@ -543,3 +543,58 @@ class TestGetReadableBy:
 
         result = await getter(session, user_second, article_private_published)
         assert result is None
+
+
+@pytest.mark.asyncio
+class TestListReceivers:
+    async def test_no_subscription(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        receivers = await article_service.list_receivers(
+            session, organization.id, False
+        )
+        assert len(receivers) == 0
+
+    async def test_no_subscription_org_member(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        receivers = await article_service.list_receivers(
+            session, organization.id, False
+        )
+        assert len(receivers) == 1
+        assert receivers[0] == (user.id, False, True)
+
+        receivers = await article_service.list_receivers(session, organization.id, True)
+        assert len(receivers) == 1
+        assert receivers[0] == (user.id, False, True)
+
+    async def test_free_subscription(
+        self, session: AsyncSession, user_second: User, organization: Organization
+    ) -> None:
+        await create_articles_subscription(
+            session, user=user_second, organization=organization, paid_subscriber=False
+        )
+
+        receivers = await article_service.list_receivers(
+            session, organization.id, False
+        )
+        assert len(receivers) == 1
+        assert receivers[0] == (user_second.id, False, False)
+
+        receivers = await article_service.list_receivers(session, organization.id, True)
+        assert len(receivers) == 0
+
+    async def test_paid_subscription(
+        self, session: AsyncSession, user_second: User, organization: Organization
+    ) -> None:
+        await create_articles_subscription(
+            session, user=user_second, organization=organization, paid_subscriber=True
+        )
+
+        receivers = await article_service.list_receivers(session, organization.id, True)
+        assert len(receivers) == 1
+        assert receivers[0] == (user_second.id, True, False)

@@ -23,6 +23,7 @@ from .schemas import (
     ArticleDeleteResponse,
     ArticlePreview,
     ArticlePreviewResponse,
+    ArticleReceiversResponse,
     ArticleSentResponse,
     ArticleUpdate,
     ArticleViewedResponse,
@@ -181,6 +182,44 @@ async def create(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
         is_paid_subscriber=True,
+    )
+
+
+@router.get(
+    "/articles/receivers",
+    response_model=ArticleReceiversResponse,
+    tags=[Tags.PUBLIC],
+    description="Get number of potential receivers for an article.",
+    summary="Get number of potential receivers for an article. (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def receivers(
+    organization_name_platform: OrganizationNamePlatform,
+    auth: UserRequiredAuth,
+    paid_subscribers_only: bool = Query(...),
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticleReceiversResponse:
+    (organization_name, platform) = organization_name_platform
+    org = await organization_service.get_by_name(session, platform, organization_name)
+    if not org:
+        raise ResourceNotFound()
+
+    # admin required
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    (
+        free_subscribers,
+        premium_subscribers,
+        organization_members,
+    ) = await article_service.count_receivers(session, org.id, paid_subscribers_only)
+
+    return ArticleReceiversResponse(
+        free_subscribers=free_subscribers,
+        premium_subscribers=premium_subscribers,
+        organization_members=organization_members,
     )
 
 

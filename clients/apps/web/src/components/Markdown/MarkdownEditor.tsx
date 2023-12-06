@@ -2,6 +2,7 @@ import { upload } from '@vercel/blob/client'
 import { TextArea } from 'polarkit/components/ui/atoms'
 import {
   ChangeEventHandler,
+  ClipboardEvent,
   DragEventHandler,
   useCallback,
   useEffect,
@@ -88,6 +89,35 @@ export const MarkdownEditor = ({
     [onChange, insertTextAtCursor],
   )
 
+  const handlePaste = useCallback(
+    async (e: ClipboardEvent<HTMLTextAreaElement>) => {
+      if (e.target instanceof HTMLTextAreaElement) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        for (const file of e.clipboardData.files) {
+          try {
+            insertTextAtCursor(uploadingText, e.target)
+
+            const newBlob = await upload(file.name, file, {
+              access: 'public',
+              handleUploadUrl: '/api/blob/upload',
+            })
+
+            const textToInsert = `![${newBlob.pathname}](${newBlob.url})`
+
+            e.target.value = e.target.value.replace(uploadingText, textToInsert)
+          } catch (err) {
+            e.target.value = e.target.value.replace(uploadingText, '')
+          } finally {
+            onChange?.(e.target.value)
+          }
+        }
+      }
+    },
+    [],
+  )
+
   const allow: DragEventHandler<HTMLTextAreaElement> = useCallback((e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -107,6 +137,7 @@ export const MarkdownEditor = ({
       onDrop={handleDrop}
       onDrag={handleDrag}
       onDragOver={allow}
+      onPaste={handlePaste}
     />
   )
 }

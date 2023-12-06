@@ -99,7 +99,7 @@ export const OrganizationPublicSidebar = ({
             className="w-full"
             href={`/maintainer/${organization.name}/issues`}
           >
-            <Button fullWidth>Open Dashboard</Button>
+            <Button fullWidth>View Dashboard</Button>
           </Link>
         ) : freeSubscriptionTier ? (
           <FreeTierSubscribe

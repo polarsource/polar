@@ -217,12 +217,6 @@ class Authz:
         #
         # Article
         #
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.read
-            and isinstance(object, Article)
-        ):
-            return await self._can_user_read_article(subject, object)
 
         if (
             isinstance(subject, User)
@@ -230,13 +224,6 @@ class Authz:
             and isinstance(object, Article)
         ):
             return await self._can_user_write_article(subject, object)
-
-        if (
-            isinstance(subject, Anonymous)
-            and accessType == AccessType.read
-            and isinstance(object, Article)
-        ):
-            return self._can_anonymous_read_article(object)
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501
@@ -470,27 +457,6 @@ class Authz:
     #
     # Article
     #
-    def _can_anonymous_read_article(self, object: Article) -> bool:
-        if object.visibility == "hidden":
-            return True
-        if object.visibility == "public":
-            return True
-        return False
-
-    async def _can_user_read_article(self, subject: User, object: Article) -> bool:
-        if self._can_anonymous_read_article(object):
-            return True
-
-        # visibility is private
-
-        # If member of org
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
-        ):
-            return True
-
-        return False
-
     async def _can_user_write_article(self, subject: User, object: Article) -> bool:
         # If member and admin of org
         if object.organization_id and await self._is_member_and_admin(

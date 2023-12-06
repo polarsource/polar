@@ -2,6 +2,7 @@ from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
 from .article import Article
+from .articles_subscription import ArticlesSubscription
 from .invites import Invite
 from .issue import Issue
 from .issue_dependency import IssueDependency
@@ -29,6 +30,7 @@ from .user_organization_settings import UserOrganizationSettings
 __all__ = [
     "Account",
     "Article",
+    "ArticlesSubscription",
     "Invite",
     "Issue",
     "IssueDependency",

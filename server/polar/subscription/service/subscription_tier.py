@@ -270,6 +270,7 @@ class SubscriptionTierService(
     async def create_free(
         self,
         session: AsyncSession,
+        benefits: list[SubscriptionBenefit],
         organization: Organization | None = None,
         repository: Repository | None = None,
     ) -> SubscriptionTier:
@@ -283,8 +284,7 @@ class SubscriptionTierService(
         if free_subscription_tier is not None:
             return free_subscription_tier
 
-        return await self.model.create(
-            session,
+        subscription_tier = SubscriptionTier(
             type=SubscriptionTierType.free,
             name="Free",
             price_amount=0,
@@ -292,6 +292,16 @@ class SubscriptionTierService(
             organization_id=organization.id if organization else None,
             repository_id=repository.id if repository else None,
         )
+
+        for index, benefit in enumerate(benefits):
+            subscription_tier.subscription_tier_benefits.append(
+                SubscriptionTierBenefit(subscription_benefit=benefit, order=index)
+            )
+
+        session.add(subscription_tier)
+        await session.commit()
+
+        return subscription_tier
 
     async def update_benefits(
         self,

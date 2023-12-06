@@ -293,7 +293,7 @@ export const Header = (props: {
 
   return (
     <div className="flex w-full flex-row items-center justify-between">
-      <div className="relative w-full min-w-[280px] max-w-[500px] py-2">
+      <div className="relative w-full min-w-[280px] py-2">
         <Input
           type="text"
           name="query"
@@ -317,11 +317,11 @@ export const Header = (props: {
         />
       </div>
 
-      <div className="ml-4 flex w-fit flex-shrink-0 items-center justify-center lg:justify-start">
+      <div className="ml-4 flex w-fit flex-shrink-0 items-center justify-center gap-x-4 lg:justify-start">
         {canFilterByBadged && (
           <>
             <DropdownMenu>
-              <DropdownMenuTrigger className="dark:text-polar-300 dark:hover:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-100">
+              <DropdownMenuTrigger className="dark:hover:bg-polar-700 dark:border-polar-700 dark:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
                 <FunnelIcon className="dark:text-polar-300 h-4 w-4" />
                 <span>Filter</span>
               </DropdownMenuTrigger>
@@ -348,7 +348,7 @@ export const Header = (props: {
         )}
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="dark:text-polar-300 dark:hover:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-100">
+          <DropdownMenuTrigger className="dark:hover:bg-polar-700 dark:border-polar-700 dark:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
             <ArrowsUpDownIcon className="dark:text-polar-300 h-4 w-4" />
             <span>
               {props.filters?.sort

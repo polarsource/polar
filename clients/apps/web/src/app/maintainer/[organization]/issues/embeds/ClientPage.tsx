@@ -85,9 +85,7 @@ export default function ClientPage() {
       </DashboardTopbar>
       <DashboardBody>
         <div className="space-y-4">
-          <h2 className="dark:text-polar-100 text-lg text-gray-900">
-            GitHub Sponsors
-          </h2>
+          <h2 className="text-lg font-medium">GitHub Sponsors</h2>
           <p className="dark:text-polar-400 text-sm text-gray-500">
             Make sure to link to your public funding page from GitHub&apos;s
             Sponsor section.
@@ -112,9 +110,7 @@ export default function ClientPage() {
               </div>
             </div>
           </ShadowBox>
-          <h2 className="dark:text-polar-100 pt-8 text-lg text-gray-900">
-            Readme embeds
-          </h2>
+          <h2 className="pt-8 text-lg font-medium">Readme embeds</h2>
           <p className="dark:text-polar-400 text-sm text-gray-500">
             Embed the Polar SVG in your README or on your website to showcase
             issues that you&apos;re seeking funding for.

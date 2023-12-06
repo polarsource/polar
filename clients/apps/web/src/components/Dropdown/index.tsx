@@ -85,7 +85,7 @@ export const SelectedBox = ({
   return (
     <div
       className={twMerge(
-        'dark:hover:bg-polar-800 flex cursor-pointer items-center justify-between space-x-2 rounded-lg px-2 py-2 text-sm hover:bg-gray-100',
+        'dark:hover:bg-polar-700 dark:border-polar-700 dark:bg-polar-800 flex cursor-pointer items-center justify-between space-x-2 rounded-lg border border-gray-200 px-2 py-2 text-sm hover:bg-gray-50',
         classNames,
       )}
       onClick={onClick}

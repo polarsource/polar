@@ -23,6 +23,7 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ShadowBox } from 'polarkit/components/ui/atoms'
+import { Separator } from 'polarkit/components/ui/separator'
 import { useDashboard, useListRepositories, useSSE } from 'polarkit/hooks'
 import {
   Dispatch,
@@ -263,23 +264,29 @@ const OrganizationIssues = ({
 
   return (
     <>
-      <DashboardTopbar isFixed useOrgFromURL>
-        <RepoPickerHeader
-          currentRepository={currentRepo}
-          repositories={allOrgRepositories ?? []}
-        >
-          <Header
-            totalCount={totalCount}
-            filters={filters}
-            onSetFilters={onSetFilters}
-            spinner={dashboardQuery.isInitialLoading}
-          />
-        </RepoPickerHeader>
-      </DashboardTopbar>
-      <DashboardBody>
+      <DashboardTopbar isFixed useOrgFromURL />
+      <DashboardBody className="flex flex-col gap-y-8">
+        {showAddBadgeBanner && <OnboardingAddBadge />}
         <ShadowBox className="rounded-3xl px-12 py-8">
+          <h2 className="mb-6 text-lg font-medium">Issues Overview</h2>
           <div className="-mx-6 space-y-8">
-            {showAddBadgeBanner && <OnboardingAddBadge />}
+            <div className="mx-6">
+              <RepoPickerHeader
+                currentRepository={currentRepo}
+                repositories={allOrgRepositories ?? []}
+              >
+                <Header
+                  totalCount={totalCount}
+                  filters={filters}
+                  onSetFilters={onSetFilters}
+                  spinner={dashboardQuery.isInitialLoading}
+                />
+              </RepoPickerHeader>
+            </div>
+
+            <div className="px-6">
+              <Separator />
+            </div>
 
             {haveIssues ? (
               <IssueList

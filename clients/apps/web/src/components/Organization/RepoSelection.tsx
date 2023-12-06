@@ -96,7 +96,7 @@ export function RepoSelection(props: {
               className={twMerge(
                 width,
                 props.openClassNames,
-                'dark:bg-polar-800 dark:border-polar-700 !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border',
+                'dark:bg-polar-800 dark:border-polar-700 !absolute z-10 w-max rounded-lg bg-white shadow-lg dark:border',
               )}
             >
               <div className="flex items-center px-2">

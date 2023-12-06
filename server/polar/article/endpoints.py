@@ -93,7 +93,11 @@ async def search(
         raise ResourceNotFound()
 
     results, count = await article_service.search(
-        session, auth.subject, pagination=pagination, organization_id=org.id
+        session,
+        auth.subject,
+        pagination=pagination,
+        show_unpublished=show_unpublished,
+        organization_id=org.id,
     )
 
     return ListResource.from_paginated_results(

@@ -141,12 +141,27 @@ async def article_private_published(
 
 
 @pytest_asyncio.fixture
+async def article_unpublished(
+    session: AsyncSession, user: User, organization: Organization
+) -> Article:
+    return await create_article(
+        session,
+        created_by_user=user,
+        organization=organization,
+        visibility=Article.Visibility.public,
+        paid_subscribers_only=False,
+        published_at=None,
+    )
+
+
+@pytest_asyncio.fixture
 async def articles(
     article_public_free_published: Article,
     article_public_paid_published: Article,
     article_hidden_free_published: Article,
     article_hidden_paid_published: Article,
     article_private_published: Article,
+    article_unpublished: Article,
 ) -> list[Article]:
     return [
         article_public_free_published,
@@ -154,6 +169,7 @@ async def articles(
         article_hidden_free_published,
         article_hidden_paid_published,
         article_private_published,
+        article_unpublished,
     ]
 
 
@@ -263,6 +279,29 @@ class TestSearch:
         assert article.id == article_public_free_published.id
         assert is_paid_subscriber is False
 
+    async def test_no_subscription_show_unpublished(
+        self,
+        session: AsyncSession,
+        articles: list[Article],
+        article_public_free_published: Article,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        results, count = await article_service.search(
+            session,
+            user_second,
+            show_unpublished=True,
+            organization_id=organization.id,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(results) == 1
+        assert count == 1
+
+        article, is_paid_subscriber = results[0]
+        assert article.id == article_public_free_published.id
+        assert is_paid_subscriber is False
+
     async def test_no_subscription_org_member(
         self,
         session: AsyncSession,
@@ -285,6 +324,28 @@ class TestSearch:
 
         assert article_public_free_published.id in get_articles_ids(results)
         assert article_public_paid_published.id in get_articles_ids(results)
+
+        for _, is_paid_subscriber in results:
+            assert is_paid_subscriber is True
+
+    async def test_no_subscription_org_member_show_unpublished(
+        self,
+        session: AsyncSession,
+        articles: list[Article],
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        results, count = await article_service.search(
+            session,
+            user,
+            show_unpublished=True,
+            organization_id=organization.id,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(results) == 6
+        assert count == 6
 
         for _, is_paid_subscriber in results:
             assert is_paid_subscriber is True

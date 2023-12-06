@@ -144,12 +144,26 @@ class ArticleService:
         session: AsyncSession,
         auth_subject: Subject,
         *,
+        show_unpublished: bool = False,
         organization_id: UUID | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[tuple[Article, bool]], int]:
-        statement = self._get_readable_articles_statement(auth_subject).where(
-            Article.visibility == Article.Visibility.public
-        )
+        statement = self._get_readable_articles_statement(auth_subject)
+
+        # Show only public and published articles
+        if not show_unpublished:
+            statement = statement.where(
+                Article.visibility == Article.Visibility.public,
+                Article.published_at <= utc_now(),
+            )
+        # Show unpublished articles only for organization members
+        else:
+            statement = statement.where(
+                or_(
+                    Article.visibility == Article.Visibility.public,
+                    UserOrganization.user_id.is_not(None),
+                )
+            )
 
         if organization_id is not None:
             statement = statement.where(Article.organization_id == organization_id)
@@ -385,6 +399,7 @@ class ArticleService:
     ) -> Select[tuple[Article, bool]]:
         statement = self._get_readable_articles_statement(user).where(
             Article.visibility == Article.Visibility.public,
+            Article.published_at <= utc_now(),
             or_(
                 ArticlesSubscription.user_id == user.id,
                 UserOrganization.user_id == user.id,

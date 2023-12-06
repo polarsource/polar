@@ -58,7 +58,9 @@ export const wrapStrictCreateElement = (
       'hr',
       'span',
       'input',
+      // custom completely overridden components
       'embed',
+      'iframe',
       // our custom components
       'poll',
       'paywall',
@@ -88,6 +90,13 @@ export const wrapStrictCreateElement = (
 
       if (customComponentName === 'embed') {
         trimProps.src = props?.src
+        children = undefined // can never have children
+      }
+
+      if (customComponentName === 'iframe') {
+        trimProps.src = props?.src
+        trimProps.title = props?.title
+        trimProps.allow = props?.allow
         children = undefined // can never have children
       }
 
@@ -164,6 +173,7 @@ export const markdownOpts = {
     paywall: () => <></>,
     SubscribeNow: () => <></>,
     embed: () => <></>,
+    iframe: () => <></>,
 
     // example style overrides
     img: (args: any) => <img {...args} style={{ maxWidth: '100%' }} />,

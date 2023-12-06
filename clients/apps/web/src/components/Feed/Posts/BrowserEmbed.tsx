@@ -15,9 +15,7 @@ const Embed = (props: { src: string }) => {
   }
 
   return (
-    <div className="bg-gray-200 p-2 text-red-800">
-      Unknown embed target ({props.src})
-    </div>
+    <div className="bg-gray-200 p-2 text-red-800">Invalid &lt;embed&gt;</div>
   )
 }
 
@@ -48,9 +46,7 @@ const EmbedIssue = (props: { src: string }) => {
 
   if (!m || !m[0] || !m[1]) {
     return (
-      <div className="bg-gray-200 p-2 text-red-800">
-        Unknown embed target ({props.src})
-      </div>
+      <div className="bg-gray-200 p-2 text-red-800">Invalid &lt;embed&gt;</div>
     )
   }
 

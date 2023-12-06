@@ -1,6 +1,7 @@
 // @ts-ignore
 import Markdown from 'markdown-to-jsx'
 import Embed from './BrowserEmbed'
+import Iframe from './BrowserIframe'
 import BrowserPoll from './BrowserPoll'
 import Paywall from './Paywall'
 import Poll from './Poll'
@@ -21,6 +22,7 @@ export const opts = {
     paywall: (args: any) => <Paywall {...args} />,
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
+    iframe: (args: any) => <Iframe {...args} />,
   },
 } as const
 

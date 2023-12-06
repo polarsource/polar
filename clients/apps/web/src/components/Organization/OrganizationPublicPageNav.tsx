@@ -22,7 +22,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Post as PostComponent } from '../Feed/Posts/Post'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import { ProfileMenu } from '../Shared/ProfileSelection'
@@ -53,6 +53,11 @@ export const OrganizationPublicPageNav = ({
     },
     [search, router, pathname],
   )
+
+  const [gotoUrl, setGotoUrl] = useState('')
+  useEffect(() => {
+    setGotoUrl(window.location.href)
+  })
 
   return (
     <div className="flex flex-row items-center justify-between md:w-full">
@@ -111,7 +116,7 @@ export const OrganizationPublicPageNav = ({
             view: 'Maintainer Page',
           }}
           text="Sign in with GitHub"
-          gotoUrl={window.location.href}
+          gotoUrl={gotoUrl}
         />
       )}
     </div>

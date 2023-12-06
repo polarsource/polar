@@ -74,9 +74,9 @@ const ClientPage = () => {
               </StaggerReveal>
             </div>
           </div>
-          <div className="flex-shrink-0 flex-col gap-y-8 xl:w-1/3">
+          <div className="flex flex-shrink-0 flex-col gap-y-8 xl:w-1/3">
             <div className="flex w-full flex-grow flex-row items-center justify-between">
-              <h3 className="dark:text-polar-50 text-lg text-gray-950">
+              <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Analytics
               </h3>
             </div>

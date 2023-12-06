@@ -397,15 +397,23 @@ async def test_list(
     for art in list_json["items"]:
         assert art["visibility"] == "public"
 
-    # authed, expect can see private
+    # authed, expect can see private if enabled
     get_authed = await client.get(
         f"/api/v1/articles/search?platform=github&organization_name={organization.name}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert get_authed.status_code == 200
     list_json_authed = get_authed.json()
-    print(list_json_authed)
-    assert len(list_json_authed["items"]) == 5
+    assert len(list_json_authed["items"]) == 2
+
+    # authed, expect can see private if enabled
+    get_show_unpublished = await client.get(
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert get_show_unpublished.status_code == 200
+    list_json_authed_unpublished = get_show_unpublished.json()
+    assert len(list_json_authed_unpublished["items"]) == 5
 
 
 @pytest.mark.asyncio

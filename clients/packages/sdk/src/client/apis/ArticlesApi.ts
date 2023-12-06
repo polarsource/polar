@@ -49,6 +49,7 @@ export interface ArticlesApiLookupRequest {
 export interface ArticlesApiSearchRequest {
     organizationName: string;
     platform: Platforms;
+    showUnpublished?: boolean;
 }
 
 export interface ArticlesApiSendRequest {
@@ -307,6 +308,10 @@ export class ArticlesApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters.showUnpublished !== undefined) {
+            queryParameters['show_unpublished'] = requestParameters.showUnpublished;
+        }
 
         if (requestParameters.organizationName !== undefined) {
             queryParameters['organization_name'] = requestParameters.organizationName;

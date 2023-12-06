@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
@@ -59,9 +59,7 @@ async def list(
     articles = await article_service.list(
         session,
         organization_ids=[o.organization_id for o in org_memberships],
-        can_see_unpublished_in_organization_ids=[
-            o.organization_id for o in org_memberships
-        ],
+        can_see_unpublished_in_organization_ids=[],
     )
 
     # TODO: pagination
@@ -91,6 +89,10 @@ async def list(
 )
 async def search(
     organization_name_platform: OrganizationNamePlatform,
+    show_unpublished: bool | None = Query(
+        default=None,
+        description="Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization.",
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
@@ -100,7 +102,9 @@ async def search(
     if not org:
         raise ResourceNotFound()
 
-    allow_private_hidden = await authz.can(auth.subject, AccessType.write, org)
+    allow_private_hidden = show_unpublished and await authz.can(
+        auth.subject, AccessType.write, org
+    )
 
     articles = await article_service.list(
         session,

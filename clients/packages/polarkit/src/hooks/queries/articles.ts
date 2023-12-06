@@ -14,19 +14,26 @@ import {
 import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
 
-export const useOrganizationArticles = (
-  orgName?: string,
-  platform: Platforms = Platforms.GITHUB,
-): UseQueryResult<ListResourceArticle> =>
+export const useOrganizationArticles = (variables: {
+  orgName?: string
+  platform?: Platforms
+  showUnpublished?: boolean
+}): UseQueryResult<ListResourceArticle> =>
   useQuery({
-    queryKey: ['article', 'organization', orgName],
+    queryKey: [
+      'article',
+      'organization',
+      variables.orgName,
+      variables.showUnpublished,
+    ],
     queryFn: () =>
       api.articles.search({
-        organizationName: orgName || '',
-        platform,
+        organizationName: variables.orgName ?? '',
+        platform: variables.platform ?? Platforms.GITHUB,
+        showUnpublished: variables.showUnpublished,
       }),
     retry: defaultRetry,
-    enabled: !!orgName,
+    enabled: !!variables.orgName,
   })
 
 export const useListArticles = (): UseQueryResult<ListResourceArticle> =>

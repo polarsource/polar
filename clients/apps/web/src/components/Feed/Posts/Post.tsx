@@ -45,7 +45,7 @@ export const Post = (props: FeedPost) => {
 
 const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
   return (
-    <div className="flex w-full flex-row items-center justify-between gap-x-4 text-sm">
+    <div className="flex w-full flex-row items-center gap-x-4 text-sm md:justify-between">
       <Avatar
         className="block h-10 w-10 md:hidden"
         avatar_url={props.article.byline.avatar_url}

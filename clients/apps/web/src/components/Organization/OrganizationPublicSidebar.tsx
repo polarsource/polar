@@ -98,7 +98,6 @@ export const OrganizationPublicSidebar = ({
             {parseGitHubUsernameLinks(organization.bio)}
           </p>
         )}
-
         <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
           {organization.company && (
             <div className="flex flex-row items-center gap-x-3">

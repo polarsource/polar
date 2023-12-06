@@ -351,6 +351,7 @@ const UpdateSubscriptionTierBenefitModalContent = ({
       organization_id: organization.id,
       ...benefit,
     },
+    shouldUnregister: true,
   })
 
   const { handleSubmit } = form

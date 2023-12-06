@@ -72,6 +72,7 @@ const SubscriptionTierEdit = ({
 
   const form = useForm<SubscriptionTierUpdate>({
     defaultValues: subscriptionTier,
+    shouldUnregister: true,
   })
   const { handleSubmit, watch } = form
 
@@ -90,6 +91,7 @@ const SubscriptionTierEdit = ({
 
   const onSubmit = useCallback(
     async (subscriptionTierUpdate: SubscriptionTierUpdate) => {
+      console.log(subscriptionTierUpdate)
       await updateSubscriptionTier.mutateAsync({
         id: subscriptionTier.id,
         subscriptionTierUpdate,

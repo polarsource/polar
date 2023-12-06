@@ -1,6 +1,5 @@
 import {
   ListResourceSubscriptionTier,
-  ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom,
   Platforms,
   SubscriptionBenefitCreate,
   SubscriptionBenefitUpdate,
@@ -117,10 +116,7 @@ export const useSubscriptionBenefits = (
   orgName: string,
   limit = 30,
   platform: Platforms = Platforms.GITHUB,
-): UseQueryResult<
-  ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom,
-  Error
-> =>
+) =>
   useQuery({
     queryKey: ['subscriptionBenefits', 'organization', orgName],
     queryFn: () =>

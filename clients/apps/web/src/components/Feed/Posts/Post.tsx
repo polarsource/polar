@@ -43,7 +43,7 @@ export const Post = (props: FeedPost) => {
   )
 }
 
-const PostHeader = (props: FeedPos & { isHovered: boolean }) => {
+const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
   return (
     <div className="flex w-full flex-row items-center justify-between text-sm">
       <div className="flex flex-col">

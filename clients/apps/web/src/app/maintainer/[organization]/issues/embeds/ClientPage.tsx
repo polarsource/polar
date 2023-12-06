@@ -2,10 +2,8 @@
 
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
-import {
-  DashboardBody,
-  RepoPickerHeader,
-} from '@/components/Layout/DashboardLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import {

@@ -7,13 +7,14 @@ import {
   usePersonalOrganization,
 } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
+import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
-import { PropsWithChildren, Suspense } from 'react'
+import { PropsWithChildren, Suspense, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import BackerNavigation from '../Dashboard/BackerNavigation'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
@@ -24,8 +25,12 @@ import Popover from '../Notifications/Popover'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import ProfileSelection from '../Shared/ProfileSelection'
 
-const DashboardLayout = (props: PropsWithChildren) => {
-  const { currentUser, hydrated } = useAuth()
+interface DashboardSidebarProps {
+  fullWidth?: boolean
+}
+
+const DashboardSidebar = ({ fullWidth }: DashboardSidebarProps) => {
+  const { currentUser } = useAuth()
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
@@ -49,59 +54,116 @@ const DashboardLayout = (props: PropsWithChildren) => {
 
   const shouldShowMaintainerUpsell = !currentOrg && !personalOrg
 
+  return (
+    <aside
+      className={twMerge(
+        'dark:bg-polar-900 dark:border-r-polar-800 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto border-r border-r-gray-100 bg-white md:w-[320px]',
+      )}
+    >
+      <div className="flex flex-col gap-y-2">
+        <div className="relative z-10 mt-5 hidden translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8 md:flex">
+          <a
+            href="/"
+            className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
+          >
+            <LogoIcon className="h-10 w-10" />
+          </a>
+
+          <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
+        </div>
+        <div className="mb-4 mt-8 flex px-4">
+          {currentUser && (
+            <ProfileSelection useOrgFromURL={true} className="shadow-xl" />
+          )}
+        </div>
+
+        {shouldRenderBackerNavigation && <BackerNavigation />}
+
+        {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
+
+        {shouldRenderDashboardNavigation && <DashboardNavigation />}
+
+        <div className="flex flex-col pt-4">
+          {shouldShowGitHubAuthUpsell ? (
+            <GitHubAuthUpsell />
+          ) : shouldShowMaintainerUpsell ? (
+            <MaintainerUpsell />
+          ) : null}
+        </div>
+      </div>
+      <div className="flex flex-col gap-y-2">
+        <MetaNavigation />
+      </div>
+    </aside>
+  )
+}
+
+const DashboardLayout = (props: PropsWithChildren) => {
+  const { hydrated } = useAuth()
+
   if (!hydrated) {
     return <></>
   }
 
   return (
-    <div className="relative flex w-full flex-row">
-      <aside className="dark:bg-polar-900 dark:border-r-polar-800 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between overflow-y-auto border-r border-r-gray-100 bg-white">
-        <div className="flex flex-col gap-y-2">
-          <div className="relative z-10 mt-5 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8">
-            <a
-              href="/"
-              className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
-            >
-              <LogoIcon className="h-10 w-10" />
-            </a>
-
-            <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
-          </div>
-          <div className="mb-4 mt-8 flex px-4">
-            {currentUser && (
-              <ProfileSelection useOrgFromURL={true} className="shadow-xl" />
-            )}
-          </div>
-
-          {shouldRenderBackerNavigation && <BackerNavigation />}
-
-          {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
-
-          {shouldRenderDashboardNavigation && <DashboardNavigation />}
-
-          <div className="flex flex-col pt-4">
-            {shouldShowGitHubAuthUpsell ? (
-              <GitHubAuthUpsell />
-            ) : shouldShowMaintainerUpsell ? (
-              <MaintainerUpsell />
-            ) : null}
-          </div>
+    <>
+      <div className="relative flex h-full w-full flex-col md:flex-row">
+        <MobileNav />
+        <div className="hidden md:flex">
+          <DashboardSidebar />
         </div>
-
-        <div className="flex flex-col gap-y-2">
-          <MetaNavigation />
+        <div className="dark:bg-polar-950 bg-gray-75 relative flex h-full w-full translate-x-0 flex-row overflow-hidden">
+          <main className={twMerge('relative mt-20 w-full overflow-auto')}>
+            <Suspense>{props.children}</Suspense>
+          </main>
         </div>
-      </aside>
-      <div className="dark:bg-polar-950 bg-gray-75 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden">
-        <main className={twMerge('relative mt-20 w-full overflow-auto')}>
-          <Suspense>{props.children}</Suspense>
-        </main>
       </div>
-    </div>
+    </>
   )
 }
 
 export default DashboardLayout
+
+const MobileNav = () => {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  const header = (
+    <>
+      <a
+        href="/"
+        className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
+      >
+        <LogoIcon className="h-10 w-10" />
+      </a>
+
+      <div
+        className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
+        onClick={() => setMobileNavOpen((toggle) => !toggle)}
+      >
+        {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
+      </div>
+    </>
+  )
+
+  return (
+    <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-white p-6 md:hidden">
+      {mobileNavOpen ? (
+        <div className="relative flex h-full w-full flex-col">
+          <div className="fixed inset-0 z-10 flex h-full flex-col">
+            <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-white px-6 pt-6 md:hidden">
+              {header}
+            </div>
+            <div className="flex h-full flex-col overflow-y-auto">
+              <DashboardSidebar />
+            </div>
+          </div>
+        </div>
+      ) : (
+        header
+      )}
+    </div>
+  )
+}
 
 const GitHubAuthUpsell = () => {
   return (

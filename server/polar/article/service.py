@@ -20,9 +20,6 @@ from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession, sql
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.worker import enqueue_job
 
 from .schemas import ArticleCreate, ArticleUpdate, Visibility
@@ -282,15 +279,58 @@ class ArticleService:
         res = await session.execute(statement)
         return res.scalars().unique().all()
 
-    async def receivers(
-        self, session: AsyncSession, article: Article
-    ) -> Sequence[UUID]:
-        # for now: send to members of the org
-        # TODO: send to subscribers!
-        members = await user_organization_service.list_by_org(
-            session, article.organization_id
+    async def list_receivers(
+        self, session: AsyncSession, organization_id: UUID, paid_subscribers_only: bool
+    ) -> Sequence[tuple[UUID, bool, bool]]:
+        user_subscription_clause = (
+            ArticlesSubscription.organization_id == organization_id
         )
-        return [m.user_id for m in members]
+        if paid_subscribers_only:
+            user_subscription_clause &= ArticlesSubscription.paid_subscriber.is_(True)
+
+        statement = (
+            select(
+                User.id,
+                func.coalesce(ArticlesSubscription.paid_subscriber, False),
+                UserOrganization.user_id.is_not(None),
+            )
+            .join(
+                UserOrganization,
+                onclause=UserOrganization.user_id == User.id,
+                isouter=True,
+            )
+            .join(
+                ArticlesSubscription,
+                onclause=ArticlesSubscription.user_id == User.id,
+                isouter=True,
+            )
+        ).where(
+            or_(
+                UserOrganization.organization_id == organization_id,
+                user_subscription_clause,
+            )
+        )
+
+        result = await session.execute(statement)
+        return result.tuples().all()
+
+    async def count_receivers(
+        self, session: AsyncSession, organization_id: UUID, paid_subscribers_only: bool
+    ) -> tuple[int, int, int]:
+        receivers = await self.list_receivers(
+            session, organization_id, paid_subscribers_only
+        )
+        free_subscribers = 0
+        premium_subscribers = 0
+        organization_members = 0
+        for _, is_paid_subscriber, is_organization_member in receivers:
+            if is_paid_subscriber:
+                premium_subscribers += 1
+            elif is_organization_member:
+                organization_members += 1
+            else:
+                free_subscribers += 1
+        return free_subscribers, premium_subscribers, organization_members
 
     async def send_to_subscribers(
         self, session: AsyncSession, article: Article
@@ -313,9 +353,11 @@ class ArticleService:
         await article.save(session)
         await session.commit()
 
-        receivers = await article_service.receivers(session, article)
+        receivers = await article_service.list_receivers(
+            session, article.organization_id, article.paid_subscribers_only
+        )
 
-        for receiver_user_id in receivers:
+        for receiver_user_id, _, _ in receivers:
             await enqueue_job(
                 "articles.send_to_user",
                 article_id=article.id,

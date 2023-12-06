@@ -9,7 +9,6 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
-import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useToast } from '@/components/Toast/use-toast'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import {
@@ -31,7 +30,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
 
 export default function ClientPage() {
   const router = useRouter()
@@ -261,58 +260,55 @@ const OrganizationIssues = ({
   }
 
   return (
-    <>
-      <DashboardTopbar isFixed useOrgFromURL />
-      <DashboardBody className="flex flex-col gap-y-8">
-        {showAddBadgeBanner && <OnboardingAddBadge />}
-        <ShadowBox className="rounded-3xl px-12 py-8">
-          <h2 className="mb-6 text-lg font-medium">Issues Overview</h2>
-          <div className="-mx-6 space-y-8">
-            <div className="mx-6">
-              <RepoPickerHeader
-                currentRepository={currentRepo}
-                repositories={allOrgRepositories ?? []}
-              >
-                <Header
-                  totalCount={totalCount}
-                  filters={filters}
-                  onSetFilters={onSetFilters}
-                  spinner={dashboardQuery.isInitialLoading}
-                />
-              </RepoPickerHeader>
-            </div>
-
-            <div className="px-6">
-              <Separator />
-            </div>
-
-            {haveIssues ? (
-              <IssueList
+    <DashboardBody className="flex flex-col gap-y-8">
+      {showAddBadgeBanner && <OnboardingAddBadge />}
+      <ShadowBox className="px-6 py-4 md:rounded-3xl md:px-12 md:py-8">
+        <h2 className="mb-6 text-lg font-medium">Issues Overview</h2>
+        <div className="-mx-6 space-y-8">
+          <div className="mx-6">
+            <RepoPickerHeader
+              currentRepository={currentRepo}
+              repositories={allOrgRepositories ?? []}
+            >
+              <Header
                 totalCount={totalCount}
-                loading={dashboardQuery.isLoading}
-                dashboard={dashboard}
                 filters={filters}
                 onSetFilters={onSetFilters}
-                isInitialLoading={dashboardQuery.isInitialLoading}
-                isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-                hasNextPage={dashboardQuery.hasNextPage || false}
-                fetchNextPage={dashboardQuery.fetchNextPage}
+                spinner={dashboardQuery.isInitialLoading}
               />
-            ) : null}
-
-            {!haveIssues && dashboardQuery.isFetched ? (
-              <EmptyLayout>
-                <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
-                  <span className="text-6xl">
-                    <HowToVoteOutlined fontSize="inherit" />
-                  </span>
-                  <h2 className="text-lg">No issues found</h2>
-                </div>
-              </EmptyLayout>
-            ) : null}
+            </RepoPickerHeader>
           </div>
-        </ShadowBox>
-      </DashboardBody>
-    </>
+
+          <div className="px-6">
+            <Separator />
+          </div>
+
+          {haveIssues ? (
+            <IssueList
+              totalCount={totalCount}
+              loading={dashboardQuery.isLoading}
+              dashboard={dashboard}
+              filters={filters}
+              onSetFilters={onSetFilters}
+              isInitialLoading={dashboardQuery.isInitialLoading}
+              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+              hasNextPage={dashboardQuery.hasNextPage || false}
+              fetchNextPage={dashboardQuery.fetchNextPage}
+            />
+          ) : null}
+
+          {!haveIssues && dashboardQuery.isFetched ? (
+            <EmptyLayout>
+              <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
+                <span className="text-6xl">
+                  <HowToVoteOutlined fontSize="inherit" />
+                </span>
+                <h2 className="text-lg">No issues found</h2>
+              </div>
+            </EmptyLayout>
+          ) : null}
+        </div>
+      </ShadowBox>
+    </DashboardBody>
   )
 }

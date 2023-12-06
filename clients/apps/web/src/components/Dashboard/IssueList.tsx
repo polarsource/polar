@@ -292,8 +292,8 @@ export const Header = (props: {
   const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <div className="flex w-full flex-row items-center justify-between">
-      <div className="relative w-full min-w-[280px] py-2">
+    <div className="flex w-full flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap md:gap-4">
+      <div className="relative w-full min-w-[140px] py-2 md:min-w-[200px]">
         <Input
           type="text"
           name="query"
@@ -317,7 +317,7 @@ export const Header = (props: {
         />
       </div>
 
-      <div className="ml-4 flex w-fit flex-shrink-0 items-center justify-center gap-x-4 lg:justify-start">
+      <div className="flex w-fit flex-shrink-0 items-center justify-center gap-x-4 lg:justify-start">
         {canFilterByBadged && (
           <>
             <DropdownMenu>
@@ -326,7 +326,7 @@ export const Header = (props: {
                 <span>Filter</span>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent className="dark:bg-polar-700">
+              <DropdownMenuContent align="start" className="dark:bg-polar-700">
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
@@ -357,7 +357,7 @@ export const Header = (props: {
             </span>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent className="dark:bg-polar-700">
+          <DropdownMenuContent align="start" className="dark:bg-polar-700">
             <DropdownMenuLabel>Sort issues by</DropdownMenuLabel>
             <DropdownMenuSeparator />
 

@@ -58,6 +58,7 @@ export const wrapStrictCreateElement = (
       'hr',
       'span',
       'input',
+      'embed',
       // our custom components
       'poll',
       'paywall',
@@ -73,17 +74,30 @@ export const wrapStrictCreateElement = (
 
     // Custom components
     if (typeof type === 'function') {
-      // todo: validate
-      console.log('custom component', {
-        type,
-        props,
-        children,
-      })
+      const customComponentName = type?.name
+      if (!customComponentName) {
+        return <></>
+      }
+
+      if (customComponentName === 'img') {
+        trimProps.src = props?.src
+        trimProps.height = props?.height
+        trimProps.width = props?.width
+        children = undefined // can never have children
+      }
+
+      if (customComponentName === 'embed') {
+        trimProps.src = props?.src
+        children = undefined // can never have children
+      }
 
       return React.createElement(
         type,
-        // dependency inject article to all custom components
+
         {
+          ...trimProps,
+
+          // Dependency inject article to all components
           article: article,
 
           // Default to true in the client side renderer. When rendering posts for end-users, the premium content is already stripped out by the backend.
@@ -103,17 +117,20 @@ export const wrapStrictCreateElement = (
       return <></>
     }
 
-    if (type === 'img') {
-      trimProps.src = props?.src
-      trimProps.height = props?.height
-      trimProps.width = props?.width
-      children = undefined // can never have children
-    }
-
     if (type === 'a') {
-      // TODO: parse and validate href
-      // Double check protocols
-      trimProps.href = props?.href
+      const href = props?.href
+      if (
+        typeof href === 'string' &&
+        // Restricted protos.
+        // Do not allow relative URLs.
+        (href.startsWith('https://') ||
+          href.startsWith('http://') ||
+          href.startsWith('mailto://'))
+      ) {
+        trimProps.href = props?.href
+      } else {
+        return <></>
+      }
     }
 
     if (type === 'input') {
@@ -146,9 +163,9 @@ export const markdownOpts = {
     poll: () => <></>,
     paywall: () => <></>,
     SubscribeNow: () => <></>,
+    embed: () => <></>,
 
     // example style overrides
     img: (args: any) => <img {...args} style={{ maxWidth: '100%' }} />,
   },
-  // createElement: wrapStrictCreateElement(),
 } as const

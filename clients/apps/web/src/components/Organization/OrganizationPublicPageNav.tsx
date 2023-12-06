@@ -33,10 +33,12 @@ import { RepositoriesOverivew } from './RepositoriesOverview'
 
 interface OrganizationPublicPageNavProps {
   shouldRenderSubscriptionsTab: boolean
+  basePath?: string
 }
 
 export const OrganizationPublicPageNav = ({
   shouldRenderSubscriptionsTab,
+  basePath,
 }: OrganizationPublicPageNavProps) => {
   const { currentUser } = useAuth()
   const router = useRouter()
@@ -48,15 +50,15 @@ export const OrganizationPublicPageNav = ({
     (value: string) => () => {
       const params = new URLSearchParams(search)
       params.set('tab', value)
-      router.push(`${pathname}?${params.toString()}`)
+      router.push(`${basePath ?? pathname}?${params.toString()}`)
     },
-    [search, router, pathname],
+    [search, router, pathname, basePath],
   )
 
   const [gotoUrl, setGotoUrl] = useState('')
   useEffect(() => {
     setGotoUrl(window.location.href)
-  })
+  }, [])
 
   return (
     <div className="flex flex-row items-center justify-between md:w-full">

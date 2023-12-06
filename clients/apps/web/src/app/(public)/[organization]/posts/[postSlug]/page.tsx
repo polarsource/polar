@@ -103,6 +103,7 @@ export default async function Page({
     ),
   ])
 
+  let subscriptionTiers: SubscriptionTier[] = []
   let subscriptionsSummary: SubscriptionSummary[] = []
   let subscribersCount = 0
   try {
@@ -130,20 +131,25 @@ export default async function Page({
         },
         cacheConfig,
       )
+    subscriptionTiers = subscriptionGroupsResponse.items ?? []
     freeSubscriptionTier = subscriptionGroupsResponse.items?.find(
       (tier) => tier.type === SubscriptionTierType.FREE,
     )
   } catch (err) {}
 
+  const currentTab = searchParams.tab as string | undefined
+
   return (
     <>
       {post && (
         <ClientPage
+          onFirstRenderTab={currentTab}
           post={post}
           organization={organization}
           freeSubscriptionTier={freeSubscriptionTier}
           subscribersCount={subscribersCount}
           subscriptionSummary={subscriptionsSummary}
+          subscriptionTiers={subscriptionTiers}
         />
       )}
     </>

@@ -26,12 +26,12 @@ export const Post = (props: FeedPost) => {
 
   return (
     <div
-      className="dark:border-polar-800 hover:dark:bg-polar-800/50 dark:bg-polar-900 flex w-full cursor-pointer flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100"
+      className="dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full cursor-pointer flex-col justify-start gap-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 md:flex-row"
       ref={ref}
       onClick={onClick}
     >
       <Avatar
-        className="h-10 w-10"
+        className="hidden h-10 w-10 md:block"
         avatar_url={props.article.byline.avatar_url}
         name={props.article.byline.name}
       />
@@ -45,7 +45,12 @@ export const Post = (props: FeedPost) => {
 
 const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
   return (
-    <div className="flex w-full flex-row items-center justify-between text-sm">
+    <div className="flex w-full flex-row items-center justify-between gap-x-4 text-sm">
+      <Avatar
+        className="block h-10 w-10 md:hidden"
+        avatar_url={props.article.byline.avatar_url}
+        name={props.article.byline.name}
+      />
       <div className="flex flex-col">
         <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
           <Link
@@ -104,13 +109,21 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
             onClick={(e) => e.stopPropagation()}
             href={`/${props.article.organization.name}?tab=subscriptions`}
           >
-            <Button className="px-0" variant="link" size="sm">
+            <Button
+              className="h-fit px-0 py-0 leading-normal"
+              variant="link"
+              size="sm"
+            >
               Subscribe
             </Button>
           </Link>
         </div>
       </div>
-      <AnimatedIconButton active={props.isHovered} variant="secondary">
+      <AnimatedIconButton
+        className="hidden md:flex"
+        active={props.isHovered}
+        variant="secondary"
+      >
         <ArrowForward fontSize="inherit" />
       </AnimatedIconButton>
     </div>
@@ -121,7 +134,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
   return (
     <div
       className={twMerge(
-        'flex w-full flex-col gap-y-4 pb-5 pt-2 text-[15px] leading-relaxed transition-colors duration-200',
+        'flex w-full flex-col gap-y-4 pb-5 pt-4 text-[15px] leading-relaxed md:pt-2',
       )}
     >
       <Link
@@ -133,7 +146,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
       <div className="flex flex-col flex-wrap">
         <p
           className={twMerge(
-            'text-md line-clamp-4 w-full flex-wrap truncate whitespace-break-spaces break-words leading-loose text-gray-500',
+            'text-md line-clamp-4 w-full flex-wrap truncate whitespace-break-spaces break-words leading-loose text-gray-500 transition-colors duration-200',
             props.isHovered
               ? 'dark:text-polar-300 text-gray-800'
               : 'dark:text-polar-400 text-gray-700',
@@ -147,6 +160,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
 }
 export const AnimatedIconButton = (
   props: PropsWithChildren<{
+    className?: string
     active?: boolean | undefined
     variant?: ButtonProps['variant']
   }>,
@@ -172,7 +186,10 @@ export const AnimatedIconButton = (
     <Button
       size="icon"
       variant={props.active ? 'default' : props.variant}
-      className="h-8 w-8 overflow-hidden rounded-full"
+      className={twMerge(
+        'h-8 w-8 overflow-hidden rounded-full',
+        props.className,
+      )}
       onMouseEnter={handleMouse(1)}
       onMouseLeave={handleMouse(0)}
     >

@@ -65,7 +65,7 @@ export default function Page({
           subscribersCount={subscribersCount}
           subscriptionSummary={subscriptionSummary}
         />
-        <StaggerReveal className="dark:md:bg-polar-800 dark:md:border-polar-700 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
+        <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
           <Link
             className="absolute left-16 top-16 hidden flex-shrink md:block"
             href={`/${organization.name}`}

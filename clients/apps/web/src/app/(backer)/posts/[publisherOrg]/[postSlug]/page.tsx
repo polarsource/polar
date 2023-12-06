@@ -14,7 +14,7 @@ export default function Page({
   const article = useArticleLookup(params.publisherOrg, params.postSlug)
 
   return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 relative my-16 flex flex-row items-start rounded-3xl bg-white p-12 shadow-lg dark:border">
+    <div className="dark:bg-polar-900 dark:border-polar-800 relative my-16 flex flex-row items-start rounded-3xl bg-white p-12 shadow-lg dark:border">
       <Link className="absolute left-16 top-16 flex-shrink" href="/posts">
         <Button
           size="sm"

@@ -202,14 +202,14 @@ export const PublishModalContent = ({
         </h3>
       </ModalHeader>
       <div className="overflow-scroll p-8">
-        <div className="flex flex-col gap-y-6">
-          <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-6">
+        <div className="flex flex-col gap-y-4">
+          <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-4">
             <AudiencePicker
               paidSubscribersOnly={paidSubscribersOnly}
               onChange={setPaidSubscribersOnly}
             />
           </div>
-          <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-6">
+          <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-4">
             <VisibilityPicker
               paidSubscribersOnly={paidSubscribersOnly}
               visibility={visibility}
@@ -220,7 +220,7 @@ export const PublishModalContent = ({
             />
           </div>
 
-          <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+          <div className="dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
             <ScheduledPostPicker
               publishAt={publishAt}
               article={article}
@@ -229,12 +229,12 @@ export const PublishModalContent = ({
             />
           </div>
 
-          <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+          <div className="dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
             <div className="flex flex-col gap-y-4">
               <div className="flex flex-col gap-y-2">
                 <span className="font-medium">Email</span>
               </div>
-              <div className="flex flex-col gap-y-6">
+              <div className="flex flex-col gap-y-4">
                 {!article.notifications_sent_at ? (
                   <div className="flex flex-row items-center gap-x-2">
                     <Checkbox
@@ -296,7 +296,7 @@ export const PublishModalContent = ({
             </div>
           </div>
 
-          <div className="dark:border-polar-700 flex flex-col gap-y-6 rounded-2xl border border-gray-100 p-6">
+          <div className="dark:border-polar-700 flex flex-col  rounded-2xl border border-gray-100 p-4">
             <div className="flex flex-col gap-y-4">
               <div className="flex flex-col  gap-2">
                 <span className="font-medium">Slug</span>
@@ -305,6 +305,7 @@ export const PublishModalContent = ({
                   URLs.
                 </p>
               </div>
+
               <Input
                 type="text"
                 value={slug}
@@ -485,7 +486,7 @@ const ScheduledPostPicker = ({
       <div className="flex items-start justify-between gap-y-2">
         <span className="font-medium">Publishing date & time</span>
       </div>
-      <div className="flex flex-col gap-y-6">
+      <div className="flex flex-col gap-y-4">
         <div className="flex flex-row justify-between">
           <DateTimePicker
             date={publishAt}
@@ -637,7 +638,7 @@ const DateTimePicker = ({
             toDate={!canSelectFuture ? new Date() : undefined}
             fromDate={!canSelectPast ? new Date() : undefined}
             classNames={{
-              day_today: 'bg-gray-200',
+              day_today: 'bg-gray-200 dark:bg-gray-800',
               cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20',
             }}
             mode="single"

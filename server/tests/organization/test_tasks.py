@@ -3,12 +3,15 @@ import uuid
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.models.organization import Organization
+from polar.models import Organization, SubscriptionBenefit
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.organization.tasks import (  # type: ignore[attr-defined]
     OrganizationDoesNotExist,
     organization_post_install,
+    subscription_benefit_service,
     subscription_tier_service,
 )
+from polar.subscription.service.subscription_benefit import SubscriptionBenefitService
 from polar.subscription.service.subscription_tier import SubscriptionTierService
 from polar.worker import JobContext, PolarWorkerContext
 
@@ -30,6 +33,22 @@ class TestOrganizationPostInstall:
         polar_worker_context: PolarWorkerContext,
         organization: Organization,
     ) -> None:
+        subscription_benefit = SubscriptionBenefit(
+            type=SubscriptionBenefitType.articles,
+            description="Public posts",
+            is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+            properties={"paid_articles": False},
+            organization=organization,
+        )
+        create_articles_benefits_mock = mocker.patch.object(
+            subscription_benefit_service,
+            "create_articles_benefits",
+            spec=SubscriptionBenefitService.create_articles_benefits,
+        )
+        create_articles_benefits_mock.return_value = (
+            subscription_benefit,
+            subscription_benefit,
+        )
         create_free_mock = mocker.patch.object(
             subscription_tier_service,
             "create_free",
@@ -40,4 +59,5 @@ class TestOrganizationPostInstall:
             job_context, organization.id, polar_worker_context
         )
 
-        # create_free_mock.assert_called_once()
+        create_articles_benefits_mock.assert_called_once()
+        create_free_mock.assert_called_once()

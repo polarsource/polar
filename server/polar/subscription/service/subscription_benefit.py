@@ -20,7 +20,10 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.subscription_benefit import (
+    SubscriptionBenefitArticles,
+    SubscriptionBenefitType,
+)
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 
@@ -136,11 +139,19 @@ class SubscriptionBenefitService(
             ):
                 raise RepositoryDoesNotExist(create_schema.repository_id)
 
+        try:
+            is_tax_applicable = getattr(create_schema, "is_tax_applicable")
+        except AttributeError:
+            is_tax_applicable = create_schema.type.is_tax_applicable()
+
         return await self.model.create(
             session,
             organization=organization,
             repository=repository,
-            **create_schema.dict(exclude={"organization_id", "repository_id"}),
+            is_tax_applicable=is_tax_applicable,
+            **create_schema.dict(
+                exclude={"organization_id", "repository_id", "is_tax_applicable"}
+            ),
         )
 
     async def user_update(
@@ -195,6 +206,56 @@ class SubscriptionBenefitService(
         )
 
         return subscription_benefit
+
+    async def create_articles_benefits(
+        self,
+        session: AsyncSession,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+    ) -> tuple[SubscriptionBenefitArticles, SubscriptionBenefitArticles]:
+        statement = select(SubscriptionBenefitArticles)
+        if organization is not None:
+            statement = statement.where(
+                SubscriptionBenefitArticles.organization_id == organization.id
+            )
+        if repository is not None:
+            statement = statement.where(
+                SubscriptionBenefitArticles.repository_id == repository.id
+            )
+
+        result = await session.execute(statement)
+
+        public_articles: SubscriptionBenefitArticles | None = None
+        premium_articles: SubscriptionBenefitArticles | None = None
+        for benefit in result.scalars().all():
+            if benefit.properties["paid_articles"]:
+                premium_articles = benefit
+            else:
+                public_articles = benefit
+
+        if public_articles is None:
+            public_articles = SubscriptionBenefitArticles(
+                description="Public posts",
+                is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+                properties={"paid_articles": False},
+                organization=organization,
+                repository=repository,
+            )
+            session.add(public_articles)
+
+        if premium_articles is None:
+            premium_articles = SubscriptionBenefitArticles(
+                description="Premium posts",
+                is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+                properties={"paid_articles": True},
+                organization=organization,
+                repository=repository,
+            )
+            session.add(premium_articles)
+
+        await session.commit()
+
+        return (public_articles, premium_articles)
 
     async def _with_organization_or_repository(
         self, session: AsyncSession, subscription_benefit: SubscriptionBenefit

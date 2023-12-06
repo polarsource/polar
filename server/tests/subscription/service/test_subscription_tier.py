@@ -622,21 +622,31 @@ class TestCreateFree:
         subscription_tier_organization_free: SubscriptionTier,
     ) -> None:
         subscription_tier = await subscription_tier_service.create_free(
-            session, organization
+            session, benefits=[], organization=organization
         )
 
         assert subscription_tier.id == subscription_tier_organization_free.id
 
     async def test_create(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        subscription_benefit_organization: SubscriptionBenefit,
+        organization: Organization,
     ) -> None:
         free_subscription_tier = await subscription_tier_service.create_free(
-            session, organization=organization
+            session,
+            benefits=[subscription_benefit_organization],
+            organization=organization,
         )
 
         assert free_subscription_tier.type == SubscriptionTierType.free
         assert free_subscription_tier.organization_id == organization.id
         assert free_subscription_tier.price_amount == 0
+        assert len(free_subscription_tier.benefits) == 1
+        assert (
+            free_subscription_tier.benefits[0].id
+            == subscription_benefit_organization.id
+        )
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,9 @@
 import uuid
 
 from polar.exceptions import PolarError
+from polar.subscription.service.subscription_benefit import (
+    subscription_benefit as subscription_benefit_service,
+)
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
@@ -29,5 +32,12 @@ async def organization_post_install(
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        return  # TODO: disable this until we have the built-in free posts benefits and migration
-        await subscription_tier_service.create_free(session, organization=organization)
+        (
+            public_articles,
+            _,
+        ) = await subscription_benefit_service.create_articles_benefits(
+            session, organization=organization
+        )
+        await subscription_tier_service.create_free(
+            session, benefits=[public_articles], organization=organization
+        )

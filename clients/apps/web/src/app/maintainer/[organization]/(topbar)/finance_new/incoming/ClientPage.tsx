@@ -49,12 +49,12 @@ export default function ClientPage() {
   return (
     <div className="flex flex-col gap-y-6">
       {org && <AccountBanner accounts={organizationAccounts} org={org} />}
-      <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-3xl border border-gray-100 bg-white p-12">
+      <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-2xl border border-gray-100 bg-white p-6 md:rounded-3xl md:p-12">
         <Tabs
           defaultValue={params.get('type') ?? 'transactions'}
           onValueChange={setActiveTab}
         >
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-y-6 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col gap-y-2">
               <h2 className="text-lg font-medium capitalize">
                 {params?.get('type') ?? 'Transactions'}
@@ -66,7 +66,7 @@ export default function ClientPage() {
               </p>
             </div>
 
-            <TabsList className="dark:border-polar-700 dark:border">
+            <TabsList className="dark:border-polar-700 flex-row dark:border">
               <TabsTrigger value="transactions">Transactions</TabsTrigger>
               <TabsTrigger value="payouts">Payouts</TabsTrigger>
             </TabsList>

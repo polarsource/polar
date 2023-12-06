@@ -25,7 +25,7 @@ export default function ClientPage() {
   return (
     <div className="flex flex-col gap-y-6">
       {org && <AccountBanner accounts={organizationAccounts} org={org} />}
-      <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-3xl border border-gray-100 bg-white p-12">
+      <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-2xl border border-gray-100 bg-white p-6 md:rounded-3xl md:p-12">
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium capitalize">Transactions</h2>

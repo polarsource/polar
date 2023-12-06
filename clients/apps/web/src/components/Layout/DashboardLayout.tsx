@@ -112,7 +112,7 @@ const DashboardLayout = (props: PropsWithChildren) => {
         <div className="hidden md:flex">
           <DashboardSidebar />
         </div>
-        <div className="dark:bg-polar-950 bg-gray-75 relative flex h-full w-full translate-x-0 flex-row overflow-hidden">
+        <div className="dark:bg-polar-950 bg-gray-75 relative flex h-full w-full translate-x-0 flex-row overflow-hidden pt-8 md:pt-0">
           <main className={twMerge('relative w-full overflow-auto md:mt-20')}>
             <Suspense>{props.children}</Suspense>
           </main>
@@ -128,7 +128,7 @@ const MobileNav = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const header = (
-    <>
+    <div className="dark:bg-polar-900 fixed left-0 right-0 top-0 flex flex-row items-center justify-between bg-white px-2 py-4 sm:px-3 md:px-4">
       <a
         href="/"
         className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
@@ -142,7 +142,7 @@ const MobileNav = () => {
       >
         {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
       </div>
-    </>
+    </div>
   )
 
   return (
@@ -153,7 +153,7 @@ const MobileNav = () => {
             <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-white px-4 pt-5 sm:px-6 md:hidden md:px-8">
               {header}
             </div>
-            <div className="flex h-full flex-col overflow-y-auto">
+            <div className="flex h-full flex-col overflow-y-auto pt-8">
               <DashboardSidebar />
             </div>
           </div>

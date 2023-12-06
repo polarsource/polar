@@ -129,6 +129,10 @@ export const OrganizationPublicPageContent = ({
   repositories: Repository[]
   subscriptionTiers: SubscriptionTier[]
 }) => {
+  const highlightedTiers = subscriptionTiers.filter(
+    (tier) => tier.is_highlighted,
+  )
+
   return (
     <div className="mt-12 flex h-full w-full flex-col md:mt-0">
       {isFeatureEnabled('feed') && (
@@ -149,11 +153,10 @@ export const OrganizationPublicPageContent = ({
         value={isFeatureEnabled('feed') ? 'issues' : 'overview'}
       >
         <div className="flex w-full flex-col gap-y-8">
-          {subscriptionTiers.filter((tier) => tier.is_highlighted).length >
-            0 && (
+          {highlightedTiers.length > 0 && (
             <PublicSubscriptionUpsell
               organization={organization}
-              subscriptionTiers={subscriptionTiers}
+              subscriptionTiers={highlightedTiers}
               subscribePath="/subscribe"
             />
           )}

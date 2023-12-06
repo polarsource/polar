@@ -9,6 +9,7 @@ export type RenderArticle = Pick<
 // strictCreateElement removes unsupported types and attributes
 export const wrapStrictCreateElement = (
   article: RenderArticle,
+  showPaywalledContent?: boolean,
 ): ((
   type:
     | string
@@ -82,7 +83,12 @@ export const wrapStrictCreateElement = (
       return React.createElement(
         type,
         // dependency inject article to all custom components
-        { article: article } as JSX.IntrinsicAttributes,
+        {
+          article: article,
+
+          // Default to true in the client side renderer. When rendering posts for end-users, the premium content is already stripped out by the backend.
+          showPaywalledContent: showPaywalledContent ?? true,
+        } as JSX.IntrinsicAttributes,
         children,
       )
     }

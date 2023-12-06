@@ -22,12 +22,18 @@ export const opts = {
   },
 } as const
 
-const BrowserRender = (props: { article: RenderArticle }) => {
+const BrowserRender = (props: {
+  article: RenderArticle
+  showPaywalledContent?: boolean
+}) => {
   return (
     <Markdown
       options={{
         ...opts,
-        createElement: wrapStrictCreateElement(props.article),
+        createElement: wrapStrictCreateElement(
+          props.article,
+          props.showPaywalledContent,
+        ),
       }}
     >
       {props.article.body}

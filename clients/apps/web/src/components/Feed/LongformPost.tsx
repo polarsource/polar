@@ -17,9 +17,13 @@ const revealTransition = {
 
 interface LongformPostProps {
   article: RenderArticle
+  showPaywalledContent?: boolean
 }
 
-export default function LongformPost({ article }: LongformPostProps) {
+export default function LongformPost({
+  article,
+  showPaywalledContent,
+}: LongformPostProps) {
   const organization = article.organization
 
   return (
@@ -59,8 +63,11 @@ export default function LongformPost({ article }: LongformPostProps) {
       </div>
 
       <StaggerReveal.Child transition={revealTransition}>
-        <div className="prose dark:prose-invert dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-3xl dark:prose-p:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline space-y-16">
-          <BrowserRender article={article} />
+        <div className="prose dark:prose-invert dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-3xl dark:prose-p:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline mb-8 space-y-16">
+          <BrowserRender
+            article={article}
+            showPaywalledContent={showPaywalledContent}
+          />
         </div>
       </StaggerReveal.Child>
 

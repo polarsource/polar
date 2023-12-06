@@ -8,8 +8,11 @@ export const PostToolbar = ({}) => {
           <TabsTrigger value="edit" size="small">
             Markdown
           </TabsTrigger>
-          <TabsTrigger value="preview" size="small">
+          <TabsTrigger value="preview_premium" size="small">
             Preview
+          </TabsTrigger>
+          <TabsTrigger value="preview_free" size="small">
+            Preview (free)
           </TabsTrigger>
         </TabsList>
       </div>

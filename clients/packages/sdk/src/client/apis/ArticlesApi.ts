@@ -20,6 +20,7 @@ import type {
   ArticleDeleteResponse,
   ArticlePreview,
   ArticlePreviewResponse,
+  ArticleReceiversResponse,
   ArticleSentResponse,
   ArticleUpdate,
   ArticleViewedResponse,
@@ -40,8 +41,19 @@ export interface ArticlesApiGetRequest {
     id: string;
 }
 
+export interface ArticlesApiListRequest {
+    page?: number;
+    limit?: number;
+}
+
 export interface ArticlesApiLookupRequest {
     slug: string;
+    organizationName: string;
+    platform: Platforms;
+}
+
+export interface ArticlesApiReceiversRequest {
+    paidSubscribersOnly: boolean;
     organizationName: string;
     platform: Platforms;
 }
@@ -50,6 +62,8 @@ export interface ArticlesApiSearchRequest {
     organizationName: string;
     platform: Platforms;
     showUnpublished?: boolean;
+    page?: number;
+    limit?: number;
 }
 
 export interface ArticlesApiSendRequest {
@@ -202,8 +216,16 @@ export class ArticlesApi extends runtime.BaseAPI {
      * List articles.
      * List articles (Public API)
      */
-    async listRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
+    async listRaw(requestParameters: ArticlesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
         const queryParameters: any = {};
+
+        if (requestParameters.page !== undefined) {
+            queryParameters['page'] = requestParameters.page;
+        }
+
+        if (requestParameters.limit !== undefined) {
+            queryParameters['limit'] = requestParameters.limit;
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -229,8 +251,8 @@ export class ArticlesApi extends runtime.BaseAPI {
      * List articles.
      * List articles (Public API)
      */
-    async list(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
-        const response = await this.listRaw(initOverrides);
+    async list(requestParameters: ArticlesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -295,6 +317,66 @@ export class ArticlesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get number of potential receivers for an article.
+     * Get number of potential receivers for an article. (Public API)
+     */
+    async receiversRaw(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleReceiversResponse>> {
+        if (requestParameters.paidSubscribersOnly === null || requestParameters.paidSubscribersOnly === undefined) {
+            throw new runtime.RequiredError('paidSubscribersOnly','Required parameter requestParameters.paidSubscribersOnly was null or undefined when calling receivers.');
+        }
+
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling receivers.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling receivers.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.paidSubscribersOnly !== undefined) {
+            queryParameters['paid_subscribers_only'] = requestParameters.paidSubscribersOnly;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/receivers`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get number of potential receivers for an article.
+     * Get number of potential receivers for an article. (Public API)
+     */
+    async receivers(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleReceiversResponse> {
+        const response = await this.receiversRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Search articles.
      * Search articles (Public API)
      */
@@ -319,6 +401,14 @@ export class ArticlesApi extends runtime.BaseAPI {
 
         if (requestParameters.platform !== undefined) {
             queryParameters['platform'] = requestParameters.platform;
+        }
+
+        if (requestParameters.page !== undefined) {
+            queryParameters['page'] = requestParameters.page;
+        }
+
+        if (requestParameters.limit !== undefined) {
+            queryParameters['limit'] = requestParameters.limit;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

@@ -36,32 +36,33 @@ export const Post = (props: FeedPost) => {
         name={props.article.byline.name}
       />
       <div className="flex w-full min-w-0 flex-col">
-        <PostHeader {...props} />
+        <PostHeader {...props} isHovered={isHovered} />
         <PostBody {...props} isHovered={isHovered} />
-        <PostFooter {...props} isHovered={isHovered} />
       </div>
     </div>
   )
 }
 
-const PostHeader = (props: FeedPost) => {
+const PostHeader = (props: FeedPos & { isHovered: boolean }) => {
   return (
-    <div className="mt-1.5 flex w-full flex-row items-center justify-between text-sm">
-      <div className="flex flex-row items-center gap-x-2">
-        <Link
-          className="flex flex-row items-center gap-x-2"
-          href={`/${props.article.organization.name}`}
-        >
-          <h3 className="text-blue-500 dark:text-blue-400">
-            {props.article.organization.pretty_name ||
-              props.article.organization.name}
-          </h3>
-        </Link>
+    <div className="flex w-full flex-row items-center justify-between text-sm">
+      <div className="flex flex-col">
+        <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
+          <Link
+            className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
+            href={`/${props.article.organization.name}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-blue-500 dark:text-blue-400">
+              {props.article.organization.pretty_name ||
+                props.article.organization.name}
+            </h3>
+          </Link>
+        </div>
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
           {props.article.published_at ? (
             <>
-              &middot;
-              <div className="text-xs">
+              <div className="min-w-0 flex-shrink flex-nowrap truncate text-xs">
                 {new Date(props.article.published_at).toLocaleString('en-US', {
                   year:
                     new Date(props.article.published_at).getFullYear() ===
@@ -99,13 +100,19 @@ const PostHeader = (props: FeedPost) => {
               &middot;
             </>
           )}
-          <Link href={`/${props.article.organization.name}?tab=subscriptions`}>
+          <Link
+            onClick={(e) => e.stopPropagation()}
+            href={`/${props.article.organization.name}?tab=subscriptions`}
+          >
             <Button className="px-0" variant="link" size="sm">
               Subscribe
             </Button>
           </Link>
         </div>
       </div>
+      <AnimatedIconButton active={props.isHovered} variant="secondary">
+        <ArrowForward fontSize="inherit" />
+      </AnimatedIconButton>
     </div>
   )
 }
@@ -138,17 +145,6 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
     </div>
   )
 }
-
-const PostFooter = (props: FeedPost & { isHovered: boolean }) => {
-  return (
-    <div className="mt-2 flex flex-row items-center justify-end gap-x-4">
-      <AnimatedIconButton active={props.isHovered} variant="secondary">
-        <ArrowForward fontSize="inherit" />
-      </AnimatedIconButton>
-    </div>
-  )
-}
-
 export const AnimatedIconButton = (
   props: PropsWithChildren<{
     active?: boolean | undefined

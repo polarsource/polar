@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.kit.pagination import ListResource, Pagination
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.utils import utc_now
 from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
@@ -15,9 +15,6 @@ from polar.postgres import (
 )
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.worker import enqueue_job
 
 from .schemas import Article as ArticleSchema
@@ -45,36 +42,28 @@ router = APIRouter(tags=["articles"])
     responses={404: {}},
 )
 async def list(
+    pagination: PaginationParamsQuery,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[ArticleSchema]:
-    # orgs that the user is a member of
-    org_memberships = await user_organization_service.list_by_user_id(
-        session, auth.subject.id
+    results, count = await article_service.list(
+        session, auth.subject, pagination=pagination
     )
 
-    # TODO: list articles based on subscriptions/benefits/etc...
-
-    articles = await article_service.list(
-        session,
-        organization_ids=[o.organization_id for o in org_memberships],
-        can_see_unpublished_in_organization_ids=[],
-    )
-
-    # TODO: pagination
-    count = len(articles)
-    return ListResource(
-        items=[
+    return ListResource.from_paginated_results(
+        [
             ArticleSchema.from_db(
-                a,
-                include_admin_fields=await authz.can(auth.subject, AccessType.write, a),
-                # TODO
-                is_paid_subscriber=await authz.can(auth.subject, AccessType.write, a),
+                art,
+                include_admin_fields=await authz.can(
+                    auth.subject, AccessType.write, art
+                ),
+                is_paid_subscriber=is_paid_subscriber,
             )
-            for a in articles
+            for art, is_paid_subscriber in results
         ],
-        pagination=Pagination(total_count=count, max_page=1),
+        count,
+        pagination,
     )
 
 
@@ -89,8 +78,9 @@ async def list(
 )
 async def search(
     organization_name_platform: OrganizationNamePlatform,
-    show_unpublished: bool | None = Query(
-        default=None,
+    pagination: PaginationParamsQuery,
+    show_unpublished: bool = Query(
+        default=False,
         description="Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization.",
     ),
     session: AsyncSession = Depends(get_db_session),
@@ -102,31 +92,23 @@ async def search(
     if not org:
         raise ResourceNotFound()
 
-    allow_private_hidden = show_unpublished and await authz.can(
-        auth.subject, AccessType.write, org
+    results, count = await article_service.search(
+        session, auth.subject, pagination=pagination, organization_id=org.id
     )
 
-    articles = await article_service.list(
-        session,
-        organization_id=org.id,
-        can_see_unpublished_in_organization_ids=[org.id]
-        if allow_private_hidden
-        else None,
-    )
-
-    # TODO: pagination
-    count = len(articles)
-    return ListResource(
-        items=[
+    return ListResource.from_paginated_results(
+        [
             ArticleSchema.from_db(
-                a,
-                include_admin_fields=await authz.can(auth.subject, AccessType.write, a),
-                # TODO
-                is_paid_subscriber=await authz.can(auth.subject, AccessType.write, a),
+                art,
+                include_admin_fields=await authz.can(
+                    auth.subject, AccessType.write, art
+                ),
+                is_paid_subscriber=is_paid_subscriber,
             )
-            for a in articles
+            for art, is_paid_subscriber in results
         ],
-        pagination=Pagination(total_count=count, max_page=1),
+        count,
+        pagination,
     )
 
 
@@ -151,18 +133,18 @@ async def lookup(
     if not org:
         raise ResourceNotFound()
 
-    art = await article_service.get_by_slug(session, organization_id=org.id, slug=slug)
-    if not art:
+    result = await article_service.get_readable_by_organization_and_slug(
+        session, auth.subject, organization_id=org.id, slug=slug
+    )
+    if not result:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, art):
-        raise Unauthorized()
+    art, is_paid_subscriber = result
 
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
-        # TODO
-        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
+        is_paid_subscriber=is_paid_subscriber,
     )
 
 
@@ -188,18 +170,13 @@ async def create(
     if not await authz.can(auth.subject, AccessType.write, org):
         raise Unauthorized()
 
-    created = await article_service.create(session, auth.subject, create)
-
-    # get for return
-    art = await article_service.get_loaded(session, created.id)
-    if not art:
-        raise ResourceNotFound()
+    art = await article_service.create(session, auth.subject, create)
+    await session.refresh(art, {"created_by_user", "organization"})
 
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
-        # TODO
-        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
+        is_paid_subscriber=True,
     )
 
 
@@ -218,20 +195,16 @@ async def get(
     authz: Authz = Depends(Authz.authz),
     auth: Auth = Depends(Auth.optional_user),
 ) -> ArticleSchema:
-    # TODO: authz, private, hidden, access by benefits, etc...
-
-    art = await article_service.get_loaded(session, id)
-    if not art:
+    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    if not result:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, art):
-        raise Unauthorized()
+    art, is_paid_subscriber = result
 
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
-        # TODO
-        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
+        is_paid_subscriber=is_paid_subscriber,
     )
 
 
@@ -247,15 +220,11 @@ async def get(
 async def viewed(
     id: UUID,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
     auth: Auth = Depends(Auth.optional_user),
 ) -> ArticleViewedResponse:
-    art = await article_service.get_loaded(session, id)
-    if not art:
+    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    if not result:
         raise ResourceNotFound()
-
-    if not await authz.can(auth.subject, AccessType.read, art):
-        raise Unauthorized()
 
     # Track view
     # TODO: very simplistic for now, might need some improvements later :-)
@@ -283,9 +252,11 @@ async def send_preview(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticlePreviewResponse:
-    art = await article_service.get_loaded(session, id)
-    if not art:
+    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    if not result:
         raise ResourceNotFound()
+
+    art, _ = result
 
     # admin required
     if not await authz.can(auth.subject, AccessType.write, art):
@@ -320,9 +291,11 @@ async def send(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSentResponse:
-    art = await article_service.get_loaded(session, id)
-    if not art:
+    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    if not result:
         raise ResourceNotFound()
+
+    art, _ = result
 
     # admin required
     if not await authz.can(auth.subject, AccessType.write, art):
@@ -348,14 +321,16 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
-    art = await article_service.get_loaded(session, id)
-    if not art:
+    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    if not result:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, art):
+    article, _ = result
+
+    if not await authz.can(auth.subject, AccessType.write, article):
         raise Unauthorized()
 
-    await article_service.update(session, art, update)
+    await article_service.update(session, article, update)
 
     # get for return
     art = await article_service.get_loaded(session, id)

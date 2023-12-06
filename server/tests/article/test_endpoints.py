@@ -210,13 +210,13 @@ async def test_get_private(
     get_anon = await client.get(
         f"/api/v1/articles/{res['id']}",
     )
-    assert get_anon.status_code == 401
+    assert get_anon.status_code == 404
 
     # lookup anon
     lookup = await client.get(
         f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world",
     )
-    assert lookup.status_code == 401
+    assert lookup.status_code == 404
 
     # lookup auth
     lookup = await client.get(

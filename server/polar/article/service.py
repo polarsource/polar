@@ -25,6 +25,14 @@ from .schemas import ArticleCreate, ArticleUpdate, Visibility
 log = structlog.get_logger()
 
 
+def polar_slugify(input: str) -> str:
+    return slugify(
+        input,
+        max_length=64,  # arbitrary
+        word_boundary=True,
+    )
+
+
 class ArticleService:
     async def create(
         self,
@@ -33,11 +41,7 @@ class ArticleService:
         create_schema: ArticleCreate,
         autocommit: bool = True,
     ) -> Article:
-        slug = slugify(
-            create_schema.title,
-            max_length=64,  # arbitrary
-            word_boundary=True,
-        )
+        slug = polar_slugify(create_schema.title)
 
         orig_slug = slug
 
@@ -169,8 +173,10 @@ class ArticleService:
         update: ArticleUpdate,
     ) -> Article:
         if update.title is not None:
-            # TODO: Update slug if article is not published
             article.title = update.title
+
+        if update.slug is not None:
+            article.slug = polar_slugify(update.slug)
 
         if update.body is not None:
             article.body = update.body

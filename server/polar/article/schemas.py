@@ -129,6 +129,7 @@ class ArticleCreate(Schema):
 class ArticleUpdate(Schema):
     title: str | None = None
     body: str | None = None
+    slug: str | None = None
     byline: Literal["user", "organization"] | None = Field(
         default=None,
         description="If the user or organization should be credited in the byline.",

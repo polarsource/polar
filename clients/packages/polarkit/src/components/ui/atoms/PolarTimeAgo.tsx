@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import TimeAgo from 'react-timeago'
 
-const PolarTimeAgo = (props: { date: Date }) => {
+const PolarTimeAgo = (props: { date: Date; suffix?: string }) => {
   const [rendered, setRendered] = useState(false)
 
   useEffect(() => {
@@ -22,7 +22,9 @@ const PolarTimeAgo = (props: { date: Date }) => {
         if (unit === 'second') {
           return 'just now'
         }
-        return `${value} ${unit}${value !== 1 ? 's' : ''} ${suffix}`
+        return `${value} ${unit}${value !== 1 ? 's' : ''} ${
+          props.suffix ?? suffix
+        }`
       }}
     />
   )

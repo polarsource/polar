@@ -34,7 +34,11 @@ startOfMonthSixMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  const posts = useOrganizationArticles(org?.name)
+  const posts = useOrganizationArticles({
+    orgName: org?.name,
+    platform: org?.platform,
+    showUnpublished: true,
+  })
 
   const summary = useSubscriptionSummary(org?.name ?? '')
   const subscriptionStatistics = useSubscriptionStatistics(
@@ -143,10 +147,25 @@ const PostItem = (post: Article) => {
           </div>
           <div className="flex flex-row items-center justify-between whitespace-nowrap">
             <div className="dark:text-polar-300  flex w-full flex-row flex-wrap gap-x-3 text-sm text-gray-500">
-              {post.published_at ? (
+              {post.published_at &&
+              new Date(post.published_at) <= new Date() ? (
                 <PolarTimeAgo date={new Date(post.published_at)} />
               ) : (
-                <span>Not published</span>
+                <>
+                  {post.published_at ? (
+                    <span>
+                      {post.notify_subscribers
+                        ? 'Publishing and sending in'
+                        : 'Publising in'}{' '}
+                      <PolarTimeAgo
+                        date={new Date(post.published_at)}
+                        suffix=""
+                      />
+                    </span>
+                  ) : (
+                    <span>Not scheduled</span>
+                  )}
+                </>
               )}
               &middot;
               {post.visibility !== 'public' ? (

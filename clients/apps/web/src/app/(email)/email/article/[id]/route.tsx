@@ -26,6 +26,7 @@ import 'postcss'
 export const runtime = 'nodejs'
 
 const twConfig = {
+  plugins: [require('@tailwindcss/typography')],
   theme: {
     fontWeight: {
       light: '300',
@@ -227,7 +228,7 @@ export async function GET(
               <Hr />
 
               <Row>
-                <Column>
+                <Column className="prose dark:prose-invert dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-3xl dark:prose-p:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline mb-8 space-y-16">
                   <EmailRender article={article} />
                 </Column>
               </Row>

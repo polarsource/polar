@@ -5,6 +5,7 @@ from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
 
 from ...schemas import SubscriptionBenefitUpdate
+from .articles import SubscriptionBenefitArticlesService
 from .base import (
     SubscriptionBenefitPreconditionError,
     SubscriptionBenefitRetriableError,
@@ -18,6 +19,7 @@ _SERVICE_CLASS_MAP: dict[
     type[SubscriptionBenefitServiceProtocol[Any, Any]],
 ] = {
     SubscriptionBenefitType.custom: SubscriptionBenefitCustomService,
+    SubscriptionBenefitType.articles: SubscriptionBenefitArticlesService,
 }
 
 

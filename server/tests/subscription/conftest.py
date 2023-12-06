@@ -2,6 +2,7 @@ import random
 import string
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -93,6 +94,7 @@ async def create_subscription_benefit(
     organization: Organization | None = None,
     repository: Repository | None = None,
     description: str = "Subscription Benefit",
+    properties: dict[str, Any] = {},
 ) -> SubscriptionBenefit:
     assert (organization is not None) != (repository is not None)
     subscription_benefit = SubscriptionBenefit(
@@ -101,6 +103,7 @@ async def create_subscription_benefit(
         is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
+        properties=properties,
     )
     session.add(subscription_benefit)
     await session.commit()

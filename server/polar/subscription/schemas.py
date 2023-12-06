@@ -8,7 +8,7 @@ from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validat
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import (
-    SubscriptionBenefitBuiltinProperties,
+    SubscriptionBenefitArticlesProperties,
     SubscriptionBenefitCustomProperties,
     SubscriptionBenefitProperties,
     SubscriptionBenefitType,
@@ -55,19 +55,20 @@ class SubscriptionBenefitCreateBase(Schema):
         return values
 
 
-class SubscriptionBenefitBuiltinCreate(SubscriptionBenefitCreateBase):
-    type: Literal[SubscriptionBenefitType.builtin]
-    properties: SubscriptionBenefitBuiltinProperties
-
-
 class SubscriptionBenefitCustomCreate(SubscriptionBenefitCreateBase):
     type: Literal[SubscriptionBenefitType.custom]
     is_tax_applicable: bool
     properties: SubscriptionBenefitCustomProperties
 
 
+# This is a dummy schema only there to produce a valid union below
+# Remove it when we have other create schemas to add
+class SubscriptionBenefitCustomBisCreate(SubscriptionBenefitCustomCreate):
+    ...
+
+
 SubscriptionBenefitCreate = (
-    SubscriptionBenefitBuiltinCreate | SubscriptionBenefitCustomCreate
+    SubscriptionBenefitCustomCreate | SubscriptionBenefitCustomBisCreate
 )
 
 
@@ -82,8 +83,10 @@ class SubscriptionBenefitUpdateBase(Schema):
     )
 
 
-class SubscriptionBenefitBuiltinUpdate(SubscriptionBenefitUpdateBase):
-    properties: SubscriptionBenefitBuiltinProperties | None = None
+class SubscriptionBenefitArticlesUpdate(SubscriptionBenefitUpdateBase):
+    # Don't allow to update properties, as both Free and Premium posts
+    # are pre-created by us and shouldn't change
+    ...
 
 
 class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
@@ -91,7 +94,7 @@ class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
 
 
 SubscriptionBenefitUpdate = (
-    SubscriptionBenefitBuiltinUpdate | SubscriptionBenefitCustomUpdate
+    SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate
 )
 
 
@@ -106,9 +109,9 @@ class SubscriptionBenefitBase(TimestampedSchema):
     repository_id: UUID4 | None = None
 
 
-class SubscriptionBenefitBuiltin(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.builtin]
-    properties: SubscriptionBenefitBuiltinProperties
+class SubscriptionBenefitArticles(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.articles]
+    properties: SubscriptionBenefitArticlesProperties
 
 
 class SubscriptionBenefitCustom(SubscriptionBenefitBase):
@@ -117,12 +120,12 @@ class SubscriptionBenefitCustom(SubscriptionBenefitBase):
     is_tax_applicable: bool
 
 
-SubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom
+SubscriptionBenefit = SubscriptionBenefitArticles | SubscriptionBenefitCustom
 
 subscription_benefit_schema_map: dict[
     SubscriptionBenefitType, type[SubscriptionBenefit]
 ] = {
-    SubscriptionBenefitType.builtin: SubscriptionBenefitBuiltin,
+    SubscriptionBenefitType.articles: SubscriptionBenefitArticles,
     SubscriptionBenefitType.custom: SubscriptionBenefitCustom,
 }
 

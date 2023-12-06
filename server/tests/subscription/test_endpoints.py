@@ -18,9 +18,14 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
 
-from .conftest import add_subscription_benefits, create_active_subscription
+from .conftest import (
+    add_subscription_benefits,
+    create_active_subscription,
+    create_subscription_benefit,
+)
 
 
 @pytest.mark.asyncio
@@ -764,6 +769,11 @@ class TestCreateSubscriptionBenefit:
                 "description": "Th",
             },
             {"description": "Subscription Benefit", "properties": {}},
+            {
+                "type": "articles",
+                "description": "My articles benefit",
+                "properties": {"paid_articles": True},
+            },
         ],
     )
     @pytest.mark.authenticated
@@ -878,6 +888,35 @@ class TestUpdateSubscriptionBenefit:
         json = response.json()
         assert json["description"] == "Updated Description"
         assert "properties" in json
+
+    @pytest.mark.authenticated
+    async def test_cant_update_articles_properties(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        benefit = await create_subscription_benefit(
+            session,
+            type=SubscriptionBenefitType.articles,
+            organization=organization,
+            properties={"paid_articles": False},
+        )
+        response = await client.post(
+            f"/api/v1/subscriptions/benefits/{benefit.id}",
+            json={
+                "description": "Updated Description",
+                "properties": {"paid_articles": True},
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["description"] == "Updated Description"
+        assert "properties" in json
+        assert json["properties"]["paid_articles"] is False
 
 
 @pytest.mark.asyncio

@@ -10,7 +10,8 @@ import {
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Avatar } from 'polarkit/components/ui/atoms'
+import { Avatar, Button } from 'polarkit/components/ui/atoms'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
@@ -61,6 +62,12 @@ export const OrganizationPublicSidebar = ({
   subscriptionSummary,
   subscribersCount,
 }: OrganizationPublicSidebarProps) => {
+  const adminOrgs = useListAdminOrganizations()
+  const shouldRenderDashboardButton = useMemo(
+    () => adminOrgs?.data?.items?.some((org) => org.name === organization.name),
+    [adminOrgs],
+  )
+
   const subscriberUsers = useMemo(
     () => subscriptionSummary.slice(0, 9).map((summary) => summary.user),
     [subscriptionSummary],
@@ -87,12 +94,19 @@ export const OrganizationPublicSidebar = ({
             @{organization.name}
           </h3>
         </div>
-        {freeSubscriptionTier && (
+        {shouldRenderDashboardButton ? (
+          <Link
+            className="w-full"
+            href={`/maintainer/${organization.name}/issues`}
+          >
+            <Button fullWidth>Open Dashboard</Button>
+          </Link>
+        ) : freeSubscriptionTier ? (
           <FreeTierSubscribe
             subscriptionTier={freeSubscriptionTier}
             organization={organization}
           />
-        )}
+        ) : null}
         {organization.bio && (
           <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-500 md:text-start">
             {parseGitHubUsernameLinks(organization.bio)}

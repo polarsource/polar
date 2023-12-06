@@ -69,7 +69,6 @@ const OrganizationPublicPage = ({
               shouldRenderSubscriptionsTab={subscriptionTiers.length > 0}
             />
           </div>
-
           <div className="relative flex w-full flex-col gap-x-24 py-16 md:flex-row">
             <OrganizationPublicSidebar
               organization={organization}

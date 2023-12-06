@@ -132,7 +132,7 @@ const PostItem = (post: Article) => {
             style={{ backgroundImage: `url(${image})` }}
           />
         ) : (
-          <div className="bg-polar-100 flex min-h-0 w-28 flex-shrink-0 flex-col items-center justify-center rounded-2xl bg-cover bg-center bg-no-repeat">
+          <div className="dark:bg-polar-700 flex min-h-0 w-28 flex-shrink-0 flex-col items-center justify-center rounded-2xl bg-gray-100 bg-cover bg-center bg-no-repeat">
             <PhotoIcon className="text-polar-400 h-8 w-8" />
           </div>
         )}

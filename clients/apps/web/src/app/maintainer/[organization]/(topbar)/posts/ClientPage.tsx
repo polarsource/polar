@@ -64,7 +64,7 @@ const ClientPage = () => {
               </Link>
             </div>
             <div className="flex flex-col gap-y-12">
-              {posts.data?.items?.length ?? 0 > 0 ? (
+              {(posts.data?.items?.length ?? 0) > 0 ? (
                 <StaggerReveal className="flex w-full flex-col gap-y-6">
                   {posts?.data?.items
                     ? posts.data.items.map((post) => (

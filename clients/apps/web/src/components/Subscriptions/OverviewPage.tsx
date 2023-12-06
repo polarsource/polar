@@ -236,53 +236,55 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
               </Card>
             ))}
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <div className="text-lg font-medium">Subscription Activity</div>
-              <div className="dark:text-polar-500 text-gray-400">
-                The last 5 subscribed users
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {lastSubscriptions !== undefined &&
-                lastSubscriptions.map((subscription) => (
-                  <div
-                    key={subscription.id}
-                    className="flex flex-row items-center justify-between"
-                  >
-                    <div className="flex flex-row items-center justify-center gap-2">
-                      <Avatar
-                        avatar_url={subscription.user.avatar_url}
-                        name={subscription.user.username}
-                        className="h-8 w-8"
-                      />
-                      <div className="flex flex-col text-sm">
-                        <div className="font-medium">
-                          {subscription.user.username}
-                        </div>
-                        <div className="dark:text-polar-500 text-xs text-gray-400">
-                          <FormattedDateTime
-                            datetime={subscription.started_at as string}
-                          />
+        {(lastSubscriptions?.length ?? 0) > 0 && (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <div className="text-lg font-medium">Subscription Activity</div>
+                <div className="dark:text-polar-500 text-gray-400">
+                  The last 5 subscribed users
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {lastSubscriptions !== undefined &&
+                  lastSubscriptions.map((subscription) => (
+                    <div
+                      key={subscription.id}
+                      className="flex flex-row items-center justify-between"
+                    >
+                      <div className="flex flex-row items-center justify-center gap-2">
+                        <Avatar
+                          avatar_url={subscription.user.avatar_url}
+                          name={subscription.user.username}
+                          className="h-8 w-8"
+                        />
+                        <div className="flex flex-col text-sm">
+                          <div className="font-medium">
+                            {subscription.user.username}
+                          </div>
+                          <div className="dark:text-polar-500 text-xs text-gray-400">
+                            <FormattedDateTime
+                              datetime={subscription.started_at as string}
+                            />
+                          </div>
                         </div>
                       </div>
+                      <div>
+                        <SubscriptionTierPill
+                          subscriptionTier={subscription.subscription_tier}
+                          amount={subscription.price_amount}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <SubscriptionTierPill
-                        subscriptionTier={subscription.subscription_tier}
-                        amount={subscription.price_amount}
-                      />
-                    </div>
-                  </div>
-                ))}
-              {lastSubscriptions === undefined &&
-                [0, 1, 2, 3, 4].map((i) => (
-                  <Skeleton key={`activity-loading-${i}`} className="h-4" />
-                ))}
-            </CardContent>
-          </Card>
-        </div>
+                  ))}
+                {lastSubscriptions === undefined &&
+                  [0, 1, 2, 3, 4].map((i) => (
+                    <Skeleton key={`activity-loading-${i}`} className="h-4" />
+                  ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </DashboardBody>
   )

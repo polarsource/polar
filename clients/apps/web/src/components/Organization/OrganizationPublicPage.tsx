@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Article,
   Organization,
@@ -6,9 +8,10 @@ import {
   SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
+import { useSearchParams } from 'next/navigation'
 import { LogoType } from 'polarkit/components/brand'
 import { Tabs } from 'polarkit/components/ui/atoms'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   OrganizationPublicPageContent,
   OrganizationPublicPageNav,
@@ -37,11 +40,23 @@ const OrganizationPublicPage = ({
       subscriptionTiers.find((tier) => tier.type === SubscriptionTierType.FREE),
     [subscriptionTiers],
   )
+
+  // externally controlled tabs, react to changes in searchParams and set the tab value
+  const [tab, setTab] = useState<string>(onFirstRenderTab ?? 'overview')
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const searchTab = searchParams.get('tab')
+    if (searchTab && searchTab !== tab) {
+      setTab(searchTab)
+    }
+  }, [searchParams])
+
   return (
     <>
       <Tabs
         className="flex min-h-screen flex-col justify-between"
-        defaultValue={onFirstRenderTab ?? 'overview'}
+        value={tab}
+        onValueChange={(v) => setTab(v)}
       >
         <div className="flex flex-col px-4 md:px-8">
           <div className="relative flex w-full flex-row items-center justify-between gap-x-24 md:justify-normal">

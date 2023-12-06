@@ -2,6 +2,7 @@
 import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
+import Embed from './EmailEmbed'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import {
@@ -19,6 +20,7 @@ export const opts = {
     poll: (args: any) => <Poll {...args} renderer={EmailPoll} />,
     paywall: (args: any) => <Paywall {...args} />,
     SubscribeNow: () => <></>, // do not render
+    embed: (args: any) => <Embed {...args} />,
   },
 } as const
 

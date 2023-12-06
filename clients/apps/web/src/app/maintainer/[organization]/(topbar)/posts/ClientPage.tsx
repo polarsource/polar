@@ -10,6 +10,7 @@ import {
   AddOutlined,
   ArrowForward,
   LanguageOutlined,
+  ViewDayOutlined,
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -63,15 +64,28 @@ const ClientPage = () => {
               </Link>
             </div>
             <div className="flex flex-col gap-y-12">
-              <StaggerReveal className="flex w-full flex-col gap-y-6">
-                {posts?.data?.items
-                  ? posts.data.items.map((post) => (
-                      <StaggerReveal.Child key={post.id}>
-                        <PostItem {...post} />
-                      </StaggerReveal.Child>
-                    ))
-                  : null}
-              </StaggerReveal>
+              {posts.data?.items?.length ?? 0 > 0 ? (
+                <StaggerReveal className="flex w-full flex-col gap-y-6">
+                  {posts?.data?.items
+                    ? posts.data.items.map((post) => (
+                        <StaggerReveal.Child key={post.id}>
+                          <PostItem {...post} />
+                        </StaggerReveal.Child>
+                      ))
+                    : null}
+                </StaggerReveal>
+              ) : (
+                <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
+                  <ViewDayOutlined fontSize="large" />
+                  <div className="flex flex-col items-center gap-y-2">
+                    <h3 className="p-2 text-lg font-medium">No Posts yet</h3>
+                    <p className="dark:text-polar-600 min-w-0 truncate text-gray-300">
+                      Create your first post to start engaging with your
+                      subscribers
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex flex-shrink-0 flex-col gap-y-8 xl:w-1/3">

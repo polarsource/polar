@@ -15,7 +15,6 @@ import {
   SubscriptionTier,
   UserSignupType,
 } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   TabsContent,
@@ -144,10 +143,8 @@ export const OrganizationPublicPageContent = ({
         <TabsContent className="w-full" value="overview">
           <StaggerReveal className="flex max-w-xl flex-col gap-y-6">
             {posts.map((post) => (
-              <StaggerReveal.Child>
-                <Link href={`/${organization.name}/posts/${post.slug}`}>
-                  <PostComponent article={post} />
-                </Link>
+              <StaggerReveal.Child key={post.id}>
+                <PostComponent article={post} />
               </StaggerReveal.Child>
             ))}
           </StaggerReveal>

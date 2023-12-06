@@ -1,13 +1,10 @@
 'use client'
 
-import {
-  ArrowForward,
-  LanguageOutlined,
-  MoreVertOutlined,
-} from '@mui/icons-material'
+import { ArrowForward, LanguageOutlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { ButtonProps } from 'polarkit/components/ui/button'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
@@ -20,10 +17,18 @@ export const Post = (props: FeedPost) => {
   const ref = useRef<HTMLDivElement>(null)
   const isHovered = useHoverDirty(ref)
 
+  const router = useRouter()
+  const onClick = () => {
+    router.push(
+      `/${props.article.organization.name}/posts/${props.article.slug}`,
+    )
+  }
+
   return (
     <div
-      className="dark:border-polar-800 hover:dark:bg-polar-800/50 dark:bg-polar-900 flex w-full flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100"
+      className="dark:border-polar-800 hover:dark:bg-polar-800/50 dark:bg-polar-900 flex w-full cursor-pointer flex-row justify-start gap-x-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100"
       ref={ref}
+      onClick={onClick}
     >
       <Avatar
         className="h-10 w-10"
@@ -101,9 +106,6 @@ const PostHeader = (props: FeedPost) => {
           </Link>
         </div>
       </div>
-      <div className="dark:text-polar-400 text-base">
-        <MoreVertOutlined fontSize="inherit" />
-      </div>
     </div>
   )
 }
@@ -115,9 +117,12 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
         'flex w-full flex-col gap-y-4 pb-5 pt-2 text-[15px] leading-relaxed transition-colors duration-200',
       )}
     >
-      <div className="dark:text-polar-50 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950">
+      <Link
+        className="dark:text-polar-50 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950"
+        href={`/${props.article.organization.name}/posts/${props.article.slug}`}
+      >
         {props.article.title}
-      </div>
+      </Link>
       <div className="flex flex-col flex-wrap">
         <p
           className={twMerge(

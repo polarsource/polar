@@ -5,12 +5,10 @@ import {
   DashboardFilters,
   DefaultFilters,
 } from '@/components/Dashboard/filters'
-import {
-  DashboardBody,
-  RepoPickerHeader,
-} from '@/components/Layout/DashboardLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
+import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useToast } from '@/components/Toast/use-toast'
 import { HowToVoteOutlined } from '@mui/icons-material'

@@ -47,7 +47,7 @@ const ClientPage = () => {
     <>
       <DashboardBody>
         <div className="items mb-24 flex w-full flex-col-reverse items-start gap-y-12  xl:flex-row xl:gap-x-12 xl:gap-y-0">
-          <div className="flex flex-col gap-y-8 overflow-hidden ">
+          <div className="flex w-full flex-col gap-y-8 overflow-hidden">
             <div className="flex flex-row items-center justify-between">
               <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Overview

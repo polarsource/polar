@@ -149,7 +149,8 @@ export const OrganizationPublicPageContent = ({
         value={isFeatureEnabled('feed') ? 'issues' : 'overview'}
       >
         <div className="flex w-full flex-col gap-y-8">
-          {subscriptionTiers.length > 0 && (
+          {subscriptionTiers.filter((tier) => tier.is_highlighted).length >
+            0 && (
             <PublicSubscriptionUpsell
               organization={organization}
               subscriptionTiers={subscriptionTiers}

@@ -31,7 +31,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from 'polarkit/components/ui/popover'
-import { useSendArticlePreview, useUpdateArticle } from 'polarkit/hooks'
+import {
+  useArticleReceivers,
+  useSendArticlePreview,
+  useUpdateArticle,
+} from 'polarkit/hooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -54,6 +58,9 @@ export const PublishModalContent = ({
   const [sendEmail, setSendEmail] = useState(article.notify_subscribers)
   const [previewEmailAddress, setPreviewEmailAddress] = useState('')
   const [previewSent, setPreviewSent] = useState<string>()
+
+  const { data: articleReceivers, refetch: refetchArticleReceivers } =
+    useArticleReceivers(article.organization.name, paidSubscribersOnly)
 
   const [publishAt, setPublishAt] = useState<Date | undefined>(
     article.published_at ? new Date(article.published_at) : undefined,
@@ -244,7 +251,21 @@ export const PublishModalContent = ({
                       }
                     />
                     <span className="text-sm">
-                      Send post as email to subscribers
+                      Send post as email to{' '}
+                      <span className="font-medium">
+                        {articleReceivers?.free_subscribers} free subscribers
+                      </span>
+                      ,{' '}
+                      <span className="font-medium">
+                        {articleReceivers?.premium_subscribers} premium
+                        subscribers
+                      </span>{' '}
+                      and{' '}
+                      <span className="font-medium">
+                        {articleReceivers?.organization_members} organization
+                        members
+                      </span>
+                      .
                     </span>
                   </div>
                 ) : (

@@ -1,6 +1,7 @@
 import {
   Article,
   ArticleCreate,
+  ArticleReceiversResponse,
   ArticleUpdate,
   ListResourceArticle,
   Platforms,
@@ -119,6 +120,21 @@ export const useArticleLookup = (organization_name?: string, slug?: string) =>
       }),
     retry: defaultRetry,
     enabled: !!organization_name && !!slug,
+  })
+
+export const useArticleReceivers = (
+  organizationName: string,
+  paidSubscribersOnly: boolean,
+): UseQueryResult<ArticleReceiversResponse> =>
+  useQuery({
+    queryKey: ['article', 'receivers', organizationName, paidSubscribersOnly],
+    queryFn: () =>
+      api.articles.receivers({
+        platform: Platforms.GITHUB,
+        organizationName,
+        paidSubscribersOnly,
+      }),
+    retry: defaultRetry,
   })
 
 export const useSendArticlePreview = () =>

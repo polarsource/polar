@@ -27,7 +27,7 @@ const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
 
   return (
     <Tabs defaultValue={current?.title}>
-      <TabsList className="dark:border-polar-700 dark:border">
+      <TabsList className="dark:border-polar-700 flex-row dark:border">
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>
@@ -89,8 +89,8 @@ const DashboardTopbar = ({
   )
 
   const className = twMerge(
-    props.isFixed !== false ? 'fixed z-20 left-0 top-0 right-0' : '',
-    'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 border-b border-gray-100 dark:border-polar-800',
+    props.isFixed !== false ? 'md:fixed z-20 left-0 top-0 right-0' : '',
+    'flex h-fit md:h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 border-b border-gray-100 dark:border-polar-800',
   )
 
   if (!hydrated) {
@@ -100,8 +100,8 @@ const DashboardTopbar = ({
   return (
     <>
       <div className={className}>
-        <div className="relative mx-auto flex w-full max-w-screen-xl flex-row items-center justify-between px-4 sm:px-6 md:px-8">
-          <div className="flex flex-row items-center gap-x-24">
+        <div className="relative flex w-full max-w-screen-xl flex-col justify-between gap-y-4 px-4 pb-4 sm:px-6 md:mx-auto md:flex-row md:items-center md:px-8 md:pb-0">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-24">
             <h4 className="dark:text-polar-100 text-lg font-medium">
               {title ?? currentRoute?.title}
             </h4>
@@ -118,7 +118,9 @@ const DashboardTopbar = ({
                 />
               )}
           </div>
-          <div className="flex flex-row items-center gap-x-6">{children}</div>
+          {children && (
+            <div className="flex flex-row items-center gap-x-6">{children}</div>
+          )}
         </div>
       </div>
     </>

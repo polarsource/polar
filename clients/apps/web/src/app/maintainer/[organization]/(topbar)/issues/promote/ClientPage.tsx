@@ -2,7 +2,6 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'
-import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { ReactElement } from 'react'
 
@@ -21,30 +20,27 @@ export default function ClientPage() {
   }
 
   return (
-    <>
-      <DashboardTopbar isFixed useOrgFromURL />
-      <DashboardBody>
-        <div className="relative z-0">
-          <div className="dark:divide-polar-700 divide-y divide-gray-200">
-            {org && (
-              <Section>
-                <>
-                  <SectionDescription title="Badge settings" />
+    <DashboardBody>
+      <div className="relative z-0">
+        <div className="dark:divide-polar-700 divide-y divide-gray-200">
+          {org && (
+            <Section>
+              <>
+                <SectionDescription title="Badge settings" />
 
-                  <BadgeSetup
-                    org={org}
-                    showControls={true}
-                    setShowControls={() => true}
-                    setSyncIssuesCount={(value: number) => true}
-                    isSettingPage={true}
-                  />
-                </>
-              </Section>
-            )}
-          </div>
+                <BadgeSetup
+                  org={org}
+                  showControls={true}
+                  setShowControls={() => true}
+                  setSyncIssuesCount={(value: number) => true}
+                  isSettingPage={true}
+                />
+              </>
+            </Section>
+          )}
         </div>
-      </DashboardBody>
-    </>
+      </div>
+    </DashboardBody>
   )
 }
 

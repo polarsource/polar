@@ -52,7 +52,7 @@ class Account(RecordModel):
         String(255), nullable=True, default=None
     )
 
-    status: Mapped[str] = mapped_column(
+    status: Mapped[Status] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.CREATED
     )
 

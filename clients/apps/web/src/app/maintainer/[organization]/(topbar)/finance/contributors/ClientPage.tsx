@@ -4,9 +4,9 @@ import Finance from '@/components/Finance/Finance'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { useRouter } from 'next/navigation'
 import {
-  useListAccountsByOrganization,
   useListPledgesForOrganization,
   useListRewards,
+  useOrganizationAccount,
 } from 'polarkit/hooks'
 import { useEffect } from 'react'
 
@@ -23,7 +23,7 @@ export default function ClientPage() {
 
   const pledges = useListPledgesForOrganization(org?.platform, org?.name)
   const rewards = useListRewards(org?.id)
-  const accounts = useListAccountsByOrganization(org?.id)
+  const { data: account } = useOrganizationAccount(org?.id)
 
   return (
     <>
@@ -33,7 +33,7 @@ export default function ClientPage() {
           rewards={rewards.data.items}
           org={org}
           tab="contributors"
-          accounts={accounts.data?.items || []}
+          account={account}
         />
       )}
     </>

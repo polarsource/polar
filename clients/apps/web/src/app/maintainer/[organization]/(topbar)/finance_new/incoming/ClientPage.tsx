@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { TabsContent } from 'polarkit/components/ui/tabs'
 import {
-  useListAccountsByOrganization,
+  useOrganizationAccount,
   usePayoutTransactions,
   useTransferTransactions,
 } from 'polarkit/hooks'
@@ -30,9 +30,7 @@ export default function ClientPage() {
     [org],
   )
 
-  const organizationAccounts =
-    useListAccountsByOrganization(org?.id).data?.items ?? []
-  const [organizationAccount] = organizationAccounts
+  const { data: organizationAccount } = useOrganizationAccount(org?.id)
 
   const transfers = useTransferTransactions({
     accountId: organizationAccount?.id,
@@ -48,7 +46,7 @@ export default function ClientPage() {
 
   return (
     <div className="flex flex-col gap-y-6">
-      {org && <AccountBanner accounts={organizationAccounts} org={org} />}
+      {org && <AccountBanner account={organizationAccount} org={org} />}
       <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-2xl border border-gray-100 bg-white p-6 md:rounded-3xl md:p-12">
         <Tabs
           defaultValue={params.get('type') ?? 'transactions'}

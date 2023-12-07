@@ -1,9 +1,4 @@
-import {
-  ListResourceRepository,
-  Platforms,
-  ResponseError,
-  Status,
-} from '@polar-sh/sdk'
+import { ListResourceRepository, Platforms, ResponseError } from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -50,11 +45,11 @@ export const useSearchRepositories = (
     retry: defaultRetry,
   })
 
-export const useListAccountsByOrganization = (organization_id?: string) =>
+export const useOrganizationAccount = (organization_id?: string) =>
   useQuery({
     queryKey: ['accounts', organization_id],
     queryFn: () =>
-      api.accounts.search({
+      api.accounts.lookup({
         organizationId: organization_id,
       }),
 
@@ -62,22 +57,11 @@ export const useListAccountsByOrganization = (organization_id?: string) =>
     retry: defaultRetry,
   })
 
-export const useOrganizationHasActiveAccount = (
-  organization_id?: string,
-): boolean => {
-  const { data: accounts } = useListAccountsByOrganization(organization_id)
-  return (
-    accounts !== undefined &&
-    accounts.items !== undefined &&
-    accounts.items.some((account) => account.status === Status.ACTIVE)
-  )
-}
-
-export const useListAccountsByUser = (user_id?: string) =>
+export const useUserAccount = (user_id?: string) =>
   useQuery({
     queryKey: ['accounts', user_id],
     queryFn: () =>
-      api.accounts.search({
+      api.accounts.lookup({
         userId: user_id,
       }),
 

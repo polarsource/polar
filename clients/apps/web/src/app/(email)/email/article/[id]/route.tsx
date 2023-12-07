@@ -18,11 +18,6 @@ import { Tailwind } from '@react-email/tailwind'
 import { notFound } from 'next/navigation'
 import { NextRequest, NextResponse } from 'next/server'
 
-// @ts-ignore
-
-// used by the renderer
-import 'postcss'
-
 export const runtime = 'nodejs'
 
 const twConfig = {

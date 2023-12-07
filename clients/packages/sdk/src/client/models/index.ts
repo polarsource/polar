@@ -4194,6 +4194,18 @@ export interface SubscriptionBenefitArticles {
     description: string;
     /**
      * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitArticles
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitArticles
+     */
+    deletable: boolean;
+    /**
+     * 
      * @type {string}
      * @memberof SubscriptionBenefitArticles
      */
@@ -4289,6 +4301,18 @@ export interface SubscriptionBenefitCustom {
      * @memberof SubscriptionBenefitCustom
      */
     description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitCustom
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitCustom
+     */
+    deletable: boolean;
     /**
      * 
      * @type {string}
@@ -4622,6 +4646,18 @@ export interface SubscriptionTierBenefit {
      * @memberof SubscriptionTierBenefit
      */
     description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionTierBenefit
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionTierBenefit
+     */
+    deletable: boolean;
     /**
      * 
      * @type {string}

@@ -196,6 +196,10 @@ export async function GET(
 
   const post = article
 
+  const date = article.published_at
+    ? new Date(article.published_at)
+    : new Date()
+
   const html = render(
     <Html lang="en">
       <Tailwind config={twConfig}>
@@ -204,11 +208,26 @@ export async function GET(
           <Container>
             <Section>
               <Row>
+                <Section className="bg-gray-100 p-4">
+                  <center>
+                    <a
+                      href={`https://polar.sh/${post.organization.name}/posts/${post.slug}`}
+                      target="_blank"
+                      className="text-sm text-black"
+                    >
+                      View this email in your browser
+                    </a>
+                  </center>
+                </Section>
+              </Row>
+
+              <Row>
                 <Column>
                   <h1>
                     <a
                       href={`https://polar.sh/${post.organization.name}/posts/${post.slug}`}
                       target="_blank"
+                      className="text-gray-900 no-underline"
                     >
                       {article.title}
                     </a>
@@ -216,12 +235,29 @@ export async function GET(
                 </Column>
               </Row>
               <Row>
-                <Column className="flex items-center">
+                <Column className="w-full">
+                  <Row>
+                    <span className="font-medium text-gray-600">
+                      {article.byline.name}
+                    </span>
+                  </Row>
+                  <Row>
+                    <span className="font-medium text-gray-400">
+                      {date
+                        .toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                        .toUpperCase()}
+                    </span>
+                  </Row>
+                </Column>
+                <Column>
                   <Img
-                    className="h-6 w-6 rounded-full"
+                    className="h-10 w-10 rounded-full"
                     src={article.byline.avatar_url}
                   />
-                  <div className="pl-4">{article.byline.name}</div>
                 </Column>
               </Row>
 
@@ -233,53 +269,19 @@ export async function GET(
                 </Column>
               </Row>
 
-              <Row>
-                <Column className="dark:bg-polar-700 rounded-3xl bg-gray-100 p-8 py-12 md:px-16">
-                  <Section>
-                    <Row>
-                      <center>
-                        <Img
-                          className="h-12 w-12 rounded-full"
-                          src={post.organization.avatar_url}
-                        />
-                      </center>
-                    </Row>
-                    <Row className="mt-4">
-                      <center>
-                        <h2 className="text-xl font-medium">
-                          Subscribe to{' '}
-                          {post.organization.pretty_name ||
-                            post.organization.name}
-                        </h2>
-                      </center>
-                    </Row>
-                    <Row className="mt-4">
-                      <center>
-                        <p className="dark:text-polar-300 text-center text-gray-500">
-                          {post.organization?.bio
-                            ? post.organization?.bio
-                            : `Support ${
-                                post.organization.pretty_name ||
-                                post.organization.name
-                              } by subscribing to their work and get access to exclusive content.`}
-                        </p>
-                      </center>
-                    </Row>
-                    <Row className="mt-4">
-                      <center>
-                        <a
-                          href={`https://polar.sh/${post.organization.name}?tab=subscriptions`}
-                          target="_blank"
-                        >
-                          <div className="bg-polar-500 inline-block overflow-hidden rounded-xl px-2 py-1 text-sm text-white">
-                            Subscribe
-                          </div>
-                        </a>
-                      </center>
-                    </Row>
-                  </Section>
-                </Column>
-              </Row>
+              <hr />
+
+              <center className="py-6 text-xs text-gray-500">
+                You received this email because you&apos;re a subscriber to{' '}
+                <a
+                  href={`https://polar.sh/${post.organization.name}`}
+                  target="_blank"
+                  className="!underline underline-offset-1"
+                >
+                  {post.organization.pretty_name || post.organization.name}
+                </a>
+                . Thanks!
+              </center>
             </Section>
           </Container>
         </Body>

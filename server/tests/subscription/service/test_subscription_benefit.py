@@ -370,6 +370,26 @@ class TestUserDelete:
                 session, authz, subscription_benefit_organization, user
             )
 
+    async def test_not_deletable_subscription_benefit(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        subscription_benefit = await create_subscription_benefit(
+            session,
+            type=SubscriptionBenefitType.articles,
+            is_tax_applicable=True,
+            organization=organization,
+            deletable=False,
+        )
+        with pytest.raises(NotPermitted):
+            await subscription_benefit_service.user_delete(
+                session, authz, subscription_benefit, user
+            )
+
     async def test_valid(
         self,
         mocker: MockerFixture,

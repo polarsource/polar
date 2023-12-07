@@ -57,6 +57,8 @@ class SubscriptionBenefit(RecordModel):
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
+    selectable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    deletable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     properties: Mapped[SubscriptionBenefitProperties] = mapped_column(
         "properties", JSONB, nullable=False, default=dict
     )

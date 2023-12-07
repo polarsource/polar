@@ -94,6 +94,8 @@ async def create_subscription_benefit(
     organization: Organization | None = None,
     repository: Repository | None = None,
     description: str = "Subscription Benefit",
+    selectable: bool = True,
+    deletable: bool = True,
     properties: dict[str, Any] = {},
 ) -> SubscriptionBenefit:
     assert (organization is not None) != (repository is not None)
@@ -103,6 +105,8 @@ async def create_subscription_benefit(
         is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
+        selectable=selectable,
+        deletable=deletable,
         properties=properties,
     )
     session.add(subscription_benefit)

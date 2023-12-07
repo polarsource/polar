@@ -6,7 +6,7 @@ import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
 import { Separator } from 'polarkit/components/ui/separator'
 import {
-  useListAccountsByOrganization,
+  useOrganizationAccount,
   useUserPaymentTransactions,
 } from 'polarkit/hooks'
 
@@ -15,8 +15,9 @@ export default function ClientPage() {
   const { currentPage, setCurrentPage } = usePagination()
   const personalOrganization = usePersonalOrganization()
 
-  const organizationAccounts =
-    useListAccountsByOrganization(personalOrganization?.id).data?.items ?? []
+  const { data: organizationAccount } = useOrganizationAccount(
+    personalOrganization?.id,
+  )
 
   const transactions = useUserPaymentTransactions({
     userId: currentUser?.id,
@@ -27,7 +28,7 @@ export default function ClientPage() {
     <div className="flex flex-col gap-y-6">
       {personalOrganization && (
         <AccountBanner
-          accounts={organizationAccounts}
+          account={organizationAccount}
           org={personalOrganization}
         />
       )}

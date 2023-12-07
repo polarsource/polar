@@ -96,7 +96,7 @@ export const Default: Story = {
     pledges: all_pledge_states,
     org: org,
     tab: 'current',
-    accounts: [],
+    account: undefined,
     rewards: rewards,
   },
 }
@@ -136,16 +136,14 @@ export const StripeHalfSetup: Story = {
   args: {
     ...Default.args,
     tab: 'rewarded',
-    accounts: [
-      {
-        id: 'xx',
-        account_type: AccountType.STRIPE,
-        status: Status.ACTIVE,
-        country: 'SE',
-        stripe_id: '',
-        is_details_submitted: false,
-      },
-    ],
+    account: {
+      id: 'xx',
+      account_type: AccountType.STRIPE,
+      status: Status.ACTIVE,
+      country: 'SE',
+      stripe_id: '',
+      is_details_submitted: false,
+    },
   },
 }
 
@@ -154,16 +152,14 @@ export const StripeSetup: Story = {
   args: {
     ...Default.args,
     tab: 'rewarded',
-    accounts: [
-      {
-        id: 'xx',
-        account_type: AccountType.STRIPE,
-        status: Status.ACTIVE,
-        country: 'SE',
-        stripe_id: 'xxx',
-        is_details_submitted: true,
-      },
-    ],
+    account: {
+      id: 'xx',
+      account_type: AccountType.STRIPE,
+      status: Status.ACTIVE,
+      country: 'SE',
+      stripe_id: 'xxx',
+      is_details_submitted: true,
+    },
   },
 }
 
@@ -190,16 +186,14 @@ export const StripeSetupDark: Story = {
   args: {
     ...Default.args,
     tab: 'rewarded',
-    accounts: [
-      {
-        id: 'xx',
-        account_type: AccountType.STRIPE,
-        status: Status.ACTIVE,
-        country: 'SE',
-        stripe_id: 'xxx',
-        is_details_submitted: true,
-      },
-    ],
+    account: {
+      id: 'xx',
+      account_type: AccountType.STRIPE,
+      status: Status.ACTIVE,
+      country: 'SE',
+      stripe_id: 'xxx',
+      is_details_submitted: true,
+    },
   },
 
   parameters: {
@@ -212,16 +206,14 @@ export const OpenCollectiveSetup: Story = {
   args: {
     ...Default.args,
     tab: 'rewarded',
-    accounts: [
-      {
-        id: 'xx',
-        account_type: AccountType.OPEN_COLLECTIVE,
-        status: Status.ACTIVE,
-        country: 'SE',
-        open_collective_slug: 'polar',
-        is_details_submitted: true,
-      },
-    ],
+    account: {
+      id: 'xx',
+      account_type: AccountType.OPEN_COLLECTIVE,
+      status: Status.ACTIVE,
+      country: 'SE',
+      open_collective_slug: 'polar',
+      is_details_submitted: true,
+    },
   },
 }
 
@@ -230,16 +222,14 @@ export const OpenCollectiveSetupDark: Story = {
   args: {
     ...Default.args,
     tab: 'rewarded',
-    accounts: [
-      {
-        id: 'xx',
-        account_type: AccountType.OPEN_COLLECTIVE,
-        status: Status.ACTIVE,
-        country: 'SE',
-        open_collective_slug: 'polar',
-        is_details_submitted: true,
-      },
-    ],
+    account: {
+      id: 'xx',
+      account_type: AccountType.OPEN_COLLECTIVE,
+      status: Status.ACTIVE,
+      country: 'SE',
+      open_collective_slug: 'polar',
+      is_details_submitted: true,
+    },
   },
 
   parameters: {

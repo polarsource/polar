@@ -1618,25 +1618,6 @@ export type ListFundingSortBy = typeof ListFundingSortBy[keyof typeof ListFundin
 /**
  * 
  * @export
- * @interface ListResourceAccount
- */
-export interface ListResourceAccount {
-    /**
-     * 
-     * @type {Array<Account>}
-     * @memberof ListResourceAccount
-     */
-    items?: Array<Account>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceAccount
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceArticle
  */
 export interface ListResourceArticle {

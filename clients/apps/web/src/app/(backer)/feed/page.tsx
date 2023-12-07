@@ -12,9 +12,9 @@ import { IssueListType, IssueStatus } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
-  useListAccountsByUser,
   useListRewardsToUser,
   usePersonalDashboard,
+  useUserAccount,
 } from 'polarkit/hooks'
 
 export default function Page() {
@@ -47,13 +47,12 @@ export default function Page() {
   const totalCount = dashboard?.pages[0].pagination.total_count ?? undefined
 
   const rewards = useListRewardsToUser(currentUser?.id)
-  const accounts = useListAccountsByUser(currentUser?.id)
+  const { data: account } = useUserAccount(currentUser?.id)
 
   const showPendingRewardsBanner =
     rewards.data?.items &&
     rewards.data?.items.length > 0 &&
-    accounts.data?.items &&
-    accounts.data.items.length === 0
+    account === undefined
 
   return (
     <div className="mb-24 mt-2 space-y-10">

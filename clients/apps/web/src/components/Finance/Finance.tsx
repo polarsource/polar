@@ -8,6 +8,7 @@ import {
   PledgeState,
   Reward,
   RewardState,
+  Status,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -48,10 +49,10 @@ const Finance = (props: {
   org: Organization
   tab: 'current' | 'rewarded' | 'contributors'
   pledges: Pledge[]
-  accounts: Account[]
+  account: Account | undefined
   rewards: Reward[]
 }) => {
-  const { org, tab, pledges, accounts, rewards } = props
+  const { org, tab, pledges, account, rewards } = props
 
   const currentPledges =
     pledges.filter(
@@ -89,7 +90,7 @@ const Finance = (props: {
 
   return (
     <div className="flex flex-col space-y-8">
-      <AccountBanner accounts={accounts} org={org} />
+      <AccountBanner account={account} org={org} />
 
       <div className="flex space-x-8">
         <HeaderPill
@@ -244,8 +245,11 @@ const Triangle = () => (
   </svg>
 )
 
-const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
-  const { accounts } = props
+const AccountBanner = (props: {
+  org: Organization
+  account: Account | undefined
+}) => {
+  const { account } = props
 
   const goToDashboard = async (account: Account) => {
     const link = await api.accounts.dashboardLink({
@@ -267,7 +271,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
     setShowSetupModal(!showSetupModal)
   }
 
-  if (accounts.length === 0) {
+  if (!account) {
     return (
       <>
         <Banner
@@ -306,8 +310,8 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
     )
   }
 
-  if (accounts.length > 0 && !accounts[0].is_details_submitted) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accounts[0].account_type]
+  if (account && account.status !== Status.ACTIVE) {
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
     return (
       <Banner
         color="default"
@@ -316,7 +320,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
             size="sm"
             onClick={(e) => {
               e.preventDefault()
-              goToOnboarding(accounts[0])
+              goToOnboarding(account)
             }}
           >
             <span>Continue setup</span>
@@ -326,17 +330,15 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
         <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
           Continue the setup of your{' '}
-          <strong>
-            {ACCOUNT_TYPE_DISPLAY_NAMES[accounts[0].account_type]}
-          </strong>{' '}
+          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
           account to receive payouts
         </span>
       </Banner>
     )
   }
 
-  if (accounts.length > 0 && accounts[0].is_details_submitted) {
-    const accountType = accounts[0].account_type
+  if (account && account.status === Status.ACTIVE) {
+    const accountType = account.account_type
     const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
     return (
       <>
@@ -349,7 +351,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
                   className="whitespace-nowrap font-medium text-blue-500 dark:text-blue-400"
                   onClick={(e) => {
                     e.preventDefault()
-                    goToDashboard(accounts[0])
+                    goToDashboard(account)
                   }}
                 >
                   Go to {ACCOUNT_TYPE_DISPLAY_NAMES[accountType]}

@@ -19,7 +19,6 @@ import type {
   AccountCreate,
   AccountLink,
   HTTPValidationError,
-  ListResourceAccount,
 } from '../models/index';
 
 export interface AccountsApiCreateRequest {
@@ -34,13 +33,13 @@ export interface AccountsApiGetRequest {
     id: string;
 }
 
-export interface AccountsApiOnboardingLinkRequest {
-    id: string;
-}
-
-export interface AccountsApiSearchRequest {
+export interface AccountsApiLookupRequest {
     organizationId?: string;
     userId?: string;
+}
+
+export interface AccountsApiOnboardingLinkRequest {
+    id: string;
 }
 
 /**
@@ -166,6 +165,48 @@ export class AccountsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Lookup
+     */
+    async lookupRaw(requestParameters: AccountsApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Account>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.organizationId !== undefined) {
+            queryParameters['organization_id'] = requestParameters.organizationId;
+        }
+
+        if (requestParameters.userId !== undefined) {
+            queryParameters['user_id'] = requestParameters.userId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/accounts/lookup`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Lookup
+     */
+    async lookup(requestParameters: AccountsApiLookupRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Account> {
+        const response = await this.lookupRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Onboarding Link
      */
     async onboardingLinkRaw(requestParameters: AccountsApiOnboardingLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AccountLink>> {
@@ -200,48 +241,6 @@ export class AccountsApi extends runtime.BaseAPI {
      */
     async onboardingLink(requestParameters: AccountsApiOnboardingLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AccountLink> {
         const response = await this.onboardingLinkRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Search
-     */
-    async searchRaw(requestParameters: AccountsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAccount>> {
-        const queryParameters: any = {};
-
-        if (requestParameters.organizationId !== undefined) {
-            queryParameters['organization_id'] = requestParameters.organizationId;
-        }
-
-        if (requestParameters.userId !== undefined) {
-            queryParameters['user_id'] = requestParameters.userId;
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/accounts/search`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Search
-     */
-    async search(requestParameters: AccountsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAccount> {
-        const response = await this.searchRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

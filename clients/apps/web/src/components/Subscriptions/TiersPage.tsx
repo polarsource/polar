@@ -2,14 +2,11 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Add, Bolt } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization, Status } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
-import {
-  useOrganizationHasActiveAccount,
-  useSubscriptionTiers,
-} from 'polarkit/hooks'
-import React from 'react'
+import { useOrganizationAccount, useSubscriptionTiers } from 'polarkit/hooks'
+import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmptyLayout from '../Layout/EmptyLayout'
 import AccountBanner from '../Transactions/AccountBanner'
@@ -21,7 +18,11 @@ interface TiersPageProps {
 
 const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
-  const hasActiveAccount = useOrganizationHasActiveAccount(organization.id)
+  const { data: account } = useOrganizationAccount(organization.id)
+  const isAccountActive = useMemo(
+    () => account && account.status === Status.ACTIVE,
+    [account],
+  )
 
   if (!subscriptionTiers?.items?.length) {
     return (
@@ -46,8 +47,8 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-12 py-2">
-        {!hasActiveAccount && (
-          <AccountBanner org={organization} accounts={[]} />
+        {!isAccountActive && (
+          <AccountBanner org={organization} account={account} />
         )}
         <div className="flex flex-row justify-between">
           <div className="flex flex-col gap-y-2">
@@ -62,10 +63,10 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
                 pathname: `/maintainer/${organization.name}/subscriptions/tiers/new`,
               }}
               className={twMerge(
-                ...(!hasActiveAccount ? ['pointer-events-none'] : []),
+                ...(!isAccountActive ? ['pointer-events-none'] : []),
               )}
             >
-              <Button disabled={!hasActiveAccount}>
+              <Button disabled={!isAccountActive}>
                 <Add className="mr-2" fontSize="small" />
                 New Tier
               </Button>

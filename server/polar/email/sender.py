@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import resend
 import sendgrid
 import structlog
 from sendgrid.helpers.mail import Content, Email, Mail, ReplyTo, To
@@ -19,6 +20,7 @@ class EmailSender(ABC):
         subject: str,
         html_content: str,
         from_name: str = "Polar",
+        from_email_addr: str = "notifications@polar.sh",
     ) -> None:
         pass
 
@@ -30,6 +32,7 @@ class LoggingEmailSender(EmailSender):
         subject: str,
         html_content: str,
         from_name: str = "Polar",
+        from_email_addr: str = "notifications@polar.sh",
     ) -> None:
         log.info(
             "logging email",
@@ -37,6 +40,7 @@ class LoggingEmailSender(EmailSender):
             subject=subject,
             html_content=html_content,
             from_name=from_name,
+            from_email_addr=from_email_addr,
         )
 
 
@@ -51,6 +55,7 @@ class SendgridEmailSender(EmailSender):
         subject: str,
         html_content: str,
         from_name: str = "Polar",
+        from_email_addr: str = "notifications@polar.sh",  # not used
     ) -> None:
         from_email = Email(email="notifications@polar.sh", name=from_name)
         to_email = To(to_email_addr)
@@ -66,7 +71,44 @@ class SendgridEmailSender(EmailSender):
         )
 
 
-def get_email_sender() -> EmailSender:
+class ResendEmailSender(EmailSender):
+    def __init__(self) -> None:
+        super().__init__()
+        resend.api_key = settings.RESEND_API_KEY
+
+    def send_to_user(
+        self,
+        to_email_addr: str,
+        subject: str,
+        html_content: str,
+        from_name: str = "Polar",
+        from_email_addr: str = "polarsource@posts.polar.sh",
+    ) -> None:
+        params = {
+            "from": f"{from_name} <{from_email_addr}>",
+            "to": [to_email_addr],
+            "subject": subject,
+            "html": html_content,
+        }
+
+        email = resend.Emails.send(params)
+
+        log.info(
+            "resend.send",
+            to_email_addr=to_email_addr,
+            subject=subject,
+            email_id=email["id"],
+        )
+
+
+def get_email_sender(type: str = "notification") -> EmailSender:
+    # Experimenting with Resend for sending posts
+    if settings.RESEND_API_KEY and type == "article":
+        return ResendEmailSender()
+
+    # Using sendgrid by default
     if settings.EMAIL_SENDER == EmailSenderType.sendgrid:
         return SendgridEmailSender()
+
+    # Logging in development
     return LoggingEmailSender()

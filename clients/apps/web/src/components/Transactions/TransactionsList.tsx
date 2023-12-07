@@ -5,6 +5,7 @@ import {
   TransactionSubscription,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { Avatar } from 'polarkit/components/ui/atoms'
 import { getCentsInDollarString } from 'polarkit/money'
 import { twMerge } from 'tailwind-merge'
 
@@ -58,16 +59,19 @@ const useTransactionMeta = (transaction: Transaction) => {
   if ('subscription' in transaction) {
     return {
       type: 'Subscription',
+      organization: transaction.subscription?.subscription_tier.organization,
       meta: transaction.subscription,
     }
   } else if ('pledge' in transaction) {
     return {
       type: 'Pledge',
+      organization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
   } else if ('issue_reward' in transaction) {
     return {
       type: 'Reward',
+      organization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
   } else {
@@ -98,9 +102,18 @@ const TransactionListItem = ({ transaction }: TransactionListItemProps) => {
           day: 'numeric',
         })}
       </td>
-      <td className={twMerge(childClass, 'flex flex-col gap-y-1')}>
-        <h3>{transactionMeta.type}</h3>
-        {transactionMeta.meta && resolveTransactionMeta(transactionMeta.meta)}
+      <td className={twMerge(childClass, 'flex flex-row items-center gap-x-4')}>
+        {transactionMeta.organization && (
+          <Avatar
+            className="h-10 w-10"
+            name={transactionMeta.organization?.name}
+            avatar_url={transactionMeta.organization?.avatar_url}
+          />
+        )}
+        <div className="flex flex-col gap-y-1">
+          <h3 className="text-sm">{transactionMeta.type}</h3>
+          {transactionMeta.meta && resolveTransactionMeta(transactionMeta.meta)}
+        </div>
       </td>
       <td className={childClass}>
         {getCentsInDollarString(transaction.amount, true, true)}

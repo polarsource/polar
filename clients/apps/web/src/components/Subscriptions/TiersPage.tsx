@@ -5,35 +5,25 @@ import { Add, Bolt } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
-import { useSubscriptionTiers } from 'polarkit/hooks'
-import React, { useMemo } from 'react'
+import {
+  useOrganizationHasActiveAccount,
+  useSubscriptionTiers,
+} from 'polarkit/hooks'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 import EmptyLayout from '../Layout/EmptyLayout'
+import AccountBanner from '../Transactions/AccountBanner'
 import SubscriptionTierCard from './SubscriptionTierCard'
-import { getSubscriptionTiersByType } from './utils'
 
 interface TiersPageProps {
   organization: Organization
 }
 
 const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
-  const subscriptionTiers = useSubscriptionTiers(organization.name)
+  const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
+  const hasActiveAccount = useOrganizationHasActiveAccount(organization.id)
 
-  const subscriptionTiersByType = useMemo(
-    () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
-    [subscriptionTiers.data],
-  )
-
-  const tiers = useMemo(
-    () => [
-      ...subscriptionTiersByType.free,
-      ...subscriptionTiersByType.hobby,
-      ...subscriptionTiersByType.pro,
-      ...subscriptionTiersByType.business,
-    ],
-    [subscriptionTiers.data?.items],
-  )
-
-  if (!subscriptionTiers.data?.items?.length) {
+  if (!subscriptionTiers?.items?.length) {
     return (
       <EmptyLayout>
         <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-10 py-96 text-gray-400">
@@ -56,6 +46,9 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-12 py-2">
+        {!hasActiveAccount && (
+          <AccountBanner org={organization} accounts={[]} />
+        )}
         <div className="flex flex-row justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium">Subscription Tiers</h2>
@@ -68,8 +61,11 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
               href={{
                 pathname: `/maintainer/${organization.name}/subscriptions/tiers/new`,
               }}
+              className={twMerge(
+                ...(!hasActiveAccount ? ['pointer-events-none'] : []),
+              )}
             >
-              <Button>
+              <Button disabled={!hasActiveAccount}>
                 <Add className="mr-2" fontSize="small" />
                 New Tier
               </Button>
@@ -77,7 +73,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
           </div>
         </div>
         <div className="grid grid-cols-4 gap-6">
-          {tiers.map((tier) => (
+          {subscriptionTiers.items.map((tier) => (
             <SubscriptionTierCard
               className="h-full"
               key={tier.id}

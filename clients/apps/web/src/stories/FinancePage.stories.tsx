@@ -8,6 +8,7 @@ import {
   PledgeType,
   Reward,
   RewardState,
+  Status,
 } from '@polar-sh/sdk'
 import { issue, org } from 'polarkit/testdata'
 
@@ -139,6 +140,7 @@ export const StripeHalfSetup: Story = {
       {
         id: 'xx',
         account_type: AccountType.STRIPE,
+        status: Status.ACTIVE,
         country: 'SE',
         stripe_id: '',
         is_details_submitted: false,
@@ -156,6 +158,7 @@ export const StripeSetup: Story = {
       {
         id: 'xx',
         account_type: AccountType.STRIPE,
+        status: Status.ACTIVE,
         country: 'SE',
         stripe_id: 'xxx',
         is_details_submitted: true,
@@ -191,6 +194,7 @@ export const StripeSetupDark: Story = {
       {
         id: 'xx',
         account_type: AccountType.STRIPE,
+        status: Status.ACTIVE,
         country: 'SE',
         stripe_id: 'xxx',
         is_details_submitted: true,
@@ -212,6 +216,7 @@ export const OpenCollectiveSetup: Story = {
       {
         id: 'xx',
         account_type: AccountType.OPEN_COLLECTIVE,
+        status: Status.ACTIVE,
         country: 'SE',
         open_collective_slug: 'polar',
         is_details_submitted: true,
@@ -229,6 +234,7 @@ export const OpenCollectiveSetupDark: Story = {
       {
         id: 'xx',
         account_type: AccountType.OPEN_COLLECTIVE,
+        status: Status.ACTIVE,
         country: 'SE',
         open_collective_slug: 'polar',
         is_details_submitted: true,

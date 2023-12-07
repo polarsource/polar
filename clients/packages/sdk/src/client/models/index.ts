@@ -20,6 +20,12 @@ export interface Account {
     account_type: AccountType;
     /**
      * 
+     * @type {Status}
+     * @memberof Account
+     */
+    status: Status;
+    /**
+     * 
      * @type {string}
      * @memberof Account
      */
@@ -3985,6 +3991,18 @@ export interface RewardsSummaryReceiver {
      */
     avatar_url?: string;
 }
+
+/**
+ * An enumeration.
+ * @export
+ */
+export const Status = {
+    CREATED: 'created',
+    ONBOARDING_STARTED: 'onboarding_started',
+    ACTIVE: 'active'
+} as const;
+export type Status = typeof Status[keyof typeof Status];
+
 /**
  * 
  * @export

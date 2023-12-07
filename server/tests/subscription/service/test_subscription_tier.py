@@ -9,6 +9,7 @@ from polar.exceptions import NotPermitted
 from polar.integrations.stripe.service import StripeError
 from polar.kit.pagination import PaginationParams
 from polar.models import (
+    Account,
     Organization,
     Repository,
     SubscriptionBenefit,
@@ -22,6 +23,7 @@ from polar.postgres import AsyncSession
 from polar.subscription.schemas import SubscriptionTierCreate, SubscriptionTierUpdate
 from polar.subscription.service.subscription_tier import (
     FreeTierIsNotArchivable,
+    NoAssociatedPayoutAccount,
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
     SubscriptionBenefitDoesNotExist,
@@ -319,6 +321,26 @@ class TestUserCreate:
                 session, authz, create_schema, user
             )
 
+    async def test_no_associated_payout_account_organization(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
+            name="Subscription Tier",
+            price_amount=1000,
+            price_currency="USD",
+            organization_id=organization.id,
+        )
+        with pytest.raises(NoAssociatedPayoutAccount):
+            await subscription_tier_service.user_create(
+                session, authz, create_schema, user
+            )
+
     async def test_valid_organization(
         self,
         session: AsyncSession,
@@ -326,6 +348,7 @@ class TestUserCreate:
         user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
+        organization_account: Account,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
@@ -385,6 +408,26 @@ class TestUserCreate:
                 session, authz, create_schema, user
             )
 
+    async def test_no_associated_payout_account_repository(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        repository: Repository,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
+            name="Subscription Tier",
+            price_amount=1000,
+            price_currency="USD",
+            repository_id=repository.id,
+        )
+        with pytest.raises(NoAssociatedPayoutAccount):
+            await subscription_tier_service.user_create(
+                session, authz, create_schema, user
+            )
+
     async def test_valid_repository(
         self,
         session: AsyncSession,
@@ -392,6 +435,7 @@ class TestUserCreate:
         user: User,
         repository: Repository,
         user_organization_admin: UserOrganization,
+        organization_account: Account,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
@@ -424,6 +468,7 @@ class TestUserCreate:
         user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
+        organization_account: Account,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (
@@ -459,6 +504,7 @@ class TestUserCreate:
         user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
+        organization_account: Account,
         stripe_service_mock: MagicMock,
     ) -> None:
         highlighted_subscription_tier = await create_subscription_tier(

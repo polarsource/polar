@@ -51,6 +51,16 @@ class RepositoryDoesNotExist(SubscriptionTierError):
         super().__init__(message, 422)
 
 
+class NoAssociatedPayoutAccount(SubscriptionTierError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        message = (
+            "A payout account should be configured for this organization "
+            "before being able to accept subscriptions."
+        )
+        super().__init__(message, 400)
+
+
 class SubscriptionBenefitDoesNotExist(SubscriptionTierError):
     def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
         self.subscription_benefit_id = subscription_benefit_id
@@ -149,6 +159,7 @@ class SubscriptionTierService(
     ) -> SubscriptionTier:
         organization: Organization | None = None
         repository: Repository | None = None
+        managing_organization_id: uuid.UUID | None = None
         if create_schema.organization_id is not None:
             organization = await organization_service.get(
                 session, create_schema.organization_id
@@ -157,6 +168,7 @@ class SubscriptionTierService(
                 user, AccessType.write, organization
             ):
                 raise OrganizationDoesNotExist(create_schema.organization_id)
+            managing_organization_id = organization.id
 
         if create_schema.repository_id is not None:
             repository = await repository_service.get(
@@ -166,6 +178,12 @@ class SubscriptionTierService(
                 user, AccessType.write, repository
             ):
                 raise RepositoryDoesNotExist(create_schema.repository_id)
+            managing_organization_id = repository.organization_id
+
+        assert managing_organization_id is not None
+        account = await account_service.get_by_org(session, managing_organization_id)
+        if account is None:
+            raise NoAssociatedPayoutAccount(managing_organization_id)
 
         nested = await session.begin_nested()
 

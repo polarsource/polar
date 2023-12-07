@@ -357,6 +357,7 @@ class TestCreateSubscriptionTier:
         client: AsyncClient,
         organization: Organization,
         user_organization_admin: UserOrganization,
+        organization_account: Account,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_product_with_price_mock: (

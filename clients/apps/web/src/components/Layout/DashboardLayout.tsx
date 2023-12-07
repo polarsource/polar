@@ -10,7 +10,6 @@ import { useAuth } from '@/hooks/auth'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { CONFIG } from 'polarkit'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
@@ -187,12 +186,9 @@ const MaintainerUpsell = () => {
       title="Become a maintainer"
       description="Supercharge your community with Posts & enable funding on your issues"
     >
-      <Link
-        href={CONFIG.GITHUB_INSTALLATION_URL}
-        className="font-medium text-blue-500"
-      >
+      <Link href="/maintainer" className="font-medium text-blue-500">
         <Button className="-z-1" fullWidth>
-          Connect Repositories
+          Get Started
         </Button>
       </Link>
     </Upsell>

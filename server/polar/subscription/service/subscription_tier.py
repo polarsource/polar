@@ -119,6 +119,7 @@ class SubscriptionTierService(
                 contains_eager(SubscriptionTier.organization),
                 contains_eager(SubscriptionTier.repository),
             )
+            .limit(1)
         )
 
         result = await session.execute(statement)

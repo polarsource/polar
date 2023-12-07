@@ -1,4 +1,10 @@
-import { Transaction } from '@polar-sh/sdk'
+import {
+  Transaction,
+  TransactionIssueReward,
+  TransactionPledge,
+  TransactionSubscription,
+} from '@polar-sh/sdk'
+import Link from 'next/link'
 import { getCentsInDollarString } from 'polarkit/money'
 import { twMerge } from 'tailwind-merge'
 
@@ -52,17 +58,17 @@ const useTransactionMeta = (transaction: Transaction) => {
   if (transaction.subscription) {
     return {
       type: 'Subscription',
-      meta: transaction.subscription.subscription_tier.name,
+      meta: transaction.subscription,
     }
   } else if (transaction.pledge) {
     return {
       type: 'Pledge',
-      meta: transaction.pledge.issue.title,
+      meta: transaction.pledge,
     }
   } else if (transaction.issue_reward) {
     return {
       type: 'Reward',
-      meta: transaction.issue_reward.issue_id,
+      meta: transaction.issue_reward,
     }
   } else {
     return {
@@ -94,9 +100,7 @@ const TransactionListItem = ({ transaction }: TransactionListItemProps) => {
       </td>
       <td className={twMerge(childClass, 'flex flex-col gap-y-1')}>
         <h3>{transactionMeta.type}</h3>
-        <p className="dark:text-polar-500 text-xs text-gray-500">
-          {transactionMeta.meta}
-        </p>
+        {transactionMeta.meta && resolveTransactionMeta(transactionMeta.meta)}
       </td>
       <td className={childClass}>
         {getCentsInDollarString(transaction.amount, true, true)}
@@ -106,4 +110,34 @@ const TransactionListItem = ({ transaction }: TransactionListItemProps) => {
       </td>
     </tr>
   )
+}
+
+const resolveTransactionMeta = (
+  meta: TransactionSubscription | TransactionPledge | TransactionIssueReward,
+) => {
+  if ('subscription_tier' in meta) {
+    return (
+      <Link
+        className="text-xs text-blue-500 dark:text-blue-400"
+        href={`/${meta.subscription_tier.organization?.name}?tab=subscriptions`}
+      >
+        {meta.subscription_tier.name}
+      </Link>
+    )
+  } else if ('issue' in meta) {
+    return (
+      <Link
+        className="text-xs text-blue-500 dark:text-blue-400"
+        href={`/${meta.issue.organization?.name}/${meta.issue.repository.name}/issues/${meta.issue.number}`}
+      >
+        {meta.issue.title}
+      </Link>
+    )
+  } else {
+    return (
+      <p className="dark:text-polar-500 text-xs text-gray-500">
+        {getCentsInDollarString(meta.share_thousands, true, true)}
+      </p>
+    )
+  }
 }

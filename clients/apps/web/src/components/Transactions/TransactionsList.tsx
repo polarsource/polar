@@ -55,20 +55,20 @@ const TransactionsList = ({ transactions }: TransactionsListProps) => {
 export default TransactionsList
 
 const useTransactionMeta = (transaction: Transaction) => {
-  if (transaction.subscription) {
+  if ('subscription' in transaction) {
     return {
       type: 'Subscription',
       meta: transaction.subscription,
     }
-  } else if (transaction.pledge) {
+  } else if ('pledge' in transaction) {
     return {
       type: 'Pledge',
       meta: transaction.pledge,
     }
-  } else if (transaction.issue_reward) {
+  } else if ('issue_reward' in transaction) {
     return {
       type: 'Reward',
-      meta: transaction.issue_reward,
+      meta: transaction.pledge,
     }
   } else {
     return {

@@ -133,11 +133,5 @@ const resolveTransactionMeta = (
         {meta.issue.title}
       </Link>
     )
-  } else {
-    return (
-      <p className="dark:text-polar-500 text-xs text-gray-500">
-        {getCentsInDollarString(meta.share_thousands, true, true)}
-      </p>
-    )
   }
 }

@@ -343,7 +343,10 @@ class SubscriptionTierService(
             if subscription_benefit is None:
                 await nested.rollback()
                 raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
-            if not subscription_benefit.selectable:
+            if (
+                not subscription_benefit.selectable
+                and subscription_benefit not in previous_benefits
+            ):
                 raise SubscriptionBenefitIsNotSelectable(subscription_benefit_id)
             new_benefits.add(subscription_benefit)
             subscription_tier.subscription_tier_benefits.append(

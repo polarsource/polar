@@ -835,7 +835,7 @@ class TestUpdateBenefits:
         assert len(added) == 0
         assert len(deleted) == 0
 
-    async def test_not_selectable(
+    async def test_add_not_selectable(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -844,14 +844,33 @@ class TestUpdateBenefits:
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        not_selectable_benefit_selected = await create_subscription_benefit(
+        not_selectable_benefit = await create_subscription_benefit(
             session,
             type=SubscriptionBenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
         )
-        not_selectable_benefit_to_select = await create_subscription_benefit(
+
+        with pytest.raises(SubscriptionBenefitIsNotSelectable):
+            await subscription_tier_service.update_benefits(
+                session,
+                authz,
+                subscription_tier_organization,
+                [not_selectable_benefit.id],
+                user,
+            )
+
+    async def test_remove_not_selectable(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        organization: Organization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        not_selectable_benefit = await create_subscription_benefit(
             session,
             type=SubscriptionBenefitType.articles,
             is_tax_applicable=True,
@@ -862,10 +881,9 @@ class TestUpdateBenefits:
         subscription_tier_organization = await add_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=[not_selectable_benefit_selected],
+            subscription_benefits=[not_selectable_benefit],
         )
 
-        # Try to remove non selectable benefit
         with pytest.raises(SubscriptionBenefitIsNotSelectable):
             await subscription_tier_service.update_benefits(
                 session,
@@ -875,18 +893,49 @@ class TestUpdateBenefits:
                 user,
             )
 
-        # Try to add non selectable benefit
-        with pytest.raises(SubscriptionBenefitIsNotSelectable):
-            await subscription_tier_service.update_benefits(
-                session,
-                authz,
-                subscription_tier_organization,
-                [
-                    not_selectable_benefit_selected.id,
-                    not_selectable_benefit_to_select.id,
-                ],
-                user,
-            )
+    async def test_add_with_existing_not_selectable(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        organization: Organization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        not_selectable_benefit = await create_subscription_benefit(
+            session,
+            type=SubscriptionBenefitType.articles,
+            is_tax_applicable=True,
+            organization=organization,
+            selectable=False,
+        )
+        selectable_benefit = await create_subscription_benefit(
+            session,
+            type=SubscriptionBenefitType.custom,
+            is_tax_applicable=True,
+            organization=organization,
+            description="SELECTABLE",
+        )
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=[not_selectable_benefit],
+        )
+
+        (
+            _,
+            added,
+            deleted,
+        ) = await subscription_tier_service.update_benefits(
+            session,
+            authz,
+            subscription_tier_organization,
+            [not_selectable_benefit.id, selectable_benefit.id],
+            user,
+        )
+        assert len(added) == 1
+        assert selectable_benefit in added
+        assert len(deleted) == 0
 
 
 @pytest.mark.asyncio

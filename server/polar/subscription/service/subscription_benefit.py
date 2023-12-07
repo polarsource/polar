@@ -193,6 +193,9 @@ class SubscriptionBenefitService(
         if not await authz.can(user, AccessType.write, subscription_benefit):
             raise NotPermitted()
 
+        if not subscription_benefit.deletable:
+            raise NotPermitted()
+
         subscription_benefit.deleted_at = utc_now()
         session.add(subscription_benefit)
         statement = delete(SubscriptionTierBenefit).where(
@@ -237,6 +240,8 @@ class SubscriptionBenefitService(
             public_articles = SubscriptionBenefitArticles(
                 description="Public posts",
                 is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+                selectable=False,
+                deletable=False,
                 properties={"paid_articles": False},
                 organization=organization,
                 repository=repository,
@@ -247,6 +252,8 @@ class SubscriptionBenefitService(
             premium_articles = SubscriptionBenefitArticles(
                 description="Premium posts",
                 is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+                selectable=True,
+                deletable=False,
                 properties={"paid_articles": True},
                 organization=organization,
                 repository=repository,

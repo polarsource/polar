@@ -16,6 +16,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import SubscriptionTierCreate, SubscriptionTierUpdate
@@ -24,6 +25,7 @@ from polar.subscription.service.subscription_tier import (
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
     SubscriptionBenefitDoesNotExist,
+    SubscriptionBenefitIsNotSelectable,
 )
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
@@ -31,6 +33,7 @@ from polar.subscription.service.subscription_tier import (
 
 from ..conftest import (
     add_subscription_benefits,
+    create_subscription_benefit,
     create_subscription_tier,
 )
 
@@ -831,6 +834,59 @@ class TestUpdateBenefits:
 
         assert len(added) == 0
         assert len(deleted) == 0
+
+    async def test_not_selectable(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        organization: Organization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        not_selectable_benefit_selected = await create_subscription_benefit(
+            session,
+            type=SubscriptionBenefitType.articles,
+            is_tax_applicable=True,
+            organization=organization,
+            selectable=False,
+        )
+        not_selectable_benefit_to_select = await create_subscription_benefit(
+            session,
+            type=SubscriptionBenefitType.articles,
+            is_tax_applicable=True,
+            organization=organization,
+            selectable=False,
+        )
+
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=[not_selectable_benefit_selected],
+        )
+
+        # Try to remove non selectable benefit
+        with pytest.raises(SubscriptionBenefitIsNotSelectable):
+            await subscription_tier_service.update_benefits(
+                session,
+                authz,
+                subscription_tier_organization,
+                [],
+                user,
+            )
+
+        # Try to add non selectable benefit
+        with pytest.raises(SubscriptionBenefitIsNotSelectable):
+            await subscription_tier_service.update_benefits(
+                session,
+                authz,
+                subscription_tier_organization,
+                [
+                    not_selectable_benefit_selected.id,
+                    not_selectable_benefit_to_select.id,
+                ],
+                user,
+            )
 
 
 @pytest.mark.asyncio

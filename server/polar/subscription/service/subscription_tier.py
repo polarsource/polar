@@ -60,6 +60,16 @@ class SubscriptionBenefitDoesNotExist(SubscriptionTierError):
         super().__init__(message, 422)
 
 
+class SubscriptionBenefitIsNotSelectable(SubscriptionTierError):
+    def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
+        self.subscription_benefit_id = subscription_benefit_id
+        message = (
+            f"Subscription benefit with id {subscription_benefit_id} "
+            "cannot be added or removed."
+        )
+        super().__init__(message, 422)
+
+
 class FreeTierIsNotArchivable(SubscriptionTierError):
     def __init__(self, subscription_tier_id: uuid.UUID) -> None:
         self.subscription_tier_id = subscription_tier_id
@@ -333,6 +343,8 @@ class SubscriptionTierService(
             if subscription_benefit is None:
                 await nested.rollback()
                 raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
+            if not subscription_benefit.selectable:
+                raise SubscriptionBenefitIsNotSelectable(subscription_benefit_id)
             new_benefits.add(subscription_benefit)
             subscription_tier.subscription_tier_benefits.append(
                 SubscriptionTierBenefit(
@@ -342,6 +354,10 @@ class SubscriptionTierService(
 
         added_benefits = new_benefits - previous_benefits
         deleted_benefits = previous_benefits - new_benefits
+
+        for deleted_benefit in deleted_benefits:
+            if not deleted_benefit.selectable:
+                raise SubscriptionBenefitIsNotSelectable(deleted_benefit.id)
 
         session.add(subscription_tier)
         await session.commit()

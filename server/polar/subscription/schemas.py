@@ -105,6 +105,8 @@ class SubscriptionBenefitBase(TimestampedSchema):
     id: UUID4
     type: SubscriptionBenefitType
     description: str
+    selectable: bool
+    deletable: bool
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
 

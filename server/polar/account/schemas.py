@@ -58,6 +58,7 @@ class AccountCreate(Schema):
 class Account(Schema):
     id: UUID
     account_type: AccountType
+    status: AccountModel.Status
     stripe_id: str | None
     open_collective_slug: str | None
     is_details_submitted: bool | None
@@ -68,6 +69,7 @@ class Account(Schema):
         return cls(
             id=o.id,
             account_type=o.account_type,
+            status=o.status,
             stripe_id=o.stripe_id,
             open_collective_slug=o.open_collective_slug,
             is_details_submitted=o.is_details_submitted,

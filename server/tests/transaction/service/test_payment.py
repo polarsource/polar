@@ -244,3 +244,31 @@ class TestCreatePayment:
         assert transaction.charge_id == stripe_charge.id
         assert transaction.pledge_id == pledge.id
         assert transaction.subscription_id is None
+
+    async def test_anonymous_pledge(
+        self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
+    ) -> None:
+        pledge.payment_id = "STRIPE_PAYMENT_ID"
+        session.add(pledge)
+        await session.commit()
+
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            customer="GUEST_CUSTOMER_ID",
+            payment_intent=pledge.payment_id,
+            balance_transaction=stripe_balance_transaction.id,
+            type=ProductType.pledge,
+        )
+
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_balance_transaction
+        )
+
+        transaction = await payment_transaction_service.create_payment(
+            session, charge=stripe_charge
+        )
+
+        assert transaction.type == TransactionType.payment
+        assert transaction.pledge_id == pledge.id
+        assert transaction.payment_user_id == pledge.by_user_id
+        assert transaction.payment_organization_id == pledge.by_organization_id

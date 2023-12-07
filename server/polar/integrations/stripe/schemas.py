@@ -42,6 +42,9 @@ class PledgePaymentIntentMetadata(PaymentIntentMetadata):
     issue_id: UUID | None = None
     issue_title: str | None = None
 
+    anonymous: bool = False
+    anonymous_email: str | None = None
+
     user_id: UUID | None = None
     user_username: str | None = None
     user_email: str | None = None

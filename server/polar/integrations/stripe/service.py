@@ -51,16 +51,17 @@ class StripeService:
         pledge_issue_repo: Repository,
         anonymous_email: str,
     ) -> stripe_lib.PaymentIntent:
+        metadata = PledgePaymentIntentMetadata(
+            issue_id=pledge_issue.id,
+            issue_title=pledge_issue.title,
+            anonymous=True,
+            anonymous_email=anonymous_email,
+        )
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
-            metadata={
-                "issue_id": str(pledge_issue.id),
-                "issue_title": pledge_issue.title,
-                "anonymous": "true",
-                "anonymous_email": anonymous_email,
-            },
+            metadata=metadata.dict(exclude_none=True),
             receipt_email=anonymous_email,
             description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
@@ -140,8 +141,6 @@ class StripeService:
             if on_behalf_of_organization_id
             else "",  # Set to empty string to unset the value on Stripe.
         )
-
-        print(metadata.dict(exclude_none=True))
 
         return stripe_lib.PaymentIntent.modify(
             id,

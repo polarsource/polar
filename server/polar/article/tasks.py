@@ -64,13 +64,14 @@ async def articles_send_to_user(
         else:
             from_name = article.created_by_user.username
 
-        email_sender = get_email_sender()
+        email_sender = get_email_sender("article")
 
         email_sender.send_to_user(
             to_email_addr=user.email,
             subject=subject,
             html_content=rendered.decode("utf8"),
             from_name=from_name,
+            from_email_addr=f"{article.organization.name}@posts.polar.sh",
         )
 
 

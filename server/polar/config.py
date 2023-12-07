@@ -94,6 +94,7 @@ class Settings(BaseSettings):
 
     EMAIL_SENDER: EmailSender = EmailSender.logger
     SENDGRID_API_KEY: str = ""
+    RESEND_API_KEY: str = ""
 
     SUBSCRIPTION_FEE_PERCENT: int = 10
 

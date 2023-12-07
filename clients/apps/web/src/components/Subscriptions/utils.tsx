@@ -6,12 +6,16 @@ import {
   ScheduleOutlined,
 } from '@mui/icons-material'
 import {
+  ItemsInner,
+  SubscriptionBenefitType,
   SubscriptionStatus,
   SubscriptionTier,
   SubscriptionTierBenefit,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
+
+export type SubscriptionBenefit = ItemsInner
 
 export const getSubscriptionColorByType = (
   type?: SubscriptionTierType,
@@ -93,3 +97,9 @@ export const subscriptionStatusDisplayNames: {
   [SubscriptionStatus.CANCELED]: 'Canceled',
   [SubscriptionStatus.UNPAID]: 'Unpaid',
 }
+
+export const isPremiumArticlesBenefit = (
+  benefit: SubscriptionBenefit,
+): boolean =>
+  benefit.type === SubscriptionBenefitType.ARTICLES &&
+  benefit.properties.paid_articles === true

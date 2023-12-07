@@ -25,6 +25,7 @@ import { ConfirmModal } from '../Shared/ConfirmModal'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
+import { SubscriptionBenefit, isPremiumArticlesBenefit } from './utils'
 
 interface SubscriptionTierEditPageProps {
   organization: Organization
@@ -56,7 +57,7 @@ export default SubscriptionTierEditPage
 interface SubscriptionTierEditProps {
   organization: Organization
   subscriptionTier: SubscriptionTier
-  organizationBenefits: SubscriptionTierBenefit[]
+  organizationBenefits: SubscriptionBenefit[]
 }
 
 const SubscriptionTierEdit = ({
@@ -168,7 +169,14 @@ const SubscriptionTierEdit = ({
             <SubscriptionTierBenefitsForm
               className="max-w-2/3 w-full"
               organization={organization}
-              organizationBenefits={organizationBenefits}
+              organizationBenefits={organizationBenefits.filter(
+                (benefit) =>
+                  // Hide not selectable benefits unless they are already enabled
+                  (benefit.selectable ||
+                    enabledBenefits.some((b) => b.id === benefit.id)) &&
+                  // Hide premium articles benefit on free tier
+                  (!isFreeTier || !isPremiumArticlesBenefit(benefit)),
+              )}
               benefits={enabledBenefits}
               onSelectBenefit={onSelectBenefit}
               onRemoveBenefit={onRemoveBenefit}

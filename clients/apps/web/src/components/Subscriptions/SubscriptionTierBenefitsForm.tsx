@@ -1,4 +1,8 @@
-import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
+import {
+  AutoAwesome,
+  LoyaltyOutlined,
+  MoreVertOutlined,
+} from '@mui/icons-material'
 import {
   Organization,
   SubscriptionBenefitCreate,
@@ -32,11 +36,15 @@ import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { ConfirmModal } from '../Shared/ConfirmModal'
-import { resolveBenefitIcon } from './utils'
+import {
+  SubscriptionBenefit,
+  isPremiumArticlesBenefit,
+  resolveBenefitIcon,
+} from './utils'
 
 interface BenefitRowProps {
   organization: Organization
-  benefit: SubscriptionTierBenefit
+  benefit: SubscriptionBenefit
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }
@@ -88,7 +96,17 @@ const BenefitRow = ({
         </span>
       </div>
       <div className="flex flex-row items-center gap-x-4 text-[14px]">
-        <Switch checked={checked} onCheckedChange={onCheckedChange} />
+        {isPremiumArticlesBenefit(benefit) && (
+          <div className="flex flex-row items-center  gap-1 rounded-lg bg-blue-500 px-2 text-sm text-white shadow dark:border dark:border-blue-400 dark:bg-blue-500">
+            <AutoAwesome className="!h-4 !w-4" />
+            Recommended
+          </div>
+        )}
+        <Switch
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          disabled={!benefit.selectable}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Button
@@ -106,7 +124,9 @@ const BenefitRow = ({
             className="dark:bg-polar-800 bg-gray-50 shadow-lg"
           >
             <DropdownMenuItem onClick={toggleEdit}>Edit</DropdownMenuItem>
-            <DropdownMenuItem onClick={toggleDelete}>Delete</DropdownMenuItem>
+            {benefit.deletable && (
+              <DropdownMenuItem onClick={toggleDelete}>Delete</DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -137,7 +157,7 @@ const BenefitRow = ({
 interface SubscriptionTierBenefitsFormProps {
   organization: Organization
   benefits: SubscriptionTierBenefit[]
-  organizationBenefits: SubscriptionTierBenefit[]
+  organizationBenefits: SubscriptionBenefit[]
   onSelectBenefit: (benefit: SubscriptionTierBenefit) => void
   onRemoveBenefit: (benefit: SubscriptionTierBenefit) => void
   className?: string

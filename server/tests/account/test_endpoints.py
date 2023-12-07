@@ -246,7 +246,7 @@ async def test_create_open_collective_not_org_admin(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -283,21 +283,19 @@ async def test_create_personal_stripe(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    print(create_response.text)
     assert create_response.status_code == 200
     assert create_response.json()["account_type"] == "stripe"
     assert create_response.json()["stripe_id"] == "fake_stripe_id"
 
-    # search
-    search = await client.get(
-        f"/api/v1/accounts/search?user_id={user.id}",
+    # lookup
+    response = await client.get(
+        f"/api/v1/accounts/lookup?user_id={user.id}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    assert search.status_code == 200
-    search_json = search.json()
-    assert len(search_json["items"]) == 1
-    assert search_json["items"][0]["id"] == str(create_response.json()["id"])
+    assert response.status_code == 200
+    json = response.json()
+    assert json["id"] == create_response.json()["id"]
 
 
 @pytest.mark.asyncio
@@ -363,36 +361,32 @@ async def test_dashboard_link_open_collective(
 
 
 @pytest.mark.asyncio
-async def test_search(
+async def test_lookup(
     open_collective_account: Account,
     auth_jwt: str,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/accounts/search?organization_id={open_collective_account.organization_id}",
+        f"/api/v1/accounts/lookup?organization_id={open_collective_account.organization_id}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
 
     json = response.json()
-
-    assert len(json["items"]) == 1
-    assert json["items"][0]["id"] == str(open_collective_account.id)
+    assert json["id"] == str(open_collective_account.id)
 
 
 @pytest.mark.asyncio
-async def test_search_no_member(
+async def test_lookup_no_member(
     open_collective_account: Account,
     auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/accounts/search?organization_id={open_collective_account.organization_id}",
+        f"/api/v1/accounts/lookup?organization_id={open_collective_account.organization_id}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    assert response.status_code == 200
-    json = response.json()
-    assert len(json["items"]) == 0
+    assert response.status_code == 403

@@ -20,6 +20,7 @@ import { useForm } from 'react-hook-form'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
+import { SubscriptionBenefit, isPremiumArticlesBenefit } from './utils'
 
 interface SubscriptionTierCreatePageProps {
   type?: SubscriptionTierCreateTypeEnum
@@ -50,7 +51,7 @@ export default SubscriptionTierCreatePage
 interface SubscriptionTierCreateProps {
   type?: SubscriptionTierCreateTypeEnum
   organization: Organization
-  organizationBenefits: SubscriptionTierBenefit[]
+  organizationBenefits: SubscriptionBenefit[]
 }
 
 const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
@@ -61,7 +62,8 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   const router = useRouter()
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     SubscriptionTierBenefit['id'][]
-  >([])
+    // Pre-select premium articles benefit
+  >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
 
   const form = useForm<SubscriptionTierCreate>({
     defaultValues: {
@@ -147,7 +149,12 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
             <SubscriptionTierBenefitsForm
               benefits={enabledBenefits}
               organization={organization}
-              organizationBenefits={organizationBenefits}
+              organizationBenefits={organizationBenefits.filter(
+                (benefit) =>
+                  // Hide not selectable benefits unless they are already enabled
+                  benefit.selectable ||
+                  enabledBenefits.some((b) => b.id === benefit.id),
+              )}
               onSelectBenefit={onSelectBenefit}
               onRemoveBenefit={onRemoveBenefit}
             />

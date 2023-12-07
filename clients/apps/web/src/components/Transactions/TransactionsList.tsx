@@ -104,11 +104,16 @@ const TransactionListItem = ({ transaction }: TransactionListItemProps) => {
       </td>
       <td className={twMerge(childClass, 'flex flex-row items-center gap-x-4')}>
         {transactionMeta.organization && (
-          <Avatar
-            className="h-10 w-10"
-            name={transactionMeta.organization?.name}
-            avatar_url={transactionMeta.organization?.avatar_url}
-          />
+          <Link
+            className="hidden flex-shrink-0 md:block"
+            href={`/${transactionMeta.organization.name}`}
+          >
+            <Avatar
+              className="h-10 w-10"
+              name={transactionMeta.organization?.name}
+              avatar_url={transactionMeta.organization?.avatar_url}
+            />
+          </Link>
         )}
         <div className="flex flex-col gap-y-1">
           <h3 className="text-sm">{transactionMeta.type}</h3>

@@ -34,7 +34,7 @@ const ClientPage = () => {
 
     if (openModal) {
       router.push(
-        `/maintainer/${created.organization.name}/posts/${created.slug}?settings=true`,
+        `/maintainer/${created.organization.name}/posts/${created.slug}/settings`,
       )
     } else {
       router.push(

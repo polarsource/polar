@@ -12,9 +12,9 @@ import { IssueListType, IssueStatus } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
+  useAccount,
   useListRewardsToUser,
   usePersonalDashboard,
-  useUserAccount,
 } from 'polarkit/hooks'
 
 export default function Page() {
@@ -47,7 +47,7 @@ export default function Page() {
   const totalCount = dashboard?.pages[0].pagination.total_count ?? undefined
 
   const rewards = useListRewardsToUser(currentUser?.id)
-  const { data: account } = useUserAccount(currentUser?.id)
+  const { data: account } = useAccount(currentUser?.account_id)
 
   const showPendingRewardsBanner =
     rewards.data?.items &&

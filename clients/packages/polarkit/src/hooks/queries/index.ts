@@ -8,6 +8,7 @@ import {
 import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
 
+export * from './accounts'
 export * from './articles'
 export * from './backoffice'
 export * from './dashboard'
@@ -45,27 +46,11 @@ export const useSearchRepositories = (
     retry: defaultRetry,
   })
 
-export const useOrganizationAccount = (organization_id?: string) =>
+export const useAccount = (id?: string) =>
   useQuery({
-    queryKey: ['accounts', organization_id],
-    queryFn: () =>
-      api.accounts.lookup({
-        organizationId: organization_id,
-      }),
-
-    enabled: !!organization_id,
-    retry: defaultRetry,
-  })
-
-export const useUserAccount = (user_id?: string) =>
-  useQuery({
-    queryKey: ['accounts', user_id],
-    queryFn: () =>
-      api.accounts.lookup({
-        userId: user_id,
-      }),
-
-    enabled: !!user_id,
+    queryKey: ['accounts', id],
+    queryFn: () => api.accounts.get({ id: id as string }),
+    enabled: !!id,
     retry: defaultRetry,
   })
 

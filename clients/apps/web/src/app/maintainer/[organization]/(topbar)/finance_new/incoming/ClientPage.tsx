@@ -14,7 +14,7 @@ import {
 import { Separator } from 'polarkit/components/ui/separator'
 import { TabsContent } from 'polarkit/components/ui/tabs'
 import {
-  useOrganizationAccount,
+  useAccount,
   usePayoutTransactions,
   useTransferTransactions,
 } from 'polarkit/hooks'
@@ -35,7 +35,8 @@ export default function ClientPage() {
     [org],
   )
 
-  const { data: organizationAccount } = useOrganizationAccount(org?.id)
+  console.log('accid', org?.account_id)
+  const { data: organizationAccount } = useAccount(org?.account_id)
 
   const transfers = useTransferTransactions({
     accountId: organizationAccount?.id,
@@ -51,7 +52,7 @@ export default function ClientPage() {
 
   return (
     <div className="flex flex-col gap-y-6">
-      {org && <AccountBanner account={organizationAccount} org={org} />}
+      {org && <AccountBanner organization={org} />}
       <ShadowBoxOnMd>
         <Tabs
           defaultValue={params.get('type') ?? 'transactions'}

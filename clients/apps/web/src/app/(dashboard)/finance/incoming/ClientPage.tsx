@@ -3,7 +3,7 @@
 import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
-import { usePersonalOrganization } from '@/hooks'
+import { useAuth, usePersonalOrganization } from '@/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ShadowBoxOnMd,
@@ -14,13 +14,14 @@ import {
 import { Separator } from 'polarkit/components/ui/separator'
 import { TabsContent } from 'polarkit/components/ui/tabs'
 import {
-  useOrganizationAccount,
+  useAccount,
   usePayoutTransactions,
   useTransferTransactions,
 } from 'polarkit/hooks'
 import { useCallback } from 'react'
 
 export default function ClientPage() {
+  const { currentUser } = useAuth()
   const router = useRouter()
   const params = useSearchParams()
   const { currentPage, setCurrentPage } = usePagination()
@@ -30,8 +31,8 @@ export default function ClientPage() {
     router.replace(`/finance/incoming?type=${value}`)
   }, [])
 
-  const { data: organizationAccount } = useOrganizationAccount(
-    personalOrganization?.id,
+  const { data: organizationAccount } = useAccount(
+    personalOrganization?.account_id,
   )
 
   const transfers = useTransferTransactions({
@@ -48,10 +49,11 @@ export default function ClientPage() {
 
   return (
     <div className="flex flex-col gap-y-6">
-      {personalOrganization && (
+      {personalOrganization && currentUser && (
         <AccountBanner
-          account={organizationAccount}
-          org={personalOrganization}
+          organization={personalOrganization}
+          user={currentUser}
+          isPersonal
         />
       )}
       <ShadowBoxOnMd>

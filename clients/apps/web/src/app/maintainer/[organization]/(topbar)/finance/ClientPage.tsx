@@ -4,9 +4,9 @@ import Finance from '@/components/Finance/Finance'
 import { useToast } from '@/components/Toast/use-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
+  useAccount,
   useListPledgesForOrganization,
   useListRewards,
-  useOrganizationAccount,
 } from 'polarkit/hooks'
 import { useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
@@ -38,7 +38,7 @@ export default function ClientPage() {
 
   const pledges = useListPledgesForOrganization(org?.platform, org?.name)
   const rewards = useListRewards(org?.id)
-  const { data: account } = useOrganizationAccount(org?.id)
+  const { data: account } = useAccount(org?.account_id)
 
   return (
     <>

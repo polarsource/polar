@@ -6,16 +6,11 @@ import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
-import {
-  useOrganizationAccount,
-  useOrganizationPaymentTransactions,
-} from 'polarkit/hooks'
+import { useOrganizationPaymentTransactions } from 'polarkit/hooks'
 
 export default function ClientPage() {
   const { currentPage, setCurrentPage } = usePagination()
   const { org } = useCurrentOrgAndRepoFromURL()
-
-  const { data: organizationAccount } = useOrganizationAccount(org?.id)
 
   const transactions = useOrganizationPaymentTransactions({
     organizationId: org?.id,
@@ -24,7 +19,7 @@ export default function ClientPage() {
 
   return (
     <div className="flex flex-col gap-y-6">
-      {org && <AccountBanner account={organizationAccount} org={org} />}
+      {org && <AccountBanner organization={org} />}
       <ShadowBoxOnMd>
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">

@@ -1,23 +1,14 @@
 'use client'
 
-import SetupAccount from '@/components/Dashboard/SetupAccount'
 import { HeaderPill, RewardsContent } from '@/components/Finance/Finance'
-import Icon from '@/components/Icons/Icon'
-import { Modal as ModernModal } from '@/components/Modal'
-import { useRequireAuth } from '@/hooks'
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
-import { Account, AccountType, Status, UserRead } from '@polar-sh/sdk'
-import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
-import { api } from 'polarkit/api'
-import { Button } from 'polarkit/components/ui/atoms'
-import { Banner } from 'polarkit/components/ui/molecules'
-import { useListRewardsToUser, useUserAccount } from 'polarkit/hooks'
-import { useState } from 'react'
+import AccountBanner from '@/components/Transactions/AccountBanner'
+import { usePersonalOrganization, useRequireAuth } from '@/hooks'
+import { useListRewardsToUser } from 'polarkit/hooks'
 
 export default function Page() {
   const { currentUser } = useRequireAuth()
   const rewards = useListRewardsToUser(currentUser?.id)
-  const { data: account } = useUserAccount(currentUser?.id)
+  const organization = usePersonalOrganization()
 
   const rewardsSum = rewards.data?.items
     ? rewards.data.items.map((r) => r.amount.amount).reduce((a, b) => a + b, 0)
@@ -27,7 +18,13 @@ export default function Page() {
     <>
       {rewards.data?.items && currentUser && (
         <div className="flex flex-col space-y-8">
-          <AccountBanner account={account} user={currentUser} />
+          {organization && (
+            <AccountBanner
+              organization={organization}
+              user={currentUser}
+              isPersonal
+            />
+          )}
           <HeaderPill
             title="Your rewards"
             amount={rewardsSum}
@@ -39,131 +36,4 @@ export default function Page() {
       )}
     </>
   )
-}
-
-const AccountBanner = (props: {
-  user: UserRead
-  account: Account | undefined
-}) => {
-  const { account } = props
-
-  const goToDashboard = async (account: Account) => {
-    const link = await api.accounts.dashboardLink({
-      id: account.id,
-    })
-    window.location.href = link.url
-  }
-
-  const goToOnboarding = async (account: Account) => {
-    const link = await api.accounts.onboardingLink({
-      id: account.id,
-    })
-    window.location.href = link.url
-  }
-
-  const [showSetupModal, setShowSetupModal] = useState(false)
-
-  const toggle = () => {
-    setShowSetupModal(!showSetupModal)
-  }
-
-  if (!account) {
-    return (
-      <>
-        <Banner
-          color="default"
-          right={
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault()
-                setShowSetupModal(true)
-              }}
-            >
-              <span>Setup</span>
-            </Button>
-          }
-        >
-          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
-          <span className="text-sm">
-            You need to set up <strong>Stripe</strong> to receive payouts
-          </span>
-        </Banner>
-        <ModernModal
-          isShown={showSetupModal}
-          hide={toggle}
-          className="min-w-[400px]"
-          modalContent={
-            <SetupAccount
-              onClose={() => setShowSetupModal(false)}
-              accountTypes={[AccountType.STRIPE]}
-              forUserId={props.user.id}
-            />
-          }
-        />
-      </>
-    )
-  }
-
-  if (account && account.status !== Status.ACTIVE) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
-    return (
-      <Banner
-        color="default"
-        right={
-          <Button
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault()
-              goToOnboarding(account)
-            }}
-          >
-            <span>Continue setup</span>
-          </Button>
-        }
-      >
-        <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-        <span className="text-sm">
-          Continue the setup of your{' '}
-          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
-          account to receive payouts
-        </span>
-      </Banner>
-    )
-  }
-
-  if (account && account.status === Status.ACTIVE) {
-    const accountType = account.account_type
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
-    return (
-      <>
-        <Banner
-          color="muted"
-          right={
-            <>
-              <button
-                className="whitespace-nowrap font-medium text-blue-500 dark:text-blue-400"
-                onClick={(e) => {
-                  e.preventDefault()
-                  goToDashboard(account)
-                }}
-              >
-                Go to {ACCOUNT_TYPE_DISPLAY_NAMES[accountType]}
-              </button>
-            </>
-          }
-        >
-          <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-          <span className="dark:text-polar-400 text-sm">
-            {accountType === AccountType.STRIPE &&
-              'Payouts will be sent to the connected Stripe account'}
-            {accountType === AccountType.OPEN_COLLECTIVE &&
-              'Payouts will be sent in bulk once per month to the connected Open Collective account'}
-          </span>
-        </Banner>
-      </>
-    )
-  }
-
-  return null
 }

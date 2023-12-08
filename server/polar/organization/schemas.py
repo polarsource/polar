@@ -63,6 +63,7 @@ class Organization(Schema):
             platform=o.platform,
             name=o.name,
             avatar_url=o.avatar_url,
+            is_personal=o.is_personal,
             bio=o.bio,
             pretty_name=o.pretty_name,
             company=o.company,

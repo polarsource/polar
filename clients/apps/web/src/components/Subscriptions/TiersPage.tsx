@@ -5,7 +5,7 @@ import { Add, Bolt } from '@mui/icons-material'
 import { Organization, Status } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
-import { useOrganizationAccount, useSubscriptionTiers } from 'polarkit/hooks'
+import { useAccount, useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmptyLayout from '../Layout/EmptyLayout'
@@ -18,7 +18,7 @@ interface TiersPageProps {
 
 const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
-  const { data: account } = useOrganizationAccount(organization.id)
+  const { data: account } = useAccount(organization.account_id)
   const isAccountActive = useMemo(
     () => account && account.status === Status.ACTIVE,
     [account],
@@ -47,9 +47,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-12 py-2">
-        {!isAccountActive && (
-          <AccountBanner org={organization} account={account} />
-        )}
+        {organization && <AccountBanner organization={organization} />}
         <div className="flex flex-row justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium">Subscription Tiers</h2>

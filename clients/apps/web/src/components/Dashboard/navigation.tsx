@@ -198,6 +198,12 @@ export const dashboardRoutes = (
                 ? `/finance/outgoing`
                 : `/maintainer/${org?.name}/finance_new/outgoing`,
             },
+            {
+              title: 'Payout account',
+              link: isPersonal
+                ? `/finance/account`
+                : `/maintainer/${org?.name}/finance_new/account`,
+            },
           ],
         },
       ]

@@ -1,59 +1,48 @@
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
-import { Account, AccountType, Organization, Status } from '@polar-sh/sdk'
-import { api } from 'polarkit'
-import {
-  ACCOUNT_TYPE_DISPLAY_NAMES,
-  ACCOUNT_TYPE_ICON,
-  ALL_ACCOUNT_TYPES,
-} from 'polarkit/account'
+import { AccountType, Organization, Status, UserRead } from '@polar-sh/sdk'
+import Link from 'next/link'
+import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { useState } from 'react'
-import SetupAccount from '../Dashboard/SetupAccount'
+import { useAccount } from 'polarkit/hooks'
 import Icon from '../Icons/Icon'
-import { Modal } from '../Modal'
 
-const AccountBanner = (props: {
-  org: Organization
-  account: Account | undefined
+interface AccountBannerProps {
+  organization: Organization
+  user?: UserRead
+  isPersonal?: boolean
+}
+
+const AccountBanner: React.FC<AccountBannerProps> = ({
+  organization,
+  user,
+  isPersonal,
 }) => {
-  const { account } = props
+  const { data: organizationAccount } = useAccount(organization.account_id)
+  const { data: personalAccount } = useAccount(user?.account_id)
 
-  const goToDashboard = async (account: Account) => {
-    const link = await api.accounts.dashboardLink({
-      id: account.id,
-    })
-    window.location.href = link.url
-  }
+  const setupLink = isPersonal
+    ? '/finance/account'
+    : `/maintainer/${organization.name}/finance_new/account`
 
-  const goToOnboarding = async (account: Account) => {
-    const link = await api.accounts.onboardingLink({
-      id: account.id,
-    })
-    window.location.href = link.url
-  }
+  const currentAccount = isPersonal
+    ? organizationAccount || personalAccount
+    : organizationAccount
+  const bothOrganizationAndPersonal =
+    isPersonal &&
+    organizationAccount !== undefined &&
+    personalAccount !== undefined &&
+    organizationAccount.id !== personalAccount.id
 
-  const [showSetupModal, setShowSetupModal] = useState(false)
-
-  const toggle = () => {
-    setShowSetupModal(!showSetupModal)
-  }
-
-  if (!account) {
+  if (!currentAccount) {
     return (
       <>
         <Banner
           color="default"
           right={
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault()
-                setShowSetupModal(true)
-              }}
-            >
-              <span>Setup</span>
-            </Button>
+            <Link href={setupLink}>
+              <Button size="sm">Setup</Button>
+            </Link>
           }
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
@@ -62,51 +51,56 @@ const AccountBanner = (props: {
             <strong>Open Collective</strong> to receive transfers
           </span>
         </Banner>
-        <Modal
-          isShown={showSetupModal}
-          className="min-w-[400px]"
-          hide={toggle}
-          modalContent={
-            <SetupAccount
-              onClose={() => setShowSetupModal(false)}
-              accountTypes={ALL_ACCOUNT_TYPES}
-              forOrganizationId={props.org.id}
-            />
-          }
-        />
       </>
     )
   }
 
-  if (account && account.status !== Status.ACTIVE) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
+  if (bothOrganizationAndPersonal) {
+    return (
+      <>
+        <Banner
+          color="default"
+          right={
+            <Link href={setupLink}>
+              <Button size="sm">Fix</Button>
+            </Link>
+          }
+        >
+          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+          <span className="text-sm">
+            You have two payout accounts selected, both as a backer and
+            maintainer.
+          </span>
+        </Banner>
+      </>
+    )
+  }
+
+  if (currentAccount && currentAccount.status !== Status.ACTIVE) {
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[currentAccount.account_type]
     return (
       <Banner
         color="default"
         right={
-          <Button
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault()
-              goToOnboarding(account)
-            }}
-          >
-            <span>Continue setup</span>
-          </Button>
+          <Link href={setupLink}>
+            <Button size="sm">Continue setup</Button>
+          </Link>
         }
       >
         <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
           Continue the setup of your{' '}
-          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
+          <strong>
+            {ACCOUNT_TYPE_DISPLAY_NAMES[currentAccount.account_type]}
+          </strong>{' '}
           account to receive transfers
         </span>
       </Banner>
     )
   }
 
-  if (account && account.status === Status.ACTIVE) {
-    const accountType = account.account_type
+  if (currentAccount && currentAccount.status === Status.ACTIVE) {
+    const accountType = currentAccount.account_type
     const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
     return (
       <>
@@ -114,22 +108,9 @@ const AccountBanner = (props: {
           color="muted"
           right={
             <>
-              {true && (
-                <button
-                  className="whitespace-nowrap font-medium text-blue-500 dark:text-blue-400"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    goToDashboard(account)
-                  }}
-                >
-                  Go to {ACCOUNT_TYPE_DISPLAY_NAMES[accountType]}
-                </button>
-              )}
-              {false && (
-                <span className="text-gray-400">
-                  Ask the admin to make changes
-                </span>
-              )}
+              <Link href={setupLink}>
+                <Button size="sm">Manage</Button>
+              </Link>
             </>
           }
         >

@@ -1,29 +1,15 @@
-import Icon from '@/components/Icons/Icon'
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import {
   Account,
-  AccountType,
   Organization,
   Pledge,
   PledgeState,
   Reward,
   RewardState,
-  Status,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import {
-  ACCOUNT_TYPE_DISPLAY_NAMES,
-  ACCOUNT_TYPE_ICON,
-  ALL_ACCOUNT_TYPES,
-} from 'polarkit/account'
-import { api } from 'polarkit/api'
-import { Button } from 'polarkit/components/ui/atoms'
-import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import SetupAccount from '../Dashboard/SetupAccount'
-import { Modal as ModernModal } from '../Modal'
+import AccountBanner from '../Transactions/AccountBanner'
 import { default as ListPledges } from './ListPledges'
 import ListRewards, { Column } from './ListRewards'
 
@@ -90,7 +76,7 @@ const Finance = (props: {
 
   return (
     <div className="flex flex-col space-y-8">
-      <AccountBanner account={account} org={org} />
+      <AccountBanner organization={org} />
 
       <div className="flex space-x-8">
         <HeaderPill
@@ -244,138 +230,3 @@ const Triangle = () => (
     />
   </svg>
 )
-
-const AccountBanner = (props: {
-  org: Organization
-  account: Account | undefined
-}) => {
-  const { account } = props
-
-  const goToDashboard = async (account: Account) => {
-    const link = await api.accounts.dashboardLink({
-      id: account.id,
-    })
-    window.location.href = link.url
-  }
-
-  const goToOnboarding = async (account: Account) => {
-    const link = await api.accounts.onboardingLink({
-      id: account.id,
-    })
-    window.location.href = link.url
-  }
-
-  const [showSetupModal, setShowSetupModal] = useState(false)
-
-  const toggle = () => {
-    setShowSetupModal(!showSetupModal)
-  }
-
-  if (!account) {
-    return (
-      <>
-        <Banner
-          color="default"
-          right={
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault()
-                setShowSetupModal(true)
-              }}
-            >
-              <span>Setup</span>
-            </Button>
-          }
-        >
-          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
-          <span className="text-sm">
-            You need to set up <strong>Stripe</strong> or{' '}
-            <strong>Open Collective</strong> to receive payouts
-          </span>
-        </Banner>
-        <ModernModal
-          isShown={showSetupModal}
-          className="min-w-[400px]"
-          hide={toggle}
-          modalContent={
-            <SetupAccount
-              onClose={() => setShowSetupModal(false)}
-              accountTypes={ALL_ACCOUNT_TYPES}
-              forOrganizationId={props.org.id}
-            />
-          }
-        />
-      </>
-    )
-  }
-
-  if (account && account.status !== Status.ACTIVE) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
-    return (
-      <Banner
-        color="default"
-        right={
-          <Button
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault()
-              goToOnboarding(account)
-            }}
-          >
-            <span>Continue setup</span>
-          </Button>
-        }
-      >
-        <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-        <span className="text-sm">
-          Continue the setup of your{' '}
-          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
-          account to receive payouts
-        </span>
-      </Banner>
-    )
-  }
-
-  if (account && account.status === Status.ACTIVE) {
-    const accountType = account.account_type
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
-    return (
-      <>
-        <Banner
-          color="muted"
-          right={
-            <>
-              {true && (
-                <button
-                  className="whitespace-nowrap font-medium text-blue-500 dark:text-blue-400"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    goToDashboard(account)
-                  }}
-                >
-                  Go to {ACCOUNT_TYPE_DISPLAY_NAMES[accountType]}
-                </button>
-              )}
-              {false && (
-                <span className="text-gray-400">
-                  Ask the admin to make changes
-                </span>
-              )}
-            </>
-          }
-        >
-          <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-          <span className="dark:text-polar-400 text-sm">
-            {accountType === AccountType.STRIPE &&
-              'Payouts will be sent to the connected Stripe account'}
-            {accountType === AccountType.OPEN_COLLECTIVE &&
-              'Payouts will be sent in bulk once per month to the connected Open Collective account'}
-          </span>
-        </Banner>
-      </>
-    )
-  }
-
-  return null
-}

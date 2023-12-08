@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import { Progress50 } from '@/components/Dashboard/IssueProgress'
 import DashboardLayout from '@/components/Layout/DashboardLayout'

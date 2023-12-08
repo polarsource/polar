@@ -1,21 +1,13 @@
 'use client'
 
 import { PostEditor } from '@/components/Feed/PostEditor'
-import { PublishModalContent } from '@/components/Feed/PublishPost'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Modal } from '@/components/Modal'
-import { useModal } from '@/components/Modal/useModal'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { ArticleUpdate } from '@polar-sh/sdk'
 import Link from 'next/link'
-import {
-  useParams,
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import {
   useArticleLookup,
@@ -25,15 +17,9 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = () => {
-  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const params = useParams<{
-    post: string
-    organization: string
-  }>()
-  const post = useArticleLookup(params?.organization, params?.post)
-  const searchParams = useSearchParams()
+  const { post: postSlug, organization: organizationName } = useParams()
+  const post = useArticleLookup(organizationName as string, postSlug as string)
   const router = useRouter()
-  const pathname = usePathname()
 
   const [updateArticle, setUpdateArticle] = useState<
     ArticleUpdate & { title: string; body: string }
@@ -41,13 +27,6 @@ const ClientPage = () => {
     title: '',
     body: '',
   })
-
-  useEffect(() => {
-    if (searchParams?.get('settings') && pathname) {
-      showModal()
-      router.replace(pathname)
-    }
-  }, [showModal, searchParams, pathname, router])
 
   useEffect(() => {
     setUpdateArticle((a) => ({
@@ -72,7 +51,7 @@ const ClientPage = () => {
 
   const handlePublish = async () => {
     await handleSave()
-    showModal()
+    router.push(`/maintainer/${organizationName}/posts/${postSlug}/settings`)
   }
 
   useEffect(() => {
@@ -158,17 +137,6 @@ const ClientPage = () => {
             body: updateArticle.body,
           },
         }}
-      />
-      <Modal
-        isShown={isModalShown}
-        hide={hideModal}
-        modalContent={
-          post.data ? (
-            <PublishModalContent article={post.data} hide={hideModal} />
-          ) : (
-            <></>
-          )
-        }
       />
     </Tabs>
   )

@@ -226,6 +226,9 @@ importers:
       '@ts-stack/markdown':
         specifier: ^1.4.0
         version: 1.4.0
+      '@types/web':
+        specifier: ^0.0.125
+        version: 0.0.125
       '@vercel/blob':
         specifier: ^0.14.1
         version: 0.14.1
@@ -10849,6 +10852,10 @@ packages:
 
   /@types/unist@3.0.2:
     resolution: {integrity: sha512-dqId9J8K/vGi5Zr7oo212BGii5m3q5Hxlkwy3WpYuKPklmBEvsbMYYyLxAQpSffdLl/gdW0XUpKWFvYmyoWCoQ==}
+    dev: false
+
+  /@types/web@0.0.125:
+    resolution: {integrity: sha512-TGZ4jAe1Nj4x+/wZICAZhAM8K3RIqti90ye0onlprDarBH0nLImnyZ2S729X+mzab3EMBu3KWd/KNwJbKHRV4g==}
     dev: false
 
   /@types/webpack-env@1.18.0:

@@ -84,7 +84,9 @@ export default async function Page({
   searchParams,
 }: {
   params: { organization: string; postSlug: string }
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: {
+    tab?: string
+  }
 }) {
   const api = getServerSideAPI()
 
@@ -137,7 +139,7 @@ export default async function Page({
     )
   } catch (err) {}
 
-  const currentTab = searchParams.tab as string | undefined
+  const currentTab = searchParams.tab
 
   return (
     <>

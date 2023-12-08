@@ -37,7 +37,9 @@ const EmbedIssue = (props: { src: string }) => {
       }
     }
 
-    get()
+    if (!realIssue) {
+      get()
+    }
 
     return () => {
       active = false

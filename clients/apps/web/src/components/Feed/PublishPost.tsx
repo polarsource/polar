@@ -399,7 +399,7 @@ const VisibilityPicker = ({
         </p>
       </div>
       <Tabs value={visibility} onValueChange={handleVisibilityChange}>
-        <TabsList className="dark:border-polar-700 dark:border">
+        <TabsList className="dark:border-polar-700 flex-row dark:border">
           <TabsTrigger
             value={ArticleVisibilityEnum.PRIVATE}
             disabled={!privateVisibilityAllowed}
@@ -473,7 +473,7 @@ const AudiencePicker = ({
         </p>
       </div>
       <Tabs value={audience} onValueChange={handleAudienceChange}>
-        <TabsList className="dark:border-polar-700 dark:border">
+        <TabsList className="dark:border-polar-700 flex-row dark:border">
           <TabsTrigger className="flex-col items-start" value="all-subscribers">
             <span>All Subscribers</span>
           </TabsTrigger>

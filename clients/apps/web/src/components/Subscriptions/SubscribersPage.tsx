@@ -250,7 +250,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
           <h2 className="text-xl">Subscribers</h2>
-          <div className="w-full md:w-1/6">
+          <div className="w-1/3 md:w-1/6">
             <SubscriptionTiersSelect
               tiersByType={subscriptionTiersByType}
               value={subscriptionTierType || subscriptionTierId || 'all'}

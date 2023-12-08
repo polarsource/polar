@@ -10,10 +10,11 @@ import { useAuth } from '@/hooks/auth'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
-import { PropsWithChildren, Suspense, useState } from 'react'
+import { PropsWithChildren, Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import BackerNavigation from '../Dashboard/BackerNavigation'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
@@ -130,6 +131,11 @@ export default DashboardLayout
 
 const MobileNav = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [pathname])
 
   const header = (
     <div className="dark:bg-polar-900 fixed left-0 right-0 top-0 flex flex-row items-center justify-between bg-white px-2 py-4 sm:px-3 md:px-4">

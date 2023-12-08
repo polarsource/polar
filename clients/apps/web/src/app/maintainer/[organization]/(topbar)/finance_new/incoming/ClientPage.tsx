@@ -5,7 +5,12 @@ import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
+import {
+  ShadowBoxOnMd,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { TabsContent } from 'polarkit/components/ui/tabs'
 import {
@@ -47,7 +52,7 @@ export default function ClientPage() {
   return (
     <div className="flex flex-col gap-y-6">
       {org && <AccountBanner account={organizationAccount} org={org} />}
-      <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-2xl border border-gray-100 bg-white p-6 md:rounded-3xl md:p-12">
+      <ShadowBoxOnMd>
         <Tabs
           defaultValue={params.get('type') ?? 'transactions'}
           onValueChange={setActiveTab}
@@ -91,7 +96,7 @@ export default function ClientPage() {
             </Pagination>
           </TabsContent>
         </Tabs>
-      </div>
+      </ShadowBoxOnMd>
     </div>
   )
 }

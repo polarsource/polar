@@ -38,7 +38,7 @@ const nextConfig = {
       },
       {
         source: '/faq',
-        destination: 'https://splendid-help-401117.framer.app/faq',
+        destination: 'https://docs.polar.sh/faq',
       },
       {
         source: '/careers',

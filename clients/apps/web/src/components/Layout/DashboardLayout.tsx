@@ -29,8 +29,9 @@ interface DashboardSidebarProps {
 }
 
 const DashboardSidebar = ({ fullWidth }: DashboardSidebarProps) => {
-  const { currentUser } = useAuth()
-  const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
+  const { currentUser, hasChecked } = useAuth()
+  const { org: currentOrg, isLoaded: isCurrentOrgLoaded } =
+    useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
 
@@ -49,9 +50,13 @@ const DashboardSidebar = ({ fullWidth }: DashboardSidebarProps) => {
   const shouldRenderDashboardNavigation = currentOrg ? isOrgAdmin : true
 
   const githubAccount = useGitHubAccount()
-  const shouldShowGitHubAuthUpsell = !githubAccount
+  const shouldShowGitHubAuthUpsell = !githubAccount && hasChecked
 
-  const shouldShowMaintainerUpsell = !currentOrg && !personalOrg
+  const shouldShowMaintainerUpsell =
+    isCurrentOrgLoaded &&
+    !listOrganizationQuery.isLoading &&
+    !currentOrg &&
+    !personalOrg
 
   return (
     <aside
@@ -184,7 +189,7 @@ const MaintainerUpsell = () => {
   return (
     <Upsell
       title="Become a maintainer"
-      description="Supercharge your community with Posts & enable funding on your issues"
+      description="Enable funding on your issues & reward your contributors"
     >
       <Link href="/maintainer" className="font-medium text-blue-500">
         <Button className="-z-1" fullWidth>

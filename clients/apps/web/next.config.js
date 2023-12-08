@@ -90,6 +90,11 @@ const nextConfig = {
         permanent: false,
       },
       {
+        source: '/faq/:path*',
+        destination: 'https://docs.polar.sh/faq/:path*',
+        permanent: false,
+      },
+      {
         source: '/:path*',
         destination: 'https://polar.sh/:path*',
         has: [

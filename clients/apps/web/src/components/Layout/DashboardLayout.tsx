@@ -50,7 +50,7 @@ const DashboardSidebar = ({ fullWidth }: DashboardSidebarProps) => {
   const shouldRenderDashboardNavigation = currentOrg ? isOrgAdmin : true
 
   const githubAccount = useGitHubAccount()
-  const shouldShowGitHubAuthUpsell = !githubAccount && hasChecked
+  const shouldShowGitHubAuthUpsell = !githubAccount
 
   const shouldShowMaintainerUpsell =
     isCurrentOrgLoaded &&

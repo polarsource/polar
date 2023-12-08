@@ -1,5 +1,5 @@
 const InvalidPoll = () => (
-  <div className="my-2 bg-gray-100 p-8 text-gray-400">
+  <div className="dark:bg-polar-700 my-2 bg-gray-100 p-8 text-gray-400">
     This <code>&lt;Poll&gt;</code> is not configured correctly.
   </div>
 )

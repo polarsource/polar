@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/auth'
 import { Article } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useUserSubscriptions } from 'polarkit/hooks'
 
@@ -14,6 +15,8 @@ const SubscribeNow = (props: { article: Article }) => {
     props.article.organization.platform,
   )
 
+  const router = useRouter()
+
   // User is already subscribed, hide button.
   if (userSubs.data?.items && userSubs.data?.items.length > 0) {
     return <></>
@@ -21,7 +24,11 @@ const SubscribeNow = (props: { article: Article }) => {
 
   return (
     <div className="flex flex-col items-center py-1">
-      <Button onClick={() => alert('TODO!')}>
+      <Button
+        onClick={() => {
+          router.push(`/${props.article.organization.name}?tab=subscriptions`)
+        }}
+      >
         Subscribe to{' '}
         {props.article.organization.pretty_name ||
           props.article.organization.name}

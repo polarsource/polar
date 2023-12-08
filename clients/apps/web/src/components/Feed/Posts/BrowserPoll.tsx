@@ -5,13 +5,13 @@ const BrowserPoll = (props: { options: string[] }) => {
   const [clicked, setClicked] = useState<string>()
 
   return (
-    <div className="my-2 flex flex-col space-y-2 bg-blue-300 p-8">
+    <div className="dark:bg-polar-700 my-2 flex flex-col space-y-2 bg-blue-300 p-8">
       {props.options.map((s) => (
         <div
           key={s}
           className={twMerge(
             'item-center flex cursor-pointer justify-between bg-black/20 p-2',
-            clicked === s ? 'bg-green-300' : '',
+            clicked === s ? 'bg-green-300 dark:bg-blue-800' : '',
           )}
           onClick={() => setClicked(s)}
         >

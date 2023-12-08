@@ -80,7 +80,7 @@ const EmbedIssue = (props: { src: string }) => {
   const issue = realIssue ?? tempIssue
 
   return (
-    <div className="not-prose my-2 overflow-hidden rounded-2xl bg-blue-50">
+    <div className="not-prose dark:bg-polar-700 bg-polar-50 my-2 overflow-hidden rounded-2xl">
       <IssueListItem
         issue={issue}
         references={[]}

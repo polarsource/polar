@@ -1,14 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { PolarQueryClientProvider } from '@/app/providers'
 import Finance from '@/components/Finance/Finance'
 import {
-  AccountType,
   Pledge,
   PledgeState,
   PledgeType,
   Reward,
   RewardState,
-  Status,
 } from '@polar-sh/sdk'
 import { issue, org } from 'polarkit/testdata'
 
@@ -99,6 +98,11 @@ export const Default: Story = {
     account: undefined,
     rewards: rewards,
   },
+  render: (args) => (
+    <PolarQueryClientProvider>
+      <Finance {...args} />
+    </PolarQueryClientProvider>
+  ),
 }
 
 export const Rewarded: Story = {
@@ -126,112 +130,6 @@ export const Dark: Story = {
     ...Default.args,
     tab: 'current',
   },
-  parameters: {
-    themes: ['dark'],
-  },
-}
-
-export const StripeHalfSetup: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    tab: 'rewarded',
-    account: {
-      id: 'xx',
-      account_type: AccountType.STRIPE,
-      status: Status.ACTIVE,
-      country: 'SE',
-      stripe_id: '',
-      is_details_submitted: false,
-    },
-  },
-}
-
-export const StripeSetup: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    tab: 'rewarded',
-    account: {
-      id: 'xx',
-      account_type: AccountType.STRIPE,
-      status: Status.ACTIVE,
-      country: 'SE',
-      stripe_id: 'xxx',
-      is_details_submitted: true,
-    },
-  },
-}
-
-// export const StripeSetupNotAdmin: Story = {
-//   ...Default,
-//   args: {
-//     ...Default.args,
-//     tab: 'rewarded',
-//     accounts: [
-//       {
-//         id: 'xx',
-//         account_type: AccountType.STRIPE,
-//         country: 'SE',
-//         stripe_id: 'xxx',
-//         is_details_submitted: true,
-//         is_admin: false,
-//       },
-//     ],
-//   },
-// }
-
-export const StripeSetupDark: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    tab: 'rewarded',
-    account: {
-      id: 'xx',
-      account_type: AccountType.STRIPE,
-      status: Status.ACTIVE,
-      country: 'SE',
-      stripe_id: 'xxx',
-      is_details_submitted: true,
-    },
-  },
-
-  parameters: {
-    themes: ['dark'],
-  },
-}
-
-export const OpenCollectiveSetup: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    tab: 'rewarded',
-    account: {
-      id: 'xx',
-      account_type: AccountType.OPEN_COLLECTIVE,
-      status: Status.ACTIVE,
-      country: 'SE',
-      open_collective_slug: 'polar',
-      is_details_submitted: true,
-    },
-  },
-}
-
-export const OpenCollectiveSetupDark: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    tab: 'rewarded',
-    account: {
-      id: 'xx',
-      account_type: AccountType.OPEN_COLLECTIVE,
-      status: Status.ACTIVE,
-      country: 'SE',
-      open_collective_slug: 'polar',
-      is_details_submitted: true,
-    },
-  },
-
   parameters: {
     themes: ['dark'],
   },

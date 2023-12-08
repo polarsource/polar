@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import {
   Account,
   AccountType,
@@ -11,7 +10,7 @@ import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { getValidationErrorsMap } from 'polarkit/api/errors'
 import { Button, CountryPicker, Input } from 'polarkit/components/ui/atoms'
 import { ChangeEvent, useState } from 'react'
-import { ModalBox } from '../Modal'
+import { ModalHeader } from '../Modal'
 
 const SetupAccount = ({
   onClose,
@@ -66,8 +65,6 @@ const SetupAccount = ({
     try {
       const account = await api.accounts.create({
         accountCreate: {
-          organization_id: forOrganizationId,
-          user_id: forUserId,
           account_type: accountType,
           country,
           ...(openCollectiveSlug
@@ -75,6 +72,17 @@ const SetupAccount = ({
             : {}),
         },
       })
+      if (forOrganizationId) {
+        await api.organizations.setAccount({
+          id: forOrganizationId,
+          organizationSetAccount: { account_id: account.id },
+        })
+      }
+      if (forUserId) {
+        await api.users.setAccount({
+          userSetAccount: { account_id: account.id },
+        })
+      }
 
       await goToOnboarding(account)
     } catch (e) {
@@ -108,17 +116,12 @@ const SetupAccount = ({
   }
 
   return (
-    <ModalBox className="max-w-[400px]">
-      <>
-        <div className="flex w-full items-start justify-between">
-          <h1 className="text-2xl font-normal">Receive payments</h1>
-          <XMarkIcon
-            className="dark:hover:text-polar-400 h-6 w-6 cursor-pointer hover:text-gray-500"
-            onClick={onClose}
-          />
-        </div>
-
-        <form className="z-0 flex flex-col space-y-4">
+    <>
+      <ModalHeader hide={onClose}>
+        <>Create payout account</>
+      </ModalHeader>
+      <div className="overflow-scroll p-8">
+        <form className="flex flex-col gap-y-4">
           <div className="space-y-4">
             <div>
               <select
@@ -189,15 +192,12 @@ const SetupAccount = ({
               {error}
             </p>
           ))}
+          <Button onClick={onConfirm} loading={loading} disabled={loading}>
+            Set up account
+          </Button>
         </form>
-
-        <div className="md:flex-1"></div>
-
-        <Button onClick={onConfirm} loading={loading} disabled={loading}>
-          Set up account
-        </Button>
-      </>
-    </ModalBox>
+      </div>
+    </>
   )
 }
 

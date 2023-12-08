@@ -74,7 +74,7 @@ const FAQ_MAINTAINER: FAQItems = [
         <a href="https://polar.sh" target="_blank" className="text-blue-400">
           Polar.sh
         </a>{' '}
-        and checkout our{' '}
+        and we&apos;ll get you setup in no time. Questions? Checkout our{' '}
         <a
           href="https://docs.polar.sh/faq/maintainers"
           target="_blank"

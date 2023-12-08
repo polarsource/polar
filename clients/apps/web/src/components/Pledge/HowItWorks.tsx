@@ -18,8 +18,8 @@ const HowItWorks: NextLayoutComponentType = () => {
 
   return (
     <>
-      <div className="dark:border-polar-700 border-t border-gray-200 py-16">
-        <h3 className="dark:text-polar-200 text-center font-medium text-gray-900">
+      <div className="dark:border-polar-700 border-t border-gray-200 pb-8 pt-16">
+        <h3 className="dark:text-polar-200 pb-6 text-center font-medium text-gray-900">
           How does funding with Polar work?
         </h3>
         <div className="mt-4 grid md:grid-cols-3 md:gap-14 md:px-14">

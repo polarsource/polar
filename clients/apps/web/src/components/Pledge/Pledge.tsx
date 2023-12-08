@@ -12,6 +12,7 @@ import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { Banner } from 'polarkit/components/ui/molecules'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
+import FAQ from './FAQ'
 import HowItWorks from './HowItWorks'
 import PledgeCheckoutPanel from './PledgeCheckoutPanel'
 
@@ -83,6 +84,7 @@ const Pledge = ({
       </div>
 
       <HowItWorks />
+      <FAQ />
     </>
   )
 }

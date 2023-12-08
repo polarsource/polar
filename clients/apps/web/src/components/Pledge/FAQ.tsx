@@ -70,7 +70,7 @@ const FAQ_MAINTAINER: FAQItems = [
     question: 'How can I get funding like this for my open source initiatives?',
     answer: (
       <>
-        It's super easy. Signup via{' '}
+        It&apos;s super easy. Signup via{' '}
         <a href="https://polar.sh" target="_blank" className="text-blue-400">
           Polar.sh
         </a>{' '}

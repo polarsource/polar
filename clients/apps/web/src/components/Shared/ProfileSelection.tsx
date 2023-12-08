@@ -11,7 +11,6 @@ import {
 import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
-import { CONFIG } from 'polarkit/config'
 import { useListAllOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
@@ -165,7 +164,7 @@ const ProfileSelection = ({
 
             {showAddOrganization && (
               <LinkItem
-                href={CONFIG.GITHUB_INSTALLATION_URL}
+                href="/maintainer/new"
                 icon={
                   <AddOutlined
                     fontSize="small"

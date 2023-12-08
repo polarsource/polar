@@ -176,6 +176,8 @@ export async function GET(
     params: { id: string }
   },
 ): Promise<NextResponse> {
+  const { searchParams } = new URL(req.url)
+
   let article: Article
 
   try {
@@ -195,6 +197,15 @@ export async function GET(
     ? new Date(article.published_at)
     : new Date()
 
+  const preAuthLink = (url: string): string => {
+    const u = new URL(url)
+    const injectMagicLinkToken = searchParams.get('inject_magic_link_token')
+    if (injectMagicLinkToken) {
+      u.searchParams.set('magic_link_token', injectMagicLinkToken)
+    }
+    return u.toString()
+  }
+
   const html = render(
     <Html lang="en">
       <Tailwind config={twConfig}>
@@ -206,7 +217,9 @@ export async function GET(
                 <Section className="bg-gray-100 p-4">
                   <center>
                     <a
-                      href={`https://polar.sh/${post.organization.name}/posts/${post.slug}`}
+                      href={preAuthLink(
+                        `https://polar.sh/${post.organization.name}/posts/${post.slug}`,
+                      )}
                       target="_blank"
                       className="text-sm text-black"
                     >
@@ -220,7 +233,9 @@ export async function GET(
                 <Column>
                   <h1>
                     <a
-                      href={`https://polar.sh/${post.organization.name}/posts/${post.slug}`}
+                      href={preAuthLink(
+                        `https://polar.sh/${post.organization.name}/posts/${post.slug}`,
+                      )}
                       target="_blank"
                       className="text-gray-900 no-underline"
                     >
@@ -269,7 +284,9 @@ export async function GET(
               <center className="py-6 text-xs text-gray-500">
                 You received this email because you&apos;re a subscriber to{' '}
                 <a
-                  href={`https://polar.sh/${post.organization.name}`}
+                  href={preAuthLink(
+                    `https://polar.sh/${post.organization.name}`,
+                  )}
                   target="_blank"
                   className="!underline underline-offset-1"
                 >

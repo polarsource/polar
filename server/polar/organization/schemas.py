@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Self
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import UUID4, Field
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
@@ -21,6 +21,7 @@ class Organization(Schema):
     platform: Platforms
     name: str
     avatar_url: str
+    is_personal: bool
 
     bio: str | None = Field(description="Public field from GitHub")
     pretty_name: str | None = Field(description="Public field from GitHub")
@@ -34,6 +35,8 @@ class Organization(Schema):
     pledge_badge_show_amount: bool
 
     default_upfront_split_to_contributors: int | None
+
+    account_id: UUID4 | None = None
 
     # Team fields
     billing_email: str | None = Field(
@@ -70,6 +73,7 @@ class Organization(Schema):
             pledge_minimum_amount=o.pledge_minimum_amount,
             pledge_badge_show_amount=o.pledge_badge_show_amount,
             default_upfront_split_to_contributors=o.default_upfront_split_to_contributors,
+            account_id=o.account_id,
             #
             billing_email=o.billing_email if include_member_fields else None,
             #
@@ -103,6 +107,10 @@ class OrganizationUpdate(Schema):
 
     set_per_user_monthly_spending_limit: bool | None = None
     per_user_monthly_spending_limit: int | None = None
+
+
+class OrganizationSetAccount(Schema):
+    account_id: UUID4
 
 
 class OrganizationStripePortalSession(Schema):

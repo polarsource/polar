@@ -499,7 +499,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         transfer_metadata: dict[str, str] = {
             "subscription_id": str(subscription.id),
-            "organization_id": str(account.organization_id),
+            "organization_id": str(
+                subscription.subscription_tier.managing_organization_id
+            ),
             "stripe_subscription_id": subscription.stripe_subscription_id,
             "stripe_product_id": cast(
                 str, subscription.subscription_tier.stripe_product_id

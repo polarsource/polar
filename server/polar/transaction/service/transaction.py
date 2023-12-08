@@ -19,6 +19,7 @@ from polar.models import (
     Transaction,
     User,
 )
+from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
@@ -192,12 +193,17 @@ class TransactionService(BaseTransactionService):
         statement = (
             select(Transaction)
             .join(Transaction.account, isouter=True)
-            .join(Account.organization, isouter=True)
             .join(
-                UserOrganization,
-                onclause=Account.organization_id == UserOrganization.organization_id,
+                Organization,
+                onclause=Organization.account_id == Account.id,
                 isouter=True,
             )
+            .join(
+                UserOrganization,
+                onclause=Organization.id == UserOrganization.organization_id,
+                isouter=True,
+            )
+            .join(User, onclause=User.account_id == Account.id, isouter=True)
             .join(
                 PaymentUserOrganization,
                 onclause=Transaction.payment_organization_id
@@ -206,7 +212,7 @@ class TransactionService(BaseTransactionService):
             )
             .where(
                 or_(
-                    Account.user_id == user.id,
+                    User.id == user.id,
                     UserOrganization.user_id == user.id,
                     Transaction.payment_user_id == user.id,
                     PaymentUserOrganization.user_id == user.id,

@@ -5,7 +5,7 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
-from polar.models import Account, Organization, Pledge, Transaction, User
+from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.dispute import (
@@ -93,7 +93,6 @@ class TestCreateDispute:
     async def test_valid(
         self,
         session: AsyncSession,
-        organization: Organization,
         user: User,
         pledge: Pledge,
         transfer_transaction_service_mock: MagicMock,
@@ -108,7 +107,6 @@ class TestCreateDispute:
 
         account = Account(
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="USD",
@@ -245,7 +243,6 @@ class TestCreateDisputeReversal:
     async def test_valid(
         self,
         session: AsyncSession,
-        organization: Organization,
         user: User,
         pledge: Pledge,
         transfer_transaction_service_mock: MagicMock,
@@ -265,7 +262,6 @@ class TestCreateDisputeReversal:
 
         account = Account(
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="USD",

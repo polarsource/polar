@@ -6,15 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import (
-    Account,
-    IssueReward,
-    Organization,
-    Pledge,
-    Subscription,
-    Transaction,
-    User,
-)
+from polar.models import Account, IssueReward, Pledge, Subscription, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transfer import (
@@ -67,12 +59,11 @@ async def create_payment_transaction(
 @pytest.mark.asyncio
 class TestCreateTransfer:
     async def test_unsupported_account_type(
-        self, session: AsyncSession, organization: Organization, user: User
+        self, session: AsyncSession, user: User
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type="UNKNOWN",
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="usd",
@@ -87,13 +78,10 @@ class TestCreateTransfer:
                 amount=1000,
             )
 
-    async def test_inactive_account(
-        self, session: AsyncSession, organization: Organization, user: User
-    ) -> None:
+    async def test_inactive_account(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ONBOARDING_STARTED,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="usd",
@@ -109,16 +97,11 @@ class TestCreateTransfer:
             )
 
     async def test_stripe(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="usd",
@@ -170,16 +153,11 @@ class TestCreateTransfer:
         ] == str(incoming.id)
 
     async def test_stripe_different_currencies(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="FR",
             currency="eur",
@@ -231,13 +209,10 @@ class TestCreateTransfer:
 
         assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
 
-    async def test_open_collective(
-        self, session: AsyncSession, organization: Organization, user: User
-    ) -> None:
+    async def test_open_collective(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.open_collective,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="usd",
@@ -276,13 +251,10 @@ class TestCreateTransfer:
 
 @pytest.mark.asyncio
 class TestCreateTransferFromCharge:
-    async def test_not_existing_charge(
-        self, session: AsyncSession, organization: Organization, user: User
-    ) -> None:
+    async def test_not_existing_charge(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="FR",
             currency="eur",
@@ -301,16 +273,11 @@ class TestCreateTransferFromCharge:
             )
 
     async def test_valid(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="FR",
             currency="eur",
@@ -350,16 +317,11 @@ class TestCreateTransferFromCharge:
 @pytest.mark.asyncio
 class TestCreateTransferFromPaymentIntent:
     async def test_valid(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="FR",
             currency="eur",
@@ -445,13 +407,10 @@ async def create_transfer_transactions(
 
 @pytest.mark.asyncio
 class TestCreateReversalTransfer:
-    async def test_inactive_account(
-        self, session: AsyncSession, organization: Organization, user: User
-    ) -> None:
+    async def test_inactive_account(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ONBOARDING_STARTED,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency=None,
@@ -474,16 +433,11 @@ class TestCreateReversalTransfer:
             )
 
     async def test_stripe(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="usd",
@@ -544,16 +498,11 @@ class TestCreateReversalTransfer:
         ] == str(incoming.id)
 
     async def test_stripe_different_currencies(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="FR",
             currency="eur",
@@ -623,13 +572,10 @@ class TestCreateReversalTransfer:
             "incoming_transaction_id"
         ] == str(incoming.id)
 
-    async def test_open_collective(
-        self, session: AsyncSession, organization: Organization, user: User
-    ) -> None:
+    async def test_open_collective(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.open_collective,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="usd",

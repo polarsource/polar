@@ -8,7 +8,6 @@ from starlette.responses import RedirectResponse
 from polar.account.service import account as account_service
 from polar.config import settings
 from polar.enums import AccountType
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 
@@ -52,17 +51,7 @@ async def stripe_connect_return(
     if not account or account.account_type != AccountType.stripe:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    if account.organization_id:
-        org = await organization_service.get(session, account.organization_id)
-        if not org:
-            raise HTTPException(status_code=404, detail="Organization not found")
-
-        return RedirectResponse(
-            url=settings.generate_frontend_url(
-                f"/maintainer/{org.name}/finance?status=stripe-return"
-            )
-        )
-
+    # TODO: return to accounts page
     return RedirectResponse(
         url=settings.generate_frontend_url("/rewards?status=stripe-return")
     )

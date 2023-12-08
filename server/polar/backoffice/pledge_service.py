@@ -8,7 +8,6 @@ from sqlalchemy.orm import (
 
 from polar.backoffice.schemas import BackofficePledge
 from polar.kit.extensions.sqlalchemy import sql
-from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
@@ -29,10 +28,6 @@ class BackofficePledgeService:
             joinedload(Pledge.issue)
             .joinedload(Issue.repository)
             .joinedload(Repository.organization),
-        )
-
-        stmt = stmt.join(
-            Account, Account.organization_id == Pledge.organization_id, isouter=True
         )
 
         stmt = stmt.where(Pledge.state != PledgeState.initiated)

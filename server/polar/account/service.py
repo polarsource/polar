@@ -6,6 +6,8 @@ from uuid import UUID
 import stripe as stripe_lib
 import stripe.error as stripe_lib_error
 import structlog
+from sqlalchemy import Select, and_, select
+from sqlalchemy.orm import joinedload
 
 from polar.enums import AccountType
 from polar.exceptions import PolarError
@@ -15,12 +17,10 @@ from polar.integrations.open_collective.service import (
     open_collective,
 )
 from polar.integrations.stripe.service import stripe
-from polar.kit.extensions.sqlalchemy import sql
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
-from polar.models.account import Account
-from polar.organization.service import organization as organization_service
+from polar.models import Account, Organization, User
 from polar.postgres import AsyncSession
-from polar.user.service import user as user_service
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -44,71 +44,75 @@ class AccountDoesNotExist(AccountServiceError):
 
 
 class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
-    async def get_by_org(
+    async def search(
+        self, session: AsyncSession, user: User, *, pagination: PaginationParams
+    ) -> tuple[Sequence[Account], int]:
+        statement = self._get_readable_accounts_statement(user)
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
+
+    async def get_by_user_id(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Account | None:
+        statement = select(Account).join(
+            User,
+            onclause=and_(
+                User.account_id == Account.id,
+                User.id == user_id,
+            ),
+        )
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
+
+    async def get_by_organization_id(
         self, session: AsyncSession, organization_id: UUID
     ) -> Account | None:
-        return await self.get_by(session=session, organization_id=organization_id)
+        statement = select(Account).join(
+            Organization,
+            onclause=and_(
+                Organization.account_id == Account.id,
+                Organization.id == organization_id,
+            ),
+        )
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
 
-    async def get_by_user(self, session: AsyncSession, user_id: UUID) -> Account | None:
-        return await self.get_by(session=session, user_id=user_id)
+    async def get_by_id(self, session: AsyncSession, id: UUID) -> Account | None:
+        statement = (
+            select(Account)
+            .where(Account.id == id)
+            .options(joinedload(Account.users), joinedload(Account.organizations))
+        )
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
 
     async def get_by_stripe_id(
         self, session: AsyncSession, stripe_id: str
     ) -> Account | None:
         return await self.get_by(session=session, stripe_id=stripe_id)
 
-    async def list_by(
-        self,
-        session: AsyncSession,
-        *,
-        org_id: UUID | None,
-        user_id: UUID | None,
-    ) -> Sequence[Account]:
-        statement = sql.select(Account).where(Account.deleted_at.is_(None))
-
-        if org_id:
-            statement = statement.where(Account.organization_id == org_id)
-
-        if user_id:
-            statement = statement.where(Account.user_id == user_id)
-
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
-
     async def create_account(
         self,
         session: AsyncSession,
         *,
-        organization_id: UUID | None = None,
-        user_id: UUID | None = None,
         admin_id: UUID,
-        account: AccountCreate,
+        account_create: AccountCreate,
     ) -> Account:
-        if organization_id and user_id:
-            raise AccountServiceError(
-                "both organization_id and user_id is set, this is not supported"
+        if account_create.account_type == AccountType.stripe:
+            account = await self._create_stripe_account(
+                session, admin_id, account_create
             )
-
-        existing = await self.get_by(
-            session=session, organization_id=organization_id, user_id=user_id
-        )
-        if existing is not None:
-            raise AccountAlreadyExistsError()
-
-        if account.account_type == AccountType.stripe:
-            return await self._create_stripe_account(
-                session,
-                organization_id=organization_id,
-                user_id=user_id,
-                admin_id=admin_id,
-                account=account,
+        elif account_create.account_type == AccountType.open_collective:
+            account = await self._create_open_collective_account(
+                session, admin_id, account_create
             )
-        elif account.account_type == AccountType.open_collective and organization_id:
-            return await self._create_open_collective_account(
-                session, organization_id, admin_id, account
-            )
+        else:
+            raise AccountServiceError("Unknown account type")
 
-        raise AccountServiceError("Unknown account type")
+        print(account.users)
+        return account
 
     async def _build_stripe_account_name(
         self,
@@ -117,6 +121,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         organization_id: UUID | None,
         user_id: UUID | None,
     ) -> str | None:
+        return None
         # The account name is visible for users and is used to differentiate accounts
         # from the same Platform ("Polar") in Stripe Express.
         #
@@ -124,38 +129,33 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         # * NAME for non-personal organisations (example: polarsource)
         # * org/NAME for personal organisations (example: org/zegl)
         # * user/NAME for users (example: user/zegl).
-        if organization_id:
-            org = await organization_service.get(session, organization_id)
-            if org:
-                if org.is_personal:
-                    return f"org/{org.name}"
-                else:
-                    return org.name
+        # if organization_id:
+        #     org = await organization_service.get(session, organization_id)
+        #     if org:
+        #         if org.is_personal:
+        #             return f"org/{org.name}"
+        #         else:
+        #             return org.name
 
-        if user_id:
-            user = await user_service.get(session, user_id)
-            if user:
-                return f"user/{user.username}"
+        # if user_id:
+        #     user = await user_service.get(session, user_id)
+        #     if user:
+        #         return f"user/{user.username}"
 
-        return None
+        # return None
 
     async def _create_stripe_account(
-        self,
-        session: AsyncSession,
-        *,
-        organization_id: UUID | None,
-        user_id: UUID | None,
-        admin_id: UUID,
-        account: AccountCreate,
+        self, session: AsyncSession, admin_id: UUID, account: AccountCreate
     ) -> Account:
-        account_name = await self._build_stripe_account_name(
-            session,
-            organization_id=organization_id,
-            user_id=user_id,
-        )
+        # TODO
+        # account_name = await self._build_stripe_account_name(
+        #     session,
+        #     organization_id=organization_id,
+        #     user_id=user_id,
+        # )
 
         try:
-            stripe_account = stripe.create_account(account, name=account_name)
+            stripe_account = stripe.create_account(account, name=None)  # TODO: name
         except stripe_lib_error.StripeError as e:
             if e.user_message:
                 raise AccountServiceError(e.user_message) from e
@@ -165,8 +165,6 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return await Account.create(
             session=session,
             status=Account.Status.ONBOARDING_STARTED,
-            organization_id=organization_id,
-            user_id=user_id,
             admin_id=admin_id,
             account_type=account.account_type,
             stripe_id=stripe_account.id,
@@ -178,14 +176,12 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             is_payouts_enabled=stripe_account.payouts_enabled,
             business_type=stripe_account.business_type,
             data=stripe_account.to_dict(),
+            users=[],
+            organizations=[],
         )
 
     async def _create_open_collective_account(
-        self,
-        session: AsyncSession,
-        organization_id: UUID,
-        admin_id: UUID,
-        account: AccountCreate,
+        self, session: AsyncSession, admin_id: UUID, account: AccountCreate
     ) -> Account:
         assert account.open_collective_slug is not None
         try:
@@ -206,12 +202,13 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return await Account.create(
             session=session,
             status=Account.Status.ACTIVE,
-            organization_id=organization_id,
             admin_id=admin_id,
             account_type=account.account_type,
             open_collective_slug=account.open_collective_slug,
             email=None,
             country=account.country,
+            users=[],
+            organizations=[],
             # For now, hard-code those values
             currency="usd",
             is_details_submitted=True,
@@ -284,12 +281,23 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return stripe.retrieve_balance(account.stripe_id)
 
     async def sync_to_upstream(self, session: AsyncSession, account: Account) -> None:
+        # TODO
+        return
         name = await self._build_stripe_account_name(
             session, organization_id=account.organization_id, user_id=account.user_id
         )
 
         if account.account_type == AccountType.stripe and account.stripe_id:
             stripe.update_account(account.stripe_id, name)
+
+    def _get_readable_accounts_statement(self, user: User) -> Select[tuple[Account]]:
+        statement = (
+            select(Account).options(
+                joinedload(Account.organizations), joinedload(Account.users)
+            )
+        ).where(Account.admin_id == user.id, Account.deleted_at.is_(None))
+
+        return statement
 
 
 account = AccountService(Account)

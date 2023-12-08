@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Self
 
-from pydantic import EmailStr, Field
+from pydantic import UUID4, EmailStr, Field
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
@@ -28,6 +28,7 @@ class UserBase(Schema):
     email: EmailStr
     avatar_url: str | None
     profile: dict[str, Any]
+    account_id: UUID4 | None = None
 
     class Config:
         orm_mode = True
@@ -63,6 +64,10 @@ class UserUpdate(UserBase):
 class UserUpdateSettings(Schema):
     email_newsletters_and_changelogs: bool | None = None
     email_promotions_and_events: bool | None = None
+
+
+class UserSetAccount(Schema):
+    account_id: UUID4
 
 
 class UserStripePortalSession(Schema):

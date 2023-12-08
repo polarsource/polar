@@ -25,6 +25,7 @@ from .schemas import (
     CreditBalance,
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
+    OrganizationSetAccount,
     OrganizationStripePortalSession,
     OrganizationUpdate,
     RepositoryBadgeSettingsRead,
@@ -195,6 +196,40 @@ async def update(
         raise Unauthorized()
 
     org = await organization.update_settings(session, org, update)
+
+    return await to_schema(session, auth.subject, org)
+
+
+@router.patch(
+    "/organizations/{id}/account",
+    response_model=OrganizationSchema,
+    tags=[Tags.PUBLIC],
+    description="Set organization account",
+    status_code=200,
+    summary="Set organization organization (Public API)",
+    responses={404: {}},
+)
+async def set_account(
+    id: UUID,
+    set_account: OrganizationSetAccount,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationSchema:
+    org = await organization.get(session, id=id)
+    if not org:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    org = await organization.set_account(
+        session,
+        authz=authz,
+        user=auth.user,
+        organization=org,
+        account_id=set_account.account_id,
+    )
 
     return await to_schema(session, auth.subject, org)
 

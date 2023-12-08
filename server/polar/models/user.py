@@ -11,6 +11,8 @@ from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 
+from .account import Account
+
 
 class OAuthAccount(RecordModel):
     __tablename__ = "oauth_accounts"
@@ -56,6 +58,21 @@ class User(RecordModel):
     profile: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB, default=None, nullable=True, insert_default={}
     )
+
+    account_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("accounts.id", ondelete="set null"),
+        nullable=True,
+    )
+
+    @declared_attr
+    def account(cls) -> Mapped[Account | None]:
+        return relationship(
+            Account,
+            lazy="raise",
+            back_populates="users",
+            foreign_keys="[User.account_id]",
+        )
 
     @declared_attr
     def oauth_accounts(cls) -> Mapped[list[OAuthAccount]]:

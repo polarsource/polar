@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Account, Organization, Pledge, Transaction, User
+from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.refund import RefundUnknownPaymentTransaction
@@ -95,7 +95,6 @@ class TestCreateRefunds:
     async def test_valid(
         self,
         session: AsyncSession,
-        organization: Organization,
         user: User,
         pledge: Pledge,
         stripe_service_mock: MagicMock,
@@ -124,7 +123,6 @@ class TestCreateRefunds:
 
         account = Account(
             account_type=AccountType.stripe,
-            organization_id=organization.id,
             admin_id=user.id,
             country="US",
             currency="USD",

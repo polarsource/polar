@@ -3,14 +3,16 @@ from enum import Enum
 from uuid import UUID
 
 from citext import CIText
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import Platforms
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+
+from .account import Account
 
 
 class NotInstalledOrganization(PolarError):
@@ -36,6 +38,16 @@ class Organization(RecordModel):
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
     avatar_url: Mapped[str] = mapped_column(String, nullable=False)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
+    account_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("accounts.id", ondelete="set null"),
+        nullable=True,
+    )
+
+    @declared_attr
+    def account(cls) -> Mapped[Account | None]:
+        return relationship(Account, lazy="raise", back_populates="organizations")
 
     installation_id: Mapped[int | None] = mapped_column(
         Integer, nullable=True, unique=True

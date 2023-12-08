@@ -123,7 +123,7 @@ class Authz:
             and accessType == AccessType.read
             and isinstance(object, Account)
         ):
-            return await self._can_user_read_account(subject, object)
+            return self._can_user_read_account(subject, object)
 
         if (
             isinstance(subject, User)
@@ -288,19 +288,6 @@ class Authz:
             return True
         return False
 
-    async def _can_user_read_account(self, subject: User, object: Account) -> bool:
-        # Can read if owned by self
-        if object.user_id and subject.id == object.user_id:
-            return True
-
-        # Can read if owned by member org
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
-        ):
-            return True
-
-        return False
-
     async def _is_member(self, user_id: UUID, organization_id: UUID) -> bool:
         key = (user_id, organization_id)
         if key in self._cache_is_member:
@@ -339,12 +326,13 @@ class Authz:
     # Account
     #
 
-    def _can_user_write_account(self, subject: User, object: Account) -> bool:
-        # Can write if owned by self
-        if object.user_id and subject.id == object.user_id:
+    def _can_user_read_account(self, subject: User, object: Account) -> bool:
+        if subject.id == object.admin_id:
             return True
 
-        # Can write if marked as admin
+        return False
+
+    def _can_user_write_account(self, subject: User, object: Account) -> bool:
         if subject.id == object.admin_id:
             return True
 

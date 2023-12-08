@@ -85,16 +85,6 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/faq',
-        destination: 'https://docs.polar.sh/faq',
-        permanent: false,
-      },
-      {
-        source: '/faq/:path*',
-        destination: 'https://docs.polar.sh/faq/:path*',
-        permanent: false,
-      },
-      {
         source: '/:path*',
         destination: 'https://polar.sh/:path*',
         has: [
@@ -103,6 +93,18 @@ const nextConfig = {
             value: 'dashboard.polar.sh',
           },
         ],
+        permanent: false,
+      },
+
+      // FAQ to docs
+      {
+        source: '/faq',
+        destination: 'https://docs.polar.sh/faq',
+        permanent: false,
+      },
+      {
+        source: '/faq/:path*',
+        destination: 'https://docs.polar.sh/faq/:path*',
         permanent: false,
       },
 

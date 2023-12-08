@@ -325,7 +325,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not repo:
             raise Exception("repo not found")
 
-        org_account: Account | None = await account_service.get_by_org(session, org.id)
+        org_account: Account | None = None
+        if org.account_id is not None:
+            org_account = await account_service.get_by_id(session, org.account_id)
 
         pledge_amount_sum = sum([p.amount for p in pledges])
 
@@ -418,7 +420,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not repo:
             raise Exception("repo not found")
 
-        org_account: Account | None = await account_service.get_by_org(session, org.id)
+        org_account: Account | None = None
+        if org.account_id is not None:
+            org_account = await account_service.get_by_id(session, org.account_id)
 
         pledge_amount_sum = sum([p.amount for p in pledges])
 
@@ -835,12 +839,14 @@ class PledgeService(ResourceServiceReader[Pledge]):
         payout_amount = round(pledge.amount * 0.9 * split.share_thousands / 1000)
 
         if split.user_id:
-            pay_to_account = await account_service.get_by_user(session, split.user_id)
+            pay_to_account = await account_service.get_by_user_id(
+                session, split.user_id
+            )
             if pay_to_account is None:
                 raise NotPermitted("Receiving user has no account")
 
         elif split.organization_id:
-            pay_to_account = await account_service.get_by_org(
+            pay_to_account = await account_service.get_by_organization_id(
                 session, split.organization_id
             )
             if pay_to_account is None:

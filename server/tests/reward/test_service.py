@@ -37,8 +37,7 @@ async def test_list_rewards(
     got.payment_id = "test_transfer_payment_id"
     await got.save(session)
 
-    account = await Account(
-        organization_id=organization.id,
+    account = Account(
         account_type=AccountType.stripe,
         admin_id=user.id,
         stripe_id="testing_account_1",
@@ -48,11 +47,11 @@ async def test_list_rewards(
         business_type="company",
         country="SE",
         currency="USD",
-    ).save(
-        session=session,
     )
-    await session.flush()
-    await organization.save(session)
+    session.add(account)
+    organization.account = account
+    session.add(organization)
+    await session.commit()
 
     splits = await pledge_service.create_issue_rewards(
         session,
@@ -152,8 +151,7 @@ async def test_list_rewards_to_user(
         payment_id="test_transfer_payment_id",
     ).save(session)
 
-    account = await Account(
-        user_id=user.id,
+    account = Account(
         account_type=AccountType.stripe,
         admin_id=user.id,
         stripe_id="testing_account_1",
@@ -163,10 +161,11 @@ async def test_list_rewards_to_user(
         business_type="individual",
         currency="SEK",
         country="SE",
-    ).save(session)
-
-    await session.flush()
-    await organization.save(session)
+    )
+    session.add(account)
+    user.account = account
+    session.add(user)
+    await session.commit()
 
     splits = await pledge_service.create_issue_rewards(
         session,

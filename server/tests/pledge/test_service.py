@@ -278,8 +278,7 @@ async def test_transfer_org(
     got.payment_id = "test_transfer_payment_id"
     await got.save(session)
 
-    account = await Account(
-        organization_id=organization.id,
+    account = Account(
         account_type=AccountType.stripe,
         admin_id=user.id,
         stripe_id="testing_account_1",
@@ -289,10 +288,11 @@ async def test_transfer_org(
         business_type="company",
         country="SE",
         currency="USD",
-    ).save(
-        session=session,
     )
-    await session.flush()
+    session.add(account)
+    organization.account = account
+    session.add(organization)
+    await session.commit()
 
     reward = await IssueReward(
         issue_id=pledge.issue_id,
@@ -382,8 +382,7 @@ async def test_transfer_user(
     got.payment_id = "test_transfer_payment_id"
     await got.save(session)
 
-    account = await Account(
-        user_id=user.id,
+    account = Account(
         account_type=AccountType.stripe,
         admin_id=user.id,
         stripe_id="testing_account_1",
@@ -393,10 +392,11 @@ async def test_transfer_user(
         business_type="individual",
         country="SE",
         currency="USD",
-    ).save(
-        session=session,
     )
-    await session.flush()
+    session.add(account)
+    user.account = account
+    session.add(user)
+    await session.commit()
 
     reward = await IssueReward(
         issue_id=pledge.issue_id,

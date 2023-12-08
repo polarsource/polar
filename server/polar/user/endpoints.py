@@ -2,13 +2,19 @@ from fastapi import APIRouter, Depends, Response
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
+from polar.authz.service import Authz
 from polar.exceptions import InternalServerError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.service import user as user_service
 
-from .schemas import UserRead, UserStripePortalSession, UserUpdateSettings
+from .schemas import (
+    UserRead,
+    UserSetAccount,
+    UserStripePortalSession,
+    UserUpdateSettings,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -31,6 +37,18 @@ async def update_preferences(
 ) -> User:
     user = await user_service.update_preferences(session, auth.user, settings)
     return user
+
+
+@router.patch("/me/account", response_model=UserRead)
+async def set_account(
+    set_account: UserSetAccount,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> User:
+    return await user_service.set_account(
+        session, authz=authz, user=auth.user, account_id=set_account.account_id
+    )
 
 
 @router.get("/logout")

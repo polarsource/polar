@@ -1,13 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, NotPermitted, ResourceNotFound
-from polar.models import Account as AccountModel
-from polar.organization.service import organization as organization_service
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
@@ -17,39 +16,25 @@ from .service import account as account_service
 router = APIRouter(tags=["accounts"])
 
 
-@router.get("/accounts/lookup", tags=[Tags.PUBLIC], response_model=Account)
-async def lookup(
+@router.get(
+    "/accounts/search", response_model=ListResource[Account], tags=[Tags.PUBLIC]
+)
+async def search(
     auth: UserRequiredAuth,
-    organization_id: UUID | None = Query(
-        default=None,
-        description="Search accounts connected to this organization. Either user_id or organization_id must be set.",  # noqa: E501
-    ),
-    user_id: UUID | None = Query(
-        default=None,
-        description="Search accounts connected to this user. Either user_id or organization_id must be set.",  # noqa: E501
-    ),
+    pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> Account:
-    if not organization_id and not user_id or (organization_id and user_id):
-        raise HTTPException(
-            status_code=400, detail="Either organization_id or user_id must be set"
-        )
+) -> ListResource[Account]:
+    results, count = await account_service.search(
+        session,
+        auth.subject,
+        pagination=pagination,
+    )
 
-    account: AccountModel | None = None
-    if organization_id is not None:
-        account = await account_service.get_by_org(session, organization_id)
-
-    if user_id is not None:
-        account = await account_service.get_by_user(session, user_id)
-
-    if account is None:
-        raise ResourceNotFound()
-
-    if not await authz.can(auth.subject, AccessType.read, account):
-        raise NotPermitted()
-
-    return Account.from_db(account)
+    return ListResource.from_paginated_results(
+        [Account.from_db(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.get("/accounts/{id}", tags=[Tags.PUBLIC], response_model=Account)
@@ -59,7 +44,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> Account:
-    acc = await account_service.get(session, id)
+    acc = await account_service.get_by_id(session, id)
     if not acc:
         raise ResourceNotFound()
 
@@ -78,7 +63,7 @@ async def onboarding_link(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> AccountLink:
-    acc = await account_service.get(session, id)
+    acc = await account_service.get_by_id(session, id)
     if not acc:
         raise ResourceNotFound()
 
@@ -104,7 +89,7 @@ async def dashboard_link(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> AccountLink:
-    acc = await account_service.get(session, id)
+    acc = await account_service.get_by_id(session, id)
     if not acc:
         raise ResourceNotFound()
 
@@ -123,25 +108,12 @@ async def dashboard_link(
 
 @router.post("/accounts", tags=[Tags.PUBLIC], response_model=Account)
 async def create(
-    account: AccountCreate,
+    account_create: AccountCreate,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> Account:
-    if account.organization_id:
-        org = await organization_service.get(session, account.organization_id)
-        if not org or not await authz.can(auth.subject, AccessType.write, org):
-            raise NotPermitted()
-
-    if account.user_id and str(account.user_id) != str(auth.user.id):
-        raise NotPermitted()
-
     created = await account_service.create_account(
-        session,
-        organization_id=account.organization_id,
-        user_id=account.user_id,
-        admin_id=auth.user.id,
-        account=account,
+        session, admin_id=auth.user.id, account_create=account_create
     )
 
     return Account.from_db(created)

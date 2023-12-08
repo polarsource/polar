@@ -279,9 +279,8 @@ async def subscription_benefits(
 async def organization_account(
     session: AsyncSession, organization: Organization, user: User
 ) -> Account:
-    return await Account(
+    account = Account(
         account_type=AccountType.stripe,
-        organization_id=organization.id,
         admin_id=user.id,
         country="US",
         currency="USD",
@@ -289,9 +288,12 @@ async def organization_account(
         is_charges_enabled=True,
         is_payouts_enabled=True,
         stripe_id="STRIPE_ACCOUNT_ID",
-    ).save(
-        session,
     )
+    session.add(account)
+    organization.account = account
+    session.add(organization)
+    await session.commit()
+    return account
 
 
 @pytest_asyncio.fixture

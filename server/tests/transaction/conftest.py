@@ -60,7 +60,6 @@ async def account(
     account = Account(
         status=Account.Status.ACTIVE,
         account_type=AccountType.stripe,
-        organization_id=organization.id,
         admin_id=user.id,
         country="US",
         currency="usd",
@@ -69,6 +68,8 @@ async def account(
         is_payouts_enabled=True,
     )
     session.add(account)
+    organization.account = account
+    session.add(organization)
     await session.commit()
     return account
 

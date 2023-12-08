@@ -181,7 +181,9 @@ class SubscriptionTierService(
             managing_organization_id = repository.organization_id
 
         assert managing_organization_id is not None
-        account = await account_service.get_by_org(session, managing_organization_id)
+        account = await account_service.get_by_organization_id(
+            session, managing_organization_id
+        )
         if account is None:
             raise NoAssociatedPayoutAccount(managing_organization_id)
 
@@ -470,7 +472,7 @@ class SubscriptionTierService(
     async def get_managing_organization_account(
         self, session: AsyncSession, subscription_tier: SubscriptionTier
     ) -> Account | None:
-        return await account_service.get_by_org(
+        return await account_service.get_by_organization_id(
             session, subscription_tier.managing_organization_id
         )
 

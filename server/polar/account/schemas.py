@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any, Self
 from uuid import UUID
 
@@ -7,19 +6,12 @@ from pydantic import Field, root_validator
 from polar.enums import AccountType
 from polar.kit.schemas import Schema
 from polar.models.account import Account as AccountModel
-
-
-# Public API
-class AccountLinkTypes(str, Enum):
-    account_onboarding = "account_onboarding"
-    account_update = "account_update"
+from polar.organization.schemas import Organization
+from polar.user.schemas import UserBase
 
 
 # Public API
 class AccountCreate(Schema):
-    user_id: UUID | None = None
-    organization_id: UUID | None = None
-
     account_type: AccountType
     open_collective_slug: str | None = Field(default=None, min_length=1)
     country: str = Field(
@@ -32,18 +24,6 @@ class AccountCreate(Schema):
         open_collective_slug: str | None = values.get("open_collective_slug")
         if account_type == AccountType.open_collective and open_collective_slug is None:
             raise ValueError("The Open Collective slug must be provided.")
-        return values
-
-    @root_validator(skip_on_failure=True)
-    def validate_user_id_org_id(cls, values: dict[str, Any]) -> dict[str, Any]:
-        user_id: UUID | None = values["user_id"]
-        organization_id: UUID | None = values["organization_id"]
-
-        if user_id and organization_id:
-            raise ValueError("user_id and organization_id are mutually exclusive")
-        if not user_id and not organization_id:
-            raise ValueError("either user_id and organization_id must be set")
-
         return values
 
     @root_validator(skip_on_failure=True)
@@ -64,6 +44,9 @@ class Account(Schema):
     is_details_submitted: bool | None
     country: str = Field(min_length=2, max_length=2)
 
+    users: list[UserBase]
+    organizations: list[Organization]
+
     @classmethod
     def from_db(cls, o: AccountModel) -> Self:
         return cls(
@@ -74,6 +57,10 @@ class Account(Schema):
             open_collective_slug=o.open_collective_slug,
             is_details_submitted=o.is_details_submitted,
             country=o.country or "SE",
+            users=[UserBase.from_orm(user) for user in o.users],
+            organizations=[
+                Organization.from_db(organization) for organization in o.organizations
+            ],
         )
 
 
@@ -85,20 +72,6 @@ class AccountUpdate(Schema):
     is_charges_enabled: bool
     is_payouts_enabled: bool
     data: dict[str, Any]
-
-
-class AccountRead(AccountCreate):
-    id: UUID
-    account_type: AccountType
-    stripe_id: str | None
-    open_collective_slug: str | None
-    balance: int | None
-    balance_currency: str | None
-    is_details_submitted: bool | None
-    is_admin: bool | None
-
-    class Config:
-        orm_mode = True
 
 
 class AccountLink(Schema):

@@ -5,8 +5,10 @@ from uuid import UUID
 import structlog
 from sqlalchemy.exc import IntegrityError
 
+from polar.account.service import account as account_service
+from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
-from polar.exceptions import BadRequest
+from polar.exceptions import BadRequest, PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
 from polar.models import Organization, User, UserOrganization
@@ -19,6 +21,20 @@ from .schemas import (
 )
 
 log = structlog.get_logger()
+
+
+class OrganizationError(PolarError):
+    ...
+
+
+class InvalidAccount(OrganizationError):
+    def __init__(self, account_id: UUID) -> None:
+        self.account_id = account_id
+        message = (
+            f"The account {account_id} does not exist "
+            "or you don't have access to it."
+        )
+        super().__init__(message)
 
 
 class OrganizationService(
@@ -201,6 +217,26 @@ class OrganizationService(
         )
 
         return updated
+
+    async def set_account(
+        self,
+        session: AsyncSession,
+        *,
+        authz: Authz,
+        user: User,
+        organization: Organization,
+        account_id: UUID,
+    ) -> Organization:
+        account = await account_service.get_by_id(session, account_id)
+        if account is None:
+            raise InvalidAccount(account_id)
+        if not await authz.can(user, AccessType.write, account):
+            raise InvalidAccount(account_id)
+
+        organization.account = account
+        session.add(organization)
+        await session.commit()
+        return organization
 
     async def set_default_issue_badge_custom_message(
         self, session: AsyncSession, org: Organization, message: str

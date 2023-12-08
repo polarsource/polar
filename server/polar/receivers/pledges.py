@@ -136,7 +136,9 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_created_notification.no_org_found")
         return
 
-    org_account: Account | None = await account_service.get_by_org(session, org.id)
+    org_account: Account | None = await account_service.get_by_organization_id(
+        session, org.id
+    )
 
     repo: Repository | None = await repository_service.get(session, issue.repository_id)
     if not repo:

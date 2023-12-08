@@ -3,6 +3,7 @@ repo_url: https://github.com/polarsource/polar
 repo_name: polarsource/polar
 plugins:
   - awesome-pages
+  - search
 theme:
   name: material
   custom_dir: overrides
@@ -19,6 +20,9 @@ theme:
     - navigation.expand
     - navigation.indexes
     - header.autohide
+    - search.highlight
+    - search.share
+    - search.suggest
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: polar-light

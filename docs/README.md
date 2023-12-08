@@ -4,8 +4,19 @@ Proud users & commercial sponsors of [mkdocs-material](https://github.com/squidf
 
 ## Local development
 
+Setting up the environment.
+
 ```
-mkdocs serve
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Now we can serve the docs - using port 8080 to avoid collision with Polar API on
+otherwise default port 8000.
+
+```
+mkdocs serve -a 127.0.0.1:8080
 ```
 
 Since Insiders is not open source, we cannot have a direct dependency to it in our OSS codebase. However, it is downward compatible to its OSS version which our development (OSS) codebase is dependent on here. See this [discussion](https://github.com/squidfunk/mkdocs-material/discussions/3844) for additional details.
@@ -19,6 +30,6 @@ poetry add git+https://github.com/<link_to_our_fork>
 Thereafter, make sure to serve the docs using the inherited insiders config, e.g
 
 ```
-mkdocs serve -f mkdocs.insiders.yml
+mkdocs serve -a 127.0.0.1:8080 -f mkdocs.insiders.yml
 ```
 

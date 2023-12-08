@@ -4,6 +4,7 @@ import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import {
   useOrganizationAccount,
@@ -24,7 +25,7 @@ export default function ClientPage() {
   return (
     <div className="flex flex-col gap-y-6">
       {org && <AccountBanner account={organizationAccount} org={org} />}
-      <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-2xl border border-gray-100 bg-white p-6 md:rounded-3xl md:p-12">
+      <ShadowBoxOnMd>
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium capitalize">Transactions</h2>
@@ -42,7 +43,7 @@ export default function ClientPage() {
         >
           <TransactionsList transactions={transactions.data?.items ?? []} />
         </Pagination>
-      </div>
+      </ShadowBoxOnMd>
     </div>
   )
 }

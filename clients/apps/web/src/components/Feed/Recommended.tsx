@@ -2,7 +2,7 @@
 
 import { FavoriteBorderOutlined } from '@mui/icons-material'
 import Link from 'next/link'
-import { Button, ShadowBoxOnLg } from 'polarkit/components/ui/atoms'
+import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { useListForYouIssues } from 'polarkit/hooks'
 import IssueListItem from '../Dashboard/IssueListItem'
 
@@ -11,7 +11,7 @@ const Recommended = () => {
 
   return (
     <>
-      <ShadowBoxOnLg>
+      <ShadowBoxOnMd>
         <>
           <div className="space-y-2 pb-4">
             <h1 className="dark:text-polar-50 text-lg text-gray-900">
@@ -59,7 +59,7 @@ const Recommended = () => {
             ))}
           </div>
         </>
-      </ShadowBoxOnLg>
+      </ShadowBoxOnMd>
     </>
   )
 }

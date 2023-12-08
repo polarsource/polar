@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from './Select'
 import ShadowBox from './ShadowBox'
-import ShadowBoxOnLg from './ShadowBoxOnLg'
+import ShadowBoxOnMd from './ShadowBoxOnMd'
 import ShadowListGroup from './ShadowListGroup'
 import Switch from './Switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs'
@@ -46,7 +46,7 @@ export {
   DataTable,
   DataTableColumnHeader,
   ShadowBox,
-  ShadowBoxOnLg,
+  ShadowBoxOnMd,
   ShadowListGroup,
   Select,
   SelectLabel,

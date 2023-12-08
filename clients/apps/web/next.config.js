@@ -37,10 +37,6 @@ const nextConfig = {
         ],
       },
       {
-        source: '/faq',
-        destination: 'https://docs.polar.sh/faq',
-      },
-      {
         source: '/careers',
         destination: 'https://splendid-help-401117.framer.app/careers',
       },
@@ -86,6 +82,11 @@ const nextConfig = {
             value: 'dashboard.polar.sh',
           },
         ],
+        permanent: false,
+      },
+      {
+        source: '/faq',
+        destination: 'https://docs.polar.sh/faq',
         permanent: false,
       },
       {

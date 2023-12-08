@@ -48,6 +48,18 @@ export interface Account {
      * @memberof Account
      */
     country: string;
+    /**
+     * 
+     * @type {Array<UserBase>}
+     * @memberof Account
+     */
+    users: Array<UserBase>;
+    /**
+     * 
+     * @type {Array<Organization>}
+     * @memberof Account
+     */
+    organizations: Array<Organization>;
 }
 /**
  * 
@@ -55,18 +67,6 @@ export interface Account {
  * @interface AccountCreate
  */
 export interface AccountCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof AccountCreate
-     */
-    user_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AccountCreate
-     */
-    organization_id?: string;
     /**
      * 
      * @type {AccountType}
@@ -1618,6 +1618,25 @@ export type ListFundingSortBy = typeof ListFundingSortBy[keyof typeof ListFundin
 /**
  * 
  * @export
+ * @interface ListResourceAccount
+ */
+export interface ListResourceAccount {
+    /**
+     * 
+     * @type {Array<Account>}
+     * @memberof ListResourceAccount
+     */
+    items?: Array<Account>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceAccount
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceArticle
  */
 export interface ListResourceArticle {
@@ -2559,6 +2578,12 @@ export interface Organization {
      */
     avatar_url: string;
     /**
+     * 
+     * @type {boolean}
+     * @memberof Organization
+     */
+    is_personal: boolean;
+    /**
      * Public field from GitHub
      * @type {string}
      * @memberof Organization
@@ -2618,6 +2643,12 @@ export interface Organization {
      * @memberof Organization
      */
     default_upfront_split_to_contributors?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Organization
+     */
+    account_id?: string;
     /**
      * Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization
      * @type {string}
@@ -2735,6 +2766,19 @@ export interface OrganizationMember {
      * @memberof OrganizationMember
      */
     is_admin: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationSetAccount
+ */
+export interface OrganizationSetAccount {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationSetAccount
+     */
+    account_id: string;
 }
 /**
  * 
@@ -5603,6 +5647,43 @@ export interface UpdateIssue {
 /**
  * 
  * @export
+ * @interface UserBase
+ */
+export interface UserBase {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserBase
+     */
+    username: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserBase
+     */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserBase
+     */
+    avatar_url?: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof UserBase
+     */
+    profile: object;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserBase
+     */
+    account_id?: string;
+}
+/**
+ * 
+ * @export
  * @interface UserRead
  */
 export interface UserRead {
@@ -5647,6 +5728,12 @@ export interface UserRead {
      * @type {string}
      * @memberof UserRead
      */
+    account_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserRead
+     */
     id: string;
     /**
      * 
@@ -5672,6 +5759,19 @@ export interface UserRead {
      * @memberof UserRead
      */
     oauth_accounts: Array<OAuthAccountRead>;
+}
+/**
+ * 
+ * @export
+ * @interface UserSetAccount
+ */
+export interface UserSetAccount {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSetAccount
+     */
+    account_id: string;
 }
 
 /**

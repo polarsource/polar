@@ -1,6 +1,6 @@
 'use client'
 
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useCurrentOrgAndRepoFromURL, useGitHubAccount } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import {
@@ -30,6 +30,7 @@ const ProfileSelection = ({
   )
   const { currentUser: loggedUser, logout } = useAuth()
   const listOrganizationQuery = useListAllOrganizations()
+  const githubAccount = useGitHubAccount()
 
   const [isOpen, setOpen] = useState<boolean>(false)
 
@@ -72,8 +73,7 @@ const ProfileSelection = ({
         avatar_url: loggedUser.avatar_url,
       } as const)
 
-  const showConnectUpsell = orgs && orgs.length === 0
-  const showAddOrganization = !showConnectUpsell
+  const showAddOrganization = !!githubAccount
 
   return (
     <>
@@ -135,15 +135,17 @@ const ProfileSelection = ({
               </TextItem>
             </ul>
 
-            <div className="mt-2 flex w-full flex-row items-center gap-x-2 py-4">
-              <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
-                Organizations
+            {(organizationsExceptSelf.length > 0 || showAddOrganization) && (
+              <div className="mt-2 flex w-full flex-row items-center gap-x-2 py-4">
+                <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
+                  Organizations
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="mb-2 flex flex-col">
-              {organizationsExceptSelf &&
-                organizationsExceptSelf.map((org) => (
+            {organizationsExceptSelf.length > 0 && (
+              <div className="mb-2 flex flex-col">
+                {organizationsExceptSelf.map((org) => (
                   <Link
                     href={
                       isFeatureEnabled('feed')
@@ -158,7 +160,8 @@ const ProfileSelection = ({
                     </ListItem>
                   </Link>
                 ))}
-            </div>
+              </div>
+            )}
 
             {showAddOrganization && (
               <LinkItem

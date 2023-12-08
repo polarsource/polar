@@ -4,7 +4,7 @@ import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import { Progress50 } from '@/components/Dashboard/IssueProgress'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import FakePullRequest from '@/components/Settings/FakePullRequest'
-import { useAuth } from '@/hooks'
+import { useAuth, usePersonalOrganization } from '@/hooks'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit'
@@ -15,6 +15,7 @@ import { useCallback, useEffect } from 'react'
 export default function Page() {
   const { authenticated, hasChecked } = useAuth()
   const listOrganizationsQuery = useListAdminOrganizations()
+  const personalOrg = usePersonalOrganization()
 
   const router = useRouter()
   const orgs = listOrganizationsQuery?.data?.items
@@ -32,9 +33,8 @@ export default function Page() {
     if (!listOrganizationsQuery.isFetched) return
 
     // redirect to first org
-    if (orgs && orgs.length > 0) {
-      const gotoOrg = orgs[0]
-      router.push(`/maintainer/${gotoOrg.name}/issues`)
+    if (personalOrg) {
+      router.push(`/maintainer/${personalOrg.name}/issues`)
       return
     }
   }, [listOrganizationsQuery, orgs, router, authenticated, hasChecked])

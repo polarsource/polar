@@ -21,6 +21,7 @@ import {
   Button,
   Input,
   PolarTimeAgo,
+  ShadowBoxOnMd,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -197,6 +198,21 @@ const ClientPage = ({ article }: PublishModalContentProps) => {
     setSlug(slug)
   }
 
+  const visibilityDescription = useMemo(() => {
+    const audience = paidSubscribersOnly
+      ? 'Premium Subscribers'
+      : 'All Subscribers'
+
+    switch (visibility) {
+      case ArticleVisibilityEnum.PRIVATE:
+        return `Only members of ${article.organization.name} can see this post`
+      case ArticleVisibilityEnum.HIDDEN:
+        return `${audience} with the link can see this post`
+      case ArticleVisibilityEnum.PUBLIC:
+        return `${audience} can see this post on the web`
+    }
+  }, [visibility, paidSubscribersOnly])
+
   if (!article) {
     return (
       <DashboardBody>
@@ -212,146 +228,154 @@ const ClientPage = ({ article }: PublishModalContentProps) => {
         isFixed
         useOrgFromURL
       />
-      <DashboardBody>
-        <div className="overflow-scroll p-8">
-          <div className="flex flex-col gap-y-4">
-            <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-4">
-              <AudiencePicker
-                paidSubscribersOnly={paidSubscribersOnly}
-                onChange={setPaidSubscribersOnly}
-              />
-            </div>
-            <div className="dark:border-polar-700 rounded-2xl border border-gray-100 p-4">
-              <VisibilityPicker
-                paidSubscribersOnly={paidSubscribersOnly}
-                visibility={visibility}
-                privateVisibilityAllowed={!sendEmail && !publishAt}
-                linkVisibilityAllowed={!sendEmail && !publishAt}
-                article={article}
-                onChange={onVisibilityChange}
-              />
-            </div>
-
-            <div className="dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
-              <ScheduledPostPicker
-                publishAt={publishAt}
-                article={article}
-                onChange={onChangePublishAt}
-                onReset={onPublishAtReset}
-              />
-            </div>
-
-            <div className="dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
+      <DashboardBody className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+        <ShadowBoxOnMd className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
+          <>
+            <AudiencePicker
+              paidSubscribersOnly={paidSubscribersOnly}
+              onChange={setPaidSubscribersOnly}
+            />
+            <VisibilityPicker
+              paidSubscribersOnly={paidSubscribersOnly}
+              visibility={visibility}
+              privateVisibilityAllowed={!sendEmail && !publishAt}
+              linkVisibilityAllowed={!sendEmail && !publishAt}
+              article={article}
+              onChange={onVisibilityChange}
+            />
+            <ScheduledPostPicker
+              publishAt={publishAt}
+              article={article}
+              onChange={onChangePublishAt}
+              onReset={onPublishAtReset}
+            />
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col gap-y-2">
+                <span className="font-medium">Email</span>
+              </div>
               <div className="flex flex-col gap-y-4">
-                <div className="flex flex-col gap-y-2">
-                  <span className="font-medium">Email</span>
-                </div>
-                <div className="flex flex-col gap-y-4">
-                  {!article.notifications_sent_at ? (
-                    <div className="flex flex-row items-center gap-x-2">
-                      <Checkbox
-                        checked={sendEmail}
-                        onCheckedChange={(checked) =>
-                          onChangeSendEmail(Boolean(checked))
-                        }
-                      />
-                      <span className="text-sm">
-                        Send post as email to{' '}
-                        <span className="font-medium">
-                          {articleReceivers?.free_subscribers} free subscribers
-                        </span>
-                        ,{' '}
-                        <span className="font-medium">
-                          {articleReceivers?.premium_subscribers} premium
-                          subscribers
-                        </span>{' '}
-                        and{' '}
-                        <span className="font-medium">
-                          {articleReceivers?.organization_members} organization
-                          members
-                        </span>
-                        .
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-row items-center gap-x-2">
-                      <Checkbox checked={true} disabled={true} />
-                      <span className="text-sm">
-                        This post was sent via email{' '}
-                        <PolarTimeAgo
-                          date={new Date(article.notifications_sent_at)}
-                        />
-                      </span>
-                    </div>
-                  )}
-
-                  {showNoEmailSentBanner ? (
-                    <Banner color="blue">
-                      This article is published and public, but has not been
-                      sent over email.
-                    </Banner>
-                  ) : null}
-
-                  <div className="flex flex-col gap-y-4">
-                    <span className="text-sm font-medium">Send Preview</span>
-                    <div className="flex flex-row items-center gap-x-2">
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={previewEmailAddress}
-                        onChange={(e) => setPreviewEmailAddress(e.target.value)}
-                      />
-                      <Button variant="secondary" onClick={handleSendPreview}>
-                        Send
-                      </Button>
-                    </div>
-                    {previewSent && (
-                      <Banner color="green">
-                        Email preview sent to {previewSent}
-                      </Banner>
-                    )}
+                {!article.notifications_sent_at ? (
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox
+                      checked={sendEmail}
+                      onCheckedChange={(checked) =>
+                        onChangeSendEmail(Boolean(checked))
+                      }
+                    />
+                    <span className="text-sm">
+                      Send post as email to subscribers
+                    </span>
                   </div>
+                ) : (
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox checked={true} disabled={true} />
+                    <span className="text-sm">
+                      This post was sent via email{' '}
+                      <PolarTimeAgo
+                        date={new Date(article.notifications_sent_at)}
+                      />
+                    </span>
+                  </div>
+                )}
 
-                  {didAutoChangeVisibility && (
-                    <Banner color="blue">
-                      The visibility has been changed to{' '}
-                      <em className="capitalize">{visibility}</em>
+                {showNoEmailSentBanner ? (
+                  <Banner color="blue">
+                    This article is published and public, but has not been sent
+                    over email.
+                  </Banner>
+                ) : null}
+
+                <div className="flex flex-col gap-y-4">
+                  <span className="text-sm font-medium">Send Preview</span>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={previewEmailAddress}
+                      onChange={(e) => setPreviewEmailAddress(e.target.value)}
+                    />
+                    <Button variant="secondary" onClick={handleSendPreview}>
+                      Send
+                    </Button>
+                  </div>
+                  {previewSent && (
+                    <Banner color="green">
+                      Email preview sent to {previewSent}
                     </Banner>
                   )}
                 </div>
+
+                {didAutoChangeVisibility && (
+                  <Banner color="blue">
+                    The visibility has been changed to{' '}
+                    <em className="capitalize">{visibility}</em>
+                  </Banner>
+                )}
               </div>
             </div>
-
-            <div className="dark:border-polar-700 flex flex-col  rounded-2xl border border-gray-100 p-4">
-              <div className="flex flex-col gap-y-4">
-                <div className="flex flex-col  gap-2">
-                  <span className="font-medium">Slug</span>
-                  <p className="text-polar-500 dark:text-polar-500 text-sm">
-                    Change the slug of the article. The slug is used in public
-                    URLs.
-                  </p>
-                </div>
-
-                <Input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => formatAndSetSlug(e.target.value)}
-                  className="font-mono"
-                  maxLength={64}
-                />
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col  gap-2">
+                <span className="font-medium">Slug</span>
+                <p className="text-polar-500 dark:text-polar-500 text-sm">
+                  Change the slug of the article. The slug is used in public
+                  URLs.
+                </p>
               </div>
-            </div>
 
-            <div className="flex flex-row items-center justify-end gap-x-2">
-              <Button variant="ghost" onClick={() => router.back()}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} loading={isSaving}>
-                {saveVerb}
-              </Button>
+              <Input
+                type="text"
+                value={slug}
+                onChange={(e) => formatAndSetSlug(e.target.value)}
+                className="font-mono"
+                maxLength={64}
+              />
+            </div>
+          </>
+        </ShadowBoxOnMd>
+        <ShadowBoxOnMd className="flex w-full flex-col gap-y-8">
+          <div className="flex flex-col gap-y-2">
+            <h2 className="text-lg font-medium leading-relaxed">
+              {article.title}
+            </h2>
+            {publishAt && (
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                <PolarTimeAgo date={publishAt} />
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col gap-y-2">
+              <h3 className="font-medium">Visibility</h3>
+              <span className="dark:text-polar-50 text-sm font-medium capitalize text-gray-950">
+                {visibility}
+              </span>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                {visibilityDescription}
+              </p>
             </div>
           </div>
-        </div>
+          <div className="flex flex-col gap-y-4">
+            <h3 className="font-medium">Audience</h3>
+            <ul className="dark:text-polar-500 text-sm text-gray-500">
+              <li>
+                <span className="font-medium">
+                  {articleReceivers?.free_subscribers} free subscribers
+                </span>
+              </li>
+              <li>
+                <span className="font-medium">
+                  {articleReceivers?.premium_subscribers} premium subscribers
+                </span>
+              </li>
+              <li>
+                <span className="font-medium">
+                  {articleReceivers?.organization_members} organization members
+                </span>
+              </li>
+            </ul>
+          </div>
+          <Button fullWidth>{saveVerb}</Button>
+        </ShadowBoxOnMd>
       </DashboardBody>
     </>
   )
@@ -369,28 +393,11 @@ interface VisibilityPickerProps {
 }
 
 const VisibilityPicker = ({
-  paidSubscribersOnly,
   visibility,
   privateVisibilityAllowed,
   linkVisibilityAllowed,
-  article,
   onChange,
 }: VisibilityPickerProps) => {
-  const visibilityDescription = useMemo(() => {
-    const audience = paidSubscribersOnly
-      ? 'Premium Subscribers'
-      : 'All Subscribers'
-
-    switch (visibility) {
-      case ArticleVisibilityEnum.PRIVATE:
-        return `Only members of ${article.organization.name} can see this post`
-      case ArticleVisibilityEnum.HIDDEN:
-        return `${audience} with the link can see this post`
-      case ArticleVisibilityEnum.PUBLIC:
-        return `${audience} can see this post on the web`
-    }
-  }, [visibility, paidSubscribersOnly])
-
   const handleVisibilityChange = useCallback(
     (visibility: string) => {
       onChange(visibility as ArticleUpdateVisibilityEnum)
@@ -446,7 +453,6 @@ const VisibilityPicker = ({
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      <Banner color="blue">{visibilityDescription}</Banner>
     </div>
   )
 }

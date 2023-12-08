@@ -48,8 +48,8 @@ export interface IntegrationsApiLookupUserOperationRequest {
     lookupUserRequest: LookupUserRequest;
 }
 
-export interface IntegrationsApiStripeConnectReturnRequest {
-    stripeId: string;
+export interface IntegrationsApiStripeConnectRefreshRequest {
+    returnPath?: string;
 }
 
 export interface IntegrationsApiSynchronizeMembersRequest {
@@ -242,8 +242,12 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Stripe Connect Refresh
      */
-    async stripeConnectRefreshRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async stripeConnectRefreshRaw(requestParameters: IntegrationsApiStripeConnectRefreshRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
+
+        if (requestParameters.returnPath !== undefined) {
+            queryParameters['return_path'] = requestParameters.returnPath;
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -262,47 +266,6 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
-    }
-
-    /**
-     * Stripe Connect Refresh
-     */
-    async stripeConnectRefresh(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.stripeConnectRefreshRaw(initOverrides);
-    }
-
-    /**
-     * Stripe Connect Return
-     */
-    async stripeConnectReturnRaw(requestParameters: IntegrationsApiStripeConnectReturnRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.stripeId === null || requestParameters.stripeId === undefined) {
-            throw new runtime.RequiredError('stripeId','Required parameter requestParameters.stripeId was null or undefined when calling stripeConnectReturn.');
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters.stripeId !== undefined) {
-            queryParameters['stripe_id'] = requestParameters.stripeId;
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/integrations/stripe/return`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
         if (this.isJsonMime(response.headers.get('content-type'))) {
             return new runtime.JSONApiResponse<any>(response);
         } else {
@@ -311,10 +274,10 @@ export class IntegrationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Stripe Connect Return
+     * Stripe Connect Refresh
      */
-    async stripeConnectReturn(requestParameters: IntegrationsApiStripeConnectReturnRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.stripeConnectReturnRaw(requestParameters, initOverrides);
+    async stripeConnectRefresh(requestParameters: IntegrationsApiStripeConnectRefreshRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.stripeConnectRefreshRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

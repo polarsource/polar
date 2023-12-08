@@ -19,9 +19,14 @@ import type {
   LoginResponse,
   LogoutResponse,
   UserRead,
+  UserSetAccount,
   UserStripePortalSession,
   UserUpdateSettings,
 } from '../models/index';
+
+export interface UsersApiSetAccountRequest {
+    userSetAccount: UserSetAccount;
+}
 
 export interface UsersApiUpdatePreferencesRequest {
     userUpdateSettings: UserUpdateSettings;
@@ -165,6 +170,47 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async logout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LogoutResponse> {
         const response = await this.logoutRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Set Account
+     */
+    async setAccountRaw(requestParameters: UsersApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
+        if (requestParameters.userSetAccount === null || requestParameters.userSetAccount === undefined) {
+            throw new runtime.RequiredError('userSetAccount','Required parameter requestParameters.userSetAccount was null or undefined when calling setAccount.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/me/account`,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.userSetAccount,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Set Account
+     */
+    async setAccount(requestParameters: UsersApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
+        const response = await this.setAccountRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

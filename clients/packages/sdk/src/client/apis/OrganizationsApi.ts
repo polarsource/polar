@@ -22,6 +22,7 @@ import type {
   Organization,
   OrganizationBadgeSettingsRead,
   OrganizationBadgeSettingsUpdate,
+  OrganizationSetAccount,
   OrganizationStripePortalSession,
   OrganizationUpdate,
   Platforms,
@@ -59,6 +60,11 @@ export interface OrganizationsApiLookupRequest {
 export interface OrganizationsApiSearchRequest {
     platform?: Platforms;
     organizationName?: string;
+}
+
+export interface OrganizationsApiSetAccountRequest {
+    id: string;
+    organizationSetAccount: OrganizationSetAccount;
 }
 
 export interface OrganizationsApiUpdateRequest {
@@ -395,6 +401,53 @@ export class OrganizationsApi extends runtime.BaseAPI {
      */
     async search(requestParameters: OrganizationsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
         const response = await this.searchRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Set organization account
+     * Set organization organization (Public API)
+     */
+    async setAccountRaw(requestParameters: OrganizationsApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling setAccount.');
+        }
+
+        if (requestParameters.organizationSetAccount === null || requestParameters.organizationSetAccount === undefined) {
+            throw new runtime.RequiredError('organizationSetAccount','Required parameter requestParameters.organizationSetAccount was null or undefined when calling setAccount.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/organizations/{id}/account`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.organizationSetAccount,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Set organization account
+     * Set organization organization (Public API)
+     */
+    async setAccount(requestParameters: OrganizationsApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
+        const response = await this.setAccountRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

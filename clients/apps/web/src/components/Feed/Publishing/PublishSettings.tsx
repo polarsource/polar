@@ -47,65 +47,62 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
   return (
     <>
-      <div className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
-        <ShadowBoxOnMd className="flex flex-col gap-y-8">
-          <>
-            {!isPublished && (
-              <PublishingTimePicker
-                publishAt={publishAt}
-                article={article}
-                onChange={onChangePublishAt}
-              />
-            )}
-            <AudiencePicker
-              paidSubscribersOnly={paidSubscribersOnly}
-              onChange={setPaidSubscribersOnly}
+      <ShadowBoxOnMd className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
+        <>
+          {!isPublished && (
+            <PublishingTimePicker
+              publishAt={publishAt}
+              article={article}
+              onChange={onChangePublishAt}
             />
-            {!article.notifications_sent_at && (
-              <>
+          )}
+          <AudiencePicker
+            paidSubscribersOnly={paidSubscribersOnly}
+            onChange={setPaidSubscribersOnly}
+          />
+          {!article.notifications_sent_at && (
+            <>
+              <div className="flex flex-col gap-y-4">
+                <div className="flex flex-col gap-y-2">
+                  <span className="font-medium">Email</span>
+                  <p className="text-polar-500 dark:text-polar-500 text-sm">
+                    Sent to subscribers when a post is published
+                  </p>
+                </div>
                 <div className="flex flex-col gap-y-4">
-                  <div className="flex flex-col gap-y-2">
-                    <span className="font-medium">Email</span>
-                    <p className="text-polar-500 dark:text-polar-500 text-sm">
-                      Sent to subscribers when a post is published
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-y-4">
-                    <div className="flex flex-row items-center gap-x-2">
-                      <Checkbox
-                        checked={sendEmail}
-                        onCheckedChange={(checked) =>
-                          onChangeSendEmail(Boolean(checked))
-                        }
-                      />
-                      <span className="text-sm">
-                        Send post as email to subscribers
-                      </span>
-                    </div>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox
+                      checked={sendEmail}
+                      onCheckedChange={(checked) =>
+                        onChangeSendEmail(Boolean(checked))
+                      }
+                    />
+                    <span className="text-sm">
+                      Send post as email to subscribers
+                    </span>
                   </div>
                 </div>
-              </>
-            )}
-            <div className="flex flex-col gap-y-4">
-              <div className="flex flex-col  gap-2">
-                <span className="font-medium">Slug</span>
-                <p className="text-polar-500 dark:text-polar-500 text-sm">
-                  Change the slug of the article. The slug is used in public
-                  URLs.
-                </p>
               </div>
-
-              <Input
-                type="text"
-                value={slug}
-                onChange={(e) => formatAndSetSlug(e.target.value)}
-                className="font-mono"
-                maxLength={64}
-              />
+            </>
+          )}
+          <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col  gap-2">
+              <span className="font-medium">Slug</span>
+              <p className="text-polar-500 dark:text-polar-500 text-sm">
+                Change the slug of the article. The slug is used in public URLs.
+              </p>
             </div>
-          </>
-        </ShadowBoxOnMd>
-      </div>
+
+            <Input
+              type="text"
+              value={slug}
+              onChange={(e) => formatAndSetSlug(e.target.value)}
+              className="font-mono"
+              maxLength={64}
+            />
+          </div>
+        </>
+      </ShadowBoxOnMd>
       <PublishSummary
         article={{
           ...article,
@@ -123,22 +120,3 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
     </>
   )
 }
-
-/**
- * 
-        <ShadowBoxOnMd className="flex flex-col gap-y-8">
-          <div className="flex flex-row items-start justify-between">
-            <div className="flex flex-col gap-y-1">
-              <h3 className="dark:text-polar-50 font-medium text-gray-950">
-                Archive
-              </h3>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                This action will unpublish the post & permanently remove it
-              </p>
-            </div>
-            <Button variant="destructive" size="sm">
-              Archive
-            </Button>
-          </div>
-        </ShadowBoxOnMd>
- */

@@ -3,11 +3,12 @@
 import { PostEditor } from '@/components/Feed/PostEditor'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import useDebouncedCallback from '@/hooks/utils'
 import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { Button, Tabs } from 'polarkit/components/ui/atoms'
+import { Tabs } from 'polarkit/components/ui/atoms'
 import { useCreateArticle } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -22,7 +23,7 @@ const ClientPage = () => {
   const router = useRouter()
   const create = useCreateArticle()
 
-  const handleContinue = async (openModal?: boolean) => {
+  const handleContinue = async () => {
     if (!org) {
       return
     }
@@ -32,31 +33,14 @@ const ClientPage = () => {
       organization_id: org.id,
     })
 
-    if (openModal) {
-      router.push(
-        `/maintainer/${created.organization.name}/posts/${created.slug}/settings`,
-      )
-    } else {
-      router.push(
-        `/maintainer/${created.organization.name}/posts/${created.slug}`,
-      )
-    }
+    router.replace(
+      `/maintainer/${created.organization.name}/posts/${created.slug}`,
+    )
   }
 
-  useEffect(() => {
-    const savePost = (e: KeyboardEvent) => {
-      if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        handleContinue()
-      }
-    }
-
-    window.addEventListener('keydown', savePost)
-
-    return () => {
-      window.removeEventListener('keydown', savePost)
-    }
-  }, [handleContinue])
+  const continueToPost = useDebouncedCallback(handleContinue, 500, [
+    handleContinue,
+  ])
 
   if (!org) {
     return null
@@ -64,21 +48,12 @@ const ClientPage = () => {
 
   return (
     <Tabs className="flex flex-col" defaultValue="edit">
-      <DashboardTopbar title="Create Post" isFixed useOrgFromURL>
-        <div className="flex flex-row items-center gap-x-2">
-          <Button
-            onClick={() => handleContinue(true)}
-            disabled={article.title.length < 1}
-            loading={create.isPending}
-          >
-            Continue
-          </Button>
-        </div>
-      </DashboardTopbar>
+      <DashboardTopbar title="Create Post" isFixed useOrgFromURL />
       <PostEditor
         title={article.title}
         body={article.body}
         onTitleChange={(title) => setArticle((a) => ({ ...a, title }))}
+        onTitleBlur={continueToPost}
         onBodyChange={(body) => setArticle((a) => ({ ...a, body }))}
         previewProps={{
           article: { ...article, organization: org, byline: org },

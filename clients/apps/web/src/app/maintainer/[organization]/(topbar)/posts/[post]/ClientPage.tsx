@@ -4,16 +4,12 @@ import { PostEditor } from '@/components/Feed/PostEditor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
+import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleUpdate } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
-import {
-  useArticleLookup,
-  useDeleteArticle,
-  useUpdateArticle,
-} from 'polarkit/hooks'
+import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = () => {
@@ -49,10 +45,10 @@ const ClientPage = () => {
     })
   }, [post, update, updateArticle])
 
-  const handlePublish = async () => {
+  const handleContinue = useCallback(async () => {
     await handleSave()
-    router.push(`/maintainer/${organizationName}/posts/${postSlug}/settings`)
-  }
+    router.push(`/maintainer/${organizationName}/posts/${postSlug}/publish`)
+  }, [organizationName, postSlug, handleSave])
 
   useEffect(() => {
     const savePost = (e: KeyboardEvent) => {
@@ -69,18 +65,6 @@ const ClientPage = () => {
     }
   }, [handleSave])
 
-  const archive = useDeleteArticle()
-
-  const handleArchive = async () => {
-    if (!post?.data?.id) {
-      return
-    }
-
-    await archive.mutateAsync({ id: post.data.id })
-
-    router.push(`/maintainer/${post.data.organization.name}/posts`)
-  }
-
   if (!post.data) {
     return (
       <DashboardBody>
@@ -93,39 +77,20 @@ const ClientPage = () => {
     <Tabs className="flex flex-col" defaultValue="edit">
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
-          <Button
-            className="self-start"
-            onClick={handleArchive}
-            variant={'destructive'}
-            loading={archive.isPending}
-          >
-            Archive
-          </Button>
-
           <Link
             href={`/${post.data.organization.name}/posts/${post.data.slug}`}
             target="_blank"
           >
-            <Button variant={'outline'}>
-              <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
+            <Button variant="secondary">
               <span>Read</span>
+              <ArrowUpRightIcon className="ml-2 h-3 w-3" />
             </Button>
           </Link>
-
-          <Button
-            className="self-start"
-            onClick={handleSave}
-            variant={'secondary'}
-            loading={update.isPending}
-          >
-            Save
-          </Button>
-          <Button className="self-start" onClick={handlePublish}>
-            {post.data.published_at ? 'Settings' : 'Publish'}
-          </Button>
+          <Button onClick={handleContinue}>Continue</Button>
         </div>
       </DashboardTopbar>
       <PostEditor
+        articleId={post.data.id}
         title={updateArticle.title}
         body={updateArticle.body}
         onTitleChange={(title) => setUpdateArticle((a) => ({ ...a, title }))}

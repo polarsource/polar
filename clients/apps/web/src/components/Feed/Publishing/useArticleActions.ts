@@ -1,3 +1,4 @@
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { ButtonProps } from 'polarkit/components/ui/button'
@@ -16,6 +17,7 @@ export const useArticleActions = (
   isDraft: boolean,
 ): ArticleAction[] => {
   const [isPublishing, setIsPublishing] = useState(false)
+  const { org } = useCurrentOrgAndRepoFromURL()
   const update = useUpdateArticle()
   const router = useRouter()
 
@@ -72,5 +74,15 @@ export const useArticleActions = (
     }
   }, [articleUpdate, handlePublish, isDraft, isPublishing])
 
-  return [publishAction]
+  const cancelAction: ArticleAction = useMemo(
+    () => ({
+      text: 'Cancel',
+      button: { variant: 'ghost' },
+      onClick: () =>
+        router.replace(`/maintainer/${org?.name}/posts/${articleUpdate.slug}`),
+    }),
+    [router, org, articleUpdate],
+  )
+
+  return [publishAction, cancelAction]
 }

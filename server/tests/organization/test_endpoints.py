@@ -5,6 +5,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.config import settings
+from polar.kit.utils import utc_now
 from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
@@ -234,7 +235,7 @@ async def test_get_organization_deleted(
     client: AsyncClient,
 ) -> None:
     # soft-delete the organization
-    organization.deleted_at = datetime.utcnow()
+    organization.deleted_at = utc_now()
     await organization.save(session)
 
     response = await client.get(

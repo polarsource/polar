@@ -1,4 +1,4 @@
-FROM docker.io/python:3.11.3-bullseye
+FROM docker.io/python:3.12.0-bullseye
 
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"

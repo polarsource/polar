@@ -1,4 +1,5 @@
 import stripe
+import structlog
 from arq import Retry
 from pydantic import parse_obj_as
 
@@ -37,6 +38,8 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import stripe as stripe_service
 
+log = structlog.get_logger()
+
 
 class StripeTaskError(PolarError):
     ...
@@ -71,12 +74,34 @@ async def payment_intent_succeeded(
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             payment_intent = event["data"]["object"]
+            payload = parse_obj_as(PaymentIntentSuccessWebhook, payment_intent)
+
+            # payments for pay_upfront (pi has metadata)
             if payment_intent.metadata.get("type") == ProductType.pledge:
-                payload = parse_obj_as(PaymentIntentSuccessWebhook, payment_intent)
                 await pledge_service.handle_payment_intent_success(
                     session=session,
                     payload=payload,
                 )
+                return
+
+            # payment for pay_on_completion
+            # metadata is on the invoice, not the payment_intent
+            if payload.invoice:
+                invoice = stripe_service.get_invoice(payload.invoice)
+                if (
+                    invoice.metadata
+                    and invoice.metadata.get("type") == ProductType.pledge
+                ):
+                    await pledge_service.handle_payment_intent_success(
+                        session=session,
+                        payload=payload,
+                    )
+                    return
+
+            log.error(
+                "stripe.webhook.payment_intent.succeeded.not_handled",
+                pi=payload.id,
+            )
 
 
 @task("stripe.webhook.charge.succeeded")

@@ -40,12 +40,12 @@ class TestOrganizationPostInstall:
             properties={"paid_articles": False},
             organization=organization,
         )
-        create_articles_benefits_mock = mocker.patch.object(
+        get_or_create_articles_benefits_mock = mocker.patch.object(
             subscription_benefit_service,
-            "create_articles_benefits",
-            spec=SubscriptionBenefitService.create_articles_benefits,
+            "get_or_create_articles_benefits",
+            spec=SubscriptionBenefitService.get_or_create_articles_benefits,
         )
-        create_articles_benefits_mock.return_value = (
+        get_or_create_articles_benefits_mock.return_value = (
             subscription_benefit,
             subscription_benefit,
         )
@@ -59,5 +59,5 @@ class TestOrganizationPostInstall:
             job_context, organization.id, polar_worker_context
         )
 
-        create_articles_benefits_mock.assert_called_once()
+        get_or_create_articles_benefits_mock.assert_called_once()
         create_free_mock.assert_called_once()

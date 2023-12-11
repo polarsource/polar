@@ -210,7 +210,7 @@ class SubscriptionBenefitService(
 
         return subscription_benefit
 
-    async def create_articles_benefits(
+    async def get_or_create_articles_benefits(
         self,
         session: AsyncSession,
         organization: Organization | None = None,
@@ -236,6 +236,8 @@ class SubscriptionBenefitService(
             else:
                 public_articles = benefit
 
+        should_commit = False
+
         if public_articles is None:
             public_articles = SubscriptionBenefitArticles(
                 description="Public posts",
@@ -247,6 +249,7 @@ class SubscriptionBenefitService(
                 repository=repository,
             )
             session.add(public_articles)
+            should_commit = True
 
         if premium_articles is None:
             premium_articles = SubscriptionBenefitArticles(
@@ -259,8 +262,10 @@ class SubscriptionBenefitService(
                 repository=repository,
             )
             session.add(premium_articles)
+            should_commit = True
 
-        await session.commit()
+        if should_commit:
+            await session.commit()
 
         return (public_articles, premium_articles)
 

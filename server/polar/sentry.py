@@ -64,9 +64,18 @@ class PostHogIntegration(Integration):
                     posthog = integration.posthog
 
                     posthog_distinct_id = event["tags"][POSTHOG_ID_TAG]
+
+                    # Posthog and Module("Posthog") are not compatible types in Python 3.12 / Mypy 1.7
+                    # Adding if/else here as a workaround
+                    host = (
+                        posthog.host
+                        if posthog and isinstance(posthog, Posthog)
+                        else global_posthog.host
+                    )
+
                     event["tags"][
                         "PostHog URL"
-                    ] = f"{posthog.host or DEFAULT_HOST}/person/{posthog_distinct_id}"
+                    ] = f"{host or DEFAULT_HOST}/person/{posthog_distinct_id}"
 
                     properties = {
                         "$sentry_event_id": event["event_id"],
@@ -89,7 +98,14 @@ class PostHogIntegration(Integration):
                                 f"?project={project_id}&query={event['event_id']}"
                             )
 
-                    posthog.capture(posthog_distinct_id, "$exception", properties)
+                    # Posthog and Module("Posthog") are not compatible types in Python 3.12 / Mypy 1.7
+                    # Adding if/else here as a workaround
+                    if posthog and isinstance(posthog, Posthog):
+                        posthog.capture(posthog_distinct_id, "$exception", properties)
+                    else:
+                        global_posthog.capture(
+                            posthog_distinct_id, "$exception", properties
+                        )
 
             return event
 

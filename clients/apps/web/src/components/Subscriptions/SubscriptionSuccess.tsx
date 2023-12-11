@@ -17,29 +17,20 @@ import { Button } from 'polarkit/components/ui/button'
 import { useCallback, useState } from 'react'
 import SubscriptionTierCelebration from './SubscriptionTierCelebration'
 
-const mockedBenefits = [
-  {
-    id: '123',
-    summary: 'Badge on Profile',
-  },
-  {
-    id: '456',
-    summary: 'Small Logo in README',
-  },
-  {
-    id: '789',
-    summary: 'Discord Support Channel',
-  },
-]
-
 export const SubscriptionSuccess = (props: {
   subscribeSession: SubscribeSession
 }) => {
-  const { subscribeSession } = props
+  const {
+    subscribeSession: {
+      customer_email: email,
+      organization_name: organizationName,
+      repository_name: repositoryName,
+      subscription_tier: subscriptionTier,
+    },
+  } = props
   const router = useRouter()
   const { currentUser } = useAuth()
 
-  const email = subscribeSession.customer_email
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)
   const onEmailSignin = useCallback(async () => {
     if (!email) {
@@ -63,13 +54,10 @@ export const SubscriptionSuccess = (props: {
     <>
       <div className="mx-auto flex flex-col gap-16 p-4 md:mt-8 md:w-[768px] md:p-0">
         <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <SubscriptionTierCelebration
-            type={subscribeSession.subscription_tier.type}
-          />
+          <SubscriptionTierCelebration type={subscriptionTier.type} />
           <p className="text-muted-foreground">Thank you!</p>
           <h1 className="text-3xl">
-            You&apos;re now a {subscribeSession.subscription_tier.name}{' '}
-            subscriber
+            You&apos;re now a {subscriptionTier.name} subscriber
           </h1>
         </div>
 
@@ -77,24 +65,21 @@ export const SubscriptionSuccess = (props: {
           <Card className="w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="text-xl font-medium">
-                Thank you for supporting{' '}
-                {subscribeSession.organization_name ||
-                  subscribeSession.repository_name}
-                !
+                Thank you for supporting {organizationName || repositoryName}!
               </CardTitle>
               <p className="text-muted-foreground text-sm">
                 You&apos;re now eligible for the benefits in the{' '}
-                {subscribeSession.subscription_tier.name} tier.
+                {subscriptionTier.name} tier.
               </p>
             </CardHeader>
             <CardContent className="flex flex-col gap-y-1">
-              {mockedBenefits.map((benefit) => (
+              {subscriptionTier.benefits.map((benefit) => (
                 <div
                   key={benefit.id}
                   className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
                 >
                   <CheckOutlined className="h-4 w-4" fontSize="small" />
-                  <span className="ml-2 text-sm">{benefit.summary}</span>
+                  <span className="ml-2 text-sm">{benefit.description}</span>
                 </div>
               ))}
             </CardContent>

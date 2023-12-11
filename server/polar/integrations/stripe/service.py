@@ -188,13 +188,13 @@ class StripeService:
                 return (b.currency, b.amount)
         return (cast(str, account.default_currency), 0)
 
-    def create_account_link(self, stripe_id: str) -> stripe_lib.AccountLink:
+    def create_account_link(
+        self, stripe_id: str, return_path: str
+    ) -> stripe_lib.AccountLink:
         refresh_url = settings.generate_external_url(
-            f"/integrations/stripe/refresh?stripe_id={stripe_id}"
+            f"/integrations/stripe/refresh?return_path={return_path}"
         )
-        return_url = settings.generate_external_url(
-            f"/integrations/stripe/return?stripe_id={stripe_id}"
-        )
+        return_url = settings.generate_frontend_url(return_path)
         return stripe_lib.AccountLink.create(
             account=stripe_id,
             refresh_url=refresh_url,

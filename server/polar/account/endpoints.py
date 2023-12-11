@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
@@ -60,6 +60,7 @@ async def get(
 async def onboarding_link(
     id: UUID,
     auth: UserRequiredAuth,
+    return_path: str = Query(...),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> AccountLink:
@@ -73,7 +74,7 @@ async def onboarding_link(
     if acc.account_type == AccountType.open_collective:
         raise ResourceNotFound()
 
-    link = await account_service.onboarding_link(acc)
+    link = await account_service.onboarding_link(acc, return_path)
     if not link:
         raise InternalServerError("Failed to create link")
 

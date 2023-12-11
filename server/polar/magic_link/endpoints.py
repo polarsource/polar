@@ -16,7 +16,9 @@ async def request_magic_link(
     magic_link_request: MagicLinkRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    magic_link, token = await magic_link_service.request(session, magic_link_request)
+    magic_link, token = await magic_link_service.request(
+        session, magic_link_request, source="user_login"
+    )
     await magic_link_service.send(magic_link, token)
 
 

@@ -30,6 +30,8 @@ class MagicLink(RecordModel):
         nullable=True,
     )
 
+    source: Mapped[str] = mapped_column(String, nullable=True)
+
     @declared_attr
     def user(cls) -> Mapped[User | None]:
         return relationship(User)

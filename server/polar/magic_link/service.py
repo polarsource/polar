@@ -1,3 +1,6 @@
+import datetime
+from math import ceil
+
 from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
@@ -13,7 +16,7 @@ from polar.models import MagicLink, User
 from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
 
-from .schemas import MagicLinkCreate, MagicLinkRequest, MagicLinkUpdate
+from .schemas import MagicLinkCreate, MagicLinkRequest, MagicLinkSource, MagicLinkUpdate
 
 
 class InvalidMagicLink(PolarError):
@@ -32,10 +35,16 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
             token_hash=create_schema.token_hash,
             user_email=create_schema.user_email,
             user_id=create_schema.user_id,
+            expires_at=create_schema.expires_at,
         ).save(session, autocommit=autocommit)
 
     async def request(
-        self, session: AsyncSession, magic_link_request: MagicLinkRequest
+        self,
+        session: AsyncSession,
+        magic_link_request: MagicLinkRequest,
+        *,
+        source: MagicLinkSource,
+        expires_at: datetime.datetime | None = None,
     ) -> tuple[MagicLink, str]:
         user = await user_service.get_by_email(session, magic_link_request.email)
 
@@ -44,6 +53,8 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
             token_hash=token_hash,
             user_email=magic_link_request.email,
             user_id=user.id if user is not None else None,
+            source=source,
+            expires_at=expires_at,
         )
         magic_link = await self.create(session, magic_link_create)
 
@@ -53,11 +64,14 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         email_renderer = get_email_renderer({"magic_link": "polar.magic_link"})
         email_sender = get_email_sender()
 
+        delta = magic_link.expires_at - utc_now()
+        token_lifetime_minutes = int(ceil(delta.seconds / 60))
+
         subject, body = email_renderer.render_from_template(
             "Sign in to Polar",
             "magic_link/magic_link.html",
             {
-                "token_lifetime_minutes": int(settings.MAGIC_LINK_TTL_SECONDS / 60),
+                "token_lifetime_minutes": token_lifetime_minutes,
                 "url": "{base_url}/login/magic-link/authenticate?token={token}".format(
                     base_url=settings.FRONTEND_BASE_URL, token=token
                 ),

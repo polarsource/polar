@@ -1,12 +1,17 @@
-import urllib.request
+from datetime import timedelta
 from uuid import UUID
 
+import requests
 import structlog
+from pydantic import EmailStr
 
 from polar.auth.service import AuthService
 from polar.config import settings
 from polar.email.sender import get_email_sender
+from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.magic_link.schemas import MagicLinkRequest
+from polar.magic_link.service import magic_link as magic_link_service
 from polar.models.article import Article
 from polar.user.service import user as user_service
 from polar.worker import (
@@ -45,18 +50,30 @@ async def articles_send_to_user(
 
         (jwt, _) = AuthService.generate_token(user)
 
-        # Authenticating to the renderer as the user we're sending the email to
-        req = urllib.request.Request(
-            f"{settings.FRONTEND_BASE_URL}/email/article/{article.id}",
+        _, magic_link_token = await magic_link_service.request(
+            session,
+            MagicLinkRequest(
+                email=EmailStr(user.email),
+            ),
+            source="article_links",
+            expires_at=utc_now() + timedelta(hours=24),
         )
-        req.add_header("Cookie", f"polar_session={jwt};")
 
-        try:
-            res = urllib.request.urlopen(req)
-            rendered = res.read()
-        except Exception as error:
-            log.error(f"failed to get rendered article: {error}")
+        req = requests.post(
+            f"{settings.FRONTEND_BASE_URL}/email/article/{article.id}",
+            json={
+                # Add pre-authenticated tokens to the end of all links in the email
+                "inject_magic_link_token": magic_link_token,
+            },
+            # Authenticating to the renderer as the user we're sending the email to
+            headers={"Cookie": f"polar_session={jwt};"},
+        )
+
+        if req.status_code != 200:
+            log.error(f"failed to get rendered article: code={req.status_code}")
             return None
+
+        rendered = req.text
 
         from_name = ""
         if article.byline == Article.Byline.organization:
@@ -69,7 +86,7 @@ async def articles_send_to_user(
         email_sender.send_to_user(
             to_email_addr=user.email,
             subject=subject,
-            html_content=rendered.decode("utf8"),
+            html_content=rendered,  # .decode("utf8"),
             from_name=from_name,
             from_email_addr=f"{article.organization.name}@posts.polar.sh",
         )

@@ -251,7 +251,7 @@ class GitHubIssueReferencesService:
                     "github.sync_issue_references.etag_cache_miss", issue_id=issue.id
                 )
 
-                issue.github_timeline_fetched_at = utc_now()
+                issue.github_timeline_fetched_at = utils.utc_now()
                 issue.github_timeline_etag = res.headers.get("etag", None)
                 await issue.save(session)
 

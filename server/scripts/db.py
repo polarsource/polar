@@ -35,7 +35,7 @@ def _recreate() -> None:
 
 @cli.command()
 def upgrade(
-    revision: str = typer.Option("head", help="Which revision to upgrade to")
+    revision: str = typer.Option("head", help="Which revision to upgrade to"),
 ) -> None:
     _upgrade(revision)
 

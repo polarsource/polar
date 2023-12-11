@@ -29,7 +29,7 @@ export const AudiencePicker = ({
       <div className="flex flex-col gap-y-2">
         <span className="font-medium">Audience</span>
         <p className="text-polar-500 dark:text-polar-500 text-sm">
-          Pick the audience for this post
+          Pick which audience you want to publish this post to
         </p>
       </div>
       <RadioGroup value={audience} onValueChange={handleAudienceChange}>

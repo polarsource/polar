@@ -1,24 +1,25 @@
 import { Article } from '@polar-sh/sdk'
-import { Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { Label } from 'polarkit/components/ui/label'
 import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { DateTimePicker } from './DateTimePicker'
 
 export interface PublishingPickerProps {
   publishAt: Date | undefined
   article: Article
   onChange: (v: Date | undefined) => void
-  onReset: () => void
 }
 
 export const PublishingTimePicker = ({
   publishAt,
   article,
   onChange,
-  onReset,
 }: PublishingPickerProps) => {
-  const [publish, setPublish] = useState('publish-now')
+  const publish = useMemo(
+    () => (!!publishAt ? 'schedule' : 'publish-now'),
+    [publishAt],
+  )
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -26,7 +27,12 @@ export const PublishingTimePicker = ({
         <span className="font-medium">Publishing</span>
       </div>
 
-      <RadioGroup value={publish} onValueChange={(value) => setPublish(value)}>
+      <RadioGroup
+        value={publish}
+        onValueChange={(value) =>
+          onChange(value === 'publish-now' ? undefined : new Date())
+        }
+      >
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="publish-now" id="publish-now" />
           <Label className={twMerge('capitalize')} htmlFor="publish-now">
@@ -50,67 +56,7 @@ export const PublishingTimePicker = ({
               canSelectPast={true}
               onChange={onChange}
             />
-            {publishAt ? (
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={onReset}
-                  variant={'ghost'}
-                  className="m-0 h-auto p-0"
-                >
-                  Reset
-                </Button>
-
-                <Button
-                  onClick={() => onChange(new Date())}
-                  variant={'outline'}
-                  className="m-0 h-auto "
-                >
-                  Now
-                </Button>
-              </div>
-            ) : null}
           </div>
-          {publishAt ? (
-            <div>
-              <span className="text-sm font-medium">
-                {publishAt < new Date() ? 'Published' : 'Publishing'}{' '}
-                <PolarTimeAgo date={publishAt} />
-              </span>
-              <div className="grid w-fit grid-cols-2 text-sm">
-                <div className="font-medium">Your time zone</div>
-                <div className="text-gray-500">
-                  {publishAt.toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}{' '}
-                  at{' '}
-                  {publishAt.toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZoneName: 'short',
-                  })}
-                </div>
-
-                <div className="font-medium">UTC</div>
-                <div className="text-gray-500">
-                  {publishAt.toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    timeZone: 'UTC',
-                  })}{' '}
-                  at{' '}
-                  {publishAt.toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZoneName: 'short',
-                    timeZone: 'UTC',
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : null}
         </div>
       )}
     </div>

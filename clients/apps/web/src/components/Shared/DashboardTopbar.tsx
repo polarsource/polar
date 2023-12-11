@@ -22,7 +22,9 @@ import {
 
 export type LogoPosition = 'center' | 'left'
 
-const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
+export const SubNav = (props: {
+  items: (SubRoute & { active: boolean })[]
+}) => {
   const current = props.items.find((i) => i.active)
 
   return (

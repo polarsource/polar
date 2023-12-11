@@ -168,21 +168,16 @@ const twConfig = {
   },
 }
 
-export async function GET(
+const renderArticle = async (
   req: NextRequest,
-  {
-    params,
-  }: {
-    params: { id: string }
-  },
-): Promise<NextResponse> {
-  const { searchParams } = new URL(req.url)
-
+  articleId: string,
+  injectMagicLinkToken?: string,
+): Promise<NextResponse> => {
   let article: Article
 
   try {
     article = await getServerSideAPI().articles.get({
-      id: params.id,
+      id: articleId,
     })
     if (!article) {
       notFound()
@@ -199,7 +194,6 @@ export async function GET(
 
   const preAuthLink = (url: string): string => {
     const u = new URL(url)
-    const injectMagicLinkToken = searchParams.get('inject_magic_link_token')
     if (injectMagicLinkToken) {
       u.searchParams.set('magic_link_token', injectMagicLinkToken)
     }
@@ -308,4 +302,32 @@ export async function GET(
     status: 200,
     headers: { 'Content-Type': 'text/html' },
   })
+}
+
+export async function GET(
+  req: NextRequest,
+  {
+    params,
+  }: {
+    params: { id: string }
+  },
+): Promise<NextResponse> {
+  return renderArticle(req, params.id)
+}
+
+export async function POST(
+  req: NextRequest,
+  {
+    params,
+  }: {
+    params: { id: string }
+  },
+): Promise<NextResponse> {
+  const input = await req.json()
+
+  const injectMagicLinkToken = input
+    ? input['inject_magic_link_token']
+    : undefined
+
+  return renderArticle(req, params.id, injectMagicLinkToken)
 }

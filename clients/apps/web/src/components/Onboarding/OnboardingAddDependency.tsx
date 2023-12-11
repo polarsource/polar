@@ -25,6 +25,7 @@ const OnboardingAddDependency = () => {
     avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=200&v=4',
     platform: Platforms.GITHUB,
     name: 'demo',
+    is_personal: false,
     pledge_minimum_amount: 2000,
     pledge_badge_show_amount: true,
     is_teams_enabled: false,

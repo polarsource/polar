@@ -55,7 +55,7 @@ export default function ClientPage() {
       {org && <AccountBanner organization={org} />}
       <ShadowBoxOnMd>
         <Tabs
-          defaultValue={params.get('type') ?? 'transactions'}
+          defaultValue={params?.get('type') ?? 'transactions'}
           onValueChange={setActiveTab}
         >
           <div className="flex flex-col gap-y-6 md:flex-row md:items-center md:justify-between">
@@ -64,7 +64,7 @@ export default function ClientPage() {
                 {params?.get('type') ?? 'Transactions'}
               </h2>
               <p className="dark:text-polar-500 text-sm text-gray-500">
-                {params.get('type') === 'payouts'
+                {params?.get('type') === 'payouts'
                   ? 'Made from your transfer account to your bank account'
                   : 'Made from Polar to your connected transfer account'}
               </p>

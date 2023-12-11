@@ -71,6 +71,7 @@ const EmbedIssue = (props: { src: string }) => {
         platform: 'github',
         name: m[1],
         avatar_url: '',
+        is_personal: false,
         pledge_minimum_amount: 0,
         pledge_badge_show_amount: false,
         is_teams_enabled: false,

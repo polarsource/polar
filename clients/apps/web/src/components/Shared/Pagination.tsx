@@ -31,24 +31,26 @@ export default Pagination
 export const usePagination = () => {
   const router = useRouter()
   const search = useSearchParams()
-  const initialPage = useMemo(() => Number(search.get('page') || '1'), [])
+  const initialPage = useMemo(() => Number(search?.get('page')) || 1, [search])
   const [currentPage, setCurrentPage] = useState<number>(initialPage)
 
   useEffect(() => {
-    if (!search.has('page')) {
+    if (!search?.has('page')) {
       setCurrentPage(1)
     }
   }, [search])
 
   const handleSetCurrentPage = useCallback(
     (page: number) => {
-      setCurrentPage(page)
-      const params = new URLSearchParams(search)
-      params.set('page', page.toString())
+      if (search) {
+        setCurrentPage(page)
+        const params = new URLSearchParams(search)
+        params.set('page', page.toString())
 
-      const url = new URL(window.location.href)
-      const newPath = `${url.pathname}?${params.toString()}`
-      router.replace(newPath, { scroll: false })
+        const url = new URL(window.location.href)
+        const newPath = `${url.pathname}?${params.toString()}`
+        router.replace(newPath, { scroll: false })
+      }
     },
     [router, search],
   )

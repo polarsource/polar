@@ -22,12 +22,15 @@ import {
   useDeleteArticle,
   useUpdateArticle,
 } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const { post: postSlug, organization: organizationName } = useParams()
-  const post = useArticleLookup(organizationName as string, postSlug as string)
+  const params = useParams<{
+    post: string
+    organization: string
+  }>()
+  const post = useArticleLookup(params?.organization, params?.post)
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -40,12 +43,11 @@ const ClientPage = () => {
   })
 
   useEffect(() => {
-    if (searchParams.get('settings')) {
+    if (searchParams?.get('settings') && pathname) {
       showModal()
-
       router.replace(pathname)
     }
-  }, [])
+  }, [showModal, searchParams, pathname, router])
 
   useEffect(() => {
     setUpdateArticle((a) => ({
@@ -57,7 +59,7 @@ const ClientPage = () => {
 
   const update = useUpdateArticle()
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!post?.data?.id) {
       return
     }
@@ -66,7 +68,7 @@ const ClientPage = () => {
       id: post.data.id,
       articleUpdate: updateArticle,
     })
-  }
+  }, [post, update, updateArticle])
 
   const handlePublish = async () => {
     await handleSave()

@@ -287,7 +287,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
       <Modal
         isShown={importSubscribersIsShow}
         hide={hideImportSubscribers}
-        modalContent={<ImportSubscribersModal />}
+        modalContent={<ImportSubscribersModal hide={hideImportSubscribers} />}
       />
     </DashboardBody>
   )

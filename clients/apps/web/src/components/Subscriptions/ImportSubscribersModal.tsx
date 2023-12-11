@@ -1,6 +1,7 @@
 import { Platforms } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
+import { Banner } from 'polarkit/components/ui/molecules'
 import { useRef, useState } from 'react'
 import { ModalHeader } from '../Modal'
 
@@ -9,24 +10,28 @@ const ImportSubscribersModal = ({ hide }: { hide: () => void }) => {
 
   const [selectedFile, setFile] = useState<File>()
 
+  const [addedSubscribers, setAddedSubscribers] = useState<number>()
+  const [isLoading, setIsLoading] = useState(false)
+
   const onUpload = async () => {
     if (!selectedFile) {
       return
     }
 
-    // const formData = new FormData()
+    setIsLoading(true)
 
-    // formData.append("upload.csv", )
-
-    console.log('doing upload', selectedFile)
-
-    const res = await api.subscriptions.subscriptionsImport({
-      organizationName: 'zegl',
-      platform: Platforms.GITHUB,
-      file: selectedFile,
-    })
-
-    console.log(res)
+    await api.subscriptions
+      .subscriptionsImport({
+        organizationName: 'zegl',
+        platform: Platforms.GITHUB,
+        file: selectedFile,
+      })
+      .then((res) => {
+        setAddedSubscribers(res.count)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
   }
 
   return (
@@ -47,7 +52,7 @@ const ImportSubscribersModal = ({ hide }: { hide: () => void }) => {
           </div>
           <input
             type="file"
-            className=""
+            className="hidden"
             ref={fileInputRef}
             accept=".csv"
             onChange={(e) => {
@@ -59,22 +64,34 @@ const ImportSubscribersModal = ({ hide }: { hide: () => void }) => {
             }}
           />
 
-          <Button
-            onClick={() => {
-              if (fileInputRef.current) {
-                fileInputRef.current.click()
-              }
-            }}
-          >
-            Select file
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              disabled={isLoading}
+              variant={'secondary'}
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.click()
+                }
+              }}
+            >
+              Select file
+            </Button>
 
-          <Button
-            disabled={selectedFile === undefined}
-            onClick={() => onUpload()}
-          >
-            Import {selectedFile ? selectedFile.name : null}
-          </Button>
+            <Button
+              disabled={selectedFile === undefined}
+              loading={isLoading}
+              onClick={() => onUpload()}
+            >
+              Import {selectedFile ? selectedFile.name : null}
+            </Button>
+          </div>
+
+          {addedSubscribers !== undefined ? (
+            <Banner color="blue">
+              Imported {addedSubscribers}{' '}
+              {addedSubscribers === 1 ? 'subscriber' : 'subscribers'}
+            </Banner>
+          ) : null}
         </div>
       </div>
     </>

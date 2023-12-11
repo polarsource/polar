@@ -48,9 +48,11 @@ export const OrganizationPublicPageNav = ({
 
   const handleTabChange = useCallback(
     (value: string) => () => {
-      const params = new URLSearchParams(search)
-      params.set('tab', value)
-      router.push(`${basePath ?? pathname}?${params.toString()}`)
+      if (search) {
+        const params = new URLSearchParams(search)
+        params.set('tab', value)
+        router.push(`${basePath ?? pathname}?${params.toString()}`)
+      }
     },
     [search, router, pathname, basePath],
   )

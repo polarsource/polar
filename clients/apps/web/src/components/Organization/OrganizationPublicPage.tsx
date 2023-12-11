@@ -45,11 +45,11 @@ const OrganizationPublicPage = ({
   const [tab, setTab] = useState<string>(onFirstRenderTab ?? 'overview')
   const searchParams = useSearchParams()
   useEffect(() => {
-    const searchTab = searchParams.get('tab')
+    const searchTab = searchParams?.get('tab')
     if (searchTab && searchTab !== tab) {
       setTab(searchTab)
     }
-  }, [searchParams])
+  }, [searchParams, tab])
 
   return (
     <>

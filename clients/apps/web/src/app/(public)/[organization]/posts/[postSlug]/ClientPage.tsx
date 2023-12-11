@@ -51,17 +51,17 @@ export default function Page({
 
     // record page view
     api.articles.viewed({ id: post.id })
-  }, [])
+  }, [post])
 
   // externally controlled tabs, react to changes in searchParams and set the tab value
   const [tab, setTab] = useState(onFirstRenderTab ?? 'overview')
   const searchParams = useSearchParams()
   useEffect(() => {
-    const searchTab = searchParams.get('tab')
+    const searchTab = searchParams?.get('tab')
     if (searchTab && searchTab !== tab) {
       setTab(searchTab)
     }
-  }, [searchParams])
+  }, [searchParams, tab])
 
   return (
     <Tabs

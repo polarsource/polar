@@ -46,6 +46,7 @@ export const org: Organization = {
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
   pledge_minimum_amount: 2000,
   pretty_name: 'Pydantic',
+  is_personal: false,
   pledge_badge_show_amount: true,
   is_teams_enabled: false,
 }

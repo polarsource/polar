@@ -90,7 +90,7 @@ const ClientPage = () => {
         </div>
       </DashboardTopbar>
       <PostEditor
-        articleId={post.data.id}
+        article={post.data}
         title={updateArticle.title}
         body={updateArticle.body}
         onTitleChange={(title) => setUpdateArticle((a) => ({ ...a, title }))}
@@ -102,6 +102,7 @@ const ClientPage = () => {
             body: updateArticle.body,
           },
         }}
+        autoFocus="body"
       />
     </Tabs>
   )

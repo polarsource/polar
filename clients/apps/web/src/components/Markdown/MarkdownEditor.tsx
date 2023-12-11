@@ -16,12 +16,14 @@ interface MarkdownEditorProps {
   className?: string
   value: string
   onChange?: (value: string) => void
+  autoFocus?: boolean
 }
 
 export const MarkdownEditor = ({
   value,
   className,
   onChange,
+  autoFocus,
 }: MarkdownEditorProps) => {
   const ref = useRef<HTMLTextAreaElement>(null)
   const insertTextAtCursor = useCallback(
@@ -140,6 +142,7 @@ export const MarkdownEditor = ({
       onDrag={handleDrag}
       onDragOver={allow}
       onPaste={handlePaste}
+      autoFocus={autoFocus}
     />
   )
 }

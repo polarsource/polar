@@ -1,5 +1,10 @@
 import { useAuth } from '@/hooks'
-import { ChevronDownIcon, EnvelopeIcon } from '@heroicons/react/24/outline'
+import {
+  ChevronDownIcon,
+  EnvelopeIcon,
+  EyeIcon,
+} from '@heroicons/react/24/outline'
+import { Article, ArticleUpdateVisibilityEnum } from '@polar-sh/sdk'
 import { DropdownMenuItemIndicator } from '@radix-ui/react-dropdown-menu'
 import {
   Button,
@@ -15,23 +20,34 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useSendArticlePreview } from 'polarkit/hooks'
+import { Label } from 'polarkit/components/ui/label'
+import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
+import { useSendArticlePreview, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
 interface PostToolbarProps {
-  articleId?: string
+  article?: Article
   previewAs: string
   onPreviewAsChange: (value: string) => void
 }
 
 export const PostToolbar = ({
-  articleId,
+  article,
   previewAs,
   onPreviewAsChange,
 }: PostToolbarProps) => {
-  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+  const {
+    isShown: isPreviewEmailModalShown,
+    hide: hidePreviewEmailModal,
+    show: showPreviewEmailModal,
+  } = useModal()
+  const {
+    isShown: isVisibilityModalShown,
+    hide: hideVisibilityModal,
+    show: showVisibilityModal,
+  } = useModal()
 
   return (
     <div className="dark:border-polar-800 dark:bg-polar-900 sticky top-0 z-20 flex w-full flex-col border-b border-gray-100 bg-white">
@@ -52,26 +68,26 @@ export const PostToolbar = ({
           value="preview"
           className="absolute right-4 mt-0 flex flex-row items-center gap-x-2 sm:right-6 md:right-8"
         >
-          {articleId && (
+          {article && (
             <>
+              {!article?.published_at && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="px-1.5"
+                  onClick={showVisibilityModal}
+                >
+                  <EyeIcon className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
                 className="px-1.5"
-                onClick={showModal}
+                onClick={showPreviewEmailModal}
               >
                 <EnvelopeIcon className="h-4 w-4" />
               </Button>
-              <Modal
-                isShown={isModalShown}
-                hide={hideModal}
-                modalContent={
-                  <PreviewEmailModal
-                    articleId={articleId}
-                    hideModal={hideModal}
-                  />
-                }
-              />
             </>
           )}
           <DropdownMenu>
@@ -96,7 +112,33 @@ export const PostToolbar = ({
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>{' '}
+          {article && (
+            <>
+              <Modal
+                isShown={isPreviewEmailModalShown}
+                hide={hidePreviewEmailModal}
+                modalContent={
+                  <PreviewEmailModal
+                    articleId={article.id}
+                    hideModal={hidePreviewEmailModal}
+                  />
+                }
+              />
+              {!article?.published_at && (
+                <Modal
+                  isShown={isVisibilityModalShown}
+                  hide={hideVisibilityModal}
+                  modalContent={
+                    <VisibilityModalContent
+                      article={article}
+                      hideModal={hideVisibilityModal}
+                    />
+                  }
+                />
+              )}
+            </>
+          )}
         </TabsContent>
       </div>
     </div>
@@ -135,8 +177,9 @@ const PreviewEmailModal = ({
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
         <h2 className="text-lg">Send Preview Email</h2>
-        <p className="dark:text-polar-400 mt-2 text-sm text-gray-400">
-          Sends a preview of the post to the email address below
+        <p className="dark:text-polar-400 mt-2 w-2/3 text-sm text-gray-400">
+          Sends a preview of the post to an email which belongs to a member
+          included in the selected visibility scope.
         </p>
       </div>
       <div className="flex flex-col gap-y-6">
@@ -148,6 +191,80 @@ const PreviewEmailModal = ({
             onClick={handleSendPreviewEmail}
           >
             Send
+          </Button>
+          <Button variant="ghost" className="self-start" onClick={hideModal}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface VisibilityModalContentProps {
+  article: Article
+  hideModal: () => void
+}
+
+const VisibilityModalContent = ({
+  article,
+  hideModal,
+}: VisibilityModalContentProps) => {
+  const [visibility, setVisibility] = useState<ArticleUpdateVisibilityEnum>(
+    article.visibility,
+  )
+  const updateArticle = useUpdateArticle()
+
+  const handleUpdateVisibility = useCallback(async () => {
+    await updateArticle.mutateAsync({
+      id: article.id,
+      articleUpdate: {
+        visibility: visibility as ArticleUpdateVisibilityEnum,
+      },
+    })
+
+    hideModal()
+  }, [updateArticle, article, visibility])
+
+  return (
+    <div className="flex flex-col gap-y-6 px-8 py-10">
+      <div>
+        <h2 className="text-lg">Visibility</h2>
+        <p className="dark:text-polar-400 mt-2 text-sm text-gray-400">
+          Adjusts the unpublished visibility of the post
+        </p>
+      </div>
+      <div className="flex flex-col gap-y-6">
+        <RadioGroup
+          value={visibility}
+          onValueChange={(v) => setVisibility(v as ArticleUpdateVisibilityEnum)}
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem
+              value={ArticleUpdateVisibilityEnum.PRIVATE}
+              id={ArticleUpdateVisibilityEnum.PRIVATE}
+            />
+            <Label htmlFor={ArticleUpdateVisibilityEnum.PRIVATE}>
+              Organization members
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem
+              value={ArticleUpdateVisibilityEnum.HIDDEN}
+              id={ArticleUpdateVisibilityEnum.HIDDEN}
+            />
+            <Label htmlFor={ArticleUpdateVisibilityEnum.HIDDEN}>
+              Anyone with the link
+            </Label>
+          </div>
+        </RadioGroup>
+        <div className="mt-4 flex flex-row items-center gap-x-2">
+          <Button
+            className="self-start"
+            loading={updateArticle.isPending}
+            onClick={handleUpdateVisibility}
+          >
+            Update
           </Button>
           <Button variant="ghost" className="self-start" onClick={hideModal}>
             Cancel

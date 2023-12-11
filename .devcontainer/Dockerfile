@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.11-bullseye
+ARG PYTHON_VERSION=3.12-bullseye
 FROM mcr.microsoft.com/vscode/devcontainers/python:${PYTHON_VERSION}
 
 ENV PYTHONUNBUFFERED 1

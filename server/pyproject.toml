@@ -6,14 +6,14 @@ authors = ["Birk Jernström <birkjernstrom@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 fastapi = "^0.95.2"
 uvicorn = { extras = ["standard"], version = "^0.23.2" }
 python-dotenv = "^0.21.1"
-asyncpg = "^0.27.0"
+asyncpg = "^0.29.0"
 alembic = "^1.9.2"
 sqlalchemy = { extras = ["asyncio"], version = "^2.0.22" }
-greenlet = "^2.0.2"                                        # Need to be explicit, M1 Mac issue (https://github.com/python-poetry/poetry/issues/5429)
+greenlet = "^3.0.2"
 structlog = "^22.3.0"
 # Temp githubkit fix. See https://github.com/polarsource/polar/issues/1241
 githubkit = { extras = [
@@ -22,7 +22,7 @@ githubkit = { extras = [
 redis = "^5.0.0"
 sse-starlette = "^1.4.0"
 arq = "^0.25.0"
-stripe = "^7.4.0"
+stripe = "=7.4.0" # strictly pinned stripe version as different versions of stripe can be incompatible with each other
 sqlalchemy-searchable = "^1.4.1"
 pyjwt = "^2.6.0"
 httpx-oauth = "^0.11.0"
@@ -36,6 +36,7 @@ sqlalchemy-citext = { git = "https://github.com/akolov/sqlalchemy-citext.git", r
 python-slugify = "^8.0.1"
 types-python-slugify = "^8.0.0.3"
 resend = "^0.6.0"
+uvloop = "^0.19.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.0"

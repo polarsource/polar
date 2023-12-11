@@ -43,6 +43,7 @@ from ..schemas import (
     SubscriptionsStatisticsPeriod,
     SubscriptionUpgrade,
 )
+from .subscription_benefit import subscription_benefit as subscription_benefit_service
 from .subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
@@ -555,6 +556,23 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_id=subscription.id,
                 user_id=subscription.user_id,
                 subscription_benefit_id=outdated_grant.subscription_benefit_id,
+            )
+
+        # Special hard-coded logic to make sure
+        # we always at least subscribe to public articles
+        if subscription_tier.get_articles_benefit() is None:
+            await session.refresh(subscription_tier, {"organization", "repository"})
+            (
+                free_articles_benefit,
+                _,
+            ) = await subscription_benefit_service.get_or_create_articles_benefits(
+                session, subscription_tier.organization, subscription_tier.repository
+            )
+            await enqueue_job(
+                f"subscription.subscription_benefit.{task}",
+                subscription_id=subscription.id,
+                user_id=subscription.user_id,
+                subscription_benefit_id=free_articles_benefit.id,
             )
 
     async def upgrade_subscription(

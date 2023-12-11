@@ -115,45 +115,21 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return account
 
     async def _build_stripe_account_name(
-        self,
-        session: AsyncSession,
-        *,
-        organization_id: UUID | None,
-        user_id: UUID | None,
+        self, session: AsyncSession, account: Account
     ) -> str | None:
-        return None
         # The account name is visible for users and is used to differentiate accounts
         # from the same Platform ("Polar") in Stripe Express.
-        #
-        # The names are:
-        # * NAME for non-personal organisations (example: polarsource)
-        # * org/NAME for personal organisations (example: org/zegl)
-        # * user/NAME for users (example: user/zegl).
-        # if organization_id:
-        #     org = await organization_service.get(session, organization_id)
-        #     if org:
-        #         if org.is_personal:
-        #             return f"org/{org.name}"
-        #         else:
-        #             return org.name
-
-        # if user_id:
-        #     user = await user_service.get(session, user_id)
-        #     if user:
-        #         return f"user/{user.username}"
-
-        # return None
+        await session.refresh(account, {"users", "organizations"})
+        associations = []
+        for user in account.users:
+            associations.append(f"user/{user.username}")
+        for organization in account.organizations:
+            associations.append(f"org/{organization.name}")
+        return "·".join(associations)
 
     async def _create_stripe_account(
         self, session: AsyncSession, admin_id: UUID, account: AccountCreate
     ) -> Account:
-        # TODO
-        # account_name = await self._build_stripe_account_name(
-        #     session,
-        #     organization_id=organization_id,
-        #     user_id=user_id,
-        # )
-
         try:
             stripe_account = stripe.create_account(account, name=None)  # TODO: name
         except stripe_lib_error.StripeError as e:
@@ -248,10 +224,12 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         return account
 
-    async def onboarding_link(self, account: Account) -> AccountLink | None:
+    async def onboarding_link(
+        self, account: Account, return_path: str
+    ) -> AccountLink | None:
         if account.account_type == AccountType.stripe:
             assert account.stripe_id is not None
-            account_link = stripe.create_account_link(account.stripe_id)
+            account_link = stripe.create_account_link(account.stripe_id, return_path)
             return AccountLink(url=account_link.url)
 
         return None
@@ -281,11 +259,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return stripe.retrieve_balance(account.stripe_id)
 
     async def sync_to_upstream(self, session: AsyncSession, account: Account) -> None:
-        # TODO
-        return
-        name = await self._build_stripe_account_name(
-            session, organization_id=account.organization_id, user_id=account.user_id
-        )
+        name = await self._build_stripe_account_name(session, account)
 
         if account.account_type == AccountType.stripe and account.stripe_id:
             stripe.update_account(account.stripe_id, name)

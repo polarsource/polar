@@ -2,13 +2,10 @@ import stripe
 import stripe.error
 import stripe.webhook
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from starlette.responses import RedirectResponse
 
-from polar.account.service import account as account_service
 from polar.config import settings
-from polar.enums import AccountType
-from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 
 log = structlog.get_logger()
@@ -42,24 +39,11 @@ async def enqueue(event: stripe.Event) -> None:
     log.info("stripe.webhook.queued", task_name=task_name)
 
 
-@router.get("/return")
-async def stripe_connect_return(
-    stripe_id: str,
-    session: AsyncSession = Depends(get_db_session),
-) -> RedirectResponse:
-    account = await account_service.get_by(session, stripe_id=stripe_id)
-    if not account or account.account_type != AccountType.stripe:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    # TODO: return to accounts page
-    return RedirectResponse(
-        url=settings.generate_frontend_url("/rewards?status=stripe-return")
-    )
-
-
-@router.get("/refresh", status_code=204)
-def stripe_connect_refresh() -> None:
-    return None
+@router.get("/refresh")
+def stripe_connect_refresh(return_path: str | None = Query(None)) -> RedirectResponse:
+    if return_path is None:
+        raise HTTPException(404)
+    return RedirectResponse(settings.generate_frontend_url(return_path))
 
 
 class WebhookEventGetter:

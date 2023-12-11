@@ -220,6 +220,7 @@ async def test_onboarding_link_open_collective(
 ) -> None:
     response = await client.post(
         f"/api/v1/accounts/{open_collective_account.id}/onboarding_link",
+        params={"return_path": "/finance/account"},
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 

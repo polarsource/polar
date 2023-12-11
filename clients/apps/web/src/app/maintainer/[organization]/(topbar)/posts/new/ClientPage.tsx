@@ -24,7 +24,7 @@ const ClientPage = () => {
   const create = useCreateArticle()
 
   const handleContinue = async () => {
-    if (!org) {
+    if (!org || article.title.length < 1) {
       return
     }
 
@@ -58,6 +58,7 @@ const ClientPage = () => {
         previewProps={{
           article: { ...article, organization: org, byline: org },
         }}
+        autoFocus="title"
       />
     </Tabs>
   )

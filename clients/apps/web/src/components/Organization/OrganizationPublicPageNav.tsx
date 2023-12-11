@@ -3,12 +3,6 @@
 import { useAuth } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
-  Bolt,
-  DragIndicatorOutlined,
-  HiveOutlined,
-  HowToVoteOutlined,
-} from '@mui/icons-material'
-import {
   Article,
   Organization,
   Repository,
@@ -70,10 +64,7 @@ export const OrganizationPublicPageNav = ({
           size="small"
           onClick={handleTabChange('overview')}
         >
-          <div className="text-[18px]">
-            <DragIndicatorOutlined fontSize="inherit" />
-          </div>
-          <span>Overview</span>
+          Overview
         </TabsTrigger>
         {isFeatureEnabled('feed') && (
           <TabsTrigger
@@ -81,10 +72,7 @@ export const OrganizationPublicPageNav = ({
             size="small"
             onClick={handleTabChange('issues')}
           >
-            <div className="text-[18px]">
-              <HowToVoteOutlined fontSize="inherit" />
-            </div>
-            <span>Issues</span>
+            Issues
           </TabsTrigger>
         )}
         <TabsTrigger
@@ -92,10 +80,7 @@ export const OrganizationPublicPageNav = ({
           size="small"
           onClick={handleTabChange('repositories')}
         >
-          <div className="text-[18px]">
-            <HiveOutlined fontSize="inherit" />
-          </div>
-          <span>Repositories</span>
+          Repositories
         </TabsTrigger>
         {isFeatureEnabled('subscriptions') && shouldRenderSubscriptionsTab && (
           <TabsTrigger
@@ -103,10 +88,7 @@ export const OrganizationPublicPageNav = ({
             size="small"
             onClick={handleTabChange('subscriptions')}
           >
-            <div className="text-[18px]">
-              <Bolt fontSize="inherit" />
-            </div>
-            <span>Subscriptions</span>
+            Subscriptions
           </TabsTrigger>
         )}
       </TabsList>

@@ -1,6 +1,5 @@
 import contextlib
 from collections.abc import AsyncIterator
-from datetime import datetime
 from typing import cast
 from unittest.mock import MagicMock
 

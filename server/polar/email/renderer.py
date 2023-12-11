@@ -70,6 +70,6 @@ class EmailRenderer:
 
 
 def get_email_renderer(
-    extras_templates_packages: Mapping[str, str] = {}
+    extras_templates_packages: Mapping[str, str] = {},
 ) -> EmailRenderer:
     return EmailRenderer(extras_templates_packages)

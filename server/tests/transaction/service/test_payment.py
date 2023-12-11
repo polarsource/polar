@@ -20,7 +20,8 @@ from tests.subscription.conftest import create_subscription, create_subscription
 
 
 def build_stripe_balance_transaction(
-    *, fee: int | None = 100
+    *,
+    fee: int | None = 100,
 ) -> stripe_lib.BalanceTransaction:
     return stripe_lib.BalanceTransaction.construct_from(
         {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": fee}, None

@@ -163,7 +163,7 @@ ReturnValue = TypeVar("ReturnValue")
 
 
 def task_hooks(
-    f: Callable[Params, Awaitable[ReturnValue]]
+    f: Callable[Params, Awaitable[ReturnValue]],
 ) -> Callable[Params, Awaitable[ReturnValue]]:
     @functools.wraps(f)
     async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
@@ -212,7 +212,7 @@ def task(
     [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
 ]:
     def decorator(
-        f: Callable[Params, Awaitable[ReturnValue]]
+        f: Callable[Params, Awaitable[ReturnValue]],
     ) -> Callable[Params, Awaitable[ReturnValue]]:
         wrapped = task_hooks(f)
 
@@ -243,7 +243,7 @@ def interval(
     [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
 ]:
     def decorator(
-        f: Callable[Params, Awaitable[ReturnValue]]
+        f: Callable[Params, Awaitable[ReturnValue]],
     ) -> Callable[Params, Awaitable[ReturnValue]]:
         wrapped = task_hooks(f)
 

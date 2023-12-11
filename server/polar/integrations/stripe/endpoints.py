@@ -93,7 +93,7 @@ class WebhookEventGetter:
 
 @router.post("/webhook", status_code=202)
 async def webhook(
-    event: stripe.Event = Depends(WebhookEventGetter(settings.STRIPE_WEBHOOK_SECRET))
+    event: stripe.Event = Depends(WebhookEventGetter(settings.STRIPE_WEBHOOK_SECRET)),
 ) -> None:
     if event["type"] in DIRECT_IMPLEMENTED_WEBHOOKS:
         await enqueue(event)

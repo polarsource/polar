@@ -14,7 +14,7 @@ asyncpg = "^0.29.0"
 alembic = "^1.9.2"
 sqlalchemy = { extras = ["asyncio"], version = "^2.0.22" }
 greenlet = "^3.0.2"
-structlog = "^22.3.0"
+structlog = "^23.2.0"
 # Temp githubkit fix. See https://github.com/polarsource/polar/issues/1241
 githubkit = { extras = [
     "auth-app",
@@ -37,6 +37,7 @@ python-slugify = "^8.0.1"
 types-python-slugify = "^8.0.0.3"
 resend = "^0.6.0"
 uvloop = "^0.19.0"
+python-dateutil = {  git = "https://github.com/dateutil/dateutil.git", rev = "0586f4afa26fc6799128d98d4f97a49c7d6ab314" }
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.0"

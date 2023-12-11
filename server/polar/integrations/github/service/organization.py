@@ -135,7 +135,7 @@ class GithubOrganizationService(OrganizationService):
             return False
 
         if suspended_at is None:
-            suspended_at = datetime.utcnow()
+            suspended_at = utc_now()
 
         org.installation_suspended_at = suspended_at
         org.status = Organization.Status.SUSPENDED

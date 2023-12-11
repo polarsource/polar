@@ -320,7 +320,7 @@ class GithubIssueService(IssueService):
         except RequestFailed as e:
             if e.response.status_code == 404:
                 log.info("github.sync_issue.404.marking_as_crawled")
-                issue.github_issue_fetched_at = datetime.datetime.utcnow()
+                issue.github_issue_fetched_at = utc_now()
                 await issue.save(session)
                 return
             elif e.response.status_code == 410:  # 410 Gone, i.e. deleted
@@ -375,7 +375,7 @@ class GithubIssueService(IssueService):
                 )
 
             # Save etag
-            issue.github_issue_fetched_at = datetime.datetime.utcnow()
+            issue.github_issue_fetched_at = utc_now()
             issue.github_issue_etag = res.headers.get("etag", None)
             await issue.save(session)
 
@@ -384,7 +384,7 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         organization: Organization,
     ) -> Sequence[Issue]:
-        current_time = datetime.datetime.utcnow()
+        current_time = utc_now()
         cutoff_time = current_time - datetime.timedelta(hours=12)
 
         stmt = (
@@ -415,7 +415,7 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         organization: Organization,
     ) -> Sequence[Issue]:
-        current_time = datetime.datetime.utcnow()
+        current_time = utc_now()
         cutoff_time = current_time - datetime.timedelta(hours=12)
 
         stmt = (

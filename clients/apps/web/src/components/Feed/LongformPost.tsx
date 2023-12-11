@@ -4,6 +4,7 @@ import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
+import { useMemo } from 'react'
 import BrowserRender from './Posts/BrowserRender'
 import { RenderArticle } from './Posts/markdown'
 
@@ -26,6 +27,28 @@ export default function LongformPost({
 }: LongformPostProps) {
   const organization = article.organization
 
+  const publishedDate = useMemo(
+    () => (article.published_at ? new Date(article.published_at) : undefined),
+    [article],
+  )
+  const publishedDateText = useMemo(
+    () =>
+      publishedDate
+        ? new Date() > publishedDate
+          ? publishedDate.toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          : `Scheduled on ${publishedDate.toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}`
+        : 'Unpublished',
+    [publishedDate],
+  )
+
   return (
     <StaggerReveal className="max-w-2xl" transition={staggerTransition}>
       <div className="flex flex-col items-center gap-y-16 pb-16 pt-4">
@@ -34,13 +57,7 @@ export default function LongformPost({
         </StaggerReveal.Child>
         <StaggerReveal.Child transition={revealTransition}>
           <span className="dark:text-polar-500 text-gray-500">
-            {article.published_at
-              ? new Date(article.published_at).toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })
-              : 'Unpublished'}
+            {publishedDateText}
           </span>
         </StaggerReveal.Child>
         <StaggerReveal.Child transition={revealTransition}>

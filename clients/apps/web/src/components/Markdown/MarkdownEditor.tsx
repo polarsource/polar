@@ -92,8 +92,10 @@ export const MarkdownEditor = ({
   const handlePaste = useCallback(
     async (e: ClipboardEvent<HTMLTextAreaElement>) => {
       if (e.target instanceof HTMLTextAreaElement) {
-        e.preventDefault()
-        e.stopPropagation()
+        if (e.clipboardData.files.length > 0) {
+          e.preventDefault()
+          e.stopPropagation()
+        }
 
         for (const file of e.clipboardData.files) {
           try {

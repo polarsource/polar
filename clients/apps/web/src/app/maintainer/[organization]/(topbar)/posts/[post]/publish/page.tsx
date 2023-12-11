@@ -28,6 +28,5 @@ export default async function Page({
     organizationName: params.organization,
     slug: params.post as string,
   })
-
   return <ClientPage article={article} />
 }

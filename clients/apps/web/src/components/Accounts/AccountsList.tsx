@@ -10,9 +10,10 @@ import AccountAssociations from './AccountAssociations'
 
 interface AccountsListProps {
   accounts: Account[]
+  returnPath: string
 }
 
-const AccountsList = ({ accounts }: AccountsListProps) => {
+const AccountsList = ({ accounts, returnPath }: AccountsListProps) => {
   return (
     <table className="-mx-4 w-full text-left">
       <thead className="dark:text-polar-500 text-gray-500">
@@ -45,7 +46,11 @@ const AccountsList = ({ accounts }: AccountsListProps) => {
       </thead>
       <tbody>
         {accounts.map((account) => (
-          <AccountListItem key={account.id} account={account} />
+          <AccountListItem
+            key={account.id}
+            account={account}
+            returnPath={returnPath}
+          />
         ))}
       </tbody>
     </table>
@@ -56,9 +61,10 @@ export default AccountsList
 
 interface AccountListItemProps {
   account: Account
+  returnPath: string
 }
 
-const AccountListItem = ({ account }: AccountListItemProps) => {
+const AccountListItem = ({ account, returnPath }: AccountListItemProps) => {
   const childClass = twMerge(
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-polar-50',
   )
@@ -66,6 +72,7 @@ const AccountListItem = ({ account }: AccountListItemProps) => {
   const goToOnboarding = async () => {
     const link = await api.accounts.onboardingLink({
       id: account.id,
+      returnPath,
     })
     window.location.href = link.url
   }

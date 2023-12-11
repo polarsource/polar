@@ -58,6 +58,9 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
   const goToOnboarding = async (account: Account) => {
     const link = await api.accounts.onboardingLink({
       id: account.id,
+      returnPath: organization.is_personal
+        ? '/finance/account'
+        : `/maintainer/${organization.name}/finance_new/account`,
     })
     window.location.href = link.url
   }

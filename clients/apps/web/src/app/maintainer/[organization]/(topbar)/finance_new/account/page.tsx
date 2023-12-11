@@ -2,6 +2,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 import { RedirectType, permanentRedirect } from 'next/navigation'
+import ClientPage from './ClientPage'
 
 const cacheConfig = {
   next: {
@@ -38,4 +39,6 @@ export default async function Page({
   if (organization.is_personal) {
     permanentRedirect('/finance/account', RedirectType.replace)
   }
+
+  return <ClientPage />
 }

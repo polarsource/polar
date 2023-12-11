@@ -1,8 +1,8 @@
 'use client'
 
+import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import AccountSetup from '@/components/Accounts/AccountSetup'
 import AccountsList from '@/components/Accounts/AccountsList'
-import SetupAccount from '@/components/Dashboard/SetupAccount'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth, usePersonalOrganization } from '@/hooks'
@@ -79,7 +79,12 @@ export default function ClientPage() {
             </div>
           </div>
           <Separator className="my-8" />
-          {accounts?.items && <AccountsList accounts={accounts?.items} />}
+          {accounts?.items && (
+            <AccountsList
+              accounts={accounts?.items}
+              returnPath="/finance/account"
+            />
+          )}
         </div>
       )}
       <Modal
@@ -87,11 +92,12 @@ export default function ClientPage() {
         className="min-w-[400px]"
         hide={hideSetupModal}
         modalContent={
-          <SetupAccount
+          <AccountCreateModal
             onClose={hideSetupModal}
             accountTypes={ALL_ACCOUNT_TYPES}
             forOrganizationId={personalOrganization?.id}
             forUserId={currentUser?.id}
+            returnPath="/finance/account"
           />
         }
       />

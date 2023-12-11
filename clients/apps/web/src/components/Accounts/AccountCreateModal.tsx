@@ -12,16 +12,18 @@ import { Button, CountryPicker, Input } from 'polarkit/components/ui/atoms'
 import { ChangeEvent, useState } from 'react'
 import { ModalHeader } from '../Modal'
 
-const SetupAccount = ({
+const AccountCreateModal = ({
   onClose,
   forOrganizationId,
   forUserId,
   accountTypes,
+  returnPath,
 }: {
   onClose: () => void
   forOrganizationId?: string
   forUserId?: string
   accountTypes: AccountType[]
+  returnPath: string
 }) => {
   const router = useRouter()
 
@@ -106,6 +108,7 @@ const SetupAccount = ({
     try {
       const link = await api.accounts.onboardingLink({
         id: account.id,
+        returnPath,
       })
       window.location.href = link.url
     } catch (e) {
@@ -201,4 +204,4 @@ const SetupAccount = ({
   )
 }
 
-export default SetupAccount
+export default AccountCreateModal

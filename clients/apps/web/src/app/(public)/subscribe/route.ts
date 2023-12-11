@@ -21,10 +21,11 @@ export async function GET(request: NextRequest) {
   const subscriptionTierId = searchParams.get('tier') as string
 
   try {
+    const requestURL = new URL(request.url)
     const { url } = await api.subscriptions.createSubscribeSession({
       subscribeSessionCreate: {
         tier_id: subscriptionTierId,
-        success_url: `${process?.env?.NEXT_PUBLIC_API_URL}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${requestURL.protocol}//${requestURL.host}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       },
     })
     return new Response(undefined, {

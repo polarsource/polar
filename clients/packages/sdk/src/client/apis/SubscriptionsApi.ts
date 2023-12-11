@@ -37,6 +37,7 @@ import type {
   SubscriptionTierType,
   SubscriptionTierUpdate,
   SubscriptionUpgrade,
+  SubscriptionsImported,
   SubscriptionsStatistics,
 } from '../models/index';
 
@@ -934,7 +935,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     /**
      * Subscriptions Import
      */
-    async subscriptionsImportRaw(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
+    async subscriptionsImportRaw(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsImported>> {
         if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
             throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling subscriptionsImport.');
         }
@@ -999,13 +1000,13 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             body: formParams,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse<any>(response);
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
      * Subscriptions Import
      */
-    async subscriptionsImport(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+    async subscriptionsImport(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsImported> {
         const response = await this.subscriptionsImportRaw(requestParameters, initOverrides);
         return await response.value();
     }

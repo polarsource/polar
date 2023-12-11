@@ -341,3 +341,7 @@ class SubscriptionsStatisticsPeriod(Schema):
 
 class SubscriptionsStatistics(Schema):
     periods: list[SubscriptionsStatisticsPeriod]
+
+
+class SubscriptionsImported(Schema):
+    count: int

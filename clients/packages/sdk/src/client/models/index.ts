@@ -4860,6 +4860,19 @@ export interface SubscriptionUpgrade {
 /**
  * 
  * @export
+ * @interface SubscriptionsImported
+ */
+export interface SubscriptionsImported {
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionsImported
+     */
+    count: number;
+}
+/**
+ * 
+ * @export
  * @interface SubscriptionsStatistics
  */
 export interface SubscriptionsStatistics {

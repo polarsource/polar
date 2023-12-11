@@ -1,12 +1,14 @@
 from datetime import date
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
-from pydantic import UUID4
+from pydantic import UUID4, EmailStr
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.authz.service import Authz
-from polar.exceptions import BadRequest, ResourceNotFound
+from polar.authz.service import AccessType, Anonymous, Authz
+from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
+from polar.kit.csv import get_emails_from_csv
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Repository, Subscription, SubscriptionBenefit, SubscriptionTier
@@ -30,6 +32,7 @@ from .schemas import (
     SubscribeSessionCreate,
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
+    SubscriptionsImported,
     SubscriptionsStatistics,
     SubscriptionSummary,
     SubscriptionTierBenefitsUpdate,
@@ -50,6 +53,8 @@ from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
 )
 from .service.subscription_tier import subscription_tier as subscription_tier_service
+
+log = structlog.get_logger()
 
 
 async def is_feature_flag_enabled(auth: Auth = Depends(Auth.optional_user)) -> None:
@@ -521,47 +526,76 @@ async def create_free_subscription(
 
 @router.post(
     "/subscriptions/import",
-    response_model=dict,
+    response_model=SubscriptionsImported,
     tags=[Tags.PUBLIC],
 )
 async def subscriptions_import(
-    # pagination: PaginationParamsQuery,
+    auth: UserRequiredAuth,
     file: UploadFile,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
+    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> dict:
+) -> SubscriptionsImported:
+    organization: Organization | None = None
+    if organization_name_platform is not None:
+        organization_name, platform = organization_name_platform
+        organization = await organization_service.get_by_name(
+            session, platform, organization_name
+        )
+        if organization is None:
+            raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        if organization is None:
+            raise BadRequest(
+                "organization_name and platform are required when repository_name is set"
+            )
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    # find free tier
+    (tiers, _) = await subscription_tier_service.search(
+        session,
+        auth.subject,
+        type=SubscriptionTierType.free,
+        organization=organization,
+        repository=repository,
+        pagination=PaginationParamsQuery(page=1, limit=1),
+    )
+
+    if not tiers or len(tiers) != 1:
+        raise ResourceNotFound("No free tier found")
+
+    # authz
+    if not await authz.can(auth.subject, AccessType.write, organization):
+        raise Unauthorized()
+
     contents = await file.read()
-    print("zegl:::", contents)
-    return {}
+    emails = get_emails_from_csv(contents.decode("utf-8"))
 
-    # organization_name, platform = organization_name_platform
-    # organization = await organization_service.get_by_name(
-    #     session, platform, organization_name
-    # )
-    # if organization is None:
-    #     raise ResourceNotFound("Organization not found")
+    count = 0
 
-    # repository: Repository | None = None
-    # if repository_name is not None:
-    #     repository = await repository_service.get_by_org_and_name(
-    #         session, organization.id, repository_name
-    #     )
-    #     if repository is None:
-    #         raise ResourceNotFound("Repository not found")
+    for email in emails:
+        try:
+            await subscription_service.create_free_subscription(
+                session,
+                free_subscription_create=FreeSubscriptionCreate(
+                    tier_id=tiers[0].id,
+                    customer_email=EmailStr(email),
+                ),
+                auth_subject=Anonymous(),  # do not forward auth!
+                auth_method=None,
+            )
+            count += 1
+        except Exception as e:
+            log.error("subscriptions_import.failed", e=e)
 
-    # results, count = await subscription_service.search_summary(
-    #     session,
-    #     organization=organization,
-    #     repository=repository,
-    #     pagination=pagination,
-    # )
-
-    # return ListResource.from_paginated_results(
-    #     [SubscriptionSummary.from_orm(result) for result in results],
-    #     count,
-    #     pagination,
-    # )
+    return SubscriptionsImported(count=count)
 
 
 @router.post(

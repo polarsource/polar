@@ -60,6 +60,7 @@ types-redis = "4.6.0.6"
 pytest-subtests = "^0.10.0"
 pytest-recording = "^0.12.2"
 respx = "^0.20.1"
+pytest-cov = "^4.1.0"
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }

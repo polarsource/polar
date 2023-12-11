@@ -39,7 +39,15 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
   const closedAt = issue_closed_at ? new Date(issue_closed_at) : undefined
 
   const showCommentsCount = !!(comments && comments > 0)
-  const showReactionsThumbs = !!(reactions && reactions.plus_one > 0)
+
+  const positiveReactions = reactions
+    ? reactions.plus_one +
+      reactions.heart +
+      reactions.hooray +
+      reactions.laugh +
+      reactions.rocket
+    : 0
+  const showReactionsThumbs = positiveReactions > 0
 
   const markdownTitle = generateMarkdownTitle(title)
 
@@ -119,7 +127,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
             <IconCounter icon="comments" count={comments} />
           )}
           {showReactionsThumbs && reactions && (
-            <IconCounter icon="thumbs_up" count={reactions.plus_one} />
+            <IconCounter icon="thumbs_up" count={positiveReactions} />
           )}
         </div>
 

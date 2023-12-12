@@ -52,6 +52,7 @@ export const opts = {
           </SyntaxHighlighter>
           <Button
             size="icon"
+            variant="secondary"
             className="absolute right-4 top-4 h-8 w-8 rounded-full text-sm"
             onClick={handleCopy}
           >

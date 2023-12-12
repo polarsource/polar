@@ -4,6 +4,7 @@ import {
   ChangeEventHandler,
   ClipboardEvent,
   DragEventHandler,
+  KeyboardEventHandler,
   useCallback,
   useEffect,
   useRef,
@@ -40,6 +41,9 @@ export const MarkdownEditor = ({
       )
 
       element.value = textBeforeCursorPosition + text + textAfterCursorPosition
+
+      element.selectionStart = cursorPosition + text.length
+      element.selectionEnd = cursorPosition + text.length
     },
     [],
   )
@@ -119,7 +123,19 @@ export const MarkdownEditor = ({
         }
       }
     },
-    [],
+    [onChange, insertTextAtCursor],
+  )
+
+  const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
+    (e) => {
+      /** Handle tab presses */
+      if (e.key == 'Tab' && e.target instanceof HTMLTextAreaElement) {
+        e.preventDefault()
+        insertTextAtCursor('\t', e.target)
+        onChange?.(e.target.value)
+      }
+    },
+    [onChange, insertTextAtCursor],
   )
 
   const allow: DragEventHandler<HTMLTextAreaElement> = useCallback((e) => {
@@ -142,6 +158,7 @@ export const MarkdownEditor = ({
       onDrag={handleDrag}
       onDragOver={allow}
       onPaste={handlePaste}
+      onKeyDown={handleKeyDown}
       autoFocus={autoFocus}
     />
   )

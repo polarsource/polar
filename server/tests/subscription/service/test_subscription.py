@@ -52,6 +52,8 @@ from ..conftest import (
 
 def construct_stripe_subscription(
     *,
+    user: User | None = None,
+    organization: Organization | None = None,
     customer_id: str = "CUSTOMER_ID",
     product_id: str = "PRODUCT_ID",
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
@@ -59,6 +61,14 @@ def construct_stripe_subscription(
     metadata: dict[str, str] = {},
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
+    base_metadata: dict[str, str] = {
+        **({"user_id": str(user.id)} if user is not None else {}),
+        **(
+            {"organization_subscriber_id": str(organization.id)}
+            if organization is not None
+            else {}
+        ),
+    }
     return stripe_lib.Subscription.construct_from(
         {
             "id": "SUBSCRIPTION_ID",
@@ -80,7 +90,7 @@ def construct_stripe_subscription(
             "cancel_at_period_end": False,
             "ended_at": None,
             "latest_invoice": latest_invoice,
-            "metadata": metadata,
+            "metadata": {**base_metadata, **metadata},
         },
         None,
     )
@@ -327,15 +337,18 @@ class TestCreateSubscription:
     async def test_existing_user(
         self,
         session: AsyncSession,
+        stripe_service_mock: MagicMock,
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
+        stripe_customer = construct_stripe_customer()
+        get_customer_mock = stripe_service_mock.get_customer
+        get_customer_mock.return_value = stripe_customer
+
         assert subscription_tier_organization.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
-            product_id=subscription_tier_organization.stripe_product_id
+            user=user, product_id=subscription_tier_organization.stripe_product_id
         )
-
-        await user.update(session, stripe_customer_id=stripe_subscription.customer)
 
         subscription = await subscription_service.create_subscription(
             session, stripe_subscription=stripe_subscription
@@ -346,19 +359,26 @@ class TestCreateSubscription:
 
         assert subscription.user_id == user.id
 
+        await session.refresh(user)
+        assert user.stripe_customer_id == stripe_subscription.customer
+
     async def test_set_started_at(
         self,
         session: AsyncSession,
+        stripe_service_mock: MagicMock,
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
+        stripe_customer = construct_stripe_customer()
+        get_customer_mock = stripe_service_mock.get_customer
+        get_customer_mock.return_value = stripe_customer
+
         assert subscription_tier_organization.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
+            user=user,
             product_id=subscription_tier_organization.stripe_product_id,
             status=SubscriptionStatus.active,
         )
-
-        await user.update(session, stripe_customer_id=stripe_subscription.customer)
 
         subscription = await subscription_service.create_subscription(
             session, stripe_subscription=stripe_subscription
@@ -367,19 +387,28 @@ class TestCreateSubscription:
         assert subscription.status == SubscriptionStatus.active
         assert subscription.started_at is not None
 
+        await session.refresh(user)
+        assert user.stripe_customer_id == stripe_subscription.customer
+
     async def test_subscription_upgrade(
         self,
         session: AsyncSession,
+        stripe_service_mock: MagicMock,
         subscription_tier_organization_free: SubscriptionTier,
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
+        stripe_customer = construct_stripe_customer()
+        get_customer_mock = stripe_service_mock.get_customer
+        get_customer_mock.return_value = stripe_customer
+
         existing_subscription = await create_active_subscription(
             session, subscription_tier=subscription_tier_organization_free, user=user
         )
 
         assert subscription_tier_organization.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
+            user=user,
             product_id=subscription_tier_organization.stripe_product_id,
             status=SubscriptionStatus.active,
             metadata={"subscription_id": str(existing_subscription.id)},
@@ -396,6 +425,42 @@ class TestCreateSubscription:
 
         await session.refresh(user)
         assert user.stripe_customer_id == stripe_subscription.customer
+
+    async def test_organization(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        stripe_customer = construct_stripe_customer()
+        get_customer_mock = stripe_service_mock.get_customer
+        get_customer_mock.return_value = stripe_customer
+
+        assert subscription_tier_organization.stripe_product_id is not None
+        stripe_subscription = construct_stripe_subscription(
+            user=user,
+            organization=organization,
+            product_id=subscription_tier_organization.stripe_product_id,
+        )
+
+        subscription = await subscription_service.create_subscription(
+            session, stripe_subscription=stripe_subscription
+        )
+
+        assert subscription.stripe_subscription_id == stripe_subscription.id
+        assert subscription.subscription_tier_id == subscription_tier_organization.id
+
+        assert subscription.user_id == user.id
+        assert subscription.organization_id == organization.id
+
+        await session.refresh(user)
+        assert user.stripe_customer_id is None
+
+        await session.refresh(organization)
+        assert organization.stripe_customer_id == stripe_subscription.customer
+        assert organization.billing_email == stripe_customer.email
 
 
 @pytest.mark.asyncio

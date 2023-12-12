@@ -11,9 +11,10 @@ funding towards issues - helping support, upvote and fund the most impactful
 efforts. You can also easily reward contributors a share of the funding once the
 issue is completed.
 
-
 ![GitHub Issue with Polar Badge](../../assets/maintainers/issue-funding/gh-badged-dark.jpg#only-dark)
 ![GitHub Issue with Polar Badge](../../assets/maintainers/issue-funding/gh-badged-light.jpg#only-light)
+
+*Checkout an example on a GitHub issue: [SerenityOS/serenity#22179](https://github.com/SerenityOS/serenity/issues/22179)*
 
 ## Features
 Polar is designed for maintainers, not bounty hunters. You remain in complete

@@ -28,6 +28,7 @@ from polar.models import (
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
+from polar.worker import enqueue_job
 
 from ..schemas import SubscriptionTierCreate, SubscriptionTierUpdate
 from .subscription_benefit import subscription_benefit as subscription_benefit_service
@@ -340,6 +341,11 @@ class SubscriptionTierService(
         session.add(free_subscription_tier)
         await session.commit()
 
+        await enqueue_job(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            free_subscription_tier.id,
+        )
+
         return free_subscription_tier
 
     async def update_benefits(
@@ -392,6 +398,11 @@ class SubscriptionTierService(
 
         session.add(subscription_tier)
         await session.commit()
+
+        await enqueue_job(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            subscription_tier.id,
+        )
 
         return subscription_tier, added_benefits, deleted_benefits
 

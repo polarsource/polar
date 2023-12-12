@@ -365,8 +365,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         await enqueue_job(
-            "subscription.subscription.enqueue_benefits_grants",
-            subscription.id,
+            "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
         return subscription
@@ -464,8 +463,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         await session.commit()
 
         await enqueue_job(
-            "subscription.subscription.enqueue_benefits_grants",
-            subscription.id,
+            "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
         return subscription
@@ -573,6 +571,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_id=subscription.id,
                 user_id=subscription.user_id,
                 subscription_benefit_id=free_articles_benefit.id,
+            )
+
+    async def update_subscription_tier_benefits_grants(
+        self, session: AsyncSession, subscription_tier: SubscriptionTier
+    ) -> None:
+        statement = select(Subscription).where(
+            Subscription.subscription_tier_id == subscription_tier.id,
+            Subscription.deleted_at.is_(None),
+        )
+        subscriptions = await session.stream_scalars(statement)
+        async for subscription in subscriptions:
+            await enqueue_job(
+                "subscription.subscription.enqueue_benefits_grants", subscription.id
             )
 
     async def upgrade_subscription(

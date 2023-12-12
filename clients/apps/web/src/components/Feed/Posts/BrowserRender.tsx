@@ -1,13 +1,15 @@
 // @ts-ignore
+import { ContentPasteOutlined } from '@mui/icons-material'
 import Markdown from 'markdown-to-jsx'
+import { Button } from 'polarkit/components/ui/atoms'
 import SyntaxHighlighter from 'react-syntax-highlighter'
-import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'
 import BrowserPoll from './BrowserPoll'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import SubscribeNow from './SubscribeNow'
+import { polarStyle } from './SyntaxHighlighter'
 import {
   RenderArticle,
   markdownOpts,
@@ -25,11 +27,39 @@ export const opts = {
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
-    code: (args: any) => (
-      <SyntaxHighlighter language={args.language} style={dark}>
-        {args.value}
-      </SyntaxHighlighter>
-    ),
+    code: (args: any) => {
+      // Language gets passed in as a className
+      const language = args.className?.replace('lang-', '')
+
+      // Copy the code contents to the clipboard
+      const handleCopy = () => {
+        navigator.clipboard.writeText(args.children)
+      }
+
+      return (
+        <div className="relative w-full">
+          <SyntaxHighlighter
+            language={language}
+            style={polarStyle}
+            lineNumberStyle={{
+              paddingRight: '1.5rem',
+              opacity: '.2',
+              fontSize: '.7rem',
+            }}
+            showLineNumbers
+          >
+            {args.children}
+          </SyntaxHighlighter>
+          <Button
+            size="icon"
+            className="absolute right-4 top-4 h-8 w-8 rounded-full text-sm"
+            onClick={handleCopy}
+          >
+            <ContentPasteOutlined fontSize="inherit" />
+          </Button>
+        </div>
+      )
+    },
   },
 } as const
 

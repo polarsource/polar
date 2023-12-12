@@ -100,6 +100,10 @@ export const wrapStrictCreateElement = (
         children = undefined // can never have children
       }
 
+      if (customComponentName === 'code') {
+        trimProps.className = props?.className
+      }
+
       return React.createElement(
         type,
 

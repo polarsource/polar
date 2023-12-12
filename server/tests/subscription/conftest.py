@@ -29,7 +29,7 @@ from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.endpoints import is_feature_flag_enabled
-from tests.fixtures.random_objects import create_organization
+from tests.fixtures.random_objects import create_organization, create_user
 
 
 def rstr(prefix: str) -> str:
@@ -141,6 +141,7 @@ async def create_subscription(
     *,
     subscription_tier: SubscriptionTier,
     user: User,
+    organization: Organization | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -158,6 +159,7 @@ async def create_subscription(
         price_amount=subscription_tier.price_amount,
         price_currency=subscription_tier.price_currency,
         user_id=user.id,
+        organization_id=organization.id if organization is not None else None,
         subscription_tier_id=subscription_tier.id,
     )
     session.add(subscription)
@@ -170,6 +172,7 @@ async def create_active_subscription(
     *,
     subscription_tier: SubscriptionTier,
     user: User,
+    organization: Organization | None = None,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
@@ -178,6 +181,7 @@ async def create_active_subscription(
         session,
         subscription_tier=subscription_tier,
         user=user,
+        organization=organization,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),
         ended_at=ended_at,
@@ -318,9 +322,42 @@ async def organization_subscriber_admin(
 
 
 @pytest_asyncio.fixture
+async def organization_subscriber_members(
+    session: AsyncSession, organization_subscriber: Organization
+) -> list[User]:
+    users: list[User] = []
+    for _ in range(5):
+        user = await create_user(session)
+        user_organization = UserOrganization(
+            user_id=user.id,
+            organization_id=organization_subscriber.id,
+            is_admin=False,
+        )
+        session.add(user_organization)
+        users.append(user)
+    await session.commit()
+    return users
+
+
+@pytest_asyncio.fixture
 async def subscription(
     session: AsyncSession, subscription_tier_organization: SubscriptionTier, user: User
 ) -> Subscription:
     return await create_subscription(
         session, subscription_tier=subscription_tier_organization, user=user
+    )
+
+
+@pytest_asyncio.fixture
+async def subscription_organization(
+    session: AsyncSession,
+    subscription_tier_organization: SubscriptionTier,
+    organization_subscriber: Organization,
+    user_second: User,
+) -> Subscription:
+    return await create_subscription(
+        session,
+        subscription_tier=subscription_tier_organization,
+        user=user_second,
+        organization=organization_subscriber,
     )

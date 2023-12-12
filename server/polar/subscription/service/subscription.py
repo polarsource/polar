@@ -37,6 +37,9 @@ from polar.transaction.service.transfer import (
     transfer_transaction as transfer_transaction_service,
 )
 from polar.user.service import user as user_service
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 from polar.worker import enqueue_job
 
 from ..schemas import (
@@ -556,44 +559,58 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription.is_incomplete():
             return
 
-        task = "grant" if subscription.active else "revoke"
-        for benefit in subscription_tier.benefits:
-            await enqueue_job(
-                f"subscription.subscription_benefit.{task}",
-                subscription_id=subscription.id,
-                user_id=subscription.user_id,
-                subscription_benefit_id=benefit.id,
-            )
-
-        # Handle granted benefits that are not part of this tier.
+        # Get granted benefits that are not part of this tier.
         # It happens if the subscription has been upgraded/downgraded.
         outdated_grants = await subscription_benefit_grant_service.get_outdated_grants(
             session, subscription, subscription_tier
         )
-        for outdated_grant in outdated_grants:
-            await enqueue_job(
-                "subscription.subscription_benefit.revoke",
-                subscription_id=subscription.id,
-                user_id=subscription.user_id,
-                subscription_benefit_id=outdated_grant.subscription_benefit_id,
-            )
 
-        # Special hard-coded logic to make sure
-        # we always at least subscribe to public articles
-        if subscription_tier.get_articles_benefit() is None:
-            await session.refresh(subscription_tier, {"organization", "repository"})
-            (
-                free_articles_benefit,
-                _,
-            ) = await subscription_benefit_service.get_or_create_articles_benefits(
-                session, subscription_tier.organization, subscription_tier.repository
+        # Grant to all members of the organization if any, or the user
+        users_ids: list[uuid.UUID] = []
+        if subscription.organization_id is not None:
+            members = await user_organization_service.list_by_org(
+                session, subscription.organization_id
             )
-            await enqueue_job(
-                f"subscription.subscription_benefit.{task}",
-                subscription_id=subscription.id,
-                user_id=subscription.user_id,
-                subscription_benefit_id=free_articles_benefit.id,
-            )
+            users_ids = [member.user_id for member in members]
+        else:
+            users_ids = [subscription.user_id]
+
+        for user_id in users_ids:
+            task = "grant" if subscription.active else "revoke"
+            for benefit in subscription_tier.benefits:
+                await enqueue_job(
+                    f"subscription.subscription_benefit.{task}",
+                    subscription_id=subscription.id,
+                    user_id=user_id,
+                    subscription_benefit_id=benefit.id,
+                )
+
+            for outdated_grant in outdated_grants:
+                await enqueue_job(
+                    "subscription.subscription_benefit.revoke",
+                    subscription_id=subscription.id,
+                    user_id=user_id,
+                    subscription_benefit_id=outdated_grant.subscription_benefit_id,
+                )
+
+            # Special hard-coded logic to make sure
+            # we always at least subscribe to public articles
+            if subscription_tier.get_articles_benefit() is None:
+                await session.refresh(subscription_tier, {"organization", "repository"})
+                (
+                    free_articles_benefit,
+                    _,
+                ) = await subscription_benefit_service.get_or_create_articles_benefits(
+                    session,
+                    subscription_tier.organization,
+                    subscription_tier.repository,
+                )
+                await enqueue_job(
+                    f"subscription.subscription_benefit.{task}",
+                    subscription_id=subscription.id,
+                    user_id=user_id,
+                    subscription_benefit_id=free_articles_benefit.id,
+                )
 
     async def update_subscription_tier_benefits_grants(
         self, session: AsyncSession, subscription_tier: SubscriptionTier

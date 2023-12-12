@@ -45,7 +45,8 @@ in addition (Stripe).
 
 **Enable more funding in a few steps**
 
-1. [Create an account](/maintainers/issue-funding/getting-started/create-account)
+1. [Create an account or enable maintainer mode for an existing Polar
+   account](/maintainers/issue-funding/getting-started/setup-account)
 2. [Install Polar for select
    repositories](/maintainers/issues-funding/getting-started/app-installation)
 3. [Customize Polar badge & embedding](/maintainers/issue-funding/getting-started/badge-settings)

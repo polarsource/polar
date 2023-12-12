@@ -1,5 +1,5 @@
-// @ts-ignore
 import { ContentPasteOutlined } from '@mui/icons-material'
+// @ts-ignore
 import Markdown from 'markdown-to-jsx'
 import { Button } from 'polarkit/components/ui/atoms'
 import SyntaxHighlighter from 'react-syntax-highlighter'

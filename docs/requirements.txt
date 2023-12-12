@@ -1,2 +1,2 @@
 mkdocs-material == 9.5.1
-mkdocs-awesome-pages-plugin == 2.9.2
+mkdocs-macros-plugin == 1.0.5

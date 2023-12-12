@@ -1,8 +1,8 @@
 ---
-title: Contributors
+title: Contributors - FAQ
 ---
 
-# Contributors
+# Contributor FAQ
 
 *Coming soon*
 

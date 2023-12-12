@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 
 from polar.article.service import article_service
-from polar.authz.service import Subject
+from polar.authz.service import Anonymous, Subject
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -19,6 +19,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.postgres import AsyncSession
+from tests.fixtures.random_objects import create_user
 
 
 def random_string(length: int = 32) -> str:
@@ -173,7 +174,19 @@ async def articles(
     ]
 
 
+@pytest_asyncio.fixture
+async def other_subscriptions(
+    session: AsyncSession, organization: Organization
+) -> None:
+    for _ in range(5):
+        user = await create_user(session)
+        await create_articles_subscription(
+            session, user=user, organization=organization, paid_subscriber=False
+        )
+
+
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("other_subscriptions")
 class TestList:
     async def test_no_subscription(
         self, session: AsyncSession, articles: list[Article], user_second: User
@@ -256,7 +269,30 @@ class TestList:
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("other_subscriptions")
 class TestSearch:
+    async def test_anonymous(
+        self,
+        session: AsyncSession,
+        articles: list[Article],
+        article_public_free_published: Article,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        results, count = await article_service.search(
+            session,
+            Anonymous(),
+            organization_id=organization.id,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(results) == 1
+        assert count == 1
+
+        article, is_paid_subscriber = results[0]
+        assert article.id == article_public_free_published.id
+        assert is_paid_subscriber is False
+
     async def test_no_subscription(
         self,
         session: AsyncSession,

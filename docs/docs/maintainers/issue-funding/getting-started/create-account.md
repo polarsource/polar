@@ -1,4 +1,4 @@
-## Create an account
+# Create a Polar Account
 
 [Signup as a maintainer](https://polar.sh/signup/maintainer) to speed through
 the account creation & app installation flow:
@@ -9,8 +9,8 @@ the account creation & app installation flow:
 
 2. Redirected to the GitHub app installation flow - granting access to select repositories to use with Polar for issue funding (see next step).
 
-![Screenshot of signup page on Polar](/assets/maintainers/issue-funding/signup-light.jpg#only-light)
-![Screenshot of signup page on Polar](/assets/maintainers/issue-funding/signup-dark.jpg#only-dark)
+![Screenshot of signup page on Polar](../../../../assets/maintainers/issue-funding/signup-light.jpg#only-light)
+![Screenshot of signup page on Polar](../../../../assets/maintainers/issue-funding/signup-dark.jpg#only-dark)
 
 **Why we require GitHub login (OAuth)**
 

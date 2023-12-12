@@ -1,0 +1,1 @@
+# Customize Polar badge settings

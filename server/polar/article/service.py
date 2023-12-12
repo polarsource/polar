@@ -7,7 +7,14 @@ from uuid import UUID
 
 import structlog
 from slugify import slugify
-from sqlalchemy import Select, desc, func, nullsfirst, select
+from sqlalchemy import (
+    Select,
+    desc,
+    false,
+    func,
+    nullsfirst,
+    select,
+)
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.service import Subject
@@ -165,7 +172,11 @@ class ArticleService:
         if organization_id is not None:
             statement = statement.where(Article.organization_id == organization_id)
 
-        results, count = await paginate(session, statement, pagination=pagination)
+        results, count = await paginate(
+            session,
+            statement,
+            pagination=pagination,
+        )
 
         return results, count
 
@@ -413,7 +424,12 @@ class ArticleService:
             .join(
                 ArticlesSubscription,
                 onclause=and_(
-                    ArticlesSubscription.organization_id == Organization.id,
+                    and_(
+                        ArticlesSubscription.user_id == auth_subject.id
+                        if isinstance(auth_subject, User)
+                        else false(),
+                        ArticlesSubscription.organization_id == Organization.id,
+                    ),
                     ArticlesSubscription.deleted_at.is_(None),
                 ),
                 isouter=True,
@@ -421,7 +437,12 @@ class ArticleService:
             .join(
                 UserOrganization,
                 onclause=and_(
-                    UserOrganization.organization_id == Organization.id,
+                    and_(
+                        UserOrganization.user_id == auth_subject.id
+                        if isinstance(auth_subject, User)
+                        else false(),
+                        UserOrganization.organization_id == Organization.id,
+                    ),
                     UserOrganization.deleted_at.is_(None),
                 ),
                 isouter=True,

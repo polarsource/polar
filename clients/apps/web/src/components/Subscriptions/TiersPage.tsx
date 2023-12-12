@@ -71,10 +71,10 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
             </Link>
           </div>
         </div>
-        <div className="flex flex-col gap-6 md:grid md:grid-cols-4">
+        <div className="flex flex-row flex-wrap gap-6">
           {subscriptionTiers.items.map((tier) => (
             <SubscriptionTierCard
-              className="h-full"
+              className="w-full self-stretch lg:max-w-[250px]"
               key={tier.id}
               subscriptionTier={tier}
             >

@@ -1,12 +1,13 @@
 'use client'
 
-import { ArrowForward, LanguageOutlined } from '@mui/icons-material'
+import { ArrowForward } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import { motion, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { ButtonProps } from 'polarkit/components/ui/button'
+import { useSubscriptionSummary } from 'polarkit/hooks'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
@@ -44,6 +45,11 @@ export const Post = (props: FeedPost) => {
 }
 
 const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
+  const organizationSummary = useSubscriptionSummary(
+    props.article.organization.name,
+  )
+  const subscribersCount = organizationSummary.data?.pagination.total_count
+
   return (
     <div className="flex w-full flex-row items-center gap-x-4 text-sm md:justify-between">
       <Avatar
@@ -51,7 +57,7 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
         avatar_url={props.article.byline.avatar_url}
         name={props.article.byline.name}
       />
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-y-0.5">
         <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
           <Link
             className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
@@ -85,38 +91,32 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
             </>
           ) : null}
           &middot;
-          {props.article.visibility === 'public' ? (
-            <>
-              <div className="flex flex-row items-center gap-x-1">
-                <span className="flex items-center text-blue-500">
-                  <LanguageOutlined fontSize="inherit" />
-                </span>
-                <span className="text-xs">Public</span>
-              </div>
-              &middot;
-            </>
+          {props.article.paid_subscribers_only ? (
+            <div className="flex flex-row items-center gap-x-1">
+              <span className="text-xs">Premium</span>
+            </div>
           ) : (
+            <div className="flex flex-row items-center gap-x-1">
+              <span className="text-xs">Public</span>
+            </div>
+          )}
+          {subscribersCount && (
             <>
+              &middot;
               <div className="flex flex-row items-center gap-x-1">
-                <span className="text-xs capitalize">
-                  {props.article.visibility}
+                <span className="text-xs">
+                  <span className="lowercase">
+                    {Intl.NumberFormat('en-US', {
+                      maximumSignificantDigits: 3,
+                      notation: 'compact',
+                      compactDisplay: 'short',
+                    }).format(subscribersCount)}
+                  </span>{' '}
+                  {subscribersCount === 1 ? 'Subscriber' : 'Subscribers'}
                 </span>
               </div>
-              &middot;
             </>
           )}
-          <Link
-            onClick={(e) => e.stopPropagation()}
-            href={`/${props.article.organization.name}?tab=subscriptions`}
-          >
-            <Button
-              className="h-fit px-0 py-0 leading-normal"
-              variant="link"
-              size="sm"
-            >
-              Subscribe
-            </Button>
-          </Link>
         </div>
       </div>
       <AnimatedIconButton

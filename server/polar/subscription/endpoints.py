@@ -1,15 +1,17 @@
+from collections.abc import AsyncGenerator
 from datetime import date
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import UUID4, EmailStr
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Anonymous, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.csv import get_emails_from_csv
-from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Repository, Subscription, SubscriptionBenefit, SubscriptionTier
 from polar.models.organization import Organization
@@ -596,6 +598,73 @@ async def subscriptions_import(
             log.error("subscriptions_import.failed", e=e)
 
     return SubscriptionsImported(count=count)
+
+
+@router.get(
+    "/subscriptions/export",
+    tags=[Tags.PUBLIC],
+)
+async def subscriptions_export(
+    auth: UserRequiredAuth,
+    organization_name_platform: OrganizationNamePlatform,
+    repository_name: OptionalRepositoryNameQuery = None,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    organization: Organization | None = None
+    if organization_name_platform is not None:
+        organization_name, platform = organization_name_platform
+        organization = await organization_service.get_by_name(
+            session, platform, organization_name
+        )
+        if organization is None:
+            raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        if organization is None:
+            raise BadRequest(
+                "organization_name and platform are required when repository_name is set"
+            )
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    # authz
+    if not await authz.can(auth.subject, AccessType.write, organization):
+        raise Unauthorized()
+
+    async def create_csv() -> AsyncGenerator[str, None]:
+        # CSV header
+        yield "email,name,created_at,active,tier\n"
+
+        (subscribers, _) = await subscription_service.search(
+            session,
+            user=auth.subject,
+            organization=organization,
+            repository=repository,
+            pagination=PaginationParams(limit=1000000, page=1),
+        )
+
+        for sub in subscribers:
+            fields = [
+                sub.user.email,
+                sub.user.username,
+                sub.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "true" if sub.active else "false",
+                sub.subscription_tier.name,
+            ]
+
+            # strip commas (poor mans CSV)
+            fields = [f.replace(",", "") for f in fields]
+
+            yield ",".join(fields) + "\n"
+
+    name = f"{organization.name}_subscribers.csv"
+    headers = {"Content-Disposition": f'inline; filename="{name}"'}
+    return StreamingResponse(create_csv(), headers=headers, media_type="text/csv")
 
 
 @router.post(

@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Iterable
 from datetime import date, datetime
 from typing import Any, Literal, Self
@@ -229,6 +230,13 @@ class SubscribeSessionCreate(Schema):
             "to retrieve the subscribe session id."
         ),
     )
+    organization_subscriber_id: UUID4 | None = Field(
+        None,
+        description=(
+            "ID of the Organization on behalf which you want to subscribe this tier to. "
+            "You need to be an administrator of the Organization to do this."
+        ),
+    )
     customer_email: EmailStr | None = Field(
         None,
         description=(
@@ -252,6 +260,7 @@ class SubscribeSession(Schema):
     )
     customer_email: str | None = None
     customer_name: str | None = None
+    organization_subscriber_id: UUID4 | None = None
     subscription_tier: SubscriptionTier
     organization_name: str | None = None
     repository_name: str | None = None
@@ -262,6 +271,15 @@ class SubscribeSession(Schema):
         checkout_session: stripe_lib.checkout.Session,
         subscription_tier: SubscriptionTierModel,
     ) -> Self:
+        organization_subscriber_id: uuid.UUID | None = None
+        if checkout_session.metadata:
+            try:
+                organization_subscriber_id = uuid.UUID(
+                    checkout_session.metadata["organization_subscriber_id"]
+                )
+            except (KeyError, ValueError):
+                pass
+
         return cls(
             id=checkout_session.id,
             url=checkout_session.url,
@@ -271,6 +289,7 @@ class SubscribeSession(Schema):
             customer_name=checkout_session.customer_details["name"]
             if checkout_session.customer_details
             else None,
+            organization_subscriber_id=organization_subscriber_id,
             subscription_tier=subscription_tier,  # type: ignore
             organization_name=subscription_tier.organization.name
             if subscription_tier.organization is not None

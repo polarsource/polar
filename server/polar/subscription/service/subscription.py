@@ -32,6 +32,7 @@ from polar.models import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.organization.service import organization as organization_service
 from polar.transaction.service.transfer import (
     transfer_transaction as transfer_transaction_service,
 )
@@ -373,8 +374,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def create_subscription(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
-        customer_id = get_expandable_id(stripe_subscription.customer)
-
         price = stripe_subscription["items"].data[0].price
         product_id = price.product
         subscription_tier = await subscription_tier_service.get_by_stripe_product_id(
@@ -392,7 +391,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             statement = (
                 select(Subscription)
                 .where(Subscription.id == uuid.UUID(existing_subscription_id))
-                .options(joinedload(Subscription.user))
+                .options(
+                    joinedload(Subscription.user), joinedload(Subscription.organization)
+                )
             )
             result = await session.execute(statement)
             subscription = result.unique().scalar_one_or_none()
@@ -417,21 +418,42 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         subscription.set_started_at()
 
-        # Take user from existing subscription, or get it from Stripe customer ID
+        customer_id = get_expandable_id(stripe_subscription.customer)
+        customer = stripe_service.get_customer(customer_id)
+        customer_email = cast(str, customer.email)
+
+        # Subscribe as organization
+        organization_subscriber_id = stripe_subscription.metadata.get(
+            "organization_subscriber_id"
+        )
+        if organization_subscriber_id is not None:
+            organization = await organization_service.get(
+                session, uuid.UUID(organization_subscriber_id)
+            )
+            if organization is not None:
+                # Take the chance to update Stripe customer ID and billing email
+                organization.stripe_customer_id = customer_id
+                organization.billing_email = customer_email
+                session.add(organization)
+                subscription.organization = organization
+
+        # Take user from existing subscription, or get it from metadata
+        user_id = stripe_subscription.metadata.get("user_id")
         user: User | None = subscription.user
         if user is None:
-            user = await user_service.get_by_stripe_customer_id(session, customer_id)
+            if user_id is not None:
+                user = await user_service.get(session, uuid.UUID(user_id))
             if user is None:
-                customer = stripe_service.get_customer(customer_id)
-                assert customer.email is not None
                 user = await user_service.get_by_email_or_signup(
-                    session, customer.email, signup_type=UserSignupType.backer
+                    session, customer_email, signup_type=UserSignupType.backer
                 )
-            subscription.user = user
+        subscription.user = user
 
-        user.stripe_customer_id = customer_id
-        await loops_service.user_update(user, isBacker=True)
-        session.add(user)
+        # Take the chance to update Stripe customer ID and email marketing
+        if subscription.organization is None:
+            user.stripe_customer_id = customer_id
+            await loops_service.user_update(user, isBacker=True)
+            session.add(user)
 
         session.add(subscription)
         await session.commit()

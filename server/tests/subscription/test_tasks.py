@@ -8,6 +8,7 @@ from polar.models import (
     Subscription,
     SubscriptionBenefit,
     SubscriptionBenefitGrant,
+    SubscriptionTier,
     User,
 )
 from polar.postgres import AsyncSession
@@ -20,6 +21,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionBenefitDoesNotExist,
     SubscriptionBenefitGrantDoesNotExist,
     SubscriptionDoesNotExist,
+    SubscriptionTierDoesNotExist,
     UserDoesNotExist,
     subscription_benefit_delete,
     subscription_benefit_grant,
@@ -28,6 +30,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     subscription_benefit_update,
     subscription_enqueue_benefits_grants,
     subscription_service,
+    subscription_update_subscription_tier_benefits_grants,
 )
 from polar.worker import JobContext, PolarWorkerContext
 
@@ -60,6 +63,36 @@ class TestSubscriptionEnqueueBenefitsGrants:
         )
 
         enqueue_benefits_grants_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
+    async def test_not_existing_subscription_tier(
+        self, job_context: JobContext, polar_worker_context: PolarWorkerContext
+    ) -> None:
+        with pytest.raises(SubscriptionTierDoesNotExist):
+            await subscription_update_subscription_tier_benefits_grants(
+                job_context, uuid.uuid4(), polar_worker_context
+            )
+
+    async def test_existing_subscription_tier(
+        self,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        update_subscription_tier_benefits_grants_mock = mocker.patch.object(
+            subscription_service,
+            "update_subscription_tier_benefits_grants",
+            spec=SubscriptionService.update_subscription_tier_benefits_grants,
+        )
+
+        await subscription_update_subscription_tier_benefits_grants(
+            job_context, subscription_tier_organization.id, polar_worker_context
+        )
+
+        update_subscription_tier_benefits_grants_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

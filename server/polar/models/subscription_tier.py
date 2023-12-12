@@ -8,7 +8,10 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.subscription_benefit import (
+    SubscriptionBenefitArticles,
+    SubscriptionBenefitType,
+)
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -17,7 +20,6 @@ if TYPE_CHECKING:
         SubscriptionBenefit,
         SubscriptionTierBenefit,
     )
-    from polar.models.subscription_benefit import SubscriptionBenefitArticles
 
 
 class SubscriptionTierType(StrEnum):
@@ -103,7 +105,7 @@ class SubscriptionTier(RecordModel):
             return f"{self.repository.name} - {self.name}"
         raise RuntimeError()
 
-    def get_articles_benefit(self) -> "SubscriptionBenefitArticles | None":
+    def get_articles_benefit(self) -> SubscriptionBenefitArticles | None:
         for benefit in self.benefits:
             if benefit.type == SubscriptionBenefitType.articles:
                 return cast(SubscriptionBenefitArticles, benefit)

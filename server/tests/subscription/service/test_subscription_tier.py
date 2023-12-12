@@ -1,8 +1,9 @@
 import uuid
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.authz.service import Anonymous, Authz
 from polar.exceptions import NotPermitted
@@ -43,6 +44,11 @@ from ..conftest import (
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.subscription.service.subscription_tier.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -667,6 +673,7 @@ class TestCreateFree:
     async def test_already_exists(
         self,
         session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
         organization: Organization,
         subscription_tier_organization_free: SubscriptionTier,
     ) -> None:
@@ -676,9 +683,15 @@ class TestCreateFree:
 
         assert subscription_tier.id == subscription_tier_organization_free.id
 
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            subscription_tier.id,
+        )
+
     async def test_create(
         self,
         session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
         subscription_benefit_organization: SubscriptionBenefit,
         organization: Organization,
     ) -> None:
@@ -695,6 +708,11 @@ class TestCreateFree:
         assert (
             free_subscription_tier.benefits[0].id
             == subscription_benefit_organization.id
+        )
+
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            free_subscription_tier.id,
         )
 
 
@@ -740,6 +758,7 @@ class TestUpdateBenefits:
     async def test_added_benefits(
         self,
         session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -774,9 +793,15 @@ class TestUpdateBenefits:
         assert len(added) == len(subscription_benefits)
         assert len(deleted) == 0
 
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            subscription_tier_organization.id,
+        )
+
     async def test_order(
         self,
         session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -811,9 +836,15 @@ class TestUpdateBenefits:
         assert len(added) == len(subscription_benefits)
         assert len(deleted) == 0
 
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            subscription_tier_organization.id,
+        )
+
     async def test_deleted(
         self,
         session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -838,9 +869,15 @@ class TestUpdateBenefits:
         assert len(added) == 0
         assert len(deleted) == len(subscription_benefits)
 
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            subscription_tier_organization.id,
+        )
+
     async def test_reordering(
         self,
         session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -880,6 +917,11 @@ class TestUpdateBenefits:
 
         assert len(added) == 0
         assert len(deleted) == 0
+
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            subscription_tier_organization.id,
+        )
 
     async def test_add_not_selectable(
         self,
@@ -942,6 +984,7 @@ class TestUpdateBenefits:
     async def test_add_with_existing_not_selectable(
         self,
         session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -982,6 +1025,11 @@ class TestUpdateBenefits:
         assert len(added) == 1
         assert selectable_benefit in added
         assert len(deleted) == 0
+
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.update_subscription_tier_benefits_grants",
+            subscription_tier_organization.id,
+        )
 
 
 @pytest.mark.asyncio

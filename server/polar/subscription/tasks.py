@@ -14,6 +14,7 @@ from .service.subscription_benefit import (
 from .service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
+from .service.subscription_tier import subscription_tier as subscription_tier_service
 
 
 class SubscriptionTaskError(PolarError):
@@ -24,6 +25,15 @@ class SubscriptionDoesNotExist(SubscriptionTaskError):
     def __init__(self, subscription_id: uuid.UUID) -> None:
         self.subscription_id = subscription_id
         message = f"The subscription with id {subscription_id} does not exist."
+        super().__init__(message, 500)
+
+
+class SubscriptionTierDoesNotExist(SubscriptionTaskError):
+    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
+        self.subscription_tier_id = subscription_tier_id
+        message = (
+            f"The subscription tier with id {subscription_tier_id} does not exist."
+        )
         super().__init__(message, 500)
 
 
@@ -64,6 +74,22 @@ async def subscription_enqueue_benefits_grants(
             raise SubscriptionDoesNotExist(subscription_id)
 
         await subscription_service.enqueue_benefits_grants(session, subscription)
+
+
+@task("subscription.subscription.update_subscription_tier_benefits_grants")
+async def subscription_update_subscription_tier_benefits_grants(
+    ctx: JobContext, subscription_tier_id: uuid.UUID, polar_context: PolarWorkerContext
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        subscription_tier = await subscription_tier_service.get(
+            session, subscription_tier_id
+        )
+        if subscription_tier is None:
+            raise SubscriptionTierDoesNotExist(subscription_tier_id)
+
+        await subscription_service.update_subscription_tier_benefits_grants(
+            session, subscription_tier
+        )
 
 
 @task("subscription.subscription_benefit.grant")

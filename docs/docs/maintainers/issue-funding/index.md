@@ -43,14 +43,17 @@ in addition (Stripe).
 
 ## Get up and running in minutes
 
-**Enable more funding in a few steps**
+**Enable more funding in only a few steps**
 
 1. [Create an account or enable maintainer mode for an existing Polar
    account](/maintainers/issue-funding/getting-started/setup-account)
 2. [Install Polar for select
    repositories](/maintainers/issues-funding/getting-started/app-installation)
-3. [Customize Polar badge & embedding](/maintainers/issue-funding/getting-started/badge-settings)
-4. Received funding? Setup Stripe or Open Collective for payouts.
+3. [Customize the Polar badge & how it's embedded](/maintainers/issue-funding/getting-started/badge-settings)
+4. [Promote funding within your
+   community](/maintainers/issue-funding/getting-started/promote) (recommended,
+   but optional)
+5. Received funding? Setup Stripe or Open Collective for payouts.
 
 **Prerequisites:**
 

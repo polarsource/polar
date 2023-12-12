@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline'
 import {
   Organization,
   PolarSubscriptionSchemasUser,
@@ -258,17 +259,25 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">Subscribers</h2>
 
-          <Button onClick={showImportSubscribers}>Import</Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={showImportSubscribers}
+              className="flex items-center"
+            >
+              <ArrowDownOnSquareIcon className="-ml-1 mr-2 h-5 w-5" />
+              <span>Import</span>
+            </Button>
 
-          <div className="w-1/3 md:w-1/6">
-            <SubscriptionTiersSelect
-              tiersByType={subscriptionTiersByType}
-              value={subscriptionTierType || subscriptionTierId || 'all'}
-              onChange={setFilter}
-            />
+            <div className="w-full min-w-[180px]">
+              <SubscriptionTiersSelect
+                tiersByType={subscriptionTiersByType}
+                value={subscriptionTierType || subscriptionTierId || 'all'}
+                onChange={setFilter}
+              />
+            </div>
           </div>
         </div>
         {subscriptions && pageCount !== undefined && (

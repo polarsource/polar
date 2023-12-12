@@ -30,13 +30,15 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
         <SelectValue placeholder="Select a tier" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All tiers</SelectItem>
+        <SelectItem value="all">
+          <span className="whitespace-nowrap">All tiers</span>
+        </SelectItem>
         <SelectSeparator />
         {Object.entries(tiersByType).map(([type, tiers], index) => (
           <React.Fragment key={type}>
             <SelectGroup>
               <SelectItem value={type} className="font-medium">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 whitespace-normal ">
                   <SubscriptionGroupIcon type={type as SubscriptionTierType} />
                   {tiersTypeDisplayNames[type as SubscriptionTierType]}
                 </div>

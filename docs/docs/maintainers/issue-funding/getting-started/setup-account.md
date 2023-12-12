@@ -1,5 +1,5 @@
 ---
-title: Setup account | Maintainers
+title: Account Setup | Maintainers
 ---
 # Setup a maintainer account with Polar
 

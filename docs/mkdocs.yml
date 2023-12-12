@@ -66,9 +66,10 @@ nav:
     - Issue Funding:
       - Overview: maintainers/issue-funding/index.md
       - Getting Started:
-        - 1. Polar Account: maintainers/issue-funding/getting-started/setup-account.md
+        - 1. Account Setup: maintainers/issue-funding/getting-started/setup-account.md
         - 2. Install GitHub App: maintainers/issue-funding/getting-started/app-installation.md
         - 3. Customize Polar Badge: maintainers/issue-funding/getting-started/badge-settings.md
+        - 4. Promote it (Optional): maintainers/issue-funding/getting-started/promote.md
     - FAQ: maintainers/faq.md
   - API:
     - Documentation (Alpha): api/index.md

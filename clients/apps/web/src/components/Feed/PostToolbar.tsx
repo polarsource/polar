@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { Label } from 'polarkit/components/ui/label'
+import { Banner } from 'polarkit/components/ui/molecules'
 import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
 import { useSendArticlePreview, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
@@ -120,7 +121,7 @@ export const PostToolbar = ({
                 hide={hidePreviewEmailModal}
                 modalContent={
                   <PreviewEmailModal
-                    articleId={article.id}
+                    article={article}
                     hideModal={hidePreviewEmailModal}
                   />
                 }
@@ -146,14 +147,11 @@ export const PostToolbar = ({
 }
 
 interface PreviewEmailModalProps {
-  articleId: string
+  article: Article
   hideModal: () => void
 }
 
-const PreviewEmailModal = ({
-  articleId,
-  hideModal,
-}: PreviewEmailModalProps) => {
+const PreviewEmailModal = ({ article, hideModal }: PreviewEmailModalProps) => {
   const { currentUser } = useAuth()
   const [previewEmail, setPreviewEmail] = useState<string>('')
   const sendPreviewEmail = useSendArticlePreview()
@@ -166,25 +164,32 @@ const PreviewEmailModal = ({
 
   const handleSendPreviewEmail = useCallback(async () => {
     await sendPreviewEmail.mutateAsync({
-      id: articleId,
+      id: article.id,
       email: previewEmail,
     })
 
     hideModal()
-  }, [articleId, previewEmail, hideModal])
+  }, [article, previewEmail, hideModal])
 
   return (
     <div className="flex flex-col gap-y-6 px-8 py-10">
-      <div>
+      <div className="flex flex-col gap-2">
         <h2 className="text-lg">Send Preview Email</h2>
-        <p className="dark:text-polar-400 mt-2 w-2/3 text-sm text-gray-400">
-          Sends a preview of the post to an email which belongs to a member
-          included in the selected visibility scope.
+        <p className="dark:text-polar-400  w-2/3 text-sm text-gray-400">
+          Sends a preview of the post via email.
         </p>
+        {article.visibility === ArticleUpdateVisibilityEnum.PRIVATE ? (
+          <Banner color="blue">
+            <p>
+              Note: This post is currently <em>private</em>. The receiver might
+              not have permissions to see the post.
+            </p>
+          </Banner>
+        ) : null}
       </div>
       <div className="flex flex-col gap-y-6">
         <Input type="email" value={previewEmail} />
-        <div className="mt-4 flex flex-row items-center gap-x-2">
+        <div className="mt-2 flex flex-row items-center gap-x-2">
           <Button
             className="self-start"
             loading={sendPreviewEmail.isPending}

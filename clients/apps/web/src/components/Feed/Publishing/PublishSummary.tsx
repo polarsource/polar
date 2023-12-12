@@ -33,6 +33,13 @@ export const PublishSummary = ({
     !isPublished,
   )
 
+  const plural = (count: number) => {
+    if (count == 1) {
+      return ''
+    }
+    return 's'
+  }
+
   return (
     <ShadowBoxOnMd className="sticky top-0 flex w-full flex-col gap-y-8">
       <div className="flex flex-col gap-y-2">
@@ -85,16 +92,45 @@ export const PublishSummary = ({
       <div className="flex flex-col gap-y-2">
         <h3 className="font-medium">Audience</h3>
         <ul className="dark:text-polar-400 text-sm text-gray-600">
-          <li>{articleReceivers?.free_subscribers} Free subscribers</li>
-          <li>{articleReceivers?.premium_subscribers} Premium subscribers</li>
-          <li>{articleReceivers?.organization_members} Organization members</li>
+          {articleReceivers?.free_subscribers !== undefined ? (
+            <li>
+              {articleReceivers.free_subscribers} free subscriber
+              {plural(articleReceivers.free_subscribers)}
+            </li>
+          ) : null}
+
+          {articleReceivers?.premium_subscribers !== undefined ? (
+            <li>
+              {articleReceivers.premium_subscribers} premium subscriber
+              {plural(articleReceivers.premium_subscribers)}
+            </li>
+          ) : null}
+
+          {articleReceivers?.organization_members !== undefined ? (
+            <li>
+              {articleReceivers.organization_members} member
+              {plural(articleReceivers.organization_members)} of{' '}
+              {article.organization.name}
+            </li>
+          ) : null}
+
+          {!article.paid_subscribers_only ? (
+            <li>Anyone on the web</li>
+          ) : (
+            <li>Premium subscribers on the web</li>
+          )}
         </ul>
       </div>
-      {article.notify_subscribers && (
+
+      {article.notify_subscribers && !article.notifications_sent_at && (
         <div className="flex flex-col gap-y-2">
           <h3 className="font-medium">Email</h3>
           <p className="dark:text-polar-400 text-sm text-gray-600">
-            Will send email to subscribers
+            Will send email to{' '}
+            {article.paid_subscribers_only
+              ? 'all premium subscribers'
+              : 'all subscribers'}
+            .
           </p>
         </div>
       )}

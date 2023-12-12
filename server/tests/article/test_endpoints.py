@@ -2,10 +2,12 @@ import pytest
 from httpx import AsyncClient
 
 from polar.config import settings
+from polar.models.articles_subscription import ArticlesSubscription
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
+from tests.fixtures.random_objects import create_user
 
 
 @pytest.mark.asyncio
@@ -337,11 +339,12 @@ async def test_list(
     create_2 = await client.post(
         "/api/v1/articles",
         json={
-            "title": "Hello Universe!",
+            "title": "Hello Paid Only!",
             "body": "Body body",
             "organization_id": str(organization.id),
             "visibility": "public",
             "published_at": "2023-11-26 00:00:00",  # a date in the past
+            "paid_subscribers_only": True,
         },
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
@@ -393,7 +396,8 @@ async def test_list(
     )
     assert get.status_code == 200
     list_json = get.json()
-    assert len(list_json["items"]) == 2
+    assert len(list_json["items"]) == 1
+    assert list_json["pagination"]["total_count"] == 1
     for art in list_json["items"]:
         assert art["visibility"] == "public"
 
@@ -405,6 +409,7 @@ async def test_list(
     assert get_authed.status_code == 200
     list_json_authed = get_authed.json()
     assert len(list_json_authed["items"]) == 2
+    assert list_json_authed["pagination"]["total_count"] == 2
 
     # authed, expect can see private if enabled
     get_show_unpublished = await client.get(
@@ -414,6 +419,60 @@ async def test_list(
     assert get_show_unpublished.status_code == 200
     list_json_authed_unpublished = get_show_unpublished.json()
     assert len(list_json_authed_unpublished["items"]) == 5
+    assert list_json_authed_unpublished["pagination"]["total_count"] == 5
+
+    # is subscriber
+    sub = ArticlesSubscription(
+        user_id=user.id,
+        organization_id=organization.id,
+        paid_subscriber=False,
+    )
+    session.add(sub)
+
+    # create other subscribers
+    for _ in range(5):
+        u = await create_user(session)
+        s2 = ArticlesSubscription(
+            user_id=u.id,
+            organization_id=organization.id,
+            paid_subscriber=False,
+        )
+        session.add(s2)
+
+    await session.commit()
+
+    # authed and is subscribed
+    get_show_unpublished = await client.get(
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert get_show_unpublished.status_code == 200
+    list_json_authed_unpublished = get_show_unpublished.json()
+    assert len(list_json_authed_unpublished["items"]) == 2
+    assert list_json_authed_unpublished["pagination"]["total_count"] == 2
+
+    # authed and is subscribed and want to see unpublished
+    get_show_unpublished = await client.get(
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert get_show_unpublished.status_code == 200
+    list_json_authed_unpublished = get_show_unpublished.json()
+    assert len(list_json_authed_unpublished["items"]) == 5
+    assert list_json_authed_unpublished["pagination"]["total_count"] == 5
+
+    # authed and is premium subscribed and want to see unpublished
+    sub.paid_subscriber = True
+    await session.commit()
+
+    get_show_unpublished = await client.get(
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert get_show_unpublished.status_code == 200
+    list_json_authed_unpublished = get_show_unpublished.json()
+    assert len(list_json_authed_unpublished["items"]) == 5
+    assert list_json_authed_unpublished["pagination"]["total_count"] == 5
 
 
 @pytest.mark.asyncio

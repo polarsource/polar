@@ -312,27 +312,35 @@ class SubscriptionTierService(
             repository_id=repository.id if repository else None,
         )
 
-        if free_subscription_tier is not None:
-            return free_subscription_tier
+        # create if does not exist
+        if free_subscription_tier is None:
+            free_subscription_tier = SubscriptionTier(
+                type=SubscriptionTierType.free,
+                name="Free",
+                price_amount=0,
+                price_currency="usd",
+                organization_id=organization.id if organization else None,
+                repository_id=repository.id if repository else None,
+            )
 
-        subscription_tier = SubscriptionTier(
-            type=SubscriptionTierType.free,
-            name="Free",
-            price_amount=0,
-            price_currency="usd",
-            organization_id=organization.id if organization else None,
-            repository_id=repository.id if repository else None,
-        )
+        existing_benefits = [
+            str(b.subscription_benefit_id)
+            for b in free_subscription_tier.subscription_tier_benefits
+        ]
 
         for index, benefit in enumerate(benefits):
-            subscription_tier.subscription_tier_benefits.append(
+            # this benefit is already attached to this tier
+            if str(benefit.id) in existing_benefits:
+                continue
+
+            free_subscription_tier.subscription_tier_benefits.append(
                 SubscriptionTierBenefit(subscription_benefit=benefit, order=index)
             )
 
-        session.add(subscription_tier)
+        session.add(free_subscription_tier)
         await session.commit()
 
-        return subscription_tier
+        return free_subscription_tier
 
     async def update_benefits(
         self,

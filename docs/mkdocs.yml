@@ -60,7 +60,6 @@ extra_css:
   - stylesheets/extra.css
 
 
-collapse_single_pages: true
 nav:
   - Home:
     - index.md
@@ -68,7 +67,9 @@ nav:
     - Issue Funding:
       - Overview: maintainers/issue-funding/index.md
       - Getting Started:
-        - Create Account: maintainers/issue-funding/getting-started/create-account.md
+        - 1. Create Account: maintainers/issue-funding/getting-started/create-account.md
+        - 2. Install GitHub App: maintainers/issue-funding/getting-started/app-installation.md
+        - 3. Customize Polar Badge: maintainers/issue-funding/getting-started/badge-settings.md
     - FAQ: maintainers/faq.md
   - API:
     - Documentation (Alpha): api/index.md
@@ -79,4 +80,3 @@ nav:
     - For Backers: faq/backers.md
     - For Contributors: faq/contributors.md
   - Support: support.md
-

@@ -1,21 +1,54 @@
 ---
-title: Getting Started - Issue Funding
+title: Issue Funding
+hide:
+    - toc
 ---
 
-# Getting started
+# Issue Funding
 
-![GitHub Issue with Polar Badge](/assets/maintainers/issue-funding/gh-badged-dark.jpg#only-dark)
+Polar offers a seamless service to enable your community to pool
+funding towards issues - helping support, upvote and fund the most impactful
+efforts. You can also easily reward contributors a share of the funding once the
+issue is completed.
 
 
-Polar offers a seamless product to enable your community of users to
-fund impactful issues across your open source initiatives. Combined with
-rewarding potential contributors a percentage of the funding (optional).
+![GitHub Issue with Polar Badge](../../assets/maintainers/issue-funding/gh-badged-dark.jpg#only-dark)
+![GitHub Issue with Polar Badge](../../assets/maintainers/issue-funding/gh-badged-light.jpg#only-light)
 
-**Steps:**
+## Features
+Polar is designed for maintainers, not bounty hunters. You remain in complete
+control & can get a better backlog based on reactions & funding from across your
+community.
 
-1. Create an account
-2. Install Polar for select repositories
-3. Embed Polar badge on select issues
+* Enable users to easily fund any issues (feature requests, roadmap items, bugs
+  etc)
+* Seamless embedding of the Polar badge on GitHub issues to promote funding for
+  select issues
+* Set individual funding goals per issue (or leave it open)
+* Funding is pooled from community members & users
+* Better backlog of issues stack ranked based on reactions & funding
+* Reward contributors once issues are completed a percentage of received funding
+* Set & promote an upfront reward (% of funding) to contributors (optional)
+* Seed the reward easily yourself if you have capital to spare (optional)
+
+**Polar by example:** [tRPC](https://polar.sh/trpc?tab=issues), [SerenityOS](https://polar.sh/serenityos?tab=issues), [Sindre Sorhus](https://polar.sh/sindresorhus?tab=issues), [Encode](https://polar.sh/encode?tab=issues) and hundreds more.
+
+
+## Pricing
+
+Polar has no fixed, monthly, fees. We take a 10% commission once transfers are
+made for successfully funded & completed issues. Payment processing fees apply
+in addition (Stripe).
+
+
+## Get up and running in minutes
+
+**Enable more funding in a few steps**
+
+1. [Create an account](/maintainers/issue-funding/getting-started/create-account)
+2. [Install Polar for select
+   repositories](/maintainers/issues-funding/getting-started/app-installation)
+3. [Customize Polar badge & embedding](/maintainers/issue-funding/getting-started/badge-settings)
 4. Received funding? Setup Stripe or Open Collective for payouts.
 
 **Prerequisites:**
@@ -23,58 +56,5 @@ rewarding potential contributors a percentage of the funding (optional).
 1. You have a GitHub account
 2. You have public - open source - repositories you want to promote funding
    towards
-3. You live in a country we support
+3. You live in a [country we support](/faq/maintainers/#which-countries-are-supported)
 
-
-## Create an account
-
-[Signup as a maintainer](https://polar.sh/signup/maintainer) to speed through
-the account creation & app installation flow:
-
-1. Create a Polar account using your GitHub login (OAuth)
-
-    *Your personal account can also be used in the future to fund issues via Polar.*
-
-2. Redirected to the GitHub app installation flow - granting access to select repositories to use with Polar for issue funding (see next step).
-
-![Screenshot of signup page on Polar](/assets/maintainers/issue-funding/signup-light.jpg#only-light)
-![Screenshot of signup page on Polar](/assets/maintainers/issue-funding/signup-dark.jpg#only-dark)
-
-**Why we require GitHub login (OAuth)**
-
-- Verify your GitHub account
-- Create a matching, public, profile on Polar (avatar, username, bio etc)
-- Show your profile in connection with funding issues (optional)
-- Install & manage the Polar GitHub app (next step) to enable funding towards
-  issues across your select repositories.
-
-
-???+ question "What GitHub permissions does Polar request for an account?"
-    We require read-only access from GitHub to your email address. It's
-    required so we can send receipts & funding notifications to you via email.
-
-    We also get read-only access to public GitHub profile resources (default by
-    GitHub). Below is what we use:
-
-    - Your public profile. Used to create a matching one on Polar (same username).
-    - Your GitHub stars. Used to surface popular issues across them (recommended
-      funding - optional)
-
-    **Note:** In addition to a Polar account, maintainers will need to install
-    the Polar app for select repositories. Our next section covers this -
-    including the repository permissions our app needs.
-
-
-!!! info "GitHub says Polar can 'Act on my behalf'"
-    Unfortunately, this is a default notice - poorly explained - from GitHub in all their OAuth
-    authentication flows. [See this ticket from the wider community asking GitHub to improve
-    the copy.](https://github.com/orgs/community/discussions/37117b)
-
-    Rest assured, we do not do anything on your behalf without a delibrate action
-    performed by you via Polar for an explicit, clear & desired outcome by you.
-
-    Specifically, we make it easy for you - as a maintainer - to comment on issues
-    you manage via Polar. In case you want to promote funding or notify
-    contributors about granted rewards via an in-line comment. No such comment
-    is automated, required or hard-coded (you can edit them freely in our UI) and they
-    require you to manually submit them each time.

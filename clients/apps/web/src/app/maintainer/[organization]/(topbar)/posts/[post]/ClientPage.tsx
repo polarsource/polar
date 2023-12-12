@@ -110,7 +110,6 @@ const ClientPage = () => {
             body: updateArticle.body,
           },
         }}
-        autoFocus="body"
       />
     </Tabs>
   )

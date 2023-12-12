@@ -37,7 +37,7 @@ export const SyntaxHighlighter = (props: {
       <Button
         size="icon"
         variant="secondary"
-        className="absolute right-4 top-4 h-8 w-8 rounded-full text-sm"
+        className="absolute right-6 top-6 h-8 w-8 rounded-full text-sm"
         onClick={handleCopy}
       >
         <ContentPasteOutlined fontSize="inherit" />
@@ -50,11 +50,8 @@ export const polarStyleLight: { [key: string]: React.CSSProperties } = {
   hljs: {
     display: 'block',
     overflowX: 'auto',
-    paddingTop: '.5em',
-    paddingBottom: '.5em',
     margin: 0,
-    paddingLeft: '0.5em',
-    paddingRight: '0.5em',
+    padding: '2em',
     background: '#F3F4F7',
     color: '#00193a',
   },
@@ -148,11 +145,8 @@ export const polarStyleDark: { [key: string]: React.CSSProperties } = {
   hljs: {
     display: 'block',
     overflowX: 'auto',
-    paddingTop: '.5em',
-    paddingBottom: '.5em',
     margin: 0,
-    paddingLeft: '0.5em',
-    paddingRight: '0.5em',
+    padding: '2em',
     background: '#16171F',
     color: '#E5EFFF',
   },

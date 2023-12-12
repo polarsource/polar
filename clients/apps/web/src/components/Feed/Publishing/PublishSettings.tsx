@@ -1,8 +1,12 @@
 'use client'
 
+import { useModal } from '@/components/Modal/useModal'
+import { ConfirmModal } from '@/components/Shared/ConfirmModal'
 import { Article } from '@polar-sh/sdk'
-import { Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { useRouter } from 'next/navigation'
+import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
+import { useDeleteArticle } from 'polarkit/hooks'
 import { useCallback, useMemo, useState } from 'react'
 import { AudiencePicker } from './AudiencePicker'
 import { PublishSummary } from './PublishSummary'
@@ -21,6 +25,8 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
     article.published_at ? new Date(article.published_at) : undefined,
   )
   const [slug, setSlug] = useState<string>(article.slug)
+  const router = useRouter()
+  const { hide: hideModal, isShown: isModalShown, show: showModal } = useModal()
 
   const onChangeSendEmail = (checked: boolean) => {
     setSendEmail(checked)
@@ -29,6 +35,18 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
   const onChangePublishAt = (v: Date | undefined) => {
     setPublishAt(v)
   }
+
+  const archiveArticle = useDeleteArticle()
+
+  const handleArchiveArticle = useCallback(async () => {
+    const response = await archiveArticle.mutateAsync({ id: article.id })
+
+    if (response.ok) {
+      router.push(`/maintainer/${article.organization.name}/posts`)
+    } else {
+      hideModal()
+    }
+  }, [archiveArticle, article, hideModal, router])
 
   const formatAndSetSlug = useCallback(
     (slug: string) => {
@@ -47,62 +65,91 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
   return (
     <>
-      <ShadowBoxOnMd className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
-        <>
-          {!isPublished && (
-            <PublishingTimePicker
-              publishAt={publishAt}
-              article={article}
-              onChange={onChangePublishAt}
+      <div className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
+        <ShadowBoxOnMd className="flex flex-col gap-y-8">
+          <>
+            {!isPublished && (
+              <PublishingTimePicker
+                publishAt={publishAt}
+                article={article}
+                onChange={onChangePublishAt}
+              />
+            )}
+            <AudiencePicker
+              paidSubscribersOnly={paidSubscribersOnly}
+              onChange={setPaidSubscribersOnly}
             />
-          )}
-          <AudiencePicker
-            paidSubscribersOnly={paidSubscribersOnly}
-            onChange={setPaidSubscribersOnly}
-          />
-          {!article.notifications_sent_at && (
-            <>
-              <div className="flex flex-col gap-y-4">
-                <div className="flex flex-col gap-y-2">
-                  <span className="font-medium">Email</span>
-                  <p className="text-polar-500 dark:text-polar-500 text-sm">
-                    Sent to subscribers when a post is published
-                  </p>
-                </div>
+            {!article.notifications_sent_at && (
+              <>
                 <div className="flex flex-col gap-y-4">
-                  <div className="flex flex-row items-center gap-x-2">
-                    <Checkbox
-                      checked={sendEmail}
-                      onCheckedChange={(checked) =>
-                        onChangeSendEmail(Boolean(checked))
-                      }
-                    />
-                    <span className="text-sm">
-                      Send post as email to subscribers
-                    </span>
+                  <div className="flex flex-col gap-y-2">
+                    <span className="font-medium">Email</span>
+                    <p className="text-polar-500 dark:text-polar-500 text-sm">
+                      Sent to subscribers when a post is published
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-y-4">
+                    <div className="flex flex-row items-center gap-x-2">
+                      <Checkbox
+                        checked={sendEmail}
+                        onCheckedChange={(checked) =>
+                          onChangeSendEmail(Boolean(checked))
+                        }
+                      />
+                      <span className="text-sm">
+                        Send post as email to subscribers
+                      </span>
+                    </div>
                   </div>
                 </div>
+              </>
+            )}
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col  gap-2">
+                <span className="font-medium">Slug</span>
+                <p className="text-polar-500 dark:text-polar-500 text-sm">
+                  Change the slug of the article. The slug is used in public
+                  URLs.
+                </p>
               </div>
-            </>
-          )}
-          <div className="flex flex-col gap-y-4">
-            <div className="flex flex-col  gap-2">
-              <span className="font-medium">Slug</span>
-              <p className="text-polar-500 dark:text-polar-500 text-sm">
-                Change the slug of the article. The slug is used in public URLs.
+
+              <Input
+                type="text"
+                value={slug}
+                onChange={(e) => formatAndSetSlug(e.target.value)}
+                className="font-mono"
+                maxLength={64}
+              />
+            </div>
+          </>
+        </ShadowBoxOnMd>
+        <ShadowBoxOnMd className="flex flex-col gap-y-8">
+          <div className="flex flex-row items-start justify-between">
+            <div className="flex flex-col gap-y-1">
+              <h3 className="dark:text-polar-50 font-medium text-gray-950">
+                Archive
+              </h3>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                This action will unpublish the post & permanently remove it
               </p>
             </div>
-
-            <Input
-              type="text"
-              value={slug}
-              onChange={(e) => formatAndSetSlug(e.target.value)}
-              className="font-mono"
-              maxLength={64}
-            />
+            <Button variant="destructive" size="sm" onClick={showModal}>
+              Archive
+            </Button>
           </div>
-        </>
-      </ShadowBoxOnMd>
+          <ConfirmModal
+            title="Archive Post"
+            description={
+              'This action will unpublish the post & permanently remove it.'
+            }
+            destructiveText="Archive"
+            onConfirm={handleArchiveArticle}
+            isShown={isModalShown}
+            hide={hideModal}
+            destructive
+          />
+        </ShadowBoxOnMd>
+      </div>
       <PublishSummary
         article={{
           ...article,

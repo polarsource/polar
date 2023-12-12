@@ -39,7 +39,7 @@ export const ConfirmModal = ({
           <div className="flex flex-col items-center gap-y-6 px-6 py-12 text-center">
             <>
               <h3 className="text-xl font-medium">{title}</h3>
-              <p className="dark:text-polar-500 max-w-[480px] text-sm leading-relaxed text-gray-400">
+              <p className="dark:text-polar-400 max-w-[480px] text-sm leading-relaxed text-gray-500">
                 {description}
               </p>
               <div className="flex flex-row items-center justify-center gap-x-4 pt-6">

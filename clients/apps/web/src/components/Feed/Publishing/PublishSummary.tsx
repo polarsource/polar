@@ -1,4 +1,4 @@
-import { Article } from '@polar-sh/sdk'
+import { Article, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { useArticleReceivers } from 'polarkit/hooks'
 import { useMemo } from 'react'
@@ -6,13 +6,9 @@ import { useArticleActions } from './useArticleActions'
 
 interface ArticleSummaryProps {
   article: Article
-  isPublished: boolean
 }
 
-export const PublishSummary = ({
-  article,
-  isPublished,
-}: ArticleSummaryProps) => {
+export const PublishSummary = ({ article }: ArticleSummaryProps) => {
   const { data: articleReceivers, refetch: refetchArticleReceivers } =
     useArticleReceivers(
       article.organization.name,
@@ -24,13 +20,19 @@ export const PublishSummary = ({
     [article],
   )
 
+  const isPublished = Boolean(
+    article.published_at &&
+      new Date(article.published_at) <= new Date() &&
+      article.visibility === ArticleVisibilityEnum.PUBLIC,
+  )
+
   const articleActions = useArticleActions(
     article.id,
     {
       ...article,
       byline: undefined,
     },
-    !isPublished,
+    isPublished,
   )
 
   const plural = (count: number) => {
@@ -43,7 +45,9 @@ export const PublishSummary = ({
   return (
     <ShadowBoxOnMd className="sticky top-0 flex w-full flex-col gap-y-8">
       <div className="flex flex-col gap-y-2">
-        <h2 className="font-medium leading-relaxed">Publish</h2>
+        <h2 className="font-medium leading-relaxed">
+          {isPublished ? 'Published' : 'Publish'}
+        </h2>
         {publishedAtDate ? (
           <div className="flex flex-col gap-y-2">
             <div className="flex flex-col text-sm">

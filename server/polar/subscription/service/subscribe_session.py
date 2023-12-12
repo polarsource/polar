@@ -141,12 +141,11 @@ class SubscribeSessionService:
         # Set the customer only from a cookie-based authentication!
         # With the PAT, it's probably a call from the maintainer who wants to redirect
         # the backer they bring from their own website.
-        if (
-            auth_method == AuthMethod.COOKIE
-            and isinstance(auth_subject, User)
-            and auth_subject.stripe_customer_id is not None
-        ):
-            customer_options["customer"] = auth_subject.stripe_customer_id
+        if auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
+            if auth_subject.stripe_customer_id is not None:
+                customer_options["customer"] = auth_subject.stripe_customer_id
+            else:
+                customer_options["customer_email"] = auth_subject.email
         elif customer_email is not None:
             customer_options["customer_email"] = customer_email
 

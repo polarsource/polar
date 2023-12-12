@@ -33,7 +33,7 @@ easily embed the Polar funding badge on issues. However, you're always in
 control of which issues to badge across the repositories you've granted access
 to.
 
-**All Repositories**
+#### All Repositories
 
 - Every, single, repository is synced with Polar - including future ones
 - **Pros:** Automatically use Polar freely across your repositories now and in
@@ -53,7 +53,7 @@ to.
 
     Both of the above are likely to be deprecated features in the future.
 
-**Select Repositories**
+#### Select Repositories
 
 - You choose *exactly* which repositories Polar should have access to
 - **Pros:** Complete control. Gradual expansion. Great starting point.

@@ -1,15 +1,17 @@
 import uuid
 
 from polar.auth.dependencies import AuthMethod
-from polar.authz.service import Subject
-from polar.exceptions import PolarError, ResourceNotFound
+from polar.authz.service import AccessType, Anonymous, Authz, Subject
+from polar.exceptions import NotPermitted, PolarError, ResourceNotFound, Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import (
     SubscriptionTier,
     User,
 )
+from polar.models.organization import Organization
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.organization.service import organization as organization_service
 
 from ..schemas import SubscribeSession
 from .subscription import subscription as subscription_service
@@ -81,8 +83,10 @@ class SubscribeSessionService:
         success_url: str,
         auth_subject: Subject,
         auth_method: AuthMethod | None,
+        authz: Authz,
         *,
         customer_email: str | None = None,
+        organization_id: uuid.UUID | None = None,
     ) -> SubscribeSession:
         subscription_tier = (
             await subscription_tier_service.with_organization_or_repository(
@@ -107,7 +111,22 @@ class SubscribeSessionService:
 
         metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
 
+        organization = (
+            await self._get_organization(session, authz, auth_subject, organization_id)
+            if organization_id is not None
+            else None
+        )
+
+        if organization is not None:
+            metadata["organization_subscriber_id"] = str(organization.id)
         if auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
+            metadata["user_id"] = str(auth_subject.id)
+
+        if (
+            auth_method == AuthMethod.COOKIE
+            and isinstance(auth_subject, User)
+            and organization is None
+        ):
             existing_subscriptions = (
                 await subscription_service.get_active_user_subscriptions(
                     session,
@@ -138,10 +157,12 @@ class SubscribeSessionService:
                     metadata["subscription_id"] = str(free_subscription_upgrade.id)
 
         customer_options: dict[str, str] = {}
+        if organization is not None and organization.stripe_customer_id is not None:
+            customer_options["customer"] = organization.stripe_customer_id
         # Set the customer only from a cookie-based authentication!
         # With the PAT, it's probably a call from the maintainer who wants to redirect
         # the backer they bring from their own website.
-        if auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
+        elif auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
             if auth_subject.stripe_customer_id is not None:
                 customer_options["customer"] = auth_subject.stripe_customer_id
             else:
@@ -187,6 +208,24 @@ class SubscribeSessionService:
         )
 
         return SubscribeSession.from_db(checkout_session, subscription_tier)
+
+    async def _get_organization(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: Subject,
+        organization_id: uuid.UUID,
+    ) -> Organization:
+        if isinstance(auth_subject, Anonymous):
+            raise Unauthorized()
+
+        organization = await organization_service.get(session, organization_id)
+        if organization is None or not (
+            await authz.can(auth_subject, AccessType.write, organization)
+        ):
+            raise NotPermitted()
+
+        return organization
 
 
 subscribe_session = SubscribeSessionService()

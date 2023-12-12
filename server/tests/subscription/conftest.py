@@ -22,12 +22,14 @@ from polar.models import (
     SubscriptionTier,
     SubscriptionTierBenefit,
     User,
+    UserOrganization,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.endpoints import is_feature_flag_enabled
+from tests.fixtures.random_objects import create_organization
 
 
 def rstr(prefix: str) -> str:
@@ -294,6 +296,25 @@ async def organization_account(
     session.add(organization)
     await session.commit()
     return account
+
+
+@pytest_asyncio.fixture
+async def organization_subscriber(session: AsyncSession) -> Organization:
+    return await create_organization(session)
+
+
+@pytest_asyncio.fixture
+async def organization_subscriber_admin(
+    session: AsyncSession, organization_subscriber: Organization, user_second: User
+) -> User:
+    user_organization = UserOrganization(
+        user_id=user_second.id,
+        organization_id=organization_subscriber.id,
+        is_admin=True,
+    )
+    session.add(user_organization)
+    await session.commit()
+    return user_second
 
 
 @pytest_asyncio.fixture

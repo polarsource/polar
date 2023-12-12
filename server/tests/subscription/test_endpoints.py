@@ -1022,6 +1022,7 @@ class TestCreateSubscribeSession:
             url="STRIPE_URL",
             customer_email=None,
             customer_details=None,
+            metadata={},
         )
 
         response = await client.post(
@@ -1054,6 +1055,7 @@ class TestCreateSubscribeSession:
             url="STRIPE_URL",
             customer_email=None,
             customer_details=None,
+            metadata={},
         )
 
         response = await client.post(

@@ -79,7 +79,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
               paidSubscribersOnly={paidSubscribersOnly}
               onChange={setPaidSubscribersOnly}
             />
-            {!article.notifications_sent_at && (
+            {!article.notifications_sent_at ? (
               <>
                 <div className="flex flex-col gap-y-4">
                   <div className="flex flex-col gap-y-2">
@@ -96,6 +96,29 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                           onChangeSendEmail(Boolean(checked))
                         }
                       />
+                      <span className="text-sm">
+                        Send post as email to subscribers
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-y-4">
+                  <div className="flex flex-col gap-y-2">
+                    <span className="font-medium">Email</span>
+                    <p className="text-polar-500 dark:text-polar-500 text-sm">
+                      This post has been sent to {article.email_sent_to_count}{' '}
+                      {article.email_sent_to_count === 1
+                        ? 'subscriber'
+                        : 'subscribers'}
+                      .
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-y-4">
+                    <div className="flex flex-row items-center gap-x-2">
+                      <Checkbox checked={true} disabled={true} />
                       <span className="text-sm">
                         Send post as email to subscribers
                       </span>

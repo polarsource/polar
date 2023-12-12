@@ -100,7 +100,7 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
               <span className="text-xs">Public</span>
             </div>
           )}
-          {subscribersCount && (
+          {typeof subscribersCount !== 'undefined' && (
             <>
               &middot;
               <div className="flex flex-row items-center gap-x-1">

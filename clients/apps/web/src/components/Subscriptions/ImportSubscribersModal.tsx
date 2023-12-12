@@ -1,11 +1,17 @@
-import { Platforms } from '@polar-sh/sdk'
-import { api } from 'polarkit/api'
+import { Organization } from '@polar-sh/sdk'
+import { api, queryClient } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useRef, useState } from 'react'
 import { ModalHeader } from '../Modal'
 
-const ImportSubscribersModal = ({ hide }: { hide: () => void }) => {
+const ImportSubscribersModal = ({
+  hide,
+  organization,
+}: {
+  hide: () => void
+  organization: Organization
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [selectedFile, setFile] = useState<File>()
@@ -22,12 +28,15 @@ const ImportSubscribersModal = ({ hide }: { hide: () => void }) => {
 
     await api.subscriptions
       .subscriptionsImport({
-        organizationName: 'zegl',
-        platform: Platforms.GITHUB,
+        organizationName: organization.name,
+        platform: organization.platform,
         file: selectedFile,
       })
       .then((res) => {
         setAddedSubscribers(res.count)
+        queryClient.invalidateQueries({
+          queryKey: ['subscriptions'],
+        })
       })
       .finally(() => {
         setIsLoading(false)

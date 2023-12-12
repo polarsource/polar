@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const ClientPage = () => {
   const { post: postSlug, organization: organizationName } = useParams()
@@ -65,6 +65,12 @@ const ClientPage = () => {
     }
   }, [handleSave])
 
+  const isPublished = useMemo(
+    () =>
+      post.data?.published_at && new Date(post.data.published_at) <= new Date(),
+    [post.data],
+  )
+
   if (!post.data) {
     return (
       <DashboardBody>
@@ -86,7 +92,9 @@ const ClientPage = () => {
               <ArrowUpRightIcon className="ml-2 h-3 w-3" />
             </Button>
           </Link>
-          <Button onClick={handleContinue}>Continue</Button>
+          <Button onClick={handleContinue}>
+            {isPublished ? 'Settings' : 'Continue'}
+          </Button>
         </div>
       </DashboardTopbar>
       <PostEditor

@@ -13,10 +13,8 @@ interface PostEditorProps {
   title: string
   body: string
   onTitleChange: (title: string) => void
-  onTitleBlur?: () => void
   onBodyChange: (body: string) => void
   previewProps: React.ComponentProps<typeof LongformPost>
-  autoFocus?: 'title' | 'body'
 }
 
 export const PostEditor = ({
@@ -24,10 +22,8 @@ export const PostEditor = ({
   title,
   body,
   onTitleChange,
-  onTitleBlur,
   onBodyChange,
   previewProps,
-  autoFocus,
 }: PostEditorProps) => {
   const [previewAs, setPreviewAs] = useState<string>('premium')
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -51,15 +47,13 @@ export const PostEditor = ({
                 <div className="flex h-full flex-col gap-y-8 py-8">
                   <input
                     className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"
-                    autoFocus={autoFocus === 'title'}
+                    autoFocus
                     placeholder="Title"
                     value={title}
                     onChange={(e) => onTitleChange(e.target.value)}
-                    onBlur={onTitleBlur}
                   />
                   <MarkdownEditor
                     className="focus:ring-none h-full overflow-visible rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
-                    autoFocus={autoFocus === 'body'}
                     value={body}
                     onChange={onBodyChange}
                   />

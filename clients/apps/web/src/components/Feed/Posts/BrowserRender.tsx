@@ -1,5 +1,7 @@
 // @ts-ignore
 import Markdown from 'markdown-to-jsx'
+import SyntaxHighlighter from 'react-syntax-highlighter'
+import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'
 import BrowserPoll from './BrowserPoll'
@@ -23,6 +25,11 @@ export const opts = {
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
+    code: (args: any) => (
+      <SyntaxHighlighter language={args.language} style={dark}>
+        {args.value}
+      </SyntaxHighlighter>
+    ),
   },
 } as const
 

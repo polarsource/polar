@@ -259,6 +259,24 @@ export const useUserSubscriptions = (
     enabled: !!userId,
   })
 
+export const useSearchSubscriptions = (variables: {
+  organizationName?: string
+  platform?: Platforms
+  limit: number
+  page: number
+  subscriptionTierId?: string
+  subscriptionTierType?: string
+}) =>
+  useQuery({
+    queryKey: ['subscriptions', 'search', JSON.stringify(variables)],
+    queryFn: () =>
+      api.subscriptions.searchSubscriptions({
+        ...variables,
+      }),
+    retry: defaultRetry,
+    enabled: !!variables.organizationName && !!variables.platform,
+  })
+
 export const useSubscriptionSummary = (
   orgName: string,
   limit = 20,

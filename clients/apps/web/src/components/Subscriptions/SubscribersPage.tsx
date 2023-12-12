@@ -11,7 +11,6 @@ import {
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import {
   Avatar,
   Button,
@@ -26,9 +25,9 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from 'polarkit/datatable'
-import { useSubscriptionTiers } from 'polarkit/hooks'
+import { useSearchSubscriptions, useSubscriptionTiers } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import ImportSubscribersModal from './ImportSubscribersModal'
@@ -78,10 +77,10 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   }
 
   const router = useRouter()
-  const [subscriptions, setSubscriptions] = useState<
-    Subscription[] | undefined
-  >()
-  const [pageCount, setPageCount] = useState<number | undefined>()
+  // const [subscriptions, setSubscriptions] = useState<
+  //   Subscription[] | undefined
+  // >()
+  // const [pageCount, setPageCount] = useState<number | undefined>()
 
   const setPagination = (
     updaterOrValue:
@@ -137,26 +136,16 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
     )
   }
 
-  useEffect(() => {
-    api.subscriptions
-      .searchSubscriptions({
-        platform: organization.platform,
-        organizationName: organization.name,
-        ...getAPIParams(pagination, sorting),
-        ...(subscriptionTierId ? { subscriptionTierId } : {}),
-        ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
-      })
-      .then((subscriptions) => {
-        setSubscriptions(subscriptions.items || [])
-        setPageCount(subscriptions.pagination.max_page)
-      })
-  }, [
-    organization,
-    pagination,
-    sorting,
-    subscriptionTierId,
-    subscriptionTierType,
-  ])
+  const subscriptionsHook = useSearchSubscriptions({
+    platform: organization.platform,
+    organizationName: organization.name,
+    ...getAPIParams(pagination, sorting),
+    ...(subscriptionTierId ? { subscriptionTierId } : {}),
+    ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
+  })
+
+  const subscriptions = subscriptionsHook.data?.items || []
+  const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<Subscription>[] = [
     {
@@ -296,7 +285,12 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
       <Modal
         isShown={importSubscribersIsShow}
         hide={hideImportSubscribers}
-        modalContent={<ImportSubscribersModal hide={hideImportSubscribers} />}
+        modalContent={
+          <ImportSubscribersModal
+            hide={hideImportSubscribers}
+            organization={organization}
+          />
+        }
       />
     </DashboardBody>
   )

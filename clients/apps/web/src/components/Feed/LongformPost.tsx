@@ -8,24 +8,31 @@ import { useMemo } from 'react'
 import BrowserRender from './Posts/BrowserRender'
 import { RenderArticle } from './Posts/markdown'
 
-const staggerTransition = {
+const defaultStaggerTransition = {
   staggerChildren: 0.2,
 }
 
-const revealTransition = {
+const defaultRevealTransition = {
   duration: 1,
 }
 
 interface LongformPostProps {
   article: RenderArticle
+  staggerTransition?: typeof defaultStaggerTransition
+  revealTransition?: typeof defaultRevealTransition
   showPaywalledContent?: boolean
 }
 
 export default function LongformPost({
   article,
+  staggerTransition,
+  revealTransition,
   showPaywalledContent,
 }: LongformPostProps) {
   const organization = article.organization
+
+  staggerTransition = staggerTransition ?? defaultStaggerTransition
+  revealTransition = revealTransition ?? defaultRevealTransition
 
   const publishedDate = useMemo(
     () => (article.published_at ? new Date(article.published_at) : undefined),

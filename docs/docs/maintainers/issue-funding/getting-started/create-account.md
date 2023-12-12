@@ -1,25 +1,3 @@
-# Getting started
-
-
-Polar offers a seamless product to enable your community of users to
-fund impactful issues across your open source initiatives. Combined with
-rewarding potential contributors a percentage of the funding (optional).
-
-**Steps:**
-
-1. Create an account
-2. Install Polar for select repositories
-3. Embed Polar badge on select issues
-4. Received funding? Setup Stripe or Open Collective for payouts.
-
-**Prerequisites:**
-
-1. You have a GitHub account
-2. You have public - open source - repositories you want to promote funding
-   towards
-3. You live in a country we support
-
-
 ## Create an account
 
 [Signup as a maintainer](https://polar.sh/signup/maintainer) to speed through
@@ -31,8 +9,8 @@ the account creation & app installation flow:
 
 2. Redirected to the GitHub app installation flow - granting access to select repositories to use with Polar for issue funding (see next step).
 
-![Screenshot of signup page on Polar](/assets/issue-funding/maintainers/signup-light.jpg#only-light)
-![Screenshot of signup page on Polar](/assets/issue-funding/maintainers/signup-dark.jpg#only-dark)
+![Screenshot of signup page on Polar](/assets/maintainers/issue-funding/signup-light.jpg#only-light)
+![Screenshot of signup page on Polar](/assets/maintainers/issue-funding/signup-dark.jpg#only-dark)
 
 **Why we require GitHub login (OAuth)**
 

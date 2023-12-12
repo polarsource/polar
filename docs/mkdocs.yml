@@ -2,8 +2,9 @@ site_name: Polar
 repo_url: https://github.com/polarsource/polar
 repo_name: polarsource/polar
 plugins:
-  - awesome-pages
   - search
+  - macros:
+      include_dir: include
 theme:
   name: material
   custom_dir: overrides
@@ -18,7 +19,6 @@ theme:
     - navigation.tabs
     - navigation.sticky
     - navigation.expand
-    - navigation.indexes
     - header.autohide
     - search.highlight
     - search.share
@@ -58,3 +58,25 @@ extra:
 
 extra_css:
   - stylesheets/extra.css
+
+
+collapse_single_pages: true
+nav:
+  - Home:
+    - index.md
+  - For Maintainers:
+    - Issue Funding:
+      - Overview: maintainers/issue-funding/index.md
+      - Getting Started:
+        - Create Account: maintainers/issue-funding/getting-started/create-account.md
+    - FAQ: maintainers/faq.md
+  - API:
+    - Documentation (Alpha): api/index.md
+    - GitHub Actions: api/github-action.md
+  - FAQ:
+    - Overview: faq/index.md
+    - For Maintainers: faq/maintainers.md
+    - For Backers: faq/backers.md
+    - For Contributors: faq/contributors.md
+  - Support: support.md
+

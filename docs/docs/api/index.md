@@ -1,4 +1,8 @@
-# API
+---
+title: API
+---
+
+# Polar API Documentation (Alpha)
 
 Polar has a [API](https://api.polar.sh/redoc) for integrating Polar with anything imaginable, from websites to Discord bots.
 

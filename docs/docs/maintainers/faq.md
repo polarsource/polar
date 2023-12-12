@@ -2,6 +2,6 @@
 title: Maintainers - FAQ
 ---
 
-# Maintainer FAQ
+# FAQ
 
 {% include 'faq/maintainers.md' %}

@@ -1,8 +1,8 @@
 ---
-title: Backers
+title: Backers - FAQ
 ---
 
-# Backers
+# Backer FAQ
 
 *Coming soon*
 

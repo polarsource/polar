@@ -32,6 +32,7 @@ export const useOrganizationArticles = (variables: {
         organizationName: variables.orgName ?? '',
         platform: variables.platform ?? Platforms.GITHUB,
         showUnpublished: variables.showUnpublished,
+        limit: 100,
       }),
     retry: defaultRetry,
     enabled: !!variables.orgName,

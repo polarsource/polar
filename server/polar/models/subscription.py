@@ -24,7 +24,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import SubscriptionTier, User
+    from polar.models import Organization, SubscriptionTier, User
 
 
 class SubscriptionStatus(StrEnum):
@@ -72,6 +72,17 @@ class Subscription(RecordModel):
     @declared_attr
     def user(cls) -> Mapped["User"]:
         return relationship("User", lazy="raise")
+
+    organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     subscription_tier_id: Mapped[UUID] = mapped_column(
         PostgresUUID,

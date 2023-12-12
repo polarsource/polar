@@ -24,7 +24,8 @@ export const opts = {
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
-    code: (args: any) => <SyntaxHighlighter {...args} />,
+    code: SyntaxHighlighter,
+    pre: ({ children }: any) => <p>{children}</p>,
   },
 } as const
 

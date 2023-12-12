@@ -1,7 +1,10 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowDownOnSquareIcon,
+  ArrowUpOnSquareIcon,
+} from '@heroicons/react/24/outline'
 import {
   Organization,
   PolarSubscriptionSchemasUser,
@@ -11,6 +14,7 @@ import {
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
+import { getServerURL } from 'polarkit/api'
 import {
   Avatar,
   Button,
@@ -245,6 +249,16 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
     show: showImportSubscribers,
   } = useModal()
 
+  const onExport = () => {
+    const url = new URL(
+      `${getServerURL()}/api/v1/subscriptions/subscriptions/export?organization_name=${
+        organization.name
+      }&platform=${organization.platform}`,
+    )
+
+    window.open(url, '_blank')
+  }
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
@@ -252,14 +266,6 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
           <h2 className="text-xl">Subscribers</h2>
 
           <div className="flex items-center gap-2">
-            <Button
-              onClick={showImportSubscribers}
-              className="flex items-center"
-            >
-              <ArrowDownOnSquareIcon className="-ml-1 mr-2 h-5 w-5" />
-              <span>Import</span>
-            </Button>
-
             <div className="w-full min-w-[180px]">
               <SubscriptionTiersSelect
                 tiersByType={subscriptionTiersByType}
@@ -280,6 +286,25 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
             onSortingChange={setSorting}
           />
         )}
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            onClick={showImportSubscribers}
+            className="flex items-center"
+            variant={'secondary'}
+          >
+            <ArrowDownOnSquareIcon className="-ml-1 mr-2 h-5 w-5" />
+            <span>Import</span>
+          </Button>
+
+          <Button
+            onClick={onExport}
+            className="flex flex-row items-center "
+            variant={'secondary'}
+          >
+            <ArrowUpOnSquareIcon className="-ml-1 mr-2 h-5 w-5" />
+            <span>Export</span>
+          </Button>
+        </div>
       </div>
 
       <Modal

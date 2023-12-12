@@ -135,6 +135,12 @@ export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
     limit?: number;
 }
 
+export interface SubscriptionsApiSubscriptionsExportRequest {
+    organizationName: string;
+    platform: Platforms;
+    repositoryName?: string;
+}
+
 export interface SubscriptionsApiSubscriptionsImportRequest {
     organizationName: string;
     platform: Platforms;
@@ -929,6 +935,64 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async searchSubscriptionsSummary(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSummary> {
         const response = await this.searchSubscriptionsSummaryRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Subscriptions Export
+     */
+    async subscriptionsExportRaw(requestParameters: SubscriptionsApiSubscriptionsExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling subscriptionsExport.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling subscriptionsExport.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.repositoryName !== undefined) {
+            queryParameters['repository_name'] = requestParameters.repositoryName;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscriptions/export`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Subscriptions Export
+     */
+    async subscriptionsExport(requestParameters: SubscriptionsApiSubscriptionsExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.subscriptionsExportRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

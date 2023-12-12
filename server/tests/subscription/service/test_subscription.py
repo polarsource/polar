@@ -711,6 +711,51 @@ class TestEnqueueBenefitsGrants:
             subscription_benefit_id=subscription_benefits[0].id,
         )
 
+    async def test_subscription_organization(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+        subscription_organization: Subscription,
+        organization_subscriber_admin: User,
+        organization_subscriber_members: list[User],
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+        subscription_organization.status = SubscriptionStatus.active
+
+        await subscription_service.enqueue_benefits_grants(
+            session, subscription_organization
+        )
+
+        members_count = len(organization_subscriber_members) + 1  # Members + admin
+        benefits_count = len(subscription_benefits) + 1  # Benefits + articles
+        assert enqueue_job_mock.call_count == members_count * benefits_count
+
+        for user_id in [
+            organization_subscriber_admin.id,
+            *[member.id for member in organization_subscriber_members],
+        ]:
+            enqueue_job_mock.assert_has_awaits(
+                [
+                    call(
+                        "subscription.subscription_benefit.grant",
+                        subscription_id=subscription_organization.id,
+                        user_id=user_id,
+                        subscription_benefit_id=benefit.id,
+                    )
+                    for benefit in subscription_benefits
+                ]
+            )
+
 
 @pytest.mark.asyncio
 class TestUpdateSubscriptionTierBenefitsGrants:

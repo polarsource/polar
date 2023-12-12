@@ -5,12 +5,12 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
-import { ArticleUpdate } from '@polar-sh/sdk'
+import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { post: postSlug, organization: organizationName } = useParams()
@@ -65,10 +65,11 @@ const ClientPage = () => {
     }
   }, [handleSave])
 
-  const isPublished = useMemo(
-    () =>
-      post.data?.published_at && new Date(post.data.published_at) <= new Date(),
-    [post.data],
+  const isPublished = Boolean(
+    post.data &&
+      post.data.published_at &&
+      new Date(post.data.published_at) <= new Date() &&
+      post.data.visibility === ArticleVisibilityEnum.PUBLIC,
   )
 
   if (!post.data) {

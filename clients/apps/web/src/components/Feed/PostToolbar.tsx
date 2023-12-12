@@ -71,16 +71,14 @@ export const PostToolbar = ({
         >
           {article && (
             <>
-              {!article?.published_at && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="px-1.5"
-                  onClick={showVisibilityModal}
-                >
-                  <EyeIcon className="h-4 w-4" />
-                </Button>
-              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                className="px-1.5"
+                onClick={showVisibilityModal}
+              >
+                <EyeIcon className="h-4 w-4" />
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
@@ -126,18 +124,16 @@ export const PostToolbar = ({
                   />
                 }
               />
-              {!article?.published_at && (
-                <Modal
-                  isShown={isVisibilityModalShown}
-                  hide={hideVisibilityModal}
-                  modalContent={
-                    <VisibilityModalContent
-                      article={article}
-                      hideModal={hideVisibilityModal}
-                    />
-                  }
-                />
-              )}
+              <Modal
+                isShown={isVisibilityModalShown}
+                hide={hideVisibilityModal}
+                modalContent={
+                  <VisibilityModalContent
+                    article={article}
+                    hideModal={hideVisibilityModal}
+                  />
+                }
+              />
             </>
           )}
         </TabsContent>
@@ -236,13 +232,15 @@ const VisibilityModalContent = ({
       <div>
         <h2 className="text-lg">Visibility</h2>
         <p className="dark:text-polar-400 mt-2 text-sm text-gray-400">
-          Adjusts the unpublished visibility of the post
+          Adjust the visibility of the post
         </p>
       </div>
       <div className="flex flex-col gap-y-6">
         <RadioGroup
           value={visibility}
-          onValueChange={(v) => setVisibility(v as ArticleUpdateVisibilityEnum)}
+          onValueChange={(v: ArticleUpdateVisibilityEnum) =>
+            setVisibility(v as ArticleUpdateVisibilityEnum)
+          }
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem
@@ -250,7 +248,7 @@ const VisibilityModalContent = ({
               id={ArticleUpdateVisibilityEnum.PRIVATE}
             />
             <Label htmlFor={ArticleUpdateVisibilityEnum.PRIVATE}>
-              Organization members
+              Members of {article.organization.name}
             </Label>
           </div>
           <div className="flex items-center space-x-2">
@@ -262,7 +260,27 @@ const VisibilityModalContent = ({
               Anyone with the link
             </Label>
           </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem
+              value={ArticleUpdateVisibilityEnum.PUBLIC}
+              id={ArticleUpdateVisibilityEnum.PUBLIC}
+              disabled={true}
+            />
+            <Label htmlFor={ArticleUpdateVisibilityEnum.PUBLIC}>
+              Public
+              {article.paid_subscribers_only
+                ? '(premium subscribers only)'
+                : null}
+            </Label>
+          </div>
         </RadioGroup>
+
+        {article.visibility !== ArticleUpdateVisibilityEnum.PUBLIC ? (
+          <Banner color={'blue'}>
+            To publish this post, click &quot;Continue&quot;.
+          </Banner>
+        ) : null}
+
         <div className="mt-4 flex flex-row items-center gap-x-2">
           <Button
             className="self-start"

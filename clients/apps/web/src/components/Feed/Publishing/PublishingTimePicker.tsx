@@ -1,25 +1,18 @@
-import { Article } from '@polar-sh/sdk'
 import { Label } from 'polarkit/components/ui/label'
 import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
-import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DateTimePicker } from './DateTimePicker'
 
 export interface PublishingPickerProps {
   publishAt: Date | undefined
-  article: Article
   onChange: (v: Date | undefined) => void
 }
 
 export const PublishingTimePicker = ({
   publishAt,
-  article,
   onChange,
 }: PublishingPickerProps) => {
-  const publish = useMemo(
-    () => (!!publishAt ? 'schedule' : 'publish-now'),
-    [publishAt],
-  )
+  const publish = publishAt ? 'schedule' : 'publish-now'
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -29,9 +22,9 @@ export const PublishingTimePicker = ({
 
       <RadioGroup
         value={publish}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
           onChange(value === 'publish-now' ? undefined : new Date())
-        }
+        }}
       >
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="publish-now" id="publish-now" />

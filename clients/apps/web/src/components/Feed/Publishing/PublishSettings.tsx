@@ -2,12 +2,12 @@
 
 import { useModal } from '@/components/Modal/useModal'
 import { ConfirmModal } from '@/components/Shared/ConfirmModal'
-import { Article } from '@polar-sh/sdk'
+import { Article, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useDeleteArticle } from 'polarkit/hooks'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { AudiencePicker } from './AudiencePicker'
 import { PublishSummary } from './PublishSummary'
 import { PublishingTimePicker } from './PublishingTimePicker'
@@ -55,14 +55,11 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
     [setSlug],
   )
 
-  const isPublished = useMemo(
-    () =>
-      article.published_at
-        ? new Date(article.published_at) <= new Date()
-        : false,
-    [article],
+  const isPublished = Boolean(
+    article.published_at &&
+      new Date(article.published_at) < new Date() &&
+      article.visibility === ArticleVisibilityEnum.PUBLIC,
   )
-
   return (
     <>
       <div className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
@@ -71,10 +68,10 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
             {!isPublished && (
               <PublishingTimePicker
                 publishAt={publishAt}
-                article={article}
                 onChange={onChangePublishAt}
               />
             )}
+
             <AudiencePicker
               paidSubscribersOnly={paidSubscribersOnly}
               onChange={setPaidSubscribersOnly}
@@ -181,11 +178,6 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
           notify_subscribers: sendEmail,
           slug,
         }}
-        isPublished={
-          article.published_at
-            ? new Date(article.published_at) <= new Date()
-            : false
-        }
       />
     </>
   )

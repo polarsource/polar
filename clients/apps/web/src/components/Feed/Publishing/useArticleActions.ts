@@ -14,7 +14,7 @@ interface ArticleAction {
 export const useArticleActions = (
   id: string,
   articleUpdate: ArticleUpdate,
-  isDraft: boolean,
+  isPublished: boolean,
 ): ArticleAction[] => {
   const [isPublishing, setIsPublishing] = useState(false)
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -27,17 +27,18 @@ export const useArticleActions = (
         id,
         articleUpdate: {
           ...articleUpdate,
-          set_published_at: publishAt ? true : false,
-          published_at: publishAt,
+
+          // Always set published at, even if unset.
+          set_published_at: true,
+          published_at: publishAt ?? new Date().toISOString(),
+
           visibility: ArticleVisibilityEnum.PUBLIC,
         },
       })
 
-      if (publishAt) {
-        router.push(`/${updated.organization.name}/posts/${updated.slug}`)
-      } else {
-        router.push(`/maintainer/${updated.organization.name}/posts`)
-      }
+      router.push(
+        `/maintainer/${updated.organization.name}/posts/${updated.slug}`,
+      )
     },
     [articleUpdate, router, update, id],
   )
@@ -45,7 +46,7 @@ export const useArticleActions = (
   const publishAction: ArticleAction = useMemo(() => {
     const publishVerb = () => {
       // Already published
-      if (!isDraft) {
+      if (isPublished) {
         return 'Save'
       }
 
@@ -72,7 +73,7 @@ export const useArticleActions = (
         setIsPublishing(false)
       },
     }
-  }, [articleUpdate, handlePublish, isDraft, isPublishing])
+  }, [articleUpdate, handlePublish, isPublished, isPublishing])
 
   const cancelAction: ArticleAction = useMemo(
     () => ({

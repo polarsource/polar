@@ -749,10 +749,10 @@ export interface BackofficeReward {
     pledge: Pledge;
     /**
      * 
-     * @type {PolarUserSchemasUser}
+     * @type {User}
      * @memberof BackofficeReward
      */
-    user?: PolarUserSchemasUser;
+    user?: User;
     /**
      * 
      * @type {Organization}
@@ -3443,44 +3443,6 @@ export interface PledgesTypeSummaries {
 /**
  * 
  * @export
- * @interface PolarSubscriptionSchemasUser
- */
-export interface PolarSubscriptionSchemasUser {
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarSubscriptionSchemasUser
-     */
-    username: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarSubscriptionSchemasUser
-     */
-    avatar_url?: string;
-}
-/**
- * 
- * @export
- * @interface PolarUserSchemasUser
- */
-export interface PolarUserSchemasUser {
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarUserSchemasUser
-     */
-    username: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarUserSchemasUser
-     */
-    avatar_url: string;
-}
-/**
- * 
- * @export
  * @interface PostIssueComment
  */
 export interface PostIssueComment {
@@ -3889,10 +3851,10 @@ export interface Reward {
     pledge: Pledge;
     /**
      * 
-     * @type {PolarUserSchemasUser}
+     * @type {User}
      * @memberof Reward
      */
-    user?: PolarUserSchemasUser;
+    user?: User;
     /**
      * 
      * @type {Organization}
@@ -4060,6 +4022,12 @@ export interface SubscribeSession {
     customer_name?: string;
     /**
      * 
+     * @type {string}
+     * @memberof SubscribeSession
+     */
+    organization_subscriber_id?: string;
+    /**
+     * 
      * @type {SubscriptionTier}
      * @memberof SubscribeSession
      */
@@ -4095,6 +4063,12 @@ export interface SubscribeSessionCreate {
      * @memberof SubscribeSessionCreate
      */
     success_url: string;
+    /**
+     * ID of the Organization on behalf which you want to subscribe this tier to. You need to be an administrator of the Organization to do this.
+     * @type {string}
+     * @memberof SubscribeSessionCreate
+     */
+    organization_subscriber_id?: string;
     /**
      * If you already know the email of your backer, you can set it. It'll be pre-filled on the subscription page.
      * @type {string}
@@ -4185,13 +4159,25 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
     subscription_tier_id: string;
     /**
      * 
-     * @type {PolarSubscriptionSchemasUser}
+     * @type {SubscriptionUser}
      * @memberof Subscription
      */
-    user: PolarSubscriptionSchemasUser;
+    user: SubscriptionUser;
+    /**
+     * 
+     * @type {SubscriptionOrganization}
+     * @memberof Subscription
+     */
+    organization?: SubscriptionOrganization;
     /**
      * 
      * @type {SubscriptionTier}
@@ -4533,6 +4519,31 @@ export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeo
  */
 export type SubscriptionBenefitUpdate = SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate;
 
+/**
+ * 
+ * @export
+ * @interface SubscriptionOrganization
+ */
+export interface SubscriptionOrganization {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionOrganization
+     */
+    name: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof SubscriptionOrganization
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionOrganization
+     */
+    avatar_url: string;
+}
 
 /**
  * An enumeration.
@@ -4557,10 +4568,16 @@ export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof Subscrip
 export interface SubscriptionSummary {
     /**
      * 
-     * @type {PolarSubscriptionSchemasUser}
+     * @type {SubscriptionUser}
      * @memberof SubscriptionSummary
      */
-    user: PolarSubscriptionSchemasUser;
+    user: SubscriptionUser;
+    /**
+     * 
+     * @type {SubscriptionOrganization}
+     * @memberof SubscriptionSummary
+     */
+    organization?: SubscriptionOrganization;
     /**
      * 
      * @type {SubscriptionTier}
@@ -4856,6 +4873,25 @@ export interface SubscriptionUpgrade {
      * @memberof SubscriptionUpgrade
      */
     subscription_tier_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface SubscriptionUser
+ */
+export interface SubscriptionUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
+    username: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
+    avatar_url?: string;
 }
 /**
  * 
@@ -5656,6 +5692,25 @@ export interface UpdateIssue {
      * @memberof UpdateIssue
      */
     set_upfront_split_to_contributors?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface User
+ */
+export interface User {
+    /**
+     * 
+     * @type {string}
+     * @memberof User
+     */
+    username: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof User
+     */
+    avatar_url: string;
 }
 /**
  * 

@@ -67,7 +67,7 @@ const ClientPage = () => {
             </div>
             <div className="flex flex-col gap-y-12">
               {(posts.data?.items?.length ?? 0) > 0 ? (
-                <StaggerReveal className="flex w-full flex-col gap-y-6">
+                <StaggerReveal className="flex w-full flex-col gap-y-4">
                   {posts?.data?.items
                     ? posts.data.items.map((post) => (
                         <StaggerReveal.Child key={post.id}>
@@ -90,7 +90,7 @@ const ClientPage = () => {
               )}
             </div>
           </div>
-          <div className="flex flex-shrink-0 flex-col gap-y-8 xl:w-1/3">
+          <div className="sticky top-8 flex flex-shrink-0 flex-col gap-y-8 xl:w-1/3">
             <div className="flex w-full flex-grow flex-row items-center justify-between">
               <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Analytics

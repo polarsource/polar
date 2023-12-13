@@ -27,11 +27,13 @@ from polar.models import (
     Repository,
     Subscription,
     SubscriptionTier,
+    Transaction,
     User,
     UserOrganization,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.transaction import TransactionType
 from polar.organization.service import organization as organization_service
 from polar.transaction.service.transfer import (
     transfer_transaction as transfer_transaction_service,
@@ -757,6 +759,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         direct_organization: bool = True,
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
+        current_start_of_month: date | None = None,
     ) -> list[SubscriptionsStatisticsPeriod]:
         subscriptions_statement = self._get_readable_subscriptions_statement(user)
 
@@ -781,6 +784,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 SubscriptionTier.id == subscription_tier_id
             )
 
+        current_start_of_month = current_start_of_month or utc_now().date().replace(
+            day=1
+        )
+
         # Set the interval to 1 month
         # Supporting dynamic interval is difficult for the cumulative column
         interval = text("interval 'P1M'")
@@ -790,20 +797,59 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         ).column_valued("start_date")
         end_date_column = start_date_column + interval
 
-        cumulative_column = func.coalesce(
+        # Rely on transactions for past months
+        past_cumulative_column = func.coalesce(
+            func.sum(func.sum(Transaction.amount))
+            # ORDER_BY makes the window implicitly stops at the current row
+            .over(order_by=start_date_column),
+            0,
+        )
+        past_statement = (
+            select(start_date_column)
+            .add_columns(
+                end_date_column,
+                func.count(Transaction.subscription_id),
+                func.coalesce(func.sum(Transaction.amount), 0),
+                past_cumulative_column,
+            )
+            .join(
+                Transaction,
+                onclause=and_(
+                    Transaction.type == TransactionType.transfer,
+                    Transaction.account_id.is_not(None),
+                    Transaction.created_at < end_date_column,
+                    Transaction.created_at >= start_date_column,
+                    Transaction.subscription_id.in_(
+                        subscriptions_statement.with_only_columns(Subscription.id)
+                    ),
+                ),
+                isouter=True,
+            )
+            .where(start_date_column < current_start_of_month)
+            .group_by(start_date_column)
+            .order_by(start_date_column)
+        )
+
+        # Estimate based on active subscriptions for future months
+        future_cumulative_column = func.coalesce(
             func.sum(func.sum(Subscription.price_amount))
             # ORDER_BY makes the window implicitly stops at the current row
             .over(order_by=start_date_column),
             0,
         )
 
-        statement = (
+        after_fee_amount_percentage = 1 - settings.SUBSCRIPTION_FEE_PERCENT / 100
+
+        future_statement = (
             select(start_date_column)
             .add_columns(
                 end_date_column,
                 func.count(Subscription.id),
-                func.coalesce(func.sum(Subscription.price_amount), 0),
-                cumulative_column,
+                func.coalesce(
+                    func.sum(Subscription.price_amount) * after_fee_amount_percentage,
+                    0,
+                ),
+                future_cumulative_column * after_fee_amount_percentage,
             )
             .join(
                 Subscription,
@@ -830,13 +876,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 ),
                 isouter=True,
             )
+            .where(start_date_column >= current_start_of_month)
             .group_by(start_date_column)
             .order_by(start_date_column)
         )
 
-        result = await session.execute(statement)
+        past_result = await session.execute(past_statement)
+        future_result = await session.execute(future_statement)
 
-        return [
+        statistics_periods = [
             SubscriptionsStatisticsPeriod(
                 start_date=start_date,
                 end_date=end_date,
@@ -844,8 +892,33 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 mrr=mrr,
                 cumulative=cumulative,
             )
-            for (start_date, end_date, subscribers, mrr, cumulative) in result.all()
+            for (
+                start_date,
+                end_date,
+                subscribers,
+                mrr,
+                cumulative,
+            ) in past_result.all()
         ]
+        last_past_cumulative = statistics_periods[-1].cumulative
+        statistics_periods += [
+            SubscriptionsStatisticsPeriod(
+                start_date=start_date,
+                end_date=end_date,
+                subscribers=subscribers,
+                mrr=mrr,
+                cumulative=cumulative + last_past_cumulative,
+            )
+            for (
+                start_date,
+                end_date,
+                subscribers,
+                mrr,
+                cumulative,
+            ) in future_result.all()
+        ]
+
+        return statistics_periods
 
     def _get_readable_subscriptions_statement(self, user: User) -> Select[Any]:
         statement = (

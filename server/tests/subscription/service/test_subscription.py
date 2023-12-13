@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Anonymous, Authz
+from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
@@ -26,6 +27,7 @@ from polar.models import (
 from polar.models.repository import Repository
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import FreeSubscriptionCreate, SubscriptionUpgrade
 from polar.subscription.service.subscription import (
@@ -1147,6 +1149,46 @@ class TestCancelSubscription:
         )
 
 
+def get_net_amount(gross_amount: int) -> int:
+    return int(gross_amount * (1 - settings.SUBSCRIPTION_FEE_PERCENT / 100))
+
+
+def get_transfers_sum(transfers: list[Transaction]) -> int:
+    return sum(transfer.amount for transfer in transfers)
+
+
+async def create_subscription_transfers(
+    session: AsyncSession,
+    *,
+    gross_amount: int,
+    start_month: int,
+    end_month: int,
+    organization_account: Account,
+    subscription: Subscription,
+    year: int = 2023,
+) -> list[Transaction]:
+    net_amount = get_net_amount(gross_amount)
+    transactions: list[Transaction] = []
+    for month in range(start_month, end_month + 1):
+        transaction = Transaction(
+            created_at=datetime(year, month, 1, 0, 0, 0, 0, UTC),
+            type=TransactionType.transfer,
+            processor=PaymentProcessor.stripe,
+            currency="usd",
+            amount=net_amount,
+            account_currency="eur",
+            account_amount=int(net_amount * 0.9),
+            tax_amount=0,
+            processor_fee_amount=0,
+            account=organization_account,
+            subscription=subscription,
+        )
+        session.add(transaction)
+        transactions.append(transaction)
+    await session.commit()
+    return transactions
+
+
 @pytest.mark.asyncio
 class TestGetStatisticsPeriods:
     async def test_not_organization_member(
@@ -1171,6 +1213,7 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
+            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
@@ -1184,17 +1227,26 @@ class TestGetStatisticsPeriods:
         self,
         session: AsyncSession,
         organization: Organization,
+        organization_account: Account,
         user: User,
         user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        await create_active_subscription(
+        subscription = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
+        )
+        transfers = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription,
         )
 
         results = await subscription_service.get_statistics_periods(
@@ -1203,26 +1255,28 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
+            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == subscription_tier_organization.price_amount
-            assert result.cumulative == subscription_tier_organization.price_amount * (
-                i + 1
+            assert result.mrr == get_net_amount(
+                subscription_tier_organization.price_amount
             )
+            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == subscription_tier_organization.price_amount * 6
+            assert result.cumulative == get_transfers_sum(transfers)
 
     async def test_multiple_users_organization(
         self,
         session: AsyncSession,
         organization: Organization,
+        organization_account: Account,
         user: User,
         user_second: User,
         user_organization: UserOrganization,
@@ -1243,12 +1297,20 @@ class TestGetStatisticsPeriods:
             session=session,
         )
 
-        await create_active_subscription(
+        subscription = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
+        )
+        transfers = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription,
         )
 
         results = await subscription_service.get_statistics_periods(
@@ -1257,45 +1319,63 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
+            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == subscription_tier_organization.price_amount
-            assert result.cumulative == subscription_tier_organization.price_amount * (
-                i + 1
+            assert result.mrr == get_net_amount(
+                subscription_tier_organization.price_amount
             )
+            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == subscription_tier_organization.price_amount * 6
+            assert result.cumulative == get_transfers_sum(transfers)
 
     async def test_filter_indirect_organization(
         self,
         session: AsyncSession,
         organization: Organization,
+        organization_account: Account,
         user: User,
         user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_repository: SubscriptionTier,
     ) -> None:
-        await create_active_subscription(
+        subscription_organization = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        await create_active_subscription(
+        transfers_organization = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription_organization,
+        )
+        subscription_repository = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_repository,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
+        )
+        transfers_repository = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription_repository,
         )
 
         results = await subscription_service.get_statistics_periods(
@@ -1305,57 +1385,68 @@ class TestGetStatisticsPeriods:
             end_date=date(2023, 12, 31),
             organization=organization,
             direct_organization=False,
+            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 2
-            assert (
-                result.mrr
-                == subscription_tier_organization.price_amount
-                + subscription_tier_repository.price_amount
-            )
-            assert result.cumulative == (
+            assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
                 + subscription_tier_repository.price_amount
-            ) * (i + 1)
+            )
+            assert result.cumulative == get_transfers_sum(
+                transfers_organization[0 : i + 1] + transfers_repository[0 : i + 1]
+            )
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert (
-                result.cumulative
-                == (
-                    subscription_tier_organization.price_amount
-                    + subscription_tier_repository.price_amount
-                )
-                * 6
+            assert result.cumulative == get_transfers_sum(
+                transfers_organization + transfers_repository
             )
 
     async def test_filter_repository(
         self,
         session: AsyncSession,
         public_repository: Repository,
+        organization_account: Account,
         user: User,
         user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_repository: SubscriptionTier,
     ) -> None:
-        await create_active_subscription(
+        subscription_organization = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        await create_active_subscription(
+        transfers_organization = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription_organization,
+        )
+        subscription_repository = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_repository,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
+        )
+        transfers_repository = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription_repository,
         )
 
         results = await subscription_service.get_statistics_periods(
@@ -1364,36 +1455,48 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             repository=public_repository,
+            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == subscription_tier_repository.price_amount
-            assert result.cumulative == subscription_tier_repository.price_amount * (
-                i + 1
+            assert result.mrr == get_net_amount(
+                subscription_tier_repository.price_amount
+            )
+            assert result.cumulative == get_transfers_sum(
+                transfers_repository[0 : i + 1]
             )
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == subscription_tier_repository.price_amount * 6
+            assert result.cumulative == get_transfers_sum(transfers_repository)
 
     async def test_filter_type(
         self,
         session: AsyncSession,
+        organization_account: Account,
         user: User,
         user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        await create_active_subscription(
+        subscription = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
+        )
+        await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription,
         )
 
         results = await subscription_service.get_statistics_periods(
@@ -1414,25 +1517,42 @@ class TestGetStatisticsPeriods:
     async def test_filter_subscription_tier_id(
         self,
         session: AsyncSession,
+        organization_account: Account,
         user: User,
         user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_repository: SubscriptionTier,
     ) -> None:
-        await create_active_subscription(
+        subscription_organization = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        await create_active_subscription(
+        transfers_organization = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription_organization,
+        )
+        subscription_repository = await create_active_subscription(
             session,
             subscription_tier=subscription_tier_repository,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
+        )
+        transfers_repository = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription_repository,
         )
 
         results = await subscription_service.get_statistics_periods(
@@ -1447,12 +1567,66 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == subscription_tier_organization.price_amount
-            assert result.cumulative == subscription_tier_organization.price_amount * (
-                i + 1
+            assert result.mrr == get_net_amount(
+                subscription_tier_organization.price_amount
+            )
+            assert result.cumulative == get_transfers_sum(
+                transfers_organization[0 : i + 1]
             )
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == subscription_tier_organization.price_amount * 6
+            assert result.cumulative == get_transfers_sum(transfers_organization)
+
+    async def test_ongoing_subscription(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_account: Account,
+        user: User,
+        user_second: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        subscription = await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+        )
+        transfers = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=10,
+            organization_account=organization_account,
+            subscription=subscription,
+        )
+
+        results = await subscription_service.get_statistics_periods(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+            current_start_of_month=date(2023, 10, 1),
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:9]):
+            assert result.subscribers == 1
+            assert result.mrr == get_net_amount(
+                subscription_tier_organization.price_amount
+            )
+            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
+
+        for i, result in enumerate(results[9:]):
+            assert result.subscribers == 1
+            assert result.mrr == get_net_amount(
+                subscription_tier_organization.price_amount
+            )
+            assert result.cumulative == get_transfers_sum(
+                transfers[:-1]
+            ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)

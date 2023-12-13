@@ -473,6 +473,22 @@ class ArticleService:
 
         return statement
 
+    async def get_subscriber(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        subscribed_to_organization_id: UUID,
+    ) -> ArticlesSubscription | None:
+        statement = (
+            sql.select(ArticlesSubscription)
+            .where(ArticlesSubscription.user_id == user_id)
+            .where(
+                ArticlesSubscription.organization_id == subscribed_to_organization_id
+            )
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
     async def unsubscribe(
         self,
         session: AsyncSession,

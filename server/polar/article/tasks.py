@@ -59,12 +59,25 @@ async def articles_send_to_user(
             expires_at=utc_now() + timedelta(hours=24),
         )
 
+        email_headers: dict[str, str] = {}
+
+        render_data = {
+            # Add pre-authenticated tokens to the end of all links in the email
+            "inject_magic_link_token": magic_link_token,
+        }
+
+        # Get subscriber ID (if exists)
+        subscriber = await article_service.get_subscriber(
+            session, user_id, article.organization_id
+        )
+        if subscriber:
+            unsubscribe_link = f"https://polar.sh/unsubscribe?org={article.organization.name}&id={subscriber.id}"
+            render_data["unsubscribe_link"] = unsubscribe_link
+            email_headers["List-Unsubscribe"] = f"<{unsubscribe_link}>"
+
         req = requests.post(
             f"{settings.FRONTEND_BASE_URL}/email/article/{article.id}",
-            json={
-                # Add pre-authenticated tokens to the end of all links in the email
-                "inject_magic_link_token": magic_link_token,
-            },
+            json=render_data,
             # Authenticating to the renderer as the user we're sending the email to
             headers={"Cookie": f"polar_session={jwt};"},
         )
@@ -87,9 +100,10 @@ async def articles_send_to_user(
         email_sender.send_to_user(
             to_email_addr=user.email,
             subject=subject,
-            html_content=rendered,  # .decode("utf8"),
+            html_content=rendered,
             from_name=from_name,
             from_email_addr=f"{article.organization.name}@posts.polar.sh",
+            email_headers=email_headers,
         )
 
 

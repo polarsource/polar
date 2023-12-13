@@ -242,6 +242,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = statement.options(
             contains_eager(Subscription.subscription_tier),
             contains_eager(Subscription.user),
+            joinedload(Subscription.organization),
         )
 
         results, count = await paginate(session, statement, pagination=pagination)
@@ -261,6 +262,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             .join(Subscription.subscription_tier)
             .options(
                 joinedload(Subscription.user),
+                joinedload(Subscription.organization),
                 contains_eager(Subscription.subscription_tier),
             )
         ).where(Subscription.active.is_(True))
@@ -365,6 +367,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             price_currency=subscription_tier.price_currency,
             price_amount=subscription_tier.price_amount,
             user=user,
+            organization=None,
             subscription_tier=subscription_tier,
         )
 
@@ -650,7 +653,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if not await authz.can(user, AccessType.write, subscription):
             raise NotPermitted()
 
-        await session.refresh(subscription, {"subscription_tier", "user"})
+        await session.refresh(
+            subscription, {"subscription_tier", "user", "organization"}
+        )
 
         if subscription.subscription_tier.type == SubscriptionTierType.free:
             raise FreeSubscriptionUpgrade(subscription)
@@ -703,7 +708,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         authz: Authz,
         user: User,
     ) -> Subscription:
-        await session.refresh(subscription, {"subscription_tier", "user"})
+        await session.refresh(
+            subscription, {"subscription_tier", "user", "organization"}
+        )
 
         if not await authz.can(user, AccessType.write, subscription):
             raise NotPermitted()

@@ -97,8 +97,8 @@ const BenefitRow = ({
       </div>
       <div className="flex flex-row items-center gap-x-4 text-[14px]">
         {isPremiumArticlesBenefit(benefit) && (
-          <div className="flex flex-row items-center  gap-1 rounded-lg bg-blue-500 px-2 text-sm text-white shadow dark:border dark:border-blue-400 dark:bg-blue-500">
-            <AutoAwesome className="!h-4 !w-4" />
+          <div className="flex flex-row items-center gap-1.5 rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white shadow dark:border dark:border-blue-400 dark:bg-blue-600">
+            <AutoAwesome className="!h-3 !w-3" />
             Recommended
           </div>
         )}
@@ -120,7 +120,7 @@ const BenefitRow = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            align="start"
+            align="end"
             className="dark:bg-polar-800 bg-gray-50 shadow-lg"
           >
             <DropdownMenuItem onClick={toggleEdit}>Edit</DropdownMenuItem>
@@ -198,7 +198,7 @@ const SubscriptionTierBenefitsForm = ({
             New Benefit
           </Button>
         </div>
-        <div className="dark:bg-polar-800 dark:border-polar-700 rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="dark:bg-polar-800 dark:border-polar-700 rounded-2xl border border-gray-200 bg-white px-6 py-4">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-4">
               <div className="flex flex-col">

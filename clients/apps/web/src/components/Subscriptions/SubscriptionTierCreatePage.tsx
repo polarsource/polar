@@ -171,6 +171,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
           </div>
           {selectedSubscriptionTierType && (
             <SubscriptionTierCard
+              className="w-1/4"
               subscriptionTier={{
                 ...newSubscriptionTier,
                 benefits: enabledBenefits,

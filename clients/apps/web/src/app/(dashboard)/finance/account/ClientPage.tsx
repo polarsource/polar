@@ -36,28 +36,28 @@ export default function ClientPage() {
   const [linkAccountLoading, setLinkAccountLoading] = useState(false)
   const onLinkAccount = useCallback(
     async (accountId: string) => {
-      if (personalOrganization) {
-        setLinkAccountLoading(true)
-        try {
+      setLinkAccountLoading(true)
+      try {
+        if (personalOrganization) {
           await api.organizations.setAccount({
             id: personalOrganization.id,
             organizationSetAccount: { account_id: accountId },
           })
-          await api.users.setAccount({
-            userSetAccount: { account_id: accountId },
-          })
-          await reloadUser()
-          window.location.reload()
-        } finally {
-          setLinkAccountLoading(false)
         }
+        await api.users.setAccount({
+          userSetAccount: { account_id: accountId },
+        })
+        await reloadUser()
+        window.location.reload()
+      } finally {
+        setLinkAccountLoading(false)
       }
     },
     [personalOrganization, reloadUser],
   )
   return (
     <div className="flex flex-col gap-y-6">
-      {personalOrganization && accounts && (
+      {accounts && (
         <AccountSetup
           organization={personalOrganization}
           accounts={accounts.items || []}

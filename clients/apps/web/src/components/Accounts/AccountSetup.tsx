@@ -18,7 +18,7 @@ import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
 interface AccoutSetupProps {
-  organization: Organization
+  organization: Organization | undefined
   accounts: Account[]
   organizationAccount: Account | undefined
   personalAccount?: Account
@@ -58,9 +58,10 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
   const goToOnboarding = async (account: Account) => {
     const link = await api.accounts.onboardingLink({
       id: account.id,
-      returnPath: organization.is_personal
-        ? '/finance/account'
-        : `/maintainer/${organization.name}/finance_new/account`,
+      returnPath:
+        !organization || organization.is_personal
+          ? '/finance/account'
+          : `/maintainer/${organization.name}/finance_new/account`,
     })
     window.location.href = link.url
   }
@@ -129,13 +130,22 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
         )}
         {!currentAccount && (
           <>
-            <p>
-              You don&apos;t have a payout account setup for{' '}
-              <span className="font-medium">{organization.name}</span>.
-              {accounts.length > 0 &&
-                ' You can select one of your existing account or create a new one.'}
-              {accounts.length === 0 && ' You should create one.'}
-            </p>
+            {organization && (
+              <p>
+                You don&apos;t have a payout account setup for{' '}
+                <span className="font-medium">{organization.name}</span>.
+              </p>
+            )}
+            {!organization && (
+              <p>You don&apos;t have a payout account setup.</p>
+            )}
+
+            {accounts.length > 0 && (
+              <p>
+                You can select one of your existing account or create a new one.{' '}
+                {accounts.length === 0 && ' You should create one.'}
+              </p>
+            )}
             <div className="min-h-12 flex flex-col items-center gap-4 sm:flex-row">
               {accounts.length > 0 && (
                 <Form {...linkAccountForm}>

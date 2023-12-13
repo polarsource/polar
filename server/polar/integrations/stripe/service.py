@@ -558,7 +558,10 @@ Thank you for your support!
         return stripe_lib.Subscription.modify(id, items=new_items)
 
     def cancel_subscription(self, id: str) -> stripe_lib.Subscription:
-        return stripe_lib.Subscription.cancel(id)
+        return stripe_lib.Subscription.modify(
+            id,
+            cancel_at_period_end=True,
+        )
 
     def update_invoice(
         self, id: str, *, metadata: dict[str, str] | None = None

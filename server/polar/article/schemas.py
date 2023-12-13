@@ -179,3 +179,7 @@ class ArticleSentResponse(Schema):
 
 class ArticleDeleteResponse(Schema):
     ok: bool
+
+
+class ArticleUnsubscribeResponse(Schema):
+    ok: bool

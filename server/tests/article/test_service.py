@@ -19,7 +19,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.postgres import AsyncSession
-from tests.fixtures.random_objects import create_user
+from tests.fixtures.random_objects import create_organization, create_user
 
 
 def random_string(length: int = 32) -> str:
@@ -634,3 +634,44 @@ class TestListReceivers:
         receivers = await article_service.list_receivers(session, organization.id, True)
         assert len(receivers) == 1
         assert receivers[0] == (user_second.id, True, False)
+
+    async def test_paid_subscription_and_member(
+        self,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_articles_subscription(
+            session, user=user, organization=organization, paid_subscriber=True
+        )
+
+        receivers = await article_service.list_receivers(session, organization.id, True)
+        assert len(receivers) == 1
+        assert receivers[0] == (user.id, True, True)
+
+    async def test_paid_subscription_and_member_member_other_orgs(
+        self,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # make user member of other orgs
+        # this test checks that list_receivers doesn't have a bad join
+        other_org = await create_organization(session)
+        a = await UserOrganization(
+            user_id=user.id,
+            organization_id=other_org.id,
+            is_admin=True,
+        ).save(
+            session=session,
+        )
+
+        await create_articles_subscription(
+            session, user=user, organization=organization, paid_subscriber=True
+        )
+
+        receivers = await article_service.list_receivers(session, organization.id, True)
+        assert len(receivers) == 1
+        assert receivers[0] == (user.id, True, True)

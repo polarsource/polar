@@ -11,6 +11,7 @@ import { useSubscriptionSummary } from 'polarkit/hooks'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
+import { AbbreviatedBrowserRender } from './BrowserRender'
 
 type FeedPost = { article: Article }
 
@@ -152,7 +153,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
               : 'dark:text-polar-400 text-gray-700',
           )}
         >
-          {props.article.body.replace('\n\n', '\n')}
+          <AbbreviatedBrowserRender article={props.article} />
         </p>
       </div>
     </div>

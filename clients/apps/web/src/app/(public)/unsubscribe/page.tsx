@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { Button, ShadowBox } from 'polarkit/components/ui/atoms'
@@ -43,9 +44,9 @@ export default function Page({
     <div className="flex h-full w-full justify-center pt-8">
       <div>
         <ShadowBox>
-          <div className="flex flex-col gap-4">
+          <div className="flex max-w-[400px] flex-col gap-4">
             <h2 className="font-semibold">
-              Unsubscribe from {searchParams.org}
+              Unsubscribe from emails from {searchParams.org}
             </h2>
 
             {showMessage ? (
@@ -65,6 +66,22 @@ export default function Page({
                 No, I changed my mind
               </Button>
             </div>
+
+            <hr className="my-6" />
+
+            <p className="text-sm">
+              This will not cancel any paid subscriptions or unsubscribe you
+              from other subscription benefits.
+            </p>
+
+            <p className="text-sm">
+              <Link
+                href={`/${searchParams.org}?tab=subscriptions`}
+                className="text-underline text-blue-500"
+              >
+                Manage my subscription.
+              </Link>
+            </p>
           </div>
         </ShadowBox>
       </div>

@@ -172,6 +172,7 @@ const renderArticle = async (
   req: NextRequest,
   articleId: string,
   injectMagicLinkToken?: string,
+  unsubscribeLink?: string,
 ): Promise<NextResponse> => {
   let article: Article
 
@@ -199,6 +200,11 @@ const renderArticle = async (
     }
     return u.toString()
   }
+
+  unsubscribeLink =
+    unsubscribeLink ??
+    // If we don't have a subscription token. Send user to the subscriptions page.
+    preAuthLink(`https://polar.sh/${post.organization.name}?tab=subscriptions`)
 
   const html = render(
     <Html lang="en">
@@ -275,7 +281,7 @@ const renderArticle = async (
 
               <hr />
 
-              <center className="py-6 text-xs text-gray-500">
+              <center className="py-3 pt-3 text-xs text-gray-500">
                 You received this email because you&apos;re a subscriber to{' '}
                 <a
                   href={preAuthLink(
@@ -287,6 +293,16 @@ const renderArticle = async (
                   {post.organization.pretty_name || post.organization.name}
                 </a>
                 . Thanks!
+              </center>
+
+              <center className="py-3  text-xs text-gray-500">
+                <a
+                  href={unsubscribeLink}
+                  target="_blank"
+                  className="!underline underline-offset-1"
+                >
+                  Unsubscribe
+                </a>
               </center>
             </Section>
           </Container>
@@ -329,5 +345,7 @@ export async function POST(
     ? input['inject_magic_link_token']
     : undefined
 
-  return renderArticle(req, params.id, injectMagicLinkToken)
+  const unsubscribeLink = input ? input['unsubscribe_link'] : undefined
+
+  return renderArticle(req, params.id, injectMagicLinkToken, unsubscribeLink)
 }

@@ -21,6 +21,7 @@ class EmailSender(ABC):
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "notifications@polar.sh",
+        email_headers: dict[str, str] = {},
     ) -> None:
         pass
 
@@ -33,6 +34,7 @@ class LoggingEmailSender(EmailSender):
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "notifications@polar.sh",
+        email_headers: dict[str, str] = {},
     ) -> None:
         log.info(
             "logging email",
@@ -41,6 +43,7 @@ class LoggingEmailSender(EmailSender):
             html_content=html_content,
             from_name=from_name,
             from_email_addr=from_email_addr,
+            email_headers=email_headers,
         )
 
 
@@ -56,6 +59,7 @@ class SendgridEmailSender(EmailSender):
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "notifications@polar.sh",  # not used
+        email_headers: dict[str, str] = {},  # not used
     ) -> None:
         from_email = Email(email="notifications@polar.sh", name=from_name)
         to_email = To(to_email_addr)
@@ -83,12 +87,14 @@ class ResendEmailSender(EmailSender):
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "polarsource@posts.polar.sh",
+        email_headers: dict[str, str] = {},
     ) -> None:
         params = {
             "from": f"{from_name} <{from_email_addr}>",
             "to": [to_email_addr],
             "subject": subject,
             "html": html_content,
+            "headers": email_headers,
         }
 
         email = resend.Emails.send(params)

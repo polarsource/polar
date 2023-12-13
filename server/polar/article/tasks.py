@@ -73,6 +73,7 @@ async def articles_send_to_user(
             log.error(f"failed to get rendered article: code={req.status_code}")
             return None
 
+        req.encoding = "utf-8"
         rendered = req.text
 
         from_name = ""

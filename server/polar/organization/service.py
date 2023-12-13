@@ -13,6 +13,9 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
 from polar.models import Organization, User, UserOrganization
 from polar.postgres import AsyncSession, sql
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import (
     OrganizationCreate,
@@ -236,6 +239,21 @@ class OrganizationService(
         organization.account = account
         session.add(organization)
         await session.commit()
+        return organization
+
+    async def set_personal_account(
+        self, session: AsyncSession, *, organization: Organization
+    ) -> Organization:
+        if organization.is_personal and organization.account_id is None:
+            user_admins = await user_organization_service.list_by_org(
+                session, organization.id, is_admin=True
+            )
+            if len(user_admins) > 0:
+                user_admin = user_admins[0]
+                if user_admin.user.account_id is not None:
+                    organization.account_id = user_admin.user.account_id
+                    session.add(organization)
+                    await session.commit()
         return organization
 
     async def set_default_issue_badge_custom_message(

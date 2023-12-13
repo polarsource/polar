@@ -41,3 +41,7 @@ async def organization_post_install(
         await subscription_tier_service.create_free(
             session, benefits=[public_articles], organization=organization
         )
+
+        await organization_service.set_personal_account(
+            session, organization=organization
+        )

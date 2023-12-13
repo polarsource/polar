@@ -666,6 +666,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription.cancel_at_period_end = True
             subscription.status = SubscriptionStatus.canceled
 
+            # free subscriptions end immediately (vs at end of billing period)
+            # queue removal of grants
+            await enqueue_job(
+                "subscription.subscription.enqueue_benefits_grants", subscription.id
+            )
+
         session.add(subscription)
         await session.commit()
 

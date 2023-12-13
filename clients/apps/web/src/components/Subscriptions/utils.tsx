@@ -1,10 +1,4 @@
-import {
-  CheckOutlined,
-  Face,
-  GestureOutlined,
-  LanguageOutlined,
-  ScheduleOutlined,
-} from '@mui/icons-material'
+import { CheckOutlined, ShortTextOutlined } from '@mui/icons-material'
 import {
   ItemsInner,
   SubscriptionBenefitType,
@@ -73,14 +67,8 @@ export const resolveBenefitIcon = (
   const description = benefit.description.toLowerCase()
   const className = twMerge('h-4 w-4', checked && 'text-white')
 
-  if (description.includes('logo') || description.includes('logotype')) {
-    return <GestureOutlined className={className} fontSize="small" />
-  } else if (description.includes('hour')) {
-    return <ScheduleOutlined className={className} fontSize="small" />
-  } else if (description.includes('avatar')) {
-    return <Face className={className} fontSize="small" />
-  } else if (description.includes('website')) {
-    return <LanguageOutlined className={className} fontSize="small" />
+  if (benefit.type === SubscriptionBenefitType.ARTICLES) {
+    return <ShortTextOutlined className={className} fontSize="small" />
   } else {
     return <CheckOutlined className={className} fontSize="small" />
   }

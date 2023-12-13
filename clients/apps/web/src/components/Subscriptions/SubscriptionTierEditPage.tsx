@@ -219,7 +219,7 @@ const SubscriptionTierEdit = ({
             </div>
           </div>
           <SubscriptionTierCard
-            className="w-full shadow-sm"
+            className="w-1/4"
             subscriptionTier={{
               ...editingSubscriptionTier,
               benefits: enabledBenefits,

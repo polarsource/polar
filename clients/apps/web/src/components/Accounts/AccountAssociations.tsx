@@ -1,5 +1,5 @@
 import { Account } from '@polar-sh/sdk'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 
 interface AccountAssociationsProps {
   account: Account
@@ -29,7 +29,7 @@ const AccountAssociations: React.FC<AccountAssociationsProps> = ({
         <>
           {prefix ? `${prefix} ` : ''}
           {associations.map((association, index) => (
-            <>
+            <React.Fragment key={association}>
               <span className="font-medium">{association}</span>
               {`${index < associations.length - 2 ? ', ' : ''}${
                 index === associations.length - 2 && associations.length > 1
@@ -37,7 +37,7 @@ const AccountAssociations: React.FC<AccountAssociationsProps> = ({
                   : ''
               }
               `}
-            </>
+            </React.Fragment>
           ))}
         </>
       )}

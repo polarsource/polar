@@ -69,6 +69,8 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
     subscription.subscription_tier.organization_id ?? '',
   )
 
+  const canUnsubscribe = !canceled && !subscription.cancel_at_period_end
+
   if (!organization.data) {
     return null
   }
@@ -115,7 +117,7 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
           </div>
         </div>
         <div className="flex flex-row gap-x-2">
-          {!canceled && (
+          {canUnsubscribe && (
             <>
               <Button
                 className="text-sm"
@@ -136,7 +138,9 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
               />
             </>
           )}
-          {canceled && <p className="text-sm text-red-500">Unsubscribed</p>}
+          {!canUnsubscribe && (
+            <p className="text-sm text-red-500">Unsubscribed</p>
+          )}
         </div>
       </div>
     </ShadowListGroup.Item>

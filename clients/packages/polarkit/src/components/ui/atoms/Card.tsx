@@ -17,7 +17,7 @@ const Card = React.forwardRef<
   <CardPrimitive
     ref={ref}
     className={twMerge(
-      'dark:text-polar-50 dark:border-polar-700 dark:bg-polar-900 rounded-2xl border-gray-100 bg-white text-gray-950 shadow-sm',
+      'dark:text-polar-50 dark:border-polar-700 dark:bg-polar-900 rounded-3xl border-gray-100 bg-white text-gray-950 shadow-sm',
       className,
     )}
     {...props}

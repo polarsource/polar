@@ -24,8 +24,18 @@ export const opts = {
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
-    code: SyntaxHighlighter,
-    pre: ({ children }: any) => <p>{children}</p>,
+    pre: (args: any) => {
+      if (!args.children) {
+        return <></>
+      }
+      if (typeof args.children !== 'object') {
+        return <></>
+      }
+      if (!('type' in args.children) || args.children.type !== 'code') {
+        return <></>
+      }
+      return <SyntaxHighlighter {...args.children.props} />
+    },
   },
 } as const
 

@@ -21,7 +21,7 @@ export const SyntaxHighlighter = (props: {
   }
 
   return (
-    <div className="relative w-full">
+    <div className="relative my-2 w-full">
       <ReactSyntaxHighlighter
         language={language}
         style={style}

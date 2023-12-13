@@ -16,14 +16,14 @@ export const getSubscriptionColorByType = (
 ): string => {
   switch (type) {
     case SubscriptionTierType.BUSINESS:
-      return '#e18f79' as const
+      return '#9d4cff' as const
     case SubscriptionTierType.PRO:
       return '#29dea5' as const
     case SubscriptionTierType.HOBBY:
-      return '#79A2E1' as const
+      return '#fb7e5d' as const
     case SubscriptionTierType.FREE:
     default:
-      return '#8e44ad' as const
+      return '#3381FF' as const
   }
 }
 
@@ -64,7 +64,6 @@ export const resolveBenefitIcon = (
   benefit: SubscriptionTierBenefit,
   checked: boolean,
 ) => {
-  const description = benefit.description.toLowerCase()
   const className = twMerge('h-4 w-4', checked && 'text-white')
 
   if (benefit.type === SubscriptionBenefitType.ARTICLES) {

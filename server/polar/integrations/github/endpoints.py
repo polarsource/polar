@@ -264,6 +264,8 @@ IMPLEMENTED_WEBHOOKS = {
     "repository.archived",
     "repository.transferred",
     "organization.renamed",
+    "organization.member_added",
+    "organization.member_removed",
 }
 
 

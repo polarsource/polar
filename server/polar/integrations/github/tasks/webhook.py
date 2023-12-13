@@ -94,6 +94,25 @@ async def organization_updated(
         return dict(success=True)
 
 
+async def organization_synchronize_members(
+    session: AsyncSession,
+    event: github.webhooks.OrganizationMemberAdded
+    | github.webhooks.OrganizationMemberRemoved,
+) -> dict[str, Any]:
+    with ExecutionContext(is_during_installation=True):
+        if not event.installation:
+            return dict(success=False)
+
+        organization = await service.github_organization.get_by_external_id(
+            session, event.organization.id
+        )
+        if not organization:
+            return dict(success=False)
+
+        await service.github_organization.synchronize_members(session, organization)
+        return dict(success=True)
+
+
 @task(name="github.webhook.organization.renamed")
 async def organizations_renamed(
     ctx: JobContext,
@@ -109,6 +128,40 @@ async def organizations_renamed(
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
             await organization_updated(session, parsed)
+
+
+@task(name="github.webhook.organization.member_added")
+async def organizations_member_added(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.OrganizationMemberAdded):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionMaker(ctx) as session:
+            await organization_synchronize_members(session, parsed)
+
+
+@task(name="github.webhook.organization.member_removed")
+async def organizations_member_removed(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.OrganizationMemberRemoved):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionMaker(ctx) as session:
+            await organization_synchronize_members(session, parsed)
 
 
 # ------------------------------------------------------------------------------

@@ -6,6 +6,7 @@ from typing import Any, Literal, Self
 import stripe as stripe_lib
 from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validator
 
+from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import (
@@ -303,9 +304,15 @@ class SubscribeSession(Schema):
 # Subscriptions
 
 
-class User(Schema):
+class SubscriptionUser(Schema):
     username: str
     avatar_url: str | None
+
+
+class SubscriptionOrganization(Schema):
+    name: str
+    platform: Platforms
+    avatar_url: str
 
 
 class Subscription(TimestampedSchema):
@@ -321,9 +328,11 @@ class Subscription(TimestampedSchema):
     price_amount: int
 
     user_id: UUID4
+    organization_id: UUID4 | None = None
     subscription_tier_id: UUID4
 
-    user: User
+    user: SubscriptionUser
+    organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
 
 
@@ -346,7 +355,8 @@ class SubscriptionUpgrade(Schema):
 
 
 class SubscriptionSummary(Schema):
-    user: User
+    user: SubscriptionUser
+    organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
 
 

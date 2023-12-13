@@ -74,7 +74,7 @@ export const OrganizationPublicSidebar = ({
   )
 
   const subscribersHiddenCount = useMemo(
-    () => subscriptionSummary.slice(9).length,
+    () => subscribersCount - subscribers.length,
     [subscriptionSummary],
   )
 
@@ -222,8 +222,8 @@ export const OrganizationPublicSidebar = ({
               </React.Fragment>
             ))}
             {subscribersHiddenCount > 0 && (
-              <div className="dark:border-polar-600 dark:text-polar-500 flex h-10 w-10 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">
-                {subscribersHiddenCount}
+              <div className="dark:border-polar-700 dark:bg-polar-900 dark:text-polar-400 flex h-10 w-10 flex-col items-center justify-center rounded-full border-2 border-blue-200 text-xs font-medium text-blue-400">
+                +{subscribersHiddenCount}
               </div>
             )}
           </div>

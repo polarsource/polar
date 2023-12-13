@@ -12,7 +12,7 @@ import {
 import Link from 'next/link'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { FreeTierSubscribe } from './FreeTierSubscribe'
@@ -68,8 +68,8 @@ export const OrganizationPublicSidebar = ({
     [adminOrgs],
   )
 
-  const subscriberUsers = useMemo(
-    () => subscriptionSummary.slice(0, 9).map((summary) => summary.user),
+  const subscribers = useMemo(
+    () => subscriptionSummary.slice(0, 9),
     [subscriptionSummary],
   )
 
@@ -180,7 +180,7 @@ export const OrganizationPublicSidebar = ({
           )}
         </div>
       </div>
-      {subscriberUsers.length > 0 && (
+      {subscribers.length > 0 && (
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row items-start justify-between">
             <h3 className="dark:text-polar-50 text-sm text-gray-950">
@@ -191,19 +191,35 @@ export const OrganizationPublicSidebar = ({
             </h3>
           </div>
           <div className="flex flex-row flex-wrap gap-3">
-            {subscriberUsers.map((user) => (
-              <Link
-                key={user.username}
-                href={`https://github.com/${user.username}`}
-                target="_blank"
-              >
-                <Avatar
-                  key={user.username}
-                  className="h-10 w-10"
-                  name={user.username}
-                  avatar_url={user.avatar_url}
-                />
-              </Link>
+            {subscribers.map(({ user, organization }) => (
+              <React.Fragment key={`${user.username}-${organization?.name}`}>
+                {organization && (
+                  <Link
+                    key={organization.name}
+                    href={`https://github.com/${organization.name}`}
+                    target="_blank"
+                  >
+                    <Avatar
+                      className="h-10 w-10"
+                      name={organization.name}
+                      avatar_url={organization.avatar_url}
+                    />
+                  </Link>
+                )}
+                {!organization && (
+                  <Link
+                    key={user.username}
+                    href={`https://github.com/${user.username}`}
+                    target="_blank"
+                  >
+                    <Avatar
+                      className="h-10 w-10"
+                      name={user.username}
+                      avatar_url={user.avatar_url}
+                    />
+                  </Link>
+                )}
+              </React.Fragment>
             ))}
             {subscribersHiddenCount > 0 && (
               <div className="dark:border-polar-600 dark:text-polar-500 flex h-10 w-10 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">

@@ -259,6 +259,32 @@ export const useUserSubscriptions = (
     enabled: !!userId,
   })
 
+export const useOrganizationSubscriptions = (
+  subscriberOrganizationId?: string,
+  orgName?: string,
+  active?: boolean,
+  limit = 30,
+  platform = Platforms.GITHUB,
+) =>
+  useQuery({
+    queryKey: [
+      'organizationSubscriptions',
+      'organization',
+      orgName,
+      subscriberOrganizationId,
+    ],
+    queryFn: () =>
+      api.subscriptions.searchSubscriptions({
+        organizationName: orgName,
+        active,
+        limit,
+        platform,
+        subscriberOrganizationId,
+      }),
+    retry: defaultRetry,
+    enabled: !!subscriberOrganizationId,
+  })
+
 export const useSearchSubscriptions = (variables: {
   organizationName?: string
   platform?: Platforms

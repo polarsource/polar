@@ -19,12 +19,16 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams
   const subscriptionTierId = searchParams.get('tier') as string
+  const organizationId = searchParams.get('organization_id') as
+    | string
+    | undefined
 
   try {
     const requestURL = new URL(request.url)
     const { url } = await api.subscriptions.createSubscribeSession({
       subscribeSessionCreate: {
         tier_id: subscriptionTierId,
+        organization_subscriber_id: organizationId,
         success_url: `${requestURL.protocol}//${requestURL.host}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       },
     })

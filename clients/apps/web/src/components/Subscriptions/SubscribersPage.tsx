@@ -7,7 +7,6 @@ import {
 } from '@heroicons/react/24/outline'
 import {
   Organization,
-  PolarSubscriptionSchemasUser,
   Subscription,
   SubscriptionStatus,
   SubscriptionTier,
@@ -153,17 +152,31 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
 
   const columns: DataTableColumnDef<Subscription>[] = [
     {
-      accessorKey: 'user',
-      enableSorting: true,
+      id: 'subscriber',
+      enableSorting: false,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="User" />
+        <DataTableColumnHeader column={column} title="Subscriber" />
       ),
-      cell: (props) => {
-        const user = props.getValue() as PolarSubscriptionSchemasUser
+      cell: ({ row: { original: subscription } }) => {
+        const user = subscription.user
+        const organization = subscription.organization
         return (
-          <div className="flex flex-row gap-2">
-            <Avatar avatar_url={user.avatar_url} name={user.username} />
-            <div className="fw-medium">{user.username}</div>
+          <div className="flex flex-row items-center gap-2">
+            {organization && (
+              <>
+                <Avatar
+                  avatar_url={organization.avatar_url}
+                  name={organization.name}
+                />
+                <div className="fw-medium">{organization.name}</div>
+              </>
+            )}
+            {!organization && (
+              <>
+                <Avatar avatar_url={user.avatar_url} name={user.username} />
+                <div className="fw-medium">{user.username}</div>
+              </>
+            )}
           </div>
         )
       },

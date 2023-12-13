@@ -22,6 +22,7 @@ from polar.organization.schemas import (
 from polar.organization.service import OrganizationService
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
+from polar.subscription.service.subscription import subscription as subscription_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -367,6 +368,8 @@ class GithubOrganizationService(OrganizationService):
                 continue
 
             await user_organization_service.remove_member(session, db_m.user_id, org.id)
+
+        await subscription_service.update_organization_benefits_grants(session, org)
 
 
 github_organization = GithubOrganizationService(Organization)

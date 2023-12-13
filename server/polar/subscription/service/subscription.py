@@ -625,6 +625,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 "subscription.subscription.enqueue_benefits_grants", subscription.id
             )
 
+    async def update_organization_benefits_grants(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        statement = select(Subscription).where(
+            Subscription.organization_id == organization.id,
+            Subscription.deleted_at.is_(None),
+        )
+        subscriptions = await session.stream_scalars(statement)
+        async for subscription in subscriptions:
+            await enqueue_job(
+                "subscription.subscription.enqueue_benefits_grants", subscription.id
+            )
+
     async def upgrade_subscription(
         self,
         session: AsyncSession,

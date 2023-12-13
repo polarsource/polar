@@ -797,6 +797,52 @@ class TestUpdateSubscriptionTierBenefitsGrants:
 
 
 @pytest.mark.asyncio
+class TestUpdateOrganizationBenefitsGrants:
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        user: User,
+        organization_subscriber: Organization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_tier_organization_second: SubscriptionTier,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+        subscription_1 = await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            organization=organization_subscriber,
+        )
+        subscription_2 = await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_second,
+            user=user,
+            organization=organization_subscriber,
+        )
+        await create_subscription(
+            session, subscription_tier=subscription_tier_organization, user=user
+        )
+
+        await subscription_service.update_organization_benefits_grants(
+            session, organization_subscriber
+        )
+
+        assert enqueue_job_mock.call_count == 2
+
+        enqueue_job_mock.assert_any_await(
+            "subscription.subscription.enqueue_benefits_grants",
+            subscription_1.id,
+        )
+        enqueue_job_mock.assert_any_await(
+            "subscription.subscription.enqueue_benefits_grants",
+            subscription_2.id,
+        )
+
+
+@pytest.mark.asyncio
 class TestSearch:
     async def test_not_organization_member(
         self,

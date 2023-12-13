@@ -182,6 +182,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
         subscriber_user_id: uuid.UUID | None = None,
+        subscriber_organization_id: uuid.UUID | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SearchSortProperty]] = [
@@ -210,7 +211,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             statement = statement.where(SubscriptionTier.id == subscription_tier_id)
 
         if subscriber_user_id is not None:
-            statement = statement.where(Subscription.user_id == subscriber_user_id)
+            statement = statement.where(
+                Subscription.user_id == subscriber_user_id,
+                Subscription.organization_id.is_(None),
+            )
+
+        if subscriber_organization_id is not None:
+            statement = statement.where(
+                Subscription.organization_id == subscriber_organization_id
+            )
 
         if active is not None:
             if active:

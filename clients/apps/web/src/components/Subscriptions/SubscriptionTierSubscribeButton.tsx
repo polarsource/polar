@@ -8,14 +8,25 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import { Button } from 'polarkit/components/ui/atoms'
-import { useUserSubscriptions } from 'polarkit/hooks'
+import {
+  Avatar,
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+} from 'polarkit/components/ui/atoms'
+import {
+  useListAllOrganizations,
+  useOrganizationSubscriptions,
+  useUserSubscriptions,
+} from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useCallback, useMemo, useState } from 'react'
+import { SelectTriggerBase } from '../../../../../packages/polarkit/src/components/ui/atoms/Select'
 import { ConfirmModal } from '../Shared/ConfirmModal'
 
 const buttonClasses =
-  'transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]'
+  'grow transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]'
 
 interface AnonymousSubscriptionTierSubscribeButtonProps {
   subscriptionTier: SubscriptionTier
@@ -26,10 +37,7 @@ const AnonymousSubscriptionTierSubscribeButton: React.FC<
   AnonymousSubscriptionTierSubscribeButtonProps
 > = ({ subscriptionTier, subscribePath }) => {
   return (
-    <Link
-      className="w-full"
-      href={`${subscribePath}?tier=${subscriptionTier.id}`}
-    >
+    <Link href={`${subscribePath}?tier=${subscriptionTier.id}`}>
       <Button className={buttonClasses} fullWidth variant="outline">
         Subscribe
       </Button>
@@ -48,27 +56,79 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   AuthenticatedSubscriptionTierSubscribeButtonProps
 > = ({ user, subscriptionTier, organization, subscribePath }) => {
   const router = useRouter()
-  const { data, refetch } = useUserSubscriptions(
-    user.id,
+
+  const { data: organizationsList } = useListAllOrganizations(true)
+  const organizations = useMemo(
+    () =>
+      organizationsList &&
+      organizationsList.items &&
+      organizationsList.items.filter(
+        (organization) => !organization.is_personal,
+      ),
+    [organizationsList],
+  )
+  const [selectedSubscriber, setSelectedSubscriber] = useState<
+    UserRead | Organization
+  >(user)
+  const isUserSelected = useMemo(
+    () => selectedSubscriber.id === user.id,
+    [selectedSubscriber, user],
+  )
+
+  const onSubscriberSelect = useCallback(
+    (id: string) => {
+      if (id === user.id) {
+        setSelectedSubscriber(user)
+      } else if (organizations) {
+        const organizationIndex = organizations.findIndex(
+          (organization) => organization.id === id,
+        )
+        if (organizationIndex > -1) {
+          setSelectedSubscriber(organizations[organizationIndex])
+        }
+      }
+    },
+    [user, organizations],
+  )
+
+  const { data: userSubscriptionsList, refetch: refetchUserSubscriptions } =
+    useUserSubscriptions(
+      user.id,
+      organization.name,
+      true,
+      10,
+      organization.platform,
+    )
+  const {
+    data: organizationSubscriptionsList,
+    refetch: refetchOrganizationSubscriptions,
+  } = useOrganizationSubscriptions(
+    !isUserSelected ? selectedSubscriber.id : undefined,
     organization.name,
     true,
     10,
     organization.platform,
   )
-  const isSubscribed =
-    data !== undefined &&
-    data.items !== undefined &&
-    data.items.some(
-      (subscription) =>
-        subscription.subscription_tier_id === subscriptionTier.id,
-    )
+  const subscriptions = isUserSelected
+    ? userSubscriptionsList?.items
+    : organizationSubscriptionsList?.items
+
+  const isSubscribed = useMemo(
+    () =>
+      subscriptions &&
+      subscriptions.some(
+        (subscription) =>
+          subscription.subscription_tier_id === subscriptionTier.id,
+      ),
+    [subscriptions, subscriptionTier],
+  )
   const upgradableSubscription = useMemo(
     () =>
-      data?.items?.find(
+      subscriptions?.find(
         (subscription) =>
           subscription.subscription_tier_id !== subscriptionTier.id,
       ),
-    [data, subscriptionTier],
+    [subscriptions, subscriptionTier],
   )
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -90,9 +150,17 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
           subscription_tier_id: subscriptionTier.id,
         },
       })
-      refetch()
+      refetchUserSubscriptions()
+      refetchOrganizationSubscriptions()
     }
-  }, [upgradableSubscription, subscriptionTier, refetch, router, subscribePath])
+  }, [
+    upgradableSubscription,
+    subscriptionTier,
+    refetchUserSubscriptions,
+    refetchOrganizationSubscriptions,
+    router,
+    subscribePath,
+  ])
 
   const onUpgrade = useCallback(() => {
     if (
@@ -107,51 +175,84 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   }, [upgradableSubscription, onUpgradeConfirm])
 
   return (
-    <>
-      {isSubscribed && (
-        <Button className={buttonClasses} fullWidth disabled variant="outline">
-          Subscribed
-        </Button>
+    <div className="flex w-full items-center gap-1">
+      {organizations && organizations.length > 0 && (
+        <Select onValueChange={onSubscriberSelect}>
+          <SelectTriggerBase>
+            <Avatar
+              className="h-8 w-8"
+              avatar_url={selectedSubscriber.avatar_url}
+              name={selectedSubscriber.id}
+            />
+          </SelectTriggerBase>
+          <SelectContent>
+            <SelectItem value={user.id}>
+              <div className="flex items-center gap-2">
+                <Avatar avatar_url={user.avatar_url} name={user.username} />
+                {user.username}
+              </div>
+            </SelectItem>
+            {organizations.map((organization) => (
+              <SelectItem value={organization.id} key={organization.id}>
+                <div className="flex items-center gap-2">
+                  <Avatar
+                    avatar_url={organization.avatar_url}
+                    name={organization.id}
+                  />
+                  {organization.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
-      {upgradableSubscription && (
-        <>
-          <Button
-            className={buttonClasses}
-            fullWidth
-            variant="outline"
-            onClick={() => onUpgrade()}
-          >
-            Upgrade
-          </Button>
-          <ConfirmModal
-            isShown={showConfirmModal}
-            hide={() => setShowConfirmModal(false)}
-            title={`Upgrade to ${subscriptionTier.name}`}
-            description={`On your next invoice, you'll be billed $${getCentsInDollarString(
-              subscriptionTier.price_amount,
-              false,
-              true,
-            )}, plus a proration for the current month.`}
-            onConfirm={() => onUpgradeConfirm()}
-          />
-        </>
-      )}
-      {!upgradableSubscription && !isSubscribed && (
-        <Link
-          className="w-full"
-          href={`${subscribePath}?tier=${subscriptionTier.id}`}
-        >
+      <div className="grow">
+        {isSubscribed && (
           <Button
             className={buttonClasses}
             fullWidth
             disabled
             variant="outline"
           >
-            Subscribe
+            Subscribed
           </Button>
-        </Link>
-      )}
-    </>
+        )}
+        {upgradableSubscription && (
+          <>
+            <Button
+              className={buttonClasses}
+              fullWidth
+              variant="outline"
+              onClick={() => onUpgrade()}
+            >
+              Upgrade
+            </Button>
+            <ConfirmModal
+              isShown={showConfirmModal}
+              hide={() => setShowConfirmModal(false)}
+              title={`Upgrade to ${subscriptionTier.name}`}
+              description={`On your next invoice, you'll be billed $${getCentsInDollarString(
+                subscriptionTier.price_amount,
+                false,
+                true,
+              )}, plus a proration for the current month.`}
+              onConfirm={() => onUpgradeConfirm()}
+            />
+          </>
+        )}
+        {!upgradableSubscription && !isSubscribed && (
+          <Link
+            href={`${subscribePath}?tier=${subscriptionTier.id}${
+              !isUserSelected ? `&organization_id=${selectedSubscriber.id}` : ''
+            }`}
+          >
+            <Button className={buttonClasses} fullWidth variant="outline">
+              Subscribe
+            </Button>
+          </Link>
+        )}
+      </div>
+    </div>
   )
 }
 

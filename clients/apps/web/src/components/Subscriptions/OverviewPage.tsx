@@ -242,7 +242,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
               <CardHeader>
                 <div className="text-lg font-medium">Subscription Activity</div>
                 <div className="dark:text-polar-500 text-gray-400">
-                  The last 5 subscribed users
+                  The last 5 subscribers
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
@@ -254,13 +254,23 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
                     >
                       <div className="flex flex-row items-center justify-center gap-2">
                         <Avatar
-                          avatar_url={subscription.user.avatar_url}
-                          name={subscription.user.username}
+                          avatar_url={
+                            subscription.organization
+                              ? subscription.organization.avatar_url
+                              : subscription.user.avatar_url
+                          }
+                          name={
+                            subscription.organization
+                              ? subscription.organization.name
+                              : subscription.user.username
+                          }
                           className="h-8 w-8"
                         />
                         <div className="flex flex-col text-sm">
                           <div className="font-medium">
-                            {subscription.user.username}
+                            {subscription.organization
+                              ? subscription.organization.name
+                              : subscription.user.username}
                           </div>
                           <div className="dark:text-polar-500 text-xs text-gray-400">
                             <FormattedDateTime

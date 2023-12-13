@@ -36,16 +36,15 @@ export const useOrganizationLookup: (
     retry: defaultRetry,
   })
 
-export const useListAllOrganizations: () => UseQueryResult<ListResourceOrganization> =
-  () =>
-    useQuery({
-      queryKey: ['user', 'allOrganizations'],
-      queryFn: () =>
-        api.organizations.list({
-          isAdminOnly: false,
-        }),
-      retry: defaultRetry,
-    })
+export const useListAllOrganizations = (isAdminOnly = false) =>
+  useQuery({
+    queryKey: ['user', 'allOrganizations', isAdminOnly],
+    queryFn: () =>
+      api.organizations.list({
+        isAdminOnly,
+      }),
+    retry: defaultRetry,
+  })
 
 export const useListOrganizationMembers = (id?: string) =>
   useQuery({

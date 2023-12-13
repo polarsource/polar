@@ -2,7 +2,7 @@
 import * as Plot from '@observablehq/plot'
 import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 const createAreaGradient = (id: string) => {
   // Create an SVG element
@@ -180,17 +180,12 @@ export const SubscribersChart: React.FC<SubscribersChartProps> = ({
   onDataIndexHover,
   hoveredIndex,
 }) => {
-  const maxSubscribers = useMemo(
-    () => Math.max(...data.map(({ subscribers }) => subscribers)),
-    [data],
-  )
   return (
     <SubscriptionsChart
       data={data}
       y="subscribers"
       axisYOptions={{
         label: null,
-        ticks: Array.from({ length: maxSubscribers + 1 }, (_, i) => i),
         stroke: 'none',
       }}
       onDataIndexHover={onDataIndexHover}

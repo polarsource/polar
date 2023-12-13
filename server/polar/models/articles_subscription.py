@@ -1,6 +1,8 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
+    TIMESTAMP,
     Boolean,
     ForeignKey,
     UniqueConstraint,
@@ -24,6 +26,10 @@ class ArticlesSubscription(RecordModel):
 
     organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("organizations.id"), nullable=False, index=True
+    )
+
+    emails_unsubscribed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     @declared_attr

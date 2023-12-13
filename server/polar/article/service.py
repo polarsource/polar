@@ -307,18 +307,21 @@ class ArticleService:
             )
             .join(
                 UserOrganization,
-                onclause=UserOrganization.user_id == User.id,
+                onclause=(UserOrganization.user_id == User.id)
+                & (UserOrganization.organization_id == organization_id),
                 isouter=True,
             )
             .join(
                 ArticlesSubscription,
-                onclause=ArticlesSubscription.user_id == User.id,
+                onclause=(ArticlesSubscription.user_id == User.id)
+                & (ArticlesSubscription.organization_id == organization_id)
+                & (ArticlesSubscription.emails_unsubscribed_at.is_(None)),
                 isouter=True,
             )
         ).where(
             or_(
-                UserOrganization.organization_id == organization_id,
                 user_subscription_clause,
+                UserOrganization.organization_id == organization_id,
             )
         )
 
@@ -423,15 +426,14 @@ class ArticleService:
             .join(Article.organization)
             .join(
                 ArticlesSubscription,
-                onclause=and_(
-                    and_(
-                        ArticlesSubscription.user_id == auth_subject.id
-                        if isinstance(auth_subject, User)
-                        else false(),
-                        ArticlesSubscription.organization_id == Organization.id,
-                    ),
-                    ArticlesSubscription.deleted_at.is_(None),
-                ),
+                onclause=(
+                    ArticlesSubscription.user_id == auth_subject.id
+                    if isinstance(auth_subject, User)
+                    else false()
+                )
+                & (ArticlesSubscription.organization_id == Organization.id)
+                & ArticlesSubscription.deleted_at.is_(None)
+                & ArticlesSubscription.emails_unsubscribed_at.is_(None),
                 isouter=True,
             )
             .join(
@@ -470,6 +472,22 @@ class ArticleService:
         )
 
         return statement
+
+    async def unsubscribe(
+        self,
+        session: AsyncSession,
+        id: UUID,
+    ) -> None:
+        stmt = (
+            sql.update(ArticlesSubscription)
+            .values({"emails_unsubscribed_at": utc_now()})
+            .where(
+                ArticlesSubscription.id == id,
+                ArticlesSubscription.emails_unsubscribed_at.is_(None),
+            )
+        )
+        await session.execute(stmt)
+        await session.commit()
 
 
 article_service = ArticleService()

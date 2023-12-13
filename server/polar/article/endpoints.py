@@ -25,12 +25,30 @@ from .schemas import (
     ArticlePreviewResponse,
     ArticleReceiversResponse,
     ArticleSentResponse,
+    ArticleUnsubscribeResponse,
     ArticleUpdate,
     ArticleViewedResponse,
 )
 from .service import article_service
 
 router = APIRouter(tags=["articles"])
+
+
+@router.get(
+    "/articles/unsubscribe",
+    tags=[Tags.INTERNAL],
+    response_model=ArticleUnsubscribeResponse,
+    description="Unsubscribe user from articles in emails.",
+    summary="Stop delivery of articles via email.",
+    status_code=200,
+    responses={404: {}},
+)
+async def email_unsubscribe(
+    article_subscription_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+) -> ArticleUnsubscribeResponse:
+    await article_service.unsubscribe(session, article_subscription_id)
+    return ArticleUnsubscribeResponse(ok=True)
 
 
 @router.get(

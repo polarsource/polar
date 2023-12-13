@@ -37,6 +37,10 @@ export interface ArticlesApiCreateRequest {
     articleCreate: ArticleCreate;
 }
 
+export interface ArticlesApiEmailUnsubscribeRequest {
+    articleSubscriptionId: string;
+}
+
 export interface ArticlesApiGetRequest {
     id: string;
 }
@@ -169,6 +173,54 @@ export class ArticlesApi extends runtime.BaseAPI {
      */
     async create(requestParameters: ArticlesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.createRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Unsubscribe user from articles in emails.
+     * Stop delivery of articles via email.
+     */
+    async emailUnsubscribeRaw(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters.articleSubscriptionId === null || requestParameters.articleSubscriptionId === undefined) {
+            throw new runtime.RequiredError('articleSubscriptionId','Required parameter requestParameters.articleSubscriptionId was null or undefined when calling emailUnsubscribe.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.articleSubscriptionId !== undefined) {
+            queryParameters['article_subscription_id'] = requestParameters.articleSubscriptionId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/articles/unsubscribe`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Unsubscribe user from articles in emails.
+     * Stop delivery of articles via email.
+     */
+    async emailUnsubscribe(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.emailUnsubscribeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

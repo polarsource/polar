@@ -131,7 +131,7 @@ export const useOrganizationPaymentTransactions = ({
     queryFn: () =>
       api.transactions.searchTransactions({
         paymentOrganizationId: organizationId,
-        type: TransactionType.TRANSFER,
+        type: TransactionType.PAYMENT,
         page,
         limit,
       }),

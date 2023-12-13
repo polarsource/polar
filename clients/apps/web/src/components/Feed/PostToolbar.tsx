@@ -184,7 +184,11 @@ const PreviewEmailModal = ({ article, hideModal }: PreviewEmailModalProps) => {
         ) : null}
       </div>
       <div className="flex flex-col gap-y-6">
-        <Input type="email" value={previewEmail} />
+        <Input
+          type="email"
+          value={previewEmail}
+          onChange={(e) => setPreviewEmail(e.target.value)}
+        />
         <div className="mt-2 flex flex-row items-center gap-x-2">
           <Button
             className="self-start"

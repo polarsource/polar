@@ -39,6 +39,20 @@ export const opts = {
   },
 } as const
 
+export const previewOpts = {
+  ...markdownOpts,
+  overrides: {
+    ...markdownOpts.overrides,
+
+    poll: () => <></>,
+    paywall: () => <></>,
+    SubscribeNow: () => <></>,
+    embed: () => <></>,
+    iframe: () => <></>,
+    pre: () => <></>,
+  },
+} as const
+
 const BrowserRender = (props: {
   article: RenderArticle
   showPaywalledContent?: boolean
@@ -54,6 +68,25 @@ const BrowserRender = (props: {
       }}
     >
       {props.article.body}
+    </Markdown>
+  )
+}
+
+export const AbbreviatedBrowserRender = (props: {
+  article: RenderArticle
+  showPaywalledContent?: boolean
+}) => {
+  return (
+    <Markdown
+      options={{
+        ...previewOpts,
+        createElement: wrapStrictCreateElement(
+          props.article,
+          props.showPaywalledContent,
+        ),
+      }}
+    >
+      {props.article.body.substring(0, 500)}
     </Markdown>
   )
 }

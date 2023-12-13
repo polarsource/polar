@@ -1,5 +1,6 @@
 'use client'
 
+import { AbbreviatedBrowserRender } from '@/components/Feed/Posts/BrowserRender'
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
@@ -20,8 +21,9 @@ import {
   useSubscriptionStatistics,
   useSubscriptionSummary,
 } from 'polarkit/hooks'
-import { useMemo, useRef } from 'react'
+import { useRef } from 'react'
 import { useHoverDirty } from 'react-use'
+import { twMerge } from 'tailwind-merge'
 
 const startOfMonth = new Date()
 startOfMonth.setUTCHours(0, 0, 0, 0)
@@ -129,8 +131,6 @@ const PostItem = (post: Article) => {
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
 
-  const description = useMemo(() => post.body.split('. ')[0], [post])
-
   const image = post.body.match(/!\[.*?\]\((.*?)\)/)?.[1]
 
   return (
@@ -141,9 +141,9 @@ const PostItem = (post: Article) => {
     >
       <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-gray-50">
         {image ? (
-          <div
-            className="hidden min-h-0 w-28 flex-shrink-0 flex-col rounded-2xl bg-cover bg-center bg-no-repeat md:flex"
-            style={{ backgroundImage: `url(${image})` }}
+          <img
+            src={image}
+            className="hidden h-28 w-28 flex-shrink-0 rounded-2xl object-cover md:block"
           />
         ) : (
           <div className="dark:bg-polar-700 hidden min-h-0 w-28 flex-shrink-0 flex-col items-center justify-center rounded-2xl bg-gray-100 bg-cover bg-center bg-no-repeat md:flex">
@@ -155,8 +155,13 @@ const PostItem = (post: Article) => {
             <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
               {post.title}
             </h3>
-            <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
-              {description}
+            <p
+              className={twMerge(
+                'text-md line-clamp-4 w-full flex-wrap truncate whitespace-break-spaces break-words leading-loose text-gray-500 transition-colors duration-200',
+                'dark:text-polar-400 text-gray-700',
+              )}
+            >
+              <AbbreviatedBrowserRender article={post} />
             </p>
           </div>
           <div className="flex flex-row items-center justify-between whitespace-nowrap">

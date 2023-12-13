@@ -226,7 +226,7 @@ export const dashboardRoutes = (
           link: `/backoffice`,
           icon: <Construction className="h-5 w-5" fontSize="inherit" />,
           postIcon: undefined,
-          if: true,
+          if: false,
           subs: [
             {
               title: 'Pledges',

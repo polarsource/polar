@@ -13,7 +13,7 @@ export const Feed = () => {
   }
 
   return articles.data.items.length > 0 ? (
-    <StaggerReveal className="flex flex-col gap-y-6">
+    <StaggerReveal className="flex flex-col gap-y-4">
       {articles.data.items.map((entity) => (
         <StaggerReveal.Child key={entity.id}>
           {/* {isRecommendation(entity) ? (

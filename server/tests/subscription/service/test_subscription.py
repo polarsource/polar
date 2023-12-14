@@ -1504,7 +1504,7 @@ class TestGetStatisticsPeriods:
             user,
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
-            type=SubscriptionTierType.business,
+            types=[SubscriptionTierType.business],
         )
 
         assert len(results) == 12

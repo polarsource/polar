@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { ButtonProps } from 'polarkit/components/ui/button'
-import { useSubscriptionSummary } from 'polarkit/hooks'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
@@ -46,11 +45,6 @@ export const Post = (props: FeedPost) => {
 }
 
 const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
-  const organizationSummary = useSubscriptionSummary(
-    props.article.organization.name,
-  )
-  const subscribersCount = organizationSummary.data?.pagination.total_count
-
   return (
     <div className="flex w-full flex-row items-center gap-x-4 text-sm md:justify-between">
       <Avatar
@@ -91,33 +85,17 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
               </div>
             </>
           ) : null}
-          &middot;
+
           {props.article.paid_subscribers_only ? (
-            <div className="flex flex-row items-center gap-x-1">
-              <span className="text-xs">Premium</span>
-            </div>
-          ) : (
-            <div className="flex flex-row items-center gap-x-1">
-              <span className="text-xs">Public</span>
-            </div>
-          )}
-          {typeof subscribersCount !== 'undefined' && (
             <>
               &middot;
               <div className="flex flex-row items-center gap-x-1">
-                <span className="text-xs">
-                  <span className="lowercase">
-                    {Intl.NumberFormat('en-US', {
-                      maximumSignificantDigits: 3,
-                      notation: 'compact',
-                      compactDisplay: 'short',
-                    }).format(subscribersCount)}
-                  </span>{' '}
-                  {subscribersCount === 1 ? 'Subscriber' : 'Subscribers'}
+                <span className="text-green-5s00 text-xs dark:text-green-700">
+                  Premium post
                 </span>
               </div>
             </>
-          )}
+          ) : null}
         </div>
       </div>
       <AnimatedIconButton

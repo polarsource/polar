@@ -216,7 +216,7 @@ export const OrganizationPublicSidebar = ({
                 </React.Fragment>
               ))}
               {subscribersHiddenCount > 0 && (
-                <div className="dark:border-polar-700 dark:bg-polar-900 dark:text-polar-400 flex h-10 w-10 flex-col items-center justify-center rounded-full border-2 border-blue-200 text-xs font-medium text-blue-400">
+                <div className="dark:border-polar-700 dark:bg-polar-900 dark:text-polar-400 flex h-10 w-10 flex-col items-center justify-center rounded-full bg-blue-50 text-xs font-medium text-blue-400 dark:border-2">
                   +{subscribersHiddenCount}
                 </div>
               )}

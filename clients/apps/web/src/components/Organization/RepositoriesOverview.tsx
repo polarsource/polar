@@ -18,11 +18,13 @@ import { StaggerReveal } from '../Shared/StaggerReveal'
 interface RepositoriesOverviewProps {
   organization: Organization
   repositories: Repository[]
+  isLoading?: boolean
 }
 
 export const RepositoriesOverivew = ({
   organization,
   repositories,
+  isLoading,
 }: RepositoriesOverviewProps) => {
   const repositoriesByStars = useMemo(
     () => repositories.sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)),
@@ -125,7 +127,7 @@ export const RepositoriesOverivew = ({
             )}
           </div>
         </>
-      ) : (
+      ) : isLoading ? null : (
         <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
           <span className="text-6xl">
             <HiveOutlined fontSize="inherit" />

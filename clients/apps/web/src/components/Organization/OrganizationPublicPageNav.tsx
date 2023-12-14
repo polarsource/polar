@@ -27,9 +27,6 @@ import GithubLoginButton from '../Shared/GithubLoginButton'
 import { ProfileMenu } from '../Shared/ProfileSelection'
 import { StaggerReveal } from '../Shared/StaggerReveal'
 import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSubscriptionsPublicPage'
-import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
-import IssuesLookingForFunding from './IssuesLookingForFunding'
-import { RepositoriesOverivew } from './RepositoriesOverview'
 
 interface OrganizationPublicPageNavProps {
   basePath?: string
@@ -131,10 +128,6 @@ export const OrganizationPublicPageContent = ({
   repositories: Repository[]
   subscriptionTiers: SubscriptionTier[]
 }) => {
-  const highlightedTiers = subscriptionTiers.filter(
-    (tier) => tier.is_highlighted,
-  )
-
   return (
     <div className="mt-12 flex h-full w-full flex-col md:mt-0">
       {isFeatureEnabled('feed') && (
@@ -148,35 +141,7 @@ export const OrganizationPublicPageContent = ({
           </StaggerReveal>
         </TabsContent>
       )}
-      <TabsContent
-        className="w-full"
-        value={isFeatureEnabled('feed') ? 'issues' : 'overview'}
-      >
-        <div className="flex w-full flex-col gap-y-8">
-          {highlightedTiers.length > 0 && (
-            <PublicSubscriptionUpsell
-              organization={organization}
-              subscriptionTiers={highlightedTiers}
-              subscribePath="/subscribe"
-            />
-          )}
-
-          <div className="dark:bg-polar-900 dark:border-polar-800 flex min-h-[480px] w-full flex-col gap-y-8 rounded-3xl border border-gray-100 bg-white p-12">
-            <div className="flex flex-row items-start justify-between">
-              <h2 className="text-lg font-medium">
-                Issues looking for funding
-              </h2>
-            </div>
-            <IssuesLookingForFunding organization={organization} />
-          </div>
-        </div>
-      </TabsContent>
-      <TabsContent className="w-full" value="repositories">
-        <RepositoriesOverivew
-          organization={organization}
-          repositories={repositories}
-        />
-      </TabsContent>
+      <TabsContent className="w-full" value="repositories"></TabsContent>
       {subscriptionTiers.length > 0 && (
         <TabsContent className="w-full" value="subscriptions">
           <OrganizationSubscriptionsPublicPage

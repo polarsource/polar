@@ -137,7 +137,7 @@ const resolveTransactionMeta = (
     return (
       <Link
         className="text-xs text-blue-500 dark:text-blue-400"
-        href={`/${meta.subscription_tier.organization?.name}?tab=subscriptions`}
+        href={`/${meta.subscription_tier.organization?.name}/subscriptions`}
       >
         {meta.subscription_tier.name}
       </Link>

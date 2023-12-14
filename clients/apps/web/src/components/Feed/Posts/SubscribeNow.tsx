@@ -26,7 +26,7 @@ const SubscribeNow = (props: { article: Article }) => {
     <div className="flex flex-col items-center py-1">
       <Button
         onClick={() => {
-          router.push(`/${props.article.organization.name}?tab=subscriptions`)
+          router.push(`/${props.article.organization.name}/subscriptions`)
         }}
       >
         Subscribe to{' '}

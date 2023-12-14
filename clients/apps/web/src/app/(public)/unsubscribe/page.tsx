@@ -76,7 +76,7 @@ export default function Page({
 
             <p className="text-sm">
               <Link
-                href={`/${searchParams.org}?tab=subscriptions`}
+                href={`/${searchParams.org}/subscriptions`}
                 className="text-underline text-blue-500"
               >
                 Manage my subscription.

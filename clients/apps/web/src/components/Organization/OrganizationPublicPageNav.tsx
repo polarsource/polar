@@ -2,65 +2,29 @@
 
 import { useAuth } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
-import {
-  Article,
-  Organization,
-  Repository,
-  SubscriptionTier,
-  UserSignupType,
-} from '@polar-sh/sdk'
-import {
-  useParams,
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from 'next/navigation'
-import {
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from 'polarkit/components/ui/atoms'
+import { Organization, UserSignupType } from '@polar-sh/sdk'
+import Link from 'next/link'
+import { TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
 import { useSubscriptionTiers } from 'polarkit/hooks'
-import { useCallback, useEffect, useState } from 'react'
-import { Post as PostComponent } from '../Feed/Posts/Post'
+import { useEffect, useState } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import { ProfileMenu } from '../Shared/ProfileSelection'
-import { StaggerReveal } from '../Shared/StaggerReveal'
-import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSubscriptionsPublicPage'
 
 interface OrganizationPublicPageNavProps {
-  basePath?: string
+  organization: Organization
 }
 
 export const OrganizationPublicPageNav = ({
-  basePath,
+  organization,
 }: OrganizationPublicPageNavProps) => {
   const { currentUser } = useAuth()
-  const router = useRouter()
-
-  const search = useSearchParams()
-  const pathname = usePathname()
-
-  const { organization: organizationName }: { organization: string } =
-    useParams()
+  const [gotoUrl, setGotoUrl] = useState('')
 
   const { data: { items: subscriptionTiers } = { items: [] } } =
-    useSubscriptionTiers(organizationName, 100)
+    useSubscriptionTiers(organization.name, 100)
 
   const shouldRenderSubscriptionsTab = (subscriptionTiers?.length ?? 0) > 0
 
-  const handleTabChange = useCallback(
-    (value: string) => () => {
-      if (search) {
-        const params = new URLSearchParams(search)
-        params.set('tab', value)
-        router.push(`${basePath ?? pathname}?${params.toString()}`)
-      }
-    },
-    [search, router, pathname, basePath],
-  )
-
-  const [gotoUrl, setGotoUrl] = useState('')
   useEffect(() => {
     setGotoUrl(window.location.href)
   }, [])
@@ -68,37 +32,29 @@ export const OrganizationPublicPageNav = ({
   return (
     <div className="flex flex-row items-center justify-between md:w-full">
       <TabsList className="dark:border-polar-700 hidden dark:border md:flex">
-        <TabsTrigger
-          value="overview"
-          size="small"
-          onClick={handleTabChange('overview')}
-        >
-          Overview
-        </TabsTrigger>
+        <Link href={`/${organization.name}`}>
+          <TabsTrigger value="overview" size="small">
+            Overview
+          </TabsTrigger>
+        </Link>
         {isFeatureEnabled('feed') && (
-          <TabsTrigger
-            value="issues"
-            size="small"
-            onClick={handleTabChange('issues')}
-          >
-            Issues
-          </TabsTrigger>
+          <Link href={`/${organization.name}/issues`}>
+            <TabsTrigger value="issues" size="small">
+              Issues
+            </TabsTrigger>
+          </Link>
         )}
-        <TabsTrigger
-          value="repositories"
-          size="small"
-          onClick={handleTabChange('repositories')}
-        >
-          Repositories
-        </TabsTrigger>
-        {isFeatureEnabled('subscriptions') && shouldRenderSubscriptionsTab && (
-          <TabsTrigger
-            value="subscriptions"
-            size="small"
-            onClick={handleTabChange('subscriptions')}
-          >
-            Subscriptions
+        <Link href={`/${organization.name}/repositories`}>
+          <TabsTrigger value="repositories" size="small">
+            Repositories
           </TabsTrigger>
+        </Link>
+        {isFeatureEnabled('subscriptions') && shouldRenderSubscriptionsTab && (
+          <Link href={`/${organization.name}/subscriptions`}>
+            <TabsTrigger value="subscriptions" size="small">
+              Subscriptions
+            </TabsTrigger>
+          </Link>
         )}
       </TabsList>
       {currentUser ? (
@@ -112,43 +68,6 @@ export const OrganizationPublicPageNav = ({
           text="Sign in with GitHub"
           gotoUrl={gotoUrl}
         />
-      )}
-    </div>
-  )
-}
-
-export const OrganizationPublicPageContent = ({
-  posts,
-  organization,
-  repositories,
-  subscriptionTiers,
-}: {
-  posts: Article[]
-  organization: Organization
-  repositories: Repository[]
-  subscriptionTiers: SubscriptionTier[]
-}) => {
-  return (
-    <div className="mt-12 flex h-full w-full flex-col md:mt-0">
-      {isFeatureEnabled('feed') && (
-        <TabsContent className="w-full" value="overview">
-          <StaggerReveal className="flex max-w-xl flex-col gap-y-6">
-            {posts.map((post) => (
-              <StaggerReveal.Child key={post.id}>
-                <PostComponent article={post} />
-              </StaggerReveal.Child>
-            ))}
-          </StaggerReveal>
-        </TabsContent>
-      )}
-      <TabsContent className="w-full" value="repositories"></TabsContent>
-      {subscriptionTiers.length > 0 && (
-        <TabsContent className="w-full" value="subscriptions">
-          <OrganizationSubscriptionsPublicPage
-            organization={organization}
-            subscriptionTiers={subscriptionTiers}
-          />
-        </TabsContent>
       )}
     </div>
   )

@@ -20,11 +20,13 @@ const ClientLayout = ({
               <LogoType />
             </a>
           </div>
-          <OrganizationPublicPageNav />
+          <OrganizationPublicPageNav organization={organization} />
         </div>
         <div className="relative flex w-full flex-col gap-x-24 py-16 md:flex-row">
           <OrganizationPublicSidebar organization={organization} />
-          <div className="flex w-full flex-col">{children}</div>
+          <div className="mt-12 flex h-full w-full flex-col md:mt-0">
+            {children}
+          </div>
         </div>
       </div>
     </Tabs>

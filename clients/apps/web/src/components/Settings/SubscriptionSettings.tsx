@@ -86,7 +86,7 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
             <h3>{organization.data?.name}</h3>
           </Link>
           <div className="dark:text-polar-400 flex flex-row items-center gap-x-3 text-sm text-gray-500">
-            <Link href={`/${organization.data?.name}?tab=subscriptions`}>
+            <Link href={`/${organization.data?.name}/subscriptions`}>
               <SubscriptionTierPill
                 amount={subscription.subscription_tier.price_amount}
                 subscriptionTier={subscription.subscription_tier}

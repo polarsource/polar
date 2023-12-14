@@ -262,15 +262,18 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
                           name={
                             subscription.organization
                               ? subscription.organization.name
-                              : subscription.user.username
+                              : subscription.user.name
                           }
                           className="h-8 w-8"
                         />
                         <div className="flex flex-col text-sm">
                           <div className="font-medium">
-                            {subscription.organization
+                            {subscription.organization?.name ??
+                              subscription.user.github_username ??
+                              subscription.user.name}
+                            {/* {subscription.organization
                               ? subscription.organization.name
-                              : subscription.user.username}
+                              : subscription.user.name} */}
                           </div>
                           <div className="dark:text-polar-500 text-xs text-gray-400">
                             <FormattedDateTime

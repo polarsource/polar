@@ -17,39 +17,6 @@ import { externalURL, prettyURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { FreeTierSubscribe } from './FreeTierSubscribe'
 
-function parseGitHubUsernameLinks(text: string) {
-  const words = text.split(' ')
-
-  const parsedWords = words.map((word) => {
-    if (word.startsWith('@')) {
-      const username = word.slice(1).replace(/\./g, '')
-      const link = `https://github.com/${username}`
-
-      return (
-        <a
-          key={word}
-          className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-          href={link}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {word}
-        </a>
-      )
-    } else {
-      return <React.Fragment key={word}>{word}</React.Fragment>
-    }
-  })
-
-  return (
-    <p>
-      {parsedWords.reduce<(string | JSX.Element)[]>((prev, curr, index) => {
-        return index === 0 ? [curr] : [...prev, ' ', curr]
-      }, [])}
-    </p>
-  )
-}
-
 interface OrganizationPublicSidebarProps {
   organization: Organization
 }
@@ -126,7 +93,7 @@ export const OrganizationPublicSidebar = ({
           ) : null}
           {organization.bio && (
             <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-500 md:text-start">
-              {parseGitHubUsernameLinks(organization.bio)}
+              {organization.bio}
             </p>
           )}
           <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">

@@ -27,6 +27,7 @@ function parseGitHubUsernameLinks(text: string) {
 
       return (
         <a
+          key={word}
           className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
           href={link}
           rel="noopener noreferrer"
@@ -36,7 +37,7 @@ function parseGitHubUsernameLinks(text: string) {
         </a>
       )
     } else {
-      return word
+      return <React.Fragment key={word}>{word}</React.Fragment>
     }
   })
 

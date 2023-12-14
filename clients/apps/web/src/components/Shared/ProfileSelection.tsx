@@ -209,7 +209,7 @@ export const ProfileMenu = ({ className = '' }) => {
       <div className={classNames}>
         <div
           className={twMerge(
-            'dark:border-polar-700 relative flex cursor-pointer flex-row items-center rounded-full border-2 border-blue-50 shadow-sm transition-colors',
+            'dark:border-polar-700 dark:hover:border-polar-600 relative flex cursor-pointer flex-row items-center rounded-full border-2 border-blue-50 shadow-sm transition-colors hover:border-blue-100',
           )}
           onClick={() => setOpen(true)}
         >

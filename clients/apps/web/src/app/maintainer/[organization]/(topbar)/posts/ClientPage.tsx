@@ -13,7 +13,7 @@ import {
   LanguageOutlined,
   ViewDayOutlined,
 } from '@mui/icons-material'
-import { Article } from '@polar-sh/sdk'
+import { Article, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import {
@@ -21,7 +21,7 @@ import {
   useSubscriptionStatistics,
   useSubscriptionSummary,
 } from 'polarkit/hooks'
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
 
@@ -29,10 +29,10 @@ const startOfMonth = new Date()
 startOfMonth.setUTCHours(0, 0, 0, 0)
 startOfMonth.setUTCDate(1)
 
-const startOfMonthSixMonthsAgo = new Date()
-startOfMonthSixMonthsAgo.setUTCHours(0, 0, 0, 0)
-startOfMonthSixMonthsAgo.setUTCDate(1)
-startOfMonthSixMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
+const startOfMonthThreeMonthsAgo = new Date()
+startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
+startOfMonthThreeMonthsAgo.setUTCDate(1)
+startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -46,8 +46,26 @@ const ClientPage = () => {
   const summary = useSubscriptionSummary(org?.name ?? '')
   const subscriptionStatistics = useSubscriptionStatistics(
     org?.name ?? '',
-    startOfMonthSixMonthsAgo,
+    startOfMonthThreeMonthsAgo,
     startOfMonth,
+  )
+  const paidSubscriptionStatistics = useSubscriptionStatistics(
+    org?.name ?? '',
+    startOfMonthThreeMonthsAgo,
+    startOfMonth,
+    [
+      SubscriptionTierType.HOBBY,
+      SubscriptionTierType.PRO,
+      SubscriptionTierType.BUSINESS,
+    ],
+  )
+
+  const currentPeriodPaidSubscriptions = useMemo(
+    () =>
+      paidSubscriptionStatistics.data?.periods[
+        paidSubscriptionStatistics.data.periods.length - 1
+      ],
+    [paidSubscriptionStatistics],
   )
 
   return (
@@ -111,6 +129,29 @@ const ClientPage = () => {
                     label: null,
                   }}
                   data={subscriptionStatistics.data.periods.map((d) => ({
+                    ...d,
+                    parsedStartDate: new Date(d.start_date),
+                  }))}
+                />
+              </Card>
+            )}
+            {paidSubscriptionStatistics.data && (
+              <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
+                <div className="flex w-full flex-grow flex-row items-center justify-between">
+                  <h3 className="p-2 text-sm font-medium">
+                    Paying Subscribers
+                  </h3>
+                  <h3 className="p-2 text-sm">
+                    {currentPeriodPaidSubscriptions?.subscribers}
+                  </h3>
+                </div>
+                <SubscriptionsChart
+                  y="subscribers"
+                  axisYOptions={{
+                    ticks: 'month',
+                    label: null,
+                  }}
+                  data={paidSubscriptionStatistics.data.periods.map((d) => ({
                     ...d,
                     parsedStartDate: new Date(d.start_date),
                   }))}

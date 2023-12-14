@@ -6,6 +6,7 @@ import {
   SubscriptionTier,
   SubscriptionTierBenefitsUpdate,
   SubscriptionTierCreate,
+  SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
 import {
@@ -323,12 +324,14 @@ export const useSubscriptionStatistics = (
   orgName: string,
   startDate: Date,
   endDate: Date,
+  tierTypes: SubscriptionTierType[] | undefined = undefined,
   platform: Platforms = Platforms.GITHUB,
 ) =>
   useQuery({
     queryKey: [
       'subscriptionStatistics',
       orgName,
+      tierTypes,
       JSON.stringify({ startDate, endDate }),
     ],
     queryFn: () =>
@@ -336,6 +339,7 @@ export const useSubscriptionStatistics = (
         organizationName: orgName,
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
+        types: tierTypes,
         platform,
       }),
     retry: defaultRetry,

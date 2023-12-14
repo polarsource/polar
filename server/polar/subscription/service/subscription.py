@@ -173,6 +173,22 @@ class SearchSortProperty(StrEnum):
 
 
 class SubscriptionService(ResourceServiceReader[Subscription]):
+    async def get(
+        self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
+    ) -> Subscription | None:
+        query = select(Subscription).where(Subscription.id == id)
+
+        if not allow_deleted:
+            query = query.where(Subscription.deleted_at.is_(None))
+
+        query = query.options(
+            joinedload(Subscription.user).joinedload(User.oauth_accounts),
+            joinedload(Subscription.organization),
+        )
+
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
+
     async def search(
         self,
         session: AsyncSession,
@@ -252,7 +268,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         statement = statement.options(
             contains_eager(Subscription.subscription_tier),
-            contains_eager(Subscription.user),
+            contains_eager(Subscription.user).joinedload(User.oauth_accounts),
             joinedload(Subscription.organization),
         )
 
@@ -272,7 +288,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             select(Subscription)
             .join(Subscription.subscription_tier)
             .options(
-                joinedload(Subscription.user),
+                joinedload(Subscription.user).joinedload(User.oauth_accounts),
                 joinedload(Subscription.organization),
                 contains_eager(Subscription.subscription_tier),
             )

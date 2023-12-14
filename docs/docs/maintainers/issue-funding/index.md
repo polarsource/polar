@@ -52,7 +52,7 @@ in addition (Stripe).
    repositories](/maintainers/issues-funding/getting-started/app-installation)
 3. [Customize the Polar badge & how it's embedded](/maintainers/issue-funding/getting-started/badge-settings)
 4. [Promote funding within your
-   community](/maintainers/issue-funding/getting-started/promote) (recommended,
+   community](/maintainers/issue-funding/promote) (recommended,
    but optional)
 5. Received funding? Setup Stripe or Open Collective for payouts.
 

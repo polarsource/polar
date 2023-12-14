@@ -111,7 +111,7 @@ with using rewards to distribute it across your contributors. Just like [tRPC](h
 
 You're now officially done with the maintainer onboarding 🎉 Go ahead and
 badge all the issues you want & checkout how you can [promote
-it](/maintainers/issue-funding/getting-started/promote) further for a
+it](/maintainers/issue-funding/promote) further for a
 higher chance of success.
 
 We're honored to have you onboard! Don't hesitate to reach out and share how we

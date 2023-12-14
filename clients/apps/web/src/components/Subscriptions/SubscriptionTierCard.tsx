@@ -21,6 +21,7 @@ interface SubscriptionTierCardProps {
   children?: React.ReactNode
   className?: string
   variant?: 'default' | 'small'
+  isEditing?: boolean
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -38,6 +39,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   children,
   className,
   variant = 'default',
+  isEditing = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
@@ -150,14 +152,21 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
               {subscriptionTier.description}
             </p>
           ) : (
-            <div className="flex flex-col gap-2">
-              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
-              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
-              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
-            </div>
+            <>
+              {isEditing ? (
+                <>
+                  <div className="flex flex-col gap-2">
+                    <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+                    <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+                    <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+                  </div>
+                </>
+              ) : null}
+            </>
           )}
         </div>
       </CardHeader>
+
       {benefitsToDisplay.length > 0 && subscriptionTier.description && (
         <Separator className="dark:bg-polar-700 bg-gray-200" />
       )}

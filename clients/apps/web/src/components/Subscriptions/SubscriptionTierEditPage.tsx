@@ -224,6 +224,7 @@ const SubscriptionTierEdit = ({
               ...editingSubscriptionTier,
               benefits: enabledBenefits,
             }}
+            isEditing={true}
           />
         </div>
       </Form>

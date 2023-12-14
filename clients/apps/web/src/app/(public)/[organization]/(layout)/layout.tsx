@@ -1,10 +1,42 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
+import PageNotFound from '@/components/Shared/PageNotFound'
+import { getServerSideAPI } from '@/utils/api'
+import { Platforms } from '@polar-sh/sdk'
+import React from 'react'
 import ClientLayout from './ClientLayout'
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+const cacheConfig = {
+  next: {
+    revalidate: 30, // 30 seconds
+  },
+}
+
+export default async function Layout({
+  params,
+  children,
+}: {
+  params: { organization: string }
+  children: React.ReactNode
+}) {
+  const api = getServerSideAPI()
+
+  const [organization] = await Promise.all([
+    api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      cacheConfig,
+    ),
+  ])
+
+  if (organization === undefined) {
+    return <PageNotFound />
+  }
+
   return (
     <PublicLayout wide>
-      <ClientLayout>{children}</ClientLayout>
+      <ClientLayout organization={organization}>{children}</ClientLayout>
     </PublicLayout>
   )
 }

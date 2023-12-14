@@ -130,6 +130,12 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
       ),
     [subscriptions, subscriptionTier],
   )
+  const isDowngrade = useMemo(
+    () =>
+      upgradableSubscription &&
+      subscriptionTier.price_amount < upgradableSubscription.price_amount,
+    [upgradableSubscription, subscriptionTier],
+  )
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
@@ -225,17 +231,29 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
               variant="outline"
               onClick={() => onUpgrade()}
             >
-              Upgrade
+              {isDowngrade ? 'Downgrade' : 'Upgrade'}
             </Button>
             <ConfirmModal
               isShown={showConfirmModal}
               hide={() => setShowConfirmModal(false)}
-              title={`Upgrade to ${subscriptionTier.name}`}
-              description={`On your next invoice, you'll be billed $${getCentsInDollarString(
-                subscriptionTier.price_amount,
-                false,
-                true,
-              )}, plus a proration for the current month.`}
+              title={
+                isDowngrade
+                  ? `Downgrade to ${subscriptionTier.name}`
+                  : `Upgrade to ${subscriptionTier.name}`
+              }
+              description={
+                isDowngrade
+                  ? `On your next invoice, you'll be billed $${getCentsInDollarString(
+                      subscriptionTier.price_amount,
+                      false,
+                      true,
+                    )}, minus a credit of what we already billed for the current month.`
+                  : `On your next invoice, you'll be billed $${getCentsInDollarString(
+                      subscriptionTier.price_amount,
+                      false,
+                      true,
+                    )}, plus a proration for the current month.`
+              }
               onConfirm={() => onUpgradeConfirm()}
             />
           </>

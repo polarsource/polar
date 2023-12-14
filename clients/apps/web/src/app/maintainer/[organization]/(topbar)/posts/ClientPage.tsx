@@ -202,7 +202,7 @@ const PostItem = (post: Article) => {
             <PhotoIcon className="text-polar-400 h-8 w-8" />
           </div>
         )}
-        <div className="flex min-w-0 flex-grow flex-col gap-y-6">
+        <div className="flex min-w-0 flex-grow flex-col justify-between gap-y-6">
           <div className="flex w-full flex-col gap-y-2">
             <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
               {post.title}

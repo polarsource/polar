@@ -24,10 +24,12 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
       )}
 
       <ShadowBoxOnMd>
-        <div className="flex flex-row items-start justify-between pb-8">
-          <h2 className="text-lg font-medium">Issues looking for funding</h2>
+        <div className="p-4">
+          <div className="flex flex-row items-start justify-between pb-8">
+            <h2 className="text-lg font-medium">Issues looking for funding</h2>
+          </div>
+          <IssuesLookingForFunding organization={organization} />
         </div>
-        <IssuesLookingForFunding organization={organization} />
       </ShadowBoxOnMd>
     </div>
   )

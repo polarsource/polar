@@ -70,7 +70,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
   const apiQueryParams = useMemo(() => {
     return {
       ...(subscriptionTierId ? { subscriptionTierId } : {}),
-      ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
+      ...(subscriptionTierType ? { types: [subscriptionTierType] } : {}),
     }
   }, [subscriptionTierId, subscriptionTierType])
 

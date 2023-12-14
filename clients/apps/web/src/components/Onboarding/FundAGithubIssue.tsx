@@ -1,5 +1,5 @@
 import { useRouter } from 'next/navigation'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 
@@ -33,8 +33,8 @@ const FundAGithubIssue = () => {
 
   return (
     <>
-      <div className="dark:bg-polar-900 dark:ring-polar-700 flex flex-col items-start space-y-4 rounded-xl bg-white p-6 shadow dark:ring-1">
-        <h2 className="dark:text-polar-50 text-center text-lg text-gray-900">
+      <ShadowBoxOnMd className="flex flex-col gap-y-4">
+        <h2 className="dark:text-polar-50 text-lg text-gray-900">
           Fund a GitHub issue
         </h2>
         <p className="dark:text-polar-400 flex-1 overflow-hidden text-sm text-gray-500">
@@ -47,7 +47,7 @@ const FundAGithubIssue = () => {
           issues/123 or polarsource/polar#123.
         </p>
 
-        <div className="flex w-full items-center space-x-2">
+        <div className="flex w-full space-x-2">
           <Input
             id="link"
             onChange={onLinkChange}
@@ -67,7 +67,7 @@ const FundAGithubIssue = () => {
         {errorMessage && (
           <p className="mt-2 text-sm text-red-500">{errorMessage}</p>
         )}
-      </div>
+      </ShadowBoxOnMd>
     </>
   )
 }

@@ -2,11 +2,15 @@
 
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
+import { Organization } from '@polar-sh/sdk'
 import { LogoType } from 'polarkit/components/brand'
 import { Tabs } from 'polarkit/components/ui/atoms'
 import { PropsWithChildren } from 'react'
 
-const ClientLayout = ({ children }: PropsWithChildren) => {
+const ClientLayout = ({
+  organization,
+  children,
+}: PropsWithChildren<{ organization: Organization }>) => {
   return (
     <Tabs className="flex min-h-screen flex-col justify-between">
       <div className="flex flex-col px-4 md:px-8">
@@ -19,7 +23,7 @@ const ClientLayout = ({ children }: PropsWithChildren) => {
           <OrganizationPublicPageNav />
         </div>
         <div className="relative flex w-full flex-col gap-x-24 py-16 md:flex-row">
-          <OrganizationPublicSidebar />
+          <OrganizationPublicSidebar organization={organization} />
           <div className="flex w-full flex-col">{children}</div>
         </div>
       </div>

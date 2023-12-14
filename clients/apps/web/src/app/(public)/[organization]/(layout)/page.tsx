@@ -146,16 +146,12 @@ export default async function Page({
   const currentTab = searchParams.tab as string | undefined
 
   return (
-    <>
-      <OrganizationPublicPage
-        posts={articles.items || []}
-        organization={organization}
-        repositories={repositories.items || []}
-        subscriptionTiers={subscriptionTiers}
-        subscriptionSummary={subscriptionsSummary}
-        subscribersCount={subscribersCount}
-        onFirstRenderTab={currentTab}
-      />
-    </>
+    <OrganizationPublicPage
+      posts={articles.items || []}
+      organization={organization}
+      repositories={repositories.items || []}
+      subscriptionTiers={subscriptionTiers}
+      subscriptionSummary={subscriptionsSummary}
+    />
   )
 }

@@ -4,14 +4,16 @@ import {
   LanguageOutlined,
   ShortTextOutlined,
 } from '@mui/icons-material'
-import {
-  Organization,
-  SubscriptionSummary,
-  SubscriptionTier,
-} from '@polar-sh/sdk'
+import { SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
-import { useListAdminOrganizations } from 'polarkit/hooks'
+import {
+  useListAdminOrganizations,
+  useOrganizationLookup,
+  useSubscriptionSummary,
+  useSubscriptionTiers,
+} from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
@@ -49,34 +51,50 @@ function parseGitHubUsernameLinks(text: string) {
   )
 }
 
-interface OrganizationPublicSidebarProps {
-  organization: Organization
-  freeSubscriptionTier: SubscriptionTier | undefined
-  subscriptionSummary: SubscriptionSummary[]
-  subscribersCount: number
-}
+export const OrganizationPublicSidebar = () => {
+  const { organization: organizationName }: { organization: string } =
+    useParams()
+  const { data: organization } = useOrganizationLookup(organizationName)
+  const { data: { items: subscriptionTiers } = { items: [] } } =
+    useSubscriptionTiers(organizationName, 100)
+  const {
+    data: {
+      items: subscriptionSummary,
+      pagination: { total_count: subscribersCount },
+    } = {
+      items: [],
+      pagination: { total_count: 0 },
+    },
+  } = useSubscriptionSummary(organizationName)
 
-export const OrganizationPublicSidebar = ({
-  organization,
-  freeSubscriptionTier,
-  subscriptionSummary,
-  subscribersCount,
-}: OrganizationPublicSidebarProps) => {
+  const freeSubscriptionTier = useMemo(
+    () =>
+      subscriptionTiers?.find(
+        (tier) => tier.type === SubscriptionTierType.FREE,
+      ),
+    [subscriptionTiers],
+  )
+
   const adminOrgs = useListAdminOrganizations()
   const shouldRenderDashboardButton = useMemo(
-    () => adminOrgs?.data?.items?.some((org) => org.name === organization.name),
+    () =>
+      adminOrgs?.data?.items?.some((org) => org.name === organization?.name),
     [adminOrgs],
   )
 
   const subscribers = useMemo(
-    () => subscriptionSummary.slice(0, 9),
+    () => subscriptionSummary?.slice(0, 9) ?? [],
     [subscriptionSummary],
   )
 
   const subscribersHiddenCount = useMemo(
-    () => subscribersCount - subscribers.length,
+    () => subscribersCount - (subscribers.length ?? 0),
     [subscriptionSummary],
   )
+
+  if (!organization) {
+    return null
+  }
 
   return (
     <div className="flex h-fit w-full shrink-0 flex-col gap-y-10 md:sticky md:top-16 md:w-64">

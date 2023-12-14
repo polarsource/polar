@@ -363,6 +363,19 @@ export interface ArticleSentResponse {
 /**
  * 
  * @export
+ * @interface ArticleUnsubscribeResponse
+ */
+export interface ArticleUnsubscribeResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ArticleUnsubscribeResponse
+     */
+    ok: boolean;
+}
+/**
+ * 
+ * @export
  * @interface ArticleUpdate
  */
 export interface ArticleUpdate {
@@ -4885,13 +4898,25 @@ export interface SubscriptionUser {
      * @type {string}
      * @memberof SubscriptionUser
      */
-    username: string;
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
+    github_username?: string;
     /**
      * 
      * @type {string}
      * @memberof SubscriptionUser
      */
     avatar_url?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
+    email?: string;
 }
 /**
  * 

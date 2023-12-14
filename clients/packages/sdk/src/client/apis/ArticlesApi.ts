@@ -22,6 +22,7 @@ import type {
   ArticlePreviewResponse,
   ArticleReceiversResponse,
   ArticleSentResponse,
+  ArticleUnsubscribeResponse,
   ArticleUpdate,
   ArticleViewedResponse,
   HTTPValidationError,
@@ -180,7 +181,7 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Unsubscribe user from articles in emails.
      * Stop delivery of articles via email.
      */
-    async emailUnsubscribeRaw(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async emailUnsubscribeRaw(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleUnsubscribeResponse>> {
         if (requestParameters.articleSubscriptionId === null || requestParameters.articleSubscriptionId === undefined) {
             throw new runtime.RequiredError('articleSubscriptionId','Required parameter requestParameters.articleSubscriptionId was null or undefined when calling emailUnsubscribe.');
         }
@@ -208,18 +209,14 @@ export class ArticlesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
      * Unsubscribe user from articles in emails.
      * Stop delivery of articles via email.
      */
-    async emailUnsubscribe(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+    async emailUnsubscribe(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleUnsubscribeResponse> {
         const response = await this.emailUnsubscribeRaw(requestParameters, initOverrides);
         return await response.value();
     }

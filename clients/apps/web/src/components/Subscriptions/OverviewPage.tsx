@@ -267,14 +267,29 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
                           className="h-8 w-8"
                         />
                         <div className="flex flex-col text-sm">
-                          <div className="font-medium">
-                            {subscription.organization?.name ??
-                              subscription.user.github_username ??
-                              subscription.user.name}
-                            {/* {subscription.organization
-                              ? subscription.organization.name
-                              : subscription.user.name} */}
-                          </div>
+                          {subscription.organization ? (
+                            <div className="font-medium">
+                              {subscription.organization.name}
+                            </div>
+                          ) : (
+                            <>
+                              {subscription.user.github_username ? (
+                                <>
+                                  <div className="font-medium">
+                                    {subscription.user.github_username}
+                                  </div>
+                                  <div className="dark:text-polar-500 text-xs text-gray-400">
+                                    {subscription.user.email}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="font-medium">
+                                  {subscription.user.email}
+                                </div>
+                              )}
+                            </>
+                          )}
+
                           <div className="dark:text-polar-500 text-xs text-gray-400">
                             <FormattedDateTime
                               datetime={subscription.started_at as string}

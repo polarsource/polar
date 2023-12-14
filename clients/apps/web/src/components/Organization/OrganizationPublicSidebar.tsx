@@ -175,8 +175,8 @@ export const OrganizationPublicSidebar = ({
               </h3>
             </div>
             <div className="flex flex-row flex-wrap gap-3">
-              {subscribers.map(({ user, organization }) => (
-                <React.Fragment key={`${user.username}-${organization?.name}`}>
+              {subscribers.map(({ user, organization }, idx) => (
+                <React.Fragment key={idx}>
                   {organization && (
                     <Link
                       key={organization.name}
@@ -191,17 +191,27 @@ export const OrganizationPublicSidebar = ({
                     </Link>
                   )}
                   {!organization && (
-                    <Link
-                      key={user.username}
-                      href={`https://github.com/${user.username}`}
-                      target="_blank"
-                    >
-                      <Avatar
-                        className="h-10 w-10"
-                        name={user.username}
-                        avatar_url={user.avatar_url}
-                      />
-                    </Link>
+                    <>
+                      {user.github_username ? (
+                        <Link
+                          key={user.github_username}
+                          href={`https://github.com/${user.github_username}`}
+                          target="_blank"
+                        >
+                          <Avatar
+                            className="h-10 w-10"
+                            name={user.github_username}
+                            avatar_url={user.avatar_url}
+                          />
+                        </Link>
+                      ) : (
+                        <Avatar
+                          className="h-10 w-10"
+                          name={user.name}
+                          avatar_url={user.avatar_url}
+                        />
+                      )}
+                    </>
                   )}
                 </React.Fragment>
               ))}

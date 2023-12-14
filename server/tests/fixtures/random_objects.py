@@ -16,7 +16,7 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
-from polar.models.user import User
+from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
 from polar.pledge.schemas import PledgeState, PledgeType
@@ -130,6 +130,23 @@ async def create_issue(
 
     await session.commit()
     return issue
+
+
+@pytest_asyncio.fixture(scope="function")
+async def user_github_oauth(
+    session: AsyncSession,
+    user: User,
+) -> OAuthAccount:
+    a = await OAuthAccount(
+        platform=Platforms.github,
+        access_token="xxyyzz",
+        account_id="xxyyzz",
+        account_email="foo@bar.com",
+        user_id=user.id,
+    ).save(session)
+
+    await session.commit()
+    return a
 
 
 @pytest_asyncio.fixture(scope="function")

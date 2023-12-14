@@ -173,8 +173,11 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
             )}
             {!organization && (
               <>
-                <Avatar avatar_url={user.avatar_url} name={user.username} />
-                <div className="fw-medium">{user.username}</div>
+                <Avatar avatar_url={user.avatar_url} name={user.name} />
+                {user.github_username ? (
+                  <div className="fw-medium">@{user.github_username}</div>
+                ) : null}
+                <div className="fw-medium">{user.email}</div>
               </>
             )}
           </div>

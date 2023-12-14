@@ -1,5 +1,6 @@
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
+import { getServerSideAPI } from '@/utils/api'
 import {
   ListFundingSortBy,
   ListResourceRepository,
@@ -9,7 +10,6 @@ import {
 } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
-import { api } from 'polarkit'
 
 const cacheConfig = {
   next: {
@@ -27,6 +27,8 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   let organization: Organization | undefined
   let repositories: ListResourceRepository | undefined
+
+  const api = getServerSideAPI()
 
   try {
     organization = await api.organizations.lookup(
@@ -94,6 +96,8 @@ export default async function Page({
 }: {
   params: { organization: string; repo: string }
 }) {
+  const api = getServerSideAPI()
+
   const organization = await api.organizations.lookup(
     {
       platform: Platforms.GITHUB,

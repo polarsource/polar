@@ -1,21 +1,11 @@
-import { Configuration, PolarAPI, ResponseError } from '@polar-sh/sdk'
-import { cookies } from 'next/headers'
+import { getServerSideAPI } from '@/utils/api'
+import { ResponseError } from '@polar-sh/sdk'
 import { NextRequest } from 'next/server'
-import { getServerURL } from 'polarkit/api'
 
 export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
-  const cookieStore = cookies()
-  const api = new PolarAPI(
-    new Configuration({
-      basePath: getServerURL(),
-      credentials: 'include',
-      headers: {
-        Cookie: cookieStore.toString(),
-      },
-    }),
-  )
+  const api = getServerSideAPI()
 
   const searchParams = request.nextUrl.searchParams
   const subscriptionTierId = searchParams.get('tier') as string

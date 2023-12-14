@@ -3,7 +3,6 @@ import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
-import { api } from 'polarkit/api'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -21,6 +20,8 @@ export async function generateMetadata(
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
   let organization: Organization | undefined
+
+  const api = getServerSideAPI()
 
   try {
     organization = await api.organizations.lookup(

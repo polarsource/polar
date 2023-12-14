@@ -3,11 +3,7 @@
 import { useCurrentOrgAndRepoFromURL, useGitHubAccount } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
-import {
-  AddOutlined,
-  LogoutOutlined,
-  ShortTextOutlined,
-} from '@mui/icons-material'
+import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
@@ -213,13 +209,12 @@ export const ProfileMenu = ({ className = '' }) => {
       <div className={classNames}>
         <div
           className={twMerge(
-            'dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 dark:text-polar-400 dark:hover:text-polar-200 relative flex cursor-pointer flex-row items-center gap-x-2 rounded-full border border-gray-100 bg-white p-1.5 pl-4 text-gray-400 shadow-sm transition-colors hover:text-gray-950',
+            'dark:border-polar-700 relative flex cursor-pointer flex-row items-center rounded-full border-2 border-blue-50 shadow-sm transition-colors',
           )}
           onClick={() => setOpen(true)}
         >
-          <ShortTextOutlined fontSize="small" />
           <Avatar
-            className="h-8 w-8"
+            className="h-9 w-9"
             name={loggedUser.username}
             avatar_url={loggedUser.avatar_url}
           />
@@ -229,7 +224,7 @@ export const ProfileMenu = ({ className = '' }) => {
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-14 z-50 w-[300px] overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
+              'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
             <Link

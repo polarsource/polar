@@ -1,12 +1,5 @@
 import { getServerSideAPI } from '@/utils/api'
-import {
-  Article,
-  Platforms,
-  ResponseError,
-  SubscriptionSummary,
-  SubscriptionTier,
-  SubscriptionTierType,
-} from '@polar-sh/sdk'
+import { Article, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -105,55 +98,5 @@ export default async function Page({
     ),
   ])
 
-  let subscriptionTiers: SubscriptionTier[] = []
-  let subscriptionsSummary: SubscriptionSummary[] = []
-  let subscribersCount = 0
-  try {
-    const subscriptionSummaryResponse =
-      await api.subscriptions.searchSubscriptionsSummary(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          limit: 20,
-        },
-        cacheConfig,
-      )
-
-    subscriptionsSummary = subscriptionSummaryResponse.items ?? []
-    subscribersCount = subscriptionSummaryResponse.pagination.total_count
-  } catch (err) {}
-
-  let freeSubscriptionTier: SubscriptionTier | undefined = undefined
-  try {
-    const subscriptionGroupsResponse =
-      await api.subscriptions.searchSubscriptionTiers(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: organization.name,
-        },
-        cacheConfig,
-      )
-    subscriptionTiers = subscriptionGroupsResponse.items ?? []
-    freeSubscriptionTier = subscriptionGroupsResponse.items?.find(
-      (tier) => tier.type === SubscriptionTierType.FREE,
-    )
-  } catch (err) {}
-
-  const currentTab = searchParams.tab
-
-  return (
-    <>
-      {post && (
-        <ClientPage
-          onFirstRenderTab={currentTab}
-          post={post}
-          organization={organization}
-          freeSubscriptionTier={freeSubscriptionTier}
-          subscribersCount={subscribersCount}
-          subscriptionSummary={subscriptionsSummary}
-          subscriptionTiers={subscriptionTiers}
-        />
-      )}
-    </>
-  )
+  return <>{post && <ClientPage post={post} organization={organization} />}</>
 }

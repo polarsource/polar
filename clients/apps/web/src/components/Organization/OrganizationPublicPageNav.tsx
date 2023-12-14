@@ -9,12 +9,18 @@ import {
   SubscriptionTier,
   UserSignupType,
 } from '@polar-sh/sdk'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation'
 import {
   TabsContent,
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
+import { useSubscriptionTiers } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
 import { Post as PostComponent } from '../Feed/Posts/Post'
 import GithubLoginButton from '../Shared/GithubLoginButton'
@@ -26,12 +32,10 @@ import IssuesLookingForFunding from './IssuesLookingForFunding'
 import { RepositoriesOverivew } from './RepositoriesOverview'
 
 interface OrganizationPublicPageNavProps {
-  shouldRenderSubscriptionsTab: boolean
   basePath?: string
 }
 
 export const OrganizationPublicPageNav = ({
-  shouldRenderSubscriptionsTab,
   basePath,
 }: OrganizationPublicPageNavProps) => {
   const { currentUser } = useAuth()
@@ -39,6 +43,14 @@ export const OrganizationPublicPageNav = ({
 
   const search = useSearchParams()
   const pathname = usePathname()
+
+  const { organization: organizationName }: { organization: string } =
+    useParams()
+
+  const { data: { items: subscriptionTiers } = { items: [] } } =
+    useSubscriptionTiers(organizationName, 100)
+
+  const shouldRenderSubscriptionsTab = (subscriptionTiers?.length ?? 0) > 0
 
   const handleTabChange = useCallback(
     (value: string) => () => {

@@ -180,7 +180,13 @@ const PostItem = (post: Article) => {
       ref={ref}
       href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}
     >
-      <div className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-gray-50">
+      <div
+        className={twMerge(
+          'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-gray-50',
+          post.paid_subscribers_only &&
+            'bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-800/10',
+        )}
+      >
         {image ? (
           <img
             src={image}
@@ -235,10 +241,11 @@ const PostItem = (post: Article) => {
               ) : (
                 <div className="flex flex-row items-center gap-x-2 text-sm">
                   {post.paid_subscribers_only ? (
-                    <>
-                      <span className="text-green-500">$</span>
-                      <span className="capitalize">Paid subscribers</span>
-                    </>
+                    <div className="flex flex-row items-center rounded-full bg-blue-50 bg-gradient-to-l px-2 py-0.5 dark:bg-blue-950">
+                      <span className="text-xs text-blue-300 dark:text-blue-300">
+                        Premium
+                      </span>
+                    </div>
                   ) : (
                     <>
                       <LanguageOutlined

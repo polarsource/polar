@@ -27,7 +27,11 @@ export const Post = (props: FeedPost) => {
 
   return (
     <div
-      className="dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full cursor-pointer flex-col justify-start gap-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 md:flex-row"
+      className={twMerge(
+        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full cursor-pointer flex-col justify-start gap-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 md:flex-row',
+        props.article.paid_subscribers_only &&
+          'bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-800/10',
+      )}
       ref={ref}
       onClick={onClick}
     >
@@ -89,9 +93,9 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
           {props.article.paid_subscribers_only ? (
             <>
               &middot;
-              <div className="flex flex-row items-center gap-x-1">
-                <span className="text-green-5s00 text-xs dark:text-green-700">
-                  Premium post
+              <div className="flex flex-row items-center rounded-full bg-blue-50 bg-gradient-to-l px-2 dark:bg-blue-950">
+                <span className="text-[.6rem] text-blue-300 dark:text-blue-300">
+                  Premium
                 </span>
               </div>
             </>

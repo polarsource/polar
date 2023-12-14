@@ -43,7 +43,7 @@ const SubscriptionGroupPublic = ({
       <div className="-mx-10 flex h-fit flex-row flex-wrap gap-6 overflow-x-auto px-10 py-6 lg:mx-0 lg:overflow-x-visible lg:px-0 lg:py-2">
         {tiers.map((tier) => (
           <SubscriptionTierCard
-            className="w-full self-stretch lg:max-w-[250px]"
+            className="w-full self-stretch lg:max-w-[286px]"
             key={tier.id}
             subscriptionTier={tier}
             variant="small"

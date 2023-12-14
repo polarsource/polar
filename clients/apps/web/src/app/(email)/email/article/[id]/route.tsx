@@ -204,7 +204,7 @@ const renderArticle = async (
   unsubscribeLink =
     unsubscribeLink ??
     // If we don't have a subscription token. Send user to the subscriptions page.
-    preAuthLink(`https://polar.sh/${post.organization.name}?tab=subscriptions`)
+    preAuthLink(`https://polar.sh/${post.organization.name}/subscriptions`)
 
   const html = render(
     <Html lang="en">

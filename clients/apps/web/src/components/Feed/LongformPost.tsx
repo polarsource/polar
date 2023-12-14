@@ -116,7 +116,7 @@ export default function LongformPost({
                   article.organization.pretty_name || article.organization.name
                 } by subscribing to their work and get access to exclusive content.`}
           </p>
-          <Link href={`/${organization.name}?tab=subscriptions`}>
+          <Link href={`/${organization.name}/subscriptions`}>
             <Button className="mt-4">Subscribe</Button>
           </Link>
         </div>

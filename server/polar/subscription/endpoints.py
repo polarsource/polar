@@ -411,7 +411,7 @@ async def get_subscriptions_statistics(
     start_date: date = Query(...),
     end_date: date = Query(...),
     direct_organization: bool = Query(True),
-    type: SubscriptionTierType | None = Query(None),
+    types: list[SubscriptionTierType] | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionsStatistics:
@@ -438,7 +438,7 @@ async def get_subscriptions_statistics(
         organization=organization,
         repository=repository,
         direct_organization=direct_organization,
-        type=type,
+        types=types,
         subscription_tier_id=subscription_tier_id,
     )
     return SubscriptionsStatistics(periods=periods)

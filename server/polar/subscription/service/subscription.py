@@ -757,7 +757,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         organization: Organization | None = None,
         repository: Repository | None = None,
         direct_organization: bool = True,
-        type: SubscriptionTierType | None = None,
+        types: list[SubscriptionTierType] | None = None,
         subscription_tier_id: uuid.UUID | None = None,
         current_start_of_month: date | None = None,
     ) -> list[SubscriptionsStatisticsPeriod]:
@@ -774,9 +774,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 SubscriptionTier.repository_id == repository.id
             )
 
-        if type is not None:
+        if types is not None:
             subscriptions_statement = subscriptions_statement.where(
-                SubscriptionTier.type == type
+                SubscriptionTier.type.in_(types)
             )
 
         if subscription_tier_id is not None:

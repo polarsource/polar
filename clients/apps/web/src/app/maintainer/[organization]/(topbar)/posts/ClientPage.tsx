@@ -184,7 +184,7 @@ const PostItem = (post: Article) => {
         className={twMerge(
           'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-gray-50',
           post.paid_subscribers_only &&
-            'bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-800/10',
+            'border-white bg-gradient-to-l from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
         )}
       >
         {image ? (
@@ -193,7 +193,12 @@ const PostItem = (post: Article) => {
             className="hidden h-28 w-28 flex-shrink-0 rounded-2xl object-cover md:block"
           />
         ) : (
-          <div className="dark:bg-polar-700 hidden min-h-0 w-28 flex-shrink-0 flex-col items-center justify-center rounded-2xl bg-gray-100 bg-cover bg-center bg-no-repeat md:flex">
+          <div
+            className={twMerge(
+              'dark:bg-polar-700 hidden h-28 w-28 flex-shrink-0 flex-col items-center justify-center self-start rounded-2xl bg-gray-100 bg-cover bg-center bg-no-repeat md:flex',
+              post.paid_subscribers_only && 'bg-blue-50/50',
+            )}
+          >
             <PhotoIcon className="text-polar-400 h-8 w-8" />
           </div>
         )}

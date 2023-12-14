@@ -80,7 +80,7 @@ export interface SubscriptionsApiGetSubscriptionsStatisticsRequest {
     platform: Platforms;
     repositoryName?: string;
     directOrganization?: boolean;
-    type?: SubscriptionTierType;
+    types?: Array<SubscriptionTierType>;
     subscriptionTierId?: string;
 }
 
@@ -527,8 +527,8 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             queryParameters['direct_organization'] = requestParameters.directOrganization;
         }
 
-        if (requestParameters.type !== undefined) {
-            queryParameters['type'] = requestParameters.type;
+        if (requestParameters.types) {
+            queryParameters['types'] = requestParameters.types;
         }
 
         if (requestParameters.subscriptionTierId !== undefined) {

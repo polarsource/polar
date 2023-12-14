@@ -68,6 +68,10 @@ const ClientPage = () => {
     [paidSubscriptionStatistics],
   )
 
+  const showPosts = (posts.data?.items?.length ?? 0) > 0
+  const showNoPostsYet =
+    !showPosts && posts.data?.items && posts.data.items.length === 0
+
   return (
     <>
       <DashboardBody>
@@ -84,9 +88,9 @@ const ClientPage = () => {
               </Link>
             </div>
             <div className="flex flex-col gap-y-12">
-              {(posts.data?.items?.length ?? 0) > 0 ? (
+              {showPosts ? (
                 <StaggerReveal className="flex w-full flex-col gap-y-4">
-                  {posts?.data?.items
+                  {posts.data?.items
                     ? posts.data.items.map((post) => (
                         <StaggerReveal.Child key={post.id}>
                           <PostItem {...post} />
@@ -94,7 +98,9 @@ const ClientPage = () => {
                       ))
                     : null}
                 </StaggerReveal>
-              ) : (
+              ) : null}
+
+              {showNoPostsYet ? (
                 <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
                   <ViewDayOutlined fontSize="large" />
                   <div className="flex flex-col items-center gap-y-2">
@@ -105,7 +111,7 @@ const ClientPage = () => {
                     </p>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
           <div className="sticky top-8 flex flex-shrink-0 flex-col gap-y-8 xl:w-1/3">

@@ -101,5 +101,5 @@ export default async function Page({
     return <PageNotFound />
   }
 
-  return <ClientPage posts={posts.items ?? []} />
+  return <ClientPage organization={organization} posts={posts.items ?? []} />
 }

@@ -3,6 +3,7 @@
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import PublicSubscriptionUpsell from '@/components/Subscriptions/PublicSubscriptionUpsell'
 import { Organization } from '@polar-sh/sdk'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { useSubscriptionTiers } from 'polarkit/hooks'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
@@ -22,12 +23,12 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
         />
       )}
 
-      <div className="dark:bg-polar-900 dark:border-polar-800 flex min-h-[480px] w-full flex-col gap-y-8 rounded-3xl border border-gray-100 bg-white p-12">
-        <div className="flex flex-row items-start justify-between">
+      <ShadowBoxOnMd>
+        <div className="flex flex-row items-start justify-between pb-8">
           <h2 className="text-lg font-medium">Issues looking for funding</h2>
         </div>
         <IssuesLookingForFunding organization={organization} />
-      </div>
+      </ShadowBoxOnMd>
     </div>
   )
 }

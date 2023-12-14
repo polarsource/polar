@@ -1,4 +1,4 @@
-import PublicLayout from '@/components/Layout/PublicLayout'
+import EmptyLayout from '@/components/Layout/EmptyLayout'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
@@ -35,8 +35,8 @@ export default async function Layout({
   }
 
   return (
-    <PublicLayout wide>
+    <EmptyLayout>
       <ClientLayout organization={organization}>{children}</ClientLayout>
-    </PublicLayout>
+    </EmptyLayout>
   )
 }

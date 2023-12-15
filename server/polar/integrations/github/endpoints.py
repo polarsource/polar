@@ -9,18 +9,19 @@ from fastapi import (
     Request,
     Response,
 )
+from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 from pydantic import BaseModel, ValidationError
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.auth.service import AuthService, LoginResponse
+from polar.auth.service import AuthService
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.context import ExecutionContext
 from polar.enums import UserSignupType
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import PolarRedirectionError, ResourceNotFound, Unauthorized
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.organization.schemas import Organization as OrganizationSchema
@@ -28,15 +29,12 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.reward.service import reward_service
+from polar.tags.api import Tags
 from polar.worker import enqueue_job
 
-from .schemas import (
-    AuthorizationResponse,
-    GithubUser,
-    OAuthAccessToken,
-)
+from .schemas import GithubUser, OAuthAccessToken
 from .service.organization import github_organization
-from .service.user import github_user
+from .service.user import GithubUserServiceError, github_user
 
 log = structlog.get_logger()
 
@@ -51,17 +49,22 @@ github_oauth_client = GitHubOAuth2(
     settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET
 )
 oauth2_authorize_callback = OAuth2AuthorizeCallback(
-    github_oauth_client, redirect_url=settings.GITHUB_REDIRECT_URL
+    github_oauth_client, route_name="integrations.github.callback"
 )
 
 
-@router.get("/authorize")
+class OAuthCallbackError(PolarRedirectionError):
+    ...
+
+
+@router.get("/authorize", name="integrations.github.authorize", tags=[Tags.INTERNAL])
 async def github_authorize(
+    request: Request,
     payment_intent_id: str | None = None,
     goto_url: str | None = None,
     user_signup_type: UserSignupType | None = None,
     auth: Auth = Depends(Auth.optional_user),
-) -> AuthorizationResponse:
+) -> RedirectResponse:
     state = {}
     if payment_intent_id:
         state["payment_intent_id"] = payment_intent_id
@@ -84,14 +87,14 @@ async def github_authorize(
         secret=settings.SECRET,
     )
     authorization_url = await github_oauth_client.get_authorization_url(
-        redirect_uri=settings.GITHUB_REDIRECT_URL,
+        redirect_uri=str(request.url_for("integrations.github.callback")),
         state=encoded_state,
         scope=["user", "user:email"],
     )
-    return AuthorizationResponse(authorization_url=authorization_url)
+    return RedirectResponse(authorization_url, 303)
 
 
-@router.get("/callback")
+@router.get("/callback", name="integrations.github.callback", tags=[Tags.INTERNAL])
 async def github_callback(
     request: Request,
     response: Response,
@@ -100,35 +103,40 @@ async def github_callback(
         oauth2_authorize_callback
     ),
     auth: Auth = Depends(Auth.optional_user),
-) -> LoginResponse:
+) -> RedirectResponse:
     token_data, state = access_token_state
     error_description = token_data.get("error_description")
     if error_description:
-        raise HTTPException(status_code=403, detail=error_description)
+        raise OAuthCallbackError(error_description)
     if not state:
-        raise HTTPException(status_code=400, detail="No state")
+        raise OAuthCallbackError("No state")
 
     try:
         state_data = jwt.decode(token=state, secret=settings.SECRET)
-    except jwt.DecodeError:
-        raise HTTPException(status_code=400, detail="Invalid state")
+    except jwt.DecodeError as e:
+        raise OAuthCallbackError("Invalid state") from e
+
+    goto_url = state_data.get("goto_url", None)
 
     try:
         tokens = OAuthAccessToken(**token_data)
-    except ValidationError:
-        raise HTTPException(status_code=400, detail="Invalid token data")
+    except ValidationError as e:
+        raise OAuthCallbackError("Invalid token data", goto_url=goto_url) from e
 
     state_user_id = state_data.get("user_id")
-    if (
-        auth.user is not None
-        and state_user_id is not None
-        and auth.user.id == UUID(state_user_id)
-    ):
-        user = await github_user.link_existing_user(
-            session, user=auth.user, tokens=tokens
-        )
-    else:
-        user = await github_user.login_or_signup(session, tokens=tokens)
+    try:
+        if (
+            auth.user is not None
+            and state_user_id is not None
+            and auth.user.id == UUID(state_user_id)
+        ):
+            user = await github_user.link_existing_user(
+                session, user=auth.user, tokens=tokens
+            )
+        else:
+            user = await github_user.login_or_signup(session, tokens=tokens)
+    except GithubUserServiceError as e:
+        raise OAuthCallbackError(e.message, e.status_code, goto_url=goto_url) from e
 
     payment_intent_id = state_data.get("payment_intent_id")
     if payment_intent_id:
@@ -140,9 +148,8 @@ async def github_callback(
     await reward_service.connect_by_username(session, user)
 
     posthog.identify(user)
-    goto_url = state_data.get("goto_url", None)
     return AuthService.generate_login_cookie_response(
-        request=request, response=response, user=user, goto_url=goto_url
+        request=request, user=user, goto_url=goto_url
     )
 
 

@@ -1,15 +1,6 @@
 from polar.kit.schemas import Schema
 
 
-class AuthorizationResponse(Schema):
-    authorization_url: str
-
-
-class CallbackRequest(Schema):
-    code: str
-    state: str
-
-
 class OAuthAccessToken(Schema):
     access_token: str
     expires_in: int

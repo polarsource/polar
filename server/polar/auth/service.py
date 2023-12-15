@@ -3,6 +3,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import Request, Response
+from fastapi.responses import RedirectResponse
 from pydantic import validator
 
 from polar.config import settings
@@ -83,17 +84,21 @@ class AuthService:
         cls,
         *,
         request: Request,
-        response: Response,
         user: User,
         goto_url: str | None = None,
-    ) -> LoginResponse:
-        (token, expires_at) = cls.generate_token(user=user)
+    ) -> RedirectResponse:
+        token, _ = cls.generate_token(user=user)
 
         is_localhost = request.url.hostname in ["127.0.0.1", "localhost"]
         secure = False if is_localhost else True
 
+        if goto_url is None:
+            goto_url = settings.generate_frontend_url(
+                settings.FRONTEND_DEFAULT_REDIRECTION_PATH
+            )
+        response = RedirectResponse(goto_url, 303)
         cls.set_auth_cookie(response=response, value=token, secure=secure)
-        return LoginResponse(success=True, expires_at=expires_at, goto_url=goto_url)
+        return response
 
     @classmethod
     def generate_login_json_response(cls, *, user: User) -> LoginResponse:

@@ -1,21 +1,19 @@
 import { TextArea } from 'polarkit/components/ui/atoms'
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useEditorHelpers } from './useEditorHelpers'
+import { PostEditorContext } from '../Feed/PostEditor'
 
 const uploadingText = 'Uploading...'
 
 interface MarkdownEditorProps {
   className?: string
   value: string
-  onChange?: (value: string) => void
   autoFocus?: boolean
 }
 
 export const MarkdownEditor = ({
   value,
   className,
-  onChange,
   autoFocus,
 }: MarkdownEditorProps) => {
   const {
@@ -26,10 +24,10 @@ export const MarkdownEditor = ({
     handleDrop,
     handleKeyDown,
     handlePaste,
-  } = useEditorHelpers(onChange)
+  } = useContext(PostEditorContext)
 
   useEffect(() => {
-    if (ref.current) {
+    if (ref?.current) {
       ref.current.style.height = ref.current.scrollHeight + 'px'
     }
   }, [value])

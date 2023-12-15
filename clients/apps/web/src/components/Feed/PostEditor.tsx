@@ -1,12 +1,45 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Article } from '@polar-sh/sdk'
 import { TabsContent } from 'polarkit/components/ui/atoms'
-import { useState } from 'react'
+import React, { PropsWithChildren, useState } from 'react'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
 import { StaggerReveal } from '../Shared/StaggerReveal'
 import LongformPost from './LongformPost'
 import { PostToolbar } from './Toolbar/PostToolbar'
+import { EditorHelpers, useEditorHelpers } from './useEditorHelpers'
+
+const defaultPostEditorContext: EditorHelpers = {
+  ref: { current: null },
+  insertText: (text: string) => {},
+  insertTextAtCursor: (text: string) => {},
+  wrapSelectionWithText: ([before, after]: [string, string]) => {},
+  handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {},
+  handleDrag: (e: React.DragEvent<HTMLTextAreaElement>) => {},
+  handleDragOver: (e: React.DragEvent<HTMLTextAreaElement>) => {},
+  handleDrop: (e: React.DragEvent<HTMLTextAreaElement>) => {},
+  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {},
+  handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => {},
+}
+
+export const PostEditorContext = React.createContext(defaultPostEditorContext)
+
+type PostEditorContextProviderProps = PropsWithChildren<{
+  onChange: (value: string) => void
+}>
+
+const PostEditorContextProvider = ({
+  onChange,
+  children,
+}: PostEditorContextProviderProps) => {
+  const helpers = useEditorHelpers(onChange)
+
+  return (
+    <PostEditorContext.Provider value={helpers}>
+      {children}
+    </PostEditorContext.Provider>
+  )
+}
 
 interface PostEditorProps {
   article?: Article
@@ -33,7 +66,7 @@ export const PostEditor = ({
   }
 
   return (
-    <>
+    <PostEditorContextProvider onChange={onBodyChange}>
       <PostToolbar
         article={article}
         previewAs={previewAs}
@@ -55,7 +88,6 @@ export const PostEditor = ({
                   <MarkdownEditor
                     className="focus:ring-none h-full overflow-visible rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
                     value={body}
-                    onChange={onBodyChange}
                   />
                 </div>
               </TabsContent>
@@ -73,6 +105,6 @@ export const PostEditor = ({
           </div>
         </DashboardBody>
       </div>
-    </>
+    </PostEditorContextProvider>
   )
 }

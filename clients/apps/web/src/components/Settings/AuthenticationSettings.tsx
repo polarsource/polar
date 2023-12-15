@@ -1,13 +1,12 @@
 import { useGitHubAccount, useRequireAuth } from '@/hooks'
 import { AtSymbolIcon } from '@heroicons/react/24/solid'
 import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
-import { api } from 'polarkit'
+import { getGitHubAuthorizeURL } from 'polarkit/auth'
 import {
   Button,
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
-import { useCallback, useState } from 'react'
 
 interface AuthenticationMethodProps {
   icon: React.ReactNode
@@ -47,18 +46,7 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
   oauthAccount,
   gotoUrl,
 }) => {
-  const [loading, setLoading] = useState(false)
-  const connect = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await api.integrations.githubAuthorize({ gotoUrl })
-      if (res.authorization_url) {
-        window.location.href = res.authorization_url
-      }
-    } catch (err) {
-      setLoading(false)
-    }
-  }, [gotoUrl])
+  const authorizeURL = getGitHubAuthorizeURL({ gotoUrl })
 
   return (
     <AuthenticationMethod
@@ -94,8 +82,8 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
             </div>
           )}
           {!oauthAccount && (
-            <Button onClick={connect} loading={loading} disabled={loading}>
-              Connect
+            <Button asChild>
+              <a href={authorizeURL}>Connect</a>
             </Button>
           )}
         </>

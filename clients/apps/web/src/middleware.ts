@@ -14,7 +14,7 @@ const handleMagicLinkToken = async (magic: string): Promise<string[]> => {
   } catch {}
 
   try {
-    const magicLink = await api.magicLink.authenticateMagicLinkRaw({
+    const magicLink = await api.magicLink.magicLinkAuthenticateRaw({
       token: magic,
     })
     const val = await magicLink.value()

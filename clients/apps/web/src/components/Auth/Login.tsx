@@ -4,11 +4,8 @@ import { LogoType70 } from 'polarkit/components/brand'
 import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import MagicLinkLoginForm from '../Shared/MagicLinkLoginForm'
-import { useLoginRedirect } from './Redirector'
 
 const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
-  useLoginRedirect()
-
   return (
     <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-[#FEFDF9]">
       <div id="polar-bg-gradient"></div>

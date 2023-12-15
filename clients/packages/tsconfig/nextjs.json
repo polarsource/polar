@@ -13,7 +13,6 @@
       "dom.iterable",
       "esnext"
     ],
-    "module": "esnext",
     "noEmit": true,
     "resolveJsonModule": true,
     "strict": true,
@@ -21,7 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "moduleResolution": "node16",
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "isolatedModules": true,
     "plugins": [
       {

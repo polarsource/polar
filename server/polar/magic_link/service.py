@@ -1,5 +1,6 @@
 import datetime
 from math import ceil
+from urllib.parse import urlencode
 
 from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
@@ -64,19 +65,22 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
 
         return magic_link, token
 
-    async def send(self, magic_link: MagicLink, token: str, base_url: str) -> None:
+    async def send(
+        self, magic_link: MagicLink, token: str, base_url: str, **extra_url_params: str
+    ) -> None:
         email_renderer = get_email_renderer({"magic_link": "polar.magic_link"})
         email_sender = get_email_sender()
 
         delta = magic_link.expires_at - utc_now()
         token_lifetime_minutes = int(ceil(delta.seconds / 60))
 
+        url_params = {"token": token, **extra_url_params}
         subject, body = email_renderer.render_from_template(
             "Sign in to Polar",
             "magic_link/magic_link.html",
             {
                 "token_lifetime_minutes": token_lifetime_minutes,
-                "url": f"{base_url}?token={token}",
+                "url": f"{base_url}?{urlencode(url_params)}",
             },
         )
 

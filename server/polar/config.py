@@ -159,6 +159,16 @@ class Settings(BaseSettings):
     def generate_frontend_url(self, path: str) -> str:
         return f"{self.FRONTEND_BASE_URL}{path}"
 
+    def get_goto_url(self, goto_url: str | None = None) -> str:
+        if goto_url is not None:
+            if not goto_url.startswith(settings.FRONTEND_BASE_URL):
+                goto_url = settings.generate_frontend_url(goto_url)
+        else:
+            goto_url = settings.generate_frontend_url(
+                settings.FRONTEND_DEFAULT_REDIRECTION_PATH
+            )
+        return goto_url
+
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))
 

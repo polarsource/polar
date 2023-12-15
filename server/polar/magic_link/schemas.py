@@ -10,6 +10,7 @@ MagicLinkSource = Literal["user_login", "article_links"]
 
 class MagicLinkRequest(Schema):
     email: EmailStr
+    goto_url: str | None = None
 
 
 class MagicLinkCreate(Schema):

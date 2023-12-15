@@ -63,6 +63,25 @@ async def test_authenticate_invalid_token(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_authenticate_already_authenticated(
+    client: AsyncClient, user: User, mocker: MockerFixture
+) -> None:
+    magic_link_service_mock = mocker.patch.object(
+        magic_link_service, "authenticate", new=AsyncMock(return_value=user)
+    )
+
+    response = await client.get(
+        "/api/v1/magic_link/authenticate", params={"token": "TOKEN"}
+    )
+
+    assert response.status_code == 303
+    assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/feed")
+
+    magic_link_service_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_authenticate_valid_token(
     client: AsyncClient, user: User, mocker: MockerFixture
 ) -> None:

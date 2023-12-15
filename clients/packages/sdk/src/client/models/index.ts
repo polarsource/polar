@@ -533,19 +533,6 @@ export interface Author {
 /**
  * 
  * @export
- * @interface AuthorizationResponse
- */
-export interface AuthorizationResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof AuthorizationResponse
-     */
-    authorization_url: string;
-}
-/**
- * 
- * @export
  * @interface BackofficeBadge
  */
 export interface BackofficeBadge {
@@ -2000,12 +1987,6 @@ export interface LoginResponse {
      * @memberof LoginResponse
      */
     token?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof LoginResponse
-     */
-    goto_url?: string;
 }
 /**
  * 
@@ -2045,6 +2026,12 @@ export interface MagicLinkRequest {
      * @memberof MagicLinkRequest
      */
     email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MagicLinkRequest
+     */
+    return_to?: string;
 }
 /**
  * 

@@ -15,11 +15,9 @@
 
 import * as runtime from '../runtime';
 import type {
-  AuthorizationResponse,
   GithubUser,
   HTTPValidationError,
   InstallationCreate,
-  LoginResponse,
   LookupUserRequest,
   Organization,
   SynchronizeMembersResponse,
@@ -27,21 +25,21 @@ import type {
   WebhookResponse,
 } from '../models/index';
 
-export interface IntegrationsApiGithubAuthorizeRequest {
-    paymentIntentId?: string;
-    gotoUrl?: string;
-    userSignupType?: UserSignupType;
+export interface IntegrationsApiInstallRequest {
+    installationCreate: InstallationCreate;
 }
 
-export interface IntegrationsApiGithubCallbackRequest {
+export interface IntegrationsApiIntegrationsGithubAuthorizeRequest {
+    paymentIntentId?: string;
+    userSignupType?: UserSignupType;
+    returnTo?: string;
+}
+
+export interface IntegrationsApiIntegrationsGithubCallbackRequest {
     code?: string;
     codeVerifier?: string;
     state?: string;
     error?: string;
-}
-
-export interface IntegrationsApiInstallRequest {
-    installationCreate: InstallationCreate;
 }
 
 export interface IntegrationsApiLookupUserOperationRequest {
@@ -60,102 +58,6 @@ export interface IntegrationsApiSynchronizeMembersRequest {
  * 
  */
 export class IntegrationsApi extends runtime.BaseAPI {
-
-    /**
-     * Github Authorize
-     */
-    async githubAuthorizeRaw(requestParameters: IntegrationsApiGithubAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuthorizationResponse>> {
-        const queryParameters: any = {};
-
-        if (requestParameters.paymentIntentId !== undefined) {
-            queryParameters['payment_intent_id'] = requestParameters.paymentIntentId;
-        }
-
-        if (requestParameters.gotoUrl !== undefined) {
-            queryParameters['goto_url'] = requestParameters.gotoUrl;
-        }
-
-        if (requestParameters.userSignupType !== undefined) {
-            queryParameters['user_signup_type'] = requestParameters.userSignupType;
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/integrations/github/authorize`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Github Authorize
-     */
-    async githubAuthorize(requestParameters: IntegrationsApiGithubAuthorizeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthorizationResponse> {
-        const response = await this.githubAuthorizeRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Github Callback
-     */
-    async githubCallbackRaw(requestParameters: IntegrationsApiGithubCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LoginResponse>> {
-        const queryParameters: any = {};
-
-        if (requestParameters.code !== undefined) {
-            queryParameters['code'] = requestParameters.code;
-        }
-
-        if (requestParameters.codeVerifier !== undefined) {
-            queryParameters['code_verifier'] = requestParameters.codeVerifier;
-        }
-
-        if (requestParameters.state !== undefined) {
-            queryParameters['state'] = requestParameters.state;
-        }
-
-        if (requestParameters.error !== undefined) {
-            queryParameters['error'] = requestParameters.error;
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/integrations/github/callback`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Github Callback
-     */
-    async githubCallback(requestParameters: IntegrationsApiGithubCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LoginResponse> {
-        const response = await this.githubCallbackRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Install
@@ -195,6 +97,110 @@ export class IntegrationsApi extends runtime.BaseAPI {
      */
     async install(requestParameters: IntegrationsApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.installRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Github.Authorize
+     */
+    async integrationsGithubAuthorizeRaw(requestParameters: IntegrationsApiIntegrationsGithubAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.paymentIntentId !== undefined) {
+            queryParameters['payment_intent_id'] = requestParameters.paymentIntentId;
+        }
+
+        if (requestParameters.userSignupType !== undefined) {
+            queryParameters['user_signup_type'] = requestParameters.userSignupType;
+        }
+
+        if (requestParameters.returnTo !== undefined) {
+            queryParameters['return_to'] = requestParameters.returnTo;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github/authorize`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Github.Authorize
+     */
+    async integrationsGithubAuthorize(requestParameters: IntegrationsApiIntegrationsGithubAuthorizeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsGithubAuthorizeRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Github.Callback
+     */
+    async integrationsGithubCallbackRaw(requestParameters: IntegrationsApiIntegrationsGithubCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.code !== undefined) {
+            queryParameters['code'] = requestParameters.code;
+        }
+
+        if (requestParameters.codeVerifier !== undefined) {
+            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        }
+
+        if (requestParameters.state !== undefined) {
+            queryParameters['state'] = requestParameters.state;
+        }
+
+        if (requestParameters.error !== undefined) {
+            queryParameters['error'] = requestParameters.error;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github/callback`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Github.Callback
+     */
+    async integrationsGithubCallback(requestParameters: IntegrationsApiIntegrationsGithubCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsGithubCallbackRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

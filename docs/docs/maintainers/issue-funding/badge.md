@@ -132,9 +132,11 @@ This has a couple of benefits:
 2. An additional opportunity to capture impressions from new viewers (who might
    scroll quickly to the end)
 
-!!! info "Comments on your behalf"
-    If you choose to post a comment via this modal, it will be posted on your
-    behalf, i.e
+!!! info "Note: Comments on your behalf"
+    In case you submit a comment via the modal (optional), it will be posted on
+    your behalf. This is mentioned next to the `Post` action so it's never a
+    surprise. Additionally, GitHub will add the Polar logo in connection with
+    your avatar for the comment - indicating it was done via the Polar App.
 
 #### Direct Link
 

@@ -16,10 +16,8 @@ issue is completed.
 
 *Checkout an example on a GitHub issue: [SerenityOS/serenity#22179](https://github.com/SerenityOS/serenity/issues/22179)*
 
-## Features
-Polar is designed for maintainers, not bounty hunters. You remain in complete
-control & can get a better backlog based on reactions & funding from across your
-community.
+## Funded Backlog
+Get a stack ranked & funded backlog based on what drives the most impact across your community.
 
 * Enable users to easily fund any issues (feature requests, roadmap items, bugs
   etc)
@@ -29,10 +27,28 @@ community.
 * Funding is pooled from community members & users
 * Better backlog of issues stack ranked based on reactions & funding
 * Reward contributors once issues are completed a percentage of received funding
-* Set & promote an upfront reward (% of funding) to contributors (optional)
-* Seed the reward easily yourself if you have capital to spare (optional)
+  (more below)
 
 **Polar by example:** [tRPC](https://polar.sh/trpc?tab=issues), [SerenityOS](https://polar.sh/serenityos?tab=issues), [Sindre Sorhus](https://polar.sh/sindresorhus?tab=issues), [Encode](https://polar.sh/encode?tab=issues) and hundreds more.
+
+## Reward Contributors
+
+Issue funding can seamlessly be shared with your contributors. You can think of
+rewards as open source bounties, but don't worry  - it's designed for
+maintainers and your communities for a change.
+
+- You are in full control
+- Your community pools funding towards an issue
+- You can [promote funding towards specific
+  issues](/maintainers/issue-funding/workflow)
+- You can split the funding with contributor(s), i.e reward them
+- You can promote rewards publicly (Optional - more details below)
+- You can adjust rewards & add custom recipients when marking an issue as
+  completed
+- Your GitHub issue thread stays focused on making progress vs. funding chatter
+
+You can read more about our philosophy of empowering maintainers & their
+communities with Polar Rewards in our original [blog post from the Rewards launch](https://blog.polar.sh/introducing-rewards/).
 
 
 ## Pricing

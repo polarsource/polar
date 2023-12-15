@@ -1,36 +1,46 @@
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi.responses import RedirectResponse
 
-from polar.auth.service import AuthService, LoginResponse
+from polar.auth.service import AuthService
+from polar.exceptions import PolarRedirectionError
 from polar.kit.db.postgres import AsyncSession
 from polar.postgres import get_db_session
 from polar.tags.api import Tags
 
 from .schemas import MagicLinkRequest
+from .service import MagicLinkError
 from .service import magic_link as magic_link_service
 
 router = APIRouter(prefix="/magic_link", tags=["magic_link"])
 
 
-@router.post("/request", status_code=status.HTTP_202_ACCEPTED, tags=[Tags.INTERNAL])
+@router.post(
+    "/request",
+    name="magic_link.request",
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=[Tags.INTERNAL],
+)
 async def request_magic_link(
+    request: Request,
     magic_link_request: MagicLinkRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     magic_link, token = await magic_link_service.request(
         session, magic_link_request, source="user_login"
     )
-    await magic_link_service.send(magic_link, token)
+    base_url = str(request.url_for("magic_link.authenticate"))
+    await magic_link_service.send(magic_link, token, base_url)
 
 
-@router.post("/authenticate", tags=[Tags.INTERNAL])
+@router.get("/authenticate", name="magic_link.authenticate", tags=[Tags.INTERNAL])
 async def authenticate_magic_link(
     request: Request,
-    response: Response,
     token: str = Query(),
     session: AsyncSession = Depends(get_db_session),
-) -> LoginResponse:
-    user = await magic_link_service.authenticate(session, token)
+) -> RedirectResponse:
+    try:
+        user = await magic_link_service.authenticate(session, token)
+    except MagicLinkError as e:
+        raise PolarRedirectionError(e.message, e.status_code) from e
 
-    return AuthService.generate_login_cookie_response(
-        request=request, response=response, user=user
-    )
+    return AuthService.generate_login_cookie_response(request=request, user=user)

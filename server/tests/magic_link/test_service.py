@@ -92,7 +92,7 @@ async def test_send(
 
     magic_link, _ = await generate_magic_link_token("user@example.com", None, None)
 
-    await magic_link_service.send(magic_link, "TOKEN")
+    await magic_link_service.send(magic_link, "TOKEN", "BASE_URL")
 
     send_to_user_mock: MagicMock = email_sender_mock.send_to_user
     assert send_to_user_mock.called

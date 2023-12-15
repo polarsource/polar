@@ -49,13 +49,14 @@ async def test_authenticate_invalid_token(
         magic_link_service, "authenticate", side_effect=InvalidMagicLink()
     )
 
-    response = await client.post(
+    response = await client.get(
         "/api/v1/magic_link/authenticate", params={"token": "TOKEN"}
     )
 
-    assert response.status_code == 401
-    json = response.json()
-    assert json["type"] == "InvalidMagicLink"
+    assert response.status_code == 303
+    assert response.headers["Location"].startswith(
+        f"{settings.FRONTEND_BASE_URL}/error"
+    )
 
     assert magic_link_service_mock.called
     assert magic_link_service_mock.call_args[0][1] == "TOKEN"
@@ -69,14 +70,12 @@ async def test_authenticate_valid_token(
         magic_link_service, "authenticate", new=AsyncMock(return_value=user)
     )
 
-    response = await client.post(
+    response = await client.get(
         "/api/v1/magic_link/authenticate", params={"token": "TOKEN"}
     )
 
-    assert response.status_code == 200
-    json = response.json()
-    assert json["success"]
-    assert json["token"] is None
+    assert response.status_code == 303
+    assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/feed")
 
     assert settings.AUTH_COOKIE_KEY in response.cookies
 

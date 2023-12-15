@@ -19,7 +19,11 @@ from polar.user.service import user as user_service
 from .schemas import MagicLinkCreate, MagicLinkRequest, MagicLinkSource, MagicLinkUpdate
 
 
-class InvalidMagicLink(PolarError):
+class MagicLinkError(PolarError):
+    ...
+
+
+class InvalidMagicLink(MagicLinkError):
     def __init__(self) -> None:
         super().__init__("This magic link is invalid or has expired.", status_code=401)
 
@@ -60,7 +64,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
 
         return magic_link, token
 
-    async def send(self, magic_link: MagicLink, token: str) -> None:
+    async def send(self, magic_link: MagicLink, token: str, base_url: str) -> None:
         email_renderer = get_email_renderer({"magic_link": "polar.magic_link"})
         email_sender = get_email_sender()
 
@@ -72,9 +76,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
             "magic_link/magic_link.html",
             {
                 "token_lifetime_minutes": token_lifetime_minutes,
-                "url": "{base_url}/login/magic-link/authenticate?token={token}".format(
-                    base_url=settings.FRONTEND_BASE_URL, token=token
-                ),
+                "url": f"{base_url}?token={token}",
             },
         )
 

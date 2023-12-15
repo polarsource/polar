@@ -111,8 +111,8 @@ const nextConfig = {
       // Logged-out user redirection
       {
         source:
-          '/(feed|for-you|posts|rewards|settings|backoffice|maintainer|finance)(.*)',
-        destination: '/login',
+          '/:path(feed|for-you|posts|rewards|settings|backoffice|maintainer|finance.*)',
+        destination: '/login?goto_url=/:path',
         missing: [
           {
             type: 'cookie',

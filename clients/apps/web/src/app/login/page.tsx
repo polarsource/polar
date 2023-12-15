@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'Login to Polar',
 }
 
-export default function Page() {
-  return <Login />
+export default function Page({
+  searchParams: { goto_url },
+}: {
+  searchParams: { goto_url: string }
+}) {
+  return <Login gotoUrl={goto_url} />
 }

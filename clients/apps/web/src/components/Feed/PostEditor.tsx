@@ -6,7 +6,7 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
 import { StaggerReveal } from '../Shared/StaggerReveal'
 import LongformPost from './LongformPost'
-import { PostToolbar } from './PostToolbar'
+import { PostToolbar } from './Toolbar/PostToolbar'
 
 interface PostEditorProps {
   article?: Article

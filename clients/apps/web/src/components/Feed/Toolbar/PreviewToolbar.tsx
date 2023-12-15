@@ -1,3 +1,4 @@
+import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks'
 import {
   ChevronDownIcon,
@@ -6,13 +7,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { Article, ArticleUpdateVisibilityEnum } from '@polar-sh/sdk'
 import { DropdownMenuItemIndicator } from '@radix-ui/react-dropdown-menu'
-import {
-  Button,
-  Input,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,20 +20,19 @@ import { Banner } from 'polarkit/components/ui/molecules'
 import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
 import { useSendArticlePreview, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
+import { Modal } from '../../Modal'
 
-interface PostToolbarProps {
+interface PreviewToolbarProps {
   article?: Article
   previewAs: string
   onPreviewAsChange: (value: string) => void
 }
 
-export const PostToolbar = ({
+export const PreviewToolbar = ({
   article,
   previewAs,
   onPreviewAsChange,
-}: PostToolbarProps) => {
+}: PreviewToolbarProps) => {
   const {
     isShown: isPreviewEmailModalShown,
     hide: hidePreviewEmailModal,
@@ -51,94 +45,75 @@ export const PostToolbar = ({
   } = useModal()
 
   return (
-    <div className="dark:border-polar-800 dark:bg-polar-900 sticky top-0 z-20 flex w-full flex-col border-b border-gray-100 bg-white">
-      <div className="relative mx-auto flex w-full min-w-0 max-w-screen-xl flex-row items-center justify-between gap-x-4 px-4 py-4 sm:px-6 md:px-8">
-        <TabsList className="dark:border-polar-700 relative flex-row dark:border md:flex-row">
-          <TabsTrigger value="edit" size="small">
-            Markdown
-          </TabsTrigger>
-          <TabsTrigger value="preview" size="small">
-            Preview
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent
-          value="edit"
-          className="absolute right-4 mt-0 flex flex-row items-center gap-x-2 sm:right-6 md:right-8"
-        ></TabsContent>
-        <TabsContent
-          value="preview"
-          className="absolute right-4 mt-0 flex flex-row items-center gap-x-2 sm:right-6 md:right-8"
-        >
-          {article && (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="px-1.5"
-                onClick={showVisibilityModal}
-              >
-                <EyeIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="px-1.5"
-                onClick={showPreviewEmailModal}
-              >
-                <EnvelopeIcon className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" className="px-2 text-left" size="sm">
-                <span>Preview as</span>
-                <ChevronDownIcon className="ml-2 h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuRadioGroup
-                value={previewAs}
-                onValueChange={onPreviewAsChange}
-              >
-                <DropdownMenuRadioItem value="premium">
-                  <DropdownMenuItemIndicator />
-                  Premium Subscriber
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="free">
-                  <DropdownMenuItemIndicator />
-                  Free Subscriber
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>{' '}
-          {article && (
-            <>
-              <Modal
-                isShown={isPreviewEmailModalShown}
-                hide={hidePreviewEmailModal}
-                modalContent={
-                  <PreviewEmailModal
-                    article={article}
-                    hideModal={hidePreviewEmailModal}
-                  />
-                }
+    <>
+      {article && (
+        <>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="px-1.5"
+            onClick={showVisibilityModal}
+          >
+            <EyeIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="px-1.5"
+            onClick={showPreviewEmailModal}
+          >
+            <EnvelopeIcon className="h-4 w-4" />
+          </Button>
+        </>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="secondary" className="px-2 text-left" size="sm">
+            <span>Preview as</span>
+            <ChevronDownIcon className="ml-2 h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuRadioGroup
+            value={previewAs}
+            onValueChange={onPreviewAsChange}
+          >
+            <DropdownMenuRadioItem value="premium">
+              <DropdownMenuItemIndicator />
+              Premium Subscriber
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="free">
+              <DropdownMenuItemIndicator />
+              Free Subscriber
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {article && (
+        <>
+          <Modal
+            isShown={isPreviewEmailModalShown}
+            hide={hidePreviewEmailModal}
+            modalContent={
+              <PreviewEmailModal
+                article={article}
+                hideModal={hidePreviewEmailModal}
               />
-              <Modal
-                isShown={isVisibilityModalShown}
-                hide={hideVisibilityModal}
-                modalContent={
-                  <VisibilityModalContent
-                    article={article}
-                    hideModal={hideVisibilityModal}
-                  />
-                }
+            }
+          />
+          <Modal
+            isShown={isVisibilityModalShown}
+            hide={hideVisibilityModal}
+            modalContent={
+              <VisibilityModalContent
+                article={article}
+                hideModal={hideVisibilityModal}
               />
-            </>
-          )}
-        </TabsContent>
-      </div>
-    </div>
+            }
+          />
+        </>
+      )}
+    </>
   )
 }
 

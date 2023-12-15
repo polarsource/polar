@@ -92,7 +92,7 @@ within the badge.
 ![Polar Badge Reward Setup](../../../../assets/maintainers/issue-funding/polar-issue-rewards-dark.jpg#only-dark)
 
 Want to setup [Contributor
-Rewards](/mjintainers/issue-funding/reward-contributors) upfront & promote it
+Rewards](/maintainers/issue-funding/reward-contributors) upfront & promote it
 publically? Awesome, let's do it - it's incredibly easy.
 
 1. Switch the `Public rewards` toggle to on (highlighted in blue)

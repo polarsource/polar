@@ -813,28 +813,29 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         ).column_valued("start_date")
         end_date_column = start_date_column + interval
 
-        # Rely on transactions for past months
-        past_cumulative_column = func.coalesce(
-            func.sum(func.sum(Transaction.amount))
-            # ORDER_BY makes the window implicitly stops at the current row
-            .over(order_by=start_date_column),
-            0,
-        )
         past_statement = (
             select(start_date_column)
             .add_columns(
                 end_date_column,
-                func.count(Transaction.subscription_id),
-                func.coalesce(func.sum(Transaction.amount), 0),
-                past_cumulative_column,
+                func.coalesce(
+                    func.sum(Transaction.amount).filter(
+                        Transaction.created_at < end_date_column,
+                        Transaction.created_at >= start_date_column,
+                    ),
+                    0,
+                ),
+                func.coalesce(
+                    func.sum(Transaction.amount).filter(
+                        Transaction.created_at < end_date_column
+                    ),
+                    0,
+                ),
             )
             .join(
                 Transaction,
                 onclause=and_(
                     Transaction.type == TransactionType.transfer,
                     Transaction.account_id.is_not(None),
-                    Transaction.created_at < end_date_column,
-                    Transaction.created_at >= start_date_column,
                     Transaction.subscription_id.in_(
                         subscriptions_statement.with_only_columns(Subscription.id)
                     ),
@@ -847,92 +848,89 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         # Estimate based on active subscriptions for future months
-        future_cumulative_column = func.coalesce(
-            func.sum(func.sum(Subscription.price_amount))
-            # ORDER_BY makes the window implicitly stops at the current row
-            .over(order_by=start_date_column),
-            0,
-        )
-
         after_fee_amount_percentage = 1 - settings.SUBSCRIPTION_FEE_PERCENT / 100
+        subscriptions_join_clause = and_(
+            Subscription.id.in_(
+                subscriptions_statement.with_only_columns(Subscription.id)
+            ),
+            or_(
+                and_(
+                    or_(
+                        start_date_column <= Subscription.ended_at,
+                        Subscription.ended_at.is_(None),
+                    ),
+                    end_date_column >= Subscription.started_at,
+                ),
+                and_(
+                    Subscription.started_at <= end_date_column,
+                    or_(
+                        Subscription.ended_at >= start_date_column,
+                        Subscription.ended_at.is_(None),
+                    ),
+                ),
+            ),
+        )
 
         future_statement = (
             select(start_date_column)
             .add_columns(
                 end_date_column,
-                func.count(Subscription.id),
                 func.coalesce(
                     func.sum(Subscription.price_amount) * after_fee_amount_percentage,
                     0,
                 ),
-                future_cumulative_column * after_fee_amount_percentage,
             )
-            .join(
-                Subscription,
-                onclause=and_(
-                    Subscription.id.in_(
-                        subscriptions_statement.with_only_columns(Subscription.id)
-                    ),
-                    or_(
-                        and_(
-                            or_(
-                                start_date_column <= Subscription.ended_at,
-                                Subscription.ended_at.is_(None),
-                            ),
-                            end_date_column >= Subscription.started_at,
-                        ),
-                        and_(
-                            Subscription.started_at <= end_date_column,
-                            or_(
-                                Subscription.ended_at >= start_date_column,
-                                Subscription.ended_at.is_(None),
-                            ),
-                        ),
-                    ),
-                ),
-                isouter=True,
-            )
+            .join(Subscription, onclause=subscriptions_join_clause, isouter=True)
             .where(start_date_column >= current_start_of_month)
             .group_by(start_date_column)
             .order_by(start_date_column)
         )
 
-        past_result = await session.execute(past_statement)
-        future_result = await session.execute(future_statement)
+        subscribers_count_statement = (
+            select(start_date_column)
+            .add_columns(end_date_column, func.count(Subscription.id))
+            .join(Subscription, onclause=subscriptions_join_clause, isouter=True)
+            .group_by(start_date_column)
+            .order_by(start_date_column)
+        )
 
-        statistics_periods = [
-            SubscriptionsStatisticsPeriod(
-                start_date=start_date,
-                end_date=end_date,
-                subscribers=subscribers,
-                mrr=mrr,
-                cumulative=cumulative,
+        past_result = await session.execute(past_statement)
+        past_results = past_result.all()
+
+        future_result = await session.execute(future_statement)
+        future_results = future_result.all()
+
+        subscribers_count_result = await session.execute(subscribers_count_statement)
+        subscribers_counts = list(subscribers_count_result.tuples().all())
+
+        statistics_periods: list[SubscriptionsStatisticsPeriod] = []
+
+        for start_date, end_date, mrr, cumulative in past_results:
+            subscribers = subscribers_counts.pop(0)[2]
+            statistics_periods.append(
+                SubscriptionsStatisticsPeriod(
+                    start_date=start_date,
+                    end_date=end_date,
+                    subscribers=subscribers,
+                    mrr=mrr,
+                    cumulative=cumulative,
+                )
             )
-            for (
-                start_date,
-                end_date,
-                subscribers,
-                mrr,
-                cumulative,
-            ) in past_result.all()
-        ]
-        last_past_cumulative = statistics_periods[-1].cumulative
-        statistics_periods += [
-            SubscriptionsStatisticsPeriod(
-                start_date=start_date,
-                end_date=end_date,
-                subscribers=subscribers,
-                mrr=mrr,
-                cumulative=cumulative + last_past_cumulative,
+
+        last_cumulative = statistics_periods[-1].cumulative
+
+        for start_date, end_date, mrr in future_results:
+            subscribers = subscribers_counts.pop(0)[2]
+            last_cumulative += mrr
+            statistics_periods.append(
+                SubscriptionsStatisticsPeriod(
+                    start_date=start_date,
+                    end_date=end_date,
+                    subscribers=subscribers,
+                    mrr=mrr,
+                    cumulative=last_cumulative,
+                )
             )
-            for (
-                start_date,
-                end_date,
-                subscribers,
-                mrr,
-                cumulative,
-            ) in future_result.all()
-        ]
 
         return statistics_periods
 

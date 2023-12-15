@@ -65,6 +65,7 @@ async def create_subscription_tier(
     organization: Organization | None = None,
     repository: Repository | None = None,
     name: str = "Subscription Tier",
+    price_amount: int = 1000,
     is_highlighted: bool = False,
     is_archived: bool = False,
 ) -> SubscriptionTier:
@@ -72,7 +73,7 @@ async def create_subscription_tier(
     subscription_tier = SubscriptionTier(
         type=type,
         name=name,
-        price_amount=1000,
+        price_amount=price_amount,
         price_currency="USD",
         is_highlighted=is_highlighted,
         is_archived=is_archived,
@@ -194,7 +195,10 @@ async def subscription_tier_organization_free(
     session: AsyncSession, organization: Organization
 ) -> SubscriptionTier:
     return await create_subscription_tier(
-        session, type=SubscriptionTierType.free, organization=organization
+        session,
+        type=SubscriptionTierType.free,
+        price_amount=0,
+        organization=organization,
     )
 
 

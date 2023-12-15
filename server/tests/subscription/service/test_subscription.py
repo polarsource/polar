@@ -1630,3 +1630,62 @@ class TestGetStatisticsPeriods:
             assert result.cumulative == get_transfers_sum(
                 transfers[:-1]
             ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)
+
+    async def test_free_subscription(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_account: Account,
+        user: User,
+        user_second: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_tier_organization_free: SubscriptionTier,
+    ) -> None:
+        subscription = await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+        )
+        transfers = await create_subscription_transfers(
+            session,
+            gross_amount=subscription_tier_organization.price_amount,
+            start_month=1,
+            end_month=10,
+            organization_account=organization_account,
+            subscription=subscription,
+        )
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_free,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+        )
+
+        results = await subscription_service.get_statistics_periods(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+            current_start_of_month=date(2023, 10, 1),
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:9]):
+            assert result.subscribers == 2
+            assert result.mrr == get_net_amount(
+                subscription_tier_organization.price_amount
+            )
+            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
+
+        for i, result in enumerate(results[9:]):
+            assert result.subscribers == 2
+            assert result.mrr == get_net_amount(
+                subscription_tier_organization.price_amount
+            )
+            assert result.cumulative == get_transfers_sum(
+                transfers[:-1]
+            ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)

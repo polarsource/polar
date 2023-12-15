@@ -8,6 +8,7 @@ import {
   CardGiftcardOutlined,
   Construction,
   CropFreeOutlined,
+  DiamondOutlined,
   DragIndicatorOutlined,
   Face,
   FavoriteBorderOutlined,
@@ -48,31 +49,28 @@ export const maintainerRoutes = (org: Organization): Route[] => [
         },
       ]
     : []),
-  {
-    id: 'org-issues',
-    title: 'Issues',
-    icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    link: `/maintainer/${org.name}/issues`,
-    if: true,
-    subs: [
-      {
-        title: 'Overview',
-        link: `/maintainer/${org.name}/issues`,
-        icon: <HowToVoteOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Promote',
-        link: `/maintainer/${org.name}/issues/promote`,
-        icon: <WifiTetheringOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Embeds',
-        link: `/maintainer/${org.name}/issues/embeds`,
-        icon: <CropFreeOutlined fontSize="inherit" />,
-      },
-    ],
-  },
+  ...(isFeatureEnabled('products')
+    ? [
+        {
+          id: 'org-products',
+          title: 'Products',
+          icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          link: `/maintainer/${org.name}/products`,
+          if: true,
+          subs: [
+            {
+              title: 'Overview',
+              link: `/maintainer/${org.name}/products`,
+            },
+            {
+              title: 'Inventory',
+              link: `/maintainer/${org.name}/products/inventory`,
+            },
+          ],
+        },
+      ]
+    : []),
   ...(isFeatureEnabled('subscriptions')
     ? [
         {
@@ -102,6 +100,31 @@ export const maintainerRoutes = (org: Organization): Route[] => [
         },
       ]
     : []),
+  {
+    id: 'org-issues',
+    title: 'Issues',
+    icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/issues`,
+    if: true,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/issues`,
+        icon: <HowToVoteOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Promote',
+        link: `/maintainer/${org.name}/issues/promote`,
+        icon: <WifiTetheringOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Embeds',
+        link: `/maintainer/${org.name}/issues/embeds`,
+        icon: <CropFreeOutlined fontSize="inherit" />,
+      },
+    ],
+  },
   {
     id: 'public-site',
     title: 'Public site',

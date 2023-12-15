@@ -1,11 +1,15 @@
+'use client'
+
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { Button, Input } from 'polarkit/components/ui/atoms'
 import { useState } from 'react'
 
-interface MagicLinkLoginFormProps {}
+interface MagicLinkLoginFormProps {
+  gotoUrl?: string
+}
 
-const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({}) => {
+const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({ gotoUrl }) => {
   const [email, setEmail] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -15,7 +19,9 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({}) => {
     setLoading(true)
 
     try {
-      await api.magicLink.magicLinkRequest({ magicLinkRequest: { email } })
+      await api.magicLink.magicLinkRequest({
+        magicLinkRequest: { email, goto_url: gotoUrl },
+      })
       const searchParams = new URLSearchParams({ email: email })
       router.push(`/login/magic-link/request?${searchParams}`)
     } catch (err) {

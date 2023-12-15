@@ -1,5 +1,3 @@
-'use client'
-
 import { LogoType70 } from 'polarkit/components/brand'
 import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Shared/GithubLoginButton'
@@ -23,7 +21,7 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
           />
         </div>
         <LabeledSeparator label="Or" />
-        <MagicLinkLoginForm />
+        <MagicLinkLoginForm gotoUrl={gotoUrl} />
         <div className="mt-8 text-center text-sm text-gray-500">
           By using Polar you agree to our{' '}
           <a

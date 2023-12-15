@@ -684,7 +684,7 @@ async def subscriptions_export(
             yield ",".join(fields) + "\n"
 
     name = f"{organization.name}_subscribers.csv"
-    headers = {"Content-Disposition": f'inline; filename="{name}"'}
+    headers = {"Content-Disposition": f'attachment; filename="{name}"'}
     return StreamingResponse(create_csv(), headers=headers, media_type="text/csv")
 
 

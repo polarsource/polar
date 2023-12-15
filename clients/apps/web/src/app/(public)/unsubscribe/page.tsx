@@ -1,24 +1,25 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { Button, ShadowBox } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useState } from 'react'
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: { id?: string; org?: string }
-}) {
+export default function Page() {
   const router = useRouter()
+
+  const search = useSearchParams()
+
+  const id = search.get('id')
+  const org = search.get('org')
 
   const [loading, setLoading] = useState(false)
   const [showMessage, setShowMessage] = useState(false)
 
   const onUnsubscribe = async () => {
-    if (!searchParams.id) {
+    if (!id) {
       return
     }
 
@@ -26,7 +27,7 @@ export default function Page({
 
     api.articles
       .emailUnsubscribe({
-        articleSubscriptionId: searchParams.id,
+        articleSubscriptionId: id,
       })
       .then(() => {
         setShowMessage(true)
@@ -36,7 +37,7 @@ export default function Page({
       })
   }
 
-  if (!searchParams.id || !searchParams.org) {
+  if (!id || !org) {
     return <div>Sorry, we could not unsubscribe you.</div>
   }
 
@@ -46,7 +47,7 @@ export default function Page({
         <ShadowBox>
           <div className="flex max-w-[400px] flex-col gap-4">
             <h2 className="font-semibold">
-              Unsubscribe from emails from {searchParams.org}
+              Unsubscribe from emails from {org}
             </h2>
 
             {showMessage ? (
@@ -59,7 +60,7 @@ export default function Page({
               </Button>
               <Button
                 onClick={() => {
-                  router.push(`/${searchParams.org}`)
+                  router.push(`/${org}`)
                 }}
                 variant={'secondary'}
               >
@@ -76,7 +77,7 @@ export default function Page({
 
             <p className="text-sm">
               <Link
-                href={`/${searchParams.org}/subscriptions`}
+                href={`/${org}/subscriptions`}
                 className="text-underline text-blue-500"
               >
                 Manage my subscription.

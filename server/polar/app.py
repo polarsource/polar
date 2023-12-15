@@ -12,8 +12,11 @@ from starlette.routing import BaseRoute
 from polar import receivers, worker  # noqa
 from polar.api import router
 from polar.config import settings
-from polar.exception_handlers import polar_exception_handler
-from polar.exceptions import PolarError
+from polar.exception_handlers import (
+    polar_exception_handler,
+    polar_redirection_exception_handler,
+)
+from polar.exceptions import PolarError, PolarRedirectionError
 from polar.health.endpoints import router as health_router
 from polar.kit.db.postgres import (
     AsyncEngine,
@@ -79,6 +82,9 @@ def create_app() -> FastAPI:
 
     app.add_middleware(LogCorrelationIdMiddleware)
 
+    app.add_exception_handler(
+        PolarRedirectionError, polar_redirection_exception_handler
+    )
     app.add_exception_handler(PolarError, polar_exception_handler)
 
     # /healthz and /readyz

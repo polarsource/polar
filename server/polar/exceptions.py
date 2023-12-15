@@ -25,6 +25,24 @@ class PolarTaskError(PolarError):
     ...
 
 
+class PolarRedirectionError(PolarError):
+    """
+    Exception class for errors
+    that should be displayed nicely to the user through our UI.
+
+    A specific exception handler will redirect to `/error` page in the client app.
+
+    Args:
+        goto_url: URL target of the *Go back* button on the error page.
+    """
+
+    def __init__(
+        self, message: str, status_code: int = 400, goto_url: str | None = None
+    ) -> None:
+        self.goto_url = goto_url
+        super().__init__(message, status_code)
+
+
 class BadRequest(PolarError):
     def __init__(self, message: str = "Bad request", status_code: int = 400) -> None:
         super().__init__(message, status_code)

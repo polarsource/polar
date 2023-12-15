@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "@manypkg/cli": "latest",
-    "eslint": "8.40.0",
+    "eslint": "^8.55.0",
     "eslint-config-custom": "workspace:*",
     "only-allow": "1.1.1",
-    "prettier": "^2.8.8",
+    "prettier": "^3.1.1",
     "prettier-plugin-organize-imports": "^3.2.3",
     "prettier-plugin-tailwindcss": "^0.2.8",
     "turbo": "^1.10.15"

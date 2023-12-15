@@ -5,7 +5,8 @@ import {
   Organization,
   Repository,
 } from '@polar-sh/sdk'
-import { ImageResponse, NextRequest } from 'next/server'
+import { ImageResponse } from 'next/og'
+import { NextRequest } from 'next/server'
 
 import OpenGraphImageArticle from '@/components/Organization/OpenGraphImageArticle'
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
@@ -13,10 +14,12 @@ import { notFound } from 'next/navigation'
 import { getServerURL } from 'polarkit/api/url'
 
 const regularFont = fetch(
+  // @ts-ignore
   new URL('/public/fonts/Inter-Regular.ttf', import.meta.url),
 ).then((res) => res.arrayBuffer())
 
 const mediumFont = fetch(
+  // @ts-ignore
   new URL('/public/fonts/Inter-Medium.ttf', import.meta.url),
 ).then((res) => res.arrayBuffer())
 

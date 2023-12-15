@@ -7,10 +7,11 @@ export type RenderArticle = Pick<
 >
 
 // strictCreateElement removes unsupported types and attributes
-export const wrapStrictCreateElement = (
-  article: RenderArticle,
-  showPaywalledContent?: boolean,
-): ((
+export const wrapStrictCreateElement = (args: {
+  article: RenderArticle
+  showPaywalledContent?: boolean
+  defaultOverride?: React.FunctionComponent
+}): ((
   type:
     | string
     | import('react').FunctionComponent<{}>
@@ -111,10 +112,10 @@ export const wrapStrictCreateElement = (
           ...trimProps,
 
           // Dependency inject article to all components
-          article: article,
+          article: args.article,
 
           // Default to true in the client side renderer. When rendering posts for end-users, the premium content is already stripped out by the backend.
-          showPaywalledContent: showPaywalledContent ?? true,
+          showPaywalledContent: args.showPaywalledContent ?? true,
         } as JSX.IntrinsicAttributes,
         children,
       )
@@ -128,6 +129,10 @@ export const wrapStrictCreateElement = (
 
     if (!allowedTypes.includes(type)) {
       return <></>
+    }
+
+    if (args.defaultOverride) {
+      return React.createElement(args.defaultOverride, {}, props.children)
     }
 
     if (type === 'a') {

@@ -1,0 +1,34 @@
+import { Article } from '@polar-sh/sdk'
+// @ts-ignore
+import Markdown from 'markdown-to-jsx'
+import { markdownOpts, wrapStrictCreateElement } from './markdown'
+
+export const previewOpts = {
+  ...markdownOpts,
+  overrides: {
+    ...markdownOpts.overrides,
+    p: (args: any) => <>{args.children} </>, // Note the space
+    div: (args: any) => <>{args.children} </>, // Note the space
+    img: (args: any) => <></>,
+  },
+} as const
+
+export default function PreviewText(props: { article: Article }) {
+  return (
+    <Markdown
+      options={{
+        ...previewOpts,
+        createElement: wrapStrictCreateElement({
+          article: props.article,
+          showPaywalledContent: false,
+
+          // Default override that removes all elements
+          defaultOverride: (args: any) => <>{args.children}</>,
+        }),
+        wrapper: (args: any) => <>{args.children}</>,
+      }}
+    >
+      {props.article.body.substring(0, 500)}
+    </Markdown>
+  )
+}

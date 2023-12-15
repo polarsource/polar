@@ -1,3 +1,4 @@
+import PreviewText from '@/components/Feed/Posts/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { Article, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
@@ -38,14 +39,29 @@ export async function generateMetadata(
     notFound()
   }
 
+  // First: I'm sorry.
+  // NextJS does not allow static imports of react-dom/server, so we're importing it dynamically here instead.
+  //
+  // We're using ReactDOMServer to render <PreviewText> (the output is a plain string), so that we can use it as the
+  // description.
+  //
+  // This is pretty fast so it's nothing that I'm worried about.
+  const ReactDOMServer = (await import('react-dom/server')).default
+
+  const preview = ReactDOMServer.renderToStaticMarkup(
+    <PreviewText article={article} />,
+  )
+
   return {
     title: {
       absolute: `${article.title} by ${article.byline.name}`,
     },
 
+    description: preview,
+
     openGraph: {
       title: `${article.title}`,
-      description: `${article.title} by ${article.byline.name}`,
+      description: `${preview}`,
       siteName: 'Polar',
 
       images: [
@@ -67,7 +83,7 @@ export async function generateMetadata(
       ],
       card: 'summary_large_image',
       title: `${article.title}`,
-      description: `${article.title} by ${article.byline.name}`,
+      description: `${preview}`,
     },
   }
 }

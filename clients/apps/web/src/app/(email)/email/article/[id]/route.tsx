@@ -1,4 +1,5 @@
 import EmailRender from '@/components/Feed/Posts/EmailRender'
+import PreviewText from '@/components/Feed/Posts/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { Article } from '@polar-sh/sdk'
 
@@ -211,6 +212,19 @@ const renderArticle = async (
       <Tailwind config={twConfig}>
         <Head />
         <Body className="font-sans">
+          {/* "Preview" text. Is showin in email list views in most email readers. */}
+          <div
+            style={{
+              display: 'none',
+              overflow: 'hidden',
+              lineHeight: '1px',
+              opacity: '0',
+              maxHeight: '0',
+              maxWidth: '0',
+            }}
+          >
+            <PreviewText article={post} />
+          </div>
           <Container>
             <Section>
               <Row>

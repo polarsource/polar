@@ -61,10 +61,10 @@ const BrowserRender = (props: {
     <Markdown
       options={{
         ...opts,
-        createElement: wrapStrictCreateElement(
-          props.article,
-          props.showPaywalledContent,
-        ),
+        createElement: wrapStrictCreateElement({
+          article: props.article,
+          showPaywalledContent: props.showPaywalledContent,
+        }),
       }}
     >
       {props.article.body}
@@ -80,10 +80,10 @@ export const AbbreviatedBrowserRender = (props: {
     <Markdown
       options={{
         ...previewOpts,
-        createElement: wrapStrictCreateElement(
-          props.article,
-          props.showPaywalledContent,
-        ),
+        createElement: wrapStrictCreateElement({
+          article: props.article,
+          showPaywalledContent: props.showPaywalledContent,
+        }),
       }}
     >
       {props.article.body.substring(0, 500)}

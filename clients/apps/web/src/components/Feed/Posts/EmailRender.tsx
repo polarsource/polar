@@ -33,7 +33,9 @@ const EmailRender = (props: { article: RenderArticle }) => {
       options={{
         ...opts,
 
-        createElement: wrapStrictCreateElement(props.article),
+        createElement: wrapStrictCreateElement({
+          article: props.article,
+        }),
       }}
     >
       {props.article.body}

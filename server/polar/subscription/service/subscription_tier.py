@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import ColumnExpressionArgument, Select, or_, select, update
+from sqlalchemy import ColumnExpressionArgument, Select, case, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import aliased, contains_eager
 
@@ -121,7 +121,12 @@ class SubscriptionTierService(
             statement = statement.where(SubscriptionTier.is_archived.is_(False))
 
         statement = statement.order_by(
-            SubscriptionTier.type,
+            case(
+                (SubscriptionTier.type == SubscriptionTierType.free, 1),
+                (SubscriptionTier.type == SubscriptionTierType.hobby, 2),
+                (SubscriptionTier.type == SubscriptionTierType.pro, 3),
+                (SubscriptionTier.type == SubscriptionTierType.business, 4),
+            ),
             SubscriptionTier.price_amount,
             SubscriptionTier.created_at,
         )

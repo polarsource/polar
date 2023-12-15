@@ -11,6 +11,7 @@
     "./api/types": "./src/api/types.ts",
     "./api/url": "./src/api/url/index.ts",
     "./account": "./src/account/index.ts",
+    "./auth": "./src/auth/index.ts",
     "./config": "./src/config.ts",
     "./store": "./src/store/index.ts",
     "./hooks": "./src/hooks/index.ts",

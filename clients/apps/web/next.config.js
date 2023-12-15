@@ -75,7 +75,7 @@ const nextConfig = {
       // dashboard.polar.sh redirections
       {
         source: '/',
-        destination: '/login/init',
+        destination: '/login',
         has: [
           {
             type: 'host',
@@ -111,8 +111,8 @@ const nextConfig = {
       // Logged-out user redirection
       {
         source:
-          '/(feed|for-you|posts|rewards|settings|backoffice|maintainer)(.*)',
-        destination: '/login/init',
+          '/(feed|for-you|posts|rewards|settings|backoffice|maintainer|finance)(.*)',
+        destination: '/login',
         missing: [
           {
             type: 'cookie',
@@ -171,7 +171,7 @@ const nextConfig = {
 
       {
         source: '/dashboard',
-        destination: '/login/init',
+        destination: '/login',
         permanent: false,
       },
 

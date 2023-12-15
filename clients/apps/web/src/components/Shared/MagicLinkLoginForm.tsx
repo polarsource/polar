@@ -15,7 +15,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({}) => {
     setLoading(true)
 
     try {
-      await api.magicLink.requestMagicLink({ magicLinkRequest: { email } })
+      await api.magicLink.magicLinkRequest({ magicLinkRequest: { email } })
       const searchParams = new URLSearchParams({ email: email })
       router.push(`/login/magic-link/request?${searchParams}`)
     } catch (err) {

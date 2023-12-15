@@ -5,34 +5,29 @@ import LoadingScreen, {
 } from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
 import { ResponseError } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { useEffect, useRef, useState } from 'react'
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: { code?: string; state?: string }
-}) {
-  const { code, state } = searchParams
+export default function Page() {
   const router = useRouter()
 
-  const loading = useRef(false)
-  const exchangeDone = useRef(false)
+  const search = useSearchParams()
+  const code = search?.get('code')
+  const state = search?.get('state')
 
   const session = useAuth()
+  const loading = useRef(false)
   const [error, setError] = useState<string | null>(null)
 
   // Try once on page load
   useEffect(() => {
     const exchange = async (code: string, state: string) => {
-      if (exchangeDone.current || loading.current) {
+      if (loading.current) {
         return
       }
 
       loading.current = true
-      exchangeDone.current = true
-
       try {
         const response = await api.integrations.githubCallback({
           code: code,

@@ -69,12 +69,7 @@ async def github_authorize(
     if payment_intent_id:
         state["payment_intent_id"] = payment_intent_id
 
-    if goto_url:
-        # Ensure we have a full URL and within Polar only
-        if not goto_url.startswith(settings.FRONTEND_BASE_URL):
-            goto_url = f"{settings.FRONTEND_BASE_URL}{goto_url}"
-
-        state["goto_url"] = goto_url
+    state["goto_url"] = settings.get_goto_url(goto_url)
 
     if user_signup_type:
         state["user_signup_type"] = user_signup_type

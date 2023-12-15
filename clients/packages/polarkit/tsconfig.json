@@ -3,8 +3,8 @@
   "compilerOptions": {
     "baseUrl": "src/",
     "allowSyntheticDefaultImports": true,
-    "module": "Node16",
-    "moduleResolution": "Node16",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./*"],
       "@polarkit/lib/*": ["./lib/*"]

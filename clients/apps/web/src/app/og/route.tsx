@@ -14,12 +14,10 @@ import { notFound } from 'next/navigation'
 import { getServerURL } from 'polarkit/api/url'
 
 const regularFont = fetch(
-  // @ts-ignore
   new URL('/public/fonts/Inter-Regular.ttf', import.meta.url),
 ).then((res) => res.arrayBuffer())
 
 const mediumFont = fetch(
-  // @ts-ignore
   new URL('/public/fonts/Inter-Medium.ttf', import.meta.url),
 ).then((res) => res.arrayBuffer())
 
@@ -63,7 +61,6 @@ const renderFundingOG = async (
           name: 'Inter',
           data: mediumFontData,
           weight: 600,
-          style: 'medium',
         },
       ],
     },

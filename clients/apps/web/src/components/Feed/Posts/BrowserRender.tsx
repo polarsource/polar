@@ -1,4 +1,3 @@
-// @ts-ignore
 import Markdown from 'markdown-to-jsx'
 import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'

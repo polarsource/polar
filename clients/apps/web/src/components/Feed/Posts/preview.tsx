@@ -1,5 +1,4 @@
 import { Article } from '@polar-sh/sdk'
-// @ts-ignore
 import Markdown from 'markdown-to-jsx'
 import { markdownOpts, wrapStrictCreateElement } from './markdown'
 

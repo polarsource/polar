@@ -1,4 +1,3 @@
-// @ts-ignore
 import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
@@ -39,7 +38,6 @@ export const opts = {
 const EmailRender = (props: { article: RenderArticle }) => {
   return (
     <Markdown
-      // @ts-ignore
       options={{
         ...opts,
 

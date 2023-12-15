@@ -1,16 +1,34 @@
 {
   "extends": "tsconfig/nextjs.json",
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "strict": true,
     "baseUrl": "src/",
     "paths": {
-      "@/*": ["./*"],
+      "@/*": [
+        "./*"
+      ],
       // To get chadcns import paths to work here as well.
       // When using regular polarkit components, refer to "polarkit" instead of "@polarkit"
-      "@polarkit/lib/*": ["../../../packages/polarkit/src/lib/*"]
-    }
+      "@polarkit/lib/*": [
+        "../../../packages/polarkit/src/lib/*"
+      ]
+    },
+    "module": "esnext",
+    "moduleResolution": "bundler",
   },
-  "include": ["next-env.d.ts", "next.d.ts", "src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "next.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

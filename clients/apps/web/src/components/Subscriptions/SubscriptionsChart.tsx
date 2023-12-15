@@ -1,4 +1,3 @@
-// @ts-ignore
 import * as Plot from '@observablehq/plot'
 import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'

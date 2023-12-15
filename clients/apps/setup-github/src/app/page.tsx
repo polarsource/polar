@@ -35,7 +35,7 @@ export default function Home() {
 
         setup_url: `${ingressHost}/github/installation?provider=github`,
         setup_on_update: true,
-        callback_urls: [`${ingressHost}/github/session`],
+        callback_urls: [`${ingressHost}/api/v1/integrations/github/callback`],
         public: true,
         default_permissions: {
           issues: 'write',

@@ -47,7 +47,6 @@ const serverEnv = async ({
     POLAR_BASE_URL: `${ingressHostProto}/api/v1`,
     POLAR_FRONTEND_BASE_URL: `${ingressHostProto}`,
     POLAR_AUTH_COOKIE_DOMAIN: `${ingressHost}`,
-    POLAR_GITHUB_REDIRECT_URL: `${ingressHostProto}/github/session`,
   }
 
   // Add GitHub Env vars

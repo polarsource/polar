@@ -48,6 +48,7 @@
     "framer-motion": "^10.12.4",
     "jest": "^29.6.2",
     "markdown-to-jsx": "^7.3.2",
+    "mermaid": "^10.6.1",
     "next": "^13.5.6",
     "next-themes": "^0.2.1",
     "polarkit": "workspace:*",

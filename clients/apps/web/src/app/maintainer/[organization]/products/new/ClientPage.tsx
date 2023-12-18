@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ProductType } from '@/components/Products/Product'
+import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import {
   AutoStoriesOutlined,
   CategoryOutlined,
@@ -20,11 +21,11 @@ import {
   TextArea,
 } from 'polarkit/components/ui/atoms'
 import {
+  ChangeEventHandler,
   Dispatch,
   DragEventHandler,
   SetStateAction,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -77,24 +78,24 @@ const ClientPage = () => {
     [selectedType],
   )
 
-  useEffect(() => {
-    if (thumbnailInputRef.current) {
-      thumbnailInputRef.current.oninput = (ev) => {
-        if (ev.target instanceof HTMLInputElement && ev.target.files?.[0]) {
-          setThumbnail(URL.createObjectURL(ev.target.files?.[0]))
+  const handleThumbnailInputChange: ChangeEventHandler<HTMLInputElement> =
+    useCallback(
+      (e) => {
+        if (e.target instanceof HTMLInputElement && e.target.files?.[0]) {
+          setThumbnail(URL.createObjectURL(e.target.files?.[0]))
         }
-      }
-    }
-  }, [setThumbnail])
+      },
+      [setThumbnail],
+    )
 
   const handleThumbnailUploadClick = useCallback(() => {
     thumbnailInputRef.current?.click()
   }, [])
 
   return (
-    <DashboardBody className="pb-16">
-      <div className="flex w-full flex-col gap-y-6">
-        <h2 className="text-lg font-medium">New Product</h2>
+    <>
+      <DashboardTopbar title="New Product" useOrgFromURL />
+      <DashboardBody className="pb-16">
         <div className="flex w-full flex-col gap-y-12">
           <ShadowBoxOnMd className="flex w-2/3 flex-col items-start gap-y-6">
             <div className="flex min-w-[260px] flex-col gap-y-2">
@@ -126,6 +127,7 @@ const ClientPage = () => {
               <div className="flex flex-col items-start gap-y-4">
                 <input
                   ref={thumbnailInputRef}
+                  onChange={handleThumbnailInputChange}
                   accept="image/png, image/jpeg"
                   className="hidden"
                   id="file_input"
@@ -151,7 +153,6 @@ const ClientPage = () => {
             onSelectType={setSelectedType}
           />
           {shouldRenderUploadManager && <ProductUploadManager />}
-
           <div className="flex flex-row gap-2">
             <Button>Continue</Button>
             <Button type="button" variant="ghost" onClick={() => router.back()}>
@@ -159,8 +160,8 @@ const ClientPage = () => {
             </Button>
           </div>
         </div>
-      </div>
-    </DashboardBody>
+      </DashboardBody>
+    </>
   )
 }
 

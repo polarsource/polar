@@ -33,6 +33,20 @@ export const OrganizationPublicPageNav = ({
             Overview
           </TabsTrigger>
         </Link>
+        {isFeatureEnabled('subscriptions') && shouldRenderSubscriptionsTab && (
+          <Link href={`/${organization.name}/subscriptions`}>
+            <TabsTrigger value="subscriptions" size="small">
+              Subscriptions
+            </TabsTrigger>
+          </Link>
+        )}
+        {isFeatureEnabled('products') && (
+          <Link href={`/${organization.name}/products`}>
+            <TabsTrigger value="products" size="small">
+              Products
+            </TabsTrigger>
+          </Link>
+        )}
         {isFeatureEnabled('feed') && (
           <Link href={`/${organization.name}/issues`}>
             <TabsTrigger value="issues" size="small">
@@ -45,13 +59,6 @@ export const OrganizationPublicPageNav = ({
             Repositories
           </TabsTrigger>
         </Link>
-        {isFeatureEnabled('subscriptions') && shouldRenderSubscriptionsTab && (
-          <Link href={`/${organization.name}/subscriptions`}>
-            <TabsTrigger value="subscriptions" size="small">
-              Subscriptions
-            </TabsTrigger>
-          </Link>
-        )}
       </TabsList>
       {currentUser ? (
         <ProfileMenu className="z-50" />

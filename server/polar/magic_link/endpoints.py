@@ -3,9 +3,9 @@ from fastapi.responses import RedirectResponse
 
 from polar.auth.dependencies import Auth
 from polar.auth.service import AuthService
-from polar.config import settings
 from polar.exceptions import PolarRedirectionError
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.http import ReturnTo
 from polar.models.user import User
 from polar.postgres import get_db_session
 from polar.tags.api import Tags
@@ -29,35 +29,37 @@ async def request_magic_link(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     magic_link, token = await magic_link_service.request(
-        session, magic_link_request, source="user_login"
+        session, magic_link_request.email, source="user_login"
     )
     base_url = str(request.url_for("magic_link.authenticate"))
     await magic_link_service.send(
         magic_link,
         token,
         base_url,
-        goto_url=settings.get_goto_url(magic_link_request.goto_url),
+        **{"return_to": magic_link_request.return_to}
+        if magic_link_request.return_to
+        else {},
     )
 
 
 @router.get("/authenticate", name="magic_link.authenticate", tags=[Tags.INTERNAL])
 async def authenticate_magic_link(
     request: Request,
-    goto_url: str | None = None,
+    return_to: ReturnTo,
     token: str = Query(),
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    goto_url = settings.get_goto_url(goto_url)
-
     if isinstance(auth.subject, User):
-        return RedirectResponse(goto_url, 303)
+        return RedirectResponse(return_to, 303)
 
     try:
         user = await magic_link_service.authenticate(session, token)
     except MagicLinkError as e:
-        raise PolarRedirectionError(e.message, e.status_code) from e
+        raise PolarRedirectionError(
+            e.message, e.status_code, return_to=return_to
+        ) from e
 
     return AuthService.generate_login_cookie_response(
-        request=request, user=user, goto_url=goto_url
+        request=request, user=user, return_to=return_to
     )

@@ -4,10 +4,10 @@ from uuid import UUID
 import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
-from pydantic import validator
 
 from polar.config import settings
 from polar.kit import jwt
+from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
 from polar.models import User
 from polar.personal_access_token.service import personal_access_token_service
@@ -21,14 +21,6 @@ class LoginResponse(Schema):
     success: bool
     expires_at: datetime
     token: str | None = None
-    goto_url: str | None = None
-
-    @validator("goto_url")
-    def goto_polar_url(cls, v: str | None) -> str | None:
-        if v is None or v.startswith(settings.FRONTEND_BASE_URL):
-            return v
-
-        raise ValueError("goto_url has to belong to polar")
 
 
 class LogoutResponse(Schema):
@@ -85,18 +77,15 @@ class AuthService:
         *,
         request: Request,
         user: User,
-        goto_url: str | None = None,
+        return_to: str | None = None,
     ) -> RedirectResponse:
         token, _ = cls.generate_token(user=user)
 
         is_localhost = request.url.hostname in ["127.0.0.1", "localhost"]
         secure = False if is_localhost else True
 
-        if goto_url is None:
-            goto_url = settings.generate_frontend_url(
-                settings.FRONTEND_DEFAULT_REDIRECTION_PATH
-            )
-        response = RedirectResponse(goto_url, 303)
+        return_url = get_safe_return_url(return_to)
+        response = RedirectResponse(return_url, 303)
         cls.set_auth_cookie(response=response, value=token, secure=secure)
         return response
 

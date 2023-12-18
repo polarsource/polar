@@ -2,6 +2,7 @@ import datetime
 from math import ceil
 from urllib.parse import urlencode
 
+from pydantic import EmailStr
 from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
@@ -17,7 +18,7 @@ from polar.models import MagicLink, User
 from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
 
-from .schemas import MagicLinkCreate, MagicLinkRequest, MagicLinkSource, MagicLinkUpdate
+from .schemas import MagicLinkCreate, MagicLinkSource, MagicLinkUpdate
 
 
 class MagicLinkError(PolarError):
@@ -46,17 +47,17 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
     async def request(
         self,
         session: AsyncSession,
-        magic_link_request: MagicLinkRequest,
+        email: str,
         *,
         source: MagicLinkSource,
         expires_at: datetime.datetime | None = None,
     ) -> tuple[MagicLink, str]:
-        user = await user_service.get_by_email(session, magic_link_request.email)
+        user = await user_service.get_by_email(session, email)
 
         token, token_hash = generate_token(secret=settings.SECRET)
         magic_link_create = MagicLinkCreate(
             token_hash=token_hash,
-            user_email=magic_link_request.email,
+            user_email=EmailStr(email),
             user_id=user.id if user is not None else None,
             source=source,
             expires_at=expires_at,

@@ -73,6 +73,7 @@ export const wrapStrictCreateElement = (args: {
       key: props?.key,
       style: props?.style,
       align: props?.align,
+      className: props?.className,
     }
 
     // Custom components
@@ -99,10 +100,6 @@ export const wrapStrictCreateElement = (args: {
         trimProps.title = props?.title
         trimProps.allow = props?.allow
         children = undefined // can never have children
-      }
-
-      if (customComponentName === 'code') {
-        trimProps.className = props?.className
       }
 
       return React.createElement(

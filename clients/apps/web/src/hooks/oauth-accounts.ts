@@ -1,9 +1,9 @@
 import { OAuthAccountRead, Platforms } from '@polar-sh/sdk'
 import { useMemo } from 'react'
-import { useRequireAuth } from '.'
+import { useAuth } from '.'
 
 export const useOAuthAccounts = (): OAuthAccountRead[] => {
-  const { currentUser } = useRequireAuth()
+  const { currentUser } = useAuth()
   return currentUser?.oauth_accounts || []
 }
 

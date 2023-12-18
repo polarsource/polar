@@ -7,7 +7,7 @@ import {
 } from '@/components/Dashboard/filters'
 import Recommended from '@/components/Feed/Recommended'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
-import { useGitHubAccount, useRequireAuth } from '@/hooks'
+import { useAuth, useGitHubAccount } from '@/hooks'
 import { IssueListType, IssueStatus } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -18,7 +18,7 @@ import {
 } from 'polarkit/hooks'
 
 export default function Page() {
-  const { currentUser } = useRequireAuth()
+  const { currentUser } = useAuth()
   const githubAccount = useGitHubAccount()
 
   const filters: DashboardFilters = {

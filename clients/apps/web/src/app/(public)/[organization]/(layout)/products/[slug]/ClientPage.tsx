@@ -1,6 +1,7 @@
 'use client'
 
-import { Product } from '@/components/Products/Product'
+import { Product } from '@/components/Product/Product'
+import { Slideshow } from '@/components/Product/Slideshow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { StarRounded } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
@@ -27,10 +28,9 @@ const ClientPage = ({
   return (
     <div className="flex w-full flex-col gap-y-8">
       <StaggerReveal className="flex flex-col gap-y-12">
-        <StaggerReveal.Child
-          className="dark:bg-polar-900 dark:border-polar-800 aspect-video h-96 rounded-3xl bg-gray-100 bg-cover bg-center shadow-lg dark:border"
-          style={{ backgroundImage: `url(${product.image})` }}
-        />
+        <StaggerReveal.Child>
+          <Slideshow images={[product.image]} />
+        </StaggerReveal.Child>
         <div className="flex flex-row gap-x-12">
           <StaggerReveal.Child className="w-2/3">
             <ShadowBoxOnMd className="flex flex-col gap-y-6">

@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { ProductTile } from '@/components/Products/ProductTile'
+import { ProductTile } from '@/components/Product/ProductTile'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { AddOutlined } from '@mui/icons-material'

@@ -1,4 +1,4 @@
-import { Product, ProductType } from '@/components/Products/Product'
+import { Product, ProductType } from '@/components/Product/Product'
 
 const lipsum =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut ac pretium nunc. Ut pulvinar commodo purus. Mauris sed scelerisque ligula, vel accumsan magna. Quisque eu sem eget urna iaculis mattis eu eu mauris. Integer faucibus blandit ligula sed fermentum. Nam luctus libero ac hendrerit eleifend. Integer luctus ligula sollicitudin ligula porta, sed mollis neque pretium.'

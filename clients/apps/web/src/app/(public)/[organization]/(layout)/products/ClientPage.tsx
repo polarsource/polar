@@ -1,7 +1,7 @@
 'use client'
 
 import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/data'
-import { ProductTile } from '@/components/Products/ProductTile'
+import { ProductTile } from '@/components/Product/ProductTile'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'

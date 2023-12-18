@@ -24,6 +24,7 @@ from polar.enums import UserSignupType
 from polar.exceptions import PolarRedirectionError, ResourceNotFound, Unauthorized
 from polar.integrations.github import client as github
 from polar.kit import jwt
+from polar.kit.http import ReturnTo
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
@@ -60,8 +61,8 @@ class OAuthCallbackError(PolarRedirectionError):
 @router.get("/authorize", name="integrations.github.authorize", tags=[Tags.INTERNAL])
 async def github_authorize(
     request: Request,
+    return_to: ReturnTo,
     payment_intent_id: str | None = None,
-    goto_url: str | None = None,
     user_signup_type: UserSignupType | None = None,
     auth: Auth = Depends(Auth.optional_user),
 ) -> RedirectResponse:
@@ -69,7 +70,7 @@ async def github_authorize(
     if payment_intent_id:
         state["payment_intent_id"] = payment_intent_id
 
-    state["goto_url"] = settings.get_goto_url(goto_url)
+    state["return_to"] = return_to
 
     if user_signup_type:
         state["user_signup_type"] = user_signup_type
@@ -111,12 +112,12 @@ async def github_callback(
     except jwt.DecodeError as e:
         raise OAuthCallbackError("Invalid state") from e
 
-    goto_url = state_data.get("goto_url", None)
+    return_to = state_data.get("return_to", None)
 
     try:
         tokens = OAuthAccessToken(**token_data)
     except ValidationError as e:
-        raise OAuthCallbackError("Invalid token data", goto_url=goto_url) from e
+        raise OAuthCallbackError("Invalid token data", return_to=return_to) from e
 
     state_user_id = state_data.get("user_id")
     try:
@@ -131,7 +132,7 @@ async def github_callback(
         else:
             user = await github_user.login_or_signup(session, tokens=tokens)
     except GithubUserServiceError as e:
-        raise OAuthCallbackError(e.message, e.status_code, goto_url=goto_url) from e
+        raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
 
     payment_intent_id = state_data.get("payment_intent_id")
     if payment_intent_id:
@@ -144,7 +145,7 @@ async def github_callback(
 
     posthog.identify(user)
     return AuthService.generate_login_cookie_response(
-        request=request, user=user, goto_url=goto_url
+        request=request, user=user, return_to=return_to
     )
 
 

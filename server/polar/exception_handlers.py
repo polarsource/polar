@@ -20,10 +20,7 @@ async def polar_redirection_exception_handler(
     error_url_params = urlencode(
         {
             "message": exc.message,
-            "goto_url": exc.goto_url
-            or settings.generate_frontend_url(
-                settings.FRONTEND_DEFAULT_REDIRECTION_PATH
-            ),
+            "return_to": exc.return_to or settings.FRONTEND_DEFAULT_RETURN_PATH,
         }
     )
     error_url = f"{settings.generate_frontend_url("/error")}?{error_url_params}"

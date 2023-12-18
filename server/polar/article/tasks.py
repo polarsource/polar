@@ -3,14 +3,12 @@ from uuid import UUID
 
 import requests
 import structlog
-from pydantic import EmailStr
 
 from polar.auth.service import AuthService
 from polar.config import settings
 from polar.email.sender import get_email_sender
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.magic_link.schemas import MagicLinkRequest
 from polar.magic_link.service import magic_link as magic_link_service
 from polar.models.article import Article
 from polar.user.service import user as user_service
@@ -52,9 +50,7 @@ async def articles_send_to_user(
 
         _, magic_link_token = await magic_link_service.request(
             session,
-            MagicLinkRequest(
-                email=EmailStr(user.email),
-            ),
+            user.email,
             source="article_links",
             expires_at=utc_now() + timedelta(hours=24),
         )

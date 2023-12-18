@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[AnyHttpUrl] = []
 
+    ALLOWED_HOSTS: set[str] = {"127.0.0.1:3000", "localhost:3000"}
+
     # Base URL for the backend. Used by generate_external_url to
     # generate URLs to the backend accessible from the outside.
     BASE_URL: str = "http://127.0.0.1:8000/api/v1"
@@ -35,7 +37,7 @@ class Settings(BaseSettings):
     # Update to ngrok domain or similar in case you want
     # working Github badges in development.
     FRONTEND_BASE_URL: str = "http://127.0.0.1:3000"
-    FRONTEND_DEFAULT_REDIRECTION_PATH: str = "/feed"
+    FRONTEND_DEFAULT_RETURN_PATH: str = "/feed"
 
     # Auth cookie
     AUTH_COOKIE_KEY: str = "polar_session"
@@ -158,16 +160,6 @@ class Settings(BaseSettings):
 
     def generate_frontend_url(self, path: str) -> str:
         return f"{self.FRONTEND_BASE_URL}{path}"
-
-    def get_goto_url(self, goto_url: str | None = None) -> str:
-        if goto_url is not None:
-            if not goto_url.startswith(settings.FRONTEND_BASE_URL):
-                goto_url = settings.generate_frontend_url(goto_url)
-        else:
-            goto_url = settings.generate_frontend_url(
-                settings.FRONTEND_DEFAULT_REDIRECTION_PATH
-            )
-        return goto_url
 
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))

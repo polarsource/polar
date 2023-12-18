@@ -33,13 +33,13 @@ class PolarRedirectionError(PolarError):
     A specific exception handler will redirect to `/error` page in the client app.
 
     Args:
-        goto_url: URL target of the *Go back* button on the error page.
+        return_to: Target URL of the *Go back* button on the error page.
     """
 
     def __init__(
-        self, message: str, status_code: int = 400, goto_url: str | None = None
+        self, message: str, status_code: int = 400, return_to: str | None = None
     ) -> None:
-        self.goto_url = goto_url
+        self.return_to = return_to
         super().__init__(message, status_code)
 
 

@@ -1,7 +1,7 @@
 import { ChevronLeftRounded, ChevronRightRounded } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from 'polarkit/components/ui/atoms'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
 const variants = {
   enter: (direction: number) => {
@@ -37,12 +37,15 @@ export const Slideshow = ({ images }: SlideshowProps) => {
   const [[page, direction], setPage] = useState([0, 0])
   const imageIndex = Math.abs(page % images.length)
 
-  const paginate = (newDirection: number) => {
-    setPage([page + newDirection, newDirection])
-  }
+  const paginate = useCallback(
+    (newDirection: number) => {
+      setPage([page + newDirection, newDirection])
+    },
+    [setPage, page],
+  )
 
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-800 relative flex aspect-video h-96 w-full items-center justify-center overflow-hidden rounded-3xl bg-gray-100 bg-cover bg-center shadow-lg dark:border">
+    <div className="dark:bg-polar-900 dark:border-polar-800 relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-3xl bg-gray-100 bg-cover bg-center shadow-lg dark:border">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           className="absolute inset-0 h-full w-full bg-cover bg-center"

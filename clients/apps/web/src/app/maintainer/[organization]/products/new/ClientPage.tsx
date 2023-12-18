@@ -1,17 +1,12 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { ProductType } from '@/components/Product/Product'
-import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import {
-  AutoStoriesOutlined,
-  CategoryOutlined,
-  CloseOutlined,
-  FileDownloadOutlined,
-  KeyOutlined,
-  MovieOutlined,
-  UploadFileOutlined,
-} from '@mui/icons-material'
+  ProductType,
+  resolveProductTypeIcon,
+} from '@/components/Product/Product'
+import DashboardTopbar from '@/components/Shared/DashboardTopbar'
+import { CloseOutlined, UploadFileOutlined } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 import {
   Button,
@@ -35,27 +30,27 @@ import { twMerge } from 'tailwind-merge'
 const productTypes = [
   {
     name: ProductType.FILE,
-    icon: <FileDownloadOutlined fontSize="large" />,
+    icon: resolveProductTypeIcon(ProductType.FILE),
     description: 'A file or collection of files that can be downloaded',
   },
   {
     name: ProductType.VIDEO_TUTORIAL,
-    icon: <MovieOutlined fontSize="large" />,
+    icon: resolveProductTypeIcon(ProductType.VIDEO_TUTORIAL),
     description: 'An in-depth, comprehensive video tutorial',
   },
   {
     name: ProductType.LICENSE,
-    icon: <KeyOutlined fontSize="large" />,
+    icon: resolveProductTypeIcon(ProductType.LICENSE),
     description: 'A license to use a product or service',
   },
   {
     name: ProductType.E_BOOK,
-    icon: <AutoStoriesOutlined fontSize="large" />,
+    icon: resolveProductTypeIcon(ProductType.E_BOOK),
     description: 'An electronic book in PDF-format',
   },
   {
     name: ProductType.BUNDLE,
-    icon: <CategoryOutlined fontSize="large" />,
+    icon: resolveProductTypeIcon(ProductType.BUNDLE),
     description: 'Create a bundle of existing products',
   },
 ] as const
@@ -185,6 +180,9 @@ const ProductTypeSelector = ({
             () => selectedType === productType.name,
             [productType, selectedType],
           )
+
+          const TypeIcon = productType.icon
+
           return (
             <div
               key={productType.name}
@@ -201,7 +199,7 @@ const ProductTypeSelector = ({
                   isActive && 'opacity-100',
                 )}
               >
-                {productType.icon}
+                <TypeIcon fontSize="large" />
               </span>
               <div className="flex flex-col gap-y-2">
                 <h3 className="dark:text-polar-50 font-medium text-gray-950">

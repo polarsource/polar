@@ -1,6 +1,6 @@
 'use client'
 
-import { Product } from '@/components/Product/Product'
+import { Product, resolveProductTypeIcon } from '@/components/Product/Product'
 import { Slideshow } from '@/components/Product/Slideshow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { StarRounded } from '@mui/icons-material'
@@ -24,6 +24,7 @@ const ClientPage = ({
   product: Product
 }) => {
   const stars = useMemo(() => Math.random() * 4 + 1, [])
+  const TypeIcon = resolveProductTypeIcon(product.type)
 
   return (
     <div className="flex w-full flex-col gap-y-8">
@@ -35,27 +36,10 @@ const ClientPage = ({
           <StaggerReveal.Child className="w-2/3">
             <ShadowBoxOnMd className="flex flex-col gap-y-6">
               <div className="flex flex-row items-center justify-between">
-                <span className="text-sm text-blue-500 dark:text-blue-400">
+                <span className="flex flex-row items-center gap-x-2 text-sm text-blue-500 dark:text-blue-400">
+                  <TypeIcon fontSize="small" />
                   {product.type}
                 </span>
-                <Link
-                  className="flex flex-row items-center gap-x-2"
-                  href={`/${organization.name}`}
-                >
-                  <Avatar
-                    className="h-8 w-8"
-                    avatar_url={organization.avatar_url}
-                    name={organization.name}
-                  />
-                </Link>
-              </div>
-              <h2 className="text-xl font-medium">{product.name}</h2>
-
-              <p className="dark:text-polar-500 leading-relaxed text-gray-500">
-                {product.description}
-              </p>
-              <Separator />
-              <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-row items-center gap-x-2">
                   <div className="flex flex-row items-center">
                     {Array(Math.floor(stars))
@@ -84,6 +68,14 @@ const ClientPage = ({
                     }).format(stars)}
                   </span>
                 </div>
+              </div>
+              <h2 className="text-xl font-medium">{product.name}</h2>
+
+              <p className="dark:text-polar-500 leading-relaxed text-gray-500">
+                {product.description}
+              </p>
+              <Separator />
+              <div className="flex flex-row items-center justify-between">
                 <span className="dark:text-polar-500 text-gray-500">
                   <PolarTimeAgo date={product.createdAt} />
                 </span>
@@ -91,14 +83,29 @@ const ClientPage = ({
             </ShadowBoxOnMd>
           </StaggerReveal.Child>
           <StaggerReveal.Child className="w-1/3">
-            <ShadowBoxOnMd className="flex flex-col gap-y-6">
+            <ShadowBoxOnMd className="flex flex-col gap-y-8">
               <div className="flex flex-col gap-y-4">
-                <h3 className="text-4xl !font-light">
-                  ${getCentsInDollarString(product.price, false, true)}
-                </h3>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  VAT included (where applicable)
-                </p>
+                <Link
+                  className="flex flex-row items-center gap-x-2"
+                  href={`/${organization.name}`}
+                >
+                  <Avatar
+                    className="h-10 w-10"
+                    avatar_url={organization.avatar_url}
+                    name={organization.name}
+                  />
+                </Link>
+                <span>{product.name}</span>
+              </div>
+              <div className="flex flex-col gap-y-6">
+                <div className="flex flex-col gap-y-4">
+                  <h3 className="text-5xl !font-light">
+                    ${getCentsInDollarString(product.price, false, true)}
+                  </h3>
+                  <p className="dark:text-polar-500 text-sm text-gray-500">
+                    VAT included (where applicable)
+                  </p>
+                </div>
               </div>
               <div className="flex flex-col items-center gap-y-4">
                 <Button fullWidth>Buy Now</Button>

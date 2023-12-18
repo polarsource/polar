@@ -25,7 +25,6 @@ arq = "^0.25.0"
 stripe = "=7.4.0" # strictly pinned stripe version as different versions of stripe can be incompatible with each other
 sqlalchemy-searchable = "^1.4.1"
 pyjwt = "^2.6.0"
-httpx-oauth = "^0.11.0"
 pydantic = { extras = ["email"], version = "^1.10.7" }
 jinja2 = "^3.1.2"
 sentry-sdk = { extras = ["fastapi"], version = "^1.20.0" }
@@ -38,16 +37,16 @@ types-python-slugify = "^8.0.0.3"
 resend = "^0.6.0"
 uvloop = "^0.19.0"
 python-dateutil = {  git = "https://github.com/dateutil/dateutil.git", rev = "0586f4afa26fc6799128d98d4f97a49c7d6ab314" }
-requests = "^2.31.0"
 types-requests = "^2.31.0.10"
 python-multipart = "^0.0.6"
 safe-redirect-url = "^0.1.1"
+httpx-oauth = "^0.13.1"
+httpx = "^0.23.0"
 
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.0"
 pytest = "^7.2.1"
-httpx = "^0.23.3"
 pytest-sugar = "^0.9.6"
 typer = "^0.7.0"
 psycopg2-binary = "^2.9.5"

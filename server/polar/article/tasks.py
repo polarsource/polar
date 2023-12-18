@@ -1,7 +1,7 @@
 from datetime import timedelta
 from uuid import UUID
 
-import requests
+import httpx
 import structlog
 
 from polar.auth.service import AuthService
@@ -71,19 +71,17 @@ async def articles_send_to_user(
             render_data["unsubscribe_link"] = unsubscribe_link
             email_headers["List-Unsubscribe"] = f"<{unsubscribe_link}>"
 
-        req = requests.post(
-            f"{settings.FRONTEND_BASE_URL}/email/article/{article.id}",
-            json=render_data,
-            # Authenticating to the renderer as the user we're sending the email to
-            headers={"Cookie": f"polar_session={jwt};"},
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{settings.FRONTEND_BASE_URL}/email/article/{article.id}",
+                json=render_data,
+                # Authenticating to the renderer as the user we're sending the email to
+                headers={"Cookie": f"polar_session={jwt};"},
+            )
 
-        if req.status_code != 200:
-            log.error(f"failed to get rendered article: code={req.status_code}")
+        if not response.is_success:
+            log.error(f"failed to get rendered article: code={response.status_code}")
             return None
-
-        req.encoding = "utf-8"
-        rendered = req.text
 
         from_name = ""
         if article.byline == Article.Byline.organization:
@@ -96,7 +94,7 @@ async def articles_send_to_user(
         email_sender.send_to_user(
             to_email_addr=user.email,
             subject=subject,
-            html_content=rendered,
+            html_content=response.text,
             from_name=from_name,
             from_email_addr=f"{article.organization.name}@posts.polar.sh",
             email_headers=email_headers,

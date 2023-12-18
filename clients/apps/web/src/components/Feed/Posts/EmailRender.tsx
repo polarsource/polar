@@ -4,6 +4,7 @@ import Markdown from 'markdown-to-jsx'
 import { Container } from '@react-email/components'
 import Embed from './EmailEmbed'
 import Iframe from './EmailIframe'
+import EmailMermaid from './EmailMermaid'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import {
@@ -23,6 +24,15 @@ export const opts = {
     SubscribeNow: () => <></>, // do not render
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
+    pre: (args: any) => {
+      if (args.children.type === 'code') {
+        const language = args.children.props.className?.replace('lang-', '')
+        if (language === 'mermaid') {
+          return <EmailMermaid graphDefinition={args.children.props.children} />
+        }
+      }
+      return <></>
+    },
   },
 } as const
 

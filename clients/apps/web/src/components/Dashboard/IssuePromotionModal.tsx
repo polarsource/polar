@@ -1,4 +1,4 @@
-import { useRequireAuth } from '@/hooks'
+import { useAuth } from '@/hooks'
 import { githubIssueLink } from '@/utils/github'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
@@ -128,7 +128,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
     })
   }
 
-  const { currentUser } = useRequireAuth()
+  const { currentUser } = useAuth()
 
   if (!currentUser) {
     return <></>

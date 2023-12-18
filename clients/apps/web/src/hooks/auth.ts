@@ -1,7 +1,5 @@
 import { type UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
-import { useRouter } from 'next/navigation'
-import { CONFIG } from 'polarkit/config'
 import { UserState, useStore } from 'polarkit/store'
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useState } from 'react'
@@ -96,30 +94,4 @@ export const useAuth = (): UserState & {
     },
     hydrated,
   }
-}
-
-export const useRequireAuth = (): UserState & {
-  hasChecked: boolean
-  isChecking: boolean
-} => {
-  const router = useRouter()
-  const session = useAuth()
-
-  if (!session.authenticated && session.hasChecked) {
-    let redirectPath = CONFIG.LOGIN_PATH
-    const currentURL = new URL(window.location.href)
-    const redirectURL = new URL(window.location.origin + redirectPath)
-
-    if (currentURL.pathname !== redirectPath) {
-      redirectURL.searchParams.set(
-        'goto_url',
-        currentURL.toString().replace(window.location.origin, ''),
-      )
-      redirectPath = redirectURL.toString()
-    }
-
-    router.push(redirectPath)
-  }
-
-  return session
 }

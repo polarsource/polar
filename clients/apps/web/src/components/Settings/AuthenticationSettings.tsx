@@ -1,4 +1,4 @@
-import { useGitHubAccount, useRequireAuth } from '@/hooks'
+import { useAuth, useGitHubAccount } from '@/hooks'
 import { AtSymbolIcon } from '@heroicons/react/24/solid'
 import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
 import { getGitHubAuthorizeURL } from 'polarkit/auth'
@@ -93,7 +93,7 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
 }
 
 const AuthenticationSettings = () => {
-  const { currentUser } = useRequireAuth()
+  const { currentUser } = useAuth()
   const githubAccount = useGitHubAccount()
 
   return (

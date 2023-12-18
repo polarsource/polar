@@ -85,6 +85,19 @@ export async function generateMetadata(
       title: `${article.title}`,
       description: `${preview}`,
     },
+
+    alternates: {
+      types: {
+        'application/rss+xml': [
+          {
+            title: `${
+              article.organization.pretty_name || article.organization.name
+            }`,
+            url: `https://polar.sh/${article.organization.name}/rss`,
+          },
+        ],
+      },
+    },
   }
 }
 

@@ -10,6 +10,9 @@ export const previewOpts = {
     p: (args: any) => <>{args.children} </>, // Note the space
     div: (args: any) => <>{args.children} </>, // Note the space
     img: (args: any) => <></>,
+    a: (args: any) => <>{args.children}</>,
+    strong: (args: any) => <>{args.children}</>,
+    em: (args: any) => <>{args.children}</>,
   },
 } as const
 

@@ -2,6 +2,7 @@ import EmailRender from '@/components/Feed/Posts/EmailRender'
 import PreviewText from '@/components/Feed/Posts/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { Article } from '@polar-sh/sdk'
+import { getMagicLinkAuthenticateURL } from 'polarkit/auth'
 
 import {
   Body,
@@ -194,18 +195,20 @@ const renderArticle = async (
     ? new Date(article.published_at)
     : new Date()
 
-  const preAuthLink = (url: string): string => {
-    const u = new URL(url)
+  const preAuthLink = (path: string): string => {
     if (injectMagicLinkToken) {
-      u.searchParams.set('magic_link_token', injectMagicLinkToken)
+      return getMagicLinkAuthenticateURL({
+        token: injectMagicLinkToken,
+        returnTo: path,
+      })
     }
-    return u.toString()
+    return `https://polar.sh${path}`
   }
 
   unsubscribeLink =
     unsubscribeLink ??
     // If we don't have a subscription token. Send user to the subscriptions page.
-    preAuthLink(`https://polar.sh/${post.organization.name}/subscriptions`)
+    preAuthLink(`/${post.organization.name}/subscriptions`)
 
   const html = render(
     <Html lang="en">
@@ -232,7 +235,7 @@ const renderArticle = async (
                   <center>
                     <a
                       href={preAuthLink(
-                        `https://polar.sh/${post.organization.name}/posts/${post.slug}`,
+                        `/${post.organization.name}/posts/${post.slug}`,
                       )}
                       target="_blank"
                       className="text-sm text-black"
@@ -248,7 +251,7 @@ const renderArticle = async (
                   <h1>
                     <a
                       href={preAuthLink(
-                        `https://polar.sh/${post.organization.name}/posts/${post.slug}`,
+                        `/${post.organization.name}/posts/${post.slug}`,
                       )}
                       target="_blank"
                       className="text-gray-900 no-underline"
@@ -298,9 +301,7 @@ const renderArticle = async (
               <center className="py-3 pt-3 text-xs text-gray-500">
                 You received this email because you&apos;re a subscriber to{' '}
                 <a
-                  href={preAuthLink(
-                    `https://polar.sh/${post.organization.name}`,
-                  )}
+                  href={preAuthLink(`/${post.organization.name}`)}
                   target="_blank"
                   className="!underline underline-offset-1"
                 >

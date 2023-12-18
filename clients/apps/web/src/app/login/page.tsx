@@ -6,9 +6,9 @@ export const metadata: Metadata = {
 }
 
 export default function Page({
-  searchParams: { goto_url },
+  searchParams: { return_to },
 }: {
-  searchParams: { goto_url: string }
+  searchParams: { return_to: string }
 }) {
-  return <Login gotoUrl={goto_url} />
+  return <Login returnTo={return_to} />
 }

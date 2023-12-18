@@ -4,9 +4,9 @@ import { useAuth } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { Organization, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
 import { useSubscriptionTiers } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import { ProfileMenu } from '../Shared/ProfileSelection'
 
@@ -18,16 +18,12 @@ export const OrganizationPublicPageNav = ({
   organization,
 }: OrganizationPublicPageNavProps) => {
   const { currentUser } = useAuth()
-  const [gotoUrl, setGotoUrl] = useState('')
+  const pathname = usePathname()
 
   const { data: { items: subscriptionTiers } = { items: [] } } =
     useSubscriptionTiers(organization.name, 100)
 
   const shouldRenderSubscriptionsTab = (subscriptionTiers?.length ?? 0) > 0
-
-  useEffect(() => {
-    setGotoUrl(window.location.href)
-  }, [])
 
   return (
     <div className="flex flex-row items-center justify-between md:w-full">
@@ -66,7 +62,7 @@ export const OrganizationPublicPageNav = ({
             view: 'Maintainer Page',
           }}
           text="Sign in with GitHub"
-          gotoUrl={gotoUrl}
+          returnTo={pathname || '/feed'}
         />
       )}
     </div>

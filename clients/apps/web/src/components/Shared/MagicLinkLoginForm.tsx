@@ -6,10 +6,12 @@ import { Button, Input } from 'polarkit/components/ui/atoms'
 import { useState } from 'react'
 
 interface MagicLinkLoginFormProps {
-  gotoUrl?: string
+  returnTo?: string
 }
 
-const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({ gotoUrl }) => {
+const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
+  returnTo,
+}) => {
   const [email, setEmail] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -20,7 +22,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({ gotoUrl }) => {
 
     try {
       await api.magicLink.magicLinkRequest({
-        magicLinkRequest: { email, goto_url: gotoUrl },
+        magicLinkRequest: { email, return_to: returnTo },
       })
       const searchParams = new URLSearchParams({ email: email })
       router.push(`/login/magic-link/request?${searchParams}`)

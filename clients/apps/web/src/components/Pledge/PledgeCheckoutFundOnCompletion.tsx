@@ -5,7 +5,7 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
 import { Issue, Organization, UserSignupType } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button, MoneyInput } from 'polarkit/components/ui/atoms'
@@ -173,6 +173,7 @@ const PledgeCheckoutFundOnCompletion = ({
 export default PledgeCheckoutFundOnCompletion
 
 const NotLoggedInBanner = () => {
+  const pathname = usePathname()
   return (
     <div className="dark:bg-polar-900 flex flex-col gap-4 rounded-lg border border-red-200 px-4 py-4 dark:border-red-700">
       <div className="flex items-center justify-between">
@@ -209,7 +210,7 @@ const NotLoggedInBanner = () => {
         size="large"
         text="Continue with GitHub"
         fullWidth={true}
-        gotoUrl={window.location.href}
+        returnTo={pathname || '/feed'}
         userSignupType={UserSignupType.BACKER}
       />
     </div>

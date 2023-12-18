@@ -19,7 +19,7 @@ export default function Page() {
       })
       .catch((error) => {
         if (error.status === 401) {
-          router.push('/?goto_url=/settings/extension')
+          router.push('/?return_to=/settings/extension')
         }
       })
   }, [router])

@@ -1,9 +1,10 @@
 'use client'
 
-import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/ClientPage'
+import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/data'
 import { ProductTile } from '@/components/Products/ProductTile'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Organization } from '@polar-sh/sdk'
+import Link from 'next/link'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
   return (
@@ -17,7 +18,9 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             key={product.id}
             className="flex flex-grow flex-col"
           >
-            <ProductTile product={product} />
+            <Link href={`/${organization?.name}/products/${product.slug}`}>
+              <ProductTile product={product} />
+            </Link>
           </StaggerReveal.Child>
         ))}
       </StaggerReveal>

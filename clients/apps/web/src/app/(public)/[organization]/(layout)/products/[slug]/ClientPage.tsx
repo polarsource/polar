@@ -3,16 +3,10 @@
 import { Product, resolveProductTypeIcon } from '@/components/Product/Product'
 import { Slideshow } from '@/components/Product/Slideshow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { ChevronLeftOutlined, StarRounded } from '@mui/icons-material'
+import { ArrowBackOutlined, StarRounded } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
-import {
-  Avatar,
-  Button,
-  PolarTimeAgo,
-  ShadowBoxOnMd,
-} from 'polarkit/components/ui/atoms'
-import { Separator } from 'polarkit/components/ui/separator'
+import { Avatar, Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 
@@ -29,17 +23,17 @@ const ClientPage = ({
   return (
     <div className="flex w-full flex-col gap-y-8">
       <Link
-        className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+        className="flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
         href={`/${organization.name}/products`}
       >
-        <ChevronLeftOutlined fontSize="small" />
+        <ArrowBackOutlined fontSize="inherit" />
         <span>Back to Products</span>
       </Link>
-      <StaggerReveal className="flex flex-col gap-y-12">
+      <StaggerReveal className="flex flex-col gap-y-8">
         <StaggerReveal.Child>
           <Slideshow images={[product.image]} />
         </StaggerReveal.Child>
-        <div className="flex flex-row gap-x-12">
+        <div className="flex flex-row gap-x-8">
           <StaggerReveal.Child className="w-2/3">
             <ShadowBoxOnMd className="flex flex-col gap-y-6">
               <div className="flex flex-row items-center justify-between">
@@ -54,7 +48,7 @@ const ClientPage = ({
                       .map((_, i) => (
                         <StarRounded
                           className="text-blue-500 dark:text-blue-400"
-                          fontSize="small"
+                          fontSize="inherit"
                           key={i}
                         />
                       ))}
@@ -62,8 +56,8 @@ const ClientPage = ({
                       .fill(0)
                       .map((_, i) => (
                         <StarRounded
-                          className="dark:text-polar-600 text-gray-400"
-                          fontSize="small"
+                          className="dark:text-polar-600 text-gray-300"
+                          fontSize="inherit"
                           key={i}
                         />
                       ))}
@@ -81,12 +75,6 @@ const ClientPage = ({
               <p className="dark:text-polar-500 whitespace-break-spaces leading-relaxed text-gray-500">
                 {product.description}
               </p>
-              <Separator />
-              <div className="flex flex-row items-center justify-between">
-                <span className="dark:text-polar-500 text-gray-500">
-                  <PolarTimeAgo date={product.createdAt} />
-                </span>
-              </div>
             </ShadowBoxOnMd>
           </StaggerReveal.Child>
           <StaggerReveal.Child className="w-1/3">
@@ -114,7 +102,7 @@ const ClientPage = ({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-y-4">
+              <div className="flex flex-col items-center gap-y-6">
                 <Button fullWidth>Buy Now</Button>
                 <p className="dark:text-polar-500 text-center text-xs text-gray-500">
                   30-day money back guarantee

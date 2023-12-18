@@ -81,7 +81,7 @@ class Auth:
         self,
         *,
         scoped_subject: ScopedSubject,
-        auth_method: AuthMethod | None = None,
+        auth_method: AuthMethod | None,
     ):
         self.scoped_subject = scoped_subject
         self.auth_method = auth_method
@@ -119,7 +119,10 @@ class Auth:
         if scoped_subject:
             return cls(scoped_subject=scoped_subject, auth_method=auth_method)
         else:
-            return cls(scoped_subject=ScopedSubject(subject=Anonymous(), scopes=[]))
+            return cls(
+                scoped_subject=ScopedSubject(subject=Anonymous(), scopes=[]),
+                auth_method=None,
+            )
 
     @classmethod
     async def backoffice_user(
@@ -161,3 +164,54 @@ class AuthRequired(Auth):
 
 
 UserRequiredAuth = Annotated[AuthRequired, Depends(Auth.current_user)]
+
+
+class AuthenticatedWithScope:
+    def __init__(
+        self,
+        *,
+        required_scopes: list[Scope],
+        fallback_to_anonymous: bool = False,
+        allow_anonymous: bool = False,
+    ):
+        self.required_scopes = required_scopes
+        self.fallback_to_anonymous = fallback_to_anonymous
+        self.allow_anonymous = allow_anonymous
+
+    def __call__(
+        self,
+        user_auth_method: tuple[ScopedSubject | None, AuthMethod | None] = Depends(
+            _current_user_optional
+        ),
+    ) -> Auth:
+        scoped_subject, auth_method = user_auth_method
+
+        # No valid authentication method
+        if not scoped_subject:
+            if self.allow_anonymous:
+                return Auth(
+                    scoped_subject=ScopedSubject(subject=Anonymous(), scopes=[]),
+                    auth_method=None,
+                )
+            else:
+                raise HTTPException(status_code=401, detail="Not authenticated")
+
+        filtered = [s for s in scoped_subject.scopes if s in self.required_scopes]
+
+        # Have at least one of the required scopes. Allow this request.
+        if len(filtered) > 0:
+            return Auth(
+                scoped_subject=scoped_subject,
+                auth_method=auth_method,
+            )
+
+        if self.fallback_to_anonymous:
+            return Auth(
+                scoped_subject=ScopedSubject(subject=Anonymous(), scopes=[]),
+                auth_method=None,
+            )
+
+        raise HTTPException(
+            status_code=401,
+            detail=f"Missing required scope: have={",".join(scoped_subject.scopes)} requires={",".join(self.required_scopes)}",
+        )

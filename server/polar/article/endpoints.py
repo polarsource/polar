@@ -2,8 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.authz.service import AccessType, Authz
+from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
+from polar.authz.service import AccessType, Authz, Scope
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.utils import utc_now
@@ -32,6 +32,12 @@ from .schemas import (
 from .service import article_service
 
 router = APIRouter(tags=["articles"])
+
+OptionalUserArticleRead = AuthenticatedWithScope(
+    required_scopes=[Scope.admin, Scope.articles_read],
+    allow_anonymous=True,
+    fallback_to_anonymous=True,
+)
 
 
 @router.get(
@@ -103,7 +109,7 @@ async def search(
         description="Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization.",
     ),
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
+    auth: Auth = Depends(OptionalUserArticleRead),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[ArticleSchema]:
     (organization_name, platform) = organization_name_platform

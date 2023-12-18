@@ -48,7 +48,7 @@ const MaintainerSignup = () => {
 
             <GithubLoginButton
               size="large"
-              gotoUrl={'/maintainer'}
+              returnTo="/maintainer"
               userSignupType={UserSignupType.MAINTAINER}
               posthogProps={{
                 view: 'Maintainer Signup',

@@ -7,7 +7,7 @@ import { twMerge } from 'tailwind-merge'
 
 const GithubLoginButton = (props: {
   className?: string
-  gotoUrl?: string
+  returnTo?: string
   userSignupType?: UserSignupType
   size?: 'large' | 'small'
   fullWidth?: boolean
@@ -17,7 +17,7 @@ const GithubLoginButton = (props: {
   const search = useSearchParams()
   const authorizeURL = getGitHubAuthorizeURL({
     paymentIntentId: search?.get('payment_intent_id') ?? undefined,
-    gotoUrl: props.gotoUrl,
+    returnTo: props.returnTo,
     userSignupType: props.userSignupType,
   })
 

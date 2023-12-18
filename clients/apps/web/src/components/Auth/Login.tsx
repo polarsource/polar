@@ -3,7 +3,7 @@ import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import MagicLinkLoginForm from '../Shared/MagicLinkLoginForm'
 
-const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
+const Login = ({ returnTo }: { returnTo?: string }) => {
   return (
     <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-[#FEFDF9]">
       <div id="polar-bg-gradient"></div>
@@ -14,14 +14,14 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
             text="Sign in with GitHub"
             size="large"
             fullWidth
-            gotoUrl={gotoUrl}
+            returnTo={returnTo}
             posthogProps={{
               view: 'Login Page',
             }}
           />
         </div>
         <LabeledSeparator label="Or" />
-        <MagicLinkLoginForm gotoUrl={gotoUrl} />
+        <MagicLinkLoginForm returnTo={returnTo} />
         <div className="mt-8 text-center text-sm text-gray-500">
           By using Polar you agree to our{' '}
           <a

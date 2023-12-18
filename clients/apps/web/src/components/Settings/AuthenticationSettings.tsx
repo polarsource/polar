@@ -1,6 +1,7 @@
 import { useAuth, useGitHubAccount } from '@/hooks'
 import { AtSymbolIcon } from '@heroicons/react/24/solid'
 import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
+import { usePathname } from 'next/navigation'
 import { getGitHubAuthorizeURL } from 'polarkit/auth'
 import {
   Button,
@@ -38,15 +39,15 @@ const AuthenticationMethod: React.FC<AuthenticationMethodProps> = ({
 interface GitHubAuthenticationMethodProps {
   user: UserRead
   oauthAccount: OAuthAccountRead | undefined
-  gotoUrl: string
+  returnTo: string
 }
 
 const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
   user,
   oauthAccount,
-  gotoUrl,
+  returnTo,
 }) => {
-  const authorizeURL = getGitHubAuthorizeURL({ gotoUrl })
+  const authorizeURL = getGitHubAuthorizeURL({ returnTo })
 
   return (
     <AuthenticationMethod
@@ -94,6 +95,7 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
 
 const AuthenticationSettings = () => {
   const { currentUser } = useAuth()
+  const pathname = usePathname()
   const githubAccount = useGitHubAccount()
 
   return (
@@ -104,7 +106,7 @@ const AuthenticationSettings = () => {
             <GitHubAuthenticationMethod
               user={currentUser}
               oauthAccount={githubAccount}
-              gotoUrl={window.location.href}
+              returnTo={pathname || '/feed'}
             />
           </ShadowListGroup.Item>
           <ShadowListGroup.Item>

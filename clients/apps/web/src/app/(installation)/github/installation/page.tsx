@@ -10,13 +10,14 @@ import {
   ResponseError,
   UserSignupType,
 } from '@polar-sh/sdk'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useEffect, useState } from 'react'
 
 export default function Page() {
   const router = useRouter()
+  const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
   const [installed, setInstalled] = useState<Organization | null>(null)
 
@@ -92,12 +93,6 @@ export default function Page() {
     }
   }, [installationID])
 
-  const [gotoUrl, setGotoUrl] = useState('')
-
-  useEffect(() => {
-    setGotoUrl(window.location.href)
-  }, [])
-
   if (installed) {
     return (
       <LoadingScreen animate={true}>Ready to go! Redirecting...</LoadingScreen>
@@ -109,9 +104,9 @@ export default function Page() {
       <LoadingScreen animate={false}>
         <div className="flex flex-col items-center space-y-2">
           <p>Login to continue</p>
-          {gotoUrl && (
+          {pathname && (
             <GithubLoginButton
-              gotoUrl={gotoUrl}
+              returnTo={pathname}
               userSignupType={UserSignupType.MAINTAINER}
               posthogProps={{
                 view: 'Github Installation Page',

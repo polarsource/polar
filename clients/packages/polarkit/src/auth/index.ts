@@ -1,4 +1,7 @@
-import { IntegrationsApiIntegrationsGithubAuthorizeRequest } from '@polar-sh/sdk'
+import {
+  IntegrationsApiIntegrationsGithubAuthorizeRequest,
+  MagicLinkApiMagicLinkAuthenticateRequest,
+} from '@polar-sh/sdk'
 import { getServerURL } from '../api'
 
 export const getGitHubAuthorizeURL = (
@@ -8,11 +11,21 @@ export const getGitHubAuthorizeURL = (
   if (params.paymentIntentId !== undefined) {
     searchParams.set('payment_intent_id', params.paymentIntentId)
   }
-  if (params.gotoUrl !== undefined) {
-    searchParams.set('goto_url', params.gotoUrl)
+  if (params.returnTo !== undefined) {
+    searchParams.set('return_to', params.returnTo)
   }
   if (params.userSignupType !== undefined) {
     searchParams.set('user_signup_type', params.userSignupType)
   }
   return `${getServerURL()}/api/v1/integrations/github/authorize?${searchParams}`
+}
+
+export const getMagicLinkAuthenticateURL = (
+  params: MagicLinkApiMagicLinkAuthenticateRequest,
+): string => {
+  const searchParams = new URLSearchParams({ token: params.token })
+  if (params.returnTo !== undefined) {
+    searchParams.set('return_to', params.returnTo)
+  }
+  return `${getServerURL()}/api/v1/magic_link/authenticate?${searchParams}`
 }

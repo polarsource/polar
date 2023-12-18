@@ -176,6 +176,7 @@ const MobileNav = () => {
 }
 
 const GitHubAuthUpsell = () => {
+  const pathname = usePathname()
   return (
     <Upsell
       title="Connect with GitHub"
@@ -184,7 +185,7 @@ const GitHubAuthUpsell = () => {
       <GithubLoginButton
         className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
         text="Connect with GitHub"
-        gotoUrl={window.location.href}
+        returnTo={pathname || '/feed'}
         userSignupType={UserSignupType.BACKER}
       />
     </Upsell>

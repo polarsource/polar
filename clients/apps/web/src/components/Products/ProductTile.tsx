@@ -1,6 +1,4 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArrowForward, BoltOutlined } from '@mui/icons-material'
-import Link from 'next/link'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useRef } from 'react'
 import { useHoverDirty } from 'react-use'
@@ -12,14 +10,12 @@ export interface ProductTileProps {
 }
 
 export const ProductTile = ({ product }: ProductTileProps) => {
-  const ref = useRef<HTMLAnchorElement>(null)
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const ref = useRef<HTMLDivElement>(null)
   const isHovered = useHoverDirty(ref)
 
   return (
-    <Link
+    <div
       ref={ref}
-      href={`/maintainer/${org?.name}/products/${product.slug}`}
       className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex h-full flex-col gap-y-6 rounded-3xl border border-gray-100 bg-white p-4 transition-colors hover:bg-gray-50"
     >
       <div
@@ -57,6 +53,6 @@ export const ProductTile = ({ product }: ProductTileProps) => {
           )}
         </div>
       </div>
-    </Link>
+    </div>
   )
 }

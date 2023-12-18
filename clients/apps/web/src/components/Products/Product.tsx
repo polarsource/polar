@@ -15,6 +15,7 @@ export interface Product {
   price: number
   image: string
   unlockable: boolean
+  createdAt: Date
 }
 
 export interface ProductBundle {

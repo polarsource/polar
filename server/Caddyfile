@@ -1,6 +1,13 @@
-:6380 {
+servers :6380 {
 	route /api/v1/* {
-		reverse_proxy host.docker.internal:8000
+		reverse_proxy {
+			to host.docker.internal:8000
+			trusted_proxies private_ranges
+		}
 	}
-	reverse_proxy host.docker.internal:3000
+
+	reverse_proxy {
+		to host.docker.internal:3000
+		trusted_proxies private_ranges
+	}
 }

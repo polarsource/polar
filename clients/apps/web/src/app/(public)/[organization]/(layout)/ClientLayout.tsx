@@ -15,7 +15,13 @@ const ClientLayout = ({
 }: PropsWithChildren<{ organization: Organization }>) => {
   const pathname = usePathname()
   const currentTab = useMemo(() => {
-    const tabs = ['overview', 'issues', 'repositories', 'subscriptions']
+    const tabs = [
+      'overview',
+      'subscriptions',
+      'products',
+      'issues',
+      'repositories',
+    ]
 
     const pathParts = pathname.split('/')
 

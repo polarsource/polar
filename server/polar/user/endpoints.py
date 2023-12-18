@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Response
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
-from polar.authz.service import Authz
-from polar.exceptions import InternalServerError
+from polar.authz.service import Authz, Scope
+from polar.exceptions import InternalServerError, Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
@@ -20,8 +20,17 @@ from .schemas import (
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+AuthUserRead = AuthenticatedWithScope(
+    required_scopes=[Scope.admin, Scope.user_read],
+    allow_anonymous=False,
+    fallback_to_anonymous=False,
+)
+
+
 @router.get("/me", response_model=UserRead)
-async def get_authenticated(auth: UserRequiredAuth) -> User:
+async def get_authenticated(auth: Auth = Depends(AuthUserRead)) -> User:
+    if not auth.user:
+        raise Unauthorized()
     return auth.user
 
 

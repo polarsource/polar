@@ -89,6 +89,7 @@ async def create(
     if payload.scopes:
         mapped = {
             "articles:read": Scope.articles_read,
+            "user:read": Scope.user_read,
         }
         scopes = [mapped[k] for k in payload.scopes]
     else:

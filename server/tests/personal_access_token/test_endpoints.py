@@ -115,3 +115,49 @@ async def test_create_scoped(auth_jwt: str, client: AsyncClient) -> None:
     )
 
     assert response.json() == {"scopes": [Scope.articles_read]}
+
+
+@pytest.mark.asyncio
+async def test_incorrect_scope(auth_jwt: str, client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/personal_access_tokens",
+        json={"comment": "rss", "scopes": ["articles:read"]},
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["expires_at"] is not None
+    assert len(response.json()["token"]) > 20
+    assert response.json()["comment"] == "rss"
+
+    response = await client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": "Bearer " + response.json()["token"]},
+    )
+
+    assert (
+        response.text
+        == '{"detail":"Missing required scope: have=articles:read requires=admin,user:read"}'
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_correct_scope(auth_jwt: str, client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/personal_access_tokens",
+        json={"comment": "rss", "scopes": ["user:read"]},
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["expires_at"] is not None
+    assert len(response.json()["token"]) > 20
+    assert response.json()["comment"] == "rss"
+
+    response = await client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": "Bearer " + response.json()["token"]},
+    )
+
+    assert response.status_code == 200

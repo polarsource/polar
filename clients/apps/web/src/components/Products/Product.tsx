@@ -3,6 +3,7 @@ export enum ProductType {
   FILE = 'File Download',
   VIDEO_TUTORIAL = 'Video Tutorial',
   BUNDLE = 'Bundle',
+  E_BOOK = 'E-Book',
 }
 
 export interface Product {
@@ -14,13 +15,6 @@ export interface Product {
   price: number
   image: string
   unlockable: boolean
-}
-
-export interface VideoTutorialProduct extends Product {
-  type: ProductType.VIDEO_TUTORIAL
-  meta: {
-    duration: number
-  }
 }
 
 export interface ProductBundle {

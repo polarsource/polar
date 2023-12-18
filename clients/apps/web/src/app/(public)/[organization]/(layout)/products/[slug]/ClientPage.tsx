@@ -3,7 +3,7 @@
 import { Product, resolveProductTypeIcon } from '@/components/Product/Product'
 import { Slideshow } from '@/components/Product/Slideshow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { StarRounded } from '@mui/icons-material'
+import { ChevronLeftOutlined, StarRounded } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -28,6 +28,13 @@ const ClientPage = ({
 
   return (
     <div className="flex w-full flex-col gap-y-8">
+      <Link
+        className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+        href={`/${organization.name}/products`}
+      >
+        <ChevronLeftOutlined fontSize="small" />
+        <span>Back to Products</span>
+      </Link>
       <StaggerReveal className="flex flex-col gap-y-12">
         <StaggerReveal.Child>
           <Slideshow images={[product.image]} />
@@ -36,7 +43,7 @@ const ClientPage = ({
           <StaggerReveal.Child className="w-2/3">
             <ShadowBoxOnMd className="flex flex-col gap-y-6">
               <div className="flex flex-row items-center justify-between">
-                <span className="flex flex-row items-center gap-x-2 text-sm text-blue-500 dark:text-blue-400">
+                <span className="flex flex-row items-center gap-x-2 text-sm font-medium text-blue-500 dark:text-blue-400">
                   <TypeIcon fontSize="small" />
                   {product.type}
                 </span>
@@ -71,7 +78,7 @@ const ClientPage = ({
               </div>
               <h2 className="text-xl font-medium">{product.name}</h2>
 
-              <p className="dark:text-polar-500 leading-relaxed text-gray-500">
+              <p className="dark:text-polar-500 whitespace-break-spaces leading-relaxed text-gray-500">
                 {product.description}
               </p>
               <Separator />

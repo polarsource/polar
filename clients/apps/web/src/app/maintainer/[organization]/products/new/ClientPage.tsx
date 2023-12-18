@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { ProductType } from '@/components/Products/Product'
+import { ProductType } from '@/components/Product/Product'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import {
   AutoStoriesOutlined,

@@ -13,6 +13,7 @@ import {
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
+  SellOutlined,
   TuneOutlined,
   ViewDayOutlined,
   WidthNormalOutlined,
@@ -144,6 +145,19 @@ export const backerRoutes = (
                 ),
                 postIcon: undefined,
                 if: isPersonal,
+                subs: undefined,
+              },
+            ]
+          : []),
+        ...(isFeatureEnabled('products')
+          ? [
+              {
+                id: 'purchases',
+                title: 'Purchases',
+                link: `/purchases`,
+                icon: <SellOutlined className="h-5 w-5" fontSize="inherit" />,
+                postIcon: undefined,
+                if: true,
                 subs: undefined,
               },
             ]

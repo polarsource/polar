@@ -24,17 +24,9 @@ export const opts = {
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
-    pre: (args: any) => {
-      if (!args.children) {
-        return <></>
-      }
-      if (typeof args.children !== 'object') {
-        return <></>
-      }
-      if (!('type' in args.children) || args.children.type !== 'code') {
-        return <></>
-      }
-      return <SyntaxHighlighter {...args.children.props} />
+    code: (args: any) => {
+      const language = args.className?.replace('lang-', '')
+      return <SyntaxHighlighter language={language} {...args} />
     },
   },
 } as const
@@ -49,7 +41,7 @@ export const previewOpts = {
     SubscribeNow: () => <></>,
     embed: () => <></>,
     iframe: () => <></>,
-    pre: () => <></>,
+    code: () => <></>,
   },
 } as const
 

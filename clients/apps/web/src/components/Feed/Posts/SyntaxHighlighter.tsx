@@ -6,14 +6,11 @@ import { Button } from 'polarkit/components/ui/atoms'
 import ReactSyntaxHighlighter from 'react-syntax-highlighter'
 
 export const SyntaxHighlighter = (props: {
-  className?: string
+  language: string | undefined
   children: string
 }) => {
   const { resolvedTheme } = useTheme()
   const style = resolvedTheme === 'dark' ? polarStyleDark : polarStyleLight
-
-  // Language gets passed in as a className
-  const language = props.className?.replace('lang-', '')
 
   // Copy the code contents to the clipboard
   const handleCopy = () => {
@@ -23,7 +20,7 @@ export const SyntaxHighlighter = (props: {
   return (
     <div className="relative my-2 w-full">
       <ReactSyntaxHighlighter
-        language={language}
+        language={props.language}
         style={style}
         lineNumberStyle={{
           paddingRight: '1.5rem',

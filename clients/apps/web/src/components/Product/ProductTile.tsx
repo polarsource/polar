@@ -16,7 +16,7 @@ export const ProductTile = ({ product }: ProductTileProps) => {
   return (
     <div
       ref={ref}
-      className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex h-full flex-col gap-y-6 rounded-3xl border border-gray-100 bg-white p-4 transition-colors hover:bg-gray-50"
+      className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex h-full flex-col gap-y-6 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50"
     >
       <div
         className="aspect-square flex-shrink-0 rounded-2xl bg-cover bg-center"

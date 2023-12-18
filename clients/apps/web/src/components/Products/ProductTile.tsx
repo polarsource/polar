@@ -37,7 +37,7 @@ export const ProductTile = ({ product }: ProductTileProps) => {
             {product.name}
           </h2>
           <h3 className="dark:text-polar-50 flex-grow text-right text-lg text-gray-950">
-            ${getCentsInDollarString(product.price, true, true)}
+            ${getCentsInDollarString(product.price, false, true)}
           </h3>
         </div>
         <p className="dark:text-polar-500 line-clamp-3 h-full text-sm text-gray-500">

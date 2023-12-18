@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.authz.service import Scope
 from polar.config import settings
 
 
@@ -93,3 +94,24 @@ async def test_auth(auth_jwt: str, client: AsyncClient) -> None:
 
     assert response.status_code == 200
     assert len(response.json()["username"]) > 3
+
+
+@pytest.mark.asyncio
+async def test_create_scoped(auth_jwt: str, client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/personal_access_tokens",
+        json={"comment": "rss", "scopes": ["articles:read"]},
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["expires_at"] is not None
+    assert len(response.json()["token"]) > 20
+    assert response.json()["comment"] == "rss"
+
+    response = await client.get(
+        "/api/v1/users/me/scopes",
+        headers={"Authorization": "Bearer " + response.json()["token"]},
+    )
+
+    assert response.json() == {"scopes": [Scope.articles_read]}

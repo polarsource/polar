@@ -65,7 +65,7 @@ class AuthService:
 
     @classmethod
     def generate_pat_token(
-        cls, pat_id: UUID, expires_at: datetime, scopes: list[Scope] = [Scope.admin]
+        cls, pat_id: UUID, expires_at: datetime, scopes: list[Scope]
     ) -> str:
         return jwt.encode(
             data={
@@ -135,7 +135,7 @@ class AuthService:
                     return None
 
                 if "scopes" in decoded:
-                    scopes = decoded["scopes"]
+                    scopes = [Scope(x) for x in decoded["scopes"].split(",")]
                 else:
                     scopes = [Scope.admin]
 

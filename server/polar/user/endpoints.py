@@ -11,6 +11,7 @@ from polar.user.service import user as user_service
 
 from .schemas import (
     UserRead,
+    UserScopes,
     UserSetAccount,
     UserStripePortalSession,
     UserUpdateSettings,
@@ -22,6 +23,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.get("/me", response_model=UserRead)
 async def get_authenticated(auth: UserRequiredAuth) -> User:
     return auth.user
+
+
+@router.get("/me/scopes", response_model=UserScopes)
+async def scopes(auth: UserRequiredAuth) -> UserScopes:
+    return UserScopes(scopes=[str(s) for s in auth.scoped_subject.scopes])
 
 
 @router.post("/me/token")

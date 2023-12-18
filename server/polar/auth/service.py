@@ -1,3 +1,4 @@
+from ast import Tuple
 from datetime import datetime
 from uuid import UUID
 
@@ -5,6 +6,7 @@ import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
+from polar.authz.service import Scope, ScopedSubject, Subject
 from polar.config import settings
 from polar.kit import jwt
 from polar.kit.http import get_safe_return_url
@@ -62,10 +64,13 @@ class AuthService:
         )
 
     @classmethod
-    def generate_pat_token(cls, pat_id: UUID, expires_at: datetime) -> str:
+    def generate_pat_token(
+        cls, pat_id: UUID, expires_at: datetime, scopes: list[Scope] = [Scope.admin]
+    ) -> str:
         return jwt.encode(
             data={
                 "pat_id": str(pat_id),
+                "scopes": ",".join(scopes),
             },
             secret=settings.SECRET,
             expires_at=expires_at,
@@ -107,14 +112,19 @@ class AuthService:
     @classmethod
     async def get_user_from_auth_header(
         cls, session: AsyncSession, *, token: str
-    ) -> User | None:
+    ) -> ScopedSubject | None:
         try:
             decoded = jwt.decode(token=token, secret=settings.SECRET)
 
             # Authorization headers as when forwarded by NextJS serverside and edge.
             # We're passing Cookie contents in the Authorization header.
             if "user_id" in decoded:
-                return await user_service.get(session, id=decoded["user_id"])
+                user = await user_service.get(session, id=decoded["user_id"])
+                if user:
+                    return ScopedSubject(
+                        subject=user,
+                        scopes=[Scope.admin],  # cookie based auth, has full admin scope
+                    )
 
             # Personal Access Token in the Authorization header.
             if "pat_id" in decoded:
@@ -124,8 +134,14 @@ class AuthService:
                 if pat is None:
                     return None
 
+                if "scopes" in decoded:
+                    scopes = decoded["scopes"]
+                else:
+                    scopes = [Scope.admin]
+
                 await personal_access_token_service.record_usage(session, id=pat.id)
-                return pat.user
+
+                return ScopedSubject(subject=pat.user, scopes=scopes)
 
             raise Exception("failed to decode token")
         except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):

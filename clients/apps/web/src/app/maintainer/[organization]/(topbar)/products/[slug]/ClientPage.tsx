@@ -8,7 +8,7 @@ import {
   ShadowBoxOnMd,
   TextArea,
 } from 'polarkit/components/ui/atoms'
-import { productMocks } from '../ClientPage'
+import { productMocks } from '../data'
 
 const ClientPage = () => {
   const { slug } = useParams()

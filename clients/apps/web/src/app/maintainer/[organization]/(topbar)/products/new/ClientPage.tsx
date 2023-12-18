@@ -24,7 +24,9 @@ import {
   DragEventHandler,
   SetStateAction,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -58,7 +60,9 @@ const productTypes = [
 ] as const
 
 const ClientPage = () => {
+  const thumbnailInputRef = useRef<HTMLInputElement>(null)
   const [price, setPrice] = useState(0)
+  const [thumbnail, setThumbnail] = useState<string>()
   const [selectedType, setSelectedType] = useState<ProductType>(
     ProductType.FILE,
   )
@@ -72,6 +76,20 @@ const ClientPage = () => {
       ),
     [selectedType],
   )
+
+  useEffect(() => {
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.oninput = (ev) => {
+        if (ev.target instanceof HTMLInputElement && ev.target.files?.[0]) {
+          setThumbnail(URL.createObjectURL(ev.target.files?.[0]))
+        }
+      }
+    }
+  }, [setThumbnail])
+
+  const handleThumbnailUploadClick = useCallback(() => {
+    thumbnailInputRef.current?.click()
+  }, [])
 
   return (
     <DashboardBody className="pb-16">
@@ -96,6 +114,36 @@ const ClientPage = () => {
                 value={price}
                 onAmountChangeInCents={setPrice}
               />
+            </div>
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col gap-y-2">
+                <span className="text-sm">Thumbnail</span>
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  A thumbnail to use when displaying your product on Polar.
+                  Minimum 500x500 pixels.
+                </p>
+              </div>
+              <div className="flex flex-col items-start gap-y-4">
+                <input
+                  ref={thumbnailInputRef}
+                  accept="image/png, image/jpeg"
+                  className="hidden"
+                  id="file_input"
+                  type="file"
+                />
+                {thumbnail && (
+                  <div
+                    className="aspect-square w-64 rounded-3xl bg-cover bg-center"
+                    style={{ backgroundImage: `url(${thumbnail})` }}
+                  />
+                )}
+                <Button
+                  variant="secondary"
+                  onClick={handleThumbnailUploadClick}
+                >
+                  Select File
+                </Button>
+              </div>
             </div>
           </ShadowBoxOnMd>
           <ProductTypeSelector
@@ -214,7 +262,7 @@ const ProductUploadManager = () => {
                   <div
                     className="dark:bg-polar-700 aspect-square w-16 rounded-xl bg-gray-100 bg-cover bg-center"
                     style={{
-                      backgroundImage: `url(${file.webkitRelativePath})`,
+                      backgroundImage: `url(${URL.createObjectURL(file)})`,
                     }}
                   />
                   <div className="flex flex-col gap-y-2 text-sm">

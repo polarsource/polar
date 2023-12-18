@@ -3,6 +3,7 @@ import Markdown from 'markdown-to-jsx'
 import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'
 import BrowserPoll from './BrowserPoll'
+import { Mermaid } from './Mermaid'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import SubscribeNow from './SubscribeNow'
@@ -27,6 +28,9 @@ export const opts = {
     pre: (args: any) => {
       if (args.children.type === 'code') {
         const language = args.children.props.className?.replace('lang-', '')
+        if (language === 'mermaid') {
+          return <Mermaid graphDefinition={args.children.props.children} />
+        }
         return (
           <SyntaxHighlighter language={language} {...args.children.props} />
         )

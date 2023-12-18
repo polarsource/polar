@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Self
+from typing import Literal, Self
 from uuid import UUID
 
 from polar.kit.schemas import Schema
@@ -28,6 +28,7 @@ class PersonalAccessToken(Schema):
 
 class CreatePersonalAccessToken(Schema):
     comment: str
+    scopes: list[Literal["articles:read"]] | None = None
 
 
 class CreatePersonalAccessTokenResponse(PersonalAccessToken):

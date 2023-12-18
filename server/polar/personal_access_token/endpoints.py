@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.auth.service import AuthService
+from polar.authz.service import Scope
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
@@ -80,8 +81,18 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> CreatePersonalAccessTokenResponse:
     pat = await personal_access_token_service.create(
-        session, user_id=auth.user.id, comment=payload.comment
+        session,
+        user_id=auth.user.id,
+        comment=payload.comment,
     )
+
+    if payload.scopes:
+        mapped = {
+            "articles:read": Scope.articles_read,
+        }
+        scopes = [mapped[k] for k in payload.scopes]
+    else:
+        scopes = [Scope.admin]
 
     return CreatePersonalAccessTokenResponse(
         id=pat.id,
@@ -89,5 +100,5 @@ async def create(
         last_used_at=pat.last_used_at,
         comment=pat.comment,
         expires_at=pat.expires_at,
-        token=AuthService.generate_pat_token(pat.id, pat.expires_at),
+        token=AuthService.generate_pat_token(pat.id, pat.expires_at, scopes=scopes),
     )

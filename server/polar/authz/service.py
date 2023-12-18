@@ -50,6 +50,20 @@ Object = (
 )
 
 
+class Scope(str, Enum):
+    admin = "admin"  # default web scope, the token can do anything
+    articles_read = "articles:read"  # article read only scope (used by RSS auth)
+
+
+class ScopedSubject:
+    subject: Subject
+    scopes: list[Scope]
+
+    def __init__(self, *, subject: Subject, scopes: list[Scope] = []):
+        self.subject = subject
+        self.scopes = scopes
+
+
 class Authz:
     session: AsyncSession
 

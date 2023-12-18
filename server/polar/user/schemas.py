@@ -72,3 +72,7 @@ class UserSetAccount(Schema):
 
 class UserStripePortalSession(Schema):
     url: str
+
+
+class UserScopes(Schema):
+    scopes: list[str]

@@ -3,10 +3,12 @@ import mermaid from 'mermaid'
 import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-interface MermaidProps {
+interface BrowserMermaidProps {
   graphDefinition: string
 }
-export const Mermaid: React.FC<MermaidProps> = ({ graphDefinition }) => {
+export const BrowserMermaid: React.FC<BrowserMermaidProps> = ({
+  graphDefinition,
+}) => {
   const { resolvedTheme } = useTheme()
   const divRef = useRef<HTMLDivElement>(null)
   const [syntaxError, setSyntaxError] = useState<string | null>(null)
@@ -40,3 +42,5 @@ export const Mermaid: React.FC<MermaidProps> = ({ graphDefinition }) => {
     <div ref={divRef} className="flex items-center justify-center"></div>
   )
 }
+
+export default BrowserMermaid

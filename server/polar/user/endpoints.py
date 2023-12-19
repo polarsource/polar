@@ -35,8 +35,16 @@ async def get_authenticated(auth: Auth = Depends(AuthUserRead)) -> User:
 
 
 @router.get("/me/scopes", response_model=UserScopes)
-async def scopes(auth: UserRequiredAuth) -> UserScopes:
-    return UserScopes(scopes=[str(s) for s in auth.scoped_subject.scopes])
+async def scopes(
+    auth: Auth = Depends(
+        AuthenticatedWithScope(
+            # require auth, but don't check scopes
+            fallback_to_anonymous=False,
+            allow_anonymous=False,
+        )
+    ),
+) -> UserScopes:
+    return UserScopes(scopes=[s.value for s in auth.scoped_subject.scopes])
 
 
 @router.post("/me/token")

@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.authz.service import Scope
 from polar.config import settings
 
 
@@ -114,7 +113,7 @@ async def test_create_scoped(auth_jwt: str, client: AsyncClient) -> None:
         headers={"Authorization": "Bearer " + response.json()["token"]},
     )
 
-    assert response.json() == {"scopes": [Scope.articles_read]}
+    assert response.json() == {"scopes": ["articles:read"]}
 
 
 @pytest.mark.asyncio

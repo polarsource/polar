@@ -3,10 +3,10 @@ from typing import Annotated, Self
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from typing_extensions import deprecated
 
 from polar.authz.service import Anonymous, Scope, ScopedSubject, Subject
 from polar.config import settings
+from polar.exceptions import Unauthorized
 from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
 
@@ -106,6 +106,11 @@ class Auth:
         ),
     ) -> Self:
         scoped_subject, auth_method = user_auth_method
+
+        # This authentication mechanism is not aware of scopes. Require the admin scope to auth as user.
+        if Scope.admin not in scoped_subject.scopes:
+            raise Unauthorized("This endpoint does not support scoped auth tokens 1 ")
+
         return cls(scoped_subject=scoped_subject, auth_method=auth_method)
 
     @classmethod
@@ -116,7 +121,14 @@ class Auth:
         ),
     ) -> Self:
         scoped_subject, auth_method = user_auth_method
+
         if scoped_subject:
+            # This authentication mechanism is not aware of scopes. Require the admin scope to auth as user.
+            if Scope.admin not in scoped_subject.scopes:
+                raise Unauthorized(
+                    "This endpoint does not support scoped auth tokens2 "
+                )
+
             return cls(scoped_subject=scoped_subject, auth_method=auth_method)
         else:
             return cls(
@@ -142,11 +154,8 @@ class Auth:
             )
 
         # must have admin scope
-        if scoped_subject.scopes != [Scope.admin]:
-            raise HTTPException(
-                status_code=404,
-                detail="Not Found",
-            )
+        if Scope.admin not in scoped_subject.scopes:
+            raise Unauthorized("This endpoint does not support scoped auth tokens3")
 
         if scoped_subject.subject.username not in allowed:
             raise HTTPException(
@@ -170,7 +179,7 @@ class AuthenticatedWithScope:
     def __init__(
         self,
         *,
-        required_scopes: list[Scope],
+        required_scopes: list[Scope] | None = None,
         fallback_to_anonymous: bool = False,
         allow_anonymous: bool = False,
     ):
@@ -196,10 +205,17 @@ class AuthenticatedWithScope:
             else:
                 raise HTTPException(status_code=401, detail="Not authenticated")
 
-        filtered = [s for s in scoped_subject.scopes if s in self.required_scopes]
+        if self.required_scopes:
+            filtered = [s for s in scoped_subject.scopes if s in self.required_scopes]
 
-        # Have at least one of the required scopes. Allow this request.
-        if len(filtered) > 0:
+            # Have at least one of the required scopes. Allow this request.
+            if len(filtered) > 0 and len(self.required_scopes) > 0:
+                return Auth(
+                    scoped_subject=scoped_subject,
+                    auth_method=auth_method,
+                )
+
+        if scoped_subject and self.required_scopes is None:
             return Auth(
                 scoped_subject=scoped_subject,
                 auth_method=auth_method,
@@ -213,5 +229,5 @@ class AuthenticatedWithScope:
 
         raise HTTPException(
             status_code=401,
-            detail=f"Missing required scope: have={",".join(scoped_subject.scopes)} requires={",".join(self.required_scopes)}",
+            detail=f"Missing required scope: have={",".join(scoped_subject.scopes)} requires={",".join(self.required_scopes or [])}",
         )

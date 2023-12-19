@@ -7,7 +7,7 @@ import BrowserPoll from './BrowserPoll'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import SubscribeNow from './SubscribeNow'
-import { SyntaxHighlighter } from './SyntaxHighlighter'
+import BrowserSyntaxHighlighter from './SyntaxHighlighter/BrowserSyntaxHighlighter'
 import {
   RenderArticle,
   markdownOpts,
@@ -34,7 +34,10 @@ export const opts = {
           )
         }
         return (
-          <SyntaxHighlighter language={language} {...args.children.props} />
+          <BrowserSyntaxHighlighter
+            language={language}
+            {...args.children.props}
+          />
         )
       }
       return <></>

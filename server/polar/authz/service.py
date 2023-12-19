@@ -51,7 +51,7 @@ Object = (
 
 
 class Scope(str, Enum):
-    admin = "admin"  # default web scope, the token can do anything
+    web_default = "web_default"  # Web default scope. For users logged in on the web.
     articles_read = "articles:read"  # article read only scope (used by RSS auth)
     user_read = "user:read"
 

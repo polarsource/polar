@@ -21,7 +21,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 AuthUserRead = AuthenticatedWithScope(
-    required_scopes=[Scope.admin, Scope.user_read],
+    required_scopes=[Scope.web_default, Scope.user_read],
     allow_anonymous=False,
     fallback_to_anonymous=False,
 )

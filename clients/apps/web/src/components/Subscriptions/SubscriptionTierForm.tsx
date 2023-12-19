@@ -46,7 +46,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
         [SubscriptionTierType.HOBBY]: 'Hobby',
         [SubscriptionTierType.PRO]: 'Pro',
         [SubscriptionTierType.BUSINESS]: 'Business',
-      } as const),
+      }) as const,
     [],
   )
 

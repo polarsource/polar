@@ -29,4 +29,4 @@ const useStore = create<UserSlice>()(
 )
 
 export { useStore }
-export type { UserState, UserSlice }
+export type { UserSlice, UserState }

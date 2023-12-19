@@ -86,8 +86,8 @@ const DashboardTopbar = ({
 
   const routes = getRoutes(pathname, currentOrgFromURL)
 
-  const [currentRoute] = routes.filter((route) =>
-    pathname?.startsWith(route.link),
+  const [currentRoute] = routes.filter(
+    (route) => pathname?.startsWith(route.link),
   )
 
   const className = twMerge(

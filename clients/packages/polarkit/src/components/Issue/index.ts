@@ -20,7 +20,7 @@ export {
   IssuePledge,
   IssueReference,
   IssueSummary,
-  getExpectedHeight,
   PublicRewardPill,
   generateMarkdownTitle,
+  getExpectedHeight,
 }

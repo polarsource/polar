@@ -19,7 +19,9 @@ export async function GET(
     params: { organization: string }
   },
 ): Promise<NextResponse> {
-  const api = getServerSideAPI()
+  const api = getServerSideAPI(
+    req.nextUrl.searchParams.get('auth') || undefined,
+  )
 
   const [organization, articles] = await Promise.all([
     api.organizations.lookup(

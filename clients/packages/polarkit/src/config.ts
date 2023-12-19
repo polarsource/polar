@@ -26,6 +26,8 @@ let defaults = {
     process?.env?.VERCEL_ENV ||
     process?.env?.NEXT_PUBLIC_VERCEL_ENV ||
     'development',
+  FRONTEND_BASE_URL:
+    process?.env?.NEXT_PUBLIC_FRONTEND_BASE_URL || 'http://127.0.0.1:3000',
   BASE_URL: process?.env?.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
   LOGIN_PATH: process?.env?.NEXT_PUBLIC_LOGIN_PATH || '/login',
   GITHUB_APP_NAMESPACE:

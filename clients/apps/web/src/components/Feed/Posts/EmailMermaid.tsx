@@ -1,4 +1,5 @@
 import pako from 'pako'
+import { CONFIG } from 'polarkit'
 
 interface EmailMermaidProps {
   graphDefinition: string
@@ -13,7 +14,10 @@ export const EmailMermaid: React.FC<EmailMermaidProps> = ({
   return (
     <center>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`https://kroki.io/mermaid/png/${base64Graph}`} alt="Mermaid" />
+      <img
+        src={`${CONFIG.FRONTEND_BASE_URL}/email/kroki/mermaid/${base64Graph}`}
+        alt="Mermaid"
+      />
     </center>
   )
 }

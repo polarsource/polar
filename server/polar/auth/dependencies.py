@@ -229,3 +229,11 @@ class AuthenticatedWithScope:
             status_code=401,
             detail=f"Missing required scope: have={",".join(scoped_subject.scopes)} requires={",".join(self.required_scopes or [])}",
         )
+
+
+# WebOrAnonymous is the scope aware alternative to Auth.optional_user
+WebOrAnonymous = AuthenticatedWithScope(
+    required_scopes=[Scope.web_default],
+    fallback_to_anonymous=True,
+    allow_anonymous=True,
+)

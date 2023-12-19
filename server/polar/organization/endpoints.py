@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import Auth, UserRequiredAuth, WebOrAnonymous
 from polar.authz.service import AccessType, Authz, Subject
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
@@ -100,7 +100,7 @@ async def search(
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
+    auth: Auth = Depends(WebOrAnonymous),
 ) -> ListResource[OrganizationSchema]:
     # Search by platform and organization name.
     # Currently the only way to search
@@ -132,7 +132,7 @@ async def lookup(
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
+    auth: Auth = Depends(WebOrAnonymous),
 ) -> OrganizationSchema:
     # Search by platform and organization name.
     # Currently the only way to search

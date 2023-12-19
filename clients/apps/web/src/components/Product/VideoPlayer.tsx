@@ -30,6 +30,7 @@ export const VideoPlayer = ({ source, poster }: VideoPlayerProps) => {
   useEffect(() => {
     const onPlay = () => {
       setIsPlaying(true)
+      setTime(videoRef.current?.currentTime ?? 0)
     }
 
     const onPause = () => {
@@ -56,6 +57,19 @@ export const VideoPlayer = ({ source, poster }: VideoPlayerProps) => {
       videoRef.current?.removeEventListener('loadeddata', onLoad)
     }
   }, [])
+
+  const handleSeek = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (videoRef.current instanceof HTMLVideoElement) {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const percentage = x / rect.width
+        const time = percentage * duration
+        videoRef.current.currentTime = time
+      }
+    },
+    [duration],
+  )
 
   const togglePlay = useCallback(() => {
     if (videoRef.current?.paused) {
@@ -84,16 +98,20 @@ export const VideoPlayer = ({ source, poster }: VideoPlayerProps) => {
   return (
     <div className="relative overflow-hidden rounded-3xl">
       <video ref={videoRef} className="relative aspect-video" poster={poster}>
-        <source src="/videos/sample.mp4" type="video/mp4" />
+        <source src={source} type="video/mp4" />
       </video>
       <div className="absolute inset-0 flex w-full flex-col justify-end">
         <div className="flex flex-col gap-y-6 bg-gradient-to-t from-black/90 from-50% to-transparent p-8 pt-16">
-          <div className="relative flex w-full flex-row items-center justify-stretch gap-x-2 overflow-hidden">
+          <div
+            className="relative flex h-1 w-full flex-row items-center justify-stretch gap-x-2 overflow-hidden rounded-full"
+            onClick={handleSeek}
+          >
             <motion.div
-              className="absolute bottom-0 left-0 top-0 z-10 h-2 flex-grow rounded-full bg-blue-500 dark:bg-white"
+              className="absolute bottom-0 left-0 top-0 z-10 bg-blue-500 bg-clip-content dark:bg-white"
+              initial={{ width: 0 }}
               animate={{
-                width: `${(Math.floor(time) / duration) * 100}%`,
-                transition: { ease: 'linear', duration: 1 },
+                width: `${(time / duration) * 100}%`,
+                transition: { ease: 'linear', duration: 0.4 },
               }}
             />
             {Array(segments)
@@ -101,7 +119,7 @@ export const VideoPlayer = ({ source, poster }: VideoPlayerProps) => {
               .map((_, i) => (
                 <div
                   key={i}
-                  className="h-2 w-full flex-grow rounded-full bg-black/20 backdrop-blur-sm dark:bg-white/20"
+                  className="h-full w-full flex-grow rounded-full bg-black/20 backdrop-blur-sm dark:bg-white/20"
                 />
               ))}
           </div>

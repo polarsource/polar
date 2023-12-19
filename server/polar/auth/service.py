@@ -1,4 +1,3 @@
-from ast import Tuple
 from datetime import datetime
 from uuid import UUID
 
@@ -6,7 +5,7 @@ import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
-from polar.authz.service import Scope, ScopedSubject, Subject
+from polar.authz.service import Scope, ScopedSubject
 from polar.config import settings
 from polar.kit import jwt
 from polar.kit.http import get_safe_return_url

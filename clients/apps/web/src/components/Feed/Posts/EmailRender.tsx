@@ -6,6 +6,7 @@ import Iframe from './EmailIframe'
 import EmailMermaid from './EmailMermaid'
 import Paywall from './Paywall'
 import Poll from './Poll'
+import EmailSyntaxHighlighter from './SyntaxHighlighter/EmailSyntaxHighlighter'
 import {
   RenderArticle,
   markdownOpts,
@@ -29,6 +30,12 @@ export const opts = {
         if (language === 'mermaid') {
           return <EmailMermaid graphDefinition={args.children.props.children} />
         }
+        return (
+          <EmailSyntaxHighlighter
+            language={language}
+            {...args.children.props}
+          />
+        )
       }
       return <></>
     },

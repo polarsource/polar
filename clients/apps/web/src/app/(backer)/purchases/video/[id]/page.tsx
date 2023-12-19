@@ -1,6 +1,7 @@
 'use client'
 
 import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/data'
+import { TutorialProduct } from '@/components/Product/Product'
 import { VideoPlayer } from '@/components/Product/VideoPlayer'
 import { useParams } from 'next/navigation'
 import { Avatar, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
@@ -8,13 +9,15 @@ import { Avatar, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 export default function Page() {
   const { id } = useParams()
 
-  const product = productMocks.find((product) => product.id === id)
+  const product = productMocks.find((product) => product.id === id) as
+    | TutorialProduct
+    | undefined
 
   if (!product) return null
 
   return (
     <div className="relative flex flex-col gap-y-12">
-      <VideoPlayer source="/videos/sample.mp4" poster={product.image} />
+      <VideoPlayer source={product.videos[0].url} />
       <div className="flex flex-row gap-x-12">
         <ShadowBoxOnMd className="flex w-2/3 flex-col gap-y-4">
           <h3 className="font-medium">{product.name}</h3>

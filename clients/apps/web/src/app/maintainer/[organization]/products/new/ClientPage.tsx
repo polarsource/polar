@@ -29,24 +29,19 @@ import { twMerge } from 'tailwind-merge'
 
 const productTypes = [
   {
-    name: ProductType.FILE,
-    icon: resolveProductTypeIcon(ProductType.FILE),
+    name: ProductType.DIGITAL,
+    icon: resolveProductTypeIcon(ProductType.DIGITAL),
     description: 'A file or collection of files that can be downloaded',
   },
   {
-    name: ProductType.VIDEO_TUTORIAL,
-    icon: resolveProductTypeIcon(ProductType.VIDEO_TUTORIAL),
+    name: ProductType.TUTORIAL,
+    icon: resolveProductTypeIcon(ProductType.TUTORIAL),
     description: 'An in-depth, comprehensive video tutorial',
   },
   {
     name: ProductType.LICENSE,
     icon: resolveProductTypeIcon(ProductType.LICENSE),
     description: 'A license to use a product or service',
-  },
-  {
-    name: ProductType.E_BOOK,
-    icon: resolveProductTypeIcon(ProductType.E_BOOK),
-    description: 'An electronic book in PDF-format',
   },
   {
     name: ProductType.BUNDLE,
@@ -60,14 +55,14 @@ const ClientPage = () => {
   const [price, setPrice] = useState(0)
   const [thumbnail, setThumbnail] = useState<string>()
   const [selectedType, setSelectedType] = useState<ProductType>(
-    ProductType.FILE,
+    ProductType.DIGITAL,
   )
 
   const router = useRouter()
 
   const shouldRenderUploadManager = useMemo(
     () =>
-      [ProductType.FILE, ProductType.VIDEO_TUTORIAL, ProductType.E_BOOK].some(
+      [ProductType.DIGITAL, ProductType.TUTORIAL].some(
         (type) => type === selectedType,
       ),
     [selectedType],

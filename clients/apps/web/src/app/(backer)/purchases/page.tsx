@@ -12,13 +12,11 @@ export default function Page() {
     const buildPath = (subPath: string) => `/purchases/${subPath}/${product.id}`
 
     switch (product.type) {
-      case ProductType.VIDEO_TUTORIAL:
+      case ProductType.TUTORIAL:
         return buildPath('video')
-      case ProductType.E_BOOK:
-        return buildPath('book')
       case ProductType.LICENSE:
         return buildPath('license')
-      case ProductType.FILE:
+      case ProductType.DIGITAL:
       default:
         return buildPath('file')
     }

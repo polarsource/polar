@@ -18,10 +18,9 @@ import { twMerge } from 'tailwind-merge'
 
 export interface VideoPlayerProps {
   source: string
-  poster?: string
 }
 
-export const VideoPlayer = ({ source, poster }: VideoPlayerProps) => {
+export const VideoPlayer = ({ source }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [duration, setDuration] = useState(0)
@@ -97,7 +96,7 @@ export const VideoPlayer = ({ source, poster }: VideoPlayerProps) => {
 
   return (
     <div className="relative overflow-hidden rounded-3xl">
-      <video ref={videoRef} className="relative aspect-video" poster={poster}>
+      <video ref={videoRef} className="relative aspect-video">
         <source src={source} type="video/mp4" />
       </video>
       <div className="absolute inset-0 flex w-full flex-col justify-end">

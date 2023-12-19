@@ -14,7 +14,9 @@ from polar.kit.db.postgres import (
 from polar.kit.db.postgres import create_engine as _create_engine
 
 
-def create_engine(process_name: Literal["app", "worker", "script"]) -> AsyncEngine:
+def create_engine(
+    process_name: Literal["app", "worker", "script", "backoffice"],
+) -> AsyncEngine:
     return _create_engine(
         dsn=str(settings.postgres_dsn),
         application_name=f"{settings.ENV.value}.{process_name}",

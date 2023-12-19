@@ -871,7 +871,24 @@ export interface CreatePersonalAccessToken {
      * @memberof CreatePersonalAccessToken
      */
     comment: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof CreatePersonalAccessToken
+     */
+    scopes?: Array<CreatePersonalAccessTokenScopesEnum>;
 }
+
+
+/**
+ * @export
+ */
+export const CreatePersonalAccessTokenScopesEnum = {
+    ARTICLESREAD: 'articles:read',
+    USERREAD: 'user:read'
+} as const;
+export type CreatePersonalAccessTokenScopesEnum = typeof CreatePersonalAccessTokenScopesEnum[keyof typeof CreatePersonalAccessTokenScopesEnum];
+
 /**
  * 
  * @export
@@ -5839,6 +5856,19 @@ export interface UserRead {
      * @memberof UserRead
      */
     oauth_accounts: Array<OAuthAccountRead>;
+}
+/**
+ * 
+ * @export
+ * @interface UserScopes
+ */
+export interface UserScopes {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof UserScopes
+     */
+    scopes: Array<string>;
 }
 /**
  * 

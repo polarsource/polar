@@ -95,12 +95,12 @@ SelectSeparator.displayName = SelectSeparatorPrimitive.displayName
 
 export {
   Select,
+  SelectContent,
   SelectGroup,
-  SelectValue,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectTriggerBase,
-  SelectContent,
-  SelectLabel,
-  SelectItem,
-  SelectSeparator,
+  SelectValue,
 }

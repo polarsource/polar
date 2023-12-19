@@ -19,8 +19,8 @@ const MaintainerNavigation = () => {
   const navs = org
     ? maintainerRoutes(org)
     : personalOrg
-    ? maintainerRoutes(personalOrg)
-    : []
+      ? maintainerRoutes(personalOrg)
+      : []
 
   const pathname = usePathname()
 

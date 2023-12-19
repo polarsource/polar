@@ -278,3 +278,7 @@ class Issue(IssueFields, RecordModel):
     @classmethod
     def _pledge_badge_currently_embedded_expression(cls) -> ColumnElement[bool]:
         return type_coerce(cls.pledge_badge_embedded_at != None, Boolean)  # noqa: E711
+
+    @property
+    def reference_key(self) -> str:
+        return f"{self.organization.name}/{self.repository.name}#{self.number}"

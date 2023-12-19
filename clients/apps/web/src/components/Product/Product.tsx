@@ -23,6 +23,10 @@ export interface Product {
   price: number
   image: string
   unlockable: boolean
+  organization: {
+    name: string
+    avatarUrl: string
+  }
   createdAt: Date
 }
 

@@ -1,5 +1,4 @@
 import {
-  AutoStoriesOutlined,
   CategoryOutlined,
   FileDownloadOutlined,
   KeyOutlined,
@@ -8,13 +7,12 @@ import {
 
 export enum ProductType {
   LICENSE = 'License',
-  FILE = 'File Download',
-  VIDEO_TUTORIAL = 'Video Tutorial',
+  DIGITAL = 'Digital',
+  TUTORIAL = 'Tutorial',
   BUNDLE = 'Bundle',
-  E_BOOK = 'E-Book',
 }
 
-export interface Product {
+export interface BaseProduct {
   id: string
   slug: string
   name: string
@@ -30,23 +28,52 @@ export interface Product {
   createdAt: Date
 }
 
-export interface ProductBundle {
+export interface BundleProduct extends BaseProduct {
   type: ProductType.BUNDLE
-  products: Product[]
+  products: Product
 }
+
+export interface FileProduct extends BaseProduct {
+  type: ProductType.DIGITAL
+  files: {
+    name: string
+    url: string
+    size: number
+  }[]
+}
+
+export interface TutorialProduct extends BaseProduct {
+  type: ProductType.TUTORIAL
+  videos: {
+    name: string
+    url: string
+    duration: number
+  }[]
+}
+
+export interface LicenseProduct extends BaseProduct {
+  type: ProductType.LICENSE
+  license: {
+    key: string
+  }
+}
+
+export type Product =
+  | LicenseProduct
+  | TutorialProduct
+  | FileProduct
+  | BundleProduct
 
 export const resolveProductTypeIcon = (type: ProductType) => {
   switch (type) {
     case ProductType.LICENSE:
       return KeyOutlined
-    case ProductType.FILE:
+    case ProductType.DIGITAL:
       return FileDownloadOutlined
-    case ProductType.VIDEO_TUTORIAL:
+    case ProductType.TUTORIAL:
       return MovieOutlined
     case ProductType.BUNDLE:
       return CategoryOutlined
-    case ProductType.E_BOOK:
-      return AutoStoriesOutlined
     default:
       return () => null
   }

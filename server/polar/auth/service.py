@@ -122,7 +122,9 @@ class AuthService:
                 if user:
                     return ScopedSubject(
                         subject=user,
-                        scopes=[Scope.admin],  # cookie based auth, has full admin scope
+                        scopes=[
+                            Scope.web_default
+                        ],  # cookie based auth, has full admin scope
                     )
 
             # Personal Access Token in the Authorization header.
@@ -136,7 +138,7 @@ class AuthService:
                 if "scopes" in decoded:
                     scopes = [Scope(x) for x in decoded["scopes"].split(",")]
                 else:
-                    scopes = [Scope.admin]
+                    scopes = [Scope.web_default]
 
                 await personal_access_token_service.record_usage(session, id=pat.id)
 

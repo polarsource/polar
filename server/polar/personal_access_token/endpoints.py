@@ -93,7 +93,7 @@ async def create(
         }
         scopes = [mapped[k] for k in payload.scopes]
     else:
-        scopes = [Scope.admin]
+        scopes = [Scope.web_default]
 
     return CreatePersonalAccessTokenResponse(
         id=pat.id,

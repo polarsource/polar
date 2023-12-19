@@ -34,7 +34,7 @@ from .service import article_service
 router = APIRouter(tags=["articles"])
 
 OptionalUserArticleRead = AuthenticatedWithScope(
-    required_scopes=[Scope.admin, Scope.articles_read],
+    required_scopes=[Scope.web_default, Scope.articles_read],
     allow_anonymous=True,
     fallback_to_anonymous=True,
 )

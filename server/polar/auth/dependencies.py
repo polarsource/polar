@@ -37,7 +37,7 @@ async def _current_user_optional(
         user = await AuthService.get_user_from_cookie(session, cookie=cookie_token)
         if user:
             return (
-                ScopedSubject(subject=user, scopes=[Scope.admin]),
+                ScopedSubject(subject=user, scopes=[Scope.web_default]),
                 AuthMethod.COOKIE,
             )
 
@@ -107,9 +107,9 @@ class Auth:
     ) -> Self:
         scoped_subject, auth_method = user_auth_method
 
-        # This authentication mechanism is not aware of scopes. Require the admin scope to auth as user.
-        if Scope.admin not in scoped_subject.scopes:
-            raise Unauthorized("This endpoint does not support scoped auth tokens 1 ")
+        # This authentication mechanism is not aware of scopes. Require the web_default scope to auth as user.
+        if Scope.web_default not in scoped_subject.scopes:
+            raise Unauthorized("This endpoint does not support scoped auth tokens")
 
         return cls(scoped_subject=scoped_subject, auth_method=auth_method)
 
@@ -124,10 +124,8 @@ class Auth:
 
         if scoped_subject:
             # This authentication mechanism is not aware of scopes. Require the admin scope to auth as user.
-            if Scope.admin not in scoped_subject.scopes:
-                raise Unauthorized(
-                    "This endpoint does not support scoped auth tokens2 "
-                )
+            if Scope.web_default not in scoped_subject.scopes:
+                raise Unauthorized("This endpoint does not support scoped auth tokens")
 
             return cls(scoped_subject=scoped_subject, auth_method=auth_method)
         else:
@@ -154,8 +152,8 @@ class Auth:
             )
 
         # must have admin scope
-        if Scope.admin not in scoped_subject.scopes:
-            raise Unauthorized("This endpoint does not support scoped auth tokens3")
+        if Scope.web_default not in scoped_subject.scopes:
+            raise Unauthorized("This endpoint does not support scoped auth tokens")
 
         if scoped_subject.subject.username not in allowed:
             raise HTTPException(

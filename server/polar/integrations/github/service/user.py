@@ -159,8 +159,8 @@ class GithubUserService(UserService):
         user.profile = profile
         await user.save(session)
 
-        oauth_account: OAuthAccount | None = user.get_platform_oauth_account(
-            Platforms.github
+        oauth_account = await oauth_account_service.get_by_platform_and_user_id(
+            session, Platforms.github, user.id
         )
         if oauth_account is None:
             oauth_account = OAuthAccount(

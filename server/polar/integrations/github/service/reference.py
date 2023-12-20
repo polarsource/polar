@@ -7,7 +7,7 @@ import structlog
 from fastapi.encoders import jsonable_encoder
 from githubkit import GitHub
 from githubkit.exception import RequestFailed
-from pydantic import Field, ValidationError, parse_obj_as
+from pydantic import Field, ValidationError
 
 import polar.integrations.github.client as github
 from polar.exceptions import IntegrityError

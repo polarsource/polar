@@ -32,7 +32,7 @@ async def test_parse_issue_timeline(
     pull_request: PullRequest,
 ) -> None:
     raw = read_cassette("github/references/issue_timeline.json")
-    payload = [TimelineEventType.model_validate(e) for e in raw]  # type: ignore
+    payload = parse_obj_as(list[TimelineEventType], raw)
 
     # Create Org/Repo/Issue (setup to match names and ids in issue_timeline.json)
     organization.name = "zegloforko"

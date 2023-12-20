@@ -143,7 +143,7 @@ class Pledge(Schema):
 
 class SummaryPledge(Schema):
     type: PledgeType = Field(description="Type of pledge")
-    pledger: Pledger | None
+    pledger: Pledger | None = None
 
     @classmethod
     def from_db(cls, o: PledgeModel) -> SummaryPledge:
@@ -173,10 +173,12 @@ class CreatePledgePayLater(Schema):
     issue_id: UUID
     amount: int = Field(gt=0)
     on_behalf_of_organization_id: UUID | None = Field(
-        description="The organization to give credit to. The pledge will be paid by the authenticated user."
+        None,
+        description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
     by_organization_id: UUID | None = Field(
-        description="The organization to create the pledge as. The pledge will be paid by this organization."
+        None,
+        description="The organization to create the pledge as. The pledge will be paid by this organization.",
     )
 
     @model_validator(mode="after")

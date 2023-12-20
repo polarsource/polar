@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, parse_obj_as
+from pydantic import BaseModel
 from sqlalchemy import desc
 
 from polar.kit.extensions.sqlalchemy import sql

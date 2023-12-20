@@ -5,7 +5,6 @@ from typing import Self
 from uuid import UUID
 
 import structlog
-from pydantic import parse_obj_as
 
 from polar.integrations.github import client as github
 from polar.issue.schemas import Author, IssueAndPullRequestBase

@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Iterable
 from datetime import date, datetime
-from typing import Any, Literal, Self
+from typing import Literal, Self
 
 import stripe as stripe_lib
 from pydantic import (
@@ -10,7 +10,6 @@ from pydantic import (
     EmailStr,
     Field,
     model_validator,
-    root_validator,
     validator,
 )
 

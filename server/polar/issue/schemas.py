@@ -147,7 +147,7 @@ class Issue(Schema):
             needs_confirmation_solved=i.needs_confirmation_solved,
             confirmed_solved_at=i.confirmed_solved_at,
             author=Author.model_validate(i.author) if i.author else None,
-            assignees=[Author.model_validate(a) for a in i.assignees]
+            assignees=[Assignee.model_validate(a) for a in i.assignees]
             if i.assignees
             else None,
             reactions=Reactions.model_validate(i.reactions) if i.reactions else None,

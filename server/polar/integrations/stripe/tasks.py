@@ -1,7 +1,6 @@
 import stripe
 import structlog
 from arq import Retry
-from pydantic import parse_obj_as
 
 from polar.account.service import account as account_service
 from polar.exceptions import PolarError

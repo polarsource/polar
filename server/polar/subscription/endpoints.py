@@ -5,7 +5,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
-from pydantic import UUID4, EmailStr
+from pydantic import UUID4
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Anonymous, Authz
@@ -378,7 +378,7 @@ async def create_subscribe_session(
     return await subscribe_session_service.create_subscribe_session(
         session,
         subscription_tier,
-        session_create.success_url,
+        str(session_create.success_url),
         auth.subject,
         auth.auth_method,
         authz,

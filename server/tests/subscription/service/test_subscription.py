@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, call
 
 import pytest
 import stripe as stripe_lib
-from pydantic import EmailStr
 from pytest_mock import MockerFixture
 
 from polar.auth.dependencies import AuthMethod

@@ -2,7 +2,6 @@ import datetime
 from math import ceil
 from urllib.parse import urlencode
 
-from pydantic import EmailStr
 from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 

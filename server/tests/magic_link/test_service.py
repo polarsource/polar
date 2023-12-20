@@ -11,7 +11,6 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.kit.db.postgres import AsyncSession
-from polar.magic_link.schemas import MagicLinkRequest
 from polar.magic_link.service import InvalidMagicLink
 from polar.magic_link.service import magic_link as magic_link_service
 from polar.models import MagicLink, User

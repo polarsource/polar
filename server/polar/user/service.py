@@ -2,15 +2,16 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
-from polar.enums import Platforms, UserSignupType
+from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
-from polar.kit.services import ResourceService, ResourceServiceReader
+from polar.kit.services import ResourceService
 from polar.logging import Logger
-from polar.models import OAuthAccount, User
+from polar.models import User
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
 
@@ -34,20 +35,57 @@ class InvalidAccount(UserError):
 
 
 class UserService(ResourceService[User, UserCreate, UserUpdate]):
+    async def get_loaded(self, session: AsyncSession, id: UUID) -> User | None:
+        query = (
+            sql.select(User)
+            .where(
+                User.id == id,
+                User.deleted_at.is_(None),
+            )
+            .options(joinedload(User.oauth_accounts))
+        )
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
+
     async def get_by_email(self, session: AsyncSession, email: str) -> User | None:
-        query = sql.select(self.model).where(func.lower(User.email) == email.lower())
+        query = (
+            sql.select(User)
+            .where(
+                func.lower(User.email) == email.lower(),
+                User.deleted_at.is_(None),
+            )
+            .options(joinedload(User.oauth_accounts))
+        )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
     async def get_by_username(
         self, session: AsyncSession, username: str
     ) -> User | None:
-        return await self.get_by(session, username=username)
+        query = (
+            sql.select(User)
+            .where(
+                User.username == username,
+                User.deleted_at.is_(None),
+            )
+            .options(joinedload(User.oauth_accounts))
+        )
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
 
     async def get_by_stripe_customer_id(
         self, session: AsyncSession, stripe_customer_id: str
     ) -> User | None:
-        return await self.get_by(session, stripe_customer_id=stripe_customer_id)
+        query = (
+            sql.select(User)
+            .where(
+                User.stripe_customer_id == stripe_customer_id,
+                User.deleted_at.is_(None),
+            )
+            .options(joinedload(User.oauth_accounts))
+        )
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
 
     async def get_by_email_or_signup(
         self,
@@ -115,13 +153,3 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
 
 
 user = UserService(User)
-
-
-class OAuthAccountService(ResourceServiceReader[OAuthAccount]):
-    async def get_by_platform_and_account_id(
-        self, session: AsyncSession, platform: Platforms, account_id: str
-    ) -> OAuthAccount | None:
-        return await self.get_by(session, platform=platform, account_id=account_id)
-
-
-oauth_account = OAuthAccountService(OAuthAccount)

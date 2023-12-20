@@ -21,7 +21,6 @@ from polar.integrations.github.cache import RedisCache
 from polar.models.user import User
 from polar.postgres import AsyncSession
 from polar.types import JSONAny
-from polar.user.oauth_service import oauth_account_service
 
 log = structlog.get_logger()
 
@@ -118,9 +117,7 @@ class RefreshAccessToken(rest.GitHubRestModel):
 async def get_user_client(
     session: AsyncSession, user: User
 ) -> GitHub[TokenAuthStrategy]:
-    oauth = await oauth_account_service.get_by_platform_and_user_id(
-        session, Platforms.github, user.id
-    )
+    oauth = user.get_platform_oauth_account(Platforms.github)
     if not oauth:
         raise Exception("no github oauth account found")
 

@@ -135,6 +135,7 @@ if __name__ == "__main__":
     environment_variables, tunnels = _set_tunnels(environment_variables)
 
     env_file = _write_env_file(environment_variables)
+    os.environ["POLAR_ENV"] = environment_variables["POLAR_ENV"]
     os.environ["POLAR_ENV_FILE"] = env_file
 
     spinner.text = "Opening SSH connection..."

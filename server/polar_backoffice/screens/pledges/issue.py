@@ -6,13 +6,14 @@ from sqlalchemy.orm import joinedload
 from textual import work
 from textual.app import ComposeResult
 from textual.screen import Screen
-from textual.widgets import DataTable, Footer, Header
+from textual.widgets import DataTable, Footer
 
 from polar.models import Issue, Pledge
 from polar.models.pledge import PledgeState
 from polar.pledge.schemas import Pledger
 
 from ...db import sessionmaker
+from ...widgets.header import PolarHeader
 
 
 class PledgesIssueScreen(Screen[None]):
@@ -35,7 +36,7 @@ class PledgesIssueScreen(Screen[None]):
         super().__init__(name, id, classes)
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        yield PolarHeader()
         yield DataTable(cursor_type="row")
         yield Footer()
 

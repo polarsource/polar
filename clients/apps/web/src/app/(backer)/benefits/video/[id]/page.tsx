@@ -1,8 +1,8 @@
 'use client'
 
 import { productMocks } from '@/app/maintainer/[organization]/(topbar)/subscriptions/benefits/data'
-import { TutorialProduct } from '@/components/Product/Product'
-import { VideoPlayer } from '@/components/Product/VideoPlayer'
+import { TutorialProduct } from '@/components/Benefit/Benefit'
+import { VideoPlayer } from '@/components/Benefit/VideoPlayer'
 import { useParams } from 'next/navigation'
 import { Avatar, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 

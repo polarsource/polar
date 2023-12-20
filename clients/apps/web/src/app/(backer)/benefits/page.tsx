@@ -1,40 +1,29 @@
-'use client'
+import { getServerSideAPI } from '@/utils/api'
+import { Platforms } from '@polar-sh/sdk'
+import ClientPage from './ClientPage'
 
-import { productMocks } from '@/app/maintainer/[organization]/(topbar)/subscriptions/benefits/data'
-import { Product, ProductType } from '@/components/Product/Product'
-import { ProductTile } from '@/components/Product/ProductTile'
-import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import Link from 'next/link'
-import { useCallback } from 'react'
+export default async function Page() {
+  const api = getServerSideAPI()
 
+  const user = await api.users.getAuthenticated()
 
+  const [subscriptions] = await Promise.all([
+    api.subscriptions.searchSubscriptions({
+      organizationName: undefined,
+      subscriberUserId: user.id,
+      active: true,
+      limit: 100,
+      platform: Platforms.GITHUB,
+    }),
+  ])
 
-export default function Page() {
-  const getProductPathType = useCallback((product: Product) => {
-    const buildPath = (subPath: string) => `/benefits/${subPath}/${product.id}`
-
-    switch (product.type) {
-      case ProductType.TUTORIAL:
-        return buildPath('video')
-      case ProductType.LICENSE:
-        return buildPath('license')
-      case ProductType.DIGITAL:
-      default:
-        return buildPath('file')
-    }
-  }, [])
-
-  return (
-    <div className="relative flex flex-col items-start">
-      <StaggerReveal className="grid grid-cols-4 gap-8">
-        {productMocks.map((product) => (
-          <StaggerReveal.Child key={product.id}>
-            <Link href={getProductPathType(product)}>
-              <ProductTile product={product} />
-            </Link>
-          </StaggerReveal.Child>
-        ))}
-      </StaggerReveal>
-    </div>
+  const subscriptionTiers = await Promise.all(
+    subscriptions.items?.map((subscription) =>
+      api.subscriptions.lookupSubscriptionTier({
+        subscriptionTierId: subscription.subscription_tier_id,
+      }),
+    ) ?? [],
   )
+
+  return <ClientPage subscriptionTiers={subscriptionTiers} />
 }

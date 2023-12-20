@@ -1,7 +1,7 @@
 'use client'
 
-import { Product, resolveProductTypeIcon } from '@/components/Product/Product'
-import { Slideshow } from '@/components/Product/Slideshow'
+import { Product, resolveProductTypeIcon } from '@/components/Benefit/Benefit'
+import { Slideshow } from '@/components/Benefit/Slideshow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { ArrowBackOutlined, StarRounded } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'

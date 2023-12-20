@@ -31,6 +31,14 @@ const OrganizationSubscriptionsPublicPage: React.FC<
       className="dark:divide-polar-700 flex flex-col gap-12"
     >
       <SubscriptionGroupPublic
+        title="Free"
+        description="Baseline tier giving access to public posts"
+        type={SubscriptionTierType.FREE}
+        tiers={subscriptionTiersByType.free}
+        organization={organization}
+        subscribePath="/subscribe"
+      />
+      <SubscriptionGroupPublic
         title="Hobby"
         description="Tiers for individuals & fans who want to say thanks"
         type={SubscriptionTierType.HOBBY}

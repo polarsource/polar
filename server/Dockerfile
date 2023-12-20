@@ -12,10 +12,9 @@ ADD poetry.lock .
 ADD pyproject.toml .
 
 RUN poetry config virtualenvs.in-project true && \
-    poetry install --with backoffice --without test,docs --no-root
+    poetry install --without test,docs --no-root
 
 ADD polar polar
-ADD polar_backoffice polar_backoffice
 ADD scripts scripts
 ADD run_worker.py .
 

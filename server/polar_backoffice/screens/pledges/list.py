@@ -1,6 +1,7 @@
 import webbrowser
 
 from babel.numbers import format_currency
+from rich.text import Text
 from sqlalchemy import and_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from textual import work
@@ -17,9 +18,12 @@ from .issue import PledgesIssueScreen
 
 
 class PledgesListScreen(Screen[None]):
-    issues: dict[str, Issue] = {}
+    BINDINGS = [
+        ("ctrl+r", "refresh", "Refresh"),
+        ("ctrl+g", "open_in_github", "Open in GitHub"),
+    ]
 
-    BINDINGS = [("ctrl+g", "open_in_github", "Open in GitHub")]
+    issues: dict[str, Issue] = {}
 
     def compose(self) -> ComposeResult:
         yield PolarHeader()
@@ -31,8 +35,16 @@ class PledgesListScreen(Screen[None]):
 
         table = self.query_one(DataTable)
         table.add_columns(
-            "Issue ID", "Issue Title", "State", "Number of pledges", "Amount pledged"
+            "Issue ID",
+            "Issue Title",
+            "State",
+            "Confirmation state",
+            "Number of pledges",
+            "Amount pledged",
         )
+        self.get_pledges_per_issue()
+
+    def action_refresh(self) -> None:
         self.get_pledges_per_issue()
 
     def action_open_in_github(self) -> None:
@@ -59,6 +71,8 @@ class PledgesListScreen(Screen[None]):
     @work(exclusive=True)
     async def get_pledges_per_issue(self) -> None:
         table = self.query_one(DataTable)
+        table.loading = True
+        table.clear()
         async with sessionmaker() as session:
             statement = (
                 select(Issue)
@@ -77,10 +91,21 @@ class PledgesListScreen(Screen[None]):
             ).order_by(Pledge.created_at.desc())
             stream = await session.stream_scalars(statement)
             async for issue in stream.unique():
+                confirmation_state = Text()
+                if issue.needs_confirmation_solved:
+                    confirmation_state.append(
+                        "Needs confirmation", style="bold dark_orange"
+                    )
+                elif issue.confirmed_solved_at:
+                    confirmation_state.append("Confirmed", style="green")
+                else:
+                    confirmation_state.append("Not confirmed")
+
                 table.add_row(
                     issue.reference_key,
                     issue.title,
                     issue.state.capitalize(),
+                    confirmation_state,
                     len(issue.pledges),
                     format_currency(
                         issue.pledged_amount_sum / 100, "USD", locale="en_US"
@@ -88,3 +113,5 @@ class PledgesListScreen(Screen[None]):
                     key=str(issue.id),
                 )
                 self.issues[str(issue.id)] = issue
+            table.loading = False
+            table.focus()

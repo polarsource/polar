@@ -28,16 +28,10 @@ AuthUserRead = AuthenticatedWithScope(
 
 
 @router.get("/me", response_model=UserRead)
-async def get_authenticated(
-    auth: Auth = Depends(AuthUserRead),
-    session: AsyncSession = Depends(get_db_session),
-) -> UserRead:
+async def get_authenticated(auth: Auth = Depends(AuthUserRead)) -> User:
     if not auth.user:
         raise Unauthorized()
-
-    user = await user_service.get_loaded(session, auth.user.id)
-
-    return UserRead.from_orm(user)
+    return auth.user
 
 
 @router.get("/me/scopes", response_model=UserScopes)

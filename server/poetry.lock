@@ -571,9 +571,9 @@ jwt = ["PyJWT[crypto] (>=2.4.0,<3.0.0)"]
 
 [package.source]
 type = "git"
-url = "https://github.com/yanyongyu/githubkit.git"
-reference = "9f5ac281c697c89ab95607c44daf0e61c1ed9014"
-resolved_reference = "9f5ac281c697c89ab95607c44daf0e61c1ed9014"
+url = "https://github.com/polarsource/githubkit.git"
+reference = "dd892e9a322ba983cbe672d12ed23b2f974e94e2"
+resolved_reference = "dd892e9a322ba983cbe672d12ed23b2f974e94e2"
 
 [[package]]
 name = "greenlet"
@@ -2977,4 +2977,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0211081812c7aafdabd06344710f323c71e43ba38ba8bb89534943672ed332f9"
+content-hash = "df08507b409438a7d7772022d0b13c61aac4ea8a9bce6d187199bcb4a62e909f"

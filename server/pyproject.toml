@@ -17,7 +17,7 @@ greenlet = "^3.0.2"
 structlog = "^23.2.0"
 githubkit = { extras = [
     "auth-app",
-], git = "https://github.com/yanyongyu/githubkit.git", rev = "9f5ac281c697c89ab95607c44daf0e61c1ed9014" }
+], git = "https://github.com/polarsource/githubkit.git", rev = "dd892e9a322ba983cbe672d12ed23b2f974e94e2" }
 redis = "^5.0.0"
 sse-starlette = "^1.4.0"
 arq = "^0.25.0"

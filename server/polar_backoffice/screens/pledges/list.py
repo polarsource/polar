@@ -6,12 +6,13 @@ from sqlalchemy.orm import contains_eager, joinedload
 from textual import work
 from textual.app import ComposeResult
 from textual.screen import Screen
-from textual.widgets import DataTable, Footer, Header
+from textual.widgets import DataTable, Footer
 
 from polar.models import Issue, Pledge
 from polar.models.pledge import PledgeState
 
 from ...db import sessionmaker
+from ...widgets.header import PolarHeader
 from .issue import PledgesIssueScreen
 
 
@@ -21,7 +22,7 @@ class PledgesListScreen(Screen[None]):
     BINDINGS = [("ctrl+g", "open_in_github", "Open in GitHub")]
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        yield PolarHeader()
         yield DataTable(cursor_type="row")
         yield Footer()
 

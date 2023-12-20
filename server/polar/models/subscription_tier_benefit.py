@@ -34,4 +34,4 @@ class SubscriptionTierBenefit(RecordModel):
 
     @declared_attr
     def subscription_benefit(cls) -> Mapped["SubscriptionBenefit"]:
-        return relationship("SubscriptionBenefit", lazy="joined")
+        return relationship("SubscriptionBenefit", lazy="raise")

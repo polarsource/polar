@@ -26,9 +26,9 @@ from polar.subscription.service.subscribe_session import (
 )
 
 from ..conftest import (
-    add_subscription_benefits,
     create_active_subscription,
     create_subscription_benefit,
+    set_subscription_benefits,
 )
 
 
@@ -343,7 +343,7 @@ class TestCreateSubscribeSession:
         applicable_tax_benefit = await create_subscription_benefit(
             session, is_tax_applicable=True, organization=organization
         )
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=[applicable_tax_benefit],

@@ -70,7 +70,7 @@ class SubscriptionTier(RecordModel):
         return relationship("Repository", lazy="raise")
 
     subscription_tier_benefits: Mapped[list["SubscriptionTierBenefit"]] = relationship(
-        lazy="selectin",
+        lazy="raise",
         order_by="SubscriptionTierBenefit.order",
         cascade="all, delete-orphan",
     )

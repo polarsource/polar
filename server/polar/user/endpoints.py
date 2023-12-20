@@ -37,7 +37,7 @@ async def get_authenticated(
 
     user = await user_service.get_loaded(session, auth.user.id)
 
-    return UserRead.from_orm(user)
+    return UserRead.model_validate(user)
 
 
 @router.get("/me/scopes", response_model=UserScopes)

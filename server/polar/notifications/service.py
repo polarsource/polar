@@ -174,29 +174,29 @@ class NotificationsService:
     ):
         match n.type:
             case "MaintainerPledgeCreatedNotification":
-                return parse_obj_as(MaintainerPledgeCreatedNotification, n.payload)
+                return MaintainerPledgeCreatedNotification.model_validate(n.payload)
             case "MaintainerPledgeConfirmationPendingNotification":
-                return parse_obj_as(
-                    MaintainerPledgeConfirmationPendingNotification, n.payload
+                return MaintainerPledgeConfirmationPendingNotification.model_validate(
+                    n.payload
                 )
             case "MaintainerPledgePendingNotification":
-                return parse_obj_as(MaintainerPledgePendingNotification, n.payload)
+                return MaintainerPledgePendingNotification.model_validate(n.payload)
             case "MaintainerPledgePaidNotification":
-                return parse_obj_as(MaintainerPledgePaidNotification, n.payload)
+                return MaintainerPledgePaidNotification.model_validate(n.payload)
             case "PledgerPledgePendingNotification":
-                return parse_obj_as(PledgerPledgePendingNotification, n.payload)
+                return PledgerPledgePendingNotification.model_validate(n.payload)
             case "RewardPaidNotification":
-                return parse_obj_as(RewardPaidNotification, n.payload)
+                return RewardPaidNotification.model_validate(n.payload)
             case "MaintainerPledgedIssueConfirmationPendingNotification":
-                return parse_obj_as(
-                    MaintainerPledgedIssueConfirmationPendingNotification, n.payload
+                return MaintainerPledgedIssueConfirmationPendingNotification.model_validate(
+                    n.payload
                 )
             case "MaintainerPledgedIssuePendingNotification":
-                return parse_obj_as(
-                    MaintainerPledgedIssuePendingNotification, n.payload
+                return MaintainerPledgedIssuePendingNotification.model_validate(
+                    n.payload
                 )
             case "TeamAdminMemberPledgedNotification":
-                return parse_obj_as(TeamAdminMemberPledgedNotification, n.payload)
+                return TeamAdminMemberPledgedNotification.model_validate(n.payload)
 
         raise ValueError(f"unknown notificaiton type {n.type}")
 

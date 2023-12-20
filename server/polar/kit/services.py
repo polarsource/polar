@@ -65,7 +65,7 @@ class ResourceService(
         autocommit: bool = True,
     ) -> ModelType:
         return await self.model.create(
-            session, **create_schema.dict(), autocommit=autocommit
+            session, **create_schema.model_dump(), autocommit=autocommit
         )
 
     # TODO: Investigate new bulk methods in SQLALchemy 2.0 for upsert_many
@@ -109,7 +109,7 @@ class ResourceService(
         mutable_keys: set[str],
         autocommit: bool = True,
     ) -> Sequence[ModelType]:
-        values = [obj.dict() for obj in objects]
+        values = [obj.model_dump() for obj in objects]
         if not values:
             raise ValueError("Zero values provided")
 
@@ -167,7 +167,7 @@ class ResourceService(
         return await source.update(
             session,
             autocommit=autocommit,
-            **update_schema.dict(
+            **update_schema.model_dump(
                 include=include, exclude=exclude, exclude_unset=exclude_unset
             ),
         )

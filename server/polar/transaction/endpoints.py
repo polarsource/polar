@@ -50,7 +50,7 @@ async def search_transactions(
     )
 
     return ListResource.from_paginated_results(
-        [Transaction.from_orm(result) for result in results],
+        [Transaction.model_validate(result) for result in results],
         count,
         pagination,
     )

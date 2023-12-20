@@ -382,10 +382,14 @@ class Subscription(TimestampedSchema):
             user=SubscriptionUser.from_db(
                 subscription.user, include_user_email=include_user_email
             ),
-            organization=SubscriptionOrganization.from_orm(subscription.organization)
+            organization=SubscriptionOrganization.model_validate(
+                subscription.organization
+            )
             if subscription.organization
             else None,
-            subscription_tier=SubscriptionTier.from_orm(subscription.subscription_tier),
+            subscription_tier=SubscriptionTier.model_validate(
+                subscription.subscription_tier
+            ),
             created_at=subscription.created_at,
             modified_at=subscription.modified_at,
         )
@@ -423,10 +427,14 @@ class SubscriptionSummary(Schema):
             user=SubscriptionUser.from_db(
                 subscription.user, include_user_email=include_user_email
             ),
-            organization=SubscriptionOrganization.from_orm(subscription.organization)
+            organization=SubscriptionOrganization.model_validate(
+                subscription.organization
+            )
             if subscription.organization
             else None,
-            subscription_tier=SubscriptionTier.from_orm(subscription.subscription_tier),
+            subscription_tier=SubscriptionTier.model_validate(
+                subscription.subscription_tier
+            ),
         )
 
 

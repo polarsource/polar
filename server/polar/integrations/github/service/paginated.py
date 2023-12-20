@@ -58,7 +58,7 @@ class GitHubPaginatedService:
                 log.warning(
                     f"{resource_type}.sync.failed",
                     error="save was unsuccessful",
-                    received=data.dict(),
+                    received=data.model_dump(),
                 )
                 errors += 1
                 continue

@@ -200,7 +200,7 @@ async def manage_badge(
     if not auth.user:
         raise Unauthorized()
 
-    log.info("backoffice.badge", badge=badge.dict(), admin=auth.user.username)
+    log.info("backoffice.badge", badge=badge.model_dump(), admin=auth.user.username)
 
     org = await organization_service.get_by_name(
         session, Platforms.github, badge.org_slug

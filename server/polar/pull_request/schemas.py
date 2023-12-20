@@ -34,7 +34,7 @@ class PullRequest(Schema):
             id=pr.id,
             number=pr.number,
             title=pr.title,
-            author=parse_obj_as(Author, pr.author) if pr.author else None,
+            author=Author.model_validate(pr.author) if pr.author else None,
             additions=pr.additions if pr.additions else 0,
             deletions=pr.deletions if pr.deletions else 0,
             is_merged=pr.is_merged if pr.is_merged else False,

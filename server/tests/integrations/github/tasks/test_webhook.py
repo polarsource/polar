@@ -69,9 +69,10 @@ async def create_org(
     )
     stmt = (
         sql.insert(Organization)
-        .values(**create_schema.dict())
+        .values(**create_schema.model_dump())
         .on_conflict_do_update(
-            index_elements=[Organization.external_id], set_={**create_schema.dict()}
+            index_elements=[Organization.external_id],
+            set_={**create_schema.model_dump()},
         )
         .returning(Organization)
         .execution_options(populate_existing=True)
@@ -106,7 +107,7 @@ async def create_repositories(
 
         stmt = (
             sql.insert(Repository)
-            .values(**create_schema.dict())
+            .values(**create_schema.model_dump())
             .on_conflict_do_nothing()
         )
         await session.execute(stmt)

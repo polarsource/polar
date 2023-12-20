@@ -18,7 +18,7 @@ from tests.fixtures.vcr import read_cassette
 @pytest.mark.asyncio
 async def test_parse_repository_issues() -> None:
     raw = read_cassette("github/references/repo_issue_events.json")
-    payload = parse_obj_as(list[github.rest.IssueEvent], raw)
+    payload = [github.rest.IssueEvent.model_validate(i) for i in raw]
     issues_to_sync = github_reference.external_issue_ids_to_sync(payload)
     assert issues_to_sync == {1634181886}
 
@@ -32,7 +32,7 @@ async def test_parse_issue_timeline(
     pull_request: PullRequest,
 ) -> None:
     raw = read_cassette("github/references/issue_timeline.json")
-    payload = parse_obj_as(list[TimelineEventType], raw)
+    payload = [TimelineEventType.model_validate(e) for e in raw]  # type: ignore
 
     # Create Org/Repo/Issue (setup to match names and ids in issue_timeline.json)
     organization.name = "zegloforko"

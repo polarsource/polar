@@ -61,7 +61,7 @@ class StripeService:
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
-            metadata=metadata.dict(exclude_none=True),
+            metadata=metadata.model_dump(exclude_none=True),
             receipt_email=anonymous_email,
             description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
@@ -97,7 +97,7 @@ class StripeService:
             currency="USD",
             transfer_group=transfer_group,
             customer=customer.id,
-            metadata=metadata.dict(exclude_none=True),
+            metadata=metadata.model_dump(exclude_none=True),
             receipt_email=user.email,
             description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
@@ -124,7 +124,7 @@ class StripeService:
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
-            metadata=metadata.dict(exclude_none=True),
+            metadata=metadata.model_dump(exclude_none=True),
             receipt_email=user.email,
         )
 
@@ -147,7 +147,7 @@ class StripeService:
             amount=amount,
             receipt_email=receipt_email,
             setup_future_usage=setup_future_usage if setup_future_usage else "",
-            metadata=metadata.dict(exclude_none=True),
+            metadata=metadata.model_dump(exclude_none=True),
         )
 
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:

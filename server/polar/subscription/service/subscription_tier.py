@@ -224,7 +224,7 @@ class SubscriptionTierService(
             organization=organization,
             repository=repository,
             subscription_tier_benefits=[],
-            **create_schema.dict(exclude={"organization_id", "repository_id"}),
+            **create_schema.model_dump(exclude={"organization_id", "repository_id"}),
             autocommit=False,
         )
         await session.flush()
@@ -317,7 +317,7 @@ class SubscriptionTierService(
             )
 
         return await subscription_tier.update(
-            session, **update_schema.dict(exclude_unset=True)
+            session, **update_schema.model_dump(exclude_unset=True)
         )
 
     async def create_free(

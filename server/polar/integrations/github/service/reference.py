@@ -447,14 +447,14 @@ class GitHubIssueReferencesService:
         client: GitHub[Any],
     ) -> IssueReference:
         if ref.reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT:
-            r = parse_obj_as(ExternalGitHubCommitReference, ref.external_source)
+            r = ExternalGitHubCommitReference.model_validate(ref.external_source)
 
             # use fields from existing db entry if set
             existing = await self.get(
                 session, ref.issue_id, ref.reference_type, ref.external_id
             )
             existingRef = (
-                parse_obj_as(ExternalGitHubCommitReference, existing.external_source)
+                ExternalGitHubCommitReference.model_validate(existing.external_source)
                 if existing
                 else None
             )

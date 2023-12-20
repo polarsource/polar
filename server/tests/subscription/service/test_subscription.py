@@ -197,7 +197,7 @@ class TestCreateFreeSubscription:
                 session,
                 free_subscription_create=FreeSubscriptionCreate(
                     tier_id=subscription_tier_organization_free.id,
-                    customer_email=EmailStr(user.email),
+                    customer_email=user.email,
                 ),
                 auth_subject=Anonymous(),
                 auth_method=None,
@@ -255,7 +255,7 @@ class TestCreateFreeSubscription:
             session,
             free_subscription_create=FreeSubscriptionCreate(
                 tier_id=subscription_tier_organization_free.id,
-                customer_email=EmailStr("backer@example.com"),
+                customer_email="backer@example.com",
             ),
             auth_subject=Anonymous(),
             auth_method=None,

@@ -609,7 +609,7 @@ async def subscriptions_import(
                 session,
                 free_subscription_create=FreeSubscriptionCreate(
                     tier_id=tiers[0].id,
-                    customer_email=EmailStr(email),
+                    customer_email=email,
                 ),
                 auth_subject=Anonymous(),  # do not forward auth!
                 auth_method=None,

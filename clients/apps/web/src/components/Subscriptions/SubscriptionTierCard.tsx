@@ -1,6 +1,5 @@
 'use client'
 
-import { AddOutlined } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
 import {
   Card,
@@ -74,9 +73,6 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const onMouseLeave = useCallback(() => {
     setShineActive(false)
   }, [setShineActive])
-
-  const benefitsToDisplay = (subscriptionTier.benefits ?? []).slice(0, 3)
-  const additionalBenefits = (subscriptionTier.benefits ?? []).slice(3)
 
   const variantStyles = {
     default: {
@@ -167,11 +163,12 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         </div>
       </CardHeader>
 
-      {benefitsToDisplay.length > 0 && subscriptionTier.description && (
-        <Separator className="dark:bg-polar-700 bg-gray-200" />
-      )}
+      {(subscriptionTier.benefits?.length ?? 0) > 0 &&
+        subscriptionTier.description && (
+          <Separator className="dark:bg-polar-700 bg-gray-200" />
+        )}
       <CardContent className="flex h-full grow flex-col gap-y-2 p-0">
-        {benefitsToDisplay.map((benefit) => (
+        {subscriptionTier.benefits?.map((benefit) => (
           <div
             key={benefit.id}
             className="flex flex-row items-start text-gray-950 dark:text-[--var-dark-fg-color]"
@@ -182,15 +179,6 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             </span>
           </div>
         ))}
-        {additionalBenefits.length > 0 && (
-          <div className="dark:text-polar-400 mt-2 flex flex-row items-center text-gray-500">
-            <AddOutlined className="h-4 w-4" fontSize="small" />
-            <span className="ml-2 text-sm">
-              {additionalBenefits.length} more{' '}
-              {additionalBenefits.length > 1 ? 'benefits' : 'benefit'}
-            </span>
-          </div>
-        )}
       </CardContent>
       {children && (
         <CardFooter

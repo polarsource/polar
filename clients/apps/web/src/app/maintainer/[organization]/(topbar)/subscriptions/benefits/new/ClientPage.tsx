@@ -1,11 +1,10 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   BenefitType,
   resolveBenefitTypeIcon,
 } from '@/components/Benefit/Benefit'
-import DashboardTopbar from '@/components/Shared/DashboardTopbar'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { CloseOutlined, UploadFileOutlined } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 import {
@@ -48,6 +47,11 @@ const productTypes = [
     icon: resolveBenefitTypeIcon(BenefitType.LICENSE),
     description: 'A license to use a product or service',
   },
+  {
+    name: 'Custom',
+    icon: resolveBenefitTypeIcon('custom'),
+    description: 'Custom benefit which is managed by the maintainer manually',
+  },
 ] as const
 
 const ClientPage = () => {
@@ -83,72 +87,69 @@ const ClientPage = () => {
   }, [])
 
   return (
-      <DashboardBody className="pb-16">
-        <div className="flex w-full flex-col gap-y-12">
-          <ShadowBoxOnMd className="flex w-2/3 flex-col items-start gap-y-6">
-            <div className="flex min-w-[260px] flex-col gap-y-2">
-              <span className="text-sm">Name</span>
-              <Input placeholder="Name" defaultValue="" />
-            </div>
-            <div className="flex w-full flex-col gap-y-2">
-              <span className="text-sm">Description</span>
-              <TextArea placeholder="Description" defaultValue="" />
-            </div>
-            <div className="flex min-w-[260px] flex-col gap-y-2">
-              <span className="text-sm">Price</span>
-              <MoneyInput
-                id="price"
-                name="price"
-                placeholder={0}
-                value={price}
-                onAmountChangeInCents={setPrice}
-              />
-            </div>
-            <div className="flex flex-col gap-y-4">
-              <div className="flex flex-col gap-y-2">
-                <span className="text-sm">Thumbnail</span>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  A thumbnail to use when displaying your product on Polar.
-                  Minimum 500x500 pixels.
-                </p>
-              </div>
-              <div className="flex flex-col items-start gap-y-4">
-                <input
-                  ref={thumbnailInputRef}
-                  onChange={handleThumbnailInputChange}
-                  accept="image/png, image/jpeg"
-                  className="hidden"
-                  id="file_input"
-                  type="file"
-                />
-                {thumbnail && (
-                  <div
-                    className="aspect-square w-64 rounded-3xl bg-cover bg-center"
-                    style={{ backgroundImage: `url(${thumbnail})` }}
-                  />
-                )}
-                <Button
-                  variant="secondary"
-                  onClick={handleThumbnailUploadClick}
-                >
-                  Select File
-                </Button>
-              </div>
-            </div>
-          </ShadowBoxOnMd>
-          <BenefitTypeSelector
-            selectedType={selectedType}
-            onSelectType={setSelectedType}
-          />
-          {shouldRenderUploadManager && <BenefitUploadManager />}
-          <div className="flex flex-row gap-2">
-            <Button>Continue</Button>
-            <Button type="button" variant="ghost" onClick={() => router.back()}>
-              Cancel
-            </Button>
+    <DashboardBody className="pb-16">
+      <div className="flex w-full flex-col gap-y-12">
+        <ShadowBoxOnMd className="flex w-2/3 flex-col items-start gap-y-6">
+          <div className="flex min-w-[260px] flex-col gap-y-2">
+            <span className="text-sm">Name</span>
+            <Input placeholder="Name" defaultValue="" />
           </div>
+          <div className="flex w-full flex-col gap-y-2">
+            <span className="text-sm">Description</span>
+            <TextArea placeholder="Description" defaultValue="" />
+          </div>
+          <div className="flex min-w-[260px] flex-col gap-y-2">
+            <span className="text-sm">Price</span>
+            <MoneyInput
+              id="price"
+              name="price"
+              placeholder={0}
+              value={price}
+              onAmountChangeInCents={setPrice}
+            />
+          </div>
+          <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col gap-y-2">
+              <span className="text-sm">Thumbnail</span>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                A thumbnail to use when displaying your product on Polar.
+                Minimum 500x500 pixels.
+              </p>
+            </div>
+            <div className="flex flex-col items-start gap-y-4">
+              <input
+                ref={thumbnailInputRef}
+                onChange={handleThumbnailInputChange}
+                accept="image/png, image/jpeg"
+                className="hidden"
+                id="file_input"
+                type="file"
+              />
+              {thumbnail && (
+                <div
+                  className="aspect-square w-64 rounded-3xl bg-cover bg-center"
+                  style={{ backgroundImage: `url(${thumbnail})` }}
+                />
+              )}
+              <Button variant="secondary" onClick={handleThumbnailUploadClick}>
+                Select File
+              </Button>
+            </div>
+          </div>
+        </ShadowBoxOnMd>
+        <BenefitTypeSelector
+          selectedType={selectedType}
+          onSelectType={setSelectedType}
+        />
+        {shouldRenderUploadManager && <BenefitUploadManager />}
+        <div className="flex flex-row gap-2">
+          <Button>Continue</Button>
+          <Button type="button" variant="ghost" onClick={() => router.back()}>
+            Cancel
+          </Button>
         </div>
-      </DashboardBody>
+      </div>
+    </DashboardBody>
   )
 }
 
@@ -168,11 +169,7 @@ const BenefitTypeSelector = ({
       <h2 className="text-lg font-medium">Benefit Type</h2>
       <div className="grid w-2/3 grid-cols-3 gap-6">
         {productTypes.map((productType) => {
-          const isActive = useMemo(
-            () => selectedType === productType.name,
-            [productType, selectedType],
-          )
-
+          const isActive = selectedType === productType.name
           const TypeIcon = productType.icon
 
           return (

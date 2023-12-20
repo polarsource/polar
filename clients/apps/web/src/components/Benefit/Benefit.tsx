@@ -1,4 +1,5 @@
 import {
+  CheckOutlined,
   FileDownloadOutlined,
   HeadsetMicOutlined,
   KeyOutlined,
@@ -77,6 +78,6 @@ export const resolveBenefitTypeIcon = (
     case 'articles':
       return ShortTextOutlined
     default:
-      return () => null
+      return CheckOutlined
   }
 }

@@ -6,8 +6,8 @@ import { useBenefitActions } from './useBenefitAction'
 
 interface BenefitRowProps {
   benefit: Benefit
-  selected: boolean
-  onSelect: (benefit: Benefit) => void
+  selected?: boolean
+  onSelect?: (benefit: Benefit) => void
 }
 
 export const BenefitRow = ({
@@ -19,14 +19,15 @@ export const BenefitRow = ({
   const BenefitTypeIcon = resolveBenefitTypeIcon(benefit.type)
 
   const handleClick = useCallback(() => {
-    onSelect(benefit)
+    onSelect?.(benefit)
   }, [benefit, onSelect])
 
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 shadow-sm transition-colors hover:bg-gray-100',
+        'dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 shadow-sm transition-colors hover:bg-gray-100',
         selected && 'dark:bg-polar-700 border-blue-200 bg-blue-50',
+        onSelect && 'cursor-pointer',
       )}
       onClick={handleClick}
     >

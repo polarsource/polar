@@ -157,6 +157,9 @@ class SubscriptionTierService(
             .options(
                 contains_eager(SubscriptionTier.organization),
                 contains_eager(SubscriptionTier.repository),
+                selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
+                    SubscriptionTierBenefit.subscription_benefit
+                ),
             )
             .limit(1)
         )

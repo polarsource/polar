@@ -181,7 +181,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   }, [upgradableSubscription, onUpgradeConfirm])
 
   return (
-    <div className="flex w-full items-center gap-1">
+    <div className="flex w-full items-center gap-2">
       {organizations && organizations.length > 0 && (
         <Select onValueChange={onSubscriberSelect}>
           <SelectTriggerBase>

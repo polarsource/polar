@@ -11,8 +11,8 @@ from polar.models import OAuthAccount, User
 from polar.organization.service import organization
 from polar.postgres import AsyncSession
 from polar.posthog import posthog
+from polar.user.oauth_service import oauth_account_service
 from polar.user.service import UserService
-from polar.user.service import oauth_account as oauth_account_service
 
 from .. import client as github
 from ..schemas import OAuthAccessToken
@@ -325,7 +325,9 @@ class GithubUserService(UserService):
             user_id=user.id,
             installation_ids=[i.id for i in installations],
         )
-        gh_oauth = user.get_platform_oauth_account(Platforms.github)
+        gh_oauth = await oauth_account_service.get_by_platform_and_user_id(
+            session, Platforms.github, user.id
+        )
         if not gh_oauth:
             log.error("sync_github_orgs.no_platform_oauth_found", user_id=user.id)
             return org_count

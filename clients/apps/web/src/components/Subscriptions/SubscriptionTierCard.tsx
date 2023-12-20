@@ -10,7 +10,13 @@ import {
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { getCentsInDollarString } from 'polarkit/money'
-import { MouseEventHandler, useCallback, useRef, useState } from 'react'
+import {
+  MouseEventHandler,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType, resolveBenefitIcon } from './utils'
@@ -91,6 +97,11 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     },
   }
 
+  const isFreeTier = useMemo(
+    () => subscriptionTier.type === 'free',
+    [subscriptionTier],
+  )
+
   return (
     <Card
       ref={containerRef}
@@ -125,8 +136,8 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           />
         </div>
         <div className="flex flex-col gap-y-8 text-gray-950 dark:text-[--var-dark-fg-color]">
-          <div className={variantStyles[variant]['priceLabel']}>
-            {
+          {!isFreeTier && (
+            <div className={variantStyles[variant]['priceLabel']}>
               <>
                 $
                 {getCentsInDollarString(
@@ -135,9 +146,11 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
                   true,
                 )}
               </>
-            }
-            <span className="ml-4 text-xl font-normal text-gray-500">/mo</span>
-          </div>
+              <span className="ml-4 text-xl font-normal text-gray-500">
+                /mo
+              </span>
+            </div>
+          )}
           {subscriptionTier.description ? (
             <p
               className={twMerge(

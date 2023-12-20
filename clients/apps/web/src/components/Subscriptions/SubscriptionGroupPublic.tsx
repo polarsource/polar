@@ -3,6 +3,7 @@ import {
   SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
+import { FreeTierSubscribe } from '../Organization/FreeTierSubscribe'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from './SubscriptionTierSubscribeButton'
@@ -48,11 +49,18 @@ const SubscriptionGroupPublic = ({
             subscriptionTier={tier}
             variant="small"
           >
-            <SubscriptionTierSubscribeButton
-              organization={organization}
-              subscriptionTier={tier}
-              subscribePath={subscribePath}
-            />
+            {tier.type === 'free' ? (
+              <FreeTierSubscribe
+                subscriptionTier={tier}
+                organization={organization}
+              />
+            ) : (
+              <SubscriptionTierSubscribeButton
+                organization={organization}
+                subscriptionTier={tier}
+                subscribePath={subscribePath}
+              />
+            )}
           </SubscriptionTierCard>
         ))}
       </div>

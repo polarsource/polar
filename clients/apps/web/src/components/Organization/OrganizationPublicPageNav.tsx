@@ -23,7 +23,8 @@ export const OrganizationPublicPageNav = ({
   const { data: { items: subscriptionTiers } = { items: [] } } =
     useSubscriptionTiers(organization.name, 100)
 
-  const shouldRenderSubscriptionsTab = (subscriptionTiers?.length ?? 0) > 0
+  const paidTiers = subscriptionTiers?.filter((tier) => tier.type !== 'free')
+  const shouldRenderSubscriptionsTab = (paidTiers?.length ?? 0) > 0
 
   return (
     <div className="flex flex-row items-center justify-between md:w-full">

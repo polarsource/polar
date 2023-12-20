@@ -23,6 +23,7 @@ from polar.organization.service import OrganizationService
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
 from polar.subscription.service.subscription import subscription as subscription_service
+from polar.user.oauth_service import oauth_account_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -50,7 +51,9 @@ class GithubOrganizationService(OrganizationService):
     async def fetch_installations(
         self, session: AsyncSession, user: User
     ) -> list[OrganizationCreate] | None:
-        oauth = user.get_platform_oauth_account(Platforms.github)
+        oauth = await oauth_account_service.get_by_platform_and_user_id(
+            session, Platforms.github, user.id
+        )
         if not oauth:
             # TODO Handle
             return None

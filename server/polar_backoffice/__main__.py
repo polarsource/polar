@@ -141,11 +141,12 @@ if __name__ == "__main__":
     spinner.text = "Opening SSH connection..."
     ssh_hostname = _get_ssh_hostname(args.render_api_key, args.render_service_id)
     with _open_ssh(ssh_hostname, tunnels):
-        spinner.stop()
+        spinner.text = "Loading app..."
 
         from .app import PolarBackOffice
 
         app = PolarBackOffice()
+        spinner.stop()
         app.run()
 
     os.remove(env_file)

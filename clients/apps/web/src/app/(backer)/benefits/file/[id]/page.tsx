@@ -1,6 +1,6 @@
 'use client'
 
-import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/data'
+import { productMocks } from '@/app/maintainer/[organization]/(topbar)/subscriptions/benefits/data'
 import { FileDownloadOutlined } from '@mui/icons-material'
 import { useParams } from 'next/navigation'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'

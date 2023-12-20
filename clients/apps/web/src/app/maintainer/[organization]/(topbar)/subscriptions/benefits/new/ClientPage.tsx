@@ -83,8 +83,6 @@ const ClientPage = () => {
   }, [])
 
   return (
-    <>
-      <DashboardTopbar title="New Product" useOrgFromURL />
       <DashboardBody className="pb-16">
         <div className="flex w-full flex-col gap-y-12">
           <ShadowBoxOnMd className="flex w-2/3 flex-col items-start gap-y-6">
@@ -151,7 +149,6 @@ const ClientPage = () => {
           </div>
         </div>
       </DashboardBody>
-    </>
   )
 }
 

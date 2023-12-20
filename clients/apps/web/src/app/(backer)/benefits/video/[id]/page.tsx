@@ -1,6 +1,6 @@
 'use client'
 
-import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/data'
+import { productMocks } from '@/app/maintainer/[organization]/(topbar)/subscriptions/benefits/data'
 import { TutorialProduct } from '@/components/Product/Product'
 import { VideoPlayer } from '@/components/Product/VideoPlayer'
 import { useParams } from 'next/navigation'

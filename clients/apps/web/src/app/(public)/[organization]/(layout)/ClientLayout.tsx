@@ -18,7 +18,7 @@ const ClientLayout = ({
     const tabs = [
       'overview',
       'subscriptions',
-      'products',
+      'benefits',
       'issues',
       'repositories',
     ]

@@ -9,14 +9,11 @@ import {
   Construction,
   CropFreeOutlined,
   DiamondOutlined,
-  DragIndicatorOutlined,
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
-  SellOutlined,
   TuneOutlined,
   ViewDayOutlined,
-  WidthNormalOutlined,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 
@@ -50,19 +47,6 @@ export const maintainerRoutes = (org: Organization): Route[] => [
         },
       ]
     : []),
-  ...(isFeatureEnabled('products')
-    ? [
-        {
-          id: 'org-products',
-          title: 'Products',
-          icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          link: `/maintainer/${org.name}/products`,
-          if: true,
-          subs: [],
-        },
-      ]
-    : []),
   ...(isFeatureEnabled('subscriptions')
     ? [
         {
@@ -76,17 +60,18 @@ export const maintainerRoutes = (org: Organization): Route[] => [
             {
               title: 'Overview',
               link: `/maintainer/${org.name}/subscriptions`,
-              icon: <DragIndicatorOutlined fontSize="inherit" />,
             },
             {
               title: 'Tiers',
               link: `/maintainer/${org.name}/subscriptions/tiers`,
-              icon: <WidthNormalOutlined fontSize="inherit" />,
+            },
+            {
+              title: 'Benefits',
+              link: `/maintainer/${org.name}/subscriptions/benefits`,
             },
             {
               title: 'Subscribers',
               link: `/maintainer/${org.name}/subscriptions/subscribers`,
-              icon: <Face fontSize="inherit" />,
             },
           ],
         },
@@ -149,13 +134,15 @@ export const backerRoutes = (
               },
             ]
           : []),
-        ...(isFeatureEnabled('products')
+        ...(isFeatureEnabled('subscriptions')
           ? [
               {
-                id: 'purchases',
-                title: 'Purchases',
-                link: `/purchases`,
-                icon: <SellOutlined className="h-5 w-5" fontSize="inherit" />,
+                id: 'benefits',
+                title: 'Benefits',
+                link: `/benefits`,
+                icon: (
+                  <DiamondOutlined className="h-5 w-5" fontSize="inherit" />
+                ),
                 postIcon: undefined,
                 if: true,
                 subs: undefined,

@@ -24,10 +24,10 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-8">
       <Link
         className="flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-        href={`/${organization.name}/products`}
+        href={`/${organization.name}/benefits`}
       >
         <ArrowBackOutlined fontSize="inherit" />
-        <span>Back to Products</span>
+        <span>Back to Benefits</span>
       </Link>
       <StaggerReveal className="flex flex-col gap-y-8">
         <StaggerReveal.Child>

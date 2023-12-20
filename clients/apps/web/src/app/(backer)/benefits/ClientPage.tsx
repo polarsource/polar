@@ -15,8 +15,8 @@ const ClientPage = ({
 }: {
   subscriptionTiers: SubscriptionTier[]
 }) => {
-  const [selectedBenefit, setSelectedBenefit] = useState<Benefit>(
-    subscriptionTiers[0].benefits[0],
+  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>(
+    subscriptionTiers[0]?.benefits[0],
   )
 
   const selectBenefit = useCallback(
@@ -47,7 +47,7 @@ export default ClientPage
 
 interface SubscriptionOrganizationProps {
   tier: SubscriptionTier
-  selectedBenefit: Benefit
+  selectedBenefit: Benefit | undefined
   onSelectBenefit: (benefit: Benefit) => void
 }
 
@@ -95,7 +95,7 @@ const Subscription = ({
           <StaggerReveal.Child key={benefit.id}>
             <BenefitRow
               benefit={benefit}
-              selected={benefit.id === selectedBenefit.id}
+              selected={benefit.id === selectedBenefit?.id}
               onSelect={onSelectBenefit}
             />
           </StaggerReveal.Child>
@@ -106,12 +106,16 @@ const Subscription = ({
 }
 
 interface BenefitContextWidgetProps {
-  benefit: Benefit
+  benefit: Benefit | undefined
 }
 
 const BenefitContextWidget = ({ benefit }: BenefitContextWidgetProps) => {
-  const { data: org } = useOrganization(benefit.organization_id ?? '')
-  const BenefitTypeIcon = resolveBenefitTypeIcon(benefit.type)
+  const { data: org } = useOrganization(benefit?.organization_id ?? '')
+  const BenefitTypeIcon = resolveBenefitTypeIcon(benefit?.type ?? 'custom')
+
+  if (!benefit) {
+    return null
+  }
 
   return (
     <ShadowBoxOnMd className="flex w-1/3 flex-col gap-y-6">

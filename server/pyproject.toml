@@ -50,6 +50,7 @@ optional = true
 [tool.poetry.group.backoffice.dependencies]
 textual = "^0.46.0"
 babel = "^2.14.0"
+halo = "^0.0.31"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.0"

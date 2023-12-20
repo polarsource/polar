@@ -17,3 +17,8 @@ class PolarBackOffice(App[None]):
     def on_mount(self) -> None:
         self.title = "Polar.sh"
         self.switch_mode("dashboard")
+
+
+if __name__ == "__main__":
+    app = PolarBackOffice()
+    app.run()

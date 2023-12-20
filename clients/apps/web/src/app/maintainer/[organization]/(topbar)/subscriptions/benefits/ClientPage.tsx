@@ -1,16 +1,17 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { ProductTile } from '@/components/Product/ProductTile'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { AddOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
-import { productMocks } from './data'
+import { useSubscriptionBenefits } from 'polarkit/hooks'
+import { BenefitRow } from '@/components/Benefit/BenefitRow'
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
+  const benefits = useSubscriptionBenefits(org?.name ?? '')
 
   return (
     <DashboardBody>
@@ -24,13 +25,13 @@ const ClientPage = () => {
           </Link>
         </div>
         <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:grid-cols-4">
-          {productMocks.map((product) => (
+          {benefits.data?.items?.map((benefit) => (
             <StaggerReveal.Child
-              key={product.id}
+              key={benefit.id}
               className="flex flex-grow flex-col"
             >
-              <Link href={`/maintainer/${org?.name}/subscriptions/benefits/${product.slug}`}>
-                <ProductTile product={product} />
+              <Link href={`/maintainer/${org?.name}/subscriptions/benefits/${benefit.id}`}>
+                <BenefitRow benefit={benefit} />
               </Link>
             </StaggerReveal.Child>
           ))}

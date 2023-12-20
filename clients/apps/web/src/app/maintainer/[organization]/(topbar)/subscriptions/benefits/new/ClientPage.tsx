@@ -2,9 +2,9 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
-  ProductType,
-  resolveProductTypeIcon,
-} from '@/components/Product/Product'
+  BenefitType,
+  resolveBenefitTypeIcon,
+} from '@/components/Benefit/Benefit'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { CloseOutlined, UploadFileOutlined } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
@@ -29,24 +29,24 @@ import { twMerge } from 'tailwind-merge'
 
 const productTypes = [
   {
-    name: ProductType.DIGITAL,
-    icon: resolveProductTypeIcon(ProductType.DIGITAL),
+    name: BenefitType.DIGITAL_DOWNLOAD,
+    icon: resolveBenefitTypeIcon(BenefitType.DIGITAL_DOWNLOAD),
     description: 'A file or collection of files that can be downloaded',
   },
   {
-    name: ProductType.TUTORIAL,
-    icon: resolveProductTypeIcon(ProductType.TUTORIAL),
+    name: BenefitType.DISCORD,
+    icon: resolveBenefitTypeIcon(BenefitType.DISCORD),
+    description: 'Discord server access for your supporters',
+  },
+  {
+    name: BenefitType.TUTORIAL,
+    icon: resolveBenefitTypeIcon(BenefitType.TUTORIAL),
     description: 'An in-depth, comprehensive video tutorial',
   },
   {
-    name: ProductType.LICENSE,
-    icon: resolveProductTypeIcon(ProductType.LICENSE),
+    name: BenefitType.LICENSE,
+    icon: resolveBenefitTypeIcon(BenefitType.LICENSE),
     description: 'A license to use a product or service',
-  },
-  {
-    name: ProductType.BUNDLE,
-    icon: resolveProductTypeIcon(ProductType.BUNDLE),
-    description: 'Create a bundle of existing products',
   },
 ] as const
 
@@ -54,15 +54,15 @@ const ClientPage = () => {
   const thumbnailInputRef = useRef<HTMLInputElement>(null)
   const [price, setPrice] = useState(0)
   const [thumbnail, setThumbnail] = useState<string>()
-  const [selectedType, setSelectedType] = useState<ProductType>(
-    ProductType.DIGITAL,
+  const [selectedType, setSelectedType] = useState<BenefitType>(
+    BenefitType.DIGITAL_DOWNLOAD,
   )
 
   const router = useRouter()
 
   const shouldRenderUploadManager = useMemo(
     () =>
-      [ProductType.DIGITAL, ProductType.TUTORIAL].some(
+      [BenefitType.DIGITAL_DOWNLOAD, BenefitType.TUTORIAL].some(
         (type) => type === selectedType,
       ),
     [selectedType],
@@ -136,11 +136,11 @@ const ClientPage = () => {
               </div>
             </div>
           </ShadowBoxOnMd>
-          <ProductTypeSelector
+          <BenefitTypeSelector
             selectedType={selectedType}
             onSelectType={setSelectedType}
           />
-          {shouldRenderUploadManager && <ProductUploadManager />}
+          {shouldRenderUploadManager && <BenefitUploadManager />}
           <div className="flex flex-row gap-2">
             <Button>Continue</Button>
             <Button type="button" variant="ghost" onClick={() => router.back()}>
@@ -154,18 +154,18 @@ const ClientPage = () => {
 
 export default ClientPage
 
-interface ProductTypeSelectorProps {
-  selectedType: ProductType
-  onSelectType: (productType: ProductType) => void
+interface BenefitTypeSelectorProps {
+  selectedType: BenefitType
+  onSelectType: (productType: BenefitType) => void
 }
 
-const ProductTypeSelector = ({
+const BenefitTypeSelector = ({
   selectedType,
   onSelectType,
-}: ProductTypeSelectorProps) => {
+}: BenefitTypeSelectorProps) => {
   return (
     <div className="flex flex-col gap-y-6">
-      <h2 className="text-lg font-medium">Product Type</h2>
+      <h2 className="text-lg font-medium">Benefit Type</h2>
       <div className="grid w-2/3 grid-cols-3 gap-6">
         {productTypes.map((productType) => {
           const isActive = useMemo(
@@ -214,7 +214,7 @@ const ProductTypeSelector = ({
   )
 }
 
-const ProductUploadManager = () => {
+const BenefitUploadManager = () => {
   const [files, setFiles] = useState<File[]>([])
   const { handleDrag, handleDragOver, handleDrop } = useUploadManager(setFiles)
 

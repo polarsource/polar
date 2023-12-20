@@ -80,7 +80,7 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [organization] = await Promise.all([
+  const [organization, tiers] = await Promise.all([
     api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
@@ -88,11 +88,16 @@ export default async function Page({
       },
       cacheConfig,
     ),
+    api.subscriptions.searchSubscriptionTiers({
+      organizationName: params.organization,
+      limit: 100,
+      platform: Platforms.GITHUB,
+    }),
   ])
 
   if (organization === undefined) {
     return <PageNotFound />
   }
 
-  return <ClientPage organization={organization} />
+  return <ClientPage organization={organization} tiers={tiers.items ?? []} />
 }

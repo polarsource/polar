@@ -1,4 +1,4 @@
-import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/data'
+import { productMocks } from '@/app/maintainer/[organization]/(topbar)/subscriptions/benefits/data'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'

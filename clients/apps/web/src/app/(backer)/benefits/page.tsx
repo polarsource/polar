@@ -1,15 +1,17 @@
 'use client'
 
-import { productMocks } from '@/app/maintainer/[organization]/(topbar)/products/data'
+import { productMocks } from '@/app/maintainer/[organization]/(topbar)/subscriptions/benefits/data'
 import { Product, ProductType } from '@/components/Product/Product'
 import { ProductTile } from '@/components/Product/ProductTile'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import Link from 'next/link'
 import { useCallback } from 'react'
 
+
+
 export default function Page() {
   const getProductPathType = useCallback((product: Product) => {
-    const buildPath = (subPath: string) => `/purchases/${subPath}/${product.id}`
+    const buildPath = (subPath: string) => `/benefits/${subPath}/${product.id}`
 
     switch (product.type) {
       case ProductType.TUTORIAL:

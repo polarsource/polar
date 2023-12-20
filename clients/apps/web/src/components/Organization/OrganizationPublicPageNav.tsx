@@ -40,10 +40,10 @@ export const OrganizationPublicPageNav = ({
             </TabsTrigger>
           </Link>
         )}
-        {isFeatureEnabled('products') && (
-          <Link href={`/${organization.name}/products`}>
-            <TabsTrigger value="products" size="small">
-              Products
+        {isFeatureEnabled('subscriptions') && (
+          <Link href={`/${organization.name}/benefits`}>
+            <TabsTrigger value="benefits" size="small">
+              Benefits
             </TabsTrigger>
           </Link>
         )}

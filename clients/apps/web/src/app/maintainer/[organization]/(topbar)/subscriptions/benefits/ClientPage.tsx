@@ -16,8 +16,8 @@ const ClientPage = () => {
     <DashboardBody>
       <div className="flex w-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
-          <h2 className="text-lg font-medium">Overview</h2>
-          <Link href={`/maintainer/${org?.name}/products/new`}>
+          <h2 className="text-lg font-medium">Benefits</h2>
+          <Link href={`/maintainer/${org?.name}/subscriptions/benefits/new`}>
             <Button className="h-8 w-8 rounded-full">
               <AddOutlined fontSize="inherit" />
             </Button>
@@ -29,7 +29,7 @@ const ClientPage = () => {
               key={product.id}
               className="flex flex-grow flex-col"
             >
-              <Link href={`/maintainer/${org?.name}/products/${product.slug}`}>
+              <Link href={`/maintainer/${org?.name}/subscriptions/benefits/${product.slug}`}>
                 <ProductTile product={product} />
               </Link>
             </StaggerReveal.Child>

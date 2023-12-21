@@ -23,14 +23,14 @@ const renderFundingOG = async (
   issues: Issue[],
   largeIssue: boolean,
 ) => {
-  const [interRegular, interMedium] = await Promise.all([
-    fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
-      res.arrayBuffer(),
-    ),
-    fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
-      res.arrayBuffer(),
-    ),
-  ])
+  // const [interRegular, interMedium] = await Promise.all([
+  //   fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
+  //     res.arrayBuffer(),
+  //   ),
+  //   fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
+  //     res.arrayBuffer(),
+  //   ),
+  // ])
 
   return new ImageResponse(
     (
@@ -46,48 +46,48 @@ const renderFundingOG = async (
     {
       height: 630,
       width: 1200,
-      fonts: [
-        {
-          name: 'Inter',
-          data: interRegular,
-          weight: 500,
-          style: 'normal',
-        },
-        {
-          name: 'Inter',
-          data: interMedium,
-          weight: 600,
-        },
-      ],
+      // fonts: [
+      //   {
+      //     name: 'Inter',
+      //     data: interRegular,
+      //     weight: 500,
+      //     style: 'normal',
+      //   },
+      //   {
+      //     name: 'Inter',
+      //     data: interMedium,
+      //     weight: 600,
+      //   },
+      // ],
     },
   )
 }
 
 const renderArticleOG = async (article: Article) => {
-  const [interRegular, interMedium] = await Promise.all([
-    fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
-      res.arrayBuffer(),
-    ),
-    fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
-      res.arrayBuffer(),
-    ),
-  ])
+  // const [interRegular, interMedium] = await Promise.all([
+  //   fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
+  //     res.arrayBuffer(),
+  //   ),
+  //   fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
+  //     res.arrayBuffer(),
+  //   ),
+  // ])
 
   return new ImageResponse(<OpenGraphImageArticle article={article} />, {
     height: 630,
     width: 1200,
-    fonts: [
-      {
-        name: 'Inter',
-        data: interRegular,
-        weight: 500,
-      },
-      {
-        name: 'Inter',
-        data: interMedium,
-        weight: 600,
-      },
-    ],
+    // fonts: [
+    //   {
+    //     name: 'Inter',
+    //     data: interRegular,
+    //     weight: 500,
+    //   },
+    //   {
+    //     name: 'Inter',
+    //     data: interMedium,
+    //     weight: 600,
+    //   },
+    // ],
   })
 }
 

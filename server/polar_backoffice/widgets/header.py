@@ -7,7 +7,7 @@ from polar.config import Environment, settings
 class PolarHeader(Header):
     DEFAULT_CSS = """
     PolarHeader.production {
-        background: darkorange;
+        background: $warning;
         color: auto;
         text-style: bold;
     }

@@ -22,6 +22,7 @@ class RewardService:
     async def list(
         self,
         session: AsyncSession,
+        pledge_id: UUID | None = None,
         pledge_org_id: UUID | None = None,
         issue_id: UUID | None = None,
         issue_ids: list[UUID] | None = None,
@@ -47,6 +48,9 @@ class RewardService:
             .where(Pledge.state.in_(PledgeState.active_states()))
             .order_by(Pledge.created_at)
         )
+
+        if pledge_id:
+            statement = statement.where(Pledge.id == pledge_id)
 
         if pledge_org_id:
             statement = statement.where(Pledge.organization_id == pledge_org_id)

@@ -67,13 +67,15 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       .filter((s) => s.length > 0),
   )
 
-  const interRegular = await fetch(
-    new URL('./Inter-Regular.ttf', import.meta.url),
-  ).then((res) => res.arrayBuffer())
-
-  const interMedium = await fetch(
-    new URL('./Inter-Medium.ttf', import.meta.url),
-  ).then((res) => res.arrayBuffer())
+  // Sorry
+  const [interRegular, interMedium] = await Promise.all([
+    fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
+      res.arrayBuffer(),
+    ),
+    fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
+      res.arrayBuffer(),
+    ),
+  ])
 
   const upfront_split_to_contributors =
     data.issue.upfront_split_to_contributors ??

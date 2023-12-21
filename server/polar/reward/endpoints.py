@@ -99,10 +99,7 @@ def to_resource(
     if transaction and transaction.amount:
         amount = CurrencyAmount(currency="USD", amount=transaction.amount)
     else:
-        amount = CurrencyAmount(
-            currency="USD",
-            amount=round(pledge.amount * 0.9 * reward.share_thousands / 1000),
-        )
+        amount = CurrencyAmount(currency="USD", amount=reward.get_share_amount(pledge))
 
     return Reward(
         pledge=Pledge.from_db(

@@ -836,7 +836,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
 
         # pledge amount - 10% (polars cut) * the users share
-        payout_amount = round(pledge.amount * 0.9 * split.share_thousands / 1000)
+        payout_amount = split.get_share_amount(pledge)
 
         if split.user_id:
             pay_to_account = await account_service.get_by_user_id(

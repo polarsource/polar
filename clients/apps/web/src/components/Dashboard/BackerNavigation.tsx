@@ -49,7 +49,7 @@ const BackerNavigation = (props: { classNames?: string }) => {
                   className={twMerge(
                     'flex h-8 w-8 flex-col items-center justify-center rounded-full bg-transparent text-[18px]',
                     n.isActive
-                      ? 'bg-blue-50 dark:bg-blue-400 dark:text-blue-900'
+                      ? 'bg-blue-50 dark:bg-blue-950 dark:text-blue-400'
                       : 'bg-transparent',
                   )}
                 >

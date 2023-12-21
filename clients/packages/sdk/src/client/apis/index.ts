@@ -22,3 +22,4 @@ export * from './StreamApi';
 export * from './SubscriptionsApi';
 export * from './TransactionsApi';
 export * from './UsersApi';
+export * from './WebhookNotificationsApi';

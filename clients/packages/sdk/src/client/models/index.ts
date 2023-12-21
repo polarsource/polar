@@ -1975,6 +1975,25 @@ export interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefit
     pagination: Pagination;
 }
 /**
+ * 
+ * @export
+ * @interface ListResourceWebhookIntegration
+ */
+export interface ListResourceWebhookIntegration {
+    /**
+     * 
+     * @type {Array<WebhookIntegration>}
+     * @memberof ListResourceWebhookIntegration
+     */
+    items?: Array<WebhookIntegration>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceWebhookIntegration
+     */
+    pagination: Pagination;
+}
+/**
  * @type LocationInner
  * @export
  */
@@ -5962,6 +5981,97 @@ export const Visibility = {
 } as const;
 export type Visibility = typeof Visibility[keyof typeof Visibility];
 
+/**
+ * 
+ * @export
+ * @interface WebhookIntegration
+ */
+export interface WebhookIntegration {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegration
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegration
+     */
+    integration: WebhookIntegrationIntegrationEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegration
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegration
+     */
+    organization_id: string;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookIntegrationIntegrationEnum = {
+    SLACK: 'slack',
+    DISCORD: 'discord'
+} as const;
+export type WebhookIntegrationIntegrationEnum = typeof WebhookIntegrationIntegrationEnum[keyof typeof WebhookIntegrationIntegrationEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookIntegrationCreate
+ */
+export interface WebhookIntegrationCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegrationCreate
+     */
+    integration: WebhookIntegrationCreateIntegrationEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegrationCreate
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegrationCreate
+     */
+    organization_id: string;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookIntegrationCreateIntegrationEnum = {
+    SLACK: 'slack',
+    DISCORD: 'discord'
+} as const;
+export type WebhookIntegrationCreateIntegrationEnum = typeof WebhookIntegrationCreateIntegrationEnum[keyof typeof WebhookIntegrationCreateIntegrationEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookIntegrationUpdate
+ */
+export interface WebhookIntegrationUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegrationUpdate
+     */
+    url: string;
+}
 /**
  * 
  * @export

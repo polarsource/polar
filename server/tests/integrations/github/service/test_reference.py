@@ -1,5 +1,5 @@
 import pytest
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 import polar.integrations.github.client as github
 from polar.integrations.github.service.reference import (
@@ -32,7 +32,8 @@ async def test_parse_issue_timeline(
     pull_request: PullRequest,
 ) -> None:
     raw = read_cassette("github/references/issue_timeline.json")
-    payload = parse_obj_as(list[TimelineEventType], raw)
+    ta = TypeAdapter(list[TimelineEventType])
+    payload = ta.validate_python(raw)
 
     # Create Org/Repo/Issue (setup to match names and ids in issue_timeline.json)
     organization.name = "zegloforko"

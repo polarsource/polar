@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any, Union
 from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
 from githubkit import GitHub
 from githubkit.exception import RequestFailed
-from pydantic import Field, ValidationError
+from pydantic import Discriminator, Field, Tag, ValidationError
 
 import polar.integrations.github.client as github
 from polar.exceptions import IntegrityError
@@ -33,40 +33,67 @@ from polar.worker import enqueue_job
 log = structlog.get_logger()
 
 
-class UnknownIssueEvent(github.rest.GitHubRestModel):
+class EventWithActor(github.rest.GitHubRestModel):
     """
     The timeline API is not fully specced out in the github schema.
     This is a catch-all event for events that we're unable to parse.
     """
 
     event: str = Field(default=...)
+    actor: github.rest.SimpleUser = Field(
+        title="Simple User", description="A GitHub user.", default=...
+    )
+    commit_id: str | None = Field(default=...)
+    commit_url: str | None = Field(default=...)
 
 
-TimelineEventType = (
-    github.rest.LabeledIssueEvent
-    | github.rest.UnlabeledIssueEvent
-    | github.rest.MilestonedIssueEvent
-    | github.rest.DemilestonedIssueEvent
-    | github.rest.RenamedIssueEvent
-    | github.rest.ReviewRequestedIssueEvent
-    | github.rest.ReviewRequestRemovedIssueEvent
-    | github.rest.ReviewDismissedIssueEvent
-    | github.rest.LockedIssueEvent
-    | github.rest.AddedToProjectIssueEvent
-    | github.rest.MovedColumnInProjectIssueEvent
-    | github.rest.RemovedFromProjectIssueEvent
-    | github.rest.ConvertedNoteToIssueIssueEvent
-    | github.rest.TimelineCommentEvent
-    | github.rest.TimelineCrossReferencedEvent
-    | github.rest.TimelineCommittedEvent
-    | github.rest.TimelineReviewedEvent
-    | github.rest.TimelineLineCommentedEvent
-    | github.rest.TimelineCommitCommentedEvent
-    | github.rest.TimelineAssignedIssueEvent
-    | github.rest.TimelineUnassignedIssueEvent
-    | github.rest.StateChangeIssueEvent
-    | UnknownIssueEvent
-)
+class EmptyIssueEvent(github.rest.GitHubRestModel):
+    # fallback
+    pass
+
+
+def get_descriminator_value(v: Any) -> str:
+    if isinstance(v, dict):
+        return v.get("event", "fallback")
+    return "fallback"
+
+
+TimelineEventType = Annotated[
+    Union[  # noqa: UP007
+        Annotated[github.rest.LabeledIssueEvent, Tag("labeled")],
+        Annotated[github.rest.UnlabeledIssueEvent, Tag("unlabeled")],
+        Annotated[github.rest.MilestonedIssueEvent, Tag("milestoned")],
+        Annotated[github.rest.DemilestonedIssueEvent, Tag("demilestoned")],
+        Annotated[github.rest.RenamedIssueEvent, Tag("renamed")],
+        Annotated[github.rest.ReviewRequestedIssueEvent, Tag("review_requested")],
+        Annotated[
+            github.rest.ReviewRequestRemovedIssueEvent, Tag("review_request_removed")
+        ],
+        Annotated[github.rest.ReviewDismissedIssueEvent, Tag("review_dismissed")],
+        Annotated[github.rest.LockedIssueEvent, Tag("locked")],
+        Annotated[github.rest.AddedToProjectIssueEvent, Tag("added_to_project")],
+        Annotated[
+            github.rest.MovedColumnInProjectIssueEvent, Tag("moved_columns_in_project")
+        ],
+        Annotated[
+            github.rest.RemovedFromProjectIssueEvent, Tag("removed_from_project")
+        ],
+        Annotated[
+            github.rest.ConvertedNoteToIssueIssueEvent, Tag("converted_note_to_issue")
+        ],
+        Annotated[github.rest.TimelineCommentEvent, Tag("commented")],
+        Annotated[github.rest.TimelineCrossReferencedEvent, Tag("cross-referenced")],
+        Annotated[github.rest.TimelineCommittedEvent, Tag("committed")],
+        Annotated[github.rest.TimelineReviewedEvent, Tag("reviewed")],
+        Annotated[github.rest.TimelineLineCommentedEvent, Tag("line_commented")],
+        Annotated[github.rest.TimelineCommitCommentedEvent, Tag("commit_commented")],
+        Annotated[github.rest.TimelineAssignedIssueEvent, Tag("assigned")],
+        Annotated[github.rest.TimelineUnassignedIssueEvent, Tag("unassigned")],
+        Annotated[EventWithActor, Tag("referenced")],
+        Annotated[EmptyIssueEvent, Tag("fallback")],
+    ],
+    Discriminator(get_descriminator_value),
+]
 
 
 class GitHubIssueReferencesService:
@@ -296,10 +323,7 @@ class GitHubIssueReferencesService:
             )
 
         # For some reason, this events maps to the StateChangeIssueEvent type
-        if (
-            isinstance(event, github.rest.StateChangeIssueEvent)
-            and event.event == "referenced"
-        ):
+        if isinstance(event, EventWithActor) and event.event == "referenced":
             return await self.parse_issue_commit_reference(event, issue)
 
         return None
@@ -368,7 +392,7 @@ class GitHubIssueReferencesService:
 
     async def parse_issue_commit_reference(
         self,
-        event: github.rest.StateChangeIssueEvent,
+        event: EventWithActor,
         issue: Issue,
     ) -> IssueReference | None:
         if not event.commit_url or not event.commit_id:

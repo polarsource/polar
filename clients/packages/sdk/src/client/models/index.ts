@@ -6011,6 +6011,12 @@ export interface WebhookIntegration {
      * @memberof WebhookIntegration
      */
     organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookIntegration
+     */
+    created_at: string;
 }
 
 

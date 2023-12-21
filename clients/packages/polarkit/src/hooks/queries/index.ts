@@ -20,6 +20,7 @@ export * from './rewards'
 export * from './subscriptions'
 export * from './transactions'
 export * from './user'
+export * from './webhookNotifications'
 
 export const useListRepositories: () => UseQueryResult<
   ListResourceRepository,

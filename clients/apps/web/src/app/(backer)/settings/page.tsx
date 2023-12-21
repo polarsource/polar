@@ -7,8 +7,14 @@ import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import SubscriptionSettings from '@/components/Settings/SubscriptionSettings'
+import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 
 export default function Page() {
+  const orgs = useListAdminOrganizations()
+
+  const org = orgs.data?.items?.find((o) => o.is_personal)
+
   return (
     <div className="relative z-0">
       <div className="dark:divide-polar-700 mb-24 flex flex-col gap-y-4">
@@ -53,6 +59,16 @@ export default function Page() {
           />
           <AccessTokensSettings />
         </Section>
+
+        {org ? (
+          <Section>
+            <SectionDescription
+              title="Discord + Slack Notifications"
+              description="Add a Discord or Slack webhook to get notified when you receive a new pledge"
+            />
+            <WebhookNotificationSettings org={org} />
+          </Section>
+        ) : null}
       </div>
     </div>
   )

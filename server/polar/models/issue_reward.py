@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
@@ -7,6 +8,9 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.organization import Organization
 from polar.models.user import User
+
+if TYPE_CHECKING:
+    from .pledge import Pledge
 
 
 class IssueReward(RecordModel):
@@ -47,3 +51,6 @@ class IssueReward(RecordModel):
     @declared_attr
     def user(cls) -> Mapped[User]:
         return relationship(User, lazy="raise")
+
+    def get_share_amount(self, pledge: "Pledge") -> int:
+        return round(pledge.amount * 0.9 * self.share_thousands / 1000)

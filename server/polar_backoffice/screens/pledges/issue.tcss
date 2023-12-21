@@ -1,7 +1,17 @@
 PledgesIssueScreen {
-  layout: grid;
-  grid-size: 2 1;
-  grid-gutter: 1;
+  layout: horizontal;
+}
+
+PledgesIssueScreen DataTable {
+  width: 50%;
+}
+
+PledgesIssueScreen Rule.screen-separator {
+  margin: 0;
+}
+
+PledgeContainer {
+  width: 50%;
 }
 
 PledgeContainer Static.header {
@@ -15,7 +25,6 @@ PledgeContainer Container.info {
   layout: grid;
   grid-size: 2 2;
   height: 5;
-  background: $boost;
 }
 PledgeContainer Digits.amount {
   row-span: 2;
@@ -23,4 +32,12 @@ PledgeContainer Digits.amount {
   height: 100%;
   text-align: center;
   content-align: center middle;
+}
+
+PledgeContainer Container.buttons {
+  layout: horizontal;
+}
+PledgeContainer Container.buttons Button {
+  width: 1fr;
+  margin: 0 1;
 }

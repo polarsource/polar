@@ -1,25 +1,34 @@
+import uuid
 import webbrowser
 
 from babel.numbers import format_currency
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-from textual import work
+from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.css.query import NoMatches
+from textual.message import Message
 from textual.screen import Screen
 from textual.widget import Widget
-from textual.widgets import DataTable, Digits, Footer, Static
+from textual.widgets import Button, DataTable, Digits, Footer, Rule, Static
 
 from polar.models import Issue, Pledge
-from polar.models.pledge import PledgeState
+from polar.models.pledge import PledgeState, PledgeType
 from polar.pledge.schemas import Pledger
+from polar.pledge.service import pledge as pledge_service
 
 from ...db import sessionmaker
+from ...widgets.confirm_modal import ConfirmModal
 from ...widgets.header import PolarHeader
 
 
 class PledgeContainer(Widget):
+    class Updated(Message):
+        def __init__(self, pledge_id: uuid.UUID) -> None:
+            self.pledge_id = pledge_id
+            super().__init__()
+
     def __init__(
         self,
         pledge: Pledge,
@@ -29,6 +38,10 @@ class PledgeContainer(Widget):
         disabled: bool = False,
     ) -> None:
         self.pledge = pledge
+        pledger = Pledger.from_pledge(self.pledge)
+        self.pledger_name = (
+            pledger.github_username or pledger.name if pledger else "Anonymous"
+        )
         super().__init__(name=name, id=id, classes=classes, disabled=disabled)
 
     def compose(self) -> ComposeResult:
@@ -48,6 +61,39 @@ class PledgeContainer(Widget):
             )
             yield Static(pledger_name)
             yield Static(pledger_name)
+        yield Rule()
+        with Container(classes="buttons"):
+            if self.pledge.type == PledgeType.pay_on_completion:
+                if self.pledge.invoice_hosted_url is None:
+                    yield Button("Send invoice", variant="primary", id="send_invoice")
+                else:
+                    yield Button("View invoice", id="view_invoice")
+
+    @on(Button.Pressed, "#view_invoice")
+    def on_view_invoice(self) -> None:
+        if self.pledge.invoice_hosted_url is not None:
+            webbrowser.open_new_tab(self.pledge.invoice_hosted_url)
+
+    @on(Button.Pressed, "#send_invoice")
+    def on_send_invoice(self, event: Button.Pressed) -> None:
+        def check_confirm(confirm: bool) -> None:
+            if confirm:
+                event.button.disabled = True
+                self.send_invoice()
+
+        self.app.push_screen(
+            ConfirmModal(
+                f"The invoice will be sent to {self.pledger_name}. Do you confirm?"
+            ),
+            check_confirm,
+        )
+
+    @work(exclusive=True)
+    async def send_invoice(self) -> None:
+        async with sessionmaker() as session:
+            await pledge_service.send_invoice(session, self.pledge.id)
+            self.screen.notify("Invoice sent")
+            self.post_message(PledgeContainer.Updated(self.pledge.id))
 
 
 class PledgesIssueScreen(Screen[None]):
@@ -74,6 +120,7 @@ class PledgesIssueScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         yield PolarHeader()
         yield DataTable(cursor_type="row")
+        yield Rule("vertical", line_style="heavy", classes="screen-separator")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -99,6 +146,9 @@ class PledgesIssueScreen(Screen[None]):
         pledge = self.pledges[row_key]
         self.mount(PledgeContainer(pledge), before=self.query_one(Footer))
 
+    async def on_pledge_container_updated(self, event: PledgeContainer.Updated) -> None:
+        self.get_issue_pledges()
+
     def action_open_in_github(self) -> None:
         webbrowser.open_new_tab(
             f"https://github.com/{self.issue.organization.name}"
@@ -121,6 +171,7 @@ class PledgesIssueScreen(Screen[None]):
     @work(exclusive=True)
     async def get_issue_pledges(self) -> None:
         table = self.query_one(DataTable)
+        previous_coordinate = table.cursor_coordinate
         table.loading = True
         table.clear()
         async with sessionmaker() as session:
@@ -153,4 +204,5 @@ class PledgesIssueScreen(Screen[None]):
                 )
                 self.pledges[str(pledge.id)] = pledge
         table.loading = False
+        table.cursor_coordinate = previous_coordinate
         table.focus()

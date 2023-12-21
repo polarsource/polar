@@ -64,7 +64,7 @@ export const resolveBenefitIcon = (
   benefit: SubscriptionTierBenefit,
   checked: boolean,
 ) => {
-  const className = twMerge('h-4 w-4', checked && 'text-white')
+  const className = twMerge('h-4 w-4')
 
   if (benefit.type === SubscriptionBenefitType.ARTICLES) {
     return <ShortTextOutlined className={className} fontSize="small" />

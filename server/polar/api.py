@@ -22,6 +22,7 @@ from polar.reward.endpoints import router as rewards_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
+from polar.webhook_notifications.endpoints import router as webhook_notifications_router
 
 router = APIRouter(prefix="/api/v1")
 
@@ -71,3 +72,5 @@ router.include_router(subscription_router)
 router.include_router(articles_router)
 # /transactions
 router.include_router(transaction_router)
+# /webhook_notifications
+router.include_router(webhook_notifications_router)

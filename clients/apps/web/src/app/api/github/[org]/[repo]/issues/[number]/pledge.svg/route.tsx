@@ -68,17 +68,11 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
   )
 
   const interRegular = await fetch(
-    new URL(
-      '../../../../../../../../assets/fonts/Inter-Regular.ttf',
-      import.meta.url,
-    ),
+    new URL('./Inter-Regular.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())
 
   const interMedium = await fetch(
-    new URL(
-      '../../../../../../../../assets/fonts/Inter-Medium.ttf',
-      import.meta.url,
-    ),
+    new URL('./Inter-Medium.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())
 
   const upfront_split_to_contributors =

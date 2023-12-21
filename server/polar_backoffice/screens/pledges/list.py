@@ -1,3 +1,4 @@
+import textwrap
 import webbrowser
 
 from babel.numbers import format_currency
@@ -147,7 +148,7 @@ class PledgesListScreen(Screen[None]):
 
                 table.add_row(
                     issue.reference_key,
-                    issue.title,
+                    textwrap.shorten(issue.title, 64),
                     issue.state.capitalize(),
                     confirmation_state,
                     len(issue.pledges),

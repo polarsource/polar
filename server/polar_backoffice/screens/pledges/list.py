@@ -2,33 +2,38 @@ import webbrowser
 
 from babel.numbers import format_currency
 from rich.text import Text
-from sqlalchemy import and_, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import and_, func, select
+from sqlalchemy.orm import contains_eager
 from textual import work
 from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer
 
-from polar.models import Issue, Pledge
+from polar.issue.search import search_query
+from polar.models import Issue, Organization, Pledge, Repository
 from polar.models.pledge import PledgeState
 
 from ...db import sessionmaker
 from ...widgets.header import PolarHeader
+from ...widgets.search_bar import SearchBar
 from .issue import PledgesIssueScreen
 
 
 class PledgesListScreen(Screen[None]):
     BINDINGS = [
         ("ctrl+r", "refresh", "Refresh"),
+        ("ctrl+f", "find", "Find"),
         ("ctrl+g", "open_in_github", "Open in GitHub"),
     ]
 
     issues: dict[str, Issue] = {}
+    search_query: str | None = None
 
     def compose(self) -> ComposeResult:
         yield PolarHeader()
         yield DataTable(cursor_type="row")
         yield Footer()
+        yield SearchBar()
 
     def on_mount(self) -> None:
         self.sub_title = "Pledges"
@@ -46,6 +51,10 @@ class PledgesListScreen(Screen[None]):
 
     def action_refresh(self) -> None:
         self.get_pledges_per_issue()
+
+    def action_find(self) -> None:
+        search_bar = self.query_one(SearchBar)
+        search_bar.toggle()
 
     def action_open_in_github(self) -> None:
         table = self.query_one(DataTable)
@@ -68,6 +77,14 @@ class PledgesListScreen(Screen[None]):
         issue = self.issues[row_key]
         self.app.push_screen(PledgesIssueScreen(issue))
 
+    def on_search_bar_submitted(self, event: SearchBar.Submitted) -> None:
+        self.search_query = event.query
+        self.get_pledges_per_issue()
+
+    def on_search_bar_cleared(self, event: SearchBar.Cleared) -> None:
+        self.search_query = None
+        self.get_pledges_per_issue()
+
     @work(exclusive=True)
     async def get_pledges_per_issue(self) -> None:
         table = self.query_one(DataTable)
@@ -83,12 +100,39 @@ class PledgesListScreen(Screen[None]):
                         Pledge.state != PledgeState.initiated,
                     ),
                 )
+                .join(Organization, onclause=Issue.organization_id == Organization.id)
+                .join(Repository, onclause=Issue.repository_id == Repository.id)
                 .options(
                     contains_eager(Issue.pledges),
-                    joinedload(Issue.organization),
-                    joinedload(Issue.repository),
+                    contains_eager(Issue.organization),
+                    contains_eager(Issue.repository),
                 )
             ).order_by(Pledge.created_at.desc())
+
+            if self.search_query:
+                clauses = self.search_query.split()
+                fuzzy_clauses = []
+                for clause in clauses:
+                    if clause.startswith("org:"):
+                        statement = statement.where(
+                            Organization.name.ilike(f"%{clause[len("org:"):]}%")
+                        )
+                    elif clause.startswith("repo:"):
+                        statement = statement.where(
+                            Repository.name.ilike(f"%{clause[len("repo:"):]}%")
+                        )
+                    elif clause.startswith("#:"):
+                        statement = statement.where(
+                            Issue.number == int(clause[len("#:") :])
+                        )
+                    else:
+                        fuzzy_clauses.append(clause)
+                if len(fuzzy_clauses):
+                    fuzzy_query = search_query(" ".join(fuzzy_clauses))
+                    statement = statement.where(
+                        Issue.title_tsv.bool_op("@@")(func.to_tsquery(fuzzy_query))
+                    )
+
             stream = await session.stream_scalars(statement)
             async for issue in stream.unique():
                 confirmation_state = Text()

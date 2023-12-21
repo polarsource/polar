@@ -11,6 +11,8 @@ PledgesIssueScreen Rule.screen-separator {
 }
 
 PledgeContainer {
+  layout: vertical;
+  height: 1fr;
   width: 50%;
 }
 
@@ -21,23 +23,59 @@ PledgeContainer Static.header {
   content-align: center middle;
   text-style: bold
 }
-PledgeContainer Container.info {
-  layout: grid;
-  grid-size: 2 2;
-  height: 5;
-}
 PledgeContainer Digits.amount {
   row-span: 2;
   width: 100%;
-  height: 100%;
+  margin: 1 0;
   text-align: center;
   content-align: center middle;
+}
+PledgeContainer Label.dispute-window-warning {
+  text-align: center;
+  color: $warning;
+  width: 100%;
 }
 
 PledgeContainer Container.buttons {
   layout: horizontal;
+  height: auto;
+  margin: 1 1;
+
 }
 PledgeContainer Container.buttons Button {
   width: 1fr;
   margin: 0 1;
+}
+
+PledgeRewards {
+  layout: grid;
+  grid-rows: auto;
+  grid-gutter: 1;
+  overflow: auto;
+}
+
+PledgeReward Container {
+  layout: horizontal;
+  background: red;
+  height: 3;
+  content-align: center middle;
+  padding: 0 1;
+}
+PledgeReward Container.unpaid {
+  background: $boost;
+}
+PledgeReward Container.paid {
+  background: $success;
+}
+PledgeReward Label {
+  width: 1fr;
+  height: 100%;
+  content-align: left middle;
+}
+PledgeReward Button {
+  width: auto;
+}
+PledgeReward Label#transferred-label {
+  text-align: right;
+  text-style: bold;
 }

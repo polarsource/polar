@@ -1,7 +1,8 @@
-import uuid
 import webbrowser
 
-from babel.numbers import format_currency
+from babel.dates import format_datetime
+from babel.numbers import format_currency, format_percent
+from rich.text import Text
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from textual import on, work
@@ -11,23 +12,141 @@ from textual.css.query import NoMatches
 from textual.message import Message
 from textual.screen import Screen
 from textual.widget import Widget
-from textual.widgets import Button, DataTable, Digits, Footer, Rule, Static
+from textual.widgets import Button, DataTable, Digits, Footer, Label, Rule, Static
 
-from polar.models import Issue, Pledge
+from polar.exceptions import PolarError
+from polar.kit.utils import utc_now
+from polar.models import Issue, IssueReward, Pledge, PledgeTransaction
 from polar.models.pledge import PledgeState, PledgeType
 from polar.pledge.schemas import Pledger
 from polar.pledge.service import pledge as pledge_service
+from polar.reward.service import reward_service
 
 from ...db import sessionmaker
+from ...utils import system_timezone
 from ...widgets.confirm_modal import ConfirmModal
 from ...widgets.header import PolarHeader
 
 
+class PledgeReward(Widget):
+    class Updated(Message):
+        ...
+
+    def __init__(
+        self,
+        pledge: Pledge,
+        reward: IssueReward,
+        pledge_transaction: PledgeTransaction | None,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+        disabled: bool = False,
+    ) -> None:
+        self.pledge = pledge
+        self.reward = reward
+        self.pledge_transaction = pledge_transaction
+
+        rewarded_name = "Unknown"
+        if self.reward.user is not None:
+            rewarded_name = self.reward.user.username
+        elif self.reward.organization is not None:
+            rewarded_name = self.reward.organization.name
+        elif self.reward.github_username:
+            rewarded_name = self.reward.github_username
+
+        self.rewarded_name = rewarded_name
+        super().__init__(name=name, id=id, classes=classes, disabled=disabled)
+
+    def compose(self) -> ComposeResult:
+        with Container(classes="paid" if self.pledge_transaction else "unpaid"):
+            amount = (
+                self.reward.get_share_amount(self.pledge)
+                if self.pledge_transaction is None
+                else self.pledge_transaction.amount
+            )
+            label = Text.assemble(
+                "→ ",
+                (format_currency(amount / 100, "USD", locale="en_US"), "bold green"),
+                (
+                    (
+                        f" ("
+                        f"{format_percent(self.reward.share_thousands / 1000, locale="en_US")}"
+                        ")"
+                    ),
+                    "bold",
+                ),
+                " to ",
+                (self.rewarded_name, "bold"),
+            )
+            yield Label(label)
+            if self.pledge_transaction is None:
+                yield Button("Create transfer", variant="primary", id="create_transfer")
+            else:
+                yield Label("Transferred", id="transferred-label")
+
+    @on(Button.Pressed, "#create_transfer")
+    def on_create_transfer(self, event: Button.Pressed) -> None:
+        def check_confirm(confirm: bool) -> None:
+            if confirm:
+                event.button.disabled = True
+                self.create_transfer()
+
+        self.app.push_screen(
+            ConfirmModal(
+                f"The money will be transferred to {self.rewarded_name}. Do you confirm?"
+            ),
+            check_confirm,
+        )
+
+    @work(exclusive=True)
+    async def create_transfer(self) -> None:
+        async with sessionmaker() as session:
+            try:
+                await pledge_service.transfer(session, self.pledge.id, self.reward.id)
+            except PolarError as e:
+                self.app.bell()
+                self.notify(e.message, severity="error", timeout=10)
+            else:
+                self.post_message(PledgeReward.Updated())
+            finally:
+                self.query_one("Button#create_transfer", Button).disabled = False
+
+
+class PledgeRewards(Widget):
+    def __init__(
+        self,
+        pledge: Pledge,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+        disabled: bool = False,
+    ) -> None:
+        self.pledge = pledge
+        super().__init__(name=name, id=id, classes=classes, disabled=disabled)
+
+    def on_mount(self) -> None:
+        self.get_rewards()
+
+    def on_pledge_reward_updated(self, event: PledgeReward.Updated) -> None:
+        self.get_rewards()
+
+    @work(exclusive=True)
+    async def get_rewards(self) -> None:
+        self.remove_children()
+        async with sessionmaker() as session:
+            results = await reward_service.list(
+                session, pledge_id=self.pledge.id, issue_id=self.pledge.issue_id
+            )
+            items = [
+                PledgeReward(self.pledge, reward, pledge_transaction)
+                for _, reward, pledge_transaction in results
+            ]
+            self.mount(*items)
+
+
 class PledgeContainer(Widget):
     class Updated(Message):
-        def __init__(self, pledge_id: uuid.UUID) -> None:
-            self.pledge_id = pledge_id
-            super().__init__()
+        ...
 
     def __init__(
         self,
@@ -51,23 +170,44 @@ class PledgeContainer(Widget):
         )
 
         yield Static(
-            f"Pledge {self.pledge.id}",
+            f"Pledge by {pledger_name}",
             classes="header",
         )
-        with Container(classes="info"):
-            yield Digits(
-                format_currency(self.pledge.amount / 100, "USD", locale="en_US"),
-                classes="amount",
+        yield Digits(
+            format_currency(self.pledge.amount / 100, "USD", locale="en_US"),
+            classes="amount",
+        )
+        if (
+            self.pledge.scheduled_payout_at
+            and self.pledge.scheduled_payout_at > utc_now()
+        ):
+            yield Label(
+                Text.assemble(
+                    "Still in dispute window.",
+                    (
+                        f" Ends at {format_datetime(self.pledge.scheduled_payout_at, locale="en_US", tzinfo=system_timezone())}.",
+                        "bold",
+                    ),
+                ),
+                classes="dispute-window-warning",
             )
-            yield Static(pledger_name)
-            yield Static(pledger_name)
-        yield Rule()
         with Container(classes="buttons"):
+            if self.pledge.payment_id is not None:
+                yield Button("View payment", id="view_payment")
             if self.pledge.type == PledgeType.pay_on_completion:
                 if self.pledge.invoice_hosted_url is None:
                     yield Button("Send invoice", variant="primary", id="send_invoice")
                 else:
                     yield Button("View invoice", id="view_invoice")
+        yield Rule()
+        yield PledgeRewards(self.pledge)
+
+    @on(Button.Pressed, "#view_payment")
+    def on_view_payment(self) -> None:
+        if self.pledge.payment_id is not None:
+            webbrowser.open_new_tab(
+                f"https://dashboard.stripe.com/payments/{self.pledge.payment_id}"
+            )
 
     @on(Button.Pressed, "#view_invoice")
     def on_view_invoice(self) -> None:
@@ -93,7 +233,7 @@ class PledgeContainer(Widget):
         async with sessionmaker() as session:
             await pledge_service.send_invoice(session, self.pledge.id)
             self.screen.notify("Invoice sent")
-            self.post_message(PledgeContainer.Updated(self.pledge.id))
+            self.post_message(PledgeContainer.Updated())
 
 
 class PledgesIssueScreen(Screen[None]):
@@ -102,7 +242,6 @@ class PledgesIssueScreen(Screen[None]):
         ("escape", "pop_screen", "Back"),
         ("ctrl+r", "refresh", "Refresh"),
         ("ctrl+g", "open_in_github", "Open issue in GitHub"),
-        ("ctrl+s", "open_in_stripe", "Open in Stripe"),
     ]
 
     pledges: dict[str, Pledge] = {}
@@ -127,7 +266,7 @@ class PledgesIssueScreen(Screen[None]):
         self.sub_title = self.issue.reference_key
 
         table = self.query_one(DataTable)
-        table.add_columns("Pledge ID", "Pledger", "Amount", "Type", "State")
+        table.add_columns("Created at", "Pledger", "Amount", "Type", "State")
         self.get_issue_pledges()
 
     def action_refresh(self) -> None:
@@ -146,7 +285,7 @@ class PledgesIssueScreen(Screen[None]):
         pledge = self.pledges[row_key]
         self.mount(PledgeContainer(pledge), before=self.query_one(Footer))
 
-    async def on_pledge_container_updated(self, event: PledgeContainer.Updated) -> None:
+    def on_pledge_container_updated(self, event: PledgeContainer.Updated) -> None:
         self.get_issue_pledges()
 
     def action_open_in_github(self) -> None:
@@ -154,19 +293,6 @@ class PledgesIssueScreen(Screen[None]):
             f"https://github.com/{self.issue.organization.name}"
             f"/{self.issue.repository.name}/issues/{self.issue.number}"
         )
-
-    def action_open_in_stripe(self) -> None:
-        table = self.query_one(DataTable)
-        cell_key = table.coordinate_to_cell_key(table.cursor_coordinate)
-        row_key = cell_key.row_key.value
-        if row_key is None:
-            return
-
-        pledge = self.pledges[row_key]
-        if pledge.payment_id is not None:
-            webbrowser.open_new_tab(
-                f"https://dashboard.stripe.com/payments/{pledge.payment_id}"
-            )
 
     @work(exclusive=True)
     async def get_issue_pledges(self) -> None:
@@ -195,7 +321,11 @@ class PledgesIssueScreen(Screen[None]):
                     pledger.github_username or pledger.name if pledger else "Anonymous"
                 )
                 table.add_row(
-                    str(pledge.id),
+                    format_datetime(
+                        pledge.created_at,
+                        tzinfo=system_timezone(),
+                        locale="en_US",
+                    ),
                     pledger_name,
                     format_currency(pledge.amount / 100, "USD", locale="en_US"),
                     pledge.type,

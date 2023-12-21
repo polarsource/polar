@@ -20,6 +20,7 @@ apis/StreamApi.ts
 apis/SubscriptionsApi.ts
 apis/TransactionsApi.ts
 apis/UsersApi.ts
+apis/WebhookNotificationsApi.ts
 apis/index.ts
 models/index.ts
 runtime.ts

@@ -26,6 +26,7 @@ import {
   SubscriptionsApi,
   TransactionsApi,
   UsersApi,
+  WebhookNotificationsApi,
 } from '.'
 
 export class PolarAPI {
@@ -51,6 +52,7 @@ export class PolarAPI {
   public readonly subscriptions: SubscriptionsApi
   public readonly transactions: TransactionsApi
   public readonly users: UsersApi
+  public readonly webhookNotifications: WebhookNotificationsApi;
 
   constructor(config: Configuration) {
     this.accounts = new AccountsApi(config)
@@ -75,5 +77,6 @@ export class PolarAPI {
     this.subscriptions = new SubscriptionsApi(config)
     this.transactions = new TransactionsApi(config)
     this.users = new UsersApi(config)
+    this.webhookNotifications = new WebhookNotificationsApi(config);
   }
 }

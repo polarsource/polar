@@ -13,14 +13,6 @@ import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFundi
 import { notFound } from 'next/navigation'
 import { getServerURL } from 'polarkit/api/url'
 
-const regularFont = fetch(
-  new URL('/public/fonts/Inter-Regular.ttf', import.meta.url),
-).then((res) => res.arrayBuffer())
-
-const mediumFont = fetch(
-  new URL('/public/fonts/Inter-Medium.ttf', import.meta.url),
-).then((res) => res.arrayBuffer())
-
 export const runtime = 'edge'
 
 const renderFundingOG = async (
@@ -31,9 +23,13 @@ const renderFundingOG = async (
   issues: Issue[],
   largeIssue: boolean,
 ) => {
-  const [regularFontData, mediumFontData] = await Promise.all([
-    regularFont,
-    mediumFont,
+  const [interRegular, interMedium] = await Promise.all([
+    fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
+      res.arrayBuffer(),
+    ),
+    fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
+      res.arrayBuffer(),
+    ),
   ])
 
   return new ImageResponse(
@@ -53,13 +49,13 @@ const renderFundingOG = async (
       fonts: [
         {
           name: 'Inter',
-          data: regularFontData,
+          data: interRegular,
           weight: 500,
           style: 'normal',
         },
         {
           name: 'Inter',
-          data: mediumFontData,
+          data: interMedium,
           weight: 600,
         },
       ],
@@ -68,9 +64,13 @@ const renderFundingOG = async (
 }
 
 const renderArticleOG = async (article: Article) => {
-  const [regularFontData, mediumFontData] = await Promise.all([
-    regularFont,
-    mediumFont,
+  const [interRegular, interMedium] = await Promise.all([
+    fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
+      res.arrayBuffer(),
+    ),
+    fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
+      res.arrayBuffer(),
+    ),
   ])
 
   return new ImageResponse(<OpenGraphImageArticle article={article} />, {
@@ -79,12 +79,12 @@ const renderArticleOG = async (article: Article) => {
     fonts: [
       {
         name: 'Inter',
-        data: regularFontData,
+        data: interRegular,
         weight: 500,
       },
       {
         name: 'Inter',
-        data: mediumFontData,
+        data: interMedium,
         weight: 600,
       },
     ],

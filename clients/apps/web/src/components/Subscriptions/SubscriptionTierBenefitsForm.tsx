@@ -79,9 +79,10 @@ const BenefitRow = ({
       <div className="flex flex-row items-center gap-x-4">
         <div
           className={twMerge(
-            'dark:bg-polar-700 dark:text-polar-400 flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-300',
-            checked &&
-              'bg-blue-500 text-blue-500 shadow dark:border dark:border-blue-400 dark:bg-blue-500',
+            'flex h-8 w-8 items-center justify-center rounded-full',
+            checked
+              ? 'bg-blue-500 text-blue-500 dark:bg-blue-950 dark:text-blue-400'
+              : 'dark:text-polar-300 dark:bg-polar-700 bg-gray-100 text-gray-300',
           )}
         >
           {resolveBenefitIcon(benefit, checked)}

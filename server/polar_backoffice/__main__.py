@@ -2,7 +2,6 @@ import argparse
 import contextlib
 import os
 import subprocess
-import tempfile
 from collections.abc import Generator
 from typing import NamedTuple, TypeAlias
 
@@ -70,12 +69,10 @@ def _set_tunnels(environment_variables: EnvVars) -> tuple[EnvVars, list[Tunnel]]
     return environment_variables, tunnels
 
 
-def _write_env_file(environment_variables: EnvVars) -> str:
-    env_file = tempfile.NamedTemporaryFile("w", delete=False)
+def _set_environment_variables(environment_variables: EnvVars) -> None:
+    os.environ["POLAR_ENV"] = environment_variables["POLAR_ENV"]
     for key, value in environment_variables.items():
-        quote = '"' if "'" in value else "'"
-        env_file.write(f"{key}={quote}{value}{quote}\n")
-    return env_file.name
+        os.environ[key] = value
 
 
 def _get_ssh_hostname(render_api_key: str, render_service_id: str) -> str:
@@ -133,10 +130,7 @@ if __name__ == "__main__":
         args.render_api_key, args.render_service_id
     )
     environment_variables, tunnels = _set_tunnels(environment_variables)
-
-    env_file = _write_env_file(environment_variables)
-    os.environ["POLAR_ENV"] = environment_variables["POLAR_ENV"]
-    os.environ["POLAR_ENV_FILE"] = env_file
+    _set_environment_variables(environment_variables)
 
     spinner.text = "Opening SSH connection..."
     ssh_hostname = _get_ssh_hostname(args.render_api_key, args.render_service_id)
@@ -148,5 +142,3 @@ if __name__ == "__main__":
         app = PolarBackOffice()
         spinner.stop()
         app.run()
-
-    os.remove(env_file)

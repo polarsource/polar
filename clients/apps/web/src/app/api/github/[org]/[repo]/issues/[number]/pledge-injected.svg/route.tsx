@@ -17,12 +17,11 @@ const renderBadge = async ({
 }) => {
   let hasAmount = amount !== null
 
-  const inter = await fetch(
-    new URL(
-      '../../../../../../../../assets/fonts/Inter-Regular.ttf',
-      import.meta.url,
+  const [interRegular] = await Promise.all([
+    fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
+      res.arrayBuffer(),
     ),
-  ).then((res) => res.arrayBuffer())
+  ])
 
   return await satori(
     <Badge
@@ -38,7 +37,7 @@ const renderBadge = async ({
       fonts: [
         {
           name: 'Inter',
-          data: inter,
+          data: interRegular,
           weight: 500,
           style: 'normal',
         },

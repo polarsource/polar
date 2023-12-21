@@ -3,6 +3,7 @@
 import { Benefit, resolveBenefitTypeIcon } from '@/components/Benefit/Benefit'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
+import { DiamondOutlined } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar, Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
@@ -26,7 +27,17 @@ const ClientPage = ({
     [setSelectedBenefit],
   )
 
-  return (
+  return subscriptionTiers.length < 1 ? (
+    <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
+      <DiamondOutlined fontSize="inherit" />
+      <div className="flex flex-col items-center gap-y-2">
+        <h3 className="p-2 text-xl font-medium">You have no benefits</h3>
+        <p className="dark:text-polar-500 min-w-0 truncate text-base text-gray-500">
+          Unlock benefits by subscribing to creators
+        </p>
+      </div>
+    </div>
+  ) : (
     <div className="relative flex flex-row items-start gap-x-12">
       <div className="flex w-2/3 flex-col">
         {subscriptionTiers.map((tier) => (

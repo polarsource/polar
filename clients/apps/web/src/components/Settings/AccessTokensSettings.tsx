@@ -16,63 +16,8 @@ import {
   useCreatePersonalAccessToken,
   useDeletePersonalAccessToken,
   useListPersonalAccessTokens,
-  useUser,
-  useUserPreferencesMutation,
 } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
-
-export type Settings = {
-  email_newsletters_and_changelogs?: boolean
-  email_promotions_and_events?: boolean
-}
-
-const AccessTokensSettings = () => {
-  const user = useUser()
-  const mutation = useUserPreferencesMutation()
-  const [settings, setSettings] = useState<Settings>({})
-
-  useEffect(() => {
-    if (!user.data) {
-      return
-    }
-
-    setSettings({
-      email_newsletters_and_changelogs:
-        user.data?.email_newsletters_and_changelogs,
-      email_promotions_and_events: user.data?.email_promotions_and_events,
-    })
-  }, [user.data])
-
-  const [canSave, setCanSave] = useState(false)
-
-  const onUpdated = (next: Settings) => {
-    setSettings({
-      ...settings,
-      ...next,
-    })
-    setCanSave(true)
-  }
-
-  const save = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    await mutation.mutateAsync({ userUpdateSettings: settings })
-  }
-
-  if (!user.data) {
-    return <></>
-  }
-
-  return (
-    <AccessTokensBox
-      settings={settings}
-      canSave={canSave}
-      onUpdated={onUpdated}
-      isSaving={mutation.isPending}
-      save={save}
-    />
-  )
-}
-
-export default AccessTokensSettings
+import { useState } from 'react'
 
 const AccessToken = (
   props: PersonalAccessToken & { createdTokenJWT?: string },
@@ -123,13 +68,7 @@ const AccessToken = (
   )
 }
 
-export const AccessTokensBox = (props: {
-  settings: Settings
-  onUpdated: (value: Settings) => void
-  save: (event: React.MouseEvent<HTMLButtonElement>) => void
-  canSave: boolean
-  isSaving: boolean
-}) => {
+const AccessTokensSettings = () => {
   const tokens = useListPersonalAccessTokens()
   const createToken = useCreatePersonalAccessToken()
   const [createdToken, setCreatedToken] =
@@ -193,3 +132,5 @@ export const AccessTokensBox = (props: {
     </div>
   )
 }
+
+export default AccessTokensSettings

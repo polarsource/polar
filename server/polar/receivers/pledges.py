@@ -1,7 +1,7 @@
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
+from slack_sdk.webhook import WebhookClient as SlackWebhookClient
 
-from polar import integrations
 from polar.account.service import account as account_service
 from polar.config import settings
 from polar.issue.hooks import IssueHook, issue_upserted
@@ -125,22 +125,47 @@ async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
         return
 
     for wh in webhooks:
+        description = (
+            f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".'
+        )
+
         if wh.integration == "discord":
             webhook = AsyncDiscordWebhook(url=wh.url, content="New pledge")
 
             embed = DiscordEmbed(
                 title="New pledge",
-                description=f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".',  # noqa: E501
+                description=description,
                 color="65280",
             )
 
             embed.add_embed_field(
                 name="Polar",
-                value=f"[Open](https://polar.sh/{org.name}/${repo.name}/issues/{issue.number})",
+                value=f"[Open](https://polar.sh/{org.name}/{repo.name}/issues/{issue.number})",
             )
 
             webhook.add_embed(embed)
             await webhook.execute()
+            continue
+
+        if wh.integration == "slack":
+            slack_webhook = SlackWebhookClient(wh.url)
+            response = slack_webhook.send(
+                text=description,
+                blocks=[
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": description,
+                        },
+                        "accessory": {
+                            "type": "button",
+                            "text": {"type": "plain_text", "text": "Open"},
+                            "url": f"https://polar.sh/{org.name}/{repo.name}/issues/{issue.number}",
+                        },
+                    },
+                ],
+            )
 
 
 pledge_created_hook.add(pledge_created_webhook_alerts)

@@ -61,7 +61,9 @@ const WebhookNotificationSettings = (props: { org: Organization }) => {
 
   const integration = webhookUrl.startsWith('https://discord.com/api/webhooks/')
     ? 'discord'
-    : ''
+    : webhookUrl.startsWith('https://hooks.slack.com/services/')
+      ? 'slack'
+      : ''
 
   const onCreate = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()

@@ -119,6 +119,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         env_file=env_file,
+        extra="ignore",
     )
 
     @field_validator("GITHUB_APP_PRIVATE_KEY")

@@ -8,7 +8,7 @@ from polar.issue.service import issue as issue_service
 from polar.models import Issue
 from polar.models.account import Account
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeType
 from polar.models.repository import Repository
 from polar.notifications.notification import (
     MaintainerPledgeCreatedNotification,
@@ -30,7 +30,7 @@ from polar.pledge.hooks import (
 from polar.pledge.hooks import (
     pledge_updated as pledge_updated_hook,
 )
-from polar.pledge.schemas import Pledger, PledgeType
+from polar.pledge.schemas import Pledger
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service

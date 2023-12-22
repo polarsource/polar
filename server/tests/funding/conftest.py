@@ -1,7 +1,7 @@
 import pytest_asyncio
 
 from polar.models import Issue, Organization, Pledge, Repository
-from polar.pledge.schemas import PledgeState, PledgeType
+from polar.models.pledge import PledgeState, PledgeType
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import create_issue, create_pledge
 

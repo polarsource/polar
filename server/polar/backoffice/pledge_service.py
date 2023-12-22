@@ -9,9 +9,8 @@ from sqlalchemy.orm import (
 from polar.backoffice.schemas import BackofficePledge
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.issue import Issue
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
-from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 
 log = structlog.get_logger()

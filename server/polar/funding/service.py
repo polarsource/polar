@@ -21,7 +21,7 @@ from polar.funding.schemas import FundingResultType
 from polar.issue.search import search_query
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Issue, Organization, Pledge, Repository, UserOrganization
-from polar.pledge.schemas import PledgeState, PledgeType
+from polar.models.pledge import PledgeState, PledgeType
 from polar.postgres import AsyncSession
 
 

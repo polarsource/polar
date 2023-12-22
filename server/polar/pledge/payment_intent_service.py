@@ -12,7 +12,7 @@ from polar.integrations.stripe.service import stripe
 from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.organization.service import organization as organization_service
@@ -22,11 +22,9 @@ from polar.repository.service import repository as repository_service
 from polar.user.service import user as user_service
 
 from .schemas import (
-    PledgeState,
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
     PledgeStripePaymentIntentUpdate,
-    PledgeType,
 )
 from .service import pledge as pledge_service
 

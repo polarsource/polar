@@ -38,8 +38,8 @@ from polar.kit.utils import utc_now
 from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
-from polar.models.pledge import Pledge
-from polar.models.pledge_transaction import PledgeTransaction
+from polar.models.pledge import Pledge, PledgeState, PledgeType
+from polar.models.pledge_transaction import PledgeTransaction, PledgeTransactionType
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
@@ -74,9 +74,6 @@ from .hooks import (
 from .schemas import (
     PledgePledgesSummary,
     Pledger,
-    PledgeState,
-    PledgeTransactionType,
-    PledgeType,
     SummaryPledge,
 )
 

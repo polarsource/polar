@@ -5,6 +5,7 @@ import uuid
 import pytest
 
 from polar.models.organization import Organization
+from polar.models.pledge import PledgeType
 from polar.models.user import User
 from polar.notifications.notification import (
     MaintainerPledgeConfirmationPendingNotification,
@@ -17,7 +18,6 @@ from polar.notifications.notification import (
     RewardPaidNotification,
     TeamAdminMemberPledgedNotification,
 )
-from polar.pledge.schemas import PledgeType
 
 
 async def check_diff(email: tuple[str, str]) -> None:

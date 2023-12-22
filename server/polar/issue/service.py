@@ -28,10 +28,9 @@ from polar.models.issue_reference import IssueReference
 from polar.models.issue_reward import IssueReward
 from polar.models.notification import Notification
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate

@@ -7,11 +7,10 @@ from polar.authz.service import AccessType, Anonymous, Authz, Subject
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import (
     create_issue,

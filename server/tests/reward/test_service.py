@@ -10,11 +10,10 @@ from polar.kit.utils import utc_now
 from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.transaction import Transaction
 from polar.models.user import OAuthAccount, User
-from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.reward.endpoints import to_resource

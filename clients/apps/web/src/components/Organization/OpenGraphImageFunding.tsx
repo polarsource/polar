@@ -161,120 +161,129 @@ const OpenGraphImageFunding = (props: {
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  flexShrink: 0,
-                }}
-              >
-                {i.funding.funding_goal ? (
-                  <div>
-                    <div
-                      style={{
-                        color: '#181A1F',
-                        fontSize: '24px',
-                        lineHeight: '36px',
-                      }}
-                    >
-                      $
-                      {getCentsInDollarString(
-                        i.funding.pledges_sum?.amount || 0,
-                        false,
-                        true,
-                      )}{' '}
-                      <span style={{ color: '#999999' }}>
-                        {`/ $${getCentsInDollarString(
-                          i.funding.funding_goal.amount,
-                          false,
-                          true,
-                        )} funded`}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        display: 'flex',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        width: '100%',
-                      }}
-                    >
+              {/* There are some layout issues here, disable for now to get the renderer to work again */}
+              {false ? (
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {i.funding.funding_goal !== undefined ? (
                       <div
                         style={{
-                          width: `${
-                            ((i.funding.pledges_sum?.amount ?? 0) /
-                              i.funding.funding_goal.amount) *
-                            100
-                          }%`,
-                          background: '#0062FF',
-                          height: '12px',
+                          display: 'flex',
                         }}
-                      ></div>
-                      <div
-                        style={{
-                          background: '#E5E5E1',
-                          flexGrow: 1,
-                          height: '12px',
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                ) : null}
+                      >
+                        <div
+                          style={{
+                            color: '#181A1F',
+                            display: 'flex',
+                            fontSize: '24px',
+                            lineHeight: '36px',
+                          }}
+                        >
+                          $
+                          {getCentsInDollarString(
+                            i.funding.pledges_sum?.amount || 0,
+                            false,
+                            true,
+                          )}{' '}
+                          <span style={{ color: '#999999' }}>
+                            {`/ $${getCentsInDollarString(
+                              i.funding.funding_goal?.amount ?? 0,
+                              false,
+                              true,
+                            )} funded`}
+                          </span>
+                        </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: props.largeIssue
-                      ? 'space-between'
-                      : 'center',
-                    alignItems: 'center',
-                    fontSize: '24px',
-                    lineHeight: '36px',
-                    gap: '20px',
-                    color: '#808080',
-                    flexShrink: 0,
-                  }}
-                >
-                  {i.reactions && i.reactions.plus_one > 0 ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            width: '100%',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${
+                                ((i.funding.pledges_sum?.amount ?? 0) /
+                                  (i.funding.funding_goal?.amount ?? 1)) *
+                                100
+                              }%`,
+                              background: '#0062FF',
+                              height: '12px',
+                            }}
+                          ></div>
+                          <div
+                            style={{
+                              background: '#E5E5E1',
+                              flexGrow: 1,
+                              height: '12px',
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    ) : null}
+
                     <div
                       style={{
                         display: 'flex',
                         flexDirection: 'row',
+                        justifyContent: props.largeIssue
+                          ? 'space-between'
+                          : 'center',
+                        alignItems: 'center',
+                        fontSize: '24px',
+                        lineHeight: '36px',
+                        gap: '20px',
+                        color: '#808080',
+                        flexShrink: 0,
                       }}
                     >
-                      <img
-                        style={{
-                          height: '36px',
-                        }}
-                        src={imageBaseURL + '/og_thumbs_up.png'}
-                      />
+                      {(i.reactions?.plus_one ?? 0) > 0 ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                          }}
+                        >
+                          <img
+                            style={{
+                              height: '36px',
+                            }}
+                            src={imageBaseURL + '/og_thumbs_up.png'}
+                          />
+                          <div
+                            style={{
+                              marginLeft: '12px',
+                              verticalAlign: 'center',
+                            }}
+                          >{`${i.reactions?.plus_one ?? 0}`}</div>
+                        </div>
+                      ) : (
+                        <div></div>
+                      )}
                       <div
                         style={{
-                          marginLeft: '12px',
-                          verticalAlign: 'center',
+                          background: '#0062FF',
+                          color: 'white',
+                          fontSize: '24px',
+                          padding: '14px 28px',
+                          borderRadius: '12px',
+                          lineHeight: '24px',
                         }}
-                      >{`${i.reactions.plus_one}`}</div>
+                      >
+                        Pledge
+                      </div>
                     </div>
-                  ) : (
-                    <div></div>
-                  )}
-                  <div
-                    style={{
-                      background: '#0062FF',
-                      color: 'white',
-                      fontSize: '24px',
-                      padding: '14px 28px',
-                      borderRadius: '12px',
-                      lineHeight: '24px',
-                    }}
-                  >
-                    Pledge
                   </div>
-                </div>
-              </div>
+                </>
+              ) : null}
             </div>
           ))}
         </div>

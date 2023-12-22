@@ -3,7 +3,7 @@ import webbrowser
 
 from babel.numbers import format_currency
 from rich.text import Text
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, desc, func, select, text
 from sqlalchemy.orm import contains_eager
 from textual import work
 from textual.app import ComposeResult
@@ -11,7 +11,14 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Footer
 
 from polar.issue.search import search_query
-from polar.models import Issue, Organization, Pledge, Repository
+from polar.models import (
+    Issue,
+    IssueReward,
+    Organization,
+    Pledge,
+    PledgeTransaction,
+    Repository,
+)
 from polar.models.pledge import PledgeState
 
 from ...db import sessionmaker
@@ -47,6 +54,7 @@ class PledgesListScreen(Screen[None]):
             "Confirmation state",
             "Number of pledges",
             "Amount pledged",
+            "Rewards to transfer",
         )
         self.get_pledges_per_issue()
 
@@ -93,7 +101,17 @@ class PledgesListScreen(Screen[None]):
         table.clear()
         async with sessionmaker() as session:
             statement = (
-                select(Issue)
+                select(
+                    Issue,
+                    # Count the rewards ready for transfer
+                    func.count(IssueReward.id)
+                    .filter(
+                        PledgeTransaction.id.is_(None),
+                        Pledge.ready_for_transfer.is_(True),
+                    )
+                    .over(partition_by=Issue.id)
+                    .label("pending_rewards_count"),
+                )
                 .join(
                     Pledge,
                     onclause=and_(
@@ -103,12 +121,26 @@ class PledgesListScreen(Screen[None]):
                 )
                 .join(Organization, onclause=Issue.organization_id == Organization.id)
                 .join(Repository, onclause=Issue.repository_id == Repository.id)
+                .join(
+                    IssueReward, onclause=Issue.id == IssueReward.issue_id, isouter=True
+                )
+                .join(
+                    PledgeTransaction,
+                    onclause=and_(
+                        PledgeTransaction.pledge_id == Pledge.id,
+                        PledgeTransaction.issue_reward_id == IssueReward.id,
+                    ),
+                    isouter=True,
+                )
                 .options(
                     contains_eager(Issue.pledges),
                     contains_eager(Issue.organization),
                     contains_eager(Issue.repository),
                 )
-            ).order_by(Pledge.created_at.desc())
+            ).order_by(
+                desc(text("pending_rewards_count")),
+                Pledge.created_at.desc(),
+            )
 
             if self.search_query:
                 clauses = self.search_query.split()
@@ -134,8 +166,8 @@ class PledgesListScreen(Screen[None]):
                         Issue.title_tsv.bool_op("@@")(func.to_tsquery(fuzzy_query))
                     )
 
-            stream = await session.stream_scalars(statement)
-            async for issue in stream.unique():
+            stream = await session.stream(statement)
+            async for issue, pending_rewards_count in stream.unique():
                 confirmation_state = Text()
                 if issue.needs_confirmation_solved:
                     confirmation_state.append(
@@ -154,6 +186,10 @@ class PledgesListScreen(Screen[None]):
                     len(issue.pledges),
                     format_currency(
                         issue.pledged_amount_sum / 100, "USD", locale="en_US"
+                    ),
+                    Text(
+                        str(pending_rewards_count),
+                        style="dark_orange" if pending_rewards_count > 0 else "",
                     ),
                     key=str(issue.id),
                 )

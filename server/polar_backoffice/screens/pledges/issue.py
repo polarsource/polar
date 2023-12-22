@@ -3,7 +3,7 @@ import webbrowser
 from babel.dates import format_datetime
 from babel.numbers import format_currency, format_percent
 from rich.text import Text
-from sqlalchemy import select
+from sqlalchemy import and_, desc, func, select, text
 from sqlalchemy.orm import joinedload
 from textual import on, work
 from textual.app import ComposeResult
@@ -79,10 +79,12 @@ class PledgeReward(Widget):
                 (self.rewarded_name, "bold"),
             )
             yield Label(label)
-            if self.pledge_transaction is None:
+            if self.pledge_transaction:
+                yield Label("Transferred", id="transfer-label")
+            elif self.pledge.ready_for_transfer:
                 yield Button("Create transfer", variant="primary", id="create_transfer")
             else:
-                yield Label("Transferred", id="transferred-label")
+                yield Label("Not ready for transfer", id="transfer-label")
 
     @on(Button.Pressed, "#create_transfer")
     def on_create_transfer(self, event: Button.Pressed) -> None:
@@ -266,7 +268,9 @@ class PledgesIssueScreen(Screen[None]):
         self.sub_title = self.issue.reference_key
 
         table = self.query_one(DataTable)
-        table.add_columns("Created at", "Pledger", "Amount", "Type", "State")
+        table.add_columns(
+            "Created at", "Pledger", "Amount", "Type", "State", "Rewards to transfer"
+        )
         self.get_issue_pledges()
 
     def action_refresh(self) -> None:
@@ -302,7 +306,30 @@ class PledgesIssueScreen(Screen[None]):
         table.clear()
         async with sessionmaker() as session:
             statement = (
-                select(Pledge)
+                select(
+                    Pledge,
+                    # Count the rewards ready for transfer
+                    func.count(IssueReward.id)
+                    .filter(
+                        PledgeTransaction.id.is_(None),
+                        Pledge.ready_for_transfer.is_(True),
+                    )
+                    .over(partition_by=Pledge.id)
+                    .label("pending_rewards_count"),
+                )
+                .join(
+                    IssueReward,
+                    onclause=Pledge.issue_id == IssueReward.issue_id,
+                    isouter=True,
+                )
+                .join(
+                    PledgeTransaction,
+                    onclause=and_(
+                        PledgeTransaction.pledge_id == Pledge.id,
+                        PledgeTransaction.issue_reward_id == IssueReward.id,
+                    ),
+                    isouter=True,
+                )
                 .options(
                     joinedload(Pledge.on_behalf_of_organization),
                     joinedload(Pledge.user),
@@ -312,10 +339,13 @@ class PledgesIssueScreen(Screen[None]):
                     Pledge.state != PledgeState.initiated,
                     Pledge.issue_id == self.issue.id,
                 )
-                .order_by(Pledge.created_at.desc())
+                .order_by(
+                    desc(text("pending_rewards_count")),
+                    Pledge.created_at.desc(),
+                )
             )
-            stream = await session.stream_scalars(statement)
-            async for pledge in stream.unique():
+            stream = await session.stream(statement)
+            async for pledge, pending_rewards_count in stream.unique():
                 pledger = Pledger.from_pledge(pledge)
                 pledger_name = (
                     pledger.github_username or pledger.name if pledger else "Anonymous"
@@ -330,6 +360,10 @@ class PledgesIssueScreen(Screen[None]):
                     format_currency(pledge.amount / 100, "USD", locale="en_US"),
                     pledge.type,
                     pledge.state.capitalize(),
+                    Text(
+                        str(pending_rewards_count),
+                        style="dark_orange" if pending_rewards_count > 0 else "",
+                    ),
                     key=str(pledge.id),
                 )
                 self.pledges[str(pledge.id)] = pledge

@@ -75,7 +75,7 @@ PledgeReward Label {
 PledgeReward Button {
   width: auto;
 }
-PledgeReward Label#transferred-label {
+PledgeReward Label#transfer-label {
   text-align: right;
   text-style: bold;
 }

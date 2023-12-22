@@ -2,11 +2,23 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String
+from sqlalchemy import (
+    TIMESTAMP,
+    BigInteger,
+    Boolean,
+    ColumnElement,
+    ForeignKey,
+    String,
+    and_,
+    or_,
+    type_coerce,
+)
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
+from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
@@ -281,3 +293,23 @@ class Pledge(RecordModel):
     @declared_attr
     def issue(cls) -> Mapped[Issue]:
         return relationship(Issue, primaryjoin=Issue.id == cls.issue_id, lazy="raise")
+
+    @hybrid_property
+    def ready_for_transfer(self) -> bool:
+        return self.state == PledgeState.pending and (
+            self.scheduled_payout_at is None or self.scheduled_payout_at < utc_now()
+        )
+
+    @ready_for_transfer.inplace.expression
+    @classmethod
+    def _ready_for_transfer_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(
+            and_(
+                cls.state == PledgeState.pending,
+                or_(
+                    cls.scheduled_payout_at.is_(None),
+                    cls.scheduled_payout_at < utc_now(),
+                ),
+            ),
+            Boolean,
+        )

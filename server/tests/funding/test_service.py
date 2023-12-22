@@ -8,7 +8,7 @@ from polar.funding.service import ListFundingSortBy
 from polar.funding.service import funding as funding_service
 from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, User, UserOrganization
-from polar.pledge.schemas import PledgeState, PledgeType
+from polar.models.pledge import PledgeState, PledgeType
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import create_repository, create_user
 

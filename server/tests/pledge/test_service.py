@@ -20,15 +20,14 @@ from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
-from polar.models.pledge_transaction import PledgeTransaction
+from polar.models.pledge import Pledge, PledgeState, PledgeType
+from polar.models.pledge_transaction import PledgeTransaction, PledgeTransactionType
 from polar.models.repository import Repository
 from polar.models.transaction import Transaction
 from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
 from polar.notifications.service import PartialNotification
 from polar.pledge.hooks import PledgeHook, pledge_created
-from polar.pledge.schemas import PledgeState, PledgeTransactionType, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import (

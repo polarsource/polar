@@ -1,12 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Self, cast
+from typing import Self
 
 from polar.currency.schemas import CurrencyAmount
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
 from polar.models import Issue as IssueModel
-from polar.pledge.schemas import Pledger, PledgeType
+from polar.models.pledge import PledgeType
+from polar.pledge.schemas import Pledger
 
 FundingResultType = tuple[
     IssueModel, Decimal, datetime | None, Decimal, Decimal, Decimal
@@ -48,7 +49,7 @@ class IssueFunding(Schema):
         for pledge in issue.pledges:
             pledger = Pledger.from_pledge(pledge)
             if pledger:
-                pledgers[cast(PledgeType, pledge.type)].append(pledger)
+                pledgers[pledge.type].append(pledger)
 
         pay_upfront_summary = PledgesSummary(
             total=CurrencyAmount(currency="USD", amount=int(pay_upfront_total)),

@@ -9,7 +9,7 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header
 
 from polar.models import Issue, Pledge
-from polar.pledge.schemas import PledgeState
+from polar.models.pledge import PledgeState
 
 from ...db import sessionmaker
 from .issue import PledgesIssueScreen

@@ -1,10 +1,10 @@
 from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
@@ -13,11 +13,112 @@ from polar.models.repository import Repository
 from polar.models.user import User
 
 
-class PledgeWithoutPledgerError(PolarError):
-    def __init__(self, pledge_id: UUID) -> None:
-        self.pledge_id = pledge_id
-        message = f"The pledge {pledge_id} has no associated pledger"
-        super().__init__(message)
+class PledgeState(StrEnum):
+    # Initiated by customer. Polar has not received money yet.
+    initiated = "initiated"
+
+    # The pledge has been created.
+    # Type=pay_upfront: polar has recevied the money
+    # Type=pay_on_completion: polar has not recevied the money
+    created = "created"
+
+    # The fix was confirmed, and rewards have been created.
+    # See issue rewards to track payment status.
+    #
+    # Type=pay_upfront: polar has recevied the money
+    # Type=pay_on_completion: polar has recevied the money
+    pending = "pending"
+
+    # The pledge was refunded in full before being paid out.
+    refunded = "refunded"
+    # The pledge was disputed by the customer (via Polar)
+    disputed = "disputed"
+    # The charge was disputed by the customer (via Stripe, aka "chargeback")
+    charge_disputed = "charge_disputed"
+    # Manually cancalled by a Polar admin.
+    cancelled = "cancelled"
+
+    # The states in which this pledge is "active", i.e. is listed on the issue
+    @classmethod
+    def active_states(cls) -> list["PledgeState"]:
+        return [
+            cls.created,
+            cls.pending,
+            cls.disputed,
+        ]
+
+    # Happy paths:
+    #   Pay upfront:
+    #       initiated -> created -> pending -> (transfer)
+    #
+    #   Pay later (pay_on_completion / pay_from_maintainer):
+    #       created -> pending -> (transfer)
+    #
+    #   Pay regardless:
+    #       pending -> (transfer)
+    #
+
+    @classmethod
+    def to_created_states(cls) -> list["PledgeState"]:
+        """
+        Allowed states to move into initiated from
+        """
+        return [cls.initiated]
+
+    @classmethod
+    def to_confirmation_pending_states(cls) -> list["PledgeState"]:
+        """
+        Allowed states to move into confirmation pending from
+        """
+        return [cls.created]
+
+    @classmethod
+    def to_pending_states(cls) -> list["PledgeState"]:
+        """
+        Allowed states to move into pending from
+        """
+        return [cls.created]
+
+    @classmethod
+    def to_disputed_states(cls) -> list["PledgeState"]:
+        """
+        # Allowed states to move into disputed from
+        """
+        return [cls.created, cls.pending]
+
+    @classmethod
+    def to_paid_states(cls) -> list["PledgeState"]:
+        """
+        Allowed states to move into paid from
+        """
+        return [cls.pending]
+
+    @classmethod
+    def to_refunded_states(cls) -> list["PledgeState"]:
+        """
+        Allowed states to move into refunded from
+        """
+        return [cls.created, cls.pending, cls.disputed]
+
+    @classmethod
+    def from_str(cls, s: str) -> "PledgeState":
+        return PledgeState.__members__[s]
+
+
+class PledgeType(StrEnum):
+    # Up front pledges, paid to Polar directly, transfered to maintainer when completed.
+    pay_upfront = "pay_upfront"
+
+    # Pledge without upfront payment. The pledger pays after the issue is completed.
+    pay_on_completion = "pay_on_completion"
+
+    # Pay directly. Money is ready to transfered to maintainer without requiring
+    # issue to be completed.
+    pay_directly = "pay_directly"
+
+    @classmethod
+    def from_str(cls, s: str) -> "PledgeType":
+        return PledgeType.__members__[s]
 
 
 class Pledge(RecordModel):
@@ -66,8 +167,12 @@ class Pledge(RecordModel):
         BigInteger, nullable=True, default=None
     )
 
-    state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
-    type: Mapped[str] = mapped_column(String, nullable=False, default="pay_upfront")
+    state: Mapped[PledgeState] = mapped_column(
+        String, nullable=False, default=PledgeState.initiated
+    )
+    type: Mapped[PledgeType] = mapped_column(
+        String, nullable=False, default=PledgeType.pay_upfront
+    )
 
     # often 7 days after the state changes to pending
     scheduled_payout_at: Mapped[datetime | None] = mapped_column(

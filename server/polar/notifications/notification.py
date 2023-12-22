@@ -4,8 +4,8 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from polar.email.renderer import get_email_renderer
+from polar.models.pledge import PledgeType
 from polar.models.user import User
-from polar.pledge.schemas import PledgeType
 
 
 class NotificationBase(BaseModel):

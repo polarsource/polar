@@ -2,10 +2,10 @@ from pydantic import UUID4
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.pledge import PledgeState
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import PaymentProcessor, TransactionType
-from polar.pledge.schemas import PledgeState
 
 
 class TransactionRepository(TimestampedSchema):

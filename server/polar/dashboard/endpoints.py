@@ -20,13 +20,13 @@ from polar.issue.schemas import Issue as IssueSchema
 from polar.issue.schemas import IssueReferenceRead
 from polar.issue.service import issue
 from polar.models.organization import Organization
+from polar.models.pledge import PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.service import organization as organization_service
 from polar.pledge.endpoints import to_schema as pledge_to_schema
 from polar.pledge.schemas import Pledge as PledgeSchema
-from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository

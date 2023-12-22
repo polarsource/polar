@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Pledge
-from polar.pledge.schemas import PledgeState
+from polar.models.pledge import PledgeState
 from polar.postgres import create_engine
 from polar.user.service import user as user_service
 

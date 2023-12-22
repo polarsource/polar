@@ -9,11 +9,10 @@ from sqlalchemy.orm import (
 
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
-from polar.models.pledge import Pledge
-from polar.models.pledge_transaction import PledgeTransaction
+from polar.models.pledge import Pledge, PledgeState
+from polar.models.pledge_transaction import PledgeTransaction, PledgeTransactionType
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.pledge.schemas import PledgeState, PledgeTransactionType
 from polar.postgres import AsyncSession, sql
 
 log = structlog.get_logger()

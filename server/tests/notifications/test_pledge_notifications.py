@@ -7,13 +7,12 @@ from polar.kit.extensions.sqlalchemy import sql
 from polar.models.issue import Issue
 from polar.models.notification import Notification
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.notifications.notification import MaintainerPledgeCreatedNotification
 from polar.notifications.service import NotificationsService, PartialNotification
-from polar.pledge.schemas import PledgeState, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 

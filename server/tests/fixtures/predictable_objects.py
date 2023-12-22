@@ -11,12 +11,11 @@ from polar.integrations.github.service import (
 )
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationCreate
-from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 

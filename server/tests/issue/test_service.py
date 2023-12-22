@@ -11,10 +11,9 @@ from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from tests.fixtures import random_objects
@@ -284,7 +283,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
         third_party_issue = await random_objects.create_issue(
             session, third_party_org, third_party_repo
         )
-        third_party_issue.title = "pledged_towards_" + str(state)
+        third_party_issue.title = "pledged_towards_" + state
         await third_party_issue.save(session)
 
         # Create pledge
@@ -309,10 +308,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
 
     # assert count == 1
     names = [i.title for i in issues]
-    assert names == [
-        "pledged_towards_PledgeState.disputed",
-        "pledged_towards_PledgeState.created",
-    ]
+    assert names == ["pledged_towards_disputed", "pledged_towards_created"]
 
 
 @pytest.mark.asyncio

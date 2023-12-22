@@ -177,7 +177,7 @@ class GithubPullRequestService(PullRequestService):
         client = github.get_app_installation_client(installation_id)
 
         paginator: Paginator[github.rest.PullRequestSimple] = client.paginate(
-            client.rest.pulls.async_list,  # type: ignore
+            client.rest.pulls.async_list,
             owner=organization.name,
             repo=repository.name,
             state=state,

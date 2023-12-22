@@ -672,7 +672,7 @@ class GithubIssueService(IssueService):
         client = github.get_app_installation_client(installation_id)
 
         paginator: Paginator[github.rest.Issue] = client.paginate(
-            client.rest.issues.async_list_for_repo,  # type: ignore
+            client.rest.issues.async_list_for_repo,
             owner=organization.name,
             repo=repository.name,
             state=state,

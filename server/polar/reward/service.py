@@ -9,6 +9,7 @@ from sqlalchemy.orm import (
 
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
+from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
 from polar.models.pledge_transaction import PledgeTransaction, PledgeTransactionType
 from polar.models.repository import Repository
@@ -74,8 +75,8 @@ class RewardService:
                 statement = statement.where(PledgeTransaction.id.is_(None))
 
         statement = statement.options(
-            joinedload(IssueReward.user),
-            joinedload(IssueReward.organization),
+            joinedload(IssueReward.user).joinedload(User.account),
+            joinedload(IssueReward.organization).joinedload(Organization.account),
             joinedload(Pledge.issue)
             .joinedload(Issue.repository)
             .joinedload(Repository.organization),

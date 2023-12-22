@@ -10,6 +10,7 @@ from polar.models.organization import Organization
 from polar.models.user import User
 
 if TYPE_CHECKING:
+    from .account import Account
     from .pledge import Pledge
 
 
@@ -54,3 +55,16 @@ class IssueReward(RecordModel):
 
     def get_share_amount(self, pledge: "Pledge") -> int:
         return round(pledge.amount * 0.9 * self.share_thousands / 1000)
+
+    def get_rewarded(self) -> "Organization | User | None":
+        if self.organization is not None:
+            return self.organization
+        elif self.user is not None:
+            return self.user
+        return None
+
+    def get_rewarded_account(self) -> "Account | None":
+        rewarded = self.get_rewarded()
+        if rewarded is not None:
+            return rewarded.account
+        return None

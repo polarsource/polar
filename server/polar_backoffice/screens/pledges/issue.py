@@ -2,6 +2,7 @@ import webbrowser
 
 from babel.dates import format_datetime
 from babel.numbers import format_currency, format_percent
+from rich.style import StyleType
 from rich.text import Text
 from sqlalchemy import and_, desc, func, select, text
 from sqlalchemy.orm import joinedload
@@ -16,7 +17,14 @@ from textual.widgets import Button, DataTable, Digits, Footer, Label, Rule, Stat
 
 from polar.exceptions import PolarError
 from polar.kit.utils import utc_now
-from polar.models import Issue, IssueReward, Pledge, PledgeTransaction
+from polar.models import (
+    Issue,
+    IssueReward,
+    Organization,
+    Pledge,
+    PledgeTransaction,
+    User,
+)
 from polar.models.pledge import PledgeState, PledgeType
 from polar.pledge.schemas import Pledger
 from polar.pledge.service import pledge as pledge_service
@@ -47,14 +55,13 @@ class PledgeReward(Widget):
         self.pledge_transaction = pledge_transaction
 
         rewarded_name = "Unknown"
-        if self.reward.user is not None:
-            rewarded_name = self.reward.user.username
-        elif self.reward.organization is not None:
-            rewarded_name = self.reward.organization.name
-        elif self.reward.github_username:
-            rewarded_name = self.reward.github_username
-
+        rewarded = self.reward.get_rewarded()
+        if isinstance(rewarded, Organization):
+            rewarded_name = rewarded.name
+        elif isinstance(rewarded, User):
+            rewarded_name = rewarded.username
         self.rewarded_name = rewarded_name
+
         super().__init__(name=name, id=id, classes=classes, disabled=disabled)
 
     def compose(self) -> ComposeResult:
@@ -64,7 +71,7 @@ class PledgeReward(Widget):
                 if self.pledge_transaction is None
                 else self.pledge_transaction.amount
             )
-            label = Text.assemble(
+            label_parts: list[str | Text | tuple[str, StyleType]] = [
                 "→ ",
                 (format_currency(amount / 100, "USD", locale="en_US"), "bold green"),
                 (
@@ -77,7 +84,15 @@ class PledgeReward(Widget):
                 ),
                 " to ",
                 (self.rewarded_name, "bold"),
-            )
+            ]
+
+            account = self.reward.get_rewarded_account()
+            if account is None:
+                label_parts.append((" (no account)", "bold dark_orange"))
+            else:
+                label_parts.append(f" ({str(account.account_type).capitalize()})")
+
+            label = Text.assemble(*label_parts)
             yield Label(label)
             if self.pledge_transaction:
                 yield Label("Transferred", id="transfer-label")

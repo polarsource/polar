@@ -116,9 +116,29 @@ def _open_ssh(
 
 
 if __name__ == "__main__":
+    env_render_api_key = os.environ.get("POLAR_BACKOFFICE_RENDER_API_KEY")
+    env_render_service_id = os.environ.get("POLAR_BACKOFFICE_RENDER_SERVICE_ID")
     parser = argparse.ArgumentParser(prog="python -m polar_backoffice")
-    parser.add_argument("render_api_key", type=str)
-    parser.add_argument("render_service_id", type=str)
+    parser.add_argument(
+        "--render-api-key",
+        type=str,
+        default=env_render_api_key,
+        required=env_render_api_key is None,
+        help=(
+            "A valid Render API key. "
+            "Fallback to POLAR_BACKOFFICE_RENDER_API_KEY environment variable."
+        ),
+    )
+    parser.add_argument(
+        "--render-service-id",
+        type=str,
+        default=env_render_service_id,
+        required=env_render_service_id is None,
+        help=(
+            "The Render service ID to connect through SSH. "
+            "Fallback to POLAR_BACKOFFICE_RENDER_SERVICE_ID environment variable."
+        ),
+    )
     args = parser.parse_args()
 
     spinner = Halo(

@@ -1,6 +1,7 @@
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
+from polar import integrations
 from polar.account.service import account as account_service
 from polar.config import settings
 from polar.issue.hooks import IssueHook, issue_upserted
@@ -34,6 +35,7 @@ from polar.pledge.schemas import Pledger
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service
+from polar.webhook_notifications.service import webhook_notifications_service
 
 log = structlog.get_logger()
 
@@ -64,7 +66,7 @@ async def mark_pledges_confirmation_pending_on_issue_close(
 issue_upserted.add(mark_pledges_confirmation_pending_on_issue_close)
 
 
-async def pledge_created_discord_alert(hook: PledgeHook) -> None:
+async def pledge_created_backoffice_discord_alert(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
 
@@ -99,7 +101,49 @@ async def pledge_created_discord_alert(hook: PledgeHook) -> None:
     await webhook.execute()
 
 
-pledge_created_hook.add(pledge_created_discord_alert)
+pledge_created_hook.add(pledge_created_backoffice_discord_alert)
+
+
+async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
+    session = hook.session
+    pledge = hook.pledge
+
+    webhooks = await webhook_notifications_service.search(
+        session, organization_id=pledge.organization_id
+    )
+
+    issue = await issue_service.get(session, pledge.issue_id)
+    if not issue:
+        return
+
+    org = await organization_service.get(session, pledge.organization_id)
+    if not org:
+        return
+
+    repo = await repository_service.get(session, pledge.repository_id)
+    if not repo:
+        return
+
+    for wh in webhooks:
+        if wh.integration == "discord":
+            webhook = AsyncDiscordWebhook(url=wh.url, content="New pledge")
+
+            embed = DiscordEmbed(
+                title="New pledge",
+                description=f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".',  # noqa: E501
+                color="65280",
+            )
+
+            embed.add_embed_field(
+                name="Polar",
+                value=f"[Open](https://polar.sh/{org.name}/${repo.name}/issues/{issue.number})",
+            )
+
+            webhook.add_embed(embed)
+            await webhook.execute()
+
+
+pledge_created_hook.add(pledge_created_webhook_alerts)
 
 
 async def pledge_created_issue_pledge_sum(hook: PledgeHook) -> None:

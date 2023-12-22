@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { Avatar, Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useOrganization } from 'polarkit/hooks'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 
 const ClientPage = ({
   subscriptionTiers,
@@ -18,13 +18,6 @@ const ClientPage = ({
 }) => {
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>(
     subscriptionTiers[0]?.benefits[0],
-  )
-
-  const selectBenefit = useCallback(
-    (benefit: Benefit) => {
-      setSelectedBenefit(benefit)
-    },
-    [setSelectedBenefit],
   )
 
   return subscriptionTiers.length < 1 ? (
@@ -45,7 +38,7 @@ const ClientPage = ({
             key={tier.id}
             tier={tier}
             selectedBenefit={selectedBenefit}
-            onSelectBenefit={selectBenefit}
+            onSelectBenefit={setSelectedBenefit}
           />
         ))}
       </div>

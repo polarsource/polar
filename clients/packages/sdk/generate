@@ -10,6 +10,9 @@ docker rm generate-api || true
 # It's currently disabled as the Dashboard API requires unions/anyOf which the generator does not support.
 # Unfortionately there is no way to disable it for a single service.
 
+# --inline-schema-name-mappings are here for conflict resolution when the generator would attempt to create
+# multiple types using the same name.
+
 docker run \
     --volume "${SCRIPTPATH}":/sdk \
     --name generate-api \
@@ -24,4 +27,9 @@ docker run \
     --additional-properties=enumPropertyNaming=UPPERCASE \
     --additional-properties=supportsES6=true \
     --additional-properties=prefixParameterInterfaces=true \
-    --additional-properties=withoutRuntimeChecks=true
+    --additional-properties=withoutRuntimeChecks=true \
+    --inline-schema-name-mappings Subscription_organization=Subscription_SubscriptionOganization \
+    --inline-schema-name-mappings Transaction_issue_reward=Transaction_TransactionIssueReward \
+    --inline-schema-name-mappings Transaction_issue_reward=Transaction_TransactionIssueReward \
+    --inline-schema-name-mappings Transaction_pledge=Transaction_TransactionPledge
+

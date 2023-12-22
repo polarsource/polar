@@ -253,7 +253,7 @@ interface NewSubscriptionTierBenefitModalContentProps {
   hideModal: () => void
 }
 
-const NewSubscriptionTierBenefitModalContent = ({
+export const NewSubscriptionTierBenefitModalContent = ({
   organization,
   onSelectBenefit,
   hideModal,
@@ -337,7 +337,7 @@ interface UpdateSubscriptionTierBenefitModalContentProps {
   hideModal: () => void
 }
 
-const UpdateSubscriptionTierBenefitModalContent = ({
+export const UpdateSubscriptionTierBenefitModalContent = ({
   organization,
   benefit,
   hideModal,
@@ -415,7 +415,7 @@ interface NewBenefitFormProps {
   update?: boolean
 }
 
-const NewBenefitForm = ({ update = false }: NewBenefitFormProps) => {
+export const NewBenefitForm = ({ update = false }: NewBenefitFormProps) => {
   const { control } = useFormContext<SubscriptionBenefitCreate>()
 
   return (

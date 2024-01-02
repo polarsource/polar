@@ -99,7 +99,7 @@ const nextConfig = {
       // FAQ to docs
       {
         source: '/faq',
-        destination: 'https://docs.polar.sh/faq',
+        destination: 'https://docs.polar.sh/faq/',
         permanent: false,
       },
       {

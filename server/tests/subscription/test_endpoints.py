@@ -24,9 +24,9 @@ from polar.models.user import OAuthAccount
 from polar.postgres import AsyncSession
 
 from .conftest import (
-    add_subscription_benefits,
     create_active_subscription,
     create_subscription_benefit,
+    set_subscription_benefits,
 )
 
 
@@ -162,7 +162,7 @@ class TestSearchSubscriptionTiers:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
@@ -227,7 +227,7 @@ class TestLookupSubscriptionTier:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,

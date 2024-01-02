@@ -4,10 +4,13 @@ from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from polar.app import app
 from polar.enums import AccountType
@@ -58,6 +61,24 @@ def override_is_feature_flag_enabled() -> Iterator[None]:
     app.dependency_overrides.pop(is_feature_flag_enabled)
 
 
+async def get_loaded_subscription_tier(
+    session: AsyncSession,
+    id: UUID,
+) -> SubscriptionTier:
+    statement = (
+        select(SubscriptionTier)
+        .where(SubscriptionTier.id == id)
+        .options(
+            selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
+                SubscriptionTierBenefit.subscription_benefit
+            )
+        )
+    )
+
+    result = await session.execute(statement)
+    return result.scalar_one()
+
+
 async def create_subscription_tier(
     session: AsyncSession,
     *,
@@ -86,7 +107,8 @@ async def create_subscription_tier(
     )
     session.add(subscription_tier)
     await session.commit()
-    return subscription_tier
+
+    return await get_loaded_subscription_tier(session, subscription_tier.id)
 
 
 async def create_subscription_benefit(
@@ -117,7 +139,7 @@ async def create_subscription_benefit(
     return subscription_benefit
 
 
-async def add_subscription_benefits(
+async def set_subscription_benefits(
     session: AsyncSession,
     *,
     subscription_tier: SubscriptionTier,
@@ -134,7 +156,8 @@ async def add_subscription_benefits(
         subscription_tier.subscription_tier_benefits.append(benefit)
     session.add(subscription_tier)
     await session.commit()
-    return subscription_tier
+
+    return await get_loaded_subscription_tier(session, subscription_tier.id)
 
 
 async def create_subscription(

@@ -33,6 +33,7 @@ from polar.models import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.subscription_tier_benefit import SubscriptionTierBenefit
 from polar.models.transaction import TransactionType
 from polar.organization.service import organization as organization_service
 from polar.transaction.service.transfer import (
@@ -267,7 +268,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
-            contains_eager(Subscription.subscription_tier),
+            contains_eager(Subscription.subscription_tier)
+            .selectinload(SubscriptionTier.subscription_tier_benefits)
+            .joinedload(SubscriptionTierBenefit.subscription_benefit),
             contains_eager(Subscription.user).joinedload(User.oauth_accounts),
             joinedload(Subscription.organization),
         )
@@ -290,7 +293,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             .options(
                 joinedload(Subscription.user).joinedload(User.oauth_accounts),
                 joinedload(Subscription.organization),
-                contains_eager(Subscription.subscription_tier),
+                contains_eager(Subscription.subscription_tier)
+                .selectinload(SubscriptionTier.subscription_tier_benefits)
+                .joinedload(SubscriptionTierBenefit.subscription_benefit),
             )
         ).where(Subscription.active.is_(True))
 
@@ -323,7 +328,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             select(Subscription)
             .join(Subscription.subscription_tier)
             .where(Subscription.user_id == user.id, Subscription.active.is_(True))
-            .options(contains_eager(Subscription.subscription_tier))
+            .options(
+                contains_eager(Subscription.subscription_tier)
+                .selectinload(SubscriptionTier.subscription_tier_benefits)
+                .joinedload(SubscriptionTierBenefit.subscription_benefit),
+            )
         )
 
         if organization_id is not None:

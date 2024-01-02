@@ -34,5 +34,4 @@ class SubscriptionTierBenefit(RecordModel):
 
     @declared_attr
     def subscription_benefit(cls) -> Mapped["SubscriptionBenefit"]:
-        # This is an association table, so eager loading makes sense
-        return relationship("SubscriptionBenefit", lazy="joined")
+        return relationship("SubscriptionBenefit", lazy="raise")

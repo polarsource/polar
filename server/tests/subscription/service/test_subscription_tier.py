@@ -35,9 +35,10 @@ from polar.subscription.service.subscription_tier import (
 )
 
 from ..conftest import (
-    add_subscription_benefits,
     create_subscription_benefit,
     create_subscription_tier,
+    get_loaded_subscription_tier,
+    set_subscription_benefits,
 )
 
 
@@ -875,7 +876,7 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
@@ -1019,7 +1020,7 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
@@ -1061,7 +1062,7 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
@@ -1161,7 +1162,7 @@ class TestUpdateBenefits:
             selectable=False,
         )
 
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=[not_selectable_benefit],
@@ -1209,7 +1210,7 @@ class TestUpdateBenefits:
             organization=organization,
             description="SELECTABLE",
         )
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier_organization = await set_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=[not_selectable_benefit],

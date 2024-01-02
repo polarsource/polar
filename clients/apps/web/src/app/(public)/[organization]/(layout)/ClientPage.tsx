@@ -7,6 +7,7 @@ import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForF
 import Spinner from '@/components/Shared/Spinner'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
+import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { useAuth } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RssIcon } from '@heroicons/react/24/outline'
@@ -30,6 +31,7 @@ import {
   CopyToClipboardInput,
   ShadowBoxOnMd,
 } from 'polarkit/components/ui/atoms'
+import { Separator } from 'polarkit/components/ui/separator'
 import { useSubscriptionSummary, useSubscriptionTiers } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -185,14 +187,14 @@ const ClientPage = ({
                 unique benefits as a bonus
               </p>
             </div>
-            <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col gap-y-6">
               {highlightedTiers?.map((tier) => (
                 <Link
                   key={tier.id}
                   className="flex w-full flex-row items-center gap-x-2"
                   href={`/${organization.name}/subscriptions`}
                 >
-                  <Card className="dark:hover:bg-polar-800 w-full rounded-2xl transition-colors hover:bg-blue-50">
+                  <Card className="dark:hover:bg-polar-800 w-full overflow-hidden transition-colors hover:bg-blue-50">
                     <CardHeader className="flex flex-col gap-y-2 p-6 pb-0">
                       <span className="dark:text-polar-500 text-xs text-gray-500">
                         {getSubscriptionTierAudience(tier)}
@@ -215,13 +217,28 @@ const ClientPage = ({
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="dark:text-polar-400 px-6 py-4 text-sm text-gray-600">
-                      {tier.description}
+                    <CardContent className="flex flex-col gap-y-4 px-6 py-4">
+                      <p className="dark:text-polar-400 text-sm text-gray-600">
+                        {tier.description}
+                      </p>
                     </CardContent>
-                    <CardFooter className="flex flex-row items-center justify-between p-6 pt-0">
-                      <span className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">
-                        Subscribe
-                      </span>
+                    <Separator />
+                    <CardFooter className="flex flex-col items-start gap-y-2 p-6">
+                      {tier.benefits?.map((benefit) => (
+                        <div
+                          key={benefit.id}
+                          className="dark:text-polar-200 flex flex-row items-start text-gray-950"
+                        >
+                          <div className="flex flex-row items-center gap-x-2 text-blue-500 dark:text-blue-400">
+                            <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-[8px] dark:bg-blue-950">
+                              {resolveBenefitIcon(benefit, false)}
+                            </span>
+                            <span className="text-xs">
+                              {benefit.description}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </CardFooter>
                   </Card>
                 </Link>

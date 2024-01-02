@@ -1,6 +1,7 @@
 from contextlib import AsyncExitStack
 
 from textual.app import App
+from textual.binding import Binding
 
 from polar.worker import lifespan
 
@@ -17,6 +18,7 @@ class PolarBackOffice(App[None]):
     BINDINGS = [
         ("d", "switch_mode('dashboard')", "Dashboard"),
         ("p", "switch_mode('pledges')", "Pledges"),
+        Binding("f19", "take_screenshot()", "Take screenshot", show=False),
     ]
 
     async def on_load(self) -> None:
@@ -30,6 +32,10 @@ class PolarBackOffice(App[None]):
     async def on_unmount(self) -> None:
         await self.exit_stack.aclose()
         await engine.dispose()
+
+    def action_take_screenshot(self) -> None:
+        filename = self.save_screenshot()
+        self.notify(f"Saved in {filename}", title="Screenshot saved")
 
 
 if __name__ == "__main__":

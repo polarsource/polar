@@ -7,12 +7,8 @@ import {
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
-import {
-  useListAdminOrganizations,
-  useSubscriptionSummary,
-  useSubscriptionTiers,
-} from 'polarkit/hooks'
-import React, { useMemo } from 'react'
+import { useListAdminOrganizations, useSubscriptionTiers } from 'polarkit/hooks'
+import { useMemo } from 'react'
 import { externalURL, prettyURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { FreeTierSubscribe } from './FreeTierSubscribe'
@@ -26,15 +22,6 @@ export const OrganizationPublicSidebar = ({
 }: OrganizationPublicSidebarProps) => {
   const { data: { items: subscriptionTiers } = { items: [] } } =
     useSubscriptionTiers(organization.name, 100)
-  const {
-    data: {
-      items: subscriptionSummary,
-      pagination: { total_count: subscribersCount },
-    } = {
-      items: [],
-      pagination: { total_count: 0 },
-    },
-  } = useSubscriptionSummary(organization.name)
 
   const freeSubscriptionTier = useMemo(
     () =>
@@ -49,16 +36,6 @@ export const OrganizationPublicSidebar = ({
     () =>
       adminOrgs?.data?.items?.some((org) => org.name === organization?.name),
     [adminOrgs, organization],
-  )
-
-  const subscribers = useMemo(
-    () => subscriptionSummary?.slice(0, 9) ?? [],
-    [subscriptionSummary],
-  )
-
-  const subscribersHiddenCount = useMemo(
-    () => subscribersCount - (subscribers.length ?? 0),
-    [subscribers, subscribersCount],
   )
 
   return (
@@ -164,65 +141,6 @@ export const OrganizationPublicSidebar = ({
             )}
           </div>
         </div>
-        {subscribers.length > 0 && (
-          <div className="flex flex-col gap-y-4">
-            <div className="flex flex-row items-start justify-between">
-              <h3 className="dark:text-polar-50 text-sm text-gray-950">
-                Subscribers
-              </h3>
-              <h3 className="dark:text-polar-500 text-sm text-gray-500">
-                {subscribersCount}
-              </h3>
-            </div>
-            <div className="flex flex-row flex-wrap gap-3">
-              {subscribers.map(({ user, organization }, idx) => (
-                <React.Fragment key={idx}>
-                  {organization && (
-                    <Link
-                      key={organization.name}
-                      href={`https://github.com/${organization.name}`}
-                      target="_blank"
-                    >
-                      <Avatar
-                        className="h-10 w-10"
-                        name={organization.name}
-                        avatar_url={organization.avatar_url}
-                      />
-                    </Link>
-                  )}
-                  {!organization && (
-                    <>
-                      {user.github_username ? (
-                        <Link
-                          key={user.github_username}
-                          href={`https://github.com/${user.github_username}`}
-                          target="_blank"
-                        >
-                          <Avatar
-                            className="h-10 w-10"
-                            name={user.github_username}
-                            avatar_url={user.avatar_url}
-                          />
-                        </Link>
-                      ) : (
-                        <Avatar
-                          className="h-10 w-10"
-                          name={user.name}
-                          avatar_url={user.avatar_url}
-                        />
-                      )}
-                    </>
-                  )}
-                </React.Fragment>
-              ))}
-              {subscribersHiddenCount > 0 && (
-                <div className="dark:border-polar-700 dark:bg-polar-900 dark:text-polar-400 flex h-10 w-10 flex-col items-center justify-center rounded-full bg-blue-50 text-xs font-medium text-blue-400 dark:border-2">
-                  +{subscribersHiddenCount}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </>
     </div>
   )

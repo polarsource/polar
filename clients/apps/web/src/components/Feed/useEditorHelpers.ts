@@ -28,15 +28,41 @@ export const useEditorHelpers = (
 ): EditorHelpers => {
   const ref = useRef<HTMLTextAreaElement>(null)
 
-  const insertText = useCallback((text: string, fireOnChange = true) => {
-    if (ref.current) {
-      ref.current.value += text
-
-      if (fireOnChange) {
-        onChange?.(ref.current.value)
-      }
+  const getTextSelection = useCallback((): [string, string, string] | null => {
+    if (!ref.current) {
+      return null
     }
-  }, [])
+
+    const selectionStart = ref.current.selectionStart
+    const selectionEnd = ref.current.selectionEnd
+
+    const textBeforeSelection = ref.current.value.substring(0, selectionStart)
+
+    const textInSelection = ref.current.value.substring(
+      selectionStart,
+      selectionEnd,
+    )
+
+    const textAfterSelection = ref.current.value.substring(
+      selectionEnd,
+      ref.current.value.length,
+    )
+
+    return [textBeforeSelection, textInSelection, textAfterSelection]
+  }, [ref])
+
+  const insertText = useCallback(
+    (text: string, fireOnChange = true) => {
+      if (ref.current) {
+        ref.current.value += text
+
+        if (fireOnChange) {
+          onChange?.(ref.current.value)
+        }
+      }
+    },
+    [ref, onChange],
+  )
 
   const insertTextAtCursor = useCallback(
     (text: string, fireOnChange = true) => {
@@ -63,29 +89,18 @@ export const useEditorHelpers = (
         }
       }
     },
-    [],
+    [ref, onChange],
   )
 
   const wrapSelectionWithText = useCallback(
     ([before, after]: [string, string], fireOnChange = true) => {
-      if (ref.current) {
+      const textSelection = getTextSelection()
+      if (ref.current && textSelection) {
+        const [textBeforeSelection, textInSelection, textAfterSelection] =
+          textSelection
+
         const selectionStart = ref.current.selectionStart
         const selectionEnd = ref.current.selectionEnd
-
-        const textBeforeSelection = ref.current.value.substring(
-          0,
-          selectionStart,
-        )
-
-        const textInSelection = ref.current.value.substring(
-          selectionStart,
-          selectionEnd,
-        )
-
-        const textAfterSelection = ref.current.value.substring(
-          selectionEnd,
-          ref.current.value.length,
-        )
 
         ref.current.value =
           textBeforeSelection +
@@ -94,12 +109,15 @@ export const useEditorHelpers = (
           after +
           textAfterSelection
 
+        ref.current.selectionStart = selectionStart + before.length
+        ref.current.selectionEnd = selectionEnd + before.length
+
         if (fireOnChange) {
           onChange?.(ref.current.value)
         }
       }
     },
-    [],
+    [ref, getTextSelection, onChange],
   )
 
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
@@ -145,11 +163,14 @@ export const useEditorHelpers = (
 
   const handlePaste = useCallback(
     async (e: ClipboardEvent<HTMLTextAreaElement>) => {
-      if (e.target instanceof HTMLTextAreaElement) {
-        if (e.clipboardData.files.length > 0) {
-          e.preventDefault()
-          e.stopPropagation()
-        }
+      if (!(e.target instanceof HTMLTextAreaElement)) {
+        return
+      }
+
+      // Handle files
+      if (e.clipboardData.files.length > 0) {
+        e.preventDefault()
+        e.stopPropagation()
 
         for (const file of e.clipboardData.files) {
           try {
@@ -169,20 +190,82 @@ export const useEditorHelpers = (
             onChange?.(e.target.value)
           }
         }
+
+        return
+      }
+
+      // Handle URL paste
+      const textData = e.clipboardData.getData('text/plain')
+      const textSelection = getTextSelection()
+      if (textSelection && textSelection[1] !== '') {
+        try {
+          new URL(textData)
+          e.preventDefault()
+          e.stopPropagation()
+          wrapSelectionWithText(['[', `](${textData})`])
+        } catch {}
       }
     },
-    [onChange, insertTextAtCursor],
+    [onChange, insertTextAtCursor, getTextSelection, wrapSelectionWithText],
   )
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
     (e) => {
-      /** Handle tab presses */
-      if (e.key == 'Tab' && e.target instanceof HTMLTextAreaElement) {
+      if (!(e.target instanceof HTMLTextAreaElement)) {
+        return
+      }
+
+      const isCtrlPressed = e.ctrlKey || e.metaKey
+      const key = e.key
+
+      // Insert tab
+      if (key === 'Tab') {
         e.preventDefault()
         insertTextAtCursor('\t')
+        return
+      }
+
+      // Bold
+      if (isCtrlPressed && e.key === 'b') {
+        e.preventDefault()
+        wrapSelectionWithText(['**', '**'])
+        return
+      }
+
+      // Italic
+      if (isCtrlPressed && e.key === 'i') {
+        e.preventDefault()
+        wrapSelectionWithText(['*', '*'])
+        return
+      }
+
+      // Inline code
+      if (isCtrlPressed && e.key === 'e') {
+        e.preventDefault()
+        wrapSelectionWithText(['`', '`'])
+        return
+      }
+
+      // Link
+      if (isCtrlPressed && e.key === 'k') {
+        e.preventDefault()
+        const textSelection = getTextSelection()
+
+        if (textSelection) {
+          const [, textInSelection] = textSelection
+          // Wrap an URL
+          try {
+            new URL(textInSelection)
+            wrapSelectionWithText(['[](', ')'])
+            // Wrap a label
+          } catch {
+            wrapSelectionWithText(['[', '](url)'])
+          }
+        }
+        return
       }
     },
-    [onChange, insertTextAtCursor],
+    [insertTextAtCursor, wrapSelectionWithText, getTextSelection],
   )
 
   const handleDragOver: DragEventHandler<HTMLTextAreaElement> = useCallback(

@@ -10,7 +10,7 @@ import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupI
 import { useAuth } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RssIcon } from '@heroicons/react/24/outline'
-import { ArrowForwardOutlined } from '@mui/icons-material'
+import { ArrowForwardOutlined, ViewDayOutlined } from '@mui/icons-material'
 import {
   Article,
   CreatePersonalAccessTokenResponse,
@@ -52,13 +52,30 @@ const ClientPage = ({
 
   return isFeatureEnabled('feed') ? (
     <div className="flex flex-row gap-x-16">
-      <StaggerReveal className="flex w-full max-w-xl flex-grow flex-col gap-y-6">
-        {posts.map((post) => (
-          <StaggerReveal.Child key={post.id}>
-            <PostComponent article={post} />
-          </StaggerReveal.Child>
-        ))}
-      </StaggerReveal>
+      <div className="flex w-full max-w-xl flex-grow flex-col gap-y-8">
+        <h2 className="text-lg">Posts</h2>
+        <StaggerReveal className="flex w-full flex-col gap-y-6">
+          <div className="flex w-full flex-col gap-y-6">
+            {posts.length > 0 ? (
+              posts.map((post) => (
+                <StaggerReveal.Child key={post.id}>
+                  <PostComponent article={post} />
+                </StaggerReveal.Child>
+              ))
+            ) : (
+              <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
+                <ViewDayOutlined fontSize="large" />
+                <div className="flex flex-col items-center gap-y-2">
+                  <h3 className="p-2 text-lg font-medium">No Posts yet</h3>
+                  <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
+                    {organization.name} has not posted anything yet
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </StaggerReveal>{' '}
+      </div>
 
       <div className="sticky top-32 flex max-w-[300px] flex-shrink flex-col gap-y-12 self-start">
         {(highlightedTiers?.length ?? 0) > 0 && (

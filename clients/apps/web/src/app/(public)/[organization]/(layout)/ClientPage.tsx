@@ -10,7 +10,7 @@ import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupI
 import { useAuth } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RssIcon } from '@heroicons/react/24/outline'
-import { ArrowForwardOutlined, ViewDayOutlined } from '@mui/icons-material'
+import { ViewDayOutlined } from '@mui/icons-material'
 import {
   Article,
   CreatePersonalAccessTokenResponse,
@@ -21,6 +21,7 @@ import {
 import Link from 'next/link'
 import { api } from 'polarkit/api'
 import {
+  Avatar,
   Button,
   Card,
   CardContent,
@@ -29,9 +30,9 @@ import {
   CopyToClipboardInput,
   ShadowBoxOnMd,
 } from 'polarkit/components/ui/atoms'
-import { useSubscriptionTiers } from 'polarkit/hooks'
+import { useSubscriptionSummary, useSubscriptionTiers } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 const ClientPage = ({
   organization,
@@ -51,6 +52,15 @@ const ClientPage = ({
     () => subscriptionTiers?.items?.filter((tier) => tier.is_highlighted),
     [subscriptionTiers],
   )
+  const {
+    data: {
+      items: subscriptionSummary,
+      pagination: { total_count: subscribersCount },
+    } = {
+      items: [],
+      pagination: { total_count: 0 },
+    },
+  } = useSubscriptionSummary(organization.name)
 
   const getSubscriptionTierAudience = (tier: SubscriptionTier) => {
     switch (tier.type) {
@@ -63,9 +73,19 @@ const ClientPage = ({
     }
   }
 
+  const subscribers = useMemo(
+    () => subscriptionSummary?.slice(0, 11) ?? [],
+    [subscriptionSummary],
+  )
+
+  const subscribersHiddenCount = useMemo(
+    () => subscribersCount - (subscribers.length ?? 0),
+    [subscribers, subscribersCount],
+  )
+
   return isFeatureEnabled('feed') ? (
     <div className="flex flex-col-reverse gap-16 md:flex-row">
-      <div className="flex w-full flex-grow flex-col gap-y-8 md:max-w-xl">
+      <div className="flex w-full flex-grow flex-col gap-y-6 md:max-w-xl">
         <h2 className="text-lg">Posts</h2>
         <StaggerReveal className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-6">
@@ -90,11 +110,76 @@ const ClientPage = ({
         </StaggerReveal>
       </div>
 
-      <div className="flex w-full flex-shrink flex-col gap-y-12 self-start md:sticky md:top-32 md:max-w-[300px]">
+      <div className="flex w-full flex-shrink flex-col gap-y-10 self-start md:max-w-[300px]">
+        {subscribers.length > 0 && (
+          <div className="flex flex-col gap-y-6">
+            <div className="flex flex-row items-start justify-between">
+              <h3 className="dark:text-polar-50 text-gray-950">Subscribers</h3>
+              <h3 className="dark:text-polar-500 text-sm text-gray-500">
+                {subscribersCount}
+              </h3>
+            </div>
+            <div className="flex flex-row flex-wrap gap-3">
+              {subscribers.map(({ user, organization }, idx) => (
+                <React.Fragment key={idx}>
+                  {organization && (
+                    <Link
+                      key={organization.name}
+                      href={`https://github.com/${organization.name}`}
+                      target="_blank"
+                    >
+                      <Avatar
+                        className="h-10 w-10"
+                        name={organization.name}
+                        avatar_url={organization.avatar_url}
+                      />
+                    </Link>
+                  )}
+                  {!organization && (
+                    <>
+                      {user.github_username ? (
+                        <Link
+                          key={user.github_username}
+                          href={`https://github.com/${user.github_username}`}
+                          target="_blank"
+                        >
+                          <Avatar
+                            className="h-10 w-10"
+                            name={user.github_username}
+                            avatar_url={user.avatar_url}
+                          />
+                        </Link>
+                      ) : (
+                        <Avatar
+                          className="h-10 w-10"
+                          name={user.name}
+                          avatar_url={user.avatar_url}
+                        />
+                      )}
+                    </>
+                  )}
+                </React.Fragment>
+              ))}
+              {subscribersHiddenCount > 0 && (
+                <div className="dark:border-polar-700 dark:bg-polar-900 dark:text-polar-400 flex h-10 w-10 flex-col items-center justify-center rounded-full bg-blue-50 text-xs font-medium text-blue-400 dark:border-2">
+                  +{subscribersHiddenCount}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {(highlightedTiers?.length ?? 0) > 0 && (
           <div className="flex w-full flex-col justify-start gap-y-6">
-            <div className="flex flex-col gap-y-2">
-              <h3>Featured Subscriptions</h3>
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <h3>Subscriptions</h3>
+                <Link
+                  className="flex flex-row items-center gap-x-2 text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+                  href={`/${organization.name}/subscriptions`}
+                >
+                  <span className="text-xs">View All</span>
+                </Link>
+              </div>
               <p className="dark:text-polar-500 text-sm text-gray-500">
                 Support {organization.name} with a paid subsciption & receive
                 unique benefits as a bonus
@@ -141,15 +226,6 @@ const ClientPage = ({
                   </Card>
                 </Link>
               ))}
-            </div>
-            <div className="flex flex-row items-center justify-end">
-              <Link
-                className="flex flex-row items-center gap-x-2 text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                href={`/${organization.name}/subscriptions`}
-              >
-                <span className="text-sm">View More</span>
-                <ArrowForwardOutlined fontSize="inherit" />
-              </Link>
             </div>
           </div>
         )}

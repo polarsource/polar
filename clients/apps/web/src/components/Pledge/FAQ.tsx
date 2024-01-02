@@ -103,7 +103,7 @@ const FAQSection = (props: {
 
         <Accordion type="single" collapsible>
           {props.items.map((faq, index) => (
-            <AccordionItem value={`backer-faq-${index}`}>
+            <AccordionItem value={`backer-faq-${index}`} key={index}>
               <AccordionTrigger>{faq.question}</AccordionTrigger>
               <AccordionContent>{faq.answer}</AccordionContent>
             </AccordionItem>

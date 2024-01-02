@@ -88,7 +88,7 @@ const WebhookNotificationSettings = (props: { org: Organization }) => {
         {webhooks.data?.items && webhooks.data.items.length > 0 ? (
           webhooks.data?.items?.map((w) => {
             return (
-              <ShadowListGroup.Item>
+              <ShadowListGroup.Item key={w.id}>
                 <WebhookNotification {...w} />
               </ShadowListGroup.Item>
             )

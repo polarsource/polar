@@ -64,8 +64,9 @@ export default function Page() {
           <Section>
             <SectionDescription
               title="Discord + Slack Notifications"
-              description="Add a Discord or Slack webhook to get notified when you receive a new pledge"
+              description={`Send a incoming webook to Discord or Slack when ${org.name} receives a new pledge`}
             />
+
             <WebhookNotificationSettings org={org} />
           </Section>
         ) : null}

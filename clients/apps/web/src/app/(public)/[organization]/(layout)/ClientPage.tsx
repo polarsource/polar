@@ -74,7 +74,7 @@ const ClientPage = ({
               </div>
             )}
           </div>
-        </StaggerReveal>{' '}
+        </StaggerReveal>
       </div>
 
       <div className="sticky top-32 flex max-w-[300px] flex-shrink flex-col gap-y-12 self-start">

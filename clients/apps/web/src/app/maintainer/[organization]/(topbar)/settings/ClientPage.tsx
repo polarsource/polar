@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
@@ -48,6 +49,13 @@ export default function ClientPage() {
             description="Manage organization invoicing, spending limits and payment methods"
           />
           <PaymentMethodSettings org={org} credits={credits.data} />
+        </Section>
+        <Section>
+          <SectionDescription
+            title="Discord + Slack Notifications"
+            description={`Send a incoming webook to Discord or Slack when ${org.name} receives a new pledge`}
+          />
+          <WebhookNotificationSettings org={org} />
         </Section>
       </div>
     </DashboardBody>

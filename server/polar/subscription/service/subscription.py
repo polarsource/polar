@@ -590,7 +590,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        subscription_tier = await subscription_tier_service.get(
+        subscription_tier = await subscription_tier_service.get_loaded(
             session, subscription.subscription_tier_id
         )
         assert subscription_tier is not None

@@ -167,6 +167,27 @@ class SubscriptionTierService(
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_loaded(
+        self, session: AsyncSession, id: uuid.UUID
+    ) -> SubscriptionTier | None:
+        statement = (
+            select(SubscriptionTier)
+            .join(SubscriptionTier.organization, full=True)
+            .join(SubscriptionTier.repository, full=True)
+            .where(SubscriptionTier.id == id, SubscriptionTier.deleted_at.is_(None))
+            .options(
+                contains_eager(SubscriptionTier.organization),
+                contains_eager(SubscriptionTier.repository),
+                selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
+                    SubscriptionTierBenefit.subscription_benefit
+                ),
+            )
+            .limit(1)
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_by_stripe_product_id(
         self, session: AsyncSession, stripe_product_id: str
     ) -> SubscriptionTier | None:

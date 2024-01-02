@@ -97,7 +97,7 @@ export const AbbreviatedBrowserRender = ({
         }),
       }}
     >
-      {article.body.substring(0, 500)}
+      {article.body.substring(0, 500).split('\n').slice(0, 4).join('\n')}
     </Markdown>
   )
 }

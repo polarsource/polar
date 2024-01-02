@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator, Generator
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -37,5 +38,29 @@ async def client(
     if authenticated_marker is not None:
         cookies[settings.AUTH_COOKIE_KEY] = auth_jwt
 
-    async with AsyncClient(app=app, base_url="http://test", cookies=cookies) as client:
+    request_hooks = []
+
+    async def expunge_hook(request: Any) -> None:
+        session.expunge_all()
+        return None
+
+    # add @pytest.mark.http_auto_expunge() to a test to add auto-expunging on the first
+    # httpx request.
+    #
+    # This should only be used if the test doesn't use "session" directly, and only makes
+    # a single HTTP request.
+    auto_expunge_marker = request.node.get_closest_marker("http_auto_expunge")
+    if auto_expunge_marker is not None:
+        # can be disabled with @pytest.mark.http_auto_expunge(False)
+        if auto_expunge_marker.args != (False,):
+            request_hooks.append(expunge_hook)
+
+    async with AsyncClient(
+        app=app,
+        base_url="http://test",
+        cookies=cookies,
+        event_hooks={"request": request_hooks},
+    ) as client:
+        client.event_hooks
+
         yield client

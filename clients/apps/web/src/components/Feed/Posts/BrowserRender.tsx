@@ -58,7 +58,10 @@ export const previewOpts = {
   },
 } as const
 
-const BrowserRender = (props: {
+const BrowserRender = ({
+  article,
+  showPaywalledContent,
+}: {
   article: RenderArticle
   showPaywalledContent?: boolean
 }) => {
@@ -67,17 +70,20 @@ const BrowserRender = (props: {
       options={{
         ...opts,
         createElement: wrapStrictCreateElement({
-          article: props.article,
-          showPaywalledContent: props.showPaywalledContent,
+          article,
+          showPaywalledContent,
         }),
       }}
     >
-      {props.article.body}
+      {article.body}
     </Markdown>
   )
 }
 
-export const AbbreviatedBrowserRender = (props: {
+export const AbbreviatedBrowserRender = ({
+  article,
+  showPaywalledContent,
+}: {
   article: RenderArticle
   showPaywalledContent?: boolean
 }) => {
@@ -86,12 +92,12 @@ export const AbbreviatedBrowserRender = (props: {
       options={{
         ...previewOpts,
         createElement: wrapStrictCreateElement({
-          article: props.article,
-          showPaywalledContent: props.showPaywalledContent,
+          article,
+          showPaywalledContent,
         }),
       }}
     >
-      {props.article.body.substring(0, 500)}
+      {article.body.substring(0, 500)}
     </Markdown>
   )
 }

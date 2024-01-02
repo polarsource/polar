@@ -123,16 +123,9 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
         {props.article.title}
       </Link>
       <div className="flex flex-col flex-wrap">
-        <p
-          className={twMerge(
-            'text-md line-clamp-4 w-full flex-wrap truncate whitespace-break-spaces break-words leading-loose text-gray-500 transition-colors duration-200',
-            props.isHovered
-              ? 'dark:text-polar-300 text-gray-800'
-              : 'dark:text-polar-400 text-gray-700',
-          )}
-        >
+        <div className="prose dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-2xl dark:prose-p:text-polar-300 dark:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline w-full max-w-none text-gray-600">
           <AbbreviatedBrowserRender article={props.article} />
-        </p>
+        </div>
       </div>
     </div>
   )

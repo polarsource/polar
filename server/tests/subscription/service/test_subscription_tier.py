@@ -56,6 +56,9 @@ class TestSearch:
     async def test_anonymous(
         self, session: AsyncSession, subscription_tiers: list[SubscriptionTier]
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_tier_service.search(
             session, Anonymous(), pagination=PaginationParams(1, 10)
         )
@@ -72,6 +75,9 @@ class TestSearch:
         subscription_tiers: list[SubscriptionTier],
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_tier_service.search(
             session, user, pagination=PaginationParams(1, 10)
         )
@@ -89,6 +95,9 @@ class TestSearch:
         subscription_tiers: list[SubscriptionTier],
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_tier_service.search(
             session, user, pagination=PaginationParams(1, 10)
         )
@@ -108,6 +117,10 @@ class TestSearch:
         await create_subscription_tier(
             session, type=SubscriptionTierType.pro, organization=organization
         )
+
+        # then
+        session.expunge_all()
+
         results, count = await subscription_tier_service.search(
             session,
             user,
@@ -129,6 +142,9 @@ class TestSearch:
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_organization_second: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_tier_service.search(
             session, user, organization=organization, pagination=PaginationParams(1, 10)
         )
@@ -147,6 +163,9 @@ class TestSearch:
         subscription_tiers: list[SubscriptionTier],
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_tier_service.search(
             session,
             user,
@@ -167,6 +186,9 @@ class TestSearch:
         subscription_tier_private_repository: SubscriptionTier,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_tier_service.search(
             session, user, repository=repository, pagination=PaginationParams(1, 10)
         )
@@ -185,6 +207,9 @@ class TestSearch:
         archived_subscription_tier = await create_subscription_tier(
             session, organization=organization, is_archived=True
         )
+
+        # then
+        session.expunge_all()
 
         # Anonymous
         results, count = await subscription_tier_service.search(
@@ -226,6 +251,9 @@ class TestGetById:
         subscription_tier_private_repository: SubscriptionTier,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
         not_existing_subscription_tier = await subscription_tier_service.get_by_id(
             session, Anonymous(), uuid.uuid4()
         )
@@ -249,6 +277,9 @@ class TestGetById:
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         not_existing_subscription_tier = await subscription_tier_service.get_by_id(
             session, user, uuid.uuid4()
         )
@@ -273,6 +304,9 @@ class TestGetById:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         not_existing_subscription_tier = await subscription_tier_service.get_by_id(
             session, user, uuid.uuid4()
         )
@@ -303,6 +337,10 @@ class TestUserCreate:
             price_currency="USD",
             organization_id=uuid.uuid4(),
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(OrganizationDoesNotExist):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, user
@@ -322,6 +360,10 @@ class TestUserCreate:
             price_currency="USD",
             organization_id=organization.id,
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(OrganizationDoesNotExist):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, user
@@ -342,6 +384,10 @@ class TestUserCreate:
             price_currency="USD",
             organization_id=organization.id,
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(NoAssociatedPayoutAccount):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, user
@@ -371,6 +417,10 @@ class TestUserCreate:
             price_currency="USD",
             organization_id=organization.id,
         )
+
+        # then
+        session.expunge_all()
+
         subscription_tier = await subscription_tier_service.user_create(
             session, authz, create_schema, user
         )
@@ -390,6 +440,10 @@ class TestUserCreate:
             price_currency="USD",
             repository_id=uuid.uuid4(),
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(RepositoryDoesNotExist):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, user
@@ -409,6 +463,10 @@ class TestUserCreate:
             price_currency="USD",
             repository_id=repository.id,
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(RepositoryDoesNotExist):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, user
@@ -429,6 +487,10 @@ class TestUserCreate:
             price_currency="USD",
             repository_id=repository.id,
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(NoAssociatedPayoutAccount):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, user
@@ -458,6 +520,10 @@ class TestUserCreate:
             price_currency="USD",
             repository_id=repository.id,
         )
+
+        # then
+        session.expunge_all()
+
         subscription_tier = await subscription_tier_service.user_create(
             session, authz, create_schema, user
         )
@@ -489,6 +555,9 @@ class TestUserCreate:
             price_currency="USD",
             organization_id=organization.id,
         )
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(StripeError):
             await subscription_tier_service.user_create(
@@ -535,6 +604,9 @@ class TestUserCreate:
             is_highlighted=True,
         )
 
+        # then
+        session.expunge_all()
+
         subscription_tier = await subscription_tier_service.user_create(
             session, authz, create_schema, user
         )
@@ -556,10 +628,23 @@ class TestUserUpdate:
         user: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         update_schema = SubscriptionTierUpdate(name="Subscription Tier Update")
         with pytest.raises(NotPermitted):
             await subscription_tier_service.user_update(
-                session, authz, subscription_tier_organization, update_schema, user
+                session,
+                authz,
+                subscription_tier_organization_loaded,
+                update_schema,
+                user,
             )
 
     async def test_valid_name_change(
@@ -574,9 +659,18 @@ class TestUserUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         update_schema = SubscriptionTierUpdate(name="Subscription Tier Update")
         updated_subscription_tier = await subscription_tier_service.user_update(
-            session, authz, subscription_tier_organization, update_schema, user
+            session, authz, subscription_tier_organization_loaded, update_schema, user
         )
         assert updated_subscription_tier.name == "Subscription Tier Update"
 
@@ -596,9 +690,18 @@ class TestUserUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         update_schema = SubscriptionTierUpdate(description="Description update")
         updated_subscription_tier = await subscription_tier_service.user_update(
-            session, authz, subscription_tier_organization, update_schema, user
+            session, authz, subscription_tier_organization_loaded, update_schema, user
         )
         assert updated_subscription_tier.description == "Description update"
 
@@ -624,9 +727,18 @@ class TestUserUpdate:
 
         old_price_id = subscription_tier_organization.stripe_price_id
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         update_schema = SubscriptionTierUpdate(price_amount=1500)
         updated_subscription_tier = await subscription_tier_service.user_update(
-            session, authz, subscription_tier_organization, update_schema, user
+            session, authz, subscription_tier_organization_loaded, update_schema, user
         )
 
         create_price_for_product_mock.assert_called_once()
@@ -654,9 +766,18 @@ class TestUserUpdate:
         ) = stripe_service_mock.create_price_for_product
         create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         update_schema = SubscriptionTierUpdate(is_highlighted=True)
         updated_subscription_tier = await subscription_tier_service.user_update(
-            session, authz, subscription_tier_organization, update_schema, user
+            session, authz, subscription_tier_organization_loaded, update_schema, user
         )
 
         assert updated_subscription_tier.is_highlighted
@@ -677,6 +798,9 @@ class TestCreateFree:
         organization: Organization,
         subscription_tier_organization_free: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
         subscription_tier = await subscription_tier_service.create_free(
             session, benefits=[], organization=organization
         )
@@ -695,6 +819,9 @@ class TestCreateFree:
         subscription_benefit_organization: SubscriptionBenefit,
         organization: Organization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         free_subscription_tier = await subscription_tier_service.create_free(
             session,
             benefits=[subscription_benefit_organization],
@@ -725,9 +852,18 @@ class TestUpdateBenefits:
         user: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(NotPermitted):
             await subscription_tier_service.update_benefits(
-                session, authz, subscription_tier_organization, [], user
+                session, authz, subscription_tier_organization_loaded, [], user
             )
 
     async def test_not_existing_benefit(
@@ -745,15 +881,29 @@ class TestUpdateBenefits:
             subscription_benefits=subscription_benefits,
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(SubscriptionBenefitDoesNotExist):
             await subscription_tier_service.update_benefits(
-                session, authz, subscription_tier_organization, [uuid.uuid4()], user
+                session,
+                authz,
+                subscription_tier_organization_loaded,
+                [uuid.uuid4()],
+                user,
             )
 
-        await session.refresh(subscription_tier_organization)
-        assert len(subscription_tier_organization.subscription_tier_benefits) == len(
-            subscription_benefits
-        )
+        await session.refresh(subscription_tier_organization_loaded)
+
+        assert len(
+            subscription_tier_organization_loaded.subscription_tier_benefits
+        ) == len(subscription_benefits)
 
     async def test_added_benefits(
         self,
@@ -765,6 +915,15 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         (
             subscription_tier,
             added,
@@ -772,7 +931,7 @@ class TestUpdateBenefits:
         ) = await subscription_tier_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             [benefit.id for benefit in subscription_benefits],
             user,
         )
@@ -808,6 +967,15 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         (
             subscription_tier,
             added,
@@ -815,7 +983,7 @@ class TestUpdateBenefits:
         ) = await subscription_tier_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             [benefit.id for benefit in subscription_benefits[::-1]],
             user,
         )
@@ -857,12 +1025,21 @@ class TestUpdateBenefits:
             subscription_benefits=subscription_benefits,
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         (
             subscription_tier,
             added,
             deleted,
         ) = await subscription_tier_service.update_benefits(
-            session, authz, subscription_tier_organization, [], user
+            session, authz, subscription_tier_organization_loaded, [], user
         )
 
         assert len(subscription_tier.subscription_tier_benefits) == 0
@@ -890,6 +1067,15 @@ class TestUpdateBenefits:
             subscription_benefits=subscription_benefits,
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         (
             subscription_tier,
             added,
@@ -897,7 +1083,7 @@ class TestUpdateBenefits:
         ) = await subscription_tier_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             [benefit.id for benefit in subscription_benefits[::-1]],
             user,
         )
@@ -940,11 +1126,20 @@ class TestUpdateBenefits:
             selectable=False,
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(SubscriptionBenefitIsNotSelectable):
             await subscription_tier_service.update_benefits(
                 session,
                 authz,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 [not_selectable_benefit.id],
                 user,
             )
@@ -972,11 +1167,20 @@ class TestUpdateBenefits:
             subscription_benefits=[not_selectable_benefit],
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(SubscriptionBenefitIsNotSelectable):
             await subscription_tier_service.update_benefits(
                 session,
                 authz,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 [],
                 user,
             )
@@ -1011,6 +1215,15 @@ class TestUpdateBenefits:
             subscription_benefits=[not_selectable_benefit],
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         (
             _,
             added,
@@ -1018,12 +1231,12 @@ class TestUpdateBenefits:
         ) = await subscription_tier_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             [not_selectable_benefit.id, selectable_benefit.id],
             user,
         )
         assert len(added) == 1
-        assert selectable_benefit in added
+        assert selectable_benefit.id in [a.id for a in added]
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_awaited_once_with(
@@ -1041,9 +1254,18 @@ class TestArchive:
         user: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(NotPermitted):
             await subscription_tier_service.archive(
-                session, authz, subscription_tier_organization, user
+                session, authz, subscription_tier_organization_loaded, user
             )
 
     async def test_free_tier(
@@ -1054,9 +1276,20 @@ class TestArchive:
         subscription_tier_organization_free: SubscriptionTier,
         user_organization_admin: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_free_loaded = (
+            await subscription_tier_service.get(
+                session, subscription_tier_organization_free.id
+            )
+        )
+        assert subscription_tier_organization_free_loaded
+
         with pytest.raises(FreeTierIsNotArchivable):
             await subscription_tier_service.archive(
-                session, authz, subscription_tier_organization_free, user
+                session, authz, subscription_tier_organization_free_loaded, user
             )
 
     async def test_valid(
@@ -1070,8 +1303,17 @@ class TestArchive:
     ) -> None:
         archive_product_mock: MagicMock = stripe_service_mock.archive_product
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         updated_subscription_tier = await subscription_tier_service.archive(
-            session, authz, subscription_tier_organization, user
+            session, authz, subscription_tier_organization_loaded, user
         )
 
         archive_product_mock.assert_called_once_with(

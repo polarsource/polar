@@ -15,6 +15,7 @@ from polar.subscription.service.benefits import (
     SubscriptionBenefitPreconditionError,
     SubscriptionBenefitServiceProtocol,
 )
+from polar.subscription.service.subscription import subscription as subscription_service
 from polar.subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
@@ -45,6 +46,9 @@ class TestGrantBenefit:
     ) -> None:
         subscription_benefit_service_mock.grant.return_value = {"external_id": "abc"}
 
+        # then
+        session.expunge_all()
+
         grant = await subscription_benefit_grant_service.grant_benefit(
             session, subscription, user, subscription_benefit_organization
         )
@@ -72,6 +76,9 @@ class TestGrantBenefit:
         session.add(grant)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         updated_grant = await subscription_benefit_grant_service.grant_benefit(
             session, subscription, user, subscription_benefit_organization
         )
@@ -97,6 +104,9 @@ class TestGrantBenefit:
         session.add(grant)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         updated_grant = await subscription_benefit_grant_service.grant_benefit(
             session, subscription, user, subscription_benefit_organization
         )
@@ -117,6 +127,9 @@ class TestGrantBenefit:
             SubscriptionBenefitPreconditionError("Error")
         )
 
+        # then
+        session.expunge_all()
+
         grant = await subscription_benefit_grant_service.grant_benefit(
             session, subscription, user, subscription_benefit_organization
         )
@@ -134,6 +147,9 @@ class TestRevokeBenefit:
         subscription_benefit_organization: SubscriptionBenefit,
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
+        # then
+        session.expunge_all()
+
         grant = await subscription_benefit_grant_service.revoke_benefit(
             session, subscription, user, subscription_benefit_organization
         )
@@ -152,6 +168,9 @@ class TestRevokeBenefit:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         subscription_benefit_service_mock.revoke.return_value = {"message": "ok"}
+
+        # then
+        session.expunge_all()
 
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
@@ -188,6 +207,9 @@ class TestRevokeBenefit:
         session.add(grant)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         updated_grant = await subscription_benefit_grant_service.revoke_benefit(
             session, subscription, user, subscription_benefit_organization
         )
@@ -210,6 +232,9 @@ class TestEnqueueBenefitGrantUpdates:
             "polar.subscription.service.subscription_benefit_grant.enqueue_job"
         )
         subscription_benefit_service_mock.requires_update.return_value = False
+
+        # then
+        session.expunge_all()
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
             session,
@@ -260,6 +285,9 @@ class TestEnqueueBenefitGrantUpdates:
         )
         subscription_benefit_service_mock.requires_update.return_value = True
 
+        # then
+        session.expunge_all()
+
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
             session,
             subscription_benefit_organization,
@@ -291,6 +319,9 @@ class TestUpdateBenefitGrant:
         session.add(grant)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         updated_grant = await subscription_benefit_grant_service.update_benefit_grant(
             session, grant
         )
@@ -318,8 +349,15 @@ class TestUpdateBenefitGrant:
         session.add(grant)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
+        # load
+        grant_loaded = await subscription_benefit_grant_service.get(session, grant.id)
+        assert grant_loaded
+
         updated_grant = await subscription_benefit_grant_service.update_benefit_grant(
-            session, grant
+            session, grant_loaded
         )
 
         assert updated_grant.id == grant.id
@@ -349,8 +387,15 @@ class TestUpdateBenefitGrant:
             SubscriptionBenefitPreconditionError("Error")
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        grant_loaded = await subscription_benefit_grant_service.get(session, grant.id)
+        assert grant_loaded
+
         updated_grant = await subscription_benefit_grant_service.update_benefit_grant(
-            session, grant
+            session, grant_loaded
         )
 
         assert not updated_grant.is_granted
@@ -397,6 +442,9 @@ class TestEnqueueBenefitGrantDeletions:
             "polar.subscription.service.subscription_benefit_grant.enqueue_job"
         )
 
+        # then
+        session.expunge_all()
+
         await subscription_benefit_grant_service.enqueue_benefit_grant_deletions(
             session, subscription_benefit_organization
         )
@@ -426,6 +474,9 @@ class TestDeleteBenefitGrant:
         session.add(grant)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         updated_grant = await subscription_benefit_grant_service.delete_benefit_grant(
             session, grant
         )
@@ -450,8 +501,15 @@ class TestDeleteBenefitGrant:
         session.add(grant)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
+        # load
+        grant_loaded = await subscription_benefit_grant_service.get(session, grant.id)
+        assert grant_loaded
+
         updated_grant = await subscription_benefit_grant_service.delete_benefit_grant(
-            session, grant
+            session, grant_loaded
         )
 
         assert updated_grant.id == grant.id
@@ -481,6 +539,9 @@ class TestHandlePreconditionError:
     ) -> None:
         error = SubscriptionBenefitPreconditionError("Error")
 
+        # then
+        session.expunge_all()
+
         await subscription_benefit_grant_service.handle_precondition_error(
             session, error, subscription, user, subscription_benefit_organization
         )
@@ -502,8 +563,15 @@ class TestHandlePreconditionError:
             email_extra_context={"foo": "bar"},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        session_loaded = await subscription_service.get(session, subscription.id)
+        assert session_loaded
+
         await subscription_benefit_grant_service.handle_precondition_error(
-            session, error, subscription, user, subscription_benefit_organization
+            session, error, session_loaded, user, subscription_benefit_organization
         )
 
         send_to_user_mock: MagicMock = email_sender_mock.send_to_user

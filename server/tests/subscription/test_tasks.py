@@ -38,8 +38,14 @@ from polar.worker import JobContext, PolarWorkerContext
 @pytest.mark.asyncio
 class TestSubscriptionEnqueueBenefitsGrants:
     async def test_not_existing_subscription(
-        self, job_context: JobContext, polar_worker_context: PolarWorkerContext
+        self,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_enqueue_benefits_grants(
                 job_context, uuid.uuid4(), polar_worker_context
@@ -51,12 +57,16 @@ class TestSubscriptionEnqueueBenefitsGrants:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
+        session: AsyncSession,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service,
             "enqueue_benefits_grants",
             spec=SubscriptionService.enqueue_benefits_grants,
         )
+
+        # then
+        session.expunge_all()
 
         await subscription_enqueue_benefits_grants(
             job_context, subscription.id, polar_worker_context
@@ -68,8 +78,14 @@ class TestSubscriptionEnqueueBenefitsGrants:
 @pytest.mark.asyncio
 class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
     async def test_not_existing_subscription_tier(
-        self, job_context: JobContext, polar_worker_context: PolarWorkerContext
+        self,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionTierDoesNotExist):
             await subscription_update_subscription_tier_benefits_grants(
                 job_context, uuid.uuid4(), polar_worker_context
@@ -81,12 +97,16 @@ class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription_tier_organization: SubscriptionTier,
+        session: AsyncSession,
     ) -> None:
         update_subscription_tier_benefits_grants_mock = mocker.patch.object(
             subscription_service,
             "update_subscription_tier_benefits_grants",
             spec=SubscriptionService.update_subscription_tier_benefits_grants,
         )
+
+        # then
+        session.expunge_all()
 
         await subscription_update_subscription_tier_benefits_grants(
             job_context, subscription_tier_organization.id, polar_worker_context
@@ -103,7 +123,11 @@ class TestSubscriptionBenefitGrant:
         polar_worker_context: PolarWorkerContext,
         subscription_benefit_organization: SubscriptionBenefit,
         user: User,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_benefit_grant(
                 job_context,
@@ -119,7 +143,11 @@ class TestSubscriptionBenefitGrant:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(UserDoesNotExist):
             await subscription_benefit_grant(
                 job_context,
@@ -135,7 +163,11 @@ class TestSubscriptionBenefitGrant:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionBenefitDoesNotExist):
             await subscription_benefit_grant(
                 job_context,
@@ -153,12 +185,16 @@ class TestSubscriptionBenefitGrant:
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
             subscription_benefit_grant_service,
             "grant_benefit",
             spec=SubscriptionBenefitGrantService.grant_benefit,
         )
+
+        # then
+        session.expunge_all()
 
         await subscription_benefit_grant(
             job_context,
@@ -178,6 +214,7 @@ class TestSubscriptionBenefitGrant:
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
             subscription_benefit_grant_service,
@@ -185,6 +222,9 @@ class TestSubscriptionBenefitGrant:
             spec=SubscriptionBenefitGrantService.grant_benefit,
         )
         grant_benefit_mock.side_effect = SubscriptionBenefitRetriableError(10)
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(Retry):
             await subscription_benefit_grant(
@@ -204,7 +244,11 @@ class TestSubscriptionBenefitRevoke:
         polar_worker_context: PolarWorkerContext,
         subscription_benefit_organization: SubscriptionBenefit,
         user: User,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_benefit_revoke(
                 job_context,
@@ -220,7 +264,11 @@ class TestSubscriptionBenefitRevoke:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(UserDoesNotExist):
             await subscription_benefit_revoke(
                 job_context,
@@ -236,7 +284,11 @@ class TestSubscriptionBenefitRevoke:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionBenefitDoesNotExist):
             await subscription_benefit_revoke(
                 job_context,
@@ -254,12 +306,16 @@ class TestSubscriptionBenefitRevoke:
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
             subscription_benefit_grant_service,
             "revoke_benefit",
             spec=SubscriptionBenefitGrantService.revoke_benefit,
         )
+
+        # then
+        session.expunge_all()
 
         await subscription_benefit_revoke(
             job_context,
@@ -279,6 +335,7 @@ class TestSubscriptionBenefitRevoke:
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
             subscription_benefit_grant_service,
@@ -286,6 +343,9 @@ class TestSubscriptionBenefitRevoke:
             spec=SubscriptionBenefitGrantService.revoke_benefit,
         )
         revoke_benefit_mock.side_effect = SubscriptionBenefitRetriableError(10)
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(Retry):
             await subscription_benefit_revoke(
@@ -304,7 +364,11 @@ class TestSubscriptionBenefitUpdate:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionBenefitGrantDoesNotExist):
             await subscription_benefit_update(
                 job_context, uuid.uuid4(), polar_worker_context
@@ -334,6 +398,9 @@ class TestSubscriptionBenefitUpdate:
             "update_benefit_grant",
             spec=SubscriptionBenefitGrantService.update_benefit_grant,
         )
+
+        # then
+        session.expunge_all()
 
         await subscription_benefit_update(job_context, grant.id, polar_worker_context)
 
@@ -365,6 +432,9 @@ class TestSubscriptionBenefitUpdate:
         )
         update_benefit_grant_mock.side_effect = SubscriptionBenefitRetriableError(10)
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(Retry):
             await subscription_benefit_update(
                 job_context, grant.id, polar_worker_context
@@ -378,7 +448,11 @@ class TestSubscriptionBenefitDelete:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionBenefitGrantDoesNotExist):
             await subscription_benefit_delete(
                 job_context, uuid.uuid4(), polar_worker_context
@@ -409,6 +483,9 @@ class TestSubscriptionBenefitDelete:
             spec=SubscriptionBenefitGrantService.delete_benefit_grant,
         )
 
+        # then
+        session.expunge_all()
+
         await subscription_benefit_delete(job_context, grant.id, polar_worker_context)
 
         delete_benefit_grant_mock.assert_called_once()
@@ -438,6 +515,9 @@ class TestSubscriptionBenefitDelete:
             spec=SubscriptionBenefitGrantService.delete_benefit_grant,
         )
         delete_benefit_grant_mock.side_effect = SubscriptionBenefitRetriableError(10)
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(Retry):
             await subscription_benefit_delete(

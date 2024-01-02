@@ -24,6 +24,9 @@ from polar.subscription.service.subscribe_session import (
 from polar.subscription.service.subscribe_session import (
     subscribe_session as subscribe_session_service,
 )
+from polar.subscription.service.subscription_tier import (
+    subscription_tier as subscription_tier_service,
+)
 
 from ..conftest import (
     add_subscription_benefits,
@@ -45,10 +48,22 @@ class TestCreateSubscribeSession:
         authz: Authz,
         subscription_tier_organization_free: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # create_subscribe_session calls .refresh() which requires the objects to be from the same session
+        # re-load the tier without any relationships
+        subscription_tier_organization_free_loaded = (
+            await subscription_tier_service.get(
+                session, subscription_tier_organization_free.id
+            )
+        )
+        assert subscription_tier_organization_free_loaded
+
         with pytest.raises(FreeSubscriptionTier):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization_free,
+                subscription_tier_organization_free_loaded,
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -62,11 +77,21 @@ class TestCreateSubscribeSession:
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         subscription_tier_organization.is_archived = True
+        await session.commit()
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
 
         with pytest.raises(ArchivedSubscriptionTier):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -81,11 +106,21 @@ class TestCreateSubscribeSession:
     ) -> None:
         subscription_tier_organization.stripe_product_id = None
         subscription_tier_organization.stripe_price_id = None
+        await session.commit()
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
 
         with pytest.raises(NotAddedToStripeSubscriptionTier):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -98,10 +133,19 @@ class TestCreateSubscribeSession:
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(NoAssociatedPayoutAccount):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -120,10 +164,19 @@ class TestCreateSubscribeSession:
             session, subscription_tier=subscription_tier_organization, user=user
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(AlreadySubscribed):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 "SUCCESS_URL",
                 user,
                 AuthMethod.COOKIE,
@@ -149,9 +202,18 @@ class TestCreateSubscribeSession:
             metadata={},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             "SUCCESS_URL",
             Anonymous(),
             None,
@@ -198,9 +260,18 @@ class TestCreateSubscribeSession:
             metadata={},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             "SUCCESS_URL",
             user,
             AuthMethod.COOKIE,
@@ -252,9 +323,18 @@ class TestCreateSubscribeSession:
             metadata={},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             "SUCCESS_URL",
             user,
             AuthMethod.PERSONAL_ACCESS_TOKEN,
@@ -301,9 +381,18 @@ class TestCreateSubscribeSession:
             metadata={},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             "SUCCESS_URL",
             user,
             AuthMethod.PERSONAL_ACCESS_TOKEN,
@@ -360,9 +449,18 @@ class TestCreateSubscribeSession:
             metadata={},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             "SUCCESS_URL",
             Anonymous(),
             None,
@@ -414,9 +512,18 @@ class TestCreateSubscribeSession:
             metadata={},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             "SUCCESS_URL",
             user,
             AuthMethod.COOKIE,
@@ -449,10 +556,19 @@ class TestCreateSubscribeSession:
         organization_subscriber: Organization,
         organization_account: Account,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(Unauthorized):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -470,10 +586,19 @@ class TestCreateSubscribeSession:
         user: User,
         organization_account: Account,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
         with pytest.raises(NotPermitted):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization,
+                subscription_tier_organization_loaded,
                 "SUCCESS_URL",
                 user,
                 AuthMethod.COOKIE,
@@ -493,6 +618,7 @@ class TestCreateSubscribeSession:
     ) -> None:
         organization_subscriber.stripe_customer_id = "ORGANIZATION_STRIPE_CUSTOMER_ID"
         organization_subscriber_admin.stripe_customer_id = "STRIPE_CUSTOMER_ID"
+        await session.commit()
 
         create_subscription_checkout_session_mock: (
             MagicMock
@@ -505,9 +631,19 @@ class TestCreateSubscribeSession:
             metadata={"organization_subscriber_id": str(organization_subscriber.id)},
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+        subscription_tier_organization = subscription_tier_organization_loaded
+
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
-            subscription_tier_organization,
+            subscription_tier_organization_loaded,
             "SUCCESS_URL",
             organization_subscriber_admin,
             AuthMethod.COOKIE,
@@ -561,6 +697,9 @@ class TestGetSubscribeSession:
             metadata=metadata,
         )
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(ResourceNotFound):
             await subscribe_session_service.get_subscribe_session(session, "SESSION_ID")
 
@@ -578,6 +717,9 @@ class TestGetSubscribeSession:
             customer_details={"name": "John", "email": "backer@example.com"},
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
+
+        # then
+        session.expunge_all()
 
         subscribe_session = await subscribe_session_service.get_subscribe_session(
             session, "SESSION_ID"

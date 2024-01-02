@@ -79,11 +79,7 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
                     new Date().getFullYear()
                       ? undefined
                       : 'numeric',
-                  month:
-                    new Date(props.article.published_at).getFullYear() ===
-                    new Date().getFullYear()
-                      ? 'long'
-                      : 'short',
+                  month: 'long',
                   day: 'numeric',
                 })}
               </div>

@@ -48,7 +48,7 @@ export const OrganizationPublicSidebar = ({
   const shouldRenderDashboardButton = useMemo(
     () =>
       adminOrgs?.data?.items?.some((org) => org.name === organization?.name),
-    [adminOrgs],
+    [adminOrgs, organization],
   )
 
   const subscribers = useMemo(
@@ -58,7 +58,7 @@ export const OrganizationPublicSidebar = ({
 
   const subscribersHiddenCount = useMemo(
     () => subscribersCount - (subscribers.length ?? 0),
-    [subscriptionSummary],
+    [subscribers, subscribersCount],
   )
 
   return (

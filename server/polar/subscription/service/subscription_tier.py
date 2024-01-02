@@ -2,16 +2,9 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import (
-    ColumnExpressionArgument,
-    Select,
-    case,
-    or_,
-    select,
-    update,
-)
+from sqlalchemy import ColumnExpressionArgument, Select, case, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import aliased, contains_eager, selectinload
+from sqlalchemy.orm import aliased, contains_eager
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz, Subject
@@ -138,12 +131,6 @@ class SubscriptionTierService(
             SubscriptionTier.created_at,
         )
 
-        statement = statement.options(
-            selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
-                SubscriptionTierBenefit.subscription_benefit
-            )
-        )
-
         results, count = await paginate(session, statement, pagination=pagination)
 
         return results, count
@@ -157,9 +144,6 @@ class SubscriptionTierService(
             .options(
                 contains_eager(SubscriptionTier.organization),
                 contains_eager(SubscriptionTier.repository),
-                selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
-                    SubscriptionTierBenefit.subscription_benefit
-                ),
             )
             .limit(1)
         )

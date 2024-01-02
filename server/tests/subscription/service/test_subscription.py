@@ -46,9 +46,9 @@ from polar.user.service import user as user_service
 from tests.fixtures.random_objects import create_user
 
 from ..conftest import (
+    add_subscription_benefits,
     create_active_subscription,
     create_subscription,
-    set_subscription_benefits,
 )
 
 
@@ -585,7 +585,7 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier_organization = await set_subscription_benefits(
+        subscription_tier_organization = await add_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
@@ -612,7 +612,7 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier_organization = await set_subscription_benefits(
+        subscription_tier_organization = await add_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
@@ -654,7 +654,7 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier_organization = await set_subscription_benefits(
+        subscription_tier_organization = await add_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
@@ -697,7 +697,7 @@ class TestEnqueueBenefitsGrants:
         session.add(grant)
         await session.commit()
 
-        subscription_tier_organization = await set_subscription_benefits(
+        subscription_tier_organization = await add_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits[1:],
@@ -727,7 +727,7 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier_organization = await set_subscription_benefits(
+        subscription_tier_organization = await add_subscription_benefits(
             session,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,

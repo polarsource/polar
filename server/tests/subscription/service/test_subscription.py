@@ -28,6 +28,7 @@ from polar.models.repository import Repository
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import FreeSubscriptionCreate, SubscriptionUpgrade
 from polar.subscription.service.subscription import (
@@ -153,6 +154,9 @@ class TestCreateFreeSubscription:
         session: AsyncSession,
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(ResourceNotFound):
             await subscription_service.create_free_subscription(
                 session,
@@ -169,6 +173,9 @@ class TestCreateFreeSubscription:
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(NotAFreeSubscriptionTier):
             await subscription_service.create_free_subscription(
                 session,
@@ -191,6 +198,9 @@ class TestCreateFreeSubscription:
             user=user,
             stripe_subscription_id=None,
         )
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(AlreadySubscribed):
             await subscription_service.create_free_subscription(
@@ -216,6 +226,9 @@ class TestCreateFreeSubscription:
             stripe_subscription_id=None,
         )
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(AlreadySubscribed):
             await subscription_service.create_free_subscription(
                 session,
@@ -231,6 +244,9 @@ class TestCreateFreeSubscription:
         session: AsyncSession,
         subscription_tier_organization_free: SubscriptionTier,
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(RequiredCustomerEmail):
             await subscription_service.create_free_subscription(
                 session,
@@ -250,6 +266,9 @@ class TestCreateFreeSubscription:
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription.enqueue_job"
         )
+
+        # then
+        session.expunge_all()
 
         subscription = await subscription_service.create_free_subscription(
             session,
@@ -281,6 +300,9 @@ class TestCreateFreeSubscription:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
+        # then
+        session.expunge_all()
+
         subscription = await subscription_service.create_free_subscription(
             session,
             free_subscription_create=FreeSubscriptionCreate(
@@ -304,6 +326,10 @@ class TestCreateFreeSubscription:
 class TestCreateSubscription:
     async def test_not_existing_subscription_tier(self, session: AsyncSession) -> None:
         stripe_subscription = construct_stripe_subscription()
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(AssociatedSubscriptionTierDoesNotExist):
             await subscription_service.create_subscription(
                 session, stripe_subscription=stripe_subscription
@@ -323,6 +349,9 @@ class TestCreateSubscription:
         stripe_subscription = construct_stripe_subscription(
             product_id=subscription_tier_organization.stripe_product_id
         )
+
+        # then
+        session.expunge_all()
 
         subscription = await subscription_service.create_subscription(
             session, stripe_subscription=stripe_subscription
@@ -352,6 +381,9 @@ class TestCreateSubscription:
             user=user, product_id=subscription_tier_organization.stripe_product_id
         )
 
+        # then
+        session.expunge_all()
+
         subscription = await subscription_service.create_subscription(
             session, stripe_subscription=stripe_subscription
         )
@@ -361,8 +393,11 @@ class TestCreateSubscription:
 
         assert subscription.user_id == user.id
 
-        await session.refresh(user)
-        assert user.stripe_customer_id == stripe_subscription.customer
+        # load user
+        user_loaded = await user_service.get(session, user.id)
+        assert user_loaded
+
+        assert user_loaded.stripe_customer_id == stripe_subscription.customer
 
     async def test_set_started_at(
         self,
@@ -382,6 +417,9 @@ class TestCreateSubscription:
             status=SubscriptionStatus.active,
         )
 
+        # then
+        session.expunge_all()
+
         subscription = await subscription_service.create_subscription(
             session, stripe_subscription=stripe_subscription
         )
@@ -389,8 +427,11 @@ class TestCreateSubscription:
         assert subscription.status == SubscriptionStatus.active
         assert subscription.started_at is not None
 
-        await session.refresh(user)
-        assert user.stripe_customer_id == stripe_subscription.customer
+        # load user
+        user_loaded = await user_service.get(session, user.id)
+        assert user_loaded
+
+        assert user_loaded.stripe_customer_id == stripe_subscription.customer
 
     async def test_subscription_upgrade(
         self,
@@ -416,6 +457,9 @@ class TestCreateSubscription:
             metadata={"subscription_id": str(existing_subscription.id)},
         )
 
+        # then
+        session.expunge_all()
+
         subscription = await subscription_service.create_subscription(
             session, stripe_subscription=stripe_subscription
         )
@@ -425,8 +469,11 @@ class TestCreateSubscription:
         assert subscription.subscription_tier_id == subscription_tier_organization.id
         assert subscription.started_at == existing_subscription.started_at
 
-        await session.refresh(user)
-        assert user.stripe_customer_id == stripe_subscription.customer
+        # load user
+        user_loaded = await user_service.get(session, user.id)
+        assert user_loaded
+
+        assert user_loaded.stripe_customer_id == stripe_subscription.customer
 
     async def test_organization(
         self,
@@ -447,6 +494,9 @@ class TestCreateSubscription:
             product_id=subscription_tier_organization.stripe_product_id,
         )
 
+        # then
+        session.expunge_all()
+
         subscription = await subscription_service.create_subscription(
             session, stripe_subscription=stripe_subscription
         )
@@ -457,18 +507,27 @@ class TestCreateSubscription:
         assert subscription.user_id == user.id
         assert subscription.organization_id == organization.id
 
-        await session.refresh(user)
-        assert user.stripe_customer_id is None
+        # load user
+        user_loaded = await user_service.get(session, user.id)
+        assert user_loaded
+        assert user_loaded.stripe_customer_id is None
 
-        await session.refresh(organization)
-        assert organization.stripe_customer_id == stripe_subscription.customer
-        assert organization.billing_email == stripe_customer.email
+        # load org
+        organization_loaded = await organization_service.get(session, organization.id)
+        assert organization_loaded
+
+        assert organization_loaded.stripe_customer_id == stripe_subscription.customer
+        assert organization_loaded.billing_email == stripe_customer.email
 
 
 @pytest.mark.asyncio
 class TestUpdateSubscription:
     async def test_not_existing_subscription(self, session: AsyncSession) -> None:
         stripe_subscription = construct_stripe_subscription()
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_service.update_subscription(
                 session, stripe_subscription=stripe_subscription
@@ -496,6 +555,9 @@ class TestUpdateSubscription:
         )
         assert subscription.started_at is None
 
+        # then
+        session.expunge_all()
+
         updated_subscription = await subscription_service.update_subscription(
             session, stripe_subscription=stripe_subscription
         )
@@ -513,6 +575,10 @@ class TestUpdateSubscription:
 class TestTransferSubscriptionPaidInvoice:
     async def test_not_existing_subscription(self, session: AsyncSession) -> None:
         stripe_invoice = construct_stripe_invoice()
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_service.transfer_subscription_paid_invoice(
                 session, invoice=stripe_invoice
@@ -541,6 +607,9 @@ class TestTransferSubscriptionPaidInvoice:
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         )
+
+        # then
+        session.expunge_all()
 
         await subscription_service.transfer_subscription_paid_invoice(
             session, invoice=stripe_invoice
@@ -592,6 +661,9 @@ class TestEnqueueBenefitsGrants:
         )
         subscription.status = status
 
+        # then
+        session.expunge_all()
+
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
         enqueue_job_mock.assert_not_called()
@@ -618,6 +690,9 @@ class TestEnqueueBenefitsGrants:
             subscription_benefits=subscription_benefits,
         )
         subscription.status = status
+
+        # then
+        session.expunge_all()
 
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
@@ -660,6 +735,9 @@ class TestEnqueueBenefitsGrants:
             subscription_benefits=subscription_benefits,
         )
         subscription.status = status
+
+        # then
+        session.expunge_all()
 
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
@@ -704,6 +782,9 @@ class TestEnqueueBenefitsGrants:
         )
         subscription.status = SubscriptionStatus.active
 
+        # then
+        session.expunge_all()
+
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
         enqueue_job_mock.assert_any_await(
@@ -733,6 +814,9 @@ class TestEnqueueBenefitsGrants:
             subscription_benefits=subscription_benefits,
         )
         subscription_organization.status = SubscriptionStatus.active
+
+        # then
+        session.expunge_all()
 
         await subscription_service.enqueue_benefits_grants(
             session, subscription_organization
@@ -782,6 +866,9 @@ class TestUpdateSubscriptionTierBenefitsGrants:
             session, subscription_tier=subscription_tier_organization_second, user=user
         )
 
+        # then
+        session.expunge_all()
+
         await subscription_service.update_subscription_tier_benefits_grants(
             session, subscription_tier_organization
         )
@@ -828,6 +915,9 @@ class TestUpdateOrganizationBenefitsGrants:
             session, subscription_tier=subscription_tier_organization, user=user
         )
 
+        # then
+        session.expunge_all()
+
         await subscription_service.update_organization_benefits_grants(
             session, organization_subscriber
         )
@@ -862,6 +952,9 @@ class TestSearch:
             ended_at=datetime(2023, 6, 15),
         )
 
+        # then
+        session.expunge_all()
+
         results, count = await subscription_service.search(
             session, user, organization=organization, pagination=PaginationParams(1, 10)
         )
@@ -885,6 +978,9 @@ class TestSearch:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+
+        # then
+        session.expunge_all()
 
         results, count = await subscription_service.search(
             session, user, organization=organization, pagination=PaginationParams(1, 10)
@@ -916,6 +1012,9 @@ class TestSearch:
             ended_at=datetime(2023, 6, 15),
         )
 
+        # then
+        session.expunge_all()
+
         results, count = await subscription_service.search(
             session,
             user_second,
@@ -936,10 +1035,17 @@ class TestUpgradeSubscription:
         subscription: Subscription,
         user_second: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         with pytest.raises(NotPermitted):
             await subscription_service.upgrade_subscription(
                 session,
-                subscription=subscription,
+                subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
                     subscription_tier_id=uuid.uuid4()
                 ),
@@ -957,10 +1063,18 @@ class TestUpgradeSubscription:
         subscription = await create_subscription(
             session, subscription_tier=subscription_tier_organization_free, user=user
         )
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         with pytest.raises(FreeSubscriptionUpgrade):
             await subscription_service.upgrade_subscription(
                 session,
-                subscription=subscription,
+                subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
                     subscription_tier_id=uuid.uuid4()
                 ),
@@ -975,10 +1089,17 @@ class TestUpgradeSubscription:
         subscription: Subscription,
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         with pytest.raises(InvalidSubscriptionTierUpgrade):
             await subscription_service.upgrade_subscription(
                 session,
-                subscription=subscription,
+                subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
                     subscription_tier_id=uuid.uuid4()
                 ),
@@ -994,10 +1115,17 @@ class TestUpgradeSubscription:
         subscription_tier_repository: SubscriptionTier,
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         with pytest.raises(InvalidSubscriptionTierUpgrade):
             await subscription_service.upgrade_subscription(
                 session,
-                subscription=subscription,
+                subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
                     subscription_tier_id=subscription_tier_repository.id
                 ),
@@ -1015,9 +1143,16 @@ class TestUpgradeSubscription:
         subscription_tier_organization_second: SubscriptionTier,
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         updated_subscription = await subscription_service.upgrade_subscription(
             session,
-            subscription=subscription,
+            subscription=subscription_loaded,
             subscription_upgrade=SubscriptionUpgrade(
                 subscription_tier_id=subscription_tier_organization_second.id
             ),
@@ -1054,9 +1189,16 @@ class TestCancelSubscription:
         subscription: Subscription,
         user_second: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         with pytest.raises(NotPermitted):
             await subscription_service.cancel_subscription(
-                session, subscription=subscription, authz=authz, user=user_second
+                session, subscription=subscription_loaded, authz=authz, user=user_second
             )
 
     async def test_already_canceled(
@@ -1073,9 +1215,17 @@ class TestCancelSubscription:
             user=user,
             status=SubscriptionStatus.canceled,
         )
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         with pytest.raises(AlreadyCanceledSubscription):
             await subscription_service.cancel_subscription(
-                session, subscription=subscription, authz=authz, user=user
+                session, subscription=subscription_loaded, authz=authz, user=user
             )
 
     async def test_cancel_at_period_end(
@@ -1090,10 +1240,18 @@ class TestCancelSubscription:
             session, subscription_tier=subscription_tier_organization, user=user
         )
         subscription.cancel_at_period_end = True
+        await session.commit()
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
 
         with pytest.raises(AlreadyCanceledSubscription):
             await subscription_service.cancel_subscription(
-                session, subscription=subscription, authz=authz, user=user
+                session, subscription=subscription_loaded, authz=authz, user=user
             )
 
     async def test_free_subscription(
@@ -1111,8 +1269,15 @@ class TestCancelSubscription:
             stripe_subscription_id=None,
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         updated_subscription = await subscription_service.cancel_subscription(
-            session, subscription=subscription, authz=authz, user=user
+            session, subscription=subscription_loaded, authz=authz, user=user
         )
 
         assert updated_subscription.id == subscription.id
@@ -1136,8 +1301,15 @@ class TestCancelSubscription:
             user=user,
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
+
         updated_subscription = await subscription_service.cancel_subscription(
-            session, subscription=subscription, authz=authz, user=user
+            session, subscription=subscription_loaded, authz=authz, user=user
         )
 
         assert updated_subscription.id == subscription.id
@@ -1207,6 +1379,9 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
 
+        # then
+        session.expunge_all()
+
         results = await subscription_service.get_statistics_periods(
             session,
             user,
@@ -1248,6 +1423,9 @@ class TestGetStatisticsPeriods:
             organization_account=organization_account,
             subscription=subscription,
         )
+
+        # then
+        session.expunge_all()
 
         results = await subscription_service.get_statistics_periods(
             session,
@@ -1313,6 +1491,9 @@ class TestGetStatisticsPeriods:
             subscription=subscription,
         )
 
+        # then
+        session.expunge_all()
+
         results = await subscription_service.get_statistics_periods(
             session,
             user,
@@ -1377,6 +1558,9 @@ class TestGetStatisticsPeriods:
             organization_account=organization_account,
             subscription=subscription_repository,
         )
+
+        # then
+        session.expunge_all()
 
         results = await subscription_service.get_statistics_periods(
             session,
@@ -1449,6 +1633,9 @@ class TestGetStatisticsPeriods:
             subscription=subscription_repository,
         )
 
+        # then
+        session.expunge_all()
+
         results = await subscription_service.get_statistics_periods(
             session,
             user,
@@ -1498,6 +1685,9 @@ class TestGetStatisticsPeriods:
             organization_account=organization_account,
             subscription=subscription,
         )
+
+        # then
+        session.expunge_all()
 
         results = await subscription_service.get_statistics_periods(
             session,
@@ -1555,6 +1745,9 @@ class TestGetStatisticsPeriods:
             subscription=subscription_repository,
         )
 
+        # then
+        session.expunge_all()
+
         results = await subscription_service.get_statistics_periods(
             session,
             user,
@@ -1603,6 +1796,9 @@ class TestGetStatisticsPeriods:
             organization_account=organization_account,
             subscription=subscription,
         )
+
+        # then
+        session.expunge_all()
 
         results = await subscription_service.get_statistics_periods(
             session,
@@ -1662,6 +1858,9 @@ class TestGetStatisticsPeriods:
             user=user_second,
             started_at=datetime(2023, 1, 1),
         )
+
+        # then
+        session.expunge_all()
 
         results = await subscription_service.get_statistics_periods(
             session,

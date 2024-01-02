@@ -47,6 +47,9 @@ class TestSearch:
         subscription_benefits: list[SubscriptionBenefit],
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_benefit_service.search(
             session, user, pagination=PaginationParams(1, 10)
         )
@@ -61,6 +64,9 @@ class TestSearch:
         subscription_benefits: list[SubscriptionBenefit],
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_benefit_service.search(
             session, user, pagination=PaginationParams(1, 10)
         )
@@ -78,6 +84,10 @@ class TestSearch:
         plain_subscription_benefit = await create_subscription_benefit(
             session, type=SubscriptionBenefitType.custom, organization=organization
         )
+
+        # then
+        session.expunge_all()
+
         results, count = await subscription_benefit_service.search(
             session,
             user,
@@ -98,6 +108,9 @@ class TestSearch:
         subscription_benefit_organization: SubscriptionBenefit,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_benefit_service.search(
             session, user, organization=organization, pagination=PaginationParams(1, 10)
         )
@@ -114,6 +127,9 @@ class TestSearch:
         subscription_benefits: list[SubscriptionBenefit],
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_benefit_service.search(
             session,
             user,
@@ -134,6 +150,9 @@ class TestSearch:
         subscription_benefit_private_repository: SubscriptionBenefit,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await subscription_benefit_service.search(
             session, user, repository=repository, pagination=PaginationParams(1, 10)
         )
@@ -152,6 +171,9 @@ class TestGetById:
         subscription_benefit_organization: SubscriptionBenefit,
         user: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         not_existing_subscription_benefit = (
             await subscription_benefit_service.get_by_id(session, user, uuid.uuid4())
         )
@@ -177,6 +199,9 @@ class TestGetById:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         not_existing_subscription_benefit = (
             await subscription_benefit_service.get_by_id(session, user, uuid.uuid4())
         )
@@ -214,6 +239,10 @@ class TestUserCreate:
             properties={},
             organization_id=uuid.uuid4(),
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(OrganizationDoesNotExist):
             await subscription_benefit_service.user_create(
                 session, authz, create_schema, user
@@ -233,6 +262,10 @@ class TestUserCreate:
             properties={},
             organization_id=organization.id,
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(OrganizationDoesNotExist):
             await subscription_benefit_service.user_create(
                 session, authz, create_schema, user
@@ -253,6 +286,10 @@ class TestUserCreate:
             properties={},
             organization_id=organization.id,
         )
+
+        # then
+        session.expunge_all()
+
         subscription_benefit = await subscription_benefit_service.user_create(
             session, authz, create_schema, user
         )
@@ -268,6 +305,10 @@ class TestUserCreate:
             properties={},
             repository_id=uuid.uuid4(),
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(RepositoryDoesNotExist):
             await subscription_benefit_service.user_create(
                 session, authz, create_schema, user
@@ -287,6 +328,10 @@ class TestUserCreate:
             properties={},
             repository_id=repository.id,
         )
+
+        # then
+        session.expunge_all()
+
         with pytest.raises(RepositoryDoesNotExist):
             await subscription_benefit_service.user_create(
                 session, authz, create_schema, user
@@ -307,6 +352,10 @@ class TestUserCreate:
             properties={},
             repository_id=repository.id,
         )
+
+        # then
+        session.expunge_all()
+
         subscription_benefit = await subscription_benefit_service.user_create(
             session, authz, create_schema, user
         )
@@ -325,9 +374,25 @@ class TestUserUpdate:
         update_schema = SubscriptionBenefitCustomUpdate(
             description="Subscription Benefit Update"
         )
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_benefit_organization_loaded = (
+            await subscription_benefit_service.get(
+                session, subscription_benefit_organization.id
+            )
+        )
+        assert subscription_benefit_organization_loaded
+
         with pytest.raises(NotPermitted):
             await subscription_benefit_service.user_update(
-                session, authz, subscription_benefit_organization, update_schema, user
+                session,
+                authz,
+                subscription_benefit_organization_loaded,
+                update_schema,
+                user,
             )
 
     async def test_valid_description_change(
@@ -348,8 +413,24 @@ class TestUserUpdate:
         update_schema = SubscriptionBenefitCustomUpdate(
             description="Description update"
         )
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_benefit_organization_loaded = (
+            await subscription_benefit_service.get(
+                session, subscription_benefit_organization.id
+            )
+        )
+        assert subscription_benefit_organization_loaded
+
         updated_subscription_benefit = await subscription_benefit_service.user_update(
-            session, authz, subscription_benefit_organization, update_schema, user
+            session,
+            authz,
+            subscription_benefit_organization_loaded,
+            update_schema,
+            user,
         )
         assert updated_subscription_benefit.description == "Description update"
 
@@ -365,9 +446,20 @@ class TestUserDelete:
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_benefit_organization_loaded = (
+            await subscription_benefit_service.get(
+                session, subscription_benefit_organization.id
+            )
+        )
+        assert subscription_benefit_organization_loaded
+
         with pytest.raises(NotPermitted):
             await subscription_benefit_service.user_delete(
-                session, authz, subscription_benefit_organization, user
+                session, authz, subscription_benefit_organization_loaded, user
             )
 
     async def test_not_deletable_subscription_benefit(
@@ -385,9 +477,19 @@ class TestUserDelete:
             organization=organization,
             deletable=False,
         )
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_benefit_loaded = await subscription_benefit_service.get(
+            session, subscription_benefit.id
+        )
+        assert subscription_benefit_loaded
+
         with pytest.raises(NotPermitted):
             await subscription_benefit_service.user_delete(
-                session, authz, subscription_benefit, user
+                session, authz, subscription_benefit_loaded, user
             )
 
     async def test_valid(
@@ -405,8 +507,19 @@ class TestUserDelete:
             spec=SubscriptionBenefitGrantService.enqueue_benefit_grant_updates,
         )
 
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_benefit_organization_loaded = (
+            await subscription_benefit_service.get(
+                session, subscription_benefit_organization.id
+            )
+        )
+        assert subscription_benefit_organization_loaded
+
         updated_subscription_benefit = await subscription_benefit_service.user_delete(
-            session, authz, subscription_benefit_organization, user
+            session, authz, subscription_benefit_organization_loaded, user
         )
 
         assert updated_subscription_benefit.deleted_at is not None

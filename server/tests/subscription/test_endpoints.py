@@ -31,6 +31,7 @@ from .conftest import (
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestSearchSubscriptionTiers:
     async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -109,6 +110,7 @@ class TestSearchSubscriptionTiers:
         organization: Organization,
         public_repository: Repository,
         subscription_tiers: list[SubscriptionTier],
+        session: AsyncSession,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/tiers/search",
@@ -134,6 +136,7 @@ class TestSearchSubscriptionTiers:
         organization: Organization,
         repository: Repository,
         subscription_tiers: list[SubscriptionTier],
+        session: AsyncSession,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/tiers/search",
@@ -150,6 +153,7 @@ class TestSearchSubscriptionTiers:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
+    @pytest.mark.http_auto_expunge(False)
     async def test_with_benefits(
         self,
         session: AsyncSession,
@@ -163,6 +167,9 @@ class TestSearchSubscriptionTiers:
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
         )
+
+        # then
+        session.expunge_all()
 
         response = await client.get(
             "/api/v1/subscriptions/tiers/search",
@@ -188,6 +195,7 @@ class TestSearchSubscriptionTiers:
 
 @pytest.mark.asyncio
 class TestLookupSubscriptionTier:
+    @pytest.mark.http_auto_expunge
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/subscriptions/tiers/lookup",
@@ -196,8 +204,11 @@ class TestLookupSubscriptionTier:
 
         assert response.status_code == 404
 
+    @pytest.mark.http_auto_expunge
     async def test_valid(
-        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/tiers/lookup",
@@ -222,6 +233,9 @@ class TestLookupSubscriptionTier:
             subscription_benefits=subscription_benefits,
         )
 
+        # then
+        session.expunge_all()
+
         response = await client.get(
             "/api/v1/subscriptions/tiers/lookup",
             params={"subscription_tier_id": str(subscription_tier_organization.id)},
@@ -239,6 +253,7 @@ class TestLookupSubscriptionTier:
 
 @pytest.mark.asyncio
 class TestCreateSubscriptionTier:
+    @pytest.mark.http_auto_expunge
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
@@ -253,6 +268,7 @@ class TestCreateSubscriptionTier:
         assert response.status_code == 401
 
     @pytest.mark.authenticated
+    @pytest.mark.http_auto_expunge
     async def test_both_organization_and_repository(
         self,
         client: AsyncClient,
@@ -275,6 +291,7 @@ class TestCreateSubscriptionTier:
         assert response.status_code == 422
 
     @pytest.mark.authenticated
+    @pytest.mark.http_auto_expunge
     async def test_neither_organization_nor_repository(
         self,
         client: AsyncClient,
@@ -289,6 +306,7 @@ class TestCreateSubscriptionTier:
         assert response.status_code == 422
 
     @pytest.mark.authenticated
+    @pytest.mark.http_auto_expunge
     async def test_cant_create_free_type_tier(
         self,
         client: AsyncClient,
@@ -332,6 +350,7 @@ class TestCreateSubscriptionTier:
         organization: Organization,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
+        session: AsyncSession,
     ) -> None:
         create_product_with_price_mock: (
             MagicMock
@@ -339,6 +358,9 @@ class TestCreateSubscriptionTier:
         create_product_with_price_mock.return_value = SimpleNamespace(
             id="PRODUCT_ID", default_price="PRICE_ID"
         )
+
+        # then
+        session.expunge_all()
 
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
@@ -361,6 +383,7 @@ class TestCreateSubscriptionTier:
         user_organization_admin: UserOrganization,
         organization_account: Account,
         stripe_service_mock: MagicMock,
+        session: AsyncSession,
     ) -> None:
         create_product_with_price_mock: (
             MagicMock
@@ -368,6 +391,9 @@ class TestCreateSubscriptionTier:
         create_product_with_price_mock.return_value = SimpleNamespace(
             id="PRODUCT_ID", default_price="PRICE_ID"
         )
+
+        # then
+        session.expunge_all()
 
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
@@ -383,9 +409,13 @@ class TestCreateSubscriptionTier:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestUpdateSubscriptionTier:
     async def test_anonymous(
-        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        session: AsyncSession,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}",
@@ -395,7 +425,11 @@ class TestUpdateSubscriptionTier:
         assert response.status_code == 401
 
     @pytest.mark.authenticated
-    async def test_not_existing(self, client: AsyncClient) -> None:
+    async def test_not_existing(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+    ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{uuid.uuid4()}",
             json={"name": "Updated Name"},
@@ -454,9 +488,12 @@ class TestUpdateSubscriptionTier:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestUpdateSubscriptionTierBenefits:
     async def test_anonymous(
-        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/benefits",
@@ -466,7 +503,10 @@ class TestUpdateSubscriptionTierBenefits:
         assert response.status_code == 401
 
     @pytest.mark.authenticated
-    async def test_not_existing(self, client: AsyncClient) -> None:
+    async def test_not_existing(
+        self,
+        client: AsyncClient,
+    ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{uuid.uuid4()}/benefits",
             json={"benefits": []},
@@ -494,9 +534,12 @@ class TestUpdateSubscriptionTierBenefits:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestArchiveSubscriptionTier:
     async def test_anonymous(
-        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/archive"
@@ -530,8 +573,12 @@ class TestArchiveSubscriptionTier:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestSearchSubscriptionBenefits:
-    async def test_anonymous(self, client: AsyncClient) -> None:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+    ) -> None:
         response = await client.get("/api/v1/subscriptions/benefits/search")
 
         assert response.status_code == 401
@@ -547,7 +594,9 @@ class TestSearchSubscriptionBenefits:
 
     @pytest.mark.authenticated
     async def test_not_existing_repository(
-        self, client: AsyncClient, organization: Organization
+        self,
+        client: AsyncClient,
+        organization: Organization,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -655,6 +704,7 @@ class TestSearchSubscriptionBenefits:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestLookupSubscriptionBenefit:
     async def test_anonymous(
         self,
@@ -701,6 +751,7 @@ class TestLookupSubscriptionBenefit:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestCreateSubscriptionBenefit:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -823,6 +874,7 @@ class TestCreateSubscriptionBenefit:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestUpdateSubscriptionBenefit:
     async def test_anonymous(
         self,
@@ -923,6 +975,7 @@ class TestUpdateSubscriptionBenefit:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestDeleteSubscriptionBenefit:
     async def test_anonymous(
         self,
@@ -956,6 +1009,7 @@ class TestDeleteSubscriptionBenefit:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestCreateSubscribeSession:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -1077,6 +1131,7 @@ class TestCreateSubscribeSession:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestGetSubscribeSession:
     async def test_valid_subscription_tier_organization(
         self,
@@ -1136,6 +1191,7 @@ class TestGetSubscribeSession:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestSearchSubscriptions:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1357,6 +1413,7 @@ class TestSearchSubscriptions:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestCreateFreeSubscription:
     async def test_anonymous(
         self,
@@ -1380,6 +1437,7 @@ class TestCreateFreeSubscription:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestUpgradeSubscription:
     async def test_anonymous(
         self,
@@ -1433,6 +1491,7 @@ class TestUpgradeSubscription:
 
 @pytest.mark.asyncio
 class TestCancelSubscription:
+    @pytest.mark.http_auto_expunge
     async def test_anonymous(
         self, client: AsyncClient, subscription: Subscription
     ) -> None:
@@ -1443,6 +1502,7 @@ class TestCancelSubscription:
         assert response.status_code == 401
 
     @pytest.mark.authenticated
+    @pytest.mark.http_auto_expunge
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.delete(
             f"/api/v1/subscriptions/subscriptions/{uuid.uuid4()}"
@@ -1458,6 +1518,9 @@ class TestCancelSubscription:
         session.add(subscription)
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         response = await client.delete(
             f"/api/v1/subscriptions/subscriptions/{subscription.id}"
         )
@@ -1470,6 +1533,7 @@ class TestCancelSubscription:
 
 @pytest.mark.asyncio
 class TestSearchSubscriptionsSummary:
+    @pytest.mark.http_auto_expunge
     async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/summary",
@@ -1478,6 +1542,7 @@ class TestSearchSubscriptionsSummary:
 
         assert response.status_code == 404
 
+    @pytest.mark.http_auto_expunge
     async def test_not_existing_repository(
         self, client: AsyncClient, organization: Organization
     ) -> None:
@@ -1507,6 +1572,9 @@ class TestSearchSubscriptionsSummary:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+
+        # then
+        session.expunge_all()
 
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/summary",
@@ -1552,6 +1620,9 @@ class TestSearchSubscriptionsSummary:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+
+        # then
+        session.expunge_all()
 
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/summary",
@@ -1600,6 +1671,9 @@ class TestSearchSubscriptionsSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
+        # then
+        session.expunge_all()
+
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/summary",
             params={
@@ -1628,6 +1702,7 @@ class TestSearchSubscriptionsSummary:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestGetSubscriptionsStatistics:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

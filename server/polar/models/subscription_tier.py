@@ -70,7 +70,8 @@ class SubscriptionTier(RecordModel):
         return relationship("Repository", lazy="raise")
 
     subscription_tier_benefits: Mapped[list["SubscriptionTierBenefit"]] = relationship(
-        lazy="raise",
+        # Benefits are almost always needed, so eager loading makes sense
+        lazy="selectin",
         order_by="SubscriptionTierBenefit.order",
         cascade="all, delete-orphan",
     )

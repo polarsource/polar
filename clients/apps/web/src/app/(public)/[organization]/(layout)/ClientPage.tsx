@@ -15,6 +15,8 @@ import {
   Article,
   CreatePersonalAccessTokenResponse,
   Organization,
+  SubscriptionTier,
+  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
@@ -50,9 +52,20 @@ const ClientPage = ({
     [subscriptionTiers],
   )
 
+  const getSubscriptionTierAudience = (tier: SubscriptionTier) => {
+    switch (tier.type) {
+      case SubscriptionTierType.HOBBY:
+        return 'For Supporters'
+      case SubscriptionTierType.PRO:
+        return 'For Indie Hackers & Startups'
+      case SubscriptionTierType.BUSINESS:
+        return 'For Businesses'
+    }
+  }
+
   return isFeatureEnabled('feed') ? (
-    <div className="flex flex-row gap-x-16">
-      <div className="flex w-full max-w-xl flex-grow flex-col gap-y-8">
+    <div className="flex flex-col-reverse gap-16 md:flex-row">
+      <div className="flex w-full flex-grow flex-col gap-y-8 md:max-w-xl">
         <h2 className="text-lg">Posts</h2>
         <StaggerReveal className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-6">
@@ -77,9 +90,9 @@ const ClientPage = ({
         </StaggerReveal>
       </div>
 
-      <div className="sticky top-32 flex max-w-[300px] flex-shrink flex-col gap-y-12 self-start">
+      <div className="flex w-full flex-shrink flex-col gap-y-12 self-start md:sticky md:top-32 md:max-w-[300px]">
         {(highlightedTiers?.length ?? 0) > 0 && (
-          <div className="flex flex-col justify-start gap-y-6">
+          <div className="flex w-full flex-col justify-start gap-y-6">
             <div className="flex flex-col gap-y-2">
               <h3>Featured Subscriptions</h3>
               <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -89,31 +102,44 @@ const ClientPage = ({
             </div>
             <div className="flex flex-col gap-y-4">
               {highlightedTiers?.map((tier) => (
-                <Card key={tier.id} className="rounded-2xl">
-                  <CardHeader className="flex flex-row items-center justify-between p-6 pb-0">
-                    <div className="flex flex-row gap-x-2">
-                      <SubscriptionGroupIcon
-                        className="text-[20px]"
-                        type={tier.type}
-                      />
-                      <h3 className="font-medium">{tier.name}</h3>
-                    </div>
-                    <div>
-                      ${getCentsInDollarString(tier.price_amount, false, true)}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="dark:text-polar-400 px-6 py-4 text-sm text-gray-600">
-                    {tier.description}
-                  </CardContent>
-                  <CardFooter className="p-6 pt-0">
-                    <Link
-                      className="flex flex-row items-center gap-x-2 text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                      href={`/${organization.name}/subscriptions`}
-                    >
-                      <span className="text-sm">Subscribe</span>
-                    </Link>
-                  </CardFooter>
-                </Card>
+                <Link
+                  key={tier.id}
+                  className="flex w-full flex-row items-center gap-x-2"
+                  href={`/${organization.name}/subscriptions`}
+                >
+                  <Card className="dark:hover:bg-polar-800 w-full rounded-2xl transition-colors hover:bg-blue-50">
+                    <CardHeader className="flex flex-col gap-y-2 p-6 pb-0">
+                      <span className="dark:text-polar-500 text-xs text-gray-500">
+                        {getSubscriptionTierAudience(tier)}
+                      </span>
+                      <div className="flex flex-row items-center justify-between">
+                        <div className="flex flex-row gap-x-2">
+                          <SubscriptionGroupIcon
+                            className="text-[20px]"
+                            type={tier.type}
+                          />
+                          <h3 className="font-medium">{tier.name}</h3>
+                        </div>
+                        <div>
+                          $
+                          {getCentsInDollarString(
+                            tier.price_amount,
+                            false,
+                            true,
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="dark:text-polar-400 px-6 py-4 text-sm text-gray-600">
+                      {tier.description}
+                    </CardContent>
+                    <CardFooter className="flex flex-row items-center justify-between p-6 pt-0">
+                      <span className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">
+                        Subscribe
+                      </span>
+                    </CardFooter>
+                  </Card>
+                </Link>
               ))}
             </div>
             <div className="flex flex-row items-center justify-end">
@@ -128,7 +154,7 @@ const ClientPage = ({
           </div>
         )}
         <div className="flex flex-col justify-start gap-y-6">
-          <div className="flex flex-col gap-y-2">
+          <div className="hidden flex-col gap-y-2 md:flex">
             <h3>RSS Feed</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
               Consume posts from {organization.name} in your favorite RSS reader

@@ -234,8 +234,8 @@ const Split = (props: {
       </ModalHeader>
       <div className="space-y-4 pt-4">
         <div className="flex flex-col gap-4 px-4">
-          {computedShares.map((s) => (
-            <div className="flex items-center space-x-4">
+          {computedShares.map((s, index) => (
+            <div className="flex items-center space-x-4" key={index}>
               <div>
                 <img src={s.avatar_url} className="h-6 w-6 rounded-full" />
               </div>

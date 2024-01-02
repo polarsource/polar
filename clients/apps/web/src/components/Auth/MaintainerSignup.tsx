@@ -35,7 +35,7 @@ const MaintainerSignup = () => {
 
             <div className="flex flex-1 flex-col gap-4">
               {steps.map((s) => (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4" key={s.num}>
                   <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-600 font-semibold text-blue-500">
                     <span>{s.num}</span>
                   </div>

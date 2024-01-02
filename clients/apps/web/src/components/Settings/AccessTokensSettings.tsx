@@ -92,7 +92,7 @@ const AccessTokensSettings = () => {
             const shouldRenderJWT = token.id === createdToken?.id
 
             return (
-              <ShadowListGroup.Item>
+              <ShadowListGroup.Item key={token.id}>
                 <AccessToken
                   {...token}
                   createdTokenJWT={

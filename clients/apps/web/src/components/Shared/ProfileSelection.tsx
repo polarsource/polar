@@ -114,7 +114,7 @@ const ProfileSelection = ({
                 <>
                   {backerRoutes(currentOrg, isPersonalOrg).map((n) => {
                     return (
-                      <LinkItem href={n.link} icon={n.icon}>
+                      <LinkItem href={n.link} icon={n.icon} key={n.link}>
                         <span className="mx-1.5 font-medium">{n.title}</span>
                       </LinkItem>
                     )
@@ -246,7 +246,7 @@ export const ProfileMenu = ({ className = '' }) => {
                 .filter((route) => ('if' in route ? route.if : true))
                 .map((n) => {
                   return (
-                    <LinkItem href={n.link} icon={n.icon}>
+                    <LinkItem href={n.link} icon={n.icon} key={n.link}>
                       <span className="mx-2 text-sm">{n.title}</span>
                     </LinkItem>
                   )

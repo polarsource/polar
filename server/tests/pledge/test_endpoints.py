@@ -34,6 +34,9 @@ async def test_get_pledge(
     user_organization.is_admin = True
     await user_organization.save(session)
 
+    # then
+    session.expunge_all()
+
     response = await client.get(
         f"/api/v1/pledges/{pledge.id}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
@@ -50,6 +53,7 @@ async def test_get_pledge(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_pledge_member_sending_org(
     organization: Organization,
     repository: Repository,
@@ -98,6 +102,7 @@ async def test_get_pledge_member_sending_org(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_pledge_member_receiving_org(
     organization: Organization,
     repository: Repository,
@@ -145,6 +150,7 @@ async def test_get_pledge_member_receiving_org(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_pledge_not_admin(
     organization: Organization,
     pledging_organization: Organization,
@@ -168,6 +174,7 @@ async def test_get_pledge_not_admin(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_pledge_not_member(
     organization: Organization,
     repository: Repository,
@@ -185,6 +192,7 @@ async def test_get_pledge_not_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_search_pledge(
     organization: Organization,
     repository: Repository,
@@ -215,6 +223,7 @@ async def test_search_pledge(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_search_pledge_no_admin(
     organization: Organization,
     repository: Repository,
@@ -237,6 +246,7 @@ async def test_search_pledge_no_admin(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_search_pledge_no_member(
     organization: Organization,
     repository: Repository,
@@ -301,6 +311,9 @@ async def test_search_pledge_by_issue_id(
 
     await session.commit()
 
+    # then
+    session.expunge_all()
+
     response = await client.get(
         f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
@@ -331,6 +344,7 @@ async def test_search_pledge_by_issue_id(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_search_no_params(
     organization: Organization,
     repository: Repository,
@@ -348,6 +362,7 @@ async def test_search_no_params(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create_pay_on_completion(
     organization: Organization,
     repository: Repository,
@@ -384,11 +399,18 @@ async def test_create_pay_on_completion(
 async def test_summary(
     repository: Repository,
     pledge: Pledge,
+    pledging_organization: Organization,
     client: AsyncClient,
     session: AsyncSession,
 ) -> None:
     repository.is_private = False
     await repository.save(session)
+
+    expected_github_username = pledging_organization.name
+    expected_name = pledging_organization.name
+
+    # then
+    session.expunge_all()
 
     response = await client.get(
         f"/api/v1/pledges/summary?issue_id={pledge.issue_id}",
@@ -405,8 +427,8 @@ async def test_summary(
             {
                 "pledger": {
                     "avatar_url": "https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-                    "github_username": pledge.by_organization.name,
-                    "name": pledge.by_organization.name,
+                    "github_username": expected_github_username,
+                    "name": expected_name,
                 },
                 "type": "pay_upfront",
             }
@@ -415,6 +437,7 @@ async def test_summary(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_summary_private_repo(
     repository: Repository,
     pledge: Pledge,
@@ -444,6 +467,9 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
     organization.billing_email = "foo@polar.sh"
     organization.total_monthly_spending_limit = 10000
     await organization.save(session)
+
+    # then
+    session.expunge_all()
 
     # first pledge is OK
     create_pledge = await client.post(
@@ -494,6 +520,9 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
     organization.per_user_monthly_spending_limit = 10000
     await organization.save(session)
 
+    # then
+    session.expunge_all()
+
     # first pledge is OK
     create_pledge = await client.post(
         "/api/v1/pledges/pay_on_completion",
@@ -530,6 +559,7 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_no_billing_email(
     organization: Organization,
     repository: Repository,
@@ -575,6 +605,9 @@ async def test_spending(
     organization.per_user_monthly_spending_limit = 10000
     await organization.save(session)
 
+    # then
+    session.expunge_all()
+
     # make a pledge
     create_pledge = await client.post(
         "/api/v1/pledges/pay_on_completion",
@@ -603,6 +636,7 @@ async def test_spending(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_spending_zero(
     organization: Organization,
     auth_jwt: str,

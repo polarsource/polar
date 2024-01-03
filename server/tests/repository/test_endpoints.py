@@ -9,6 +9,7 @@ from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_repository_private_not_member(
     organization: Organization,
     repository: Repository,
@@ -19,12 +20,11 @@ async def test_get_repository_private_not_member(
         f"/api/v1/repositories/{repository.id}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
-
-    print(response.text)
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_repository_public(
     organization: Organization,
     public_repository: Repository,
@@ -36,13 +36,13 @@ async def test_get_repository_public(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    print(response.text)
     assert response.status_code == 200
     assert response.json()["id"] == str(public_repository.id)
     assert response.json()["organization"]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_repository_private_member(
     organization: Organization,
     repository: Repository,
@@ -55,13 +55,13 @@ async def test_get_repository_private_member(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    print(response.text)
     assert response.status_code == 200
     assert response.json()["id"] == str(repository.id)
     assert response.json()["organization"]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_repositories_no_member(
     organization: Organization,
     repository: Repository,
@@ -78,6 +78,7 @@ async def test_list_repositories_no_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_repositories_member(
     organization: Organization,
     repository: Repository,
@@ -95,6 +96,7 @@ async def test_list_repositories_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_repositories_admin(
     organization: Organization,
     repository: Repository,
@@ -118,6 +120,7 @@ async def test_list_repositories_admin(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_repository_lookup_not_found(
     organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -130,6 +133,7 @@ async def test_repository_lookup_not_found(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_repository_lookup_public(
     organization: Organization,
     public_repository: Repository,
@@ -146,6 +150,7 @@ async def test_repository_lookup_public(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_repository_lookup_private_member(
     organization: Organization,
     repository: Repository,
@@ -163,6 +168,7 @@ async def test_repository_lookup_private_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_repository_lookup_private_non_member(
     organization: Organization,
     repository: Repository,
@@ -178,6 +184,7 @@ async def test_repository_lookup_private_non_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_repository_search_no_matching_org(
     organization: Organization,
     repository: Repository,
@@ -195,6 +202,7 @@ async def test_repository_search_no_matching_org(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_repository_search_org(
     organization: Organization,
     repository: Repository,

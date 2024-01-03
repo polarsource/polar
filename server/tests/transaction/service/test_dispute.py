@@ -87,6 +87,9 @@ class TestCreateDispute:
     ) -> None:
         dispute = build_stripe_dispute(balance_transactions=[])
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(DisputeUnknownPaymentTransaction):
             await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
@@ -197,6 +200,9 @@ class TestCreateDispute:
 
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         dispute_transaction = await dispute_transaction_service.create_dispute(
             session, dispute=dispute
         )
@@ -212,19 +218,19 @@ class TestCreateDispute:
         first_call = (
             transfer_transaction_service_mock.create_reversal_transfer.call_args_list[0]
         )
-        assert first_call[1]["transfer_transactions"] == (
-            outgoing_transfer_1,
-            incoming_transfer_1,
-        )
+        assert [t.id for t in first_call[1]["transfer_transactions"]] == [
+            outgoing_transfer_1.id,
+            incoming_transfer_1.id,
+        ]
         assert first_call[1]["amount"] == dispute.amount * 0.75
 
         second_call = (
             transfer_transaction_service_mock.create_reversal_transfer.call_args_list[1]
         )
-        assert second_call[1]["transfer_transactions"] == (
-            outgoing_transfer_2,
-            incoming_transfer_2,
-        )
+        assert [t.id for t in second_call[1]["transfer_transactions"]] == [
+            outgoing_transfer_2.id,
+            incoming_transfer_2.id,
+        ]
         assert second_call[1]["amount"] == dispute.amount * 0.25
 
 
@@ -234,6 +240,9 @@ class TestCreateDisputeReversal:
         self, session: AsyncSession
     ) -> None:
         dispute = build_stripe_dispute(balance_transactions=[])
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(DisputeUnknownPaymentTransaction):
             await dispute_transaction_service.create_dispute_reversal(
@@ -436,6 +445,9 @@ class TestCreateDisputeReversal:
 
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         dispute_transaction = await dispute_transaction_service.create_dispute_reversal(
             session, dispute=dispute
         )
@@ -447,11 +459,11 @@ class TestCreateDisputeReversal:
         assert transfer_transaction_service_mock.create_transfer.call_count == 2
 
         first_call = transfer_transaction_service_mock.create_transfer.call_args_list[0]
-        assert first_call[1]["destination_account"] == account
+        assert first_call[1]["destination_account"].id == account.id
         assert first_call[1]["amount"] == incoming_transfer_1.amount
 
         second_call = transfer_transaction_service_mock.create_transfer.call_args_list[
             1
         ]
-        assert second_call[1]["destination_account"] == account
+        assert second_call[1]["destination_account"].id == account.id
         assert second_call[1]["amount"] == incoming_transfer_2.amount

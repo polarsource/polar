@@ -98,6 +98,9 @@ class TestCreatePayment:
             stripe_balance_transaction
         )
 
+        # then
+        session.expunge_all()
+
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge
         )
@@ -132,6 +135,9 @@ class TestCreatePayment:
             stripe_balance_transaction
         )
 
+        # then
+        session.expunge_all()
+
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge
         )
@@ -148,6 +154,9 @@ class TestCreatePayment:
         stripe_charge = build_stripe_charge(invoice=stripe_invoice.id)
 
         stripe_service_mock.get_invoice.return_value = stripe_invoice
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(SubscriptionDoesNotExist):
             await payment_transaction_service.create_payment(
@@ -180,6 +189,9 @@ class TestCreatePayment:
             stripe_balance_transaction
         )
 
+        # then
+        session.expunge_all()
+
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge
         )
@@ -210,6 +222,9 @@ class TestCreatePayment:
             stripe_balance_transaction
         )
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(PledgeDoesNotExist):
             await payment_transaction_service.create_payment(
                 session, charge=stripe_charge
@@ -232,6 +247,9 @@ class TestCreatePayment:
         stripe_service_mock.get_balance_transaction.return_value = (
             stripe_balance_transaction
         )
+
+        # then
+        session.expunge_all()
 
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge
@@ -264,6 +282,9 @@ class TestCreatePayment:
         stripe_service_mock.get_balance_transaction.return_value = (
             stripe_balance_transaction
         )
+
+        # then
+        session.expunge_all()
 
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge

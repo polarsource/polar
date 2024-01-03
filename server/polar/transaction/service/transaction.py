@@ -116,8 +116,22 @@ class TransactionService(BaseTransactionService):
                 subqueryload(Transaction.subscription).options(
                     joinedload(Subscription.subscription_tier),
                 ),
-                # Paid transactions
-                subqueryload(Transaction.paid_transactions),
+                # Paid transactions (joining on itself)
+                subqueryload(Transaction.paid_transactions)
+                .subqueryload(Transaction.pledge)
+                .joinedload(Pledge.issue)
+                .options(
+                    joinedload(Issue.repository),
+                    joinedload(Issue.organization),
+                ),
+                subqueryload(Transaction.paid_transactions).subqueryload(
+                    Transaction.issue_reward
+                ),
+                subqueryload(Transaction.paid_transactions)
+                .subqueryload(Transaction.subscription)
+                .options(
+                    joinedload(Subscription.subscription_tier),
+                ),
             )
             .where(Transaction.id == id)
         )

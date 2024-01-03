@@ -192,7 +192,7 @@ const ClientPage = ({
                 <Link
                   key={tier.id}
                   className="flex w-full flex-row items-center gap-x-2"
-                  href={`/${organization.name}/subscriptions`}
+                  href={`/${organization.name}/subscriptions#${tier.name}`}
                 >
                   <Card className="dark:hover:bg-polar-800 w-full overflow-hidden transition-colors hover:bg-blue-50">
                     <CardHeader className="flex flex-col gap-y-2 p-6 pb-0">

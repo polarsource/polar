@@ -94,6 +94,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   return (
     <Card
       ref={containerRef}
+      id={subscriptionTier.name}
       className={twMerge(
         'dark:bg-polar-900 dark:border-polar-800 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm',
         variantStyles[variant]['card'],

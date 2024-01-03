@@ -31,6 +31,9 @@ async def test_can_read_repository_private(
     repository.is_private = True
     await repository.save(session)
 
+    # then
+    session.expunge_all()
+
     authz = Authz(session)
 
     assert (
@@ -72,6 +75,9 @@ async def test_can_read_repository_public(
     repository.is_private = False
     await repository.save(session)
 
+    # then
+    session.expunge_all()
+
     authz = Authz(session)
 
     assert (
@@ -112,6 +118,9 @@ async def test_can_write_repository(
 ) -> None:
     repository.is_private = False
     await repository.save(session)
+
+    # then
+    session.expunge_all()
 
     assert (
         await Authz(session).can(
@@ -162,6 +171,9 @@ async def test_can_write_organization(
     user_second: User,
     user_organization: UserOrganization,
 ) -> None:
+    # then
+    session.expunge_all()
+
     assert (
         await Authz(session).can(
             Anonymous(),
@@ -214,6 +226,9 @@ async def test_can_read_issue_public_repository(
 ) -> None:
     repository.is_private = False
     await repository.save(session)
+
+    # then
+    session.expunge_all()
 
     authz = Authz(session)
 
@@ -270,6 +285,9 @@ async def test_can_read_issue_private_repository(
     repository.is_private = True
     await repository.save(session)
 
+    # then
+    session.expunge_all()
+
     authz = Authz(session)
 
     assert (
@@ -321,6 +339,9 @@ async def test_can_write_issue(
     user_second: User,
     user_organization: UserOrganization,
 ) -> None:
+    # then
+    session.expunge_all()
+
     assert (
         await Authz(session).can(
             Anonymous(),
@@ -368,6 +389,9 @@ async def test_can_read_organization(
     organization: Organization,
     user: User,
 ) -> None:
+    # then
+    session.expunge_all()
+
     authz = Authz(session)
 
     assert (
@@ -394,6 +418,9 @@ async def test_can_read_issue_reward(
     subtests: Any,
     session: AsyncSession,
 ) -> None:
+    # then (this is not perfect, some initialization happens after this)
+    session.expunge_all()
+
     authz = Authz(session)
 
     @dataclass
@@ -478,6 +505,9 @@ async def test_can_read_pledge(
     session: AsyncSession,
 ) -> None:
     authz = Authz(session)
+
+    # then (this is not perfect, some initialization happens after this)
+    session.expunge_all()
 
     @dataclass
     class TestCase:
@@ -584,6 +614,9 @@ async def test_can_write_pledge(
     session: AsyncSession,
 ) -> None:
     authz = Authz(session)
+
+    # then (this is not perfect, some initialization happens after this)
+    session.expunge_all()
 
     @dataclass
     class TestCase:

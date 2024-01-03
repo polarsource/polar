@@ -11,6 +11,9 @@ async def test_sync_external_org_with_repo_and_issue(
 ) -> None:
     client = get_client("")
 
+    # then
+    session.expunge_all()
+
     issue = await github_issue.sync_external_org_with_repo_and_issue(
         session=session,
         client=client,

@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from uuid import UUID
 
+import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
 from sqlalchemy import Integer, String
@@ -41,7 +42,9 @@ async def initialize_test_database(engine: AsyncEngine) -> None:
 
 @pytest_asyncio.fixture
 async def session(
-    engine: AsyncEngine, mocker: MockerFixture
+    engine: AsyncEngine,
+    mocker: MockerFixture,
+    request: pytest.FixtureRequest,
 ) -> AsyncIterator[AsyncSession]:
     connection = await engine.connect()
     transaction = await connection.begin()
@@ -59,6 +62,10 @@ async def session(
 
     await transaction.rollback()
     await connection.close()
+
+    skip_db_assert_marker = request.node.get_closest_marker("skip_db_asserts")
+    if skip_db_assert_marker is not None:
+        return
 
     # Assert that session.expunge_all() was called.
     #

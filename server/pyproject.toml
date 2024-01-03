@@ -85,7 +85,7 @@ verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify 
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render"}
 
 [tool.pytest.ini_options]
-markers = ["authenticated", "http_auto_expunge"]
+markers = ["authenticated", "http_auto_expunge", "skip_db_asserts"]
 asyncio_mode = "strict"
 
 [tool.coverage.run]

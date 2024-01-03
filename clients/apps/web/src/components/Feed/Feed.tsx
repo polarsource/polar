@@ -9,13 +9,9 @@ import { Post as PostComponent } from './Posts/Post'
 export const Feed = () => {
   const articles = useListArticles()
 
-  if (!articles.data || !articles.data.items) {
-    return <></>
-  }
-
-  return articles.data.items.length > 0 ? (
+  return (articles.data?.items?.length ?? 0) > 0 ? (
     <StaggerReveal className="flex flex-col gap-y-4">
-      {articles.data.items.map((entity) => (
+      {articles.data?.items?.map((entity) => (
         <StaggerReveal.Child key={entity.id}>
           <Link href={`/${entity.organization.name}/posts/${entity.slug}`}>
             <PostComponent article={entity} />

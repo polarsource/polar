@@ -7,8 +7,11 @@ import {
   Platforms,
 } from '@polar-sh/sdk'
 import {
+  InfiniteData,
+  UseInfiniteQueryResult,
   UseMutationResult,
   UseQueryResult,
+  useInfiniteQuery,
   useMutation,
   useQuery,
 } from '@tanstack/react-query'
@@ -38,10 +41,62 @@ export const useOrganizationArticles = (variables: {
     enabled: !!variables.orgName,
   })
 
-export const useListArticles = (): UseQueryResult<ListResourceArticle> =>
-  useQuery({
+export const useListArticles = (): UseInfiniteQueryResult<
+  InfiniteData<ListResourceArticle>
+> =>
+  useInfiniteQuery({
     queryKey: ['article', 'list'],
-    queryFn: () => api.articles.list(),
+    queryFn: ({ signal, pageParam = 1 }) => {
+      const promise = api.articles.list({ page: pageParam, limit: 20 })
+
+      signal?.addEventListener('abort', () => {
+        // TODO!
+        // promise.cancel()
+      })
+
+      return promise
+    },
+    getNextPageParam: (
+      lastPage: ListResourceArticle,
+      pages,
+    ): number | undefined => {
+      return lastPage.pagination.max_page > pages.length
+        ? pages.length + 1
+        : undefined
+    },
+    initialPageParam: 1,
+    retry: defaultRetry,
+  })
+
+export const useSearchArticles = (
+  organizationName: string,
+): UseInfiniteQueryResult<InfiniteData<ListResourceArticle>> =>
+  useInfiniteQuery({
+    queryKey: ['article', 'list'],
+    queryFn: ({ signal, pageParam = 1 }) => {
+      const promise = api.articles.search({
+        organizationName,
+        platform: Platforms.GITHUB,
+        page: pageParam,
+        limit: 20,
+      })
+
+      signal?.addEventListener('abort', () => {
+        // TODO!
+        // promise.cancel()
+      })
+
+      return promise
+    },
+    getNextPageParam: (
+      lastPage: ListResourceArticle,
+      pages,
+    ): number | undefined => {
+      return lastPage.pagination.max_page > pages.length
+        ? pages.length + 1
+        : undefined
+    },
+    initialPageParam: 1,
     retry: defaultRetry,
   })
 

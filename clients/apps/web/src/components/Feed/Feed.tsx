@@ -1,24 +1,41 @@
 'use client'
 
 import { ViewDayOutlined } from '@mui/icons-material'
+import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useListArticles } from 'polarkit/hooks'
+import { useEffect } from 'react'
+import { useInView } from 'react-intersection-observer'
 import { StaggerReveal } from '../Shared/StaggerReveal'
 import { Post as PostComponent } from './Posts/Post'
 
 export const Feed = () => {
+  const [ref, inView] = useInView()
   const articles = useListArticles()
 
-  return (articles.data?.items?.length ?? 0) > 0 ? (
-    <StaggerReveal className="flex flex-col gap-y-4">
-      {articles.data?.items?.map((entity) => (
-        <StaggerReveal.Child key={entity.id}>
-          <Link href={`/${entity.organization.name}/posts/${entity.slug}`}>
-            <PostComponent article={entity} />
-          </Link>
-        </StaggerReveal.Child>
-      ))}
-    </StaggerReveal>
+  const infiniteArticles = articles.data?.pages
+    .flatMap((page) => page.items)
+    .filter((item): item is Article => Boolean(item))
+
+  useEffect(() => {
+    if (inView && articles.hasNextPage) {
+      articles.fetchNextPage()
+    }
+  }, [inView, articles])
+
+  return (infiniteArticles?.length ?? 0) > 0 ? (
+    <div className="flex flex-col gap-y-4">
+      <StaggerReveal className="flex flex-col gap-y-4">
+        {infiniteArticles?.map((entity) => (
+          <StaggerReveal.Child key={entity.id}>
+            <Link href={`/${entity.organization.name}/posts/${entity.slug}`}>
+              <PostComponent article={entity} />
+            </Link>
+          </StaggerReveal.Child>
+        ))}
+      </StaggerReveal>
+      <div ref={ref} />
+    </div>
   ) : (
     <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
       <ViewDayOutlined fontSize="large" />

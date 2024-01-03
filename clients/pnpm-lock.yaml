@@ -283,6 +283,9 @@ importers:
       react-hook-form:
         specifier: ^7.47.0
         version: 7.47.0(react@18.2.0)
+      react-intersection-observer:
+        specifier: ^9.5.3
+        version: 9.5.3(react@18.2.0)
       react-markdown:
         specifier: ^9.0.1
         version: 9.0.1(@types/react@18.2.21)(react@18.2.0)
@@ -17457,6 +17460,14 @@ packages:
     engines: {node: '>=12.22.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18
+    dependencies:
+      react: 18.2.0
+    dev: false
+
+  /react-intersection-observer@9.5.3(react@18.2.0):
+    resolution: {integrity: sha512-NJzagSdUPS5rPhaLsHXYeJbsvdpbJwL6yCHtMk91hc0ufQ2BnXis+0QQ9NBh6n9n+Q3OyjR6OQLShYbaNBkThQ==}
+    peerDependencies:
+      react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
     dependencies:
       react: 18.2.0
     dev: false

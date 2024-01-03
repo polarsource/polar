@@ -62,14 +62,14 @@ export const getSubscriptionTiersByType = (tiers: SubscriptionTier[]) =>
 
 export const resolveBenefitIcon = (
   benefit: SubscriptionTierBenefit,
-  checked: boolean,
+  fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
 ) => {
   const className = twMerge('h-4 w-4')
 
   if (benefit.type === SubscriptionBenefitType.ARTICLES) {
-    return <ShortTextOutlined className={className} fontSize="small" />
+    return <ShortTextOutlined className={className} fontSize={fontSize} />
   } else {
-    return <CheckOutlined className={className} fontSize="small" />
+    return <CheckOutlined className={className} fontSize={fontSize} />
   }
 }
 

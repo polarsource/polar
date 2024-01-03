@@ -85,7 +85,7 @@ const BenefitRow = ({
               : 'dark:text-polar-300 dark:bg-polar-700 bg-gray-100 text-gray-300',
           )}
         >
-          {resolveBenefitIcon(benefit, checked)}
+          {resolveBenefitIcon(benefit)}
         </div>
         <span
           className={twMerge(

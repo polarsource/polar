@@ -87,7 +87,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                   'flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
                 )}
               >
-                {resolveBenefitIcon(selectedBenefit, true)}
+                {resolveBenefitIcon(selectedBenefit)}
               </div>
               <span className="text-sm">{selectedBenefit.description}</span>
             </div>
@@ -180,7 +180,7 @@ const BenefitRow = ({
             'flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
           )}
         >
-          {resolveBenefitIcon(benefit, true)}
+          {resolveBenefitIcon(benefit)}
         </div>
         <span className="text-sm">{benefit.description}</span>
       </div>

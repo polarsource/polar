@@ -264,7 +264,7 @@ export const useEditorHelpers = (
       // Italic
       if (isCtrlPressed && e.key === 'i') {
         e.preventDefault()
-        wrapSelectionWithText(['*', '*'])
+        wrapSelectionWithText(['_', '_'])
         return
       }
 

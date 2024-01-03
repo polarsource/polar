@@ -92,6 +92,9 @@ async def test_list_by_repository_type_and_status_sorting(
         issue_has_pull_request_relationship=False,
     ).save(session)
 
+    # then
+    session.expunge_all()
+
     (issues, count) = await issue_service.list_by_repository_type_and_status(
         session,
         repository_ids=[repository.id],
@@ -228,6 +231,9 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         by_organization_id=organization.id,
     ).save(session)
 
+    # then
+    session.expunge_all()
+
     # TODO: test pledge statuses filter
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
@@ -298,6 +304,9 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
             state=state,
         ).save(session)
 
+    # then
+    session.expunge_all()
+
     (issues, count) = await issue_service.list_by_repository_type_and_status(
         session,
         sort_by=IssueSortBy.newest,
@@ -354,6 +363,9 @@ async def test_list_by_github_milestone_number(
     issue_2 = await issue_with_milestone(14)
     issue_3 = await issue_with_milestone(30)
 
+    # then
+    session.expunge_all()
+
     for milestone, expected in [
         (14, ["issue_in_14", "issue_in_14"]),
         (30, ["issue_in_30"]),
@@ -393,6 +405,9 @@ async def test_transfer(
         session, organization, is_private=False
     )
     new_issue = await random_objects.create_issue(session, organization, new_repository)
+
+    # then
+    session.expunge_all()
 
     updated_new_issue = await issue_service.transfer(session, old_issue, new_issue)
 

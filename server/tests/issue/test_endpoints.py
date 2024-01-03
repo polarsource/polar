@@ -16,6 +16,7 @@ from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_issue(
     organization: Organization,
     repository: Repository,
@@ -39,6 +40,7 @@ async def test_get_issue(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_issue_reactions(
     organization: Organization,
     repository: Repository,
@@ -76,6 +78,7 @@ async def test_get_issue_reactions(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_not_found_private_repo(
     organization: Organization,
     repository: Repository,
@@ -96,6 +99,7 @@ async def test_get_not_found_private_repo(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_private_repo_member(
     organization: Organization,
     repository: Repository,
@@ -118,6 +122,7 @@ async def test_get_private_repo_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_issue_search_public_repo(
     organization: Organization,
     repository: Repository,
@@ -145,6 +150,7 @@ async def test_issue_search_public_repo(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_issue_search_public_repo_without_repo_selector(
     organization: Organization,
     repository: Repository,
@@ -168,6 +174,7 @@ async def test_issue_search_public_repo_without_repo_selector(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_issue_search_private_repo(
     organization: Organization,
     repository: Repository,
@@ -190,6 +197,7 @@ async def test_issue_search_private_repo(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_issue_search_private_repo_without_repo_selector(
     organization: Organization,
     repository: Repository,
@@ -223,6 +231,9 @@ async def test_update_funding_goal(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     # get, default value should be None
     response = await client.get(
@@ -279,6 +290,9 @@ async def test_confirm_solved(
 
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     await issue_service.mark_confirmed_solved(session, issue.id, user.id)
 

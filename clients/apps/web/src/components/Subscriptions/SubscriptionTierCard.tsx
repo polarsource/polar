@@ -143,7 +143,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <p
               className={twMerge(
                 variantStyles[variant].description,
-                'dark:text-polar-500 line-clamp-4 leading-relaxed text-gray-500',
+                'dark:text-polar-500 leading-relaxed text-gray-500',
               )}
             >
               {subscriptionTier.description}

@@ -102,13 +102,44 @@ export const useEditorHelpers = (
         const selectionStart = ref.current.selectionStart
         const selectionEnd = ref.current.selectionEnd
 
-        const newVal = before + textInSelection + after
+        // detect if current selection already is wrapped
+        // pressing cmd+b will add ** wrapping the first time it's pressed, the second time it will be removed
+        const currentBefore = ref.current.value.substring(
+          selectionStart - before.length,
+          selectionStart,
+        )
 
-        ref.current.focus()
-        document.execCommand('insertText', false, newVal)
+        const currentAfter = ref.current.value.substring(
+          selectionEnd,
+          selectionEnd + after.length,
+        )
 
-        ref.current.selectionStart = selectionStart + before.length
-        ref.current.selectionEnd = selectionEnd + before.length
+        if (currentBefore === before && currentAfter === after) {
+          // remove existing wrap
+
+          ref.current.focus()
+
+          // move selection to around wrapping
+          ref.current.selectionStart = selectionStart - before.length
+          ref.current.selectionEnd = selectionEnd + after.length
+
+          // using execCommand here even tough it's "deprecated"
+          // it's the only way to modify the text without breaking the undo history
+          document.execCommand('insertText', false, textInSelection)
+
+          // move selection to what remained after unwrapping
+
+          ref.current.selectionStart = selectionStart - before.length
+          ref.current.selectionEnd = selectionEnd - after.length
+        } else {
+          // add wrap
+          const newVal = before + textInSelection + after
+          ref.current.focus()
+          document.execCommand('insertText', false, newVal)
+
+          ref.current.selectionStart = selectionStart + before.length
+          ref.current.selectionEnd = selectionEnd + before.length
+        }
 
         if (fireOnChange) {
           onChange?.(ref.current.value)

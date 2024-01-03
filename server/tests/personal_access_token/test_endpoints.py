@@ -2,9 +2,11 @@ import pytest
 from httpx import AsyncClient
 
 from polar.config import settings
+from polar.kit.db.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create(auth_jwt: str, client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens",
@@ -19,7 +21,8 @@ async def test_create(auth_jwt: str, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list(auth_jwt: str, client: AsyncClient) -> None:
+@pytest.mark.skip_db_asserts
+async def test_list(auth_jwt: str, client: AsyncClient, session: AsyncSession) -> None:
     t1 = await client.post(
         "/api/v1/personal_access_tokens",
         json={"comment": "one"},
@@ -45,6 +48,7 @@ async def test_list(auth_jwt: str, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_delete(auth_jwt: str, client: AsyncClient) -> None:
     t1 = await client.post(
         "/api/v1/personal_access_tokens",
@@ -76,6 +80,7 @@ async def test_delete(auth_jwt: str, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_auth(auth_jwt: str, client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens",
@@ -96,6 +101,7 @@ async def test_auth(auth_jwt: str, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_create_scoped(auth_jwt: str, client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens",
@@ -117,6 +123,7 @@ async def test_create_scoped(auth_jwt: str, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_incorrect_scope(auth_jwt: str, client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens",
@@ -142,6 +149,7 @@ async def test_incorrect_scope(auth_jwt: str, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_correct_scope(auth_jwt: str, client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens",

@@ -40,6 +40,7 @@ async def check_diff(email: tuple[str, str]) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgeCreatedNotification_no_stripe(
     predictable_user: User,
 ) -> None:
@@ -59,6 +60,7 @@ async def test_MaintainerPledgeCreatedNotification_no_stripe(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgeCreatedNotification_with_stripe(
     predictable_user: User,
 ) -> None:
@@ -78,6 +80,7 @@ async def test_MaintainerPledgeCreatedNotification_with_stripe(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgeCreatedNotification_anonymous(
     predictable_user: User,
 ) -> None:
@@ -97,6 +100,7 @@ async def test_MaintainerPledgeCreatedNotification_anonymous(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgeCreatedNotification_pay_on_completion(
     predictable_user: User,
 ) -> None:
@@ -116,6 +120,7 @@ async def test_MaintainerPledgeCreatedNotification_pay_on_completion(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgeConfirmationPendingdNotification_no_stripe(
     predictable_user: User,
 ) -> None:
@@ -134,6 +139,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_no_stripe(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgeConfirmationPendingdNotification_with_stripe(
     predictable_user: User,
 ) -> None:
@@ -152,6 +158,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_with_stripe(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgePendingdNotification_no_stripe(
     predictable_user: User,
 ) -> None:
@@ -171,6 +178,7 @@ async def test_MaintainerPledgePendingdNotification_no_stripe(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgePendingdNotification_with_stripe(
     predictable_user: User,
 ) -> None:
@@ -190,6 +198,7 @@ async def test_MaintainerPledgePendingdNotification_with_stripe(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_PledgerPledgePendingNotification(
     predictable_user: User,
 ) -> None:
@@ -209,6 +218,7 @@ async def test_PledgerPledgePendingNotification(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_PledgerPledgePendingNotification_pay_on_completion(
     predictable_user: User,
 ) -> None:
@@ -228,6 +238,7 @@ async def test_PledgerPledgePendingNotification_pay_on_completion(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgePaidNotification(
     predictable_user: User,
 ) -> None:
@@ -245,6 +256,7 @@ async def test_MaintainerPledgePaidNotification(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_RewardPaidNotification(
     predictable_user: User,
 ) -> None:
@@ -263,6 +275,7 @@ async def test_RewardPaidNotification(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgedIssueConfirmationPendingNotification(
     predictable_user: User,
 ) -> None:
@@ -281,6 +294,7 @@ async def test_MaintainerPledgedIssueConfirmationPendingNotification(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgedIssueConfirmationPendingNotification_with_account(
     predictable_user: User,
 ) -> None:
@@ -299,6 +313,7 @@ async def test_MaintainerPledgedIssueConfirmationPendingNotification_with_accoun
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgedIssuePendingNotification(
     predictable_user: User,
 ) -> None:
@@ -317,6 +332,7 @@ async def test_MaintainerPledgedIssuePendingNotification(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_MaintainerPledgedIssuePendingNotification_with_account(
     predictable_user: User,
 ) -> None:
@@ -335,6 +351,7 @@ async def test_MaintainerPledgedIssuePendingNotification_with_account(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_TeamAdminMemberPledgedNotification(
     predictable_user: User,
     predictable_organization: Organization,

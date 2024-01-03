@@ -10,6 +10,7 @@ from polar.models.user_organization import UserOrganization
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get(
     user: User,
     organization: Organization,

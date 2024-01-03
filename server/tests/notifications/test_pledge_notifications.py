@@ -42,6 +42,10 @@ async def test_create_pledge_from_created(
         state=PledgeState.initiated,
         payment_id=payment_id,
     )
+
+    # then
+    session.expunge_all()
+
     await pledge_service.mark_created_by_payment_id(
         session,
         payment_id,
@@ -99,6 +103,10 @@ async def test_create_pledge_from_created_by_user(
         state=PledgeState.initiated,
         payment_id=payment_id,
     )
+
+    # then
+    session.expunge_all()
+
     await pledge_service.mark_created_by_payment_id(
         session,
         payment_id,
@@ -157,6 +165,10 @@ async def test_create_pledge_from_created_on_behalf_of(
         state=PledgeState.initiated,
         payment_id=payment_id,
     )
+
+    # then
+    session.expunge_all()
+
     await pledge_service.mark_created_by_payment_id(
         session,
         payment_id,
@@ -223,6 +235,9 @@ async def test_deduplicate(
     assert spy.call_count == 0
 
     assert pledge.payment_id
+
+    # then
+    session.expunge_all()
 
     # Update to created
     await pledge_service.mark_created_by_payment_id(

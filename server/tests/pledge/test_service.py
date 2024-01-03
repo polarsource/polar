@@ -122,6 +122,9 @@ async def test_mark_pending_by_issue_id(
 
     await session.commit()
 
+    # then
+    session.expunge_all()
+
     await pledge_service.mark_pending_by_issue_id(session, issue.id)
 
     get_pledges = await pledge_service.list_by(
@@ -196,6 +199,9 @@ async def test_mark_pending_already_pending_no_notification(
 
     await session.commit()
 
+    # then
+    session.expunge_all()
+
     await pledge_service.mark_pending_by_issue_id(session, issue.id)
 
     get_pledges = await pledge_service.list_by(
@@ -231,6 +237,9 @@ async def test_transfer_unexpected_state(
         session,
     )
 
+    # then
+    session.expunge_all()
+
     with pytest.raises(Exception, match="Pledge is not in pending state") as excinfo:
         await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
@@ -250,6 +259,9 @@ async def test_transfer_early(
     ).save(
         session,
     )
+
+    # then
+    session.expunge_all()
 
     with pytest.raises(
         Exception,
@@ -309,6 +321,9 @@ async def test_transfer_org(
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
 
+    # then
+    session.expunge_all()
+
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
     transfer.assert_called_once()
@@ -354,6 +369,9 @@ async def test_transfer_org_no_account(
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
+
+    # then
+    session.expunge_all()
 
     with pytest.raises(NotPermitted, match="Receiving organization has no account"):
         await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
@@ -413,6 +431,9 @@ async def test_transfer_user(
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
 
+    # then
+    session.expunge_all()
+
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
     transfer.assert_called_once()
@@ -458,6 +479,9 @@ async def test_transfer_user_no_account(
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
+
+    # then
+    session.expunge_all()
 
     with pytest.raises(NotPermitted, match="Receiving user has no account"):
         await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
@@ -546,6 +570,9 @@ async def test_create_issue_rewards(
     pledge: Pledge,
     organization: Organization,
 ) -> None:
+    # then
+    session.expunge_all()
+
     await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
@@ -575,6 +602,9 @@ async def test_create_issue_rewards_associate_username(
         account_email="test_gh_user@polar.sh",
     ).save(session)
 
+    # then
+    session.expunge_all()
+
     rewards = await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
@@ -600,6 +630,9 @@ async def test_create_issue_rewards_invalid(
     pledge: Pledge,
     organization: Organization,
 ) -> None:
+    # then
+    session.expunge_all()
+
     with pytest.raises(Exception, match="invalid split configuration"):
         await pledge_service.create_issue_rewards(
             session,
@@ -617,6 +650,9 @@ async def test_create_issue_rewards_twice_fails(
     pledge: Pledge,
     organization: Organization,
 ) -> None:
+    # then
+    session.expunge_all()
+
     await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
@@ -637,6 +673,7 @@ async def test_create_issue_rewards_twice_fails(
         )
 
 
+# TODO(zegl): what does this test actually test? remove it?
 @pytest.mark.asyncio
 async def test_generate_pledge_testdata(
     session: AsyncSession,
@@ -732,6 +769,9 @@ async def test_generate_pledge_testdata(
 
     await session.commit()
 
+    # then?
+    session.expunge_all()
+
 
 @pytest.mark.asyncio
 async def test_mark_created_by_payment_id(
@@ -755,6 +795,9 @@ async def test_mark_created_by_payment_id(
     ).save(session)
 
     assert pledge.payment_id
+
+    # then
+    session.expunge_all()
 
     await pledge_service.mark_created_by_payment_id(
         session,
@@ -816,6 +859,9 @@ async def test_sum_pledges_period(
         state=PledgeState.created,
         created_at=utc_now() + timedelta(days=60),  # not in current period
     ).save(session)
+
+    # then
+    session.expunge_all()
 
     period_sum = await pledge_service.sum_pledges_period(
         session, organization_id=organization.id
@@ -935,6 +981,9 @@ async def test_pledge_states(
         "polar.integrations.stripe.service.StripeService.create_user_pledge_invoice"
     )
     create_invoice.return_value = Invoice()
+
+    # then (this is not perfect, the expunge assert does not work well with subtests)
+    session.expunge_all()
 
     @dataclass
     class TestCase:

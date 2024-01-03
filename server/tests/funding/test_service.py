@@ -6,6 +6,7 @@ from polar.authz.service import Anonymous
 from polar.funding.schemas import FundingResultType
 from polar.funding.service import ListFundingSortBy
 from polar.funding.service import funding as funding_service
+from polar.issue.service import issue as issue_service
 from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, User, UserOrganization
 from polar.models.pledge import PledgeState, PledgeType
@@ -15,8 +16,11 @@ from tests.fixtures.random_objects import create_repository, create_user
 from .conftest import IssuesPledgesFixture, create_issues_pledges
 
 
-def issue_row_assertions(
-    result: FundingResultType, issue: Issue, pledges: list[Pledge]
+async def issue_row_assertions(
+    session: AsyncSession,
+    result: FundingResultType,
+    issue: Issue,
+    pledges: list[Pledge],
 ) -> None:
     (
         issue_object,
@@ -32,6 +36,12 @@ def issue_row_assertions(
     active_pledges = [
         pledge for pledge in pledges if pledge.state in PledgeState.active_states()
     ]
+
+    # load issue with relations
+    issue_loaded = await issue_service.get_loaded(session, issue.id)
+    assert issue_loaded
+    issue = issue_loaded
+
     assert len(issue.pledges) == len(active_pledges)
 
     assert total == sum([pledge.amount for pledge in active_pledges])
@@ -68,6 +78,9 @@ class TestListBy:
     async def test_without_option(
         self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await funding_service.list_by(
             session, Anonymous(), pagination=PaginationParams(1, 10)
         )
@@ -76,11 +89,14 @@ class TestListBy:
         assert len(results) > 0
         for i, result in enumerate(results):
             issue, pledges = issues_pledges[i]
-            issue_row_assertions(result, issue, pledges)
+            await issue_row_assertions(session, result, issue, pledges)
 
     async def test_sorting_newest(
         self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, _ = await funding_service.list_by(
             session,
             Anonymous(),
@@ -93,6 +109,9 @@ class TestListBy:
     async def test_sorting_most_funded(
         self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, _ = await funding_service.list_by(
             session,
             Anonymous(),
@@ -105,6 +124,9 @@ class TestListBy:
     async def test_sorting_most_recently_funded(
         self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, _ = await funding_service.list_by(
             session,
             Anonymous(),
@@ -127,6 +149,9 @@ class TestListBy:
         issues_pledges = await create_issues_pledges(
             session, organization, private_repository
         )
+
+        # then
+        session.expunge_all()
 
         results, count = await funding_service.list_by(
             session,
@@ -170,6 +195,9 @@ class TestListBy:
             session=session,
         )
 
+        # then
+        session.expunge_all()
+
         results, count = await funding_service.list_by(
             session, user, pagination=PaginationParams(1, 10), organization=organization
         )
@@ -178,7 +206,7 @@ class TestListBy:
         assert len(results) > 0
         for i, result in enumerate(results):
             issue, pledges = issues_pledges[i]
-            issue_row_assertions(result, issue, pledges)
+            await issue_row_assertions(session, result, issue, pledges)
 
     async def test_query(
         self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
@@ -192,6 +220,9 @@ class TestListBy:
             issue_pledge[0].title = titles[i]
             session.add(issue_pledge[0])
         await session.commit()
+
+        # then
+        session.expunge_all()
 
         results, count = await funding_service.list_by(
             session,
@@ -209,6 +240,8 @@ class TestListBy:
 @pytest.mark.asyncio
 class TestGetByIssueId:
     async def test_not_existing_issue(self, session: AsyncSession) -> None:
+        # then
+        session.expunge_all()
         result = await funding_service.get_by_issue_id(
             session, Anonymous(), issue_id=uuid.uuid4()
         )
@@ -219,12 +252,15 @@ class TestGetByIssueId:
     ) -> None:
         issue, pledges = issues_pledges[0]
 
+        # then
+        session.expunge_all()
+
         result = await funding_service.get_by_issue_id(
             session, Anonymous(), issue_id=issue.id
         )
 
         assert result is not None
-        issue_row_assertions(result, issue, pledges)
+        await issue_row_assertions(session, result, issue, pledges)
 
     async def test_private_issue(
         self,
@@ -241,6 +277,9 @@ class TestGetByIssueId:
         )
         issue, pledges = issues_pledges[0]
 
+        # then
+        session.expunge_all()
+
         result = await funding_service.get_by_issue_id(
             session, Anonymous(), issue_id=issue.id
         )
@@ -250,4 +289,4 @@ class TestGetByIssueId:
         result = await funding_service.get_by_issue_id(session, user, issue_id=issue.id)
 
         assert result is not None
-        issue_row_assertions(result, issue, pledges)
+        await issue_row_assertions(session, result, issue, pledges)

@@ -6,6 +6,7 @@ from polar.models.user import User
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_users_me_authed(
     user: User, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -22,6 +23,7 @@ async def test_get_users_me_authed(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_users_me_no_auth(client: AsyncClient) -> None:
     response = await client.get(
         "/api/v1/users/me",

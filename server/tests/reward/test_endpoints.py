@@ -58,6 +58,9 @@ async def test_search(
     session.add(organization)
     await session.commit()
 
+    # then
+    session.expunge_all()
+
     splits = await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,

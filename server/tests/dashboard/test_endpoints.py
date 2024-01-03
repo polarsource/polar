@@ -14,6 +14,7 @@ from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get(
     user: User,
     organization: Organization,
@@ -35,6 +36,7 @@ async def test_get(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_personal(user: User, auth_jwt: str, client: AsyncClient) -> None:
     response = await client.get(
         "/api/v1/dashboard/personal",
@@ -45,6 +47,7 @@ async def test_get_personal(user: User, auth_jwt: str, client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_no_member(
     user: User,
     organization: Organization,
@@ -62,6 +65,7 @@ async def test_get_no_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_with_pledge_from_org(
     user: User,
     organization: Organization,
@@ -94,6 +98,7 @@ async def test_get_with_pledge_from_org(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_with_pledge_from_user(
     user: User,
     organization: Organization,
@@ -126,6 +131,7 @@ async def test_get_with_pledge_from_user(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_with_pledge_initiated(
     user: User,
     organization: Organization,
@@ -157,6 +163,7 @@ async def test_get_with_pledge_initiated(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_only_pledged_with_pledge(
     user: User,
     organization: Organization,
@@ -187,6 +194,7 @@ async def test_get_only_pledged_with_pledge(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_only_pledged_no_pledge(
     user: User,
     organization: Organization,
@@ -210,6 +218,7 @@ async def test_get_only_pledged_no_pledge(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_only_badged_no_badge(
     user: User,
     organization: Organization,
@@ -233,6 +242,7 @@ async def test_get_only_badged_no_badge(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_only_badged_is_badged(
     user: User,
     organization: Organization,

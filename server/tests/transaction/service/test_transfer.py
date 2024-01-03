@@ -70,6 +70,9 @@ class TestCreateTransfer:
         )
         payment_transaction = await create_payment_transaction(session)
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(UnsupportedAccountType):
             await transfer_transaction_service.create_transfer(
                 session,
@@ -87,6 +90,9 @@ class TestCreateTransfer:
             currency="usd",
         )
         payment_transaction = await create_payment_transaction(session)
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(InactiveAccount):
             await transfer_transaction_service.create_transfer(
@@ -117,6 +123,9 @@ class TestCreateTransfer:
         stripe_service_mock.transfer.return_value = SimpleNamespace(
             id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
         )
+
+        # then
+        session.expunge_all()
 
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
@@ -182,6 +191,9 @@ class TestCreateTransfer:
             ),
         )
 
+        # then
+        session.expunge_all()
+
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
@@ -225,6 +237,9 @@ class TestCreateTransfer:
         await session.commit()
         payment_transaction = await create_payment_transaction(session)
 
+        # then
+        session.expunge_all()
+
         outgoing, incoming = await transfer_transaction_service.create_transfer(
             session,
             destination_account=account,
@@ -264,6 +279,9 @@ class TestCreateTransferFromCharge:
             stripe_id="STRIPE_ACCOUNT_ID",
         )
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(PaymentTransactionForChargeDoesNotExist):
             await transfer_transaction_service.create_transfer_from_charge(
                 session,
@@ -300,6 +318,9 @@ class TestCreateTransferFromCharge:
             ),
         )
 
+        # then
+        session.expunge_all()
+
         (
             incoming,
             outgoing,
@@ -310,8 +331,11 @@ class TestCreateTransferFromCharge:
             amount=1000,
         )
 
-        assert incoming.payment_transaction == payment_transaction
-        assert outgoing.payment_transaction == payment_transaction
+        assert incoming.payment_transaction
+        assert incoming.payment_transaction.id == payment_transaction.id
+
+        assert outgoing.payment_transaction
+        assert outgoing.payment_transaction.id == payment_transaction.id
 
 
 @pytest.mark.asyncio
@@ -347,6 +371,9 @@ class TestCreateTransferFromPaymentIntent:
             id="STRIPE_PAYMENT_INTENT_ID", latest_charge="STRIPE_CHARGE_ID"
         )
 
+        # then
+        session.expunge_all()
+
         (
             incoming,
             outgoing,
@@ -357,8 +384,11 @@ class TestCreateTransferFromPaymentIntent:
             amount=1000,
         )
 
-        assert incoming.payment_transaction == payment_transaction
-        assert outgoing.payment_transaction == payment_transaction
+        assert incoming.payment_transaction
+        assert incoming.payment_transaction.id == payment_transaction.id
+
+        assert outgoing.payment_transaction
+        assert outgoing.payment_transaction.id == payment_transaction.id
 
 
 async def create_transfer_transactions(
@@ -424,6 +454,9 @@ class TestCreateReversalTransfer:
             session, destination_account=account
         )
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(InactiveAccount):
             await transfer_transaction_service.create_reversal_transfer(
                 session,
@@ -452,6 +485,9 @@ class TestCreateReversalTransfer:
         stripe_service_mock.reverse_transfer.return_value = SimpleNamespace(
             id="STRIPE_REVERSAL_TRANSFER_ID"
         )
+
+        # then
+        session.expunge_all()
 
         transfer_transactions = await create_transfer_transactions(
             session, destination_account=account
@@ -525,6 +561,9 @@ class TestCreateReversalTransfer:
             ),
         )
 
+        # then
+        session.expunge_all()
+
         transfer_transactions = await create_transfer_transactions(
             session, destination_account=account
         )
@@ -586,6 +625,9 @@ class TestCreateReversalTransfer:
         )
         session.add(account)
         await session.commit()
+
+        # then?
+        session.expunge_all()
 
         transfer_transactions = await create_transfer_transactions(
             session, destination_account=account

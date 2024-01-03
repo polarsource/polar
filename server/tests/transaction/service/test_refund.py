@@ -89,6 +89,9 @@ class TestCreateRefunds:
     ) -> None:
         charge = build_stripe_charge()
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(RefundUnknownPaymentTransaction):
             await refund_transaction_service.create_refunds(session, charge=charge)
 
@@ -226,6 +229,9 @@ class TestCreateRefunds:
 
         await session.commit()
 
+        # then
+        session.expunge_all()
+
         refund_transactions = await refund_transaction_service.create_refunds(
             session, charge=charge
         )
@@ -244,17 +250,17 @@ class TestCreateRefunds:
         first_call = (
             transfer_transaction_service_mock.create_reversal_transfer.call_args_list[0]
         )
-        assert first_call[1]["transfer_transactions"] == (
-            outgoing_transfer_1,
-            incoming_transfer_1,
-        )
+        assert [t.id for t in first_call[1]["transfer_transactions"]] == [
+            outgoing_transfer_1.id,
+            incoming_transfer_1.id,
+        ]
         assert first_call[1]["amount"] == new_refund.amount * 0.75
 
         second_call = (
             transfer_transaction_service_mock.create_reversal_transfer.call_args_list[1]
         )
-        assert second_call[1]["transfer_transactions"] == (
-            outgoing_transfer_2,
-            incoming_transfer_2,
-        )
+        assert [t.id for t in second_call[1]["transfer_transactions"]] == [
+            outgoing_transfer_2.id,
+            incoming_transfer_2.id,
+        ]
         assert second_call[1]["amount"] == new_refund.amount * 0.25

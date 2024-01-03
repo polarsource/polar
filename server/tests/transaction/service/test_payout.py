@@ -96,6 +96,9 @@ class TestCreatePayoutFromStripe:
     async def test_not_paid_payout(self, session: AsyncSession) -> None:
         stripe_payout = build_stripe_payout(status="pending")
 
+        # then
+        session.expunge_all()
+
         with pytest.raises(StripePayoutNotPaid):
             await payout_transaction_service.create_payout_from_stripe(
                 session, payout=stripe_payout, stripe_account_id="STRIPE_ACCOUNT_ID"
@@ -103,6 +106,9 @@ class TestCreatePayoutFromStripe:
 
     async def test_unknown_account(self, session: AsyncSession) -> None:
         stripe_payout = build_stripe_payout()
+
+        # then
+        session.expunge_all()
 
         with pytest.raises(UnknownAccount):
             await payout_transaction_service.create_payout_from_stripe(
@@ -147,6 +153,9 @@ class TestCreatePayoutFromStripe:
         stripe_payout = build_stripe_payout(
             amount=sum(transaction.amount for transaction in transactions)
         )
+
+        # then
+        session.expunge_all()
 
         transaction = await payout_transaction_service.create_payout_from_stripe(
             session, payout=stripe_payout, stripe_account_id="STRIPE_ACCOUNT_ID"
@@ -207,6 +216,9 @@ class TestCreatePayoutFromStripe:
             currency="eur",
         )
 
+        # then
+        session.expunge_all()
+
         transaction = await payout_transaction_service.create_payout_from_stripe(
             session, payout=stripe_payout, stripe_account_id="STRIPE_ACCOUNT_ID"
         )
@@ -236,6 +248,9 @@ class TestCreateManualPayout:
     async def test_unknown_transaction(
         self, session: AsyncSession, account_usd: Account
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(UnknownTransaction):
             await payout_transaction_service.create_manual_payout(
                 session,
@@ -262,6 +277,9 @@ class TestCreateManualPayout:
             session.add(transaction)
             transactions.append(transaction)
         await session.commit()
+
+        # then
+        session.expunge_all()
 
         transaction = await payout_transaction_service.create_manual_payout(
             session,
@@ -307,6 +325,9 @@ class TestCreateManualPayout:
             session.add(transaction)
             transactions.append(transaction)
         await session.commit()
+
+        # then
+        session.expunge_all()
 
         transaction = await payout_transaction_service.create_manual_payout(
             session,

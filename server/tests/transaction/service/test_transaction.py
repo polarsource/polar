@@ -24,6 +24,7 @@ class TestSearch:
         user_second: User,
         all_transactions: list[Transaction],
     ) -> None:
+        # then
         session.expunge_all()
 
         results, count = await transaction_service.search(
@@ -41,6 +42,7 @@ class TestSearch:
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
+        # then
         session.expunge_all()
 
         results, count = await transaction_service.search(
@@ -72,6 +74,7 @@ class TestSearch:
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
+        # then
         session.expunge_all()
 
         results, count = await transaction_service.search(
@@ -100,6 +103,7 @@ class TestSearch:
         account_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
+        # then
         session.expunge_all()
 
         results, count = await transaction_service.search(
@@ -122,6 +126,7 @@ class TestSearch:
         user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
+        # then
         session.expunge_all()
 
         results, count = await transaction_service.search(
@@ -145,6 +150,7 @@ class TestSearch:
         organization_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
+        # then
         session.expunge_all()
 
         results, count = await transaction_service.search(
@@ -168,6 +174,9 @@ class TestGetSummary:
     async def test_account_not_permitted(
         self, session: AsyncSession, account: Account, user_second: User, authz: Authz
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(NotPermitted):
             await transaction_service.get_summary(session, user_second, account, authz)
 
@@ -180,6 +189,9 @@ class TestGetSummary:
         authz: Authz,
         account_transactions: list[Transaction],
     ) -> None:
+        # then
+        session.expunge_all()
+
         summary = await transaction_service.get_summary(session, user, account, authz)
 
         assert summary.balance.currency == "usd"
@@ -204,6 +216,9 @@ class TestGetSummary:
 @pytest.mark.asyncio
 class TestLookup:
     async def test_not_existing(self, session: AsyncSession, user_second: User) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(ResourceNotFound):
             await transaction_service.lookup(session, uuid.uuid4(), user_second)
 
@@ -214,6 +229,9 @@ class TestLookup:
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
+        # then
+        session.expunge_all()
+
         with pytest.raises(ResourceNotFound):
             await transaction_service.lookup(
                 session, readable_user_transactions[0].id, user_second
@@ -227,6 +245,9 @@ class TestLookup:
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
+        # then
+        session.expunge_all()
+
         transaction = await transaction_service.lookup(
             session, readable_user_transactions[0].id, user
         )

@@ -182,7 +182,7 @@ const ClientPage = ({
                   <span className="text-xs">View All</span>
                 </Link>
               </div>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
+              <p className="dark:text-polar-500 text-sm leading-normal text-gray-500">
                 Support {organization.name} with a paid subsciption & receive
                 unique benefits as a bonus
               </p>
@@ -218,7 +218,7 @@ const ClientPage = ({
                       </div>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-y-4 px-6 py-4">
-                      <p className="dark:text-polar-400 text-sm text-gray-600">
+                      <p className="dark:text-polar-400 text-sm leading-normal text-gray-600">
                         {tier.description}
                       </p>
                     </CardContent>
@@ -249,7 +249,7 @@ const ClientPage = ({
         <div className="flex flex-col justify-start gap-y-6">
           <div className="hidden flex-col gap-y-2 md:flex">
             <h3>RSS Feed</h3>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
+            <p className="dark:text-polar-500 text-sm leading-normal text-gray-500">
               Consume posts from {organization.name} in your favorite RSS reader
             </p>
             <Button

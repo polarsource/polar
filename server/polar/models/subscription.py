@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 from sqlalchemy import (
@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    func,
     type_coerce,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -100,6 +101,15 @@ class Subscription(RecordModel):
             SubscriptionStatus.incomplete,
             SubscriptionStatus.incomplete_expired,
         ]
+
+    @hybrid_property
+    def subscriber_id(self) -> UUID:
+        return cast(UUID, self.user_id or self.organization_id)
+
+    @subscriber_id.inplace.expression
+    @classmethod
+    def _subscriber_id_expression(cls) -> ColumnElement[UUID]:
+        return func.coalesce(cls.user_id, cls.organization_id)
 
     @hybrid_property
     def active(self) -> bool:

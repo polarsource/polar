@@ -1,5 +1,6 @@
 'use client'
 
+import { ViewDayOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { useListArticles } from 'polarkit/hooks'
 import { StaggerReveal } from '../Shared/StaggerReveal'
@@ -16,15 +17,21 @@ export const Feed = () => {
     <StaggerReveal className="flex flex-col gap-y-4">
       {articles.data.items.map((entity) => (
         <StaggerReveal.Child key={entity.id}>
-          {/* {isRecommendation(entity) ? (
-            <RecommendationComponent {...entity} />
-          ) : ( */}
           <Link href={`/${entity.organization.name}/posts/${entity.slug}`}>
             <PostComponent article={entity} />
           </Link>
-          {/* )} */}
         </StaggerReveal.Child>
       ))}
     </StaggerReveal>
-  ) : null
+  ) : (
+    <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
+      <ViewDayOutlined fontSize="large" />
+      <div className="flex flex-col items-center gap-y-2">
+        <h3 className="p-2 text-lg font-medium">No Posts yet</h3>
+        <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
+          Posts from creators you subscribe to will appear here
+        </p>
+      </div>
+    </div>
+  )
 }

@@ -43,7 +43,10 @@ async def generate_magic_link_token(
 
 
 @pytest.mark.asyncio
-async def test_request(session: AsyncSession, mocker: MockerFixture) -> None:
+async def test_request(session: AsyncSession) -> None:
+    # then
+    session.expunge_all()
+
     magic_link, token = await magic_link_service.request(
         session, "user@example.com", source="user_login"
     )
@@ -54,6 +57,9 @@ async def test_request(session: AsyncSession, mocker: MockerFixture) -> None:
 
 @pytest.mark.asyncio
 async def test_authenticate_invalid_token(session: AsyncSession) -> None:
+    # then
+    session.expunge_all()
+
     with pytest.raises(InvalidMagicLink):
         await magic_link_service.authenticate(session, "INVALID_TOKEN")
 
@@ -72,6 +78,9 @@ async def test_authenticate_expired_token(
     expires_at: datetime,
     generate_magic_link_token: GenerateMagicLinkToken,
 ) -> None:
+    # then
+    session.expunge_all()
+
     _, token = await generate_magic_link_token("user@example.com", None, expires_at)
     with pytest.raises(InvalidMagicLink):
         await magic_link_service.authenticate(session, token)
@@ -79,12 +88,17 @@ async def test_authenticate_expired_token(
 
 @pytest.mark.asyncio
 async def test_send(
-    generate_magic_link_token: GenerateMagicLinkToken, mocker: MockerFixture
+    generate_magic_link_token: GenerateMagicLinkToken,
+    mocker: MockerFixture,
+    session: AsyncSession,
 ) -> None:
     email_sender_mock = MagicMock()
     mocker.patch(
         "polar.magic_link.service.get_email_sender", return_value=email_sender_mock
     )
+
+    # then
+    session.expunge_all()
 
     magic_link, _ = await generate_magic_link_token("user@example.com", None, None)
 
@@ -120,6 +134,9 @@ async def test_authenticate_existing_user(
     session.add(user)
     await session.commit()
 
+    # then
+    session.expunge_all()
+
     magic_link, token = await generate_magic_link_token(user.email, user.id, None)
 
     authenticated_user = await magic_link_service.authenticate(session, token)
@@ -138,6 +155,9 @@ async def test_authenticate_existing_user_unlinked_from_magic_token(
     session.add(user)
     await session.commit()
 
+    # then
+    session.expunge_all()
+
     magic_link, token = await generate_magic_link_token("user@example.com", None, None)
 
     authenticated_user = await magic_link_service.authenticate(session, token)
@@ -152,6 +172,9 @@ async def test_authenticate_existing_user_unlinked_from_magic_token(
 async def test_authenticate_new_user(
     session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
 ) -> None:
+    # then
+    session.expunge_all()
+
     magic_link, token = await generate_magic_link_token("user@example.com", None, None)
 
     authenticated_user = await magic_link_service.authenticate(session, token)
@@ -166,6 +189,9 @@ async def test_authenticate_new_user(
 async def test_delete_expired(
     session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
 ) -> None:
+    # then
+    session.expunge_all()
+
     magic_link_expired_1, _ = await generate_magic_link_token(
         "user@example.com",
         None,

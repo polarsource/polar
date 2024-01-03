@@ -102,12 +102,10 @@ export const useEditorHelpers = (
         const selectionStart = ref.current.selectionStart
         const selectionEnd = ref.current.selectionEnd
 
-        ref.current.value =
-          textBeforeSelection +
-          before +
-          textInSelection +
-          after +
-          textAfterSelection
+        const newVal = before + textInSelection + after
+
+        ref.current.focus()
+        document.execCommand('insertText', false, newVal)
 
         ref.current.selectionStart = selectionStart + before.length
         ref.current.selectionEnd = selectionEnd + before.length

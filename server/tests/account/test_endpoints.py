@@ -43,6 +43,7 @@ async def open_collective_account(session: AsyncSession, user: User) -> Account:
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create_invalid_account_type(auth_jwt: str, client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/accounts",
@@ -58,6 +59,7 @@ async def test_create_invalid_account_type(auth_jwt: str, client: AsyncClient) -
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("slug", [None, ""])
+@pytest.mark.http_auto_expunge
 async def test_create_open_collective_missing_slug(
     slug: str | None, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -75,6 +77,7 @@ async def test_create_open_collective_missing_slug(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 @pytest.mark.parametrize(
     "error",
     [
@@ -108,6 +111,7 @@ async def test_create_open_collective_get_collective_error(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 @pytest.mark.parametrize(
     "collective",
     [
@@ -142,6 +146,7 @@ async def test_create_open_collective_not_eligible(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create_open_collective(
     auth_jwt: str, session: AsyncSession, mocker: MockerFixture, client: AsyncClient
 ) -> None:
@@ -177,6 +182,7 @@ async def test_create_open_collective(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create_personal_stripe(
     user: User,
     auth_jwt: str,
@@ -215,6 +221,7 @@ async def test_create_personal_stripe(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_onboarding_link_open_collective(
     open_collective_account: Account, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -228,6 +235,7 @@ async def test_onboarding_link_open_collective(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_dashboard_link_not_existing_account(
     user: User,
     organization: Organization,
@@ -244,6 +252,7 @@ async def test_dashboard_link_not_existing_account(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_dashboard_link_open_collective(
     open_collective_account: Account, auth_jwt: str, client: AsyncClient
 ) -> None:

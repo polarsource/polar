@@ -13,6 +13,7 @@ from polar.user_organization.schemas import OrganizationMember
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_organization(
     organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -29,6 +30,7 @@ async def test_get_organization(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_organization_member_only_fields_no_member(
     session: AsyncSession,
     organization: Organization,
@@ -52,6 +54,7 @@ async def test_get_organization_member_only_fields_no_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_organization_member_only_fields_is_member(
     session: AsyncSession,
     organization: Organization,
@@ -85,6 +88,9 @@ async def test_update_organization_billing_email(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     response = await client.get(
         f"/api/v1/organizations/{organization.id}",
@@ -123,6 +129,7 @@ async def test_update_organization_billing_email(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_organization_member(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -139,6 +146,7 @@ async def test_list_organization_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_organization_member_allow_non_admin(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -155,6 +163,7 @@ async def test_list_organization_member_allow_non_admin(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_organization_member_admin(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -175,6 +184,7 @@ async def test_list_organization_member_admin(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_organization_lookup_not_found(
     organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -187,6 +197,7 @@ async def test_organization_lookup_not_found(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_organization_lookup(
     organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -200,6 +211,7 @@ async def test_organization_lookup(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_organization_search(
     organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -213,6 +225,7 @@ async def test_organization_search(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_organization_search_no_matches(
     organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:
@@ -226,6 +239,7 @@ async def test_organization_search_no_matches(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_get_organization_deleted(
     session: AsyncSession,
     organization: Organization,
@@ -246,6 +260,7 @@ async def test_get_organization_deleted(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_update_organization_no_admin(
     organization: Organization,
     auth_jwt: str,
@@ -273,6 +288,9 @@ async def test_update_organization(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
@@ -313,6 +331,7 @@ async def test_update_organization(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_members(
     session: AsyncSession,
     organization: Organization,
@@ -341,6 +360,7 @@ async def test_list_members(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_list_members_not_member(
     session: AsyncSession,
     organization: Organization,

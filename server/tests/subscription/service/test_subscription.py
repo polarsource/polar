@@ -1855,7 +1855,7 @@ class TestGetStatisticsPeriods:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization_free,
-            user=user_second,
+            user=user,
             started_at=datetime(2023, 1, 1),
         )
 
@@ -1888,3 +1888,51 @@ class TestGetStatisticsPeriods:
             assert result.cumulative == get_transfers_sum(
                 transfers[:-1]
             ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)
+
+    async def test_cancelled_subscriptions(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_account: Account,
+        user: User,
+        user_second: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization_free: SubscriptionTier,
+    ) -> None:
+        await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_free,
+            user=user_second,
+            started_at=datetime(2023, 1, 1, 0, 0, 0),
+            ended_at=datetime(2023, 1, 1, 1, 0, 0),
+        )
+        await create_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_free,
+            user=user_second,
+            started_at=datetime(2023, 1, 1, 2, 0, 0),
+            ended_at=datetime(2023, 1, 1, 3, 0, 0),
+        )
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_free,
+            user=user_second,
+            started_at=datetime(2023, 1, 1, 4, 0, 0),
+        )
+
+        # then
+        session.expunge_all()
+
+        results = await subscription_service.get_statistics_periods(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 1, 31),
+            organization=organization,
+            current_start_of_month=date(2023, 1, 1),
+        )
+
+        assert len(results) == 1
+
+        result = results[0]
+        assert result.subscribers == 1

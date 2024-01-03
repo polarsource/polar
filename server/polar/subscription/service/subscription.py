@@ -6,7 +6,19 @@ from enum import StrEnum
 from typing import Any, cast, overload
 
 import stripe as stripe_lib
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select, text
+from sqlalchemy import (
+    Select,
+    UnaryExpression,
+    and_,
+    asc,
+    desc,
+    distinct,
+    func,
+    or_,
+    select,
+    text,
+    tuple_,
+)
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.auth.dependencies import AuthMethod
@@ -888,7 +900,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         subscribers_count_statement = (
             select(start_date_column)
-            .add_columns(end_date_column, func.count(Subscription.id))
+            .add_columns(
+                end_date_column,
+                # Trick to exclude counting of multiple subscription/unsubscription
+                # that could happen with the Free tier.
+                func.count(
+                    distinct(
+                        tuple_(
+                            Subscription.subscriber_id,
+                            Subscription.subscription_tier_id,
+                        )
+                    )
+                ).filter(Subscription.id.is_not(None)),
+            )
             .join(Subscription, onclause=subscriptions_join_clause, isouter=True)
             .group_by(start_date_column)
             .order_by(start_date_column)
@@ -917,7 +941,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
             )
 
-        last_cumulative = statistics_periods[-1].cumulative
+        try:
+            last_cumulative = statistics_periods[-1].cumulative
+        except IndexError:
+            last_cumulative = 0
 
         for start_date, end_date, mrr in future_results:
             subscribers = subscribers_counts.pop(0)[2]

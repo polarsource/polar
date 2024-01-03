@@ -191,6 +191,9 @@ class TestList:
     async def test_no_subscription(
         self, session: AsyncSession, articles: list[Article], user_second: User
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await article_service.list(
             session, user_second, pagination=PaginationParams(1, 10)
         )
@@ -207,6 +210,9 @@ class TestList:
         article_public_free_published: Article,
         article_public_paid_published: Article,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await article_service.list(
             session, user, pagination=PaginationParams(1, 10)
         )
@@ -231,6 +237,10 @@ class TestList:
         await create_articles_subscription(
             session, user=user_second, organization=organization, paid_subscriber=False
         )
+
+        # then
+        session.expunge_all()
+
         results, count = await article_service.list(
             session, user_second, pagination=PaginationParams(1, 10)
         )
@@ -254,6 +264,10 @@ class TestList:
         await create_articles_subscription(
             session, user=user_second, organization=organization, paid_subscriber=True
         )
+
+        # then
+        session.expunge_all()
+
         results, count = await article_service.list(
             session, user_second, pagination=PaginationParams(1, 10)
         )
@@ -279,6 +293,9 @@ class TestSearch:
         organization: Organization,
         user_second: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await article_service.search(
             session,
             Anonymous(),
@@ -301,6 +318,9 @@ class TestSearch:
         organization: Organization,
         user_second: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await article_service.search(
             session,
             user_second,
@@ -323,6 +343,9 @@ class TestSearch:
         organization: Organization,
         user_second: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await article_service.search(
             session,
             user_second,
@@ -348,6 +371,9 @@ class TestSearch:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await article_service.search(
             session,
             user,
@@ -372,6 +398,9 @@ class TestSearch:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         results, count = await article_service.search(
             session,
             user,
@@ -398,6 +427,10 @@ class TestSearch:
         await create_articles_subscription(
             session, user=user_second, organization=organization, paid_subscriber=True
         )
+
+        # then
+        session.expunge_all()
+
         results, count = await article_service.search(
             session,
             user_second,
@@ -463,6 +496,9 @@ class TestGetReadableBy:
         article_private_published: Article,
         user_second: User,
     ) -> None:
+        # then
+        session.expunge_all()
+
         result = await getter(session, user_second, article_public_free_published)
         assert result is not None
         assert result[1] is False
@@ -492,6 +528,9 @@ class TestGetReadableBy:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         result = await getter(session, user, article_public_free_published)
         assert result is not None
         assert result[1] is True
@@ -528,6 +567,9 @@ class TestGetReadableBy:
             session, user=user_second, organization=organization, paid_subscriber=False
         )
 
+        # then
+        session.expunge_all()
+
         result = await getter(session, user_second, article_public_free_published)
         assert result is not None
         assert result[1] is False
@@ -561,6 +603,9 @@ class TestGetReadableBy:
             session, user=user_second, organization=organization, paid_subscriber=True
         )
 
+        # then
+        session.expunge_all()
+
         result = await getter(session, user_second, article_public_free_published)
         assert result is not None
         assert result[1] is True
@@ -586,6 +631,9 @@ class TestListReceivers:
     async def test_no_subscription(
         self, session: AsyncSession, organization: Organization
     ) -> None:
+        # then
+        session.expunge_all()
+
         receivers = await article_service.list_receivers(
             session, organization.id, False
         )
@@ -598,6 +646,9 @@ class TestListReceivers:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
+        # then
+        session.expunge_all()
+
         receivers = await article_service.list_receivers(
             session, organization.id, False
         )
@@ -615,6 +666,9 @@ class TestListReceivers:
             session, user=user_second, organization=organization, paid_subscriber=False
         )
 
+        # then
+        session.expunge_all()
+
         receivers = await article_service.list_receivers(
             session, organization.id, False
         )
@@ -631,6 +685,9 @@ class TestListReceivers:
             session, user=user_second, organization=organization, paid_subscriber=True
         )
 
+        # then
+        session.expunge_all()
+
         receivers = await article_service.list_receivers(session, organization.id, True)
         assert len(receivers) == 1
         assert receivers[0] == (user_second.id, True, False)
@@ -645,6 +702,9 @@ class TestListReceivers:
         await create_articles_subscription(
             session, user=user, organization=organization, paid_subscriber=True
         )
+
+        # then
+        session.expunge_all()
 
         receivers = await article_service.list_receivers(session, organization.id, True)
         assert len(receivers) == 1
@@ -671,6 +731,9 @@ class TestListReceivers:
         await create_articles_subscription(
             session, user=user, organization=organization, paid_subscriber=True
         )
+
+        # then
+        session.expunge_all()
 
         receivers = await article_service.list_receivers(session, organization.id, True)
         assert len(receivers) == 1

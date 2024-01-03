@@ -11,6 +11,7 @@ from tests.fixtures.random_objects import create_user
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create(
     user: User,
     organization: Organization,
@@ -39,6 +40,7 @@ async def test_create(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create_non_member(
     user: User,
     organization: Organization,
@@ -60,6 +62,7 @@ async def test_create_non_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create_non_admin(
     user: User,
     organization: Organization,
@@ -92,6 +95,9 @@ async def test_get_public(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     response = await client.post(
         "/api/v1/articles",
@@ -142,6 +148,9 @@ async def test_get_hidden(
     user_organization.is_admin = True
     await user_organization.save(session)
 
+    # then
+    session.expunge_all()
+
     response = await client.post(
         "/api/v1/articles",
         json={
@@ -180,6 +189,9 @@ async def test_get_private(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     response = await client.post(
         "/api/v1/articles",
@@ -240,6 +252,9 @@ async def test_byline_default(
     user_organization.is_admin = True
     await user_organization.save(session)
 
+    # then
+    session.expunge_all()
+
     response = await client.post(
         "/api/v1/articles",
         json={
@@ -266,6 +281,9 @@ async def test_byline_user(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     response = await client.post(
         "/api/v1/articles",
@@ -295,6 +313,9 @@ async def test_byline_org(
     user_organization.is_admin = True
     await user_organization.save(session)
 
+    # then
+    session.expunge_all()
+
     response = await client.post(
         "/api/v1/articles",
         json={
@@ -322,6 +343,9 @@ async def test_list(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     create_1 = await client.post(
         "/api/v1/articles",
@@ -487,6 +511,9 @@ async def test_slug_collision(
     user_organization.is_admin = True
     await user_organization.save(session)
 
+    # then
+    session.expunge_all()
+
     create_0 = await client.post(
         "/api/v1/articles",
         json={
@@ -539,6 +566,9 @@ async def test_update(
     user_organization.is_admin = True
     await user_organization.save(session)
 
+    # then
+    session.expunge_all()
+
     response = await client.post(
         "/api/v1/articles",
         json={
@@ -584,6 +614,9 @@ async def test_view_counter(
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     response = await client.post(
         "/api/v1/articles",

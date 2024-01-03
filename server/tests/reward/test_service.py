@@ -52,6 +52,9 @@ async def test_list_rewards(
     session.add(organization)
     await session.commit()
 
+    # then
+    session.expunge_all()
+
     splits = await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
@@ -165,6 +168,9 @@ async def test_list_rewards_to_user(
     user.account = account
     session.add(user)
     await session.commit()
+
+    # then
+    session.expunge_all()
 
     splits = await pledge_service.create_issue_rewards(
         session,

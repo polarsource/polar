@@ -85,6 +85,9 @@ async def test_installation_no_notifications(
     await session.commit()
     await session.flush()
 
+    # then
+    session.expunge_all()
+
     # Create a new github installation
     await webhook_tasks.installation_created(
         job_context,

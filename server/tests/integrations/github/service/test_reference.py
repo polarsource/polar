@@ -51,6 +51,9 @@ async def test_parse_issue_timeline(
 
     client = github.get_client("fake")
 
+    # then
+    session.expunge_all()
+
     parsed = [
         await github_reference.parse_issue_timeline_event(
             session,

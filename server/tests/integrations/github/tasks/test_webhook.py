@@ -119,6 +119,7 @@ async def create_issue(
 ) -> TestWebhook:
     await create_repositories(session, github_webhook)
     hook = github_webhook.create("issues.opened")
+
     await webhook_tasks.issue_opened(
         job_context,
         "issues",
@@ -134,6 +135,7 @@ async def create_pr(
 ) -> TestWebhook:
     await create_repositories(session, github_webhook)
     hook = github_webhook.create("pull_request.opened")
+
     await webhook_tasks.pull_request_opened(
         job_context,
         "pull_request",
@@ -158,6 +160,10 @@ async def test_webhook_installation_suspend(
 
     hook = github_webhook.create("installation.suspend")
     org_id = hook["installation"]["account"]["id"]
+
+    # then
+    session.expunge_all()
+
     await webhook_tasks.installation_suspend(
         job_context,
         "installation",
@@ -186,6 +192,10 @@ async def test_webhook_installation_unsuspend(
 
     hook = github_webhook.create("installation.unsuspend")
     org_id = hook["installation"]["account"]["id"]
+
+    # then
+    session.expunge_all()
+
     await webhook_tasks.installation_unsuspend(
         job_context,
         "installation",
@@ -214,6 +224,9 @@ async def test_webhook_installation_delete(
     org = await create_org(session, github_webhook, status=Organization.Status.ACTIVE)
     assert org
     assert org.external_id == org_id
+
+    # then
+    session.expunge_all()
 
     await webhook_tasks.installation_delete(
         job_context,
@@ -407,6 +420,9 @@ async def test_webhook_repositories_added(
         ],
     )
 
+    # then
+    session.expunge_all()
+
     repo = await service.github_repository.get_by_external_id(session, new_repo["id"])
     assert repo is None
 
@@ -453,6 +469,9 @@ async def test_webhook_repositories_removed(
         ],
     )
 
+    # then
+    session.expunge_all()
+
     await webhook_tasks.repositories_removed(
         job_context,
         "installation_repositories",
@@ -487,6 +506,9 @@ async def test_webhook_issues_opened(
     hook = github_webhook.create("issues.opened")
     issue_id = hook["issue"]["id"]
 
+    # then
+    session.expunge_all()
+
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is None
 
@@ -516,6 +538,9 @@ async def test_webhook_issues_closed(
     await create_repositories(session, github_webhook)
     hook = github_webhook.create("issues.opened")
     issue_id = hook["issue"]["id"]
+
+    # then
+    session.expunge_all()
 
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is None
@@ -557,6 +582,9 @@ async def test_webhook_issues_labeled(
     await create_repositories(session, github_webhook)
     hook = await create_issue(job_context, session, github_webhook)
 
+    # then
+    session.expunge_all()
+
     issue_id = hook["issue"]["id"]
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is not None
@@ -591,6 +619,9 @@ async def test_webhook_pull_request_opened(
     hook = github_webhook.create("pull_request.opened")
     pr_id = hook["pull_request"]["id"]
 
+    # then
+    session.expunge_all()
+
     pr = await service.github_pull_request.get_by_external_id(session, pr_id)
     assert pr is None
 
@@ -612,6 +643,9 @@ async def test_webhook_pull_request_edited(
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("polar.worker._enqueue_job")
+
+    # then
+    session.expunge_all()
 
     hook = github_webhook.create("pull_request.edited")
     pr_id = hook["pull_request"]["id"]
@@ -641,6 +675,10 @@ async def test_webhook_pull_request_synchronize(
     mocker.patch("polar.worker._enqueue_job")
 
     await create_pr(job_context, session, github_webhook)
+
+    # then
+    session.expunge_all()
+
     hook = github_webhook.create("pull_request.synchronize")
     pr_id = hook["pull_request"]["id"]
 
@@ -672,6 +710,9 @@ async def test_webhook_issues_deleted(
     mocker.patch("polar.worker._enqueue_job")
 
     await create_repositories(session, github_webhook)
+
+    # then
+    session.expunge_all()
 
     # first create an issue
     hook = github_webhook.create("issues.opened")
@@ -741,6 +782,9 @@ async def test_webhook_opened_with_label(
     hook = github_webhook.create("issues.opened_with_polar_label")
     issue_id = hook["issue"]["id"]
 
+    # then
+    session.expunge_all()
+
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is None
 
@@ -802,6 +846,9 @@ async def test_webhook_labeled_remove_badge_body(
     # first create an issue labeled with "polar" label
     hook = github_webhook.create("issues.opened_with_polar_label")
     issue_id = hook["issue"]["id"]
+
+    # then
+    session.expunge_all()
 
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is None
@@ -879,6 +926,9 @@ async def test_webhook_organization_renamed(
     hook = github_webhook.create("organization.renamed")
     hook["organization"]["id"] = organization.external_id
 
+    # then
+    session.expunge_all()
+
     await webhook_tasks.organizations_renamed(
         job_context,
         "organization",
@@ -910,6 +960,9 @@ async def test_webhook_repository_transferred(
     hook = github_webhook.create("repository.transferred")
     hook["repository"]["id"] = repository.external_id
     hook["repository"]["owner"]["id"] = new_organization.external_id
+
+    # then
+    session.expunge_all()
 
     await webhook_tasks.repositories_transferred(
         job_context,
@@ -953,6 +1006,9 @@ async def test_webhook_issue_transferred(
     hook["changes"]["new_issue"]["id"] = new_issue.external_id
     hook["changes"]["new_repository"]["id"] = new_repository.external_id
     hook["changes"]["new_repository"]["owner"]["id"] = organization.external_id
+
+    # then
+    session.expunge_all()
 
     await webhook_tasks.issue_transferred(
         job_context,

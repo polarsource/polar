@@ -32,6 +32,9 @@ async def test_create_pull_request(
         text("delete from pull_requests where external_id = 1258704582")
     )
 
+    # then
+    session.expunge_all()
+
     simple = simple_pull_request()
     assert simple.id == 1258704582
     assert simple.number == 519

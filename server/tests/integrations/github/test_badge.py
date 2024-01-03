@@ -32,6 +32,7 @@ BADGED_BODY = """Hello my issue
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_add_badge(
     predictable_organization: Organization,
     predictable_repository: Repository,
@@ -58,6 +59,9 @@ async def test_add_badge_custom_content(
 
     predictable_organization.default_badge_custom_content = None
     await predictable_organization.save(session)
+
+    # then
+    session.expunge_all()
 
     res = GithubBadge(
         organization=predictable_organization,
@@ -98,6 +102,9 @@ async def test_add_badge_custom_organization_content(
     )
     await predictable_organization.save(session)
 
+    # then
+    session.expunge_all()
+
     res = GithubBadge(
         organization=predictable_organization,
         repository=predictable_repository,
@@ -123,6 +130,7 @@ Default message from organization.
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_remove_badge(
     predictable_organization: Organization,
     predictable_repository: Repository,
@@ -138,6 +146,7 @@ async def test_remove_badge(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_remove_badge_custom_content(
     predictable_organization: Organization,
     predictable_repository: Repository,
@@ -168,6 +177,7 @@ Anything can go here!
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_remove_badge_pre_2023_05_08(
     predictable_organization: Organization,
     predictable_repository: Repository,
@@ -188,6 +198,7 @@ async def test_remove_badge_pre_2023_05_08(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", False)
 async def test_should_add_badge_app_config_disabled(
     session: AsyncSession,
@@ -205,6 +216,7 @@ async def test_should_add_badge_app_config_disabled(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_org_not_installed(
     session: AsyncSession,
@@ -229,6 +241,7 @@ async def test_should_add_badge_org_not_installed(
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_no_badge_with_auto(
     session: AsyncSession,
@@ -264,6 +277,9 @@ async def test_should_add_badge_no_badge_without_auto(
     organization.onboarded_at = utc_now()
     await organization.save(session)
 
+    # then
+    session.expunge_all()
+
     res = GithubBadge.should_add_badge(
         organization=organization,
         repository=repository,
@@ -289,6 +305,9 @@ async def test_should_add_badge_issue_previousy_embedded(
     issue.pledge_badge_ever_embedded = True
     await issue.save(session)
 
+    # then
+    session.expunge_all()
+
     res = GithubBadge.should_add_badge(
         organization=organization,
         repository=repository,
@@ -313,6 +332,9 @@ async def test_should_add_badge_issue_previousy_embedded_label(
     await organization.save(session)
     issue.pledge_badge_ever_embedded = True
     await issue.save(session)
+
+    # then
+    session.expunge_all()
 
     res = GithubBadge.should_add_badge(
         organization=organization,
@@ -349,11 +371,14 @@ async def test_list_issues_to_add_badge_to_auto(
     i3.pledge_badge_embedded_at = datetime.now(UTC)
     await i3.save(session)
 
+    # then
+    session.expunge_all()
+
     issues = await github_issue.list_issues_to_add_badge_to_auto(
         session, organization, repository
     )
 
-    assert issues == [i1, i4]
+    assert [i.id for i in issues] == [i1.id, i4.id]
 
 
 @pytest.mark.asyncio
@@ -381,8 +406,11 @@ async def test_list_issues_to_remove_badge_from_auto(
     i3.pledge_badge_ever_embedded = True
     await i3.save(session)
 
+    # then
+    session.expunge_all()
+
     issues = await github_issue.list_issues_to_remove_badge_from_auto(
         session, organization, repository
     )
 
-    assert issues == [i1, i2, i4]
+    assert [i.id for i in issues] == [i1.id, i2.id, i4.id]

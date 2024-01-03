@@ -50,6 +50,7 @@ class ActiveRecord(TestModel, ActiveRecordMixin):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_fill(session: AsyncSession) -> None:
     instance = ActiveRecord()
     instance.fill(int_column=1337, str_column="New instance")

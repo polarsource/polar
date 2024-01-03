@@ -91,15 +91,8 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [organization, posts] = await Promise.all([
+  const [organization] = await Promise.all([
     api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    ),
-    await api.articles.search(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
@@ -112,5 +105,5 @@ export default async function Page({
     return <PageNotFound />
   }
 
-  return <ClientPage organization={organization} posts={posts.items ?? []} />
+  return <ClientPage organization={organization} />
 }

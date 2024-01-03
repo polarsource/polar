@@ -78,8 +78,8 @@ export const useEditorHelpers = (
           ref.current.value.length,
         )
 
-        ref.current.value =
-          textBeforeCursorPosition + text + textAfterCursorPosition
+        ref.current.focus()
+        document.execCommand('insertText', false, text)
 
         ref.current.selectionStart = cursorPosition + text.length
         ref.current.selectionEnd = cursorPosition + text.length

@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from uuid import UUID
 
 import pytest_asyncio
+from pytest_mock import MockerFixture
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
@@ -39,7 +40,9 @@ async def initialize_test_database(engine: AsyncEngine) -> None:
 
 
 @pytest_asyncio.fixture
-async def session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+async def session(
+    engine: AsyncEngine, mocker: MockerFixture
+) -> AsyncIterator[AsyncSession]:
     connection = await engine.connect()
     transaction = await connection.begin()
 
@@ -50,7 +53,18 @@ async def session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
         autoflush=False,
     )
 
+    expunge_spy = mocker.spy(session, "expunge_all")
+
     yield session
 
     await transaction.rollback()
     await connection.close()
+
+    # Assert that session.expunge_all() was called.
+    #
+    # expunge_all() should be called after the test has been setup, and before
+    # the test calls out to the implementation.
+    #
+    # This is to ensure that we don't rely on the existing state in the Session
+    # from creating the tests.
+    expunge_spy.assert_called_once()

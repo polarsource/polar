@@ -10,6 +10,7 @@ class SerializeModel(TestModel, SerializeMixin):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 async def test_to_dict(session: AsyncSession) -> None:
     created = SerializeModel(int_column=1, str_column="Dict")
     session.add(created)

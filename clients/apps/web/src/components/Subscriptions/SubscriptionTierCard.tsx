@@ -171,10 +171,12 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         {subscriptionTier.benefits?.map((benefit) => (
           <div
             key={benefit.id}
-            className="flex flex-row items-start text-gray-950 dark:text-[--var-dark-fg-color]"
+            className="flex flex-row items-start text-blue-500 dark:text-[--var-dark-fg-color]"
           >
-            {resolveBenefitIcon(benefit)}
-            <span className="-mt-[2px] ml-3 text-sm">
+            <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-[--var-dark-border-color]">
+              {resolveBenefitIcon(benefit, 'inherit')}
+            </span>
+            <span className="ml-3 text-sm leading-relaxed">
               {benefit.description}
             </span>
           </div>

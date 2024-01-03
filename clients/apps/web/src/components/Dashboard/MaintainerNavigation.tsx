@@ -54,7 +54,7 @@ const MaintainerNavigation = () => {
     <>
       <div className="flex w-full flex-row items-center gap-x-2 px-7 pt-2">
         <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
-          Maintainer
+          Creator
         </div>
       </div>
       <div className="flex flex-col gap-2 px-4 py-3">

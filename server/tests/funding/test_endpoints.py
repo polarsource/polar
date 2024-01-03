@@ -12,6 +12,7 @@ from .conftest import IssuesPledgesFixture, create_issues_pledges
 
 
 @pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 class TestSearch:
     async def test_missing_organization_name(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -91,6 +92,7 @@ class TestSearch:
         json = response.json()
         assert json["items"][0]["issue"]["id"] == str(issues_pledges[-1][0].id)
 
+    @pytest.mark.http_auto_expunge(False)
     async def test_private_repository(
         self,
         client: AsyncClient,
@@ -105,6 +107,9 @@ class TestSearch:
         issues_pledges = await create_issues_pledges(
             session, organization, private_repository
         )
+
+        # then
+        session.expunge_all()
 
         response = await client.get(
             "/api/v1/funding/search",

@@ -32,22 +32,34 @@ import {
   ShadowBoxOnMd,
 } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
-import { useSubscriptionSummary, useSubscriptionTiers } from 'polarkit/hooks'
+import {
+  useSearchArticles,
+  useSubscriptionSummary,
+  useSubscriptionTiers,
+} from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import React, { useEffect, useMemo, useState } from 'react'
+import { useInView } from 'react-intersection-observer'
 
-const ClientPage = ({
-  organization,
-  posts,
-}: {
-  organization: Organization
-  posts: Article[]
-}) => {
+const ClientPage = ({ organization }: { organization: Organization }) => {
   const {
     isShown: rssModalIsShown,
     hide: hideRssModal,
     show: showRssModal,
   } = useModal()
+
+  const posts = useSearchArticles(organization.name)
+  const infinitePosts = posts.data?.pages
+    .flatMap((page) => page.items)
+    .filter((item): item is Article => Boolean(item))
+
+  const [ref, inView] = useInView()
+
+  useEffect(() => {
+    if (inView && posts.hasNextPage) {
+      posts.fetchNextPage()
+    }
+  }, [inView, posts])
 
   const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
   const highlightedTiers = useMemo(
@@ -91,12 +103,15 @@ const ClientPage = ({
         <h2 className="text-lg">Posts</h2>
         <StaggerReveal className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-6">
-            {posts.length > 0 ? (
-              posts.map((post) => (
-                <StaggerReveal.Child key={post.id}>
-                  <PostComponent article={post} />
-                </StaggerReveal.Child>
-              ))
+            {(infinitePosts?.length ?? 0) > 0 ? (
+              <>
+                {infinitePosts?.map((post) => (
+                  <StaggerReveal.Child key={post.id}>
+                    <PostComponent article={post} />
+                  </StaggerReveal.Child>
+                ))}
+                <div ref={ref} />
+              </>
             ) : (
               <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
                 <ViewDayOutlined fontSize="large" />

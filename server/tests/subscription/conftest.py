@@ -1,6 +1,6 @@
 import random
 import string
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock
@@ -12,7 +12,7 @@ from pytest_mock import MockerFixture
 from polar.app import app
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.kit.db.postgres import AsyncEngine, AsyncSession
+from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -34,37 +34,6 @@ from tests.fixtures.random_objects import create_organization, create_user
 
 def rstr(prefix: str) -> str:
     return f"{prefix}.{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}"
-
-
-@pytest_asyncio.fixture
-async def session(
-    engine: AsyncEngine, mocker: MockerFixture
-) -> AsyncIterator[AsyncSession]:
-    connection = await engine.connect()
-    transaction = await connection.begin()
-
-    session = AsyncSession(
-        bind=connection,
-        expire_on_commit=False,
-        autocommit=False,
-        autoflush=False,
-    )
-
-    expunge_spy = mocker.spy(session, "expunge_all")
-
-    yield session
-
-    await transaction.rollback()
-    await connection.close()
-
-    # Assert that session.expunge_all() was called.
-    #
-    # expunge_all() should be called after the test has been setup, and before
-    # the test calls out to the implementation.
-    #
-    # This is to ensure that we don't rely on the existing state in the Session
-    # from creating the tests.
-    expunge_spy.assert_called_once()
 
 
 @pytest.fixture(autouse=True)

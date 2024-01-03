@@ -72,7 +72,7 @@ export const useSearchArticles = (
   organizationName: string,
 ): UseInfiniteQueryResult<InfiniteData<ListResourceArticle>> =>
   useInfiniteQuery({
-    queryKey: ['article', 'list'],
+    queryKey: ['article', 'organization', organizationName],
     queryFn: ({ signal, pageParam = 1 }) => {
       const promise = api.articles.search({
         organizationName,

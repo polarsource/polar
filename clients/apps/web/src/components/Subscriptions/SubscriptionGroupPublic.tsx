@@ -30,7 +30,7 @@ const SubscriptionGroupPublic = ({
   }
 
   return (
-    <div className="flex flex-row gap-12">
+    <div className="flex flex-row gap-12 py-12">
       <div className="w-64 flex-shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="flex flex-row items-center text-lg font-medium">

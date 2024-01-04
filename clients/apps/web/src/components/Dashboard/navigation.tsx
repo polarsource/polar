@@ -199,9 +199,7 @@ export const dashboardRoutes = (
         {
           id: 'finance',
           title: 'Finance',
-          link: isPersonal
-            ? `/finance`
-            : `/maintainer/${org?.name}/finance_new`,
+          link: isPersonal ? `/finance` : `/maintainer/${org?.name}/finance`,
           icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
           postIcon: undefined,
           if: isOrgAdmin,
@@ -210,27 +208,32 @@ export const dashboardRoutes = (
               title: 'Incoming',
               link: isPersonal
                 ? `/finance/incoming`
-                : `/maintainer/${org?.name}/finance_new/incoming`,
+                : `/maintainer/${org?.name}/finance/incoming`,
             },
             {
               title: 'Outgoing',
               link: isPersonal
                 ? `/finance/outgoing`
-                : `/maintainer/${org?.name}/finance_new/outgoing`,
+                : `/maintainer/${org?.name}/finance/outgoing`,
             },
             ...(isPersonal
               ? [
                   {
-                    title: 'Rewards',
+                    title: 'Issue Rewards',
                     link: `/finance/rewards`,
                   },
                 ]
-              : []),
+              : [
+                  {
+                    title: 'Issue Funding',
+                    link: `/maintainer/${org?.name}/finance/issue-funding`,
+                  },
+                ]),
             {
               title: 'Payout account',
               link: isPersonal
                 ? `/finance/account`
-                : `/maintainer/${org?.name}/finance_new/account`,
+                : `/maintainer/${org?.name}/finance/account`,
             },
           ],
         },

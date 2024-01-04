@@ -83,19 +83,19 @@ const Finance = (props: {
           title="Current pledges"
           amount={currentPledgesAmount}
           active={props.tab === 'current'}
-          href={`/maintainer/${org.name}/finance`}
+          href={`/maintainer/${org.name}/finance/issue-funding`}
         />
         <HeaderPill
           title={`Rewarded to ${org.name}`}
           amount={rewardedToSelfAmount}
           active={props.tab === 'rewarded'}
-          href={`/maintainer/${org.name}/finance/rewarded`}
+          href={`/maintainer/${org.name}/finance/issue-funding/rewarded`}
         />
         <HeaderPill
           title="Rewarded to contributors"
           amount={rewardedToContributorsAmount}
           active={props.tab === 'contributors'}
-          href={`/maintainer/${org.name}/finance/contributors`}
+          href={`/maintainer/${org.name}/finance/issue-funding/contributors`}
         />
       </div>
 

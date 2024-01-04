@@ -67,7 +67,7 @@ export default function ClientPage() {
           {org && accounts?.items && (
             <AccountsList
               accounts={accounts?.items}
-              returnPath={`/maintainer/${org.name}/finance_new/account`}
+              returnPath={`/maintainer/${org.name}/finance/account`}
             />
           )}
         </div>
@@ -81,7 +81,7 @@ export default function ClientPage() {
             onClose={hideSetupModal}
             accountTypes={ALL_ACCOUNT_TYPES}
             forOrganizationId={org?.id}
-            returnPath={`/maintainer/${org?.name}/finance_new/account`}
+            returnPath={`/maintainer/${org?.name}/finance/account`}
           />
         }
       />

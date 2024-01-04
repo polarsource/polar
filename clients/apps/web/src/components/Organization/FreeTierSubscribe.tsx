@@ -8,7 +8,7 @@ import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
 import { Input } from 'polarkit/components/ui/input'
-import { useUserSubscriptions } from 'polarkit/hooks'
+import { useCreateFreeSubscription, useUserSubscriptions } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { Modal } from '../Modal'
@@ -26,9 +26,7 @@ export const AuthenticatedFreeTierSubscribe = ({
   organization,
   user,
 }: AuthenticatedFreeTierSubscribeProps) => {
-  const router = useRouter()
-
-  const { data, isLoading, refetch } = useUserSubscriptions(
+  const { data } = useUserSubscriptions(
     user.id,
     organization.name,
     true,
@@ -38,18 +36,20 @@ export const AuthenticatedFreeTierSubscribe = ({
   const subscription = data && data.items && data.items[0]
   const isSubscribed = subscription !== undefined
 
-  const onSubscribeFree = useCallback(async () => {
-    await api.subscriptions.createFreeSubscription({
-      freeSubscriptionCreate: { tier_id: subscriptionTier.id },
-    })
-    refetch()
-    router.refresh()
-  }, [subscriptionTier, refetch, router])
+  const createFreeSubscription = useCreateFreeSubscription()
+
+  const onSubscribeFree = async () => {
+    await createFreeSubscription.mutateAsync({ tier_id: subscriptionTier.id })
+  }
 
   return (
     <div className="flex w-full">
       {!isSubscribed && (
-        <Button fullWidth onClick={onSubscribeFree} loading={isLoading}>
+        <Button
+          fullWidth
+          onClick={onSubscribeFree}
+          loading={createFreeSubscription.isPending}
+        >
           Subscribe
         </Button>
       )}
@@ -57,7 +57,7 @@ export const AuthenticatedFreeTierSubscribe = ({
         <Link href="/settings" className="w-full">
           <Button
             onClick={onSubscribeFree}
-            loading={isLoading}
+            loading={createFreeSubscription.isPending}
             fullWidth
             variant="outline"
           >
@@ -85,46 +85,37 @@ export const AnonymousFreeTierSubscribe = ({
   const router = useRouter()
 
   const [showModal, setShowModal] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const form = useForm<{ customer_email: string }>()
   const { control, handleSubmit } = form
 
   const [email, setEmail] = useState('')
 
+  const createFreeSubscription = useCreateFreeSubscription()
+
   const onSubscribeFree: SubmitHandler<{ customer_email: string }> =
     useCallback(
       async (data) => {
-        setLoading(true)
         setSuccess(false)
-        try {
-          await api.subscriptions.createFreeSubscription({
-            freeSubscriptionCreate: {
-              tier_id: subscriptionTier.id,
-              customer_email: data.customer_email,
-            },
-          })
-          setEmail(data.customer_email)
-          setSuccess(true)
-        } finally {
-          setLoading(false)
-        }
+
+        await createFreeSubscription.mutateAsync({
+          tier_id: subscriptionTier.id,
+          customer_email: data.customer_email,
+        })
+
+        setEmail(data.customer_email)
+        setSuccess(true)
       },
       [subscriptionTier],
     )
 
-  const [emailSigninLoading, setEmailSigninLoading] = useState(false)
+  const [emailSignInClicked, setEmailSignInClicked] = useState(false)
   const onEmailSignin = useCallback(async () => {
-    setEmailSigninLoading(true)
-    try {
-      await api.magicLink.magicLinkRequest({ magicLinkRequest: { email } })
-      const searchParams = new URLSearchParams({ email: email })
-      router.push(`/login/magic-link/request?${searchParams}`)
-    } catch (err) {
-      // TODO: error handling
-    } finally {
-      setEmailSigninLoading(false)
-    }
+    setEmailSignInClicked(true) // set to true, never resets to false
+
+    await api.magicLink.magicLinkRequest({ magicLinkRequest: { email } })
+    const searchParams = new URLSearchParams({ email: email })
+    router.push(`/login/magic-link/request?${searchParams}`)
   }, [email, router])
 
   return (
@@ -163,7 +154,10 @@ export const AnonymousFreeTierSubscribe = ({
                                 type="email"
                                 placeholder="Type your email..."
                               />
-                              <Button type="submit" loading={loading}>
+                              <Button
+                                type="submit"
+                                loading={createFreeSubscription.isPending}
+                              >
                                 Subscribe
                               </Button>
                             </div>
@@ -186,8 +180,8 @@ export const AnonymousFreeTierSubscribe = ({
                 <Button
                   type="button"
                   size="lg"
-                  disabled={emailSigninLoading}
-                  loading={emailSigninLoading}
+                  disabled={emailSignInClicked}
+                  loading={emailSignInClicked}
                   onClick={onEmailSignin}
                 >
                   Sign in with email

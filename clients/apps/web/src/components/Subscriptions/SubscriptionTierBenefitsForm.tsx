@@ -81,7 +81,7 @@ const BenefitRow = ({
           className={twMerge(
             'flex h-8 w-8 items-center justify-center rounded-full',
             checked
-              ? 'bg-blue-500 text-blue-500 dark:bg-blue-950 dark:text-blue-400'
+              ? 'bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-400'
               : 'dark:text-polar-300 dark:bg-polar-700 bg-gray-100 text-gray-300',
           )}
         >

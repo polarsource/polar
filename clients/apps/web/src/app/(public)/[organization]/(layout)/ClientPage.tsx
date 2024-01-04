@@ -49,9 +49,10 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   } = useModal()
 
   const posts = useSearchArticles(organization.name)
-  const infinitePosts = posts.data?.pages
-    .flatMap((page) => page.items)
-    .filter((item): item is Article => Boolean(item))
+  const infinitePosts =
+    posts.data?.pages
+      .flatMap((page) => page.items)
+      .filter((item): item is Article => Boolean(item)) ?? []
 
   const [ref, inView] = useInView()
 
@@ -101,25 +102,29 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
         <h2 className="text-lg">Posts</h2>
         <StaggerReveal className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-6">
-            {(infinitePosts?.length ?? 0) > 0 ? (
+            {infinitePosts.length > 0 ? (
               <>
-                {infinitePosts?.map((post) => (
+                {infinitePosts.map((post) => (
                   <StaggerReveal.Child key={post.id}>
-                    <PostComponent article={post} />
+                    <PostComponent article={post} key={post.id} />
                   </StaggerReveal.Child>
                 ))}
                 <div ref={ref} />
               </>
             ) : (
-              <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
-                <ViewDayOutlined fontSize="large" />
-                <div className="flex flex-col items-center gap-y-2">
-                  <h3 className="p-2 text-lg font-medium">No Posts yet</h3>
-                  <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
-                    {organization.name} has not posted anything yet
-                  </p>
-                </div>
-              </div>
+              <>
+                {posts.isFetched && infinitePosts.length > 0 ? (
+                  <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
+                    <ViewDayOutlined fontSize="large" />
+                    <div className="flex flex-col items-center gap-y-2">
+                      <h3 className="p-2 text-lg font-medium">No Posts yet</h3>
+                      <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
+                        {organization.name} has not posted anything yet
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </>
             )}
           </div>
         </StaggerReveal>

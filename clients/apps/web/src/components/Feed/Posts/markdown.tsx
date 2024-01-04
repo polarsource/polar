@@ -176,7 +176,7 @@ export const markdownOpts = {
     // Do not render by default.
     // The web and email renderers will register their corresponding implementations
     poll: () => <></>,
-    paywall: () => <></>,
+    Paywall: () => <></>,
     SubscribeNow: () => <></>,
     embed: () => <></>,
     iframe: () => <></>,

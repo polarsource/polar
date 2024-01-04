@@ -20,7 +20,7 @@ export const opts = {
 
     // email overrides
     poll: (args: any) => <Poll {...args} renderer={EmailPoll} />,
-    paywall: (args: any) => <Paywall {...args} />,
+    Paywall: (args: any) => <Paywall {...args} />,
     SubscribeNow: () => <></>, // do not render
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,

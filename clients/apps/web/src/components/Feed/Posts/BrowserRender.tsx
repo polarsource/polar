@@ -20,7 +20,7 @@ export const opts = {
 
     // browser overrides
     poll: (args: any) => <Poll {...args} renderer={BrowserPoll} />,
-    paywall: (args: any) => <Paywall {...args} />,
+    Paywall: (args: any) => <Paywall {...args} />,
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
@@ -50,7 +50,7 @@ export const previewOpts = {
     ...markdownOpts.overrides,
 
     poll: () => <></>,
-    paywall: () => <></>,
+    Paywall: () => <></>,
     SubscribeNow: () => <></>,
     embed: () => <></>,
     iframe: () => <></>,

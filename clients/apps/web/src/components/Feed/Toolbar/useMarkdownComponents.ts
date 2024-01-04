@@ -8,8 +8,8 @@ export const useMarkdownComponents = () => {
   const insertPaywall = useCallback(() => {
     if (ref.current) {
       ref.current.selectionStart !== ref.current.selectionEnd
-        ? wrapSelectionWithText(['<paywall>', '</paywall>'])
-        : insertTextAtCursor('<paywall></paywall>')
+        ? wrapSelectionWithText(['<Paywall>', '</Paywall>'])
+        : insertTextAtCursor('<Paywall></Paywall>')
     }
   }, [wrapSelectionWithText])
 

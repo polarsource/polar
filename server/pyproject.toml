@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.95.2"
+fastapi = "^0.108.0"
 uvicorn = { extras = ["standard"], version = "^0.23.2" }
 python-dotenv = "^0.21.1"
 asyncpg = "^0.29.0"
@@ -15,17 +15,14 @@ alembic = "^1.9.2"
 sqlalchemy = { extras = ["asyncio"], version = "^2.0.22" }
 greenlet = "^3.0.2"
 structlog = "^23.2.0"
-# Temp githubkit fix. See https://github.com/polarsource/polar/issues/1241
-githubkit = { extras = [
-    "auth-app",
-], git = "https://github.com/polarsource/githubkit.git", rev = "a89b25d624aa701c8d097770f5f3d7d930aafdbf" }
+githubkit = "^0.11.0a2"
 redis = "^5.0.0"
 sse-starlette = "^1.4.0"
 arq = "^0.25.0"
 stripe = "=7.4.0" # strictly pinned stripe version as different versions of stripe can be incompatible with each other
 sqlalchemy-searchable = "^1.4.1"
 pyjwt = "^2.6.0"
-pydantic = { extras = ["email"], version = "^1.10.7" }
+pydantic = "^2.5.3"
 jinja2 = "^3.1.2"
 sentry-sdk = { extras = ["fastapi"], version = "^1.20.0" }
 sendgrid = "^6.10.0"
@@ -43,6 +40,8 @@ safe-redirect-url = "^0.1.1"
 httpx-oauth = "^0.13.1"
 httpx = "^0.23.0"
 slack-sdk = "^3.26.1"
+pydantic-settings = "^2.1.0"
+email-validator = "^2.1.0.post1"
 
 [tool.poetry.group.backoffice]
 optional = true

@@ -166,7 +166,7 @@ export const backerRoutes = (
         {
           id: 'rewards',
           title: 'Rewards',
-          link: `/rewards`,
+          link: `/finance/rewards`,
           icon: <CardGiftcardOutlined className="h-5 w-5" fontSize="inherit" />,
           postIcon: undefined,
           if: isPersonal,
@@ -213,6 +213,14 @@ export const dashboardRoutes = (
                 ? `/finance/outgoing`
                 : `/maintainer/${org?.name}/finance_new/outgoing`,
             },
+            ...(isPersonal
+              ? [
+                  {
+                    title: 'Rewards',
+                    link: `/finance/rewards`,
+                  },
+                ]
+              : []),
             {
               title: 'Payout account',
               link: isPersonal

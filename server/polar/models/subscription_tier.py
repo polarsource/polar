@@ -24,8 +24,7 @@ if TYPE_CHECKING:
 
 class SubscriptionTierType(StrEnum):
     free = "free"
-    hobby = "hobby"
-    pro = "pro"
+    individual = "individual"
     business = "business"
 
 

@@ -258,7 +258,7 @@ class TestCreateSubscriptionTier:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={
-                "type": "hobby",
+                "type": "individual",
                 "name": "Subscription Tier",
                 "price_amount": 1000,
                 "organization_id": str(uuid.uuid4()),
@@ -280,7 +280,7 @@ class TestCreateSubscriptionTier:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={
-                "type": "hobby",
+                "type": "individual",
                 "name": "Subscription Tier",
                 "price_amount": 1000,
                 "organization_id": str(organization.id),
@@ -300,7 +300,11 @@ class TestCreateSubscriptionTier:
     ) -> None:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
-            json={"type": "hobby", "name": "Subscription Tier", "price_amount": 1000},
+            json={
+                "type": "individual",
+                "name": "Subscription Tier",
+                "price_amount": 1000,
+            },
         )
 
         assert response.status_code == 422
@@ -365,7 +369,7 @@ class TestCreateSubscriptionTier:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={
-                "type": "hobby",
+                "type": "individual",
                 "name": "Subscription Tier",
                 "price_amount": 1000,
                 "organization_id": str(organization.id),
@@ -398,7 +402,7 @@ class TestCreateSubscriptionTier:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={
-                "type": "hobby",
+                "type": "individual",
                 "name": "Subscription Tier",
                 "price_amount": 1000,
                 "organization_id": str(organization.id),

@@ -111,11 +111,11 @@ class TestSearch:
         user: User,
         organization: Organization,
     ) -> None:
-        hobby_subscription_tier = await create_subscription_tier(
-            session, type=SubscriptionTierType.hobby, organization=organization
+        individual_subscription_tier = await create_subscription_tier(
+            session, type=SubscriptionTierType.individual, organization=organization
         )
         await create_subscription_tier(
-            session, type=SubscriptionTierType.pro, organization=organization
+            session, type=SubscriptionTierType.business, organization=organization
         )
 
         # then
@@ -124,13 +124,13 @@ class TestSearch:
         results, count = await subscription_tier_service.search(
             session,
             user,
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             pagination=PaginationParams(1, 10),
         )
 
         assert count == 1
         assert len(results) == 1
-        assert results[0].id == hobby_subscription_tier.id
+        assert results[0].id == individual_subscription_tier.id
 
     async def test_filter_organization_direct(
         self,
@@ -331,7 +331,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -354,7 +354,7 @@ class TestUserCreate:
         organization: Organization,
     ) -> None:
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -378,7 +378,7 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
     ) -> None:
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -411,7 +411,7 @@ class TestUserCreate:
         )
 
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -434,7 +434,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -457,7 +457,7 @@ class TestUserCreate:
         repository: Repository,
     ) -> None:
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -481,7 +481,7 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
     ) -> None:
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -514,7 +514,7 @@ class TestUserCreate:
         )
 
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -549,7 +549,7 @@ class TestUserCreate:
         create_product_with_price_mock.side_effect = StripeError()
 
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -596,7 +596,7 @@ class TestUserCreate:
         )
 
         create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.hobby,
+            type=SubscriptionTierType.individual,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",

@@ -217,6 +217,11 @@ const nextConfig = {
         permanent: false,
       },
       {
+        source: '/rewards(.*)',
+        destination: '/finance/rewards',
+        permanent: false
+      },
+      {
         source: '/maintainer/:organization/promote',
         destination: '/maintainer/:organization/promote/issues',
         permanent: false,

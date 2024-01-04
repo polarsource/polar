@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 import structlog
@@ -51,6 +51,18 @@ class UnknownRepositoryTransferOrganization(GitHubTasksWebhookError):
         super().__init__(message)
 
 
+class IssueTransferMissingOrganization(GitHubTasksWebhookError):
+    """
+    This error may be triggered by `handle_issue_transferred` when we handle
+    a `issues.transferred` event, if the event doesn't embed the target organization ID.
+    """
+
+    def __init__(self, issue_id: UUID) -> None:
+        self.issue_id = issue_id
+        message = "Tried to handle an issue transfer but the organization is missing"
+        super().__init__(message)
+
+
 class UnknownIssueTransferOrganization(GitHubTasksWebhookError):
     """
     This error may be triggered by `handle_issue_transferred` when we handle
@@ -74,7 +86,7 @@ class UnknownIssueTransferOrganization(GitHubTasksWebhookError):
 
 async def organization_updated(
     session: AsyncSession,
-    event: github.webhooks.OrganizationRenamed,
+    event: github.models.WebhookOrganizationRenamed,
 ) -> dict[str, Any]:
     with ExecutionContext(is_during_installation=True):
         if not event.installation:
@@ -96,8 +108,8 @@ async def organization_updated(
 
 async def organization_synchronize_members(
     session: AsyncSession,
-    event: github.webhooks.OrganizationMemberAdded
-    | github.webhooks.OrganizationMemberRemoved,
+    event: github.models.WebhookOrganizationMemberAdded
+    | github.models.WebhookOrganizationMemberRemoved,
 ) -> dict[str, Any]:
     with ExecutionContext(is_during_installation=True):
         if not event.installation:
@@ -116,14 +128,14 @@ async def organization_synchronize_members(
 @task(name="github.webhook.organization.renamed")
 async def organizations_renamed(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["organization"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.OrganizationRenamed):
+        if not isinstance(parsed, github.models.WebhookOrganizationRenamed):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -133,14 +145,14 @@ async def organizations_renamed(
 @task(name="github.webhook.organization.member_added")
 async def organizations_member_added(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["organization"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.OrganizationMemberAdded):
+        if not isinstance(parsed, github.models.WebhookOrganizationMemberAdded):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -150,14 +162,14 @@ async def organizations_member_added(
 @task(name="github.webhook.organization.member_removed")
 async def organizations_member_removed(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["organization"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.OrganizationMemberRemoved):
+        if not isinstance(parsed, github.models.WebhookOrganizationMemberRemoved):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -171,18 +183,18 @@ async def organizations_member_removed(
 
 async def repositories_changed(
     session: AsyncSession,
-    event: github.webhooks.InstallationRepositoriesAdded
-    | github.webhooks.InstallationRepositoriesRemoved
-    | github.webhooks.InstallationCreated,
+    event: github.models.WebhookInstallationRepositoriesAdded
+    | github.models.WebhookInstallationRepositoriesRemoved
+    | github.models.WebhookInstallationCreated,
 ) -> None:
     with ExecutionContext(is_during_installation=True):
         removed: Sequence[
-            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
-            | github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems
-            | github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+            github.models.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
+            | github.models.WebhookInstallationRepositoriesAddedPropRepositoriesRemovedItems
+            | github.models.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
         ] = (
             []
-            if isinstance(event, github.webhooks.InstallationCreated)
+            if isinstance(event, github.models.WebhookInstallationCreated)
             else event.repositories_removed
         )
 
@@ -205,17 +217,17 @@ async def repositories_changed(
 
 async def create_from_installation(
     session: AsyncSession,
-    installation: github.rest.Installation | github.webhooks.Installation,
+    installation: github.models.Installation,
     removed: Sequence[
-        github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
-        | github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems
-        | github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+        github.models.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
+        | github.models.WebhookInstallationRepositoriesAddedPropRepositoriesRemovedItems
+        | github.models.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
     ],
 ) -> Organization:
     account = installation.account
     if not account:
         raise Exception("installation has no account")
-    if isinstance(account, github.rest.Enterprise):
+    if isinstance(account, github.models.Enterprise):
         raise Exception("enterprise accounts is not supported")
 
     organization = await service.github_organization.create_or_update_from_github(
@@ -238,9 +250,9 @@ async def create_from_installation(
 async def remove_repositories(
     session: AsyncSession,
     repositories: Sequence[
-        github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
-        | github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems
-        | github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+        github.models.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
+        | github.models.WebhookInstallationRepositoriesAddedPropRepositoriesRemovedItems
+        | github.models.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
     ],
 ) -> None:
     for repo in repositories:
@@ -256,14 +268,14 @@ async def remove_repositories(
 @task("github.webhook.installation_repositories.added")
 async def repositories_added(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["installation_repositories"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.InstallationRepositoriesAdded):
+        if not isinstance(parsed, github.models.WebhookInstallationRepositoriesAdded):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -273,14 +285,14 @@ async def repositories_added(
 @task(name="github.webhook.installation_repositories.removed")
 async def repositories_removed(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["installation_repositories"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.InstallationRepositoriesRemoved):
+        if not isinstance(parsed, github.models.WebhookInstallationRepositoriesRemoved):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -290,14 +302,14 @@ async def repositories_removed(
 @task(name="github.webhook.public")
 async def repositories_public(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["public"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.PublicEvent):
+        if not isinstance(parsed, github.models.WebhookPublic):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -307,14 +319,14 @@ async def repositories_public(
 @task(name="github.webhook.repository.renamed")
 async def repositories_renamed(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["repository"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.RepositoryRenamed):
+        if not isinstance(parsed, github.models.WebhookRepositoryRenamed):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -324,14 +336,14 @@ async def repositories_renamed(
 @task(name="github.webhook.repository.edited")
 async def repositories_redited(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["repository"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.RepositoryEdited):
+        if not isinstance(parsed, github.models.WebhookRepositoryEdited):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -341,14 +353,14 @@ async def repositories_redited(
 @task(name="github.webhook.repository.deleted")
 async def repositories_deleted(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["repository"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.RepositoryDeleted):
+        if not isinstance(parsed, github.models.WebhookRepositoryDeleted):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -358,14 +370,14 @@ async def repositories_deleted(
 @task(name="github.webhook.repository.archived")
 async def repositories_archived(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["repository"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.RepositoryArchived):
+        if not isinstance(parsed, github.models.WebhookRepositoryArchived):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -375,14 +387,14 @@ async def repositories_archived(
 @task(name="github.webhook.repository.transferred")
 async def repositories_transferred(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["repository"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.RepositoryTransferred):
+        if not isinstance(parsed, github.models.WebhookRepositoryTransferred):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
@@ -391,10 +403,10 @@ async def repositories_transferred(
 
 async def repository_updated(
     session: AsyncSession,
-    event: github.webhooks.PublicEvent
-    | github.webhooks.RepositoryRenamed
-    | github.webhooks.RepositoryEdited
-    | github.webhooks.RepositoryArchived,
+    event: github.models.WebhookPublic
+    | github.models.WebhookRepositoryRenamed
+    | github.models.WebhookRepositoryEdited
+    | github.models.WebhookRepositoryArchived,
 ) -> dict[str, Any]:
     with ExecutionContext(is_during_installation=True):
         if not event.installation:
@@ -417,7 +429,7 @@ async def repository_updated(
 
 async def repository_deleted(
     session: AsyncSession,
-    event: github.webhooks.RepositoryDeleted,
+    event: github.models.WebhookRepositoryDeleted,
 ) -> dict[str, Any]:
     with ExecutionContext(is_during_installation=True):
         if not event.installation:
@@ -439,7 +451,7 @@ async def repository_deleted(
 
 async def repository_transferred(
     session: AsyncSession,
-    event: github.webhooks.RepositoryTransferred,
+    event: github.models.WebhookRepositoryTransferred,
 ) -> dict[str, Any]:
     with ExecutionContext(is_during_installation=True):
         if not event.installation:
@@ -481,11 +493,11 @@ async def handle_issue(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: github.webhooks.IssuesOpened
-    | github.webhooks.IssuesEdited
-    | github.webhooks.IssuesClosed
-    | github.webhooks.IssuesReopened
-    | github.webhooks.IssuesDeleted,
+    event: github.models.WebhookIssuesOpened
+    | github.models.WebhookIssuesEdited
+    | github.models.WebhookIssuesClosed
+    | github.models.WebhookIssuesReopened
+    | github.models.WebhookIssuesDeleted,
 ) -> Issue:
     owner_id = event.repository.owner.id
     repository_id = event.repository.id
@@ -525,7 +537,7 @@ async def handle_issue_transferred(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: github.webhooks.IssuesTransferred,
+    event: github.models.WebhookIssuesTransferred,
 ) -> Issue | None:
     old_issue_id = event.issue.id
     old_issue = await service.github_issue.get_by_external_id(session, old_issue_id)
@@ -533,6 +545,9 @@ async def handle_issue_transferred(
         return None
 
     new_repository_data = event.changes.new_repository
+
+    if new_repository_data.owner is None:
+        raise IssueTransferMissingOrganization(old_issue.id)
 
     organization_id = new_repository_data.owner.id
     organization = await service.github_organization.get_by_external_id(
@@ -560,14 +575,14 @@ async def handle_issue_transferred(
 @task("github.webhook.issues.opened")
 async def issue_opened(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesOpened):
+        if not isinstance(parsed, github.models.WebhookIssuesOpened):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -582,14 +597,14 @@ async def issue_opened(
 @task("github.webhook.issues.reopened")
 async def issue_reopened(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesReopened):
+        if not isinstance(parsed, github.models.WebhookIssuesReopened):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -604,14 +619,14 @@ async def issue_reopened(
 @task("github.webhook.issues.edited")
 async def issue_edited(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesEdited):
+        if not isinstance(parsed, github.models.WebhookIssuesEdited):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -626,14 +641,14 @@ async def issue_edited(
 @task("github.webhook.issues.closed")
 async def issue_closed(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesClosed):
+        if not isinstance(parsed, github.models.WebhookIssuesClosed):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -644,14 +659,14 @@ async def issue_closed(
 @task("github.webhook.issues.deleted")
 async def issue_deleted(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesDeleted):
+        if not isinstance(parsed, github.models.WebhookIssuesDeleted):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -672,14 +687,14 @@ async def issue_deleted(
 @task("github.webhook.issues.transferred")
 async def issue_transferred(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesTransferred):
+        if not isinstance(parsed, github.models.WebhookIssuesTransferred):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -690,14 +705,14 @@ async def issue_transferred(
 @task("github.webhook.issues.labeled")
 async def issue_labeled(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesLabeled):
+        if not isinstance(parsed, github.models.WebhookIssuesLabeled):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -708,14 +723,14 @@ async def issue_labeled(
 @task("github.webhook.issues.unlabeled")
 async def issue_unlabeled(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesUnlabeled):
+        if not isinstance(parsed, github.models.WebhookIssuesUnlabeled):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -775,7 +790,7 @@ async def issue_labeled_async(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: github.webhooks.IssuesLabeled | github.webhooks.IssuesUnlabeled,
+    event: github.models.WebhookIssuesLabeled | github.models.WebhookIssuesUnlabeled,
 ) -> None:
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:
@@ -816,14 +831,14 @@ async def issue_labeled_async(
 @task("github.webhook.issues.assigned")
 async def issue_assigned(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesAssigned):
+        if not isinstance(parsed, github.models.WebhookIssuesAssigned):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -834,14 +849,14 @@ async def issue_assigned(
 @task("github.webhook.issues.unassigned")
 async def issue_unassigned(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["issues"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.IssuesUnassigned):
+        if not isinstance(parsed, github.models.WebhookIssuesUnassigned):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -853,7 +868,7 @@ async def issue_assigned_async(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: github.webhooks.IssuesAssigned | github.webhooks.IssuesUnassigned,
+    event: github.models.WebhookIssuesAssigned | github.models.WebhookIssuesUnassigned,
 ) -> None:
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:
@@ -885,11 +900,11 @@ async def handle_pull_request(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: github.webhooks.PullRequestOpened
-    | github.webhooks.PullRequestEdited
-    | github.webhooks.PullRequestClosed
-    | github.webhooks.PullRequestReopened
-    | github.webhooks.PullRequestSynchronize,
+    event: github.models.WebhookPullRequestOpened
+    | github.models.WebhookPullRequestEdited
+    | github.models.WebhookPullRequestClosed
+    | github.models.WebhookPullRequestReopened
+    | github.models.WebhookPullRequestSynchronize,
 ) -> None:
     owner_id = event.repository.owner.id
     repository_id = event.repository.id
@@ -916,14 +931,14 @@ async def handle_pull_request(
 @task("github.webhook.pull_request.opened")
 async def pull_request_opened(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["pull_request"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.PullRequestOpened):
+        if not isinstance(parsed, github.models.WebhookPullRequestOpened):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -934,14 +949,14 @@ async def pull_request_opened(
 @task("github.webhook.pull_request.edited")
 async def pull_request_edited(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["pull_request"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.PullRequestEdited):
+        if not isinstance(parsed, github.models.WebhookPullRequestEdited):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -952,14 +967,14 @@ async def pull_request_edited(
 @task("github.webhook.pull_request.closed")
 async def pull_request_closed(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["pull_request"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.PullRequestClosed):
+        if not isinstance(parsed, github.models.WebhookPullRequestClosed):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -970,14 +985,14 @@ async def pull_request_closed(
 @task("github.webhook.pull_request.reopened")
 async def pull_request_reopened(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["pull_request"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.PullRequestReopened):
+        if not isinstance(parsed, github.models.WebhookPullRequestReopened):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -988,14 +1003,14 @@ async def pull_request_reopened(
 @task("github.webhook.pull_request.synchronize")
 async def pull_request_synchronize(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["pull_request"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, github.webhooks.PullRequestSynchronize):
+        if not isinstance(parsed, github.models.WebhookPullRequestSynchronize):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -1011,14 +1026,14 @@ async def pull_request_synchronize(
 @task("github.webhook.installation.created")
 async def installation_created(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["installation"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with ExecutionContext(is_during_installation=True):
         event = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(event, github.webhooks.InstallationCreated):
+        if not isinstance(event, github.models.WebhookInstallationCreated):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
@@ -1029,20 +1044,24 @@ async def installation_created(
 @task("github.webhook.installation.deleted")
 async def installation_delete(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["installation"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(event, github.webhooks.InstallationDeleted):
+        if not isinstance(event, github.models.WebhookInstallationDeleted):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
+        installation_account = event.installation.account
+        if installation_account is None:
+            return
+
         async with AsyncSessionMaker(ctx) as session:
             org = await service.github_organization.get_by_external_id(
-                session, event.installation.account.id
+                session, installation_account.id
             )
             if not org:
                 return
@@ -1052,22 +1071,23 @@ async def installation_delete(
 @task("github.webhook.installation.suspend")
 async def installation_suspend(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["installation"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(event, github.webhooks.InstallationSuspend):
+        if not isinstance(event, github.models.WebhookInstallationSuspend):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
+            suspended_by = event.installation.suspended_by
             await service.github_organization.suspend(
                 session,
                 event.installation.id,
-                event.installation.suspended_by.id,
+                suspended_by.id if suspended_by is not None else None,
                 event.installation.suspended_at,
                 event.sender.id,
             )
@@ -1076,14 +1096,14 @@ async def installation_suspend(
 @task("github.webhook.installation.unsuspend")
 async def installation_unsuspend(
     ctx: JobContext,
-    scope: str,
+    scope: Literal["installation"],
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(event, github.webhooks.InstallationUnsuspend):
+        if not isinstance(event, github.models.WebhookInstallationUnsuspend):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 

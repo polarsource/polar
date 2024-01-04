@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import datetime
 from typing import Self
 from uuid import UUID
@@ -7,6 +5,7 @@ from uuid import UUID
 import structlog
 
 from polar.integrations.github import client as github
+from polar.integrations.github.client import models
 from polar.issue.schemas import Author, IssueAndPullRequestBase
 from polar.kit.schemas import Schema
 from polar.models import Organization, Repository
@@ -105,12 +104,13 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
     @classmethod
     def minimal_pull_request_from_github(
         cls,
-        pr: github.rest.PullRequestSimple
-        | github.rest.PullRequest
-        | github.webhooks.PullRequestOpenedPropPullRequest
-        | github.webhooks.PullRequest
-        | github.webhooks.PullRequestClosedPropPullRequest
-        | github.webhooks.PullRequestReopenedPropPullRequest,
+        pr: models.PullRequestSimple
+        | models.PullRequest
+        | github.models.WebhookPullRequestOpenedPropPullRequest
+        | github.models.WebhookPullRequestEditedPropPullRequest
+        | github.models.WebhookPullRequestClosedPropPullRequest
+        | github.models.WebhookPullRequestReopenedPropPullRequest
+        | github.models.WebhookPullRequestSynchronizePropPullRequest,
         organization: Organization,
         repository: Repository,
     ) -> Self:
@@ -155,11 +155,12 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
     @classmethod
     def full_pull_request_from_github(
         cls,
-        pr: github.rest.PullRequest
-        | github.webhooks.PullRequestOpenedPropPullRequest
-        | github.webhooks.PullRequest
-        | github.webhooks.PullRequestClosedPropPullRequest
-        | github.webhooks.PullRequestReopenedPropPullRequest,
+        pr: models.PullRequest
+        | github.models.WebhookPullRequestOpenedPropPullRequest
+        | github.models.WebhookPullRequestEditedPropPullRequest
+        | github.models.WebhookPullRequestClosedPropPullRequest
+        | github.models.WebhookPullRequestReopenedPropPullRequest
+        | github.models.WebhookPullRequestSynchronizePropPullRequest,
         organization: Organization,
         repository: Repository,
     ) -> Self:

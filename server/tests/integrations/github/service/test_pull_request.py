@@ -11,14 +11,14 @@ from polar.postgres import AsyncSession
 from tests.fixtures.vcr import read_cassette
 
 
-def simple_pull_request() -> github.rest.PullRequestSimple:
+def simple_pull_request() -> github.models.PullRequestSimple:
     body = read_cassette("github/pull_request/simple.json")
-    return github.rest.PullRequestSimple(**body)
+    return github.models.PullRequestSimple(**body)
 
 
-def full_pull_request() -> github.rest.PullRequest:
+def full_pull_request() -> github.models.PullRequest:
     body = read_cassette("github/pull_request/full.json")
-    return github.rest.PullRequest(**body)
+    return github.models.PullRequest(**body)
 
 
 @pytest.mark.asyncio

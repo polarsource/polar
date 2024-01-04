@@ -25,8 +25,8 @@ class GitHubPaginatedService:
         self,
         session: AsyncSession,
         *,
-        paginator: Paginator[github.rest.Issue]
-        | Paginator[github.rest.PullRequestSimple],
+        paginator: Paginator[github.models.Issue]
+        | Paginator[github.models.PullRequestSimple],
         store_resource_method: Callable[
             ..., Coroutine[Any, Any, Issue | PullRequest | None]
         ],
@@ -34,7 +34,7 @@ class GitHubPaginatedService:
         repository: Repository,
         resource_type: Literal["issue", "pull_request"],
         skip_condition: Callable[
-            [github.rest.Issue | github.rest.PullRequestSimple], bool
+            [github.models.Issue | github.models.PullRequestSimple], bool
         ]
         | None = None,
         on_sync_signal: Hook[SyncedHook] | None = None,

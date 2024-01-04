@@ -9,11 +9,12 @@ from githubkit import (
     GitHub,
     Response,
     TokenAuthStrategy,
-    rest,
     utils,
     webhooks,
 )
-from pydantic import Field
+from githubkit.versions.latest import models
+from githubkit.versions.latest import webhooks as events
+from pydantic import BaseModel, Field
 
 from polar.config import settings
 from polar.enums import Platforms
@@ -102,7 +103,7 @@ def ensure_expected_response(
 ###############################################################################
 
 
-class RefreshAccessToken(rest.GitHubRestModel):
+class RefreshAccessToken(BaseModel):
     access_token: str = Field(default=...)  # The new access token
     expires_in: int = Field(
         default=...
@@ -217,11 +218,12 @@ __all__ = [
     "get_app_client",
     "get_app_installation_client",
     "get_user_client",
-    "webhooks",
-    "rest",
     "GitHub",
     "AppInstallationAuthStrategy",
     "TokenAuthStrategy",
     "utils",
     "Response",
+    "webhooks",
+    "models",
+    "events",
 ]

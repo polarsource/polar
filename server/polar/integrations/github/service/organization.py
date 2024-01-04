@@ -7,10 +7,6 @@ from githubkit import (
     GitHub,
     TokenAuthStrategy,
 )
-from githubkit.rest.models import Installation as GitHubInstallation
-from githubkit.rest.models import SimpleUser as GitHubSimpleUser
-from githubkit.webhooks.models import Installation as GitHubWebhookInstallation
-from githubkit.webhooks.models import User as GitHubUser
 from pydantic import BaseModel
 
 from polar.enums import Platforms
@@ -88,7 +84,7 @@ class GithubOrganizationService(OrganizationService):
                     installation_id=installation.id,
                 )
                 continue
-            elif not isinstance(account, GitHubSimpleUser):
+            elif not isinstance(account, github.models.SimpleUser):
                 log.warning(
                     "unsupported installation with an Enterprise account",
                     installation=installation.id,
@@ -197,7 +193,7 @@ class GithubOrganizationService(OrganizationService):
         self,
         session: AsyncSession,
         installation_id: int,
-        suspended_by: int,
+        suspended_by: int | None,
         suspended_at: datetime | None = None,
         external_user_id: int | None = None,
     ) -> bool:
@@ -250,9 +246,9 @@ class GithubOrganizationService(OrganizationService):
     async def create_or_update_from_github(
         self,
         session: AsyncSession,
-        data: GitHubUser | GitHubSimpleUser,
+        data: github.models.SimpleUser,
         *,
-        installation: GitHubInstallation | GitHubWebhookInstallation | None = None,
+        installation: github.models.Installation | None = None,
     ) -> Organization:
         organization = await self.get_by_external_id(session, data.id)
 

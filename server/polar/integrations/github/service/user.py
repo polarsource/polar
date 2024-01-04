@@ -20,7 +20,7 @@ from ..schemas import OAuthAccessToken
 log = structlog.get_logger()
 
 
-GithubUser = github.rest.PrivateUser | github.rest.PublicUser
+GithubUser = github.models.PrivateUser | github.models.PublicUser
 
 GithubEmail = tuple[str, bool]
 
@@ -349,7 +349,7 @@ class GithubUserService(UserService):
             if not i.account:
                 continue
 
-            if isinstance(i.account, github.rest.Enterprise):
+            if isinstance(i.account, github.models.Enterprise):
                 log.error("sync_github_orgs.github_enterprise_not_supported")
                 continue
 
@@ -445,13 +445,13 @@ class GithubUserService(UserService):
 
     def map_installations_func(
         self,
-        r: github.Response[github.rest.UserInstallationsGetResponse200],
-    ) -> list[github.rest.Installation]:
+        r: github.Response[github.models.UserInstallationsGetResponse200],
+    ) -> list[github.models.Installation]:
         return r.parsed_data.installations
 
     async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User
-    ) -> list[github.rest.Installation]:
+    ) -> list[github.models.Installation]:
         """
         Load user accessible installations from GitHub API
         Finds the union between app installations and the users user-to-server token.

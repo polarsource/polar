@@ -236,18 +236,20 @@ class IssueAndPullRequestBase(Base):
     @classmethod
     def get_normalized_github_issue(
         cls: type[Self],
-        data: github.rest.Issue
-        | github.webhooks.Issue
-        | github.webhooks.IssuesOpenedPropIssue
-        | github.webhooks.IssuesOpenedPropIssue
-        | github.webhooks.IssuesClosedPropIssue
-        | github.webhooks.IssuesReopenedPropIssue
-        | github.rest.PullRequest
-        | github.rest.PullRequestSimple
-        | github.webhooks.PullRequest
-        | github.webhooks.PullRequestOpenedPropPullRequest
-        | github.webhooks.PullRequestClosedPropPullRequest
-        | github.webhooks.PullRequestReopenedPropPullRequest,
+        data: github.models.Issue
+        | github.models.WebhookIssuesOpenedPropIssue
+        | github.models.WebhookIssuesEditedPropIssue
+        | github.models.WebhookIssuesClosedPropIssue
+        | github.models.WebhookIssuesReopenedPropIssue
+        | github.models.WebhookIssuesDeletedPropIssue
+        | github.models.WebhookIssuesTransferredPropChangesPropNewIssue
+        | github.models.PullRequest
+        | github.models.PullRequestSimple
+        | github.models.WebhookPullRequestOpenedPropPullRequest
+        | github.models.WebhookPullRequestEditedPropPullRequest
+        | github.models.WebhookPullRequestClosedPropPullRequest
+        | github.models.WebhookPullRequestReopenedPropPullRequest
+        | github.models.WebhookPullRequestSynchronizePropPullRequest,
         organization: OrganizationModel,
         repository: RepositoryModel,
     ) -> Self:
@@ -262,12 +264,15 @@ class IssueAndPullRequestBase(Base):
 
         # All issue types have reactions, pull request types does not
         if (
-            isinstance(data, github.rest.Issue)
-            or isinstance(data, github.webhooks.IssuesOpenedPropIssue)
-            or isinstance(data, github.webhooks.IssuesOpenedPropIssue)
-            or isinstance(data, github.webhooks.IssuesClosedPropIssue)
-            or isinstance(data, github.webhooks.IssuesReopenedPropIssue)
-            or isinstance(data, github.webhooks.Issue)
+            isinstance(data, github.models.Issue)
+            or isinstance(data, github.models.WebhookIssuesOpenedPropIssue)
+            or isinstance(data, github.models.WebhookIssuesEditedPropIssue)
+            or isinstance(data, github.models.WebhookIssuesClosedPropIssue)
+            or isinstance(data, github.models.WebhookIssuesReopenedPropIssue)
+            or isinstance(data, github.models.WebhookIssuesDeletedPropIssue)
+            or isinstance(
+                data, github.models.WebhookIssuesTransferredPropChangesPropNewIssue
+            )
         ) and data.reactions:
             reactions = Reactions(
                 total_count=data.reactions.total_count,
@@ -317,11 +322,13 @@ class IssueCreate(IssueAndPullRequestBase):
     @classmethod
     def from_github(
         cls,
-        data: github.rest.Issue
-        | github.webhooks.Issue
-        | github.webhooks.IssuesOpenedPropIssue
-        | github.webhooks.IssuesClosedPropIssue
-        | github.webhooks.IssuesReopenedPropIssue,
+        data: github.models.Issue
+        | github.models.WebhookIssuesOpenedPropIssue
+        | github.models.WebhookIssuesEditedPropIssue
+        | github.models.WebhookIssuesClosedPropIssue
+        | github.models.WebhookIssuesReopenedPropIssue
+        | github.models.WebhookIssuesDeletedPropIssue
+        | github.models.WebhookIssuesTransferredPropChangesPropNewIssue,
         organization: OrganizationModel,
         repository: RepositoryModel,
     ) -> Self:

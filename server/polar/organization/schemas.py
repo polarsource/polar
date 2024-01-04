@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Self
+from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
 from pydantic import UUID4, Field
@@ -10,9 +8,11 @@ from pydantic import UUID4, Field
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
-from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization as OrganizationModel
+
+if TYPE_CHECKING:
+    from polar.integrations.github.client import models
 
 
 # Public API
@@ -155,11 +155,9 @@ class OrganizationCreate(Schema):
     @classmethod
     def from_github(
         cls,
-        user: github.webhooks.User | github.rest.SimpleUser,
+        user: "models.SimpleUser",
         *,
-        installation: github.webhooks.Installation
-        | github.rest.Installation
-        | None = None,
+        installation: "models.Installation | None" = None,
     ) -> Self:
         if installation is None:
             return cls(
@@ -170,16 +168,6 @@ class OrganizationCreate(Schema):
                 is_personal=user.type.lower() == "user",
             )
 
-        installation_created_at = (
-            datetime.fromtimestamp(installation.created_at)
-            if isinstance(installation.created_at, int)
-            else installation.created_at
-        )
-        installation_updated_at = (
-            datetime.fromtimestamp(installation.updated_at)
-            if isinstance(installation.updated_at, int)
-            else installation.updated_at
-        )
         return cls(
             platform=Platforms.github,
             name=user.login,
@@ -187,8 +175,8 @@ class OrganizationCreate(Schema):
             avatar_url=user.avatar_url,
             is_personal=user.type.lower() == "user",
             installation_id=installation.id,
-            installation_created_at=installation_created_at,
-            installation_updated_at=installation_updated_at,
+            installation_created_at=installation.created_at,
+            installation_updated_at=installation.updated_at,
             installation_suspended_at=installation.suspended_at,
         )
 

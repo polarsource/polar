@@ -83,9 +83,10 @@ def create_app() -> FastAPI:
     app.add_middleware(LogCorrelationIdMiddleware)
 
     app.add_exception_handler(
-        PolarRedirectionError, polar_redirection_exception_handler
+        PolarRedirectionError,
+        polar_redirection_exception_handler,  # type: ignore
     )
-    app.add_exception_handler(PolarError, polar_exception_handler)
+    app.add_exception_handler(PolarError, polar_exception_handler)  # type: ignore
 
     # /healthz and /readyz
     app.include_router(health_router)

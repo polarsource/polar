@@ -9,7 +9,7 @@ from polar.kit.schemas import Schema
 from polar.models.article import Article as ArticleModel
 from polar.organization.schemas import Organization
 
-paywall_regex = r"<paywall>((.|\n)*?)<\/paywall>"
+paywall_regex = r"<Paywall>((.|\n)*?)<\/Paywall>"
 
 
 class Byline(Schema):
@@ -43,12 +43,12 @@ class Article(Schema):
 
         For paying subscribers, no changes to the body are made.
 
-        If the user is not paying, empty <paywall></paywall> tags are left in it's place.
+        If the user is not paying, empty <Paywall></Paywall> tags are left in it's place.
         """
         if is_paid_subscriber:
             return body
 
-        return re.sub(paywall_regex, "<paywall></paywall>", body, 0, re.MULTILINE)
+        return re.sub(paywall_regex, "<Paywall></Paywall>", body, 0, re.MULTILINE)
 
     @classmethod
     def from_db(

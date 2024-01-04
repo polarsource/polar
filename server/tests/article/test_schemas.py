@@ -7,37 +7,37 @@ from polar.article.schemas import Article
 async def test_strip_paywalled_content() -> None:
     assert (
         Article.strip_paywalled_content(
-            "before <paywall>inside</paywall> after",
+            "before <Paywall>inside</Paywall> after",
             False,
         )
-        == "before <paywall></paywall> after"
+        == "before <Paywall></Paywall> after"
     )
 
     assert (
         Article.strip_paywalled_content(
             """
             before
-            
-            <paywall>inside</paywall>
 
-            <paywall>
+            <Paywall>inside</Paywall>
+
+            <Paywall>
             a
             b
             c
             d
-            </paywall>
-            
+            </Paywall>
+
             after
             """,
             False,
         )
         == """
             before
-            
-            <paywall></paywall>
 
-            <paywall></paywall>
-            
+            <Paywall></Paywall>
+
+            <Paywall></Paywall>
+
             after
             """
     )

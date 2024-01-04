@@ -2,7 +2,6 @@ import uuid
 from typing import Any
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
@@ -22,24 +21,6 @@ from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
-
-
-@pytest_asyncio.fixture
-async def open_collective_account(session: AsyncSession, user: User) -> Account:
-    account = Account(
-        account_type=AccountType.open_collective,
-        admin_id=user.id,
-        open_collective_slug="polar",
-        country="US",
-        currency="USD",
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=True,
-        business_type="fiscal_host",
-    )
-    await account.save(session)
-    await session.commit()
-    return account
 
 
 @pytest.mark.asyncio

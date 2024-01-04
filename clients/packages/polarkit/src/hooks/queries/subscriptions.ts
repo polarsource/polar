@@ -260,6 +260,29 @@ export const useUserSubscriptions = (
     enabled: !!userId,
   })
 
+export const useCreateFreeSubscription = () =>
+  useMutation({
+    mutationFn: ({
+      tier_id,
+      customer_email,
+    }: {
+      tier_id: string
+      customer_email?: string
+    }) => {
+      return api.subscriptions.createFreeSubscription({
+        freeSubscriptionCreate: {
+          tier_id: tier_id,
+          customer_email: customer_email,
+        },
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['userSubscriptions'],
+      })
+    },
+  })
+
 export const useOrganizationSubscriptions = (
   subscriberOrganizationId?: string,
   orgName?: string,

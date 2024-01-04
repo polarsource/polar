@@ -1,7 +1,9 @@
 import os
 from enum import Enum
+from functools import cached_property
 
-from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn, validator
+from pydantic import PostgresDsn, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Environment(str, Enum):
@@ -17,6 +19,10 @@ class EmailSender(str, Enum):
     resend = "resend"
 
 
+env = Environment(os.getenv("POLAR_ENV", Environment.development))
+env_file = ".env.testing" if env == Environment.testing else ".env"
+
+
 class Settings(BaseSettings):
     ENV: Environment = Environment.development
     DEBUG: bool = False
@@ -26,7 +32,7 @@ class Settings(BaseSettings):
     SECRET: str = "super secret jwt secret"
 
     # JSON list of accepted CORS origins
-    CORS_ORIGINS: list[AnyHttpUrl] = []
+    CORS_ORIGINS: list[str] = []
 
     ALLOWED_HOSTS: set[str] = {"127.0.0.1:3000", "localhost:3000"}
 
@@ -107,12 +113,15 @@ class Settings(BaseSettings):
     # Default organization setting for minimum pledge amount ($20)
     MINIMUM_ORG_PLEDGE_AMOUNT: int = 2000
 
-    class Config:
-        env_prefix = "polar_"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_prefix="polar_",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        env_file=env_file,
+    )
 
-    @validator("GITHUB_APP_PRIVATE_KEY", pre=True)
+    @field_validator("GITHUB_APP_PRIVATE_KEY", mode="before")
+    @classmethod
     def validate_github_rsa_key(cls, v: str) -> str:
         if not (
             v.startswith("-----BEGIN RSA PRIVATE KEY")
@@ -125,24 +134,18 @@ class Settings(BaseSettings):
     def redis_url(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
 
-    @property
-    def postgres_dsn(self) -> PostgresDsn:
-        dsn = self.__dict__.get("postgres_dsn")
-        if dsn is None:
-            dsn = self.build_postgres_dsn()
-            self.__dict__["postgres_dsn"] = dsn
-        return dsn
-
-    def build_postgres_dsn(self) -> PostgresDsn:
-        uri = PostgresDsn.build(
-            scheme=self.POSTGRES_SCHEME,
-            user=self.POSTGRES_USER,
-            password=self.POSTGRES_PWD,
-            host=self.POSTGRES_HOST,
-            port=str(self.POSTGRES_PORT),
-            path=f"/{self.POSTGRES_DATABASE}",
+    @cached_property
+    def postgres_dsn(self) -> str:
+        return str(
+            PostgresDsn.build(
+                scheme=self.POSTGRES_SCHEME,
+                username=self.POSTGRES_USER,
+                password=self.POSTGRES_PWD,
+                host=self.POSTGRES_HOST,
+                port=self.POSTGRES_PORT,
+                path=self.POSTGRES_DATABASE,
+            )
         )
-        return PostgresDsn(uri, scheme=self.POSTGRES_SCHEME)
 
     def is_environment(self, environment: Environment) -> bool:
         return self.ENV == environment
@@ -166,16 +169,4 @@ class Settings(BaseSettings):
         return f"{self.FRONTEND_BASE_URL}{path}"
 
 
-env = Environment(os.getenv("POLAR_ENV", Environment.development))
-
-
-env_file = ".env"
-
-if env == Environment.testing:
-    env_file = ".env.testing"
-
-override_env_file = os.getenv("POLAR_ENV_FILE", None)
-if override_env_file:
-    env_file = override_env_file
-
-settings = Settings(_env_file=env_file, ENV=env)  # type: ignore
+settings = Settings()

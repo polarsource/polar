@@ -26,21 +26,15 @@ class User(Schema):
 class UserBase(Schema):
     username: str = Field(..., max_length=50)
     email: EmailStr
-    avatar_url: str | None
+    avatar_url: str | None = None
     profile: dict[str, Any]
     account_id: UUID4 | None = None
-
-    class Config:
-        orm_mode = True
 
 
 class OAuthAccountRead(TimestampedSchema):
     platform: Platforms
     account_id: str
     account_email: str
-
-    class Config:
-        orm_mode = True
 
 
 class UserRead(UserBase, TimestampedSchema):

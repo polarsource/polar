@@ -7,7 +7,7 @@ from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from pydantic import Field, HttpUrl, parse_obj_as
+from pydantic import ConfigDict, Field, HttpUrl, parse_obj_as
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
@@ -72,20 +72,20 @@ class Issue(Schema):
     platform: Platforms = Field(description="Issue platform (currently always GitHub)")
     number: int = Field(description="GitHub #number")
     title: str = Field(description="GitHub issue title")
-    body: str | None = Field(description="GitHub issue body")
+    body: str | None = Field(None, description="GitHub issue body")
     comments: int | None = Field(
-        description="Number of GitHub comments made on the issue"
+        None, description="Number of GitHub comments made on the issue"
     )
     labels: list[Label] = []
 
-    author: Author | None = Field(description="GitHub author")
-    assignees: list[Assignee] | None = Field(description="GitHub assignees")
-    reactions: Reactions | None = Field(description="GitHub reactions")
+    author: Author | None = Field(None, description="GitHub author")
+    assignees: list[Assignee] | None = Field(None, description="GitHub assignees")
+    reactions: Reactions | None = Field(None, description="GitHub reactions")
 
     state: Literal["OPEN", "CLOSED"]
 
-    issue_closed_at: datetime | None
-    issue_modified_at: datetime | None
+    issue_closed_at: datetime | None = None
+    issue_modified_at: datetime | None = None
     issue_created_at: datetime
 
     needs_confirmation_solved: bool = Field(
@@ -93,7 +93,8 @@ class Issue(Schema):
     )
 
     confirmed_solved_at: datetime | None = Field(
-        description="If this issue has been marked as confirmed solved through Polar"
+        None,
+        description="If this issue has been marked as confirmed solved through Polar",
     )
 
     funding: Funding
@@ -101,7 +102,8 @@ class Issue(Schema):
     repository: Repository = Field(description="The repository that the issue is in")
 
     upfront_split_to_contributors: int | None = Field(
-        description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."  # noqa: E501
+        None,
+        description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive).",  # noqa: E501
     )
 
     pledge_badge_currently_embedded: bool = Field(
@@ -191,11 +193,11 @@ class Base(Schema):
     number: int
 
     title: str
-    body: str | None
-    comments: int | None
+    body: str | None = None
+    comments: int | None = None
 
     author: JSONAny
-    author_association: str | None
+    author_association: str | None = None
     labels: JSONAny
     assignee: JSONAny
     assignees: JSONAny
@@ -204,10 +206,10 @@ class Base(Schema):
     reactions: JSONAny
 
     state: IssueModel.State
-    state_reason: str | None
+    state_reason: str | None = None
 
-    issue_closed_at: datetime | None
-    issue_modified_at: datetime | None
+    issue_closed_at: datetime | None = None
+    issue_modified_at: datetime | None = None
     issue_created_at: datetime
 
     __mutable_keys__ = {
@@ -361,9 +363,7 @@ class IssueRead(IssueCreate):
     id: UUID
     created_at: datetime
     modified_at: datetime | None
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class IssueReferenceType(str, Enum):
@@ -382,8 +382,8 @@ class PullRequestReference(Schema):
     deletions: int
     state: str  # open | closed
     created_at: datetime
-    merged_at: datetime | None
-    closed_at: datetime | None
+    merged_at: datetime | None = None
+    closed_at: datetime | None = None
     is_draft: bool
 
 
@@ -513,9 +513,7 @@ class IssueReferenceRead(Schema):
 class IssueDependencyRead(Schema):
     dependent_issue_id: UUID
     dependency_issue_id: UUID
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostIssueComment(Schema):

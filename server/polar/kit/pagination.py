@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Annotated, Any, Generic, NamedTuple, Self, TypeVar, overload
 
 from fastapi import Depends, Query
-from pydantic.generics import GenericModel
+from pydantic import BaseModel
 from sqlalchemy import Select, func, over
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
 
@@ -95,7 +95,7 @@ class Pagination(Schema):
     max_page: int
 
 
-class ListResource(GenericModel, Generic[T]):
+class ListResource(BaseModel, Generic[T]):
     items: Sequence[T] = []
     pagination: Pagination
 

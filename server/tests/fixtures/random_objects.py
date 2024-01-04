@@ -6,11 +6,12 @@ from datetime import datetime
 
 import pytest_asyncio
 
-from polar.enums import Platforms
+from polar.enums import AccountType, Platforms
 from polar.integrations.github.service import (
     github_organization,
     github_repository,
 )
+from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -350,3 +351,21 @@ async def user_organization_second(
 
     await session.commit()
     return a
+
+
+@pytest_asyncio.fixture
+async def open_collective_account(session: AsyncSession, user: User) -> Account:
+    account = Account(
+        account_type=AccountType.open_collective,
+        admin_id=user.id,
+        open_collective_slug="polar",
+        country="US",
+        currency="USD",
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=True,
+        business_type="fiscal_host",
+    )
+    await account.save(session)
+    await session.commit()
+    return account

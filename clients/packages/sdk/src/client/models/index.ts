@@ -4841,8 +4841,7 @@ export interface SubscriptionTierCreate {
  * @export
  */
 export const SubscriptionTierCreateTypeEnum = {
-    HOBBY: 'hobby',
-    PRO: 'pro',
+    INDIVIDUAL: 'individual',
     BUSINESS: 'business'
 } as const;
 export type SubscriptionTierCreateTypeEnum = typeof SubscriptionTierCreateTypeEnum[keyof typeof SubscriptionTierCreateTypeEnum];
@@ -4854,8 +4853,7 @@ export type SubscriptionTierCreateTypeEnum = typeof SubscriptionTierCreateTypeEn
  */
 export const SubscriptionTierType = {
     FREE: 'free',
-    HOBBY: 'hobby',
-    PRO: 'pro',
+    INDIVIDUAL: 'individual',
     BUSINESS: 'business'
 } as const;
 export type SubscriptionTierType = typeof SubscriptionTierType[keyof typeof SubscriptionTierType];

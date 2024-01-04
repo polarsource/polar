@@ -78,10 +78,8 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
   const getSubscriptionTierAudience = (tier: SubscriptionTier) => {
     switch (tier.type) {
-      case SubscriptionTierType.HOBBY:
-        return 'For Supporters'
-      case SubscriptionTierType.PRO:
-        return 'For Indie Hackers & Startups'
+      case SubscriptionTierType.INDIVIDUAL:
+        return 'For Individuals'
       case SubscriptionTierType.BUSINESS:
         return 'For Businesses'
     }

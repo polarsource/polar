@@ -53,11 +53,7 @@ const ClientPage = () => {
     org?.name ?? '',
     startOfMonthThreeMonthsAgo,
     startOfMonth,
-    [
-      SubscriptionTierType.HOBBY,
-      SubscriptionTierType.PRO,
-      SubscriptionTierType.BUSINESS,
-    ],
+    [SubscriptionTierType.INDIVIDUAL, SubscriptionTierType.BUSINESS],
   )
 
   const currentPeriodPaidSubscriptions = useMemo(

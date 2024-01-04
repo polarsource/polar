@@ -41,18 +41,10 @@ const OrganizationSubscriptionsPublicPage: React.FC<
           subscribePath="/subscribe"
         />
         <SubscriptionGroupPublic
-          title="Hobby"
+          title="Individual"
           description="Tiers for individuals & fans who want to say thanks"
-          type={SubscriptionTierType.HOBBY}
-          tiers={subscriptionTiersByType.hobby}
-          organization={organization}
-          subscribePath="/subscribe"
-        />
-        <SubscriptionGroupPublic
-          title="Pro"
-          description="Tiers best suited for indie hackers & startups"
-          type={SubscriptionTierType.PRO}
-          tiers={subscriptionTiersByType?.pro}
+          type={SubscriptionTierType.INDIVIDUAL}
+          tiers={subscriptionTiersByType.individual}
           organization={organization}
           subscribePath="/subscribe"
         />

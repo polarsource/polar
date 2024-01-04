@@ -13,7 +13,6 @@ import {
 import { Form, FormField } from 'polarkit/components/ui/form'
 import { SelectContent, SelectItem } from 'polarkit/components/ui/select'
 import { Separator } from 'polarkit/components/ui/separator'
-import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
@@ -42,16 +41,6 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     personalAccount !== undefined &&
     organizationAccount.id !== personalAccount.id
 
-  const borderColor = useMemo(() => {
-    if (bothOrganizationAndPersonal) {
-      return 'border-red-500'
-    }
-    if (!currentAccount || currentAccount.status !== Status.ACTIVE) {
-      return 'border-yellow-500'
-    }
-    return 'border-green-500'
-  }, [bothOrganizationAndPersonal, currentAccount])
-
   const linkAccountForm = useForm<{ account_id: string }>()
   const { control, handleSubmit } = linkAccountForm
 
@@ -61,7 +50,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
       returnPath:
         !organization || organization.is_personal
           ? '/finance/account'
-          : `/maintainer/${organization.name}/finance_new/account`,
+          : `/maintainer/${organization.name}/finance/account`,
     })
     window.location.href = link.url
   }
@@ -76,8 +65,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-900 min-h-[150px] rounded-3xl border border-gray-100 bg-white p-12',
-        borderColor,
+        'dark:bg-polar-900 min-h-[150px] rounded-3xl bg-white p-12',
       )}
     >
       <div className="flex flex-row items-center justify-between">
@@ -225,7 +213,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
             <>
               <p>You need to continue the setup of your payout account.</p>
               <Button
-                className="w-full sm:w-auto sm:grow"
+                className="self-start sm:w-auto sm:grow"
                 onClick={() => goToOnboarding(currentAccount)}
               >
                 Continue setup
@@ -240,7 +228,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                 Your payout account is setup and ready to receive transfers!
               </p>
               <Button
-                className="w-full sm:w-auto sm:grow"
+                className="self-start sm:w-auto sm:grow"
                 onClick={() => goToDashboard(currentAccount)}
               >
                 Open dashboard

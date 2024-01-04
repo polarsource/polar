@@ -62,7 +62,7 @@ class ListResponse(Schema):
 class PaginationResponse(Schema):
     total_count: int
     page: int
-    next_page: int | None
+    next_page: int | None = None
 
 
 class IssueListResponse(ListResponse):

@@ -1,10 +1,16 @@
 import uuid
-from collections.abc import Iterable
 from datetime import date, datetime
-from typing import Any, Literal, Self
+from typing import Literal, Self
 
 import stripe as stripe_lib
-from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validator
+from pydantic import (
+    UUID4,
+    AnyHttpUrl,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
@@ -54,23 +60,19 @@ class SubscriptionBenefitCreateBase(Schema):
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
 
-    @root_validator
-    def check_either_organization_or_repository(
-        cls, values: dict[str, Any]
-    ) -> dict[str, Any]:
-        organization_id = values.get("organization_id")
-        repository_id = values.get("repository_id")
-        if organization_id is not None and repository_id is not None:
+    @model_validator(mode="after")
+    def check_either_organization_or_repository(self) -> Self:
+        if self.organization_id is not None and self.repository_id is not None:
             raise ValueError(
                 "Subscription benefits should either be linked to "
                 "an Organization or a Repository, not both."
             )
-        if organization_id is None and repository_id is None:
+        if self.organization_id is None and self.repository_id is None:
             raise ValueError(
                 "Subscription benefits should be linked to "
                 "an Organization or a Repository."
             )
-        return values
+        return self
 
 
 class SubscriptionBenefitCustomCreate(SubscriptionBenefitCreateBase):
@@ -187,30 +189,27 @@ class SubscriptionTierCreate(Schema):
     )
     is_highlighted: bool = False
     price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
-    price_currency: str = Field("USD", regex="USD")
+    price_currency: str = Field("USD", pattern="USD")
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
 
-    @root_validator
-    def check_either_organization_or_repository(
-        cls, values: dict[str, Any]
-    ) -> dict[str, Any]:
-        organization_id = values.get("organization_id")
-        repository_id = values.get("repository_id")
-        if organization_id is not None and repository_id is not None:
+    @model_validator(mode="after")
+    def check_either_organization_or_repository(self) -> Self:
+        if self.organization_id is not None and self.repository_id is not None:
             raise ValueError(
                 "Subscription tiers should either be linked to "
                 "an Organization or a Repository, not both."
             )
-        if organization_id is None and repository_id is None:
+        if self.organization_id is None and self.repository_id is None:
             raise ValueError(
                 "Subscription tiers should be linked to "
                 "an Organization or a Repository."
             )
-        return values
+        return self
 
     # FIXME: in Pydantic V2, replace with an annotated type
-    @validator("description")
+    @field_validator("description")
+    @classmethod
     def empty_str_to_none(cls, v: str | None) -> str | None:
         if v == "":
             return None
@@ -226,10 +225,11 @@ class SubscriptionTierUpdate(Schema):
     )
     is_highlighted: bool | None = None
     price_amount: int | None = Field(default=None, gt=0, le=MAXIMUM_PRICE_AMOUNT)
-    price_currency: str | None = Field(default=None, regex="USD")
+    price_currency: str | None = Field(default=None, pattern="USD")
 
     # FIXME: in Pydantic V2, replace with an annotated type
-    @validator("description")
+    @field_validator("description")
+    @classmethod
     def empty_str_to_none(cls, v: str | None) -> str | None:
         if v == "":
             return None
@@ -260,23 +260,16 @@ class SubscriptionTierBase(TimestampedSchema):
 class SubscriptionTier(SubscriptionTierBase):
     benefits: list[SubscriptionTierBenefit]
 
-    @validator("benefits", pre=True)
-    def benefits_association_proxy_fix(
-        cls, v: Iterable[SubscriptionTierBenefit]
-    ) -> list[SubscriptionTierBenefit]:
-        # FIXME: Not needed in Pydantic V2
-        return list(v)
-
 
 class SubscriptionTierSubscriber(SubscriptionTierBase):
     benefits: list[SubscriptionBenefitSubscriber]
 
-    @validator("benefits", pre=True)
-    def benefits_association_proxy_fix(
-        cls, v: Iterable[SubscriptionBenefitSubscriber]
-    ) -> list[SubscriptionBenefitSubscriber]:
-        # FIXME: Not needed in Pydantic V2
-        return list(v)
+    # @field_validator("benefits", pre=True)
+    # def benefits_association_proxy_fix(
+    #     cls, v: Iterable[SubscriptionBenefitSubscriber]
+    # ) -> list[SubscriptionBenefitSubscriber]:
+    #     # FIXME: Not needed in Pydantic V2
+    #     return list(v)
 
 
 # SubscribeSession

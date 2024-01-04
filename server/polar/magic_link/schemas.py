@@ -1,7 +1,7 @@
 import datetime
 from typing import Literal
 
-from pydantic import UUID4, EmailStr, validator
+from pydantic import UUID4, EmailStr, field_validator
 
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
@@ -13,7 +13,8 @@ class MagicLinkRequest(Schema):
     email: EmailStr
     return_to: str | None = None
 
-    @validator("return_to")
+    @field_validator("return_to")
+    @classmethod
     def validate_return_to(cls, v: str | None) -> str:
         return get_safe_return_url(v)
 

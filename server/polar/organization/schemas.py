@@ -23,18 +23,18 @@ class Organization(Schema):
     avatar_url: str
     is_personal: bool
 
-    bio: str | None = Field(description="Public field from GitHub")
-    pretty_name: str | None = Field(description="Public field from GitHub")
-    company: str | None = Field(description="Public field from GitHub")
-    blog: str | None = Field(description="Public field from GitHub")
-    location: str | None = Field(description="Public field from GitHub")
-    email: str | None = Field(description="Public field from GitHub")
-    twitter_username: str | None = Field(description="Public field from GitHub")
+    bio: str | None = Field(None, description="Public field from GitHub")
+    pretty_name: str | None = Field(None, description="Public field from GitHub")
+    company: str | None = Field(None, description="Public field from GitHub")
+    blog: str | None = Field(None, description="Public field from GitHub")
+    location: str | None = Field(None, description="Public field from GitHub")
+    email: str | None = Field(None, description="Public field from GitHub")
+    twitter_username: str | None = Field(None, description="Public field from GitHub")
 
     pledge_minimum_amount: int
     pledge_badge_show_amount: bool
 
-    default_upfront_split_to_contributors: int | None
+    default_upfront_split_to_contributors: int | None = None
 
     account_id: UUID4 | None = None
 
@@ -44,13 +44,16 @@ class Organization(Schema):
 
     # Team fields
     billing_email: str | None = Field(
-        description="Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization"
+        None,
+        description="Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization",
     )
     total_monthly_spending_limit: int | None = Field(
-        description="Overall team monthly spending limit, per calendar month. Only visible for members of the organization"
+        None,
+        description="Overall team monthly spending limit, per calendar month. Only visible for members of the organization",
     )
     per_user_monthly_spending_limit: int | None = Field(
-        description="Team members monthly spending limit, per calendar month. Only visible for members of the organization"
+        None,
+        description="Team members monthly spending limit, per calendar month. Only visible for members of the organization",
     )
     is_teams_enabled: bool = Field(
         description="Feature flag for if this organization is a team."
@@ -205,7 +208,7 @@ class RepositoryBadgeSettingsUpdate(Schema):
 # Internal model
 class RepositoryBadgeSettingsRead(Schema):
     id: UUID
-    avatar_url: str | None
+    avatar_url: str | None = None
     name: str
     synced_issues: int
     open_issues: int
@@ -230,5 +233,5 @@ class OrganizationBadgeSettingsUpdate(Schema):
 class OrganizationBadgeSettingsRead(Schema):
     show_amount: bool
     minimum_amount: int
-    message: str | None
+    message: str | None = None
     repositories: Sequence[RepositoryBadgeSettingsRead]

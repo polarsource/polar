@@ -5,7 +5,6 @@ from typing import Self
 from uuid import UUID
 
 import structlog
-from pydantic import parse_obj_as
 
 from polar.integrations.github import client as github
 from polar.issue.schemas import Author, IssueAndPullRequestBase
@@ -22,7 +21,7 @@ class PullRequest(Schema):
     id: UUID
     number: int
     title: str
-    author: Author | None
+    author: Author | None = None
     additions: int
     deletions: int
     is_merged: bool
@@ -34,7 +33,7 @@ class PullRequest(Schema):
             id=pr.id,
             number=pr.number,
             title=pr.title,
-            author=parse_obj_as(Author, pr.author) if pr.author else None,
+            author=Author.model_validate(pr.author) if pr.author else None,
             additions=pr.additions if pr.additions else 0,
             deletions=pr.deletions if pr.deletions else 0,
             is_merged=pr.is_merged if pr.is_merged else False,
@@ -73,16 +72,16 @@ common_mutable_keys = {
 
 
 class MinimalPullRequestCreate(IssueAndPullRequestBase):
-    requested_reviewers: JSONAny
-    requested_teams: JSONAny
+    requested_reviewers: JSONAny | None = None
+    requested_teams: JSONAny | None = None
 
-    is_merged: bool | None
+    is_merged: bool | None = None
 
-    merged_at: datetime | None
-    merge_commit_sha: str | None
+    merged_at: datetime | None = None
+    merge_commit_sha: str | None = None
 
-    head: JSONAny
-    base: JSONAny
+    head: JSONAny | None = None
+    base: JSONAny | None = None
 
     is_draft: bool | None = None
 
@@ -129,17 +128,17 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
 
 
 class FullPullRequestCreate(MinimalPullRequestCreate):
-    commits: int | None
-    additions: int | None
-    deletions: int | None
-    changed_files: int | None
+    commits: int | None = None
+    additions: int | None = None
+    deletions: int | None = None
+    changed_files: int | None = None
 
-    review_comments: int | None
-    maintainer_can_modify: bool | None
-    is_mergeable: bool | None
-    mergeable_state: str | None
+    review_comments: int | None = None
+    maintainer_can_modify: bool | None = None
+    is_mergeable: bool | None = None
+    mergeable_state: str | None = None
 
-    merged_by: JSONAny
+    merged_by: JSONAny | None = None
 
     __mutable_keys__ = MinimalPullRequestCreate.__mutable_keys__ | {
         "commits",
@@ -188,7 +187,4 @@ class PullRequestUpdate(FullPullRequestCreate):
 class PullRequestRead(FullPullRequestCreate):
     id: UUID
     created_at: datetime
-    modified_at: datetime | None
-
-    class Config:
-        orm_mode = True
+    modified_at: datetime | None = None

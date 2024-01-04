@@ -9,7 +9,7 @@ from polar.kit.schemas import Schema
 class PaymentMethod(Schema):
     stripe_payment_method_id: str
     type: Literal["card", None]
-    brand: str | None
+    brand: str | None = None
     last4: str
     exp_month: int
     exp_year: int

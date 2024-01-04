@@ -21,18 +21,22 @@ class RewardState(str, Enum):
 
 class Reward(Schema):
     pledge: Pledge = Field(description="The pledge that the reward was split from")
-    user: User | None = Field(description="The user that received the reward (if any)")
+    user: User | None = Field(
+        None, description="The user that received the reward (if any)"
+    )
     organization: Organization | None = Field(
-        description="The organization that received the reward (if any)"
+        None, description="The organization that received the reward (if any)"
     )
     amount: CurrencyAmount
     state: RewardState
-    paid_at: datetime | None = Field(description="If and when the reward was paid out.")
+    paid_at: datetime | None = Field(
+        None, description="If and when the reward was paid out."
+    )
 
 
 class RewardsSummaryReceiver(Schema):
     name: str
-    avatar_url: str | None
+    avatar_url: str | None = None
 
 
 class RewardsSummary(Schema):

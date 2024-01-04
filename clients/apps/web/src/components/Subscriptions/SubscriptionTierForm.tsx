@@ -83,7 +83,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
           rules={{ required: 'This field is required' }}
           render={({ field }) => (
             <FormItem className="max-w-[300px]">
-              <FormLabel>Group</FormLabel>
+              <FormLabel>Type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -117,17 +117,24 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
             name="is_highlighted"
             render={({ field }) => {
               return (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      defaultChecked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm leading-none">
-                    Highlight this tier
-                  </FormLabel>
-                </FormItem>
+                <div className="flex flex-col gap-y-4">
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        defaultChecked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm leading-none">
+                      Highlight this tier
+                    </FormLabel>
+                  </FormItem>
+                  <p className="dark:text-polar-500 text-sm text-gray-500">
+                    Highlighted tiers are shown on the public overview page.
+                    <br />
+                    Only one tier can be highlighted per tier type.
+                  </p>
+                </div>
               )
             }}
           />

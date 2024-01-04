@@ -11,7 +11,6 @@ import { EditorHelpers, useEditorHelpers } from './useEditorHelpers'
 
 const defaultPostEditorContext: EditorHelpers = {
   ref: { current: null },
-  insertText: (text: string) => {},
   insertTextAtCursor: (text: string) => {},
   wrapSelectionWithText: ([before, after]: [string, string]) => {},
   handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {},

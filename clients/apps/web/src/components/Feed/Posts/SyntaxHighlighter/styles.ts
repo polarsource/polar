@@ -9,21 +9,25 @@ export const polarStyleLight: { [key: string]: React.CSSProperties } = {
   },
   'hljs-comment': {
     color: '#008000',
+    fontStyle: 'italic',
   },
   'hljs-quote': {
     color: '#008000',
+    fontStyle: 'italic',
   },
   'hljs-variable': {
     color: '#008000',
   },
   'hljs-keyword': {
     color: '#00f',
+    fontStyle: 'italic',
   },
   'hljs-selector-tag': {
     color: '#00f',
   },
   'hljs-built_in': {
     color: '#00f',
+    fontStyle: 'italic',
   },
   'hljs-name': {
     color: '#00f',
@@ -36,6 +40,7 @@ export const polarStyleLight: { [key: string]: React.CSSProperties } = {
   },
   'hljs-title': {
     color: '#ef6464',
+    fontStyle: 'italic',
   },
   'hljs-section': {
     color: '#ef6464',
@@ -57,15 +62,19 @@ export const polarStyleLight: { [key: string]: React.CSSProperties } = {
   },
   'hljs-addition': {
     color: '#ef6464',
+    fontStyle: 'italic',
   },
   'hljs-deletion': {
     color: '#2b91af',
+    fontStyle: 'italic',
   },
   'hljs-selector-attr': {
     color: '#2b91af',
+    fontStyle: 'italic',
   },
   'hljs-selector-pseudo': {
     color: '#2b91af',
+    fontStyle: 'italic',
   },
   'hljs-meta': {
     color: '#2b91af',

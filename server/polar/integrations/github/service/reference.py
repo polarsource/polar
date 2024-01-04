@@ -7,7 +7,7 @@ import structlog
 from fastapi.encoders import jsonable_encoder
 from githubkit import GitHub
 from githubkit.exception import RequestFailed
-from pydantic import Field, ValidationError, parse_obj_as
+from pydantic import ValidationError, parse_obj_as
 
 import polar.integrations.github.client as github
 from polar.exceptions import IntegrityError
@@ -34,39 +34,29 @@ from polar.worker import enqueue_job
 log: Logger = structlog.get_logger()
 
 
-class UnknownIssueEvent(github.rest.GitHubRestModel):
-    """
-    The timeline API is not fully specced out in the github schema.
-    This is a catch-all event for events that we're unable to parse.
-    """
-
-    event: str = Field(default=...)
-
-
 TimelineEventType = (
-    github.rest.LabeledIssueEvent
-    | github.rest.UnlabeledIssueEvent
-    | github.rest.MilestonedIssueEvent
-    | github.rest.DemilestonedIssueEvent
-    | github.rest.RenamedIssueEvent
-    | github.rest.ReviewRequestedIssueEvent
-    | github.rest.ReviewRequestRemovedIssueEvent
-    | github.rest.ReviewDismissedIssueEvent
-    | github.rest.LockedIssueEvent
-    | github.rest.AddedToProjectIssueEvent
-    | github.rest.MovedColumnInProjectIssueEvent
-    | github.rest.RemovedFromProjectIssueEvent
-    | github.rest.ConvertedNoteToIssueIssueEvent
-    | github.rest.TimelineCommentEvent
-    | github.rest.TimelineCrossReferencedEvent
-    | github.rest.TimelineCommittedEvent
-    | github.rest.TimelineReviewedEvent
-    | github.rest.TimelineLineCommentedEvent
-    | github.rest.TimelineCommitCommentedEvent
-    | github.rest.TimelineAssignedIssueEvent
-    | github.rest.TimelineUnassignedIssueEvent
-    | github.rest.StateChangeIssueEvent
-    | UnknownIssueEvent
+    github.models.LabeledIssueEvent
+    | github.models.UnlabeledIssueEvent
+    | github.models.MilestonedIssueEvent
+    | github.models.DemilestonedIssueEvent
+    | github.models.RenamedIssueEvent
+    | github.models.ReviewRequestedIssueEvent
+    | github.models.ReviewRequestRemovedIssueEvent
+    | github.models.ReviewDismissedIssueEvent
+    | github.models.LockedIssueEvent
+    | github.models.AddedToProjectIssueEvent
+    | github.models.MovedColumnInProjectIssueEvent
+    | github.models.RemovedFromProjectIssueEvent
+    | github.models.ConvertedNoteToIssueIssueEvent
+    | github.models.TimelineCommentEvent
+    | github.models.TimelineCrossReferencedEvent
+    | github.models.TimelineCommittedEvent
+    | github.models.TimelineReviewedEvent
+    | github.models.TimelineLineCommentedEvent
+    | github.models.TimelineCommitCommentedEvent
+    | github.models.TimelineAssignedIssueEvent
+    | github.models.TimelineUnassignedIssueEvent
+    | github.models.StateChangeIssueEvent
 )
 
 
@@ -171,7 +161,7 @@ class GitHubIssueReferencesService:
         return None
 
     def external_issue_ids_to_sync(
-        self, events: list[github.rest.IssueEvent]
+        self, events: list[github.models.IssueEvent]
     ) -> set[int]:
         res: set[int] = set()
 
@@ -286,7 +276,7 @@ class GitHubIssueReferencesService:
         event: TimelineEventType,
         client: GitHub[Any],
     ) -> IssueReference | None:
-        if isinstance(event, github.rest.TimelineCrossReferencedEvent):
+        if isinstance(event, github.models.TimelineCrossReferencedEvent):
             return await self.parse_issue_pull_request_reference(
                 session,
                 org,
@@ -298,7 +288,7 @@ class GitHubIssueReferencesService:
 
         # For some reason, this events maps to the StateChangeIssueEvent type
         if (
-            isinstance(event, github.rest.StateChangeIssueEvent)
+            isinstance(event, github.models.StateChangeIssueEvent)
             and event.event == "referenced"
         ):
             return await self.parse_issue_commit_reference(event, issue)
@@ -310,7 +300,7 @@ class GitHubIssueReferencesService:
         session: AsyncSession,
         org: Organization,
         repo: Repository,
-        event: github.rest.TimelineCrossReferencedEvent,
+        event: github.models.TimelineCrossReferencedEvent,
         issue: Issue,
         client: GitHub[Any],
     ) -> IssueReference | None:
@@ -320,7 +310,7 @@ class GitHubIssueReferencesService:
         # Mention was not from a pull request
         if not isinstance(
             event.source.issue.pull_request,
-            github.rest.IssuePropPullRequest,
+            github.models.IssuePropPullRequest,
         ):
             return None
 
@@ -369,7 +359,7 @@ class GitHubIssueReferencesService:
 
     async def parse_issue_commit_reference(
         self,
-        event: github.rest.StateChangeIssueEvent,
+        event: github.models.StateChangeIssueEvent,
         issue: Issue,
     ) -> IssueReference | None:
         if not event.commit_url or not event.commit_id:
@@ -401,7 +391,7 @@ class GitHubIssueReferencesService:
 
     def parse_external_reference(
         self,
-        event: github.rest.TimelineCrossReferencedEvent,
+        event: github.models.TimelineCrossReferencedEvent,
         issue: Issue,
     ) -> IssueReference | None:
         if not event.source.issue:
@@ -415,7 +405,7 @@ class GitHubIssueReferencesService:
         # Mention was not from a pull request
         if not isinstance(
             i.pull_request,
-            github.rest.IssuePropPullRequest,
+            github.models.IssuePropPullRequest,
         ):
             return None
 

@@ -1,15 +1,6 @@
 from collections.abc import Sequence
 
 import structlog
-from githubkit import Response
-from githubkit.rest import (
-    InstallationRepositoriesGetResponse200,
-)
-from githubkit.rest import (
-    Repository as GitHubRepository,
-)
-from githubkit.rest.models import FullRepository as GitHubFullRepository
-from githubkit.webhooks.models import Repository as GitHubWebhookRepository
 
 from polar.enums import Platforms
 from polar.integrations.loops.service import loops as loops_service
@@ -62,14 +53,9 @@ class GithubRepositoryService(RepositoryService):
 
         instances = []
 
-        def mapper(
-            res: Response[InstallationRepositoriesGetResponse200],
-        ) -> list[GitHubRepository]:
-            return res.parsed_data.repositories
-
         async for repo in client.paginate(
             client.rest.apps.async_list_repos_accessible_to_installation,
-            map_func=mapper,
+            map_func=lambda r: r.parsed_data.repositories,
         ):
             create = RepositoryCreate.from_github(repo, organization.id)
             inst = await self.create_or_update(session, create)
@@ -95,7 +81,9 @@ class GithubRepositoryService(RepositoryService):
         self,
         session: AsyncSession,
         organization: Organization,
-        data: GitHubRepository | GitHubFullRepository | GitHubWebhookRepository,
+        data: github.models.Repository
+        | github.models.FullRepository
+        | github.models.WebhookIssuesTransferredPropChangesPropNewRepository,
     ) -> Repository:
         repository = await self.get_by_external_id(session, data.id)
 

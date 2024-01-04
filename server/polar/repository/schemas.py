@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import datetime
 from typing import Self
 from uuid import UUID
@@ -76,9 +74,10 @@ class RepositoryCreate(Schema):
     @classmethod
     def from_github(
         cls,
-        repository: github.rest.Repository
-        | github.rest.FullRepository
-        | github.webhooks.Repository,
+        repository: github.models.Repository
+        | github.models.FullRepository
+        | github.models.RepositoryWebhooks
+        | github.models.WebhookIssuesTransferredPropChangesPropNewRepository,
         organization_id: UUID,
     ) -> Self:
         topics = repository.topics if repository.topics else None
@@ -98,9 +97,6 @@ class RepositoryCreate(Schema):
             if isinstance(repository.created_at, int)
             else repository.created_at
         )
-        # FIXME: this shouldn't be needed
-        # Remove it when githubkit has updated the schema
-        disabled = bool(repository.disabled)
 
         return cls(
             platform=Platforms.github,
@@ -125,9 +121,9 @@ class RepositoryCreate(Schema):
             is_projects_enabled=repository.has_projects,
             is_wiki_enabled=repository.has_wiki,
             is_pages_enabled=repository.has_pages,
-            is_downloads_enabled=repository.has_downloads,
+            is_downloads_enabled=bool(repository.has_downloads),
             is_archived=repository.archived,
-            is_disabled=disabled,
+            is_disabled=bool(repository.disabled),
         )
 
 

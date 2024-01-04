@@ -335,7 +335,7 @@ async def test_list_by_github_milestone_number(
             repository,
         )
 
-        ms = github.rest.Milestone(
+        ms = github.models.Milestone(
             url="http://example.com/",
             html_url="http://example.com/",
             labels_url="http://example.com/",

@@ -27,7 +27,7 @@ class GithubPullRequestService(PullRequestService):
         self,
         session: AsyncSession,
         *,
-        data: github.rest.PullRequestSimple,
+        data: github.models.PullRequestSimple,
         organization: Organization,
         repository: Repository,
     ) -> PullRequest:
@@ -43,11 +43,11 @@ class GithubPullRequestService(PullRequestService):
         self,
         session: AsyncSession,
         *,
-        data: Sequence[github.rest.PullRequestSimple],
+        data: Sequence[github.models.PullRequestSimple],
         organization: Organization,
         repository: Repository,
     ) -> Sequence[PullRequest]:
-        def parse(pr: github.rest.PullRequestSimple) -> MinimalPullRequestCreate:
+        def parse(pr: github.models.PullRequestSimple) -> MinimalPullRequestCreate:
             return MinimalPullRequestCreate.minimal_pull_request_from_github(
                 pr, organization, repository
             )
@@ -77,8 +77,8 @@ class GithubPullRequestService(PullRequestService):
     async def store_full(
         self,
         session: AsyncSession,
-        data: github.rest.PullRequest
-        | github.webhooks.PullRequestOpenedPropPullRequest,
+        data: github.models.PullRequest
+        | github.models.WebhookPullRequestOpenedPropPullRequest,
         organization: Organization,
         repository: Repository,
     ) -> PullRequest:
@@ -94,21 +94,23 @@ class GithubPullRequestService(PullRequestService):
         self,
         session: AsyncSession,
         data: Sequence[
-            github.rest.PullRequest
-            | github.webhooks.PullRequest
-            | github.webhooks.PullRequestOpenedPropPullRequest
-            | github.webhooks.PullRequestClosedPropPullRequest
-            | github.webhooks.PullRequestReopenedPropPullRequest,
+            github.models.PullRequest
+            | github.models.WebhookPullRequestOpenedPropPullRequest
+            | github.models.WebhookPullRequestEditedPropPullRequest
+            | github.models.WebhookPullRequestClosedPropPullRequest
+            | github.models.WebhookPullRequestReopenedPropPullRequest
+            | github.models.WebhookPullRequestSynchronizePropPullRequest
         ],
         organization: Organization,
         repository: Repository,
     ) -> Sequence[PullRequest]:
         def parse(
-            pr: github.rest.PullRequest
-            | github.webhooks.PullRequest
-            | github.webhooks.PullRequestOpenedPropPullRequest
-            | github.webhooks.PullRequestClosedPropPullRequest
-            | github.webhooks.PullRequestReopenedPropPullRequest,
+            pr: github.models.PullRequest
+            | github.models.WebhookPullRequestOpenedPropPullRequest
+            | github.models.WebhookPullRequestEditedPropPullRequest
+            | github.models.WebhookPullRequestClosedPropPullRequest
+            | github.models.WebhookPullRequestReopenedPropPullRequest
+            | github.models.WebhookPullRequestSynchronizePropPullRequest,
         ) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(
                 pr, organization, repository
@@ -176,7 +178,7 @@ class GithubPullRequestService(PullRequestService):
 
         client = github.get_app_installation_client(installation_id)
 
-        paginator: Paginator[github.rest.PullRequestSimple] = client.paginate(
+        paginator: Paginator[github.models.PullRequestSimple] = client.paginate(
             client.rest.pulls.async_list,
             owner=organization.name,
             repo=repository.name,

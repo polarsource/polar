@@ -184,7 +184,7 @@ class GithubBadge:
 
     async def update_body(
         self, client: GitHub[AppInstallationAuthStrategy], body: str
-    ) -> github.rest.Issue:
+    ) -> github.models.Issue:
         updated = await client.rest.issues.async_update(
             owner=self.organization.name,
             repo=self.repository.name,

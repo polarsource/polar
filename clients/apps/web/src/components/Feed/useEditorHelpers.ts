@@ -12,7 +12,6 @@ const uploadingText = 'Uploading...'
 
 export interface EditorHelpers {
   ref: React.RefObject<HTMLTextAreaElement>
-  insertText: (text: string) => void
   insertTextAtCursor: (text: string) => void
   wrapSelectionWithText: (text: [string, string]) => void
   handleChange: ChangeEventHandler<HTMLTextAreaElement>
@@ -50,19 +49,6 @@ export const useEditorHelpers = (
 
     return [textBeforeSelection, textInSelection, textAfterSelection]
   }, [ref])
-
-  const insertText = useCallback(
-    (text: string, fireOnChange = true) => {
-      if (ref.current) {
-        ref.current.value += text
-
-        if (fireOnChange) {
-          onChange?.(ref.current.value)
-        }
-      }
-    },
-    [ref, onChange],
-  )
 
   const insertTextAtCursor = useCallback(
     (text: string, fireOnChange = true) => {
@@ -161,30 +147,53 @@ export const useEditorHelpers = (
     e.stopPropagation()
   }, [])
 
+  const uploadFiles = async (element: HTMLTextAreaElement, files: FileList) => {
+    if (!ref.current) {
+      return
+    }
+
+    for (let idx = 0; idx < files.length; idx++) {
+      const file = files[idx]
+      const uploadingText =
+        files.length === 0
+          ? 'Uploading...'
+          : `Uploading ${idx + 1}/${files.length}...`
+
+      try {
+        insertTextAtCursor(uploadingText, false)
+
+        ref.current.selectionStart =
+          ref.current.selectionEnd - uploadingText.length
+
+        const newBlob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/blob/upload',
+        })
+
+        const textToInsert = `![${newBlob.pathname}](${newBlob.url})`
+
+        ref.current.focus()
+        document.execCommand('insertText', false, textToInsert)
+      } catch (err) {
+        ref.current.focus()
+        document.execCommand('insertText', false, 'Upload failed!')
+      } finally {
+        onChange?.(element.value)
+      }
+    }
+  }
+
   const handleDrop: DragEventHandler<HTMLTextAreaElement> = useCallback(
     async (e) => {
       if (e.target instanceof HTMLTextAreaElement) {
         e.preventDefault()
         e.stopPropagation()
 
-        for (const file of e.dataTransfer.files) {
-          try {
-            insertTextAtCursor(uploadingText, false)
-
-            const newBlob = await upload(file.name, file, {
-              access: 'public',
-              handleUploadUrl: '/api/blob/upload',
-            })
-
-            const textToInsert = `![${newBlob.pathname}](${newBlob.url})`
-
-            e.target.value = e.target.value.replace(uploadingText, textToInsert)
-          } catch (err) {
-            e.target.value = e.target.value.replace(uploadingText, '')
-          } finally {
-            onChange?.(e.target.value)
-          }
+        if (!ref.current) {
+          return
         }
+
+        await uploadFiles(e.target, e.dataTransfer.files)
       }
     },
     [onChange, insertTextAtCursor],
@@ -201,25 +210,7 @@ export const useEditorHelpers = (
         e.preventDefault()
         e.stopPropagation()
 
-        for (const file of e.clipboardData.files) {
-          try {
-            insertTextAtCursor(uploadingText, false)
-
-            const newBlob = await upload(file.name, file, {
-              access: 'public',
-              handleUploadUrl: '/api/blob/upload',
-            })
-
-            const textToInsert = `![${newBlob.pathname}](${newBlob.url})`
-
-            e.target.value = e.target.value.replace(uploadingText, textToInsert)
-          } catch (err) {
-            e.target.value = e.target.value.replace(uploadingText, '')
-          } finally {
-            onChange?.(e.target.value)
-          }
-        }
-
+        await uploadFiles(e.target, e.clipboardData.files)
         return
       }
 
@@ -307,7 +298,6 @@ export const useEditorHelpers = (
 
   return {
     ref,
-    insertText,
     insertTextAtCursor,
     wrapSelectionWithText,
     handleChange,

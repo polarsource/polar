@@ -84,10 +84,10 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             <div className="flex flex-row items-center gap-x-3">
               <div
                 className={twMerge(
-                  'flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
+                  'flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
                 )}
               >
-                {resolveBenefitIcon(selectedBenefit)}
+                {resolveBenefitIcon(selectedBenefit, 'inherit')}
               </div>
               <span className="text-sm">{selectedBenefit.description}</span>
             </div>
@@ -99,7 +99,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                     <Link
                       key={tier.id}
                       href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
-                      className="dark:hover:bg-polar-800 -mx-2 flex flex-row items-center gap-x-2 rounded-lg px-4 py-2 hover:bg-gray-50"
+                      className="dark:hover:bg-polar-800 -mx-2 flex flex-row items-center gap-x-2 rounded-lg px-4 py-2 hover:bg-gray-100"
                     >
                       <SubscriptionGroupIcon
                         className="h-4! w-4! text-lg"
@@ -168,7 +168,7 @@ const BenefitRow = ({
   return (
     <div
       className={twMerge(
-        'dark:hover:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border px-4 py-3 shadow-sm transition-colors dark:border-transparent',
+        'dark:hover:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 px-4 py-3 transition-colors hover:border-blue-100 hover:bg-blue-50 dark:border-transparent',
         selected &&
           'dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 border-blue-100 bg-blue-50 hover:bg-blue-100',
       )}
@@ -177,10 +177,10 @@ const BenefitRow = ({
       <div className="flex flex-row items-center gap-x-3">
         <div
           className={twMerge(
-            'flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
+            'flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
           )}
         >
-          {resolveBenefitIcon(benefit)}
+          {resolveBenefitIcon(benefit, 'inherit')}
         </div>
         <span className="text-sm">{benefit.description}</span>
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import FundingPage from '../funding/FundingPage'
+import FundingPage from './FundingPage'
 
 export default function Page() {
   return <FundingPage />

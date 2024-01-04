@@ -123,7 +123,7 @@ export const backerRoutes = (
           ? [
               {
                 id: 'posts',
-                title: 'Posts',
+                title: 'Feed',
                 link: `/posts`,
                 icon: (
                   <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />
@@ -154,7 +154,12 @@ export const backerRoutes = (
   {
     id: 'funding',
     title: 'Funding',
-    link: isPersonal ? `/feed` : `/maintainer/${org?.name}/funding`,
+    link:
+      isPersonal && isFeatureEnabled('feed')
+        ? `/funding` // personal and new feed
+        : isPersonal
+          ? '/feed' // personal and old feed
+          : `/maintainer/${org?.name}/funding`, // orgs
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,

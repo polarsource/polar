@@ -106,6 +106,7 @@ class Pledge(Schema):
     def from_db(
         cls,
         o: PledgeModel,
+        *,
         include_receiver_admin_fields: bool = False,
         include_sender_admin_fields: bool = False,
         include_sender_fields: bool = False,

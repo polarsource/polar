@@ -48,7 +48,14 @@ async def pledges(
 def r(
     pledge: PledgeModel, reward: IssueReward, transaction: PledgeTransactionModel
 ) -> BackofficeReward:
-    r = reward_to_resource(pledge, reward, transaction, include_admin_fields=True)
+    r = reward_to_resource(
+        pledge,
+        reward,
+        transaction,
+        include_receiver_admin_fields=True,
+        include_sender_admin_fields=True,
+        include_sender_fields=True,
+    )
     return BackofficeReward(
         pledge=r.pledge,
         user=r.user,

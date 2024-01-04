@@ -287,7 +287,7 @@ async def dashboard(
                 pledge,
                 reward,
                 transaction,
-                include_admin_fields=await authz.can(
+                include_receiver_admin_fields=await authz.can(
                     auth.subject, AccessType.write, pledge
                 ),
             )

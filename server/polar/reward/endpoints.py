@@ -66,7 +66,7 @@ async def search(
             pledge,
             reward,
             transaction,
-            include_admin_fields=await authz.can(
+            include_receiver_admin_fields=await authz.can(
                 auth.subject, AccessType.write, pledge
             ),
         )
@@ -83,7 +83,10 @@ def to_resource(
     pledge: PledgeModel,
     reward: IssueReward,
     transaction: PledgeTransactionModel,
-    include_admin_fields: bool,
+    *,
+    include_receiver_admin_fields: bool = False,
+    include_sender_admin_fields: bool = False,
+    include_sender_fields: bool = False,
 ) -> Reward:
     user = None
     if reward and reward.user:
@@ -104,7 +107,9 @@ def to_resource(
     return Reward(
         pledge=Pledge.from_db(
             pledge,
-            include_admin_fields,
+            include_receiver_admin_fields=include_receiver_admin_fields,
+            include_sender_admin_fields=include_sender_admin_fields,
+            include_sender_fields=include_sender_fields,
         ),
         user=user,
         organization=organization,

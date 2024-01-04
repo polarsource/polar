@@ -194,14 +194,10 @@ async def test_list_rewards_to_user(
 
     # test get single reward
     (f_pledge, f_issue_reward, f_pledge_tsx) = rewards[0]
-    assert to_resource(
-        f_pledge, f_issue_reward, f_pledge_tsx, include_admin_fields=False
-    )
+    assert to_resource(f_pledge, f_issue_reward, f_pledge_tsx)
 
     s_single = await reward_service.get(session, f_pledge.id, f_issue_reward.id)
     assert s_single is not None
     (s_pledge, s_issue_reward, s_pledge_tsx) = s_single
     assert s_pledge.id is f_pledge.id
-    assert to_resource(
-        s_pledge, s_issue_reward, s_pledge_tsx, include_admin_fields=False
-    )
+    assert to_resource(s_pledge, s_issue_reward, s_pledge_tsx)

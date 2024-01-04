@@ -123,9 +123,8 @@ class SubscriptionTierService(
         statement = statement.order_by(
             case(
                 (SubscriptionTier.type == SubscriptionTierType.free, 1),
-                (SubscriptionTier.type == SubscriptionTierType.hobby, 2),
-                (SubscriptionTier.type == SubscriptionTierType.pro, 3),
-                (SubscriptionTier.type == SubscriptionTierType.business, 4),
+                (SubscriptionTier.type == SubscriptionTierType.individual, 2),
+                (SubscriptionTier.type == SubscriptionTierType.business, 3),
             ),
             SubscriptionTier.price_amount,
             SubscriptionTier.created_at,

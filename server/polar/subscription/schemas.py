@@ -141,8 +141,7 @@ subscription_benefit_schema_map: dict[
 
 class SubscriptionTierCreate(Schema):
     type: Literal[
-        SubscriptionTierType.hobby,
-        SubscriptionTierType.pro,
+        SubscriptionTierType.individual,
         SubscriptionTierType.business,
     ]
     name: str = Field(

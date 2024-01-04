@@ -61,7 +61,7 @@ def override_is_feature_flag_enabled() -> Iterator[None]:
 async def create_subscription_tier(
     session: AsyncSession,
     *,
-    type: SubscriptionTierType = SubscriptionTierType.hobby,
+    type: SubscriptionTierType = SubscriptionTierType.individual,
     organization: Organization | None = None,
     repository: Repository | None = None,
     name: str = "Subscription Tier",

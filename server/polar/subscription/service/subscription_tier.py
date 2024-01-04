@@ -15,7 +15,7 @@ from sqlalchemy.orm import aliased, contains_eager, selectinload
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz, Subject
-from polar.exceptions import NotPermitted, PolarError
+from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
 from polar.integrations.stripe.service import ProductUpdateKwargs, StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -98,6 +98,29 @@ class FreeTierIsNotArchivable(SubscriptionTierError):
 class SubscriptionTierService(
     ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
+    async def get(
+        self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
+    ) -> SubscriptionTier | None:
+        query = select(SubscriptionTier).where(SubscriptionTier.id == id)
+
+        if not allow_deleted:
+            query = query.where(SubscriptionTier.deleted_at.is_(None))
+
+        query = query.join(SubscriptionTier.organization, full=True).join(
+            SubscriptionTier.repository, full=True
+        )
+
+        query = query.options(
+            contains_eager(SubscriptionTier.organization),
+            contains_eager(SubscriptionTier.repository),
+            selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
+                SubscriptionTierBenefit.subscription_benefit
+            ),
+        )
+
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
+
     async def search(
         self,
         session: AsyncSession,
@@ -153,27 +176,6 @@ class SubscriptionTierService(
     ) -> SubscriptionTier | None:
         statement = (
             self._get_readable_subscription_tier_statement(auth_subject)
-            .where(SubscriptionTier.id == id, SubscriptionTier.deleted_at.is_(None))
-            .options(
-                contains_eager(SubscriptionTier.organization),
-                contains_eager(SubscriptionTier.repository),
-                selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
-                    SubscriptionTierBenefit.subscription_benefit
-                ),
-            )
-            .limit(1)
-        )
-
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def get_loaded(
-        self, session: AsyncSession, id: uuid.UUID
-    ) -> SubscriptionTier | None:
-        statement = (
-            select(SubscriptionTier)
-            .join(SubscriptionTier.organization, full=True)
-            .join(SubscriptionTier.repository, full=True)
             .where(SubscriptionTier.id == id, SubscriptionTier.deleted_at.is_(None))
             .options(
                 contains_eager(SubscriptionTier.organization),
@@ -366,6 +368,16 @@ class SubscriptionTierService(
                 repository_id=repository.id if repository else None,
             )
 
+            session.add(free_subscription_tier)
+            await session.commit()
+
+        # reload with relations
+        free_subscription_tier_loaded = await self.get(
+            session, free_subscription_tier.id
+        )
+        assert free_subscription_tier_loaded
+        free_subscription_tier = free_subscription_tier_loaded
+
         existing_benefits = [
             str(b.subscription_benefit_id)
             for b in free_subscription_tier.subscription_tier_benefits
@@ -380,7 +392,6 @@ class SubscriptionTierService(
                 SubscriptionTierBenefit(subscription_benefit=benefit, order=index)
             )
 
-        session.add(free_subscription_tier)
         await session.commit()
 
         await enqueue_job(

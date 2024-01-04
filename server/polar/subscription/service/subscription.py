@@ -185,6 +185,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         query = query.options(
             joinedload(Subscription.user).joinedload(User.oauth_accounts),
             joinedload(Subscription.organization),
+            joinedload(Subscription.subscription_tier)
+            .selectinload(SubscriptionTier.subscription_tier_benefits)
+            .joinedload(SubscriptionTierBenefit.subscription_benefit),
         )
 
         res = await session.execute(query)
@@ -590,7 +593,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        subscription_tier = await subscription_tier_service.get_loaded(
+        subscription_tier = await subscription_tier_service.get(
             session, subscription.subscription_tier_id
         )
         assert subscription_tier is not None

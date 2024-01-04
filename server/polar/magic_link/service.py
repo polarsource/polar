@@ -2,7 +2,6 @@ import datetime
 from math import ceil
 from urllib.parse import urlencode
 
-from pydantic import EmailStr
 from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
@@ -57,7 +56,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         token, token_hash = generate_token(secret=settings.SECRET)
         magic_link_create = MagicLinkCreate(
             token_hash=token_hash,
-            user_email=EmailStr(email),
+            user_email=email,
             user_id=user.id if user is not None else None,
             source=source,
             expires_at=expires_at,

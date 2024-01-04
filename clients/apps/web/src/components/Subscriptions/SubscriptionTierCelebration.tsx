@@ -12,9 +12,7 @@ const SubscriptionTierCelebration: React.FC<
     switch (type) {
       case SubscriptionTierType.FREE:
         return ['#b075c9', '#cfacdf']
-      case SubscriptionTierType.HOBBY:
-        return ['#DBF2FF', '#B1C7FF']
-      case SubscriptionTierType.PRO:
+      case SubscriptionTierType.INDIVIDUAL:
         return ['#FFDFEE', '#C79BE9']
       case SubscriptionTierType.BUSINESS:
         return ['#FFF4E0', '#FFC7A7']

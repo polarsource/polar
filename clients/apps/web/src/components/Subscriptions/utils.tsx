@@ -17,10 +17,8 @@ export const getSubscriptionColorByType = (
   switch (type) {
     case SubscriptionTierType.BUSINESS:
       return '#9d4cff' as const
-    case SubscriptionTierType.PRO:
+    case SubscriptionTierType.INDIVIDUAL:
       return '#29dea5' as const
-    case SubscriptionTierType.HOBBY:
-      return '#fb7e5d' as const
     case SubscriptionTierType.FREE:
     default:
       return '#3381FF' as const
@@ -33,8 +31,7 @@ export type SubscriptionTiersByType = {
 
 const defaultSubscriptionTiersByType: SubscriptionTiersByType = {
   [SubscriptionTierType.FREE]: [],
-  [SubscriptionTierType.HOBBY]: [],
-  [SubscriptionTierType.PRO]: [],
+  [SubscriptionTierType.INDIVIDUAL]: [],
   [SubscriptionTierType.BUSINESS]: [],
 }
 
@@ -42,8 +39,7 @@ export const tiersTypeDisplayNames: {
   [key in SubscriptionTierType]: string
 } = {
   [SubscriptionTierType.FREE]: 'Free',
-  [SubscriptionTierType.HOBBY]: 'Hobby',
-  [SubscriptionTierType.PRO]: 'Pro',
+  [SubscriptionTierType.INDIVIDUAL]: 'Individual',
   [SubscriptionTierType.BUSINESS]: 'Business',
 }
 

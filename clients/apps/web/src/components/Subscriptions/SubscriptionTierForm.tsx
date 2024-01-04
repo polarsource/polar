@@ -43,8 +43,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
   const subscriptionTierTypes = useMemo(
     () =>
       ({
-        [SubscriptionTierType.HOBBY]: 'Hobby',
-        [SubscriptionTierType.PRO]: 'Pro',
+        [SubscriptionTierType.INDIVIDUAL]: 'Individual',
         [SubscriptionTierType.BUSINESS]: 'Business',
       }) as const,
     [],

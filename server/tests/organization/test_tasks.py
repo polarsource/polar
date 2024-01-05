@@ -48,7 +48,7 @@ class TestOrganizationPostInstall:
         subscription_benefit = SubscriptionBenefit(
             type=SubscriptionBenefitType.articles,
             description="Public posts",
-            is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+            is_tax_applicable=False,
             properties={"paid_articles": False},
             organization=organization,
         )

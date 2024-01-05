@@ -27,9 +27,7 @@ class SubscriptionBenefitType(StrEnum):
 
     def is_tax_applicable(self) -> bool:
         try:
-            _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {
-                SubscriptionBenefitType.articles: True,
-            }
+            _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {}
             return _is_tax_applicable_map[self]
         except KeyError as e:
             raise TaxApplicationMustBeSpecified(self) from e

@@ -241,7 +241,7 @@ class SubscriptionBenefitService(
         if public_articles is None:
             public_articles = SubscriptionBenefitArticles(
                 description="Public posts",
-                is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+                is_tax_applicable=False,
                 selectable=False,
                 deletable=False,
                 properties={"paid_articles": False},
@@ -254,7 +254,7 @@ class SubscriptionBenefitService(
         if premium_articles is None:
             premium_articles = SubscriptionBenefitArticles(
                 description="Premium posts",
-                is_tax_applicable=SubscriptionBenefitType.articles.is_tax_applicable(),
+                is_tax_applicable=True,
                 selectable=True,
                 deletable=False,
                 properties={"paid_articles": True},

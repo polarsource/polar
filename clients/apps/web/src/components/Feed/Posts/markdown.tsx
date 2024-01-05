@@ -74,6 +74,7 @@ export const wrapStrictCreateElement = (args: {
       // custom completely overridden components
       'embed',
       'iframe',
+      'img',
       // our custom components
       'poll',
       'paywall',

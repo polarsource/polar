@@ -1,7 +1,7 @@
 'use client'
 
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { useAuth, usePersonalOrganization } from '@/hooks'
+import { useAuth } from '@/hooks'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
@@ -33,7 +33,6 @@ export default function LongformPost({
 }: LongformPostProps) {
   const { currentUser } = useAuth()
   const organization = article.organization
-  const personalOrg = usePersonalOrganization()
   const orgs = useListAdminOrganizations()
 
   const userSubs = useUserSubscriptions(

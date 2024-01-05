@@ -97,6 +97,7 @@ export const PostEditor = ({
                     revealTransition={{ duration: 0 }}
                     staggerTransition={{ staggerChildren: 0 }}
                     showPaywalledContent={previewAs === 'premium'}
+                    isSubscriber={previewAs === 'premium'}
                   />
                 </StaggerReveal>
               </TabsContent>

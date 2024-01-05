@@ -22,7 +22,8 @@ interface LongformPostProps {
   article: RenderArticle
   staggerTransition?: typeof defaultStaggerTransition
   revealTransition?: typeof defaultRevealTransition
-  showPaywalledContent?: boolean
+  showPaywalledContent: boolean
+  isSubscriber: boolean
 }
 
 export default function LongformPost({
@@ -30,6 +31,7 @@ export default function LongformPost({
   staggerTransition,
   revealTransition,
   showPaywalledContent,
+  isSubscriber,
 }: LongformPostProps) {
   const { currentUser } = useAuth()
   const organization = article.organization
@@ -111,6 +113,7 @@ export default function LongformPost({
           <BrowserRender
             article={article}
             showPaywalledContent={showPaywalledContent}
+            isSubscriber={isSubscriber}
           />
         </div>
       </StaggerReveal.Child>

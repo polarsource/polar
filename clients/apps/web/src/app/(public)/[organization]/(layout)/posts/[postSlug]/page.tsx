@@ -127,5 +127,9 @@ export default async function Page({
     ),
   ])
 
-  return <>{post && <ClientPage post={post} organization={organization} />}</>
+  if (!post) {
+    notFound()
+  }
+
+  return <ClientPage post={post} organization={organization} />
 }

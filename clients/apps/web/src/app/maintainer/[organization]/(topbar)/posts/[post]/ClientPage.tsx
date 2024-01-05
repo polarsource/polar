@@ -110,6 +110,8 @@ const ClientPage = () => {
             title: updateArticle.title,
             body: updateArticle.body,
           },
+          isSubscriber: true,
+          showPaywalledContent: true,
         }}
       />
     </Tabs>

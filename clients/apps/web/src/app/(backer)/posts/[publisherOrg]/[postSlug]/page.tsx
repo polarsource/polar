@@ -25,7 +25,13 @@ export default function Page({
         </Button>
       </Link>
       <div className="flex w-full flex-grow flex-col items-center gap-y-8 pb-12">
-        {article.data ? <LongformPost article={article.data} /> : null}
+        {article.data ? (
+          <LongformPost
+            article={article.data}
+            isSubscriber={true}
+            showPaywalledContent={true} // Can safely be true. Content is already stripped out.
+          />
+        ) : null}
       </div>
     </div>
   )

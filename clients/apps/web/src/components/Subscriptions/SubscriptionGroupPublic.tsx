@@ -30,8 +30,8 @@ const SubscriptionGroupPublic = ({
   }
 
   return (
-    <div className="flex flex-row gap-12 py-12">
-      <div className="w-64 flex-shrink-0">
+    <div className="flex flex-col gap-x-12 gap-y-8 py-12 lg:flex-row">
+      <div className="w-full flex-shrink-0 md:w-64">
         <div className="flex items-center justify-between">
           <h2 className="flex flex-row items-center text-lg font-medium">
             <SubscriptionGroupIcon type={type} className="!h-6 !w-6" />
@@ -41,7 +41,7 @@ const SubscriptionGroupPublic = ({
         <p className="dark:text-polar-500 mt-2 text-gray-500">{description}</p>
       </div>
 
-      <div className="grid h-fit w-full grid-cols-2 gap-6 overflow-x-auto lg:mx-0 lg:overflow-x-visible">
+      <div className="grid h-fit w-full grid-cols-1 gap-6 overflow-x-auto lg:mx-0 lg:overflow-x-visible xl:grid-cols-2">
         {tiers.map((tier) => (
           <SubscriptionTierCard
             className="w-full self-stretch"

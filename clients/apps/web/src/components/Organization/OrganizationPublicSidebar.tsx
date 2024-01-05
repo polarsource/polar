@@ -41,8 +41,8 @@ export const OrganizationPublicSidebar = ({
   return (
     <div className="flex h-fit w-full shrink-0 flex-col gap-y-10 md:sticky md:top-32 md:w-64">
       <>
-        <div className="flex flex-col items-center gap-y-6 md:items-start">
-          <div className="flex flex-col items-center gap-y-2 md:items-start">
+        <div className="flex flex-col items-start gap-y-6">
+          <div className="flex flex-col items-start gap-y-2">
             <Avatar
               className="mb-6 h-32 w-32 md:h-60 md:w-60"
               name={organization.name}
@@ -69,7 +69,7 @@ export const OrganizationPublicSidebar = ({
             />
           ) : null}
           {organization.bio && (
-            <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-500 md:text-start">
+            <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
               {organization.bio}
             </p>
           )}

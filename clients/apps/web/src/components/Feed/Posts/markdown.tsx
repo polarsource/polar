@@ -10,6 +10,7 @@ export type RenderArticle = Pick<
 export const wrapStrictCreateElement = (args: {
   article: RenderArticle
   showPaywalledContent?: boolean
+  isSubscriber?: boolean
   defaultOverride?: React.FunctionComponent
 }): ((
   type:
@@ -59,13 +60,6 @@ export const wrapStrictCreateElement = (args: {
       'hr',
       'span',
       'input',
-      // custom completely overridden components
-      'embed',
-      'iframe',
-      // our custom components
-      'poll',
-      'paywall',
-      'subscribenow',
     ]
 
     // clean up props, only pass down a limited set of safe props
@@ -76,12 +70,23 @@ export const wrapStrictCreateElement = (args: {
       className: props?.className,
     }
 
+    const allowedCustomComponents = [
+      // custom completely overridden components
+      'embed',
+      'iframe',
+      // our custom components
+      'poll',
+      'paywall',
+      'subscribenow',
+    ]
+
     // Custom components
-    if (typeof type === 'function') {
-      const customComponentName = type?.name
-      if (!customComponentName) {
-        return <></>
-      }
+    if (
+      typeof type === 'function' &&
+      type?.name &&
+      allowedCustomComponents.includes(type?.name.toLocaleLowerCase())
+    ) {
+      const customComponentName = type?.name.toLocaleLowerCase()
 
       if (customComponentName === 'img') {
         trimProps.src = props?.src
@@ -113,6 +118,7 @@ export const wrapStrictCreateElement = (args: {
 
           // Default to true in the client side renderer. When rendering posts for end-users, the premium content is already stripped out by the backend.
           showPaywalledContent: args.showPaywalledContent ?? true,
+          isSubscriber: args.isSubscriber ?? false,
         } as JSX.IntrinsicAttributes,
         children,
       )

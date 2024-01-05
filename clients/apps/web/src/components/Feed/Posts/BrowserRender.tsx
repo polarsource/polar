@@ -61,9 +61,11 @@ export const previewOpts = {
 const BrowserRender = ({
   article,
   showPaywalledContent,
+  isSubscriber,
 }: {
   article: RenderArticle
-  showPaywalledContent?: boolean
+  showPaywalledContent: boolean
+  isSubscriber: boolean
 }) => {
   return (
     <Markdown
@@ -72,6 +74,7 @@ const BrowserRender = ({
         createElement: wrapStrictCreateElement({
           article,
           showPaywalledContent,
+          isSubscriber,
         }),
       }}
     >
@@ -94,6 +97,7 @@ export const AbbreviatedBrowserRender = ({
         createElement: wrapStrictCreateElement({
           article,
           showPaywalledContent,
+          isSubscriber: true, // Do not show <SubscribeNow /> in abbreviations
         }),
       }}
     >

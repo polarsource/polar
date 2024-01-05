@@ -1,11 +1,22 @@
-from enum import Enum, StrEnum
+from enum import StrEnum
+
+from pydantic import GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema
 
 
-# TODO: Remove this abstraction?
-# We will likely want to support Gitlab users in the near future so this
-# abstraction is here to hopefully support a drop-in – albeit custom – Gitlab client.
-class Platforms(str, Enum):
+class Platforms(StrEnum):
     github = "github"
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        """
+        Workaround to force Pydantic to generate an enum schema
+        even if there is only one item.
+        """
+        return {"enum": ["github"], "type": "string", "title": "Platforms"}
 
 
 class UserSignupType(StrEnum):

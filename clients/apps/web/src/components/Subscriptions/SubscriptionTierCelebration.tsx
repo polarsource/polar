@@ -11,11 +11,11 @@ const SubscriptionTierCelebration: React.FC<
   const [gradientColorStart, gradientColorEnd] = useMemo(() => {
     switch (type) {
       case SubscriptionTierType.FREE:
-        return ['#b075c9', '#cfacdf']
+        return ['#3381FF', '#0054DB']
       case SubscriptionTierType.INDIVIDUAL:
-        return ['#FFDFEE', '#C79BE9']
+        return ['#65ebc0', '#29dea5']
       case SubscriptionTierType.BUSINESS:
-        return ['#FFF4E0', '#FFC7A7']
+        return ['#d2a1ff', '#9d4cff']
     }
   }, [type])
 

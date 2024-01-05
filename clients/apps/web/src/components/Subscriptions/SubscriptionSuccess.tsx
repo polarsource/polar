@@ -1,21 +1,21 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { CheckOutlined } from '@mui/icons-material'
 import { SubscribeSession } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import {
+  Button,
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
 } from 'polarkit/components/ui/atoms'
-import { Button } from 'polarkit/components/ui/button'
 import { useCallback, useState } from 'react'
 import SubscriptionTierCelebration from './SubscriptionTierCelebration'
+import { resolveBenefitIcon } from './utils'
 
 export const SubscriptionSuccess = (props: {
   subscribeSession: SubscribeSession
@@ -76,10 +76,14 @@ export const SubscriptionSuccess = (props: {
               {subscriptionTier.benefits.map((benefit) => (
                 <div
                   key={benefit.id}
-                  className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
+                  className="flex flex-row items-start text-blue-500 dark:text-blue-400"
                 >
-                  <CheckOutlined className="h-4 w-4" fontSize="small" />
-                  <span className="ml-2 text-sm">{benefit.description}</span>
+                  <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
+                    {resolveBenefitIcon(benefit, 'inherit')}
+                  </span>
+                  <span className="ml-2 text-sm leading-relaxed">
+                    {benefit.description}
+                  </span>
                 </div>
               ))}
             </CardContent>
@@ -90,7 +94,7 @@ export const SubscriptionSuccess = (props: {
                 </Link>
               )}
               {!currentUser && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-4">
                   <p className="text-muted-foreground text-sm">
                     You now have an account with Polar! Sign in now to manage
                     your subscriptions and benefits.

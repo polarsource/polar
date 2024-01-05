@@ -46,7 +46,7 @@
     "@vercel/blob": "^0.14.1",
     "class-variance-authority": "^0.6.0",
     "cmdk": "^0.2.0",
-    "framer-motion": "^10.12.4",
+    "framer-motion": "^10.17.8",
     "jest": "^29.7.0",
     "markdown-to-jsx": "^7.3.2",
     "mermaid": "^10.6.1",

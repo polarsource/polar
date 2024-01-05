@@ -54,10 +54,10 @@ export const Modal: FunctionComponent<ModalProps> = ({
               hide()
             }}
           >
-            <div className="block w-2 lg:h-full lg:max-h-[10%] lg:grow-[2]"></div>
+            <div className="block h-[20%] w-2 lg:h-full lg:max-h-[10%] lg:grow-[2]"></div>
             <div
               className={twMerge(
-                'dark:bg-polar-800 z-10 flex max-h-full max-w-full flex-col overflow-hidden rounded-2xl bg-white shadow lg:min-w-[800px] ',
+                'dark:bg-polar-800 z-10 flex max-h-full w-full flex-col overflow-hidden rounded-2xl bg-white shadow md:max-w-full lg:min-w-[800px]',
                 className,
               )}
               onClick={onInnerClick}

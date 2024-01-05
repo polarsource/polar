@@ -56,7 +56,6 @@ export const AuthenticatedFreeTierSubscribe = ({
       {isSubscribed && (
         <Link href="/settings" className="w-full">
           <Button
-            onClick={onSubscribeFree}
             loading={createFreeSubscription.isPending}
             fullWidth
             variant="outline"

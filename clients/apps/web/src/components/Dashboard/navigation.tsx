@@ -230,7 +230,7 @@ export const dashboardRoutes = (
                   },
                 ]),
             {
-              title: 'Payout account',
+              title: 'Payout Account',
               link: isPersonal
                 ? `/finance/account`
                 : `/maintainer/${org?.name}/finance/account`,

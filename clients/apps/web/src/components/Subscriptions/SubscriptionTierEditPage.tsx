@@ -221,6 +221,7 @@ const SubscriptionTierEdit = ({
           <SubscriptionTierCard
             className="w-1/4"
             subscriptionTier={{
+              ...subscriptionTier,
               ...editingSubscriptionTier,
               benefits: enabledBenefits,
             }}

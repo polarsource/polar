@@ -4,7 +4,6 @@ import { isFeatureEnabled } from '@/utils/feature-flags'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
-import { useSubscriptionTiers } from 'polarkit/hooks'
 import { twMerge } from 'tailwind-merge'
 
 interface OrganizationPublicPageNavProps {
@@ -16,12 +15,6 @@ export const OrganizationPublicPageNav = ({
   organization,
   className,
 }: OrganizationPublicPageNavProps) => {
-  const { data: { items: subscriptionTiers } = { items: [] } } =
-    useSubscriptionTiers(organization.name, 100)
-
-  const paidTiers = subscriptionTiers?.filter((tier) => tier.type !== 'free')
-  const shouldRenderSubscriptionsTab = (paidTiers?.length ?? 0) > 0
-
   return (
     <TabsList
       className={twMerge('dark:border-polar-700 flex dark:border', className)}
@@ -31,7 +24,7 @@ export const OrganizationPublicPageNav = ({
           Overview
         </TabsTrigger>
       </Link>
-      {isFeatureEnabled('subscriptions') && shouldRenderSubscriptionsTab && (
+      {isFeatureEnabled('subscriptions') && (
         <Link href={`/${organization.name}/subscriptions`}>
           <TabsTrigger value="subscriptions" size="small">
             Subscriptions

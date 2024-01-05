@@ -68,13 +68,13 @@ const ClientLayout = ({
         <div className="mx-auto mb-16 mt-4 flex w-full max-w-7xl flex-col space-y-8 px-4 lg:px-0">
           <div className="flex w-full flex-col gap-8 py-6 md:flex-row md:gap-24">
             <OrganizationPublicSidebar organization={organization} />
-            <OrganizationPublicPageNav
-              className="flex flex-row md:hidden"
-              organization={organization}
-            />
-            <div className="flex h-full w-full flex-col md:mt-0">
-              {children}
+            <div className="-mx-4 flex flex-row overflow-x-auto px-4 pb-4 md:hidden">
+              <OrganizationPublicPageNav
+                className="flex-row"
+                organization={organization}
+              />
             </div>
+            <div className="flex h-full w-full flex-col">{children}</div>
           </div>
         </div>
       </div>

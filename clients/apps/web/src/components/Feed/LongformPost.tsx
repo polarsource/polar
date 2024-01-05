@@ -1,9 +1,11 @@
 'use client'
 
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
+import { useAuth, usePersonalOrganization } from '@/hooks'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
+import { useListAdminOrganizations, useUserSubscriptions } from 'polarkit/hooks'
 import { useMemo } from 'react'
 import BrowserRender from './Posts/BrowserRender'
 import { RenderArticle } from './Posts/markdown'
@@ -29,7 +31,26 @@ export default function LongformPost({
   revealTransition,
   showPaywalledContent,
 }: LongformPostProps) {
+  const { currentUser } = useAuth()
   const organization = article.organization
+  const personalOrg = usePersonalOrganization()
+  const orgs = useListAdminOrganizations()
+
+  const userSubs = useUserSubscriptions(
+    currentUser?.id,
+    article.organization.name,
+    true,
+    30,
+    article.organization.platform,
+  )
+
+  const shouldRenderUpsell = useMemo(
+    () =>
+      userSubs.data?.items &&
+      userSubs.data?.items.length < 1 &&
+      !orgs.data?.items?.map((o) => o.id).includes(article.organization.id),
+    [userSubs, article, orgs],
+  )
 
   staggerTransition = staggerTransition ?? defaultStaggerTransition
   revealTransition = revealTransition ?? defaultRevealTransition
@@ -95,32 +116,37 @@ export default function LongformPost({
         </div>
       </StaggerReveal.Child>
 
-      <StaggerReveal.Child
-        className="flex flex-col gap-y-16"
-        transition={revealTransition}
-      >
-        <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16">
-          <Avatar
-            className="h-12 w-12"
-            avatar_url={article.organization.avatar_url}
-            name={article.organization.pretty_name || article.organization.name}
-          />
-          <h2 className="text-xl font-medium">
-            Subscribe to{' '}
-            {article.organization.pretty_name || article.organization.name}
-          </h2>
-          <p className="dark:text-polar-300 text-center text-gray-500">
-            {organization?.bio
-              ? organization?.bio
-              : `Support ${
-                  article.organization.pretty_name || article.organization.name
-                } by subscribing to their work and get access to exclusive content.`}
-          </p>
-          <Link href={`/${organization.name}/subscriptions`}>
-            <Button className="mt-4">Subscribe</Button>
-          </Link>
-        </div>
-      </StaggerReveal.Child>
+      {shouldRenderUpsell && (
+        <StaggerReveal.Child
+          className="flex flex-col gap-y-16"
+          transition={revealTransition}
+        >
+          <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16">
+            <Avatar
+              className="h-12 w-12"
+              avatar_url={article.organization.avatar_url}
+              name={
+                article.organization.pretty_name || article.organization.name
+              }
+            />
+            <h2 className="text-xl font-medium">
+              Subscribe to{' '}
+              {article.organization.pretty_name || article.organization.name}
+            </h2>
+            <p className="dark:text-polar-300 text-center text-gray-500">
+              {organization?.bio
+                ? organization?.bio
+                : `Support ${
+                    article.organization.pretty_name ||
+                    article.organization.name
+                  } by subscribing to their work and get access to exclusive content.`}
+            </p>
+            <Link href={`/${organization.name}/subscriptions`}>
+              <Button className="mt-4">Subscribe</Button>
+            </Link>
+          </div>
+        </StaggerReveal.Child>
+      )}
     </StaggerReveal>
   )
 }

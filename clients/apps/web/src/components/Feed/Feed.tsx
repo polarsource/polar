@@ -2,7 +2,6 @@
 
 import { ViewDayOutlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { useListArticles } from 'polarkit/hooks'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -47,9 +46,7 @@ export const Feed = () => {
       <StaggerReveal className="flex flex-col gap-y-4">
         {infiniteArticles?.map((entity) => (
           <StaggerReveal.Child key={entity.id}>
-            <Link href={`/${entity.organization.name}/posts/${entity.slug}`}>
-              <PostComponent article={entity} />
-            </Link>
+            <PostComponent article={entity} />
           </StaggerReveal.Child>
         ))}
       </StaggerReveal>

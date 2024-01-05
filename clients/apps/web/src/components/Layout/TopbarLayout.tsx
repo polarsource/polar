@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import Topbar, { LogoPosition } from '../Shared/Topbar'
 import EmptyLayout from './EmptyLayout'
 
@@ -7,8 +8,9 @@ const TopbarLayout = ({
   isFixed,
   hideProfile,
 }: {
-  children: React.ReactElement
+  children: ReactNode
   logoPosition?: LogoPosition
+  logoTile?: string
   isFixed?: boolean
   hideProfile?: boolean
 }) => {

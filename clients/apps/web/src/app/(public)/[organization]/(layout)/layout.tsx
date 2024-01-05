@@ -1,7 +1,8 @@
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
-import { Platforms } from '@polar-sh/sdk'
+import { Organization, Platforms } from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
 import React from 'react'
 import ClientLayout from './ClientLayout'
 
@@ -20,15 +21,19 @@ export default async function Layout({
 }) {
   const api = getServerSideAPI()
 
-  const [organization] = await Promise.all([
-    api.organizations.lookup(
+  let organization: Organization | undefined
+
+  try {
+    organization = await api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
       },
       cacheConfig,
-    ),
-  ])
+    )
+  } catch (e) {
+    notFound()
+  }
 
   if (organization === undefined) {
     return <PageNotFound />

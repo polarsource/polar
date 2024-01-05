@@ -91,15 +91,19 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [organization] = await Promise.all([
-    api.organizations.lookup(
+  let organization: Organization | undefined
+
+  try {
+    organization = await api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
       },
       cacheConfig,
-    ),
-  ])
+    )
+  } catch (e) {
+    notFound()
+  }
 
   if (organization === undefined) {
     return <PageNotFound />

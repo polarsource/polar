@@ -219,7 +219,7 @@ const nextConfig = {
       {
         source: '/rewards(.*)',
         destination: '/finance/rewards',
-        permanent: false
+        permanent: false,
       },
       {
         source: '/maintainer/:organization/promote',
@@ -234,6 +234,12 @@ const nextConfig = {
       {
         source: '/maintainer/:organization/finance',
         destination: '/maintainer/:organization/finance/incoming',
+        permanent: false,
+      },
+
+      {
+        source: '/posts',
+        destination: '/feed',
         permanent: false,
       },
 

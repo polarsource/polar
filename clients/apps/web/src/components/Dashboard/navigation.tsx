@@ -124,7 +124,7 @@ export const backerRoutes = (
               {
                 id: 'posts',
                 title: 'Feed',
-                link: `/posts`,
+                link: `/feed`,
                 icon: (
                   <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />
                 ),

@@ -103,12 +103,8 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
-  searchParams,
 }: {
   params: { organization: string; postSlug: string }
-  searchParams: {
-    tab?: string
-  }
 }) {
   const api = getServerSideAPI()
 

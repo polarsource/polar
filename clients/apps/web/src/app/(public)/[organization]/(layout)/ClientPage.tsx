@@ -97,7 +97,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   )
 
   return isFeatureEnabled('feed') ? (
-    <div className="flex flex-col-reverse gap-16 md:flex-row">
+    <div className="flex flex-col-reverse gap-x-16 md:flex-row">
       <div className="flex w-full flex-grow flex-col gap-y-6 md:max-w-xl">
         <h2 className="text-lg">Posts</h2>
         <StaggerReveal className="flex w-full flex-col gap-y-6">
@@ -205,14 +205,14 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                 unique benefits as a bonus
               </p>
             </div>
-            <div className="flex flex-col gap-y-6">
+            <div className="-mx-4 flex flex-row items-start gap-6 overflow-x-auto px-4 pb-6 md:-mx-0 md:flex-col md:px-0 md:pb-0">
               {highlightedTiers?.map((tier) => (
                 <Link
                   key={tier.id}
-                  className="flex w-full flex-row items-center gap-x-2"
+                  className="flex h-full w-4/5 flex-shrink-0 flex-row items-center gap-x-2 md:w-full"
                   href={`/${organization.name}/subscriptions#${tier.name}`}
                 >
-                  <Card className="dark:hover:bg-polar-800 w-full overflow-hidden transition-colors hover:bg-blue-50">
+                  <Card className="dark:hover:bg-polar-800 h-full w-full overflow-hidden transition-colors hover:bg-blue-50">
                     <CardHeader className="flex flex-col gap-y-2 p-6 pb-0">
                       <span className="dark:text-polar-500 text-xs text-gray-500">
                         {getSubscriptionTierAudience(tier)}

@@ -101,7 +101,7 @@ export interface AccountLink {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const AccountType = {
@@ -1499,7 +1499,7 @@ export interface IssueListResponse {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const IssueListType = {
@@ -1547,7 +1547,7 @@ export interface IssueReferenceRead {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const IssueReferenceType = {
@@ -1559,7 +1559,7 @@ export type IssueReferenceType = typeof IssueReferenceType[keyof typeof IssueRef
 
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const IssueSortBy = {
@@ -1579,7 +1579,7 @@ export type IssueSortBy = typeof IssueSortBy[keyof typeof IssueSortBy];
 
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const IssueStatus = {
@@ -1632,7 +1632,7 @@ export interface Label {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const ListFundingSortBy = {
@@ -2604,7 +2604,7 @@ export interface NotificationRead {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const NotificationType = {
@@ -3110,7 +3110,8 @@ export interface PaymentMethod {
  * @export
  */
 export const PaymentMethodTypeEnum = {
-    CARD: 'card'
+    CARD: 'card',
+    NULL: 'null'
 } as const;
 export type PaymentMethodTypeEnum = typeof PaymentMethodTypeEnum[keyof typeof PaymentMethodTypeEnum];
 
@@ -3164,7 +3165,7 @@ export interface PersonalAccessToken {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const Platforms = {
@@ -3310,7 +3311,7 @@ export interface PledgeSpending {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const PledgeState = {
@@ -3451,7 +3452,7 @@ export type PledgeStripePaymentIntentUpdateSetupFutureUsageEnum = typeof PledgeS
 
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const PledgeType = {
@@ -4088,7 +4089,7 @@ export interface RewardPaidNotification {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const RewardState = {
@@ -4131,7 +4132,7 @@ export interface RewardsSummaryReceiver {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const Status = {
@@ -4869,7 +4870,7 @@ export type SubscriptionBenefitCustomUpdateTypeEnum = typeof SubscriptionBenefit
 
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const SubscriptionBenefitType = {
@@ -4936,7 +4937,7 @@ export interface SubscriptionPublicUser {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const SubscriptionStatus = {
@@ -5390,7 +5391,7 @@ export interface SubscriptionTierSubscriber {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const SubscriptionTierType = {
@@ -6444,7 +6445,7 @@ export interface UserSetAccount {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const UserSignupType = {
@@ -6512,7 +6513,7 @@ export interface ValidationError {
 }
 
 /**
- * An enumeration.
+ * 
  * @export
  */
 export const Visibility = {

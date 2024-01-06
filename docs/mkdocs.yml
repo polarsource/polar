@@ -72,6 +72,7 @@ nav:
       - Workflow: maintainers/issue-funding/workflow.md
       - Promote Funding: maintainers/issue-funding/promote.md
     - FAQ: maintainers/faq.md
+  - Payment & Taxes: payment.md
   - API:
     - Documentation (Alpha): api/index.md
     - GitHub Actions: api/github-action.md

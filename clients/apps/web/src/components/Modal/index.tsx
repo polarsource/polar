@@ -41,7 +41,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
     <React.Fragment>
       <FocusLock>
         <div
-          className="fixed bottom-0 left-0 right-0 top-0 z-50 overflow-hidden"
+          className="fixed bottom-0 left-0 right-0 top-0 z-50 overflow-hidden focus-within:outline-none"
           aria-modal
           tabIndex={-1}
           role="dialog"

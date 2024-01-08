@@ -3,6 +3,7 @@ import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'
 import BrowserMermaid from './BrowserMermaid'
 import BrowserPoll from './BrowserPoll'
+import { ImageOverlay } from './ImageOverlay'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import SubscribeNow from './SubscribeNow'
@@ -24,6 +25,7 @@ export const opts = {
     SubscribeNow: (args: any) => <SubscribeNow {...args} />,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
+    img: (args: any) => <ImageOverlay {...args} />,
     pre: (args: any) => {
       if (args.children.type === 'code') {
         const language = args.children.props.className?.replace('lang-', '')

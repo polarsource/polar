@@ -37,7 +37,10 @@ const AnonymousSubscriptionTierSubscribeButton: React.FC<
   AnonymousSubscriptionTierSubscribeButtonProps
 > = ({ subscriptionTier, subscribePath }) => {
   return (
-    <Link href={`${subscribePath}?tier=${subscriptionTier.id}`}>
+    <Link
+      className="w-full"
+      href={`${subscribePath}?tier=${subscriptionTier.id}`}
+    >
       <Button className={buttonClasses} fullWidth variant="outline">
         Subscribe
       </Button>

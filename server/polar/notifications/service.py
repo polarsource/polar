@@ -13,6 +13,7 @@ from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.user_notification import UserNotification
 from polar.notifications.notification import (
+    MaintainerAccountReviewedNotification,
     MaintainerAccountUnderReviewNotification,
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
@@ -173,6 +174,7 @@ class NotificationsService:
         | MaintainerPledgedIssuePendingNotification
         | TeamAdminMemberPledgedNotification
         | MaintainerAccountUnderReviewNotification
+        | MaintainerAccountReviewedNotification
     ):
         match n.type:
             case "MaintainerPledgeCreatedNotification":
@@ -201,6 +203,8 @@ class NotificationsService:
                 return parse_obj_as(TeamAdminMemberPledgedNotification, n.payload)
             case "MaintainerAccountUnderReviewNotification":
                 return parse_obj_as(MaintainerAccountUnderReviewNotification, n.payload)
+            case "MaintainerAccountReviewedNotification":
+                return parse_obj_as(MaintainerAccountReviewedNotification, n.payload)
 
         raise ValueError(f"unknown notificaiton type {n.type}")
 

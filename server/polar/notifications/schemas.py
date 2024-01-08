@@ -4,6 +4,7 @@ from uuid import UUID
 
 from polar.kit.schemas import Schema
 from polar.notifications.notification import (
+    MaintainerAccountReviewedNotification,
     MaintainerAccountUnderReviewNotification,
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
@@ -36,6 +37,7 @@ class NotificationType(StrEnum):
     MaintainerAccountUnderReviewNotification = (
         "MaintainerAccountUnderReviewNotification"
     )
+    MaintainerAccountReviewedNotification = "MaintainerAccountReviewedNotification"
 
 
 class NotificationRead(Schema):
@@ -61,6 +63,7 @@ class NotificationRead(Schema):
     maintainer_account_under_review: MaintainerAccountUnderReviewNotification | None = (
         None
     )
+    maintainer_account_reviewed: MaintainerAccountReviewedNotification | None = None
 
 
 class NotificationsList(Schema):

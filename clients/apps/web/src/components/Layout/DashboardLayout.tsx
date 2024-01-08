@@ -195,7 +195,7 @@ const GitHubAuthUpsell = () => {
 const MaintainerUpsell = () => {
   return (
     <Upsell
-      title="Become a maintainer"
+      title="Become a creator"
       description="Enable funding on your issues & reward your contributors"
     >
       <Link href="/maintainer" className="font-medium text-blue-500">

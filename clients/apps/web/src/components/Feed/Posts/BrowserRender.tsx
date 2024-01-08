@@ -7,7 +7,6 @@ import { ImageOverlay } from './ImageOverlay'
 import Paywall from './Paywall'
 import Poll from './Poll'
 import SubscribeNow from './SubscribeNow'
-import BrowserSyntaxHighlighter from './SyntaxHighlighter/BrowserSyntaxHighlighter'
 import {
   RenderArticle,
   markdownOpts,
@@ -15,6 +14,10 @@ import {
 } from './markdown'
 
 const BrowserMermaid = dynamic(() => import('./BrowserMermaid'), { ssr: false })
+const BrowserSyntaxHighlighter = dynamic(
+  () => import('./SyntaxHighlighter/BrowserSyntaxHighlighter'),
+  { ssr: false },
+)
 
 export const opts = {
   ...markdownOpts,

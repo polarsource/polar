@@ -60,7 +60,7 @@ const Pledge = ({
 
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
         {/* Left side */}
-        <div className="mt-12">
+        <div className="mt-8 flex flex-col gap-y-8">
           <IssueCard
             issue={issue}
             htmlBody={htmlBody}

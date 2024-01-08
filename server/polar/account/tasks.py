@@ -7,7 +7,10 @@ from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.held_transfer.service import held_transfer as held_transfer_service
 from polar.models import Account
-from polar.notifications.notification import MaintainerAccountUnderReviewNotification
+from polar.notifications.notification import (
+    MaintainerAccountReviewedNotification,
+    MaintainerAccountUnderReviewNotification,
+)
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
@@ -81,3 +84,13 @@ async def account_reviewed(
             raise AccountDoesNotExist(account_id)
 
         await held_transfer_service.release_account(session, account)
+
+        await notification_service.send_to_user(
+            session=session,
+            user_id=account.admin_id,
+            notif=PartialNotification(
+                payload=MaintainerAccountReviewedNotification(
+                    account_type=AccountType.get_display_name(account.account_type)
+                )
+            ),
+        )

@@ -93,6 +93,11 @@ class TestAccountReviewed:
             "release_account",
             spec=HeldTransferService.release_account,
         )
+        send_to_user_mock = mocker.patch.object(
+            notification_service,
+            "send_to_user",
+            spec=NotificationsService.send_to_user,
+        )
 
         # then
         session.expunge_all()
@@ -100,3 +105,4 @@ class TestAccountReviewed:
         await account_reviewed(job_context, account.id, polar_worker_context)
 
         release_account_mock.assert_called_once()
+        send_to_user_mock.assert_called_once()

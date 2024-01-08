@@ -10,7 +10,14 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
-from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
+from polar.models import (
+    Account,
+    HeldTransfer,
+    IssueReward,
+    Pledge,
+    Subscription,
+    Transaction,
+)
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
@@ -33,11 +40,48 @@ class UnsupportedAccountType(TransferTransactionError):
         super().__init__(message)
 
 
-class InactiveAccount(TransferTransactionError):
+class UnderReviewAccount(TransferTransactionError):
+    def __init__(
+        self,
+        *,
+        destination_account: Account,
+        payment_transaction: Transaction,
+        amount: int,
+        pledge: Pledge | None = None,
+        subscription: Subscription | None = None,
+        issue_reward: IssueReward | None = None,
+        transfer_metadata: dict[str, str] | None = None,
+    ) -> None:
+        self.destination_account = destination_account
+        self.amount = amount
+        self.pledge = pledge
+        self.issue_reward = issue_reward
+        self.subscription = subscription
+        self.payment_transaction = payment_transaction
+        self.transfer_metadata = transfer_metadata
+        message = (
+            f"The destination account {destination_account.id} is under review "
+            "and can't receive transfers."
+        )
+        super().__init__(message)
+
+    def build_held_transfer(self) -> HeldTransfer:
+        return HeldTransfer(
+            account=self.destination_account,
+            amount=self.amount,
+            pledge=self.pledge,
+            issue_reward=self.issue_reward,
+            subscription=self.subscription,
+            payment_transaction=self.payment_transaction,
+            transfer_metadata=self.transfer_metadata,
+        )
+
+
+class NotReadyAccount(TransferTransactionError):
     def __init__(self, account: Account) -> None:
         self.account = account
         message = (
-            f"The destination account {account.id} is not active."
+            f"The destination account {account.id} is not ready."
             f"The owner should go through the onboarding on {account.account_type}"
         )
         super().__init__(message)
@@ -70,8 +114,20 @@ class TransferTransactionService(BaseTransactionService):
         else:
             raise UnsupportedAccountType(destination_account)
 
-        if not destination_account.is_active():
-            raise InactiveAccount(destination_account)
+        if destination_account.is_under_review():
+            raise UnderReviewAccount(
+                destination_account=destination_account,
+                payment_transaction=payment_transaction,
+                amount=amount,
+                pledge=pledge,
+                subscription=subscription,
+                issue_reward=issue_reward,
+                transfer_metadata=transfer_metadata,
+            )
+
+        if not destination_account.is_ready():
+            raise NotReadyAccount(destination_account)
+
         assert destination_account.currency is not None
 
         source_currency = payment_transaction.currency.lower()
@@ -246,8 +302,8 @@ class TransferTransactionService(BaseTransactionService):
         source_account = await account_service.get(session, source_account_id)
         assert source_account is not None
 
-        if not source_account.is_active():
-            raise InactiveAccount(source_account)
+        if not source_account.is_ready():
+            raise NotReadyAccount(source_account)
         assert source_account.currency is not None
 
         source_currency = source_account.currency

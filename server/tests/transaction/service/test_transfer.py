@@ -10,8 +10,9 @@ from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transfer import (
-    InactiveAccount,
+    NotReadyAccount,
     PaymentTransactionForChargeDoesNotExist,
+    UnderReviewAccount,
     UnsupportedAccountType,
 )
 from polar.transaction.service.transfer import (
@@ -81,6 +82,29 @@ class TestCreateTransfer:
                 amount=1000,
             )
 
+    async def test_under_review_account(
+        self, session: AsyncSession, user: User
+    ) -> None:
+        account = Account(
+            status=Account.Status.UNDER_REVIEW,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+        )
+        payment_transaction = await create_payment_transaction(session)
+
+        # then
+        session.expunge_all()
+
+        with pytest.raises(UnderReviewAccount):
+            await transfer_transaction_service.create_transfer(
+                session,
+                destination_account=account,
+                payment_transaction=payment_transaction,
+                amount=1000,
+            )
+
     async def test_inactive_account(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ONBOARDING_STARTED,
@@ -94,7 +118,7 @@ class TestCreateTransfer:
         # then
         session.expunge_all()
 
-        with pytest.raises(InactiveAccount):
+        with pytest.raises(NotReadyAccount):
             await transfer_transaction_service.create_transfer(
                 session,
                 destination_account=account,
@@ -457,7 +481,7 @@ class TestCreateReversalTransfer:
         # then
         session.expunge_all()
 
-        with pytest.raises(InactiveAccount):
+        with pytest.raises(NotReadyAccount):
             await transfer_transaction_service.create_reversal_transfer(
                 session,
                 transfer_transactions=transfer_transactions,

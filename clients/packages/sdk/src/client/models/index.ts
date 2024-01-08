@@ -2072,6 +2072,32 @@ export interface MagicLinkRequest {
 /**
  * 
  * @export
+ * @interface MaintainerAccountReviewedNotification
+ */
+export interface MaintainerAccountReviewedNotification {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountReviewedNotification
+     */
+    account_type: string;
+}
+/**
+ * 
+ * @export
+ * @interface MaintainerAccountUnderReviewNotification
+ */
+export interface MaintainerAccountUnderReviewNotification {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountUnderReviewNotification
+     */
+    account_type: string;
+}
+/**
+ * 
+ * @export
  * @interface MaintainerPledgeConfirmationPendingNotification
  */
 export interface MaintainerPledgeConfirmationPendingNotification {
@@ -2495,6 +2521,18 @@ export interface NotificationRead {
      * @memberof NotificationRead
      */
     team_admin_member_pledged?: TeamAdminMemberPledgedNotification;
+    /**
+     * 
+     * @type {MaintainerAccountUnderReviewNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_account_under_review?: MaintainerAccountUnderReviewNotification;
+    /**
+     * 
+     * @type {MaintainerAccountReviewedNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_account_reviewed?: MaintainerAccountReviewedNotification;
 }
 
 /**
@@ -2510,7 +2548,9 @@ export const NotificationType = {
     REWARD_PAID_NOTIFICATION: 'RewardPaidNotification',
     MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgedIssueConfirmationPendingNotification',
     MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION: 'MaintainerPledgedIssuePendingNotification',
-    TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION: 'TeamAdminMemberPledgedNotification'
+    TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION: 'TeamAdminMemberPledgedNotification',
+    MAINTAINER_ACCOUNT_UNDER_REVIEW_NOTIFICATION: 'MaintainerAccountUnderReviewNotification',
+    MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION: 'MaintainerAccountReviewedNotification'
 } as const;
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
 
@@ -4022,6 +4062,8 @@ export interface RewardsSummaryReceiver {
 export const Status = {
     CREATED: 'created',
     ONBOARDING_STARTED: 'onboarding_started',
+    UNREVIEWED: 'unreviewed',
+    UNDER_REVIEW: 'under_review',
     ACTIVE: 'active'
 } as const;
 export type Status = typeof Status[keyof typeof Status];

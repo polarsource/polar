@@ -22,7 +22,7 @@ const PublicRewardsSetting = (props: {
   }, [contributorsShare])
 
   const onSave = async (splitShare?: number) => {
-    await props.onSave(splitShare)
+    props.onSave(splitShare)
   }
 
   const [bannerContributionRewardShown, setBannerContributionRewardShown] =

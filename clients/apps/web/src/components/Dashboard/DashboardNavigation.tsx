@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 import { dashboardRoutes } from './navigation'
 
-const DashboardNavigation = (props: { classNames?: string }) => {
+const DashboardNavigation = () => {
   const path = usePathname()
   const { org } = useCurrentOrgAndRepoFromURL()
   const isOrgAdmin = useIsOrganizationAdmin(org)

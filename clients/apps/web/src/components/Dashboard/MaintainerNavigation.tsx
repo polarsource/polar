@@ -11,7 +11,7 @@ import { twMerge } from 'tailwind-merge'
 import { maintainerRoutes } from './navigation'
 
 const MaintainerNavigation = () => {
-  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { org } = useCurrentOrgAndRepoFromURL()
 
   const personalOrg = usePersonalOrganization()
 

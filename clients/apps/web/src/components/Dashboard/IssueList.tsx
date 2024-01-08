@@ -18,13 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import React, {
-  ChangeEvent,
-  Dispatch,
-  FormEvent,
-  SetStateAction,
-  useMemo,
-} from 'react'
+import { ChangeEvent, Dispatch, SetStateAction, useMemo } from 'react'
 import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
 
@@ -159,29 +153,6 @@ export const Header = (props: {
     router.push(newPath)
   }
 
-  const onSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value
-
-    let sort: IssueSortBy =
-      {
-        newest: IssueSortBy.NEWEST,
-        pledged_amount_desc: IssueSortBy.PLEDGED_AMOUNT_DESC,
-        relevance: IssueSortBy.RELEVANCE,
-        dependencies_default: IssueSortBy.DEPENDENCIES_DEFAULT,
-        issues_default: IssueSortBy.ISSUES_DEFAULT,
-        most_positive_reactions: IssueSortBy.MOST_POSITIVE_REACTIONS,
-        most_engagement: IssueSortBy.MOST_ENGAGEMENT,
-      }[value] || IssueSortBy.NEWEST
-
-    const filters: DashboardFilters = {
-      ...props.filters,
-      sort,
-    }
-
-    props.onSetFilters(filters)
-    navigate(filters)
-  }
-
   const getTitle = (sortBy: IssueSortBy): string => {
     if (sortBy == IssueSortBy.NEWEST) {
       return 'Newest'
@@ -233,11 +204,6 @@ export const Header = (props: {
     ]
   }, [tabFilters])
 
-  const width = useMemo(() => {
-    const t = getTitle(props.filters.sort || tabFilters[0])
-    return t.length * 7.5 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
-  }, [props.filters.sort, tabFilters])
-
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
     event.preventDefault()
     event.stopPropagation()
@@ -252,11 +218,6 @@ export const Header = (props: {
     props.onSetFilters(f)
 
     navigate(f)
-  }
-
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    navigate(props.filters)
   }
 
   const onOnlyBadgedChanged = (value: boolean) => {

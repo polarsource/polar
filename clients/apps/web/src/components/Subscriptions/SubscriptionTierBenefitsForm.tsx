@@ -98,7 +98,7 @@ const BenefitRow = ({
       </div>
       <div className="flex flex-row items-center gap-x-4 text-[14px]">
         {isPremiumArticlesBenefit(benefit) && (
-          <div className="flex flex-row items-center gap-1.5 rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white shadow dark:border dark:border-blue-400 dark:bg-blue-600">
+          <div className="hidden flex-row items-center gap-1.5 rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white shadow dark:border dark:border-blue-400 dark:bg-blue-600 md:flex">
             <AutoAwesome className="!h-3 !w-3" />
             Recommended
           </div>

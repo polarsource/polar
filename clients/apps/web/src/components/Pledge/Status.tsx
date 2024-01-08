@@ -24,7 +24,6 @@ export const Status = (props: {
   const didReloadUser = useRef(false)
   const router = useRouter()
   const setLatestPledge = useStore((store) => store.setLatestPledge)
-  const [hasCheckedAuth, setCheckedAuth] = useState<boolean>(false)
 
   useEffect(() => {
     if (currentUser && !didReloadUser.current) {
@@ -33,7 +32,6 @@ export const Status = (props: {
       // this us used to grant the user access to polar (alpha/beta) without an invite code
       reloadUser()
     }
-    setCheckedAuth(true)
   }, [currentUser, reloadUser])
 
   const gotoUrl = search?.get('goto_url')

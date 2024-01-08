@@ -3,6 +3,8 @@ import {
   SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
+import { useListAdminOrganizations } from 'polarkit/hooks'
+import { useMemo } from 'react'
 import { FreeTierSubscribe } from '../Organization/FreeTierSubscribe'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import SubscriptionTierCard from './SubscriptionTierCard'
@@ -25,6 +27,13 @@ const SubscriptionGroupPublic = ({
   organization,
   subscribePath,
 }: SubscriptionGroupPublicProps) => {
+  const orgs = useListAdminOrganizations()
+
+  const shouldRenderSubscribeButton = useMemo(
+    () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
+    [organization, orgs],
+  )
+
   if (tiers.length < 1) {
     return null
   }
@@ -49,18 +58,19 @@ const SubscriptionGroupPublic = ({
             subscriptionTier={tier}
             variant="small"
           >
-            {tier.type === 'free' ? (
-              <FreeTierSubscribe
-                subscriptionTier={tier}
-                organization={organization}
-              />
-            ) : (
-              <SubscriptionTierSubscribeButton
-                organization={organization}
-                subscriptionTier={tier}
-                subscribePath={subscribePath}
-              />
-            )}
+            {shouldRenderSubscribeButton &&
+              (tier.type === 'free' ? (
+                <FreeTierSubscribe
+                  subscriptionTier={tier}
+                  organization={organization}
+                />
+              ) : (
+                <SubscriptionTierSubscribeButton
+                  organization={organization}
+                  subscriptionTier={tier}
+                  subscribePath={subscribePath}
+                />
+              ))}
           </SubscriptionTierCard>
         ))}
       </div>

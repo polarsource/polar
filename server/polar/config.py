@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: str = ""
     RESEND_API_KEY: str = ""
 
+    ACCOUNT_TRANSFERS_REVIEW_THRESHOLD: int = 10000
+
     SUBSCRIPTION_FEE_PERCENT: int = 10
 
     # Default organization setting for minimum pledge amount ($20)

@@ -202,6 +202,23 @@ class TransactionService(BaseTransactionService):
             ),
         )
 
+    async def get_transactions_sum(
+        self,
+        session: AsyncSession,
+        account_id: uuid.UUID | None,
+        *,
+        type: TransactionType | None = None,
+    ) -> int:
+        statement = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.account_id == account_id
+        )
+
+        if type is not None:
+            statement = statement.where(Transaction.type == type)
+
+        result = await session.execute(statement)
+        return result.scalar_one()
+
     def _get_readable_transactions_statement(self, user: User) -> Select[Any]:
         PaymentUserOrganization = aliased(UserOrganization)
         statement = (

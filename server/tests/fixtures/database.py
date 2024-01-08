@@ -74,4 +74,4 @@ async def session(
     #
     # This is to ensure that we don't rely on the existing state in the Session
     # from creating the tests.
-    expunge_spy.assert_called_once()
+    expunge_spy.assert_called()

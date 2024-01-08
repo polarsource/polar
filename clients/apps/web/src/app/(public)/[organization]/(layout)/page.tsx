@@ -1,4 +1,3 @@
-import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
@@ -33,6 +32,8 @@ export async function generateMetadata(
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
+    } else {
+      throw e
     }
   }
 
@@ -84,10 +85,8 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
-  searchParams,
 }: {
   params: { organization: string }
-  searchParams: { [key: string]: string | string[] | undefined }
 }) {
   const api = getServerSideAPI()
 
@@ -103,10 +102,6 @@ export default async function Page({
     )
   } catch (e) {
     notFound()
-  }
-
-  if (organization === undefined) {
-    return <PageNotFound />
   }
 
   return <ClientPage organization={organization} />

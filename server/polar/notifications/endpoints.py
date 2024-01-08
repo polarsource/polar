@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from polar.auth.dependencies import UserRequiredAuth
 from polar.models.notification import Notification
 from polar.notifications.notification import (
+    MaintainerAccountUnderReviewNotification,
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgedIssueConfirmationPendingNotification,
@@ -42,7 +43,7 @@ async def get(
             payload = notifications.parse_payload(n)
             notif = NotificationRead(
                 id=n.id,
-                type=NotificationType.from_str(n.type),
+                type=NotificationType(n.type),
                 created_at=n.created_at,
             )
 
@@ -66,6 +67,8 @@ async def get(
                 notif.maintainer_pledged_issue_pending = payload
             if isinstance(payload, TeamAdminMemberPledgedNotification):
                 notif.team_admin_member_pledged = payload
+            if isinstance(payload, MaintainerAccountUnderReviewNotification):
+                notif.maintainer_account_under_review = payload
 
             return notif
         except Exception as e:

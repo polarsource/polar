@@ -1,10 +1,10 @@
 from datetime import datetime
-from enum import Enum
-from typing import Self
+from enum import StrEnum
 from uuid import UUID
 
 from polar.kit.schemas import Schema
 from polar.notifications.notification import (
+    MaintainerAccountUnderReviewNotification,
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgedIssueConfirmationPendingNotification,
@@ -17,7 +17,7 @@ from polar.notifications.notification import (
 )
 
 
-class NotificationType(str, Enum):
+class NotificationType(StrEnum):
     MaintainerPledgePaidNotification = "MaintainerPledgePaidNotification"
     MaintainerPledgeConfirmationPendingNotification = (
         "MaintainerPledgeConfirmationPendingNotification"
@@ -33,10 +33,9 @@ class NotificationType(str, Enum):
         "MaintainerPledgedIssuePendingNotification"
     )
     TeamAdminMemberPledgedNotification = "TeamAdminMemberPledgedNotification"
-
-    @classmethod
-    def from_str(cls, s: str) -> Self:
-        return cls.__members__[s]
+    MaintainerAccountUnderReviewNotification = (
+        "MaintainerAccountUnderReviewNotification"
+    )
 
 
 class NotificationRead(Schema):
@@ -47,18 +46,21 @@ class NotificationRead(Schema):
     maintainer_pledge_paid: MaintainerPledgePaidNotification | None = None
     maintainer_pledge_confirmation_pending: (
         MaintainerPledgeConfirmationPendingNotification | None
-    ) = None  # noqa: E501
+    ) = None
     maintainer_pledge_pending: MaintainerPledgePendingNotification | None = None
     maintainer_pledge_created: MaintainerPledgeCreatedNotification | None = None
     pledger_pledge_pending: PledgerPledgePendingNotification | None = None
     reward_paid: RewardPaidNotification | None = None
     maintainer_pledged_issue_confirmation_pending: (
         MaintainerPledgedIssueConfirmationPendingNotification | None
-    ) = None  # noqa: E501
+    ) = None
     maintainer_pledged_issue_pending: (
         MaintainerPledgedIssuePendingNotification | None
-    ) = None  # noqa: E501
+    ) = None
     team_admin_member_pledged: TeamAdminMemberPledgedNotification | None = None
+    maintainer_account_under_review: MaintainerAccountUnderReviewNotification | None = (
+        None
+    )
 
 
 class NotificationsList(Schema):

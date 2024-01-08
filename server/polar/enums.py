@@ -13,6 +13,13 @@ class UserSignupType(StrEnum):
     backer = "backer"
 
 
-class AccountType(str, Enum):
+class AccountType(StrEnum):
     stripe = "stripe"
     open_collective = "open_collective"
+
+    @classmethod
+    def get_display_name(cls, v: "AccountType") -> str:
+        return {
+            AccountType.stripe: "Stripe",
+            AccountType.open_collective: "Open Collective",
+        }[v]

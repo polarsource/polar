@@ -131,6 +131,8 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             session.add(account)
             await session.commit()
 
+            await enqueue_job("account.under_review", account_id=account.id)
+
         return account
 
     async def confirm_account_reviewed(

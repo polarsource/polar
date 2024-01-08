@@ -297,3 +297,20 @@ class TeamAdminMemberPledgedNotification(NotificationBase):
 
 {{team_member_name}} just made a ${{pledge_amount}} pledge towards <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> on behalf of {{team_name}}.
 """  # noqa: E501
+
+
+class MaintainerAccountUnderReviewNotification(NotificationBase):
+    account_type: str
+
+    def subject(self) -> str:
+        return "Your payout account is under review"
+
+    def body(self) -> str:
+        return f"""Hi,<br><br>
+
+We wanted to inform you that your {self.account_type} account has reached a transaction threshold, and as part of our security measures, we are now conducting a review.<br><br>
+
+During this brief evaluation period, money transfers to your account will be temporarily paused. We assure you that this is a routine procedure to ensure the safety and security of your account.<br><br>
+
+Our team is working diligently to complete the review promptly. We appreciate your understanding and cooperation during this process. If there are any specific details or documents required for the review, our support team will reach out to you directly.<br><br>
+"""  # noqa: E501

@@ -82,3 +82,11 @@ class Account(RecordModel):
 
     def is_under_review(self) -> bool:
         return self.status == Account.Status.UNDER_REVIEW
+
+    def get_associations_names(self) -> list[str]:
+        associations_names: list[str] = []
+        for user in self.users:
+            associations_names.append(user.username)
+        for organization in self.organizations:
+            associations_names.append(organization.name)
+        return associations_names

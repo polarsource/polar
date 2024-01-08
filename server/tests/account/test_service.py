@@ -30,14 +30,24 @@ async def create_transaction(
 
 @pytest.mark.asyncio
 class TestCheckReviewThreshold:
-    async def test_active_account(self, session: AsyncSession, user: User) -> None:
+    async def test_active_account(
+        self, mocker: MockerFixture, session: AsyncSession, user: User
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
+
         account = await create_account(
             session, admin=user, status=Account.Status.ACTIVE
         )
         updated_account = await account_service.check_review_threshold(session, account)
         assert updated_account.status == Account.Status.ACTIVE
 
-    async def test_below_threshold(self, session: AsyncSession, user: User) -> None:
+        enqueue_job_mock.assert_not_called()
+
+    async def test_below_threshold(
+        self, mocker: MockerFixture, session: AsyncSession, user: User
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
+
         account = await create_account(
             session, admin=user, status=Account.Status.UNREVIEWED
         )
@@ -46,7 +56,13 @@ class TestCheckReviewThreshold:
         updated_account = await account_service.check_review_threshold(session, account)
         assert updated_account.status == Account.Status.UNREVIEWED
 
-    async def test_above_threshold(self, session: AsyncSession, user: User) -> None:
+        enqueue_job_mock.assert_not_called()
+
+    async def test_above_threshold(
+        self, mocker: MockerFixture, session: AsyncSession, user: User
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
+
         account = await create_account(
             session, admin=user, status=Account.Status.UNREVIEWED
         )
@@ -55,6 +71,10 @@ class TestCheckReviewThreshold:
 
         updated_account = await account_service.check_review_threshold(session, account)
         assert updated_account.status == Account.Status.UNDER_REVIEW
+
+        enqueue_job_mock.assert_called_once_with(
+            "account.under_review", account_id=account.id
+        )
 
 
 @pytest.mark.asyncio

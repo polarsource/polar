@@ -294,3 +294,10 @@ module.exports = withSentryConfig(
     disableLogger: true,
   },
 )
+
+if (process.env.ANALYZE === 'true') {
+  const withBundleAnalyzer = require('@next/bundle-analyzer')({
+    enabled: true,
+  })
+  module.exports = withBundleAnalyzer(module.exports)
+}

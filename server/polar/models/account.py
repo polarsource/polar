@@ -58,6 +58,10 @@ class Account(RecordModel):
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     @declared_attr
+    def admin(cls) -> Mapped["User"]:
+        return relationship("User", lazy="raise", foreign_keys="[Account.admin_id]")
+
+    @declared_attr
     def users(cls) -> Mapped[list["User"]]:
         return relationship(
             "User",

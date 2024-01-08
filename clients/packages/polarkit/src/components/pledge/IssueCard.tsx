@@ -62,7 +62,7 @@ const IssueCard = ({
   return (
     <div className="dark:divide-polar-700 divide-y-[1px] divide-gray-200">
       <div className="space-y-4 pb-4">
-        <h1 className="dark:text-polar-50 mb-8 text-center text-4xl leading-snug text-gray-900 sm:text-left">
+        <h1 className="dark:text-polar-50 text-center text-4xl text-gray-900 sm:text-left">
           {generateMarkdownTitle(issue.title)}
         </h1>
         {/* Issue details */}

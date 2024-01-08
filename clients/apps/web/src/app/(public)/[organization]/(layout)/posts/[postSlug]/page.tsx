@@ -31,6 +31,8 @@ export async function generateMetadata(
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
+    } else {
+      throw e
     }
   }
 
@@ -123,7 +125,7 @@ export default async function Page({
     ),
   ])
 
-  if (!post) {
+  if (!post || !organization) {
     notFound()
   }
 

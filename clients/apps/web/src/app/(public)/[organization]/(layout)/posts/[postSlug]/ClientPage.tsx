@@ -36,8 +36,6 @@ export default function Page({
     api.articles.viewed({ id: post.id })
   }, [post])
 
-  // TODO: detect is subscriber
-
   const { currentUser } = useAuth()
 
   const userSubs = useUserSubscriptions(

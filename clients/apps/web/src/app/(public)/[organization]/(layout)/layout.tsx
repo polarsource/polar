@@ -1,5 +1,4 @@
 import EmptyLayout from '@/components/Layout/EmptyLayout'
-import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
@@ -33,10 +32,6 @@ export default async function Layout({
     )
   } catch (e) {
     notFound()
-  }
-
-  if (organization === undefined) {
-    return <PageNotFound />
   }
 
   return (

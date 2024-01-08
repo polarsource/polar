@@ -9,7 +9,7 @@ import {
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { Button } from 'polarkit/components/ui/atoms'
+import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
 import {
   useArchiveSubscriptionTier,
@@ -154,8 +154,8 @@ const SubscriptionTierEdit = ({
   return (
     <DashboardBody>
       <Form {...form}>
-        <div className="flex flex-row items-start justify-between gap-x-12">
-          <div className="dark:bg-polar-900 dark:border-polar-800 relative flex w-2/3 flex-col gap-y-12 rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+        <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
+          <ShadowBoxOnMd className="relative flex w-full flex-col gap-y-12 md:w-2/3">
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="mb-8 flex items-center justify-between">
                 <h1 className="text-lg font-medium">Edit Subscription Tier</h1>
@@ -183,7 +183,7 @@ const SubscriptionTierEdit = ({
             />
             {!isFreeTier && (
               <>
-                <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full flex-row items-start justify-between rounded-2xl border border-gray-200 bg-white p-6">
+                <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full flex-col space-y-4 rounded-2xl border border-gray-200 bg-white p-6 md:flex-row md:items-start md:justify-between md:space-y-0">
                   <div className="flex flex-col gap-y-2">
                     <h3 className="max-w-1/3">Archive Subscription Tier</h3>
                     <p className="dark:text-polar-500 w-3/4 text-sm text-gray-400">
@@ -191,7 +191,11 @@ const SubscriptionTierEdit = ({
                       subscribers, only prevent new subscribers.
                     </p>
                   </div>
-                  <Button variant="destructive" onClick={showArchiveModal}>
+                  <Button
+                    className="self-start"
+                    variant="destructive"
+                    onClick={showArchiveModal}
+                  >
                     Archive
                   </Button>
                 </div>
@@ -217,9 +221,9 @@ const SubscriptionTierEdit = ({
                 Cancel
               </Button>
             </div>
-          </div>
+          </ShadowBoxOnMd>
           <SubscriptionTierCard
-            className="w-1/4"
+            className="w-full md:w-1/4"
             subscriptionTier={{
               ...subscriptionTier,
               ...editingSubscriptionTier,

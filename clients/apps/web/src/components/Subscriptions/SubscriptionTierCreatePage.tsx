@@ -8,7 +8,7 @@ import {
   SubscriptionTierCreateTypeEnum,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { Button } from 'polarkit/components/ui/atoms'
+import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
 import {
   useCreateSubscriptionTier,
@@ -134,10 +134,10 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   return (
     <DashboardBody>
       <Form {...form}>
-        <div className="flex flex-row items-start justify-between gap-x-12">
-          <div className="dark:bg-polar-900 dark:border-polar-800 relative flex w-2/3 flex-col gap-y-12 rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+        <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
+          <ShadowBoxOnMd className="relative flex w-full flex-col gap-y-12 md:w-2/3">
             <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="mb-16 flex items-center justify-between">
+              <div className="mb-8 flex items-center justify-between">
                 <h1 className="text-lg font-medium">New Subscription Tier</h1>
               </div>
               <div className="relative flex w-full flex-row justify-between gap-x-24">
@@ -168,10 +168,10 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
                 Cancel
               </Button>
             </div>
-          </div>
+          </ShadowBoxOnMd>
           {selectedSubscriptionTierType && (
             <SubscriptionTierCard
-              className="w-1/4"
+              className="w-full md:w-1/4"
               subscriptionTier={{
                 ...newSubscriptionTier,
                 benefits: enabledBenefits,

@@ -62,13 +62,13 @@ const IssueCard = ({
   return (
     <div className="dark:divide-polar-700 divide-y-[1px] divide-gray-200">
       <div className="space-y-4 pb-4">
-        <h1 className="dark:text-polar-50 mb-8 text-center text-4xl leading-snug text-gray-900 sm:text-left">
+        <h1 className="dark:text-polar-50 mb-8 text-left text-4xl leading-snug text-gray-900">
           {generateMarkdownTitle(issue.title)}
         </h1>
         {/* Issue details */}
-        <div className="dark:text-polar-500 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
+        <div className="dark:text-polar-500 grid grid-cols-3 text-gray-600">
           {/* Left part */}
-          <div className="col-span-1 flex	flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start	">
+          <div className="col-span-2 flex flex-row justify-start gap-2	">
             <div>
               <a href={url}>#{issue.number}</a>
             </div>
@@ -96,7 +96,7 @@ const IssueCard = ({
             </div>
           </div>
           {/* Right part */}
-          <div className="flex flex-row items-center justify-center gap-4 sm:justify-end">
+          <div className="flex flex-row items-center justify-end gap-4">
             {issue.comments !== undefined && (
               <div className="flex flex-row items-center gap-1">
                 <ChatBubbleOutline className="h-5 w-5" fontSize="small" />
@@ -252,9 +252,9 @@ const FundingGoal = ({
 
   if (funding_goal) {
     return (
-      <div className="grid grid-cols-1 py-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 py-4">
         {/* Funding amount and goal */}
-        <div className="flex flex-col items-center sm:items-start">
+        <div className="flex flex-col items-start">
           <div className="dark:text-polar-300 text-lg text-gray-900">
             ${getCentsInDollarString(pledges_sum?.amount || 0, false, true)}{' '}
             <span className="dark:text-polar-400 text-gray-400">
@@ -276,7 +276,7 @@ const FundingGoal = ({
         </div>
 
         {/* Pledgers */}
-        <div className="mt-2 flex justify-center md:mt-0 md:justify-end">
+        <div className="mt-0 mt-2 flex justify-end">
           <Pledgers pledgers={pledgers} size="sm" />
         </div>
       </div>
@@ -286,9 +286,9 @@ const FundingGoal = ({
   // No funding goal
   if (pledges_sum && pledges_sum?.amount > 0) {
     return (
-      <div className="grid grid-cols-1 py-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 py-4">
         {/* Funding amount and goal */}
-        <div className="flex flex-col items-center sm:items-start">
+        <div className="flex flex-col items-start">
           <div className="dark:text-polar-300 text-lg text-gray-900">
             ${getCentsInDollarString(pledges_sum?.amount || 0, false, true)}{' '}
             <span className="dark:text-polar-400 text-gray-400">funded</span>
@@ -296,7 +296,7 @@ const FundingGoal = ({
         </div>
 
         {/* Pledgers */}
-        <div className="mt-2 flex justify-center md:mt-0 md:justify-end">
+        <div className="mt-0 mt-2 flex justify-end">
           <Pledgers pledgers={pledgers} size="sm" />
         </div>
       </div>

@@ -58,8 +58,19 @@ const Pledge = ({
         </Banner>
       )}
 
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+      <div className="flex flex-col-reverse gap-12 md:flex-row">
         {/* Left side */}
+        <div>
+          <WhiteCard padding>
+            <PledgeCheckoutPanel
+              issue={issue}
+              gotoURL={gotoURL}
+              onAmountChange={onAmountChange}
+            />
+          </WhiteCard>
+        </div>
+
+        {/* Right side */}
         <div className="mt-8 flex flex-col gap-y-8">
           <IssueCard
             issue={issue}
@@ -69,17 +80,6 @@ const Pledge = ({
             rewards={rewards}
             pullRequests={pullRequests}
           />
-        </div>
-
-        {/* Right side */}
-        <div>
-          <WhiteCard padding>
-            <PledgeCheckoutPanel
-              issue={issue}
-              gotoURL={gotoURL}
-              onAmountChange={onAmountChange}
-            />
-          </WhiteCard>
         </div>
       </div>
 

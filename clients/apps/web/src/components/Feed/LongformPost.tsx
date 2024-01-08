@@ -109,7 +109,7 @@ export default function LongformPost({
       </div>
 
       <StaggerReveal.Child transition={revealTransition}>
-        <div className="prose dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-2xl dark:prose-p:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline mb-8 w-full max-w-none space-y-16">
+        <div className="prose dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline mb-8 w-full max-w-none space-y-16">
           <BrowserRender
             article={article}
             showPaywalledContent={showPaywalledContent}

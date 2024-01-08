@@ -1,7 +1,7 @@
 import Markdown from 'markdown-to-jsx'
+import dynamic from 'next/dynamic'
 import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'
-import BrowserMermaid from './BrowserMermaid'
 import BrowserPoll from './BrowserPoll'
 import Paywall from './Paywall'
 import Poll from './Poll'
@@ -12,6 +12,8 @@ import {
   markdownOpts,
   wrapStrictCreateElement,
 } from './markdown'
+
+const BrowserMermaid = dynamic(() => import('./BrowserMermaid'), { ssr: false })
 
 export const opts = {
   ...markdownOpts,

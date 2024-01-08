@@ -108,5 +108,11 @@
     "tailwindcss-animate": "^1.0.5",
     "tsconfig": "workspace:*",
     "typescript": "5.3.3"
+  },
+  "nextBundleAnalysis": {
+    "budget": 358400,
+    "budgetPercentIncreaseRed": 20,
+    "minimumChangeThreshold": 0,
+    "showDetails": true
   }
 }

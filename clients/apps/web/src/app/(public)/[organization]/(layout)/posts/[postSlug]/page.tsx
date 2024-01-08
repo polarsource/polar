@@ -1,4 +1,3 @@
-import PreviewText from '@/components/Feed/Posts/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { Article, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
@@ -46,11 +45,12 @@ export async function generateMetadata(
   // description.
   //
   // This is pretty fast so it's nothing that I'm worried about.
-  const ReactDOMServer = (await import('react-dom/server')).default
+  // const ReactDOMServer = (await import('react-dom/server')).default
 
-  const preview = ReactDOMServer.renderToStaticMarkup(
-    <PreviewText article={article} />,
-  )
+  // const preview = ReactDOMServer.renderToStaticMarkup(
+  //   <PreviewText article={article} />,
+  // )
+  const preview = article.title
 
   return {
     title: {

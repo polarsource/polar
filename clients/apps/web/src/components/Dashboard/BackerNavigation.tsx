@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 import { backerRoutes } from './navigation'
 
-const BackerNavigation = (props: { classNames?: string }) => {
+const BackerNavigation = () => {
   const path = usePathname()
   const { org } = useCurrentOrgAndRepoFromURL()
   const personalOrg = usePersonalOrganization()

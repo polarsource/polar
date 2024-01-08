@@ -73,6 +73,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "@next/bundle-analyzer": "^14.0.4",
     "@storybook/addon-essentials": "^7.6.4",
     "@storybook/addon-interactions": "^7.6.4",
     "@storybook/addon-links": "^7.6.4",

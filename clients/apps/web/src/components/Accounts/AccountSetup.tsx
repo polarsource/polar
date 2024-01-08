@@ -40,6 +40,10 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     organizationAccount !== undefined &&
     personalAccount !== undefined &&
     organizationAccount.id !== personalAccount.id
+  const isActive =
+    currentAccount?.status === Status.UNREVIEWED ||
+    currentAccount?.status === Status.ACTIVE
+  const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
 
   const linkAccountForm = useForm<{ account_id: string }>()
   const { control, handleSubmit } = linkAccountForm
@@ -207,9 +211,23 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
             </div>
           </>
         )}
+        {currentAccount && !bothOrganizationAndPersonal && isUnderReview && (
+          <>
+            <p>
+              Your payout account is under review. It has reached a transaction
+              threshold, and as part of our security measures, we are now
+              conducting a review.
+            </p>
+            <p>
+              Transfers are temporarily paused during this brief evaluation
+              period.
+            </p>
+          </>
+        )}
         {currentAccount &&
           !bothOrganizationAndPersonal &&
-          currentAccount.status != Status.ACTIVE && (
+          !isActive &&
+          !isUnderReview && (
             <>
               <p>You need to continue the setup of your payout account.</p>
               <Button
@@ -220,21 +238,17 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
               </Button>
             </>
           )}
-        {currentAccount &&
-          !bothOrganizationAndPersonal &&
-          currentAccount.status == Status.ACTIVE && (
-            <>
-              <p>
-                Your payout account is setup and ready to receive transfers!
-              </p>
-              <Button
-                className="self-start sm:w-auto sm:grow"
-                onClick={() => goToDashboard(currentAccount)}
-              >
-                Open dashboard
-              </Button>
-            </>
-          )}
+        {currentAccount && !bothOrganizationAndPersonal && isActive && (
+          <>
+            <p>Your payout account is setup and ready to receive transfers!</p>
+            <Button
+              className="self-start sm:w-auto sm:grow"
+              onClick={() => goToDashboard(currentAccount)}
+            >
+              Open dashboard
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

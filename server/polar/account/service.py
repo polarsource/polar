@@ -177,7 +177,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         return await Account.create(
             session=session,
-            status=Account.Status.ACTIVE,
+            status=Account.Status.UNREVIEWED,
             admin_id=admin_id,
             account_type=account.account_type,
             open_collective_slug=account.open_collective_slug,
@@ -217,7 +217,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 account.is_payouts_enabled,
             )
         ):
-            account.status = Account.Status.ACTIVE
+            account.status = Account.Status.UNREVIEWED
 
         session.add(account)
         await session.commit()

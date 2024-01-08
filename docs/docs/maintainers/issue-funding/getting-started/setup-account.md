@@ -74,7 +74,7 @@ GitHub organization and its repositories to use with Polar? We got you.
 ![Screenshot of enabling personal maintainer mode in Polar](../../../../assets/maintainers/issue-funding/polar-upgrade-light.jpg#only-light)
 ![Screenshot of enabling personal maintainer mode in Polar](../../../../assets/maintainers/issue-funding/polar-upgrade-dark.jpg#only-dark)
 
-1. Click `Get Started` under the `Become a maintainer` card in the sidebar
+1. Click `Get Started` under the `Become a creator` card in the sidebar
 2. You're presented with an onboarding page to enable maintainer mode (see above)
 3. Click `Connect Repositories`
 4. Redirected to the GitHub App Installation flow - covered next in [Install GitHub

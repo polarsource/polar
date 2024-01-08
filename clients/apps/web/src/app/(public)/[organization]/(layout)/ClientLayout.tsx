@@ -1,40 +1,17 @@
-'use client'
-
 import Footer from '@/components/Organization/Footer'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
-import GithubLoginButton from '@/components/Shared/GithubLoginButton'
-import { ProfileMenu } from '@/components/Shared/ProfileSelection'
-import { useAuth } from '@/hooks'
-import { Organization, UserSignupType } from '@polar-sh/sdk'
-import { usePathname } from 'next/navigation'
+import { Organization } from '@polar-sh/sdk'
 import { LogoType } from 'polarkit/components/brand'
-import { Tabs } from 'polarkit/components/ui/atoms'
-import { PropsWithChildren, useMemo } from 'react'
+import { PropsWithChildren } from 'react'
+import LayoutTopbarAuth from './LayoutTopbarAuth'
 
 const ClientLayout = ({
   organization,
   children,
 }: PropsWithChildren<{ organization: Organization }>) => {
-  const { currentUser } = useAuth()
-  const pathname = usePathname()
-  const currentTab = useMemo(() => {
-    const tabs = ['overview', 'subscriptions', 'issues', 'repositories']
-
-    const pathParts = pathname.split('/')
-
-    if (pathParts.includes('posts')) {
-      return 'overview'
-    } else {
-      return tabs.find((tab) => pathParts.includes(tab)) ?? 'overview'
-    }
-  }, [pathname])
-
   return (
-    <Tabs
-      className="flex min-h-screen flex-col justify-between"
-      value={currentTab}
-    >
+    <div className="flex min-h-screen flex-col justify-between">
       <div className="flex flex-col">
         <div className="dark:bg-polar-900 sticky top-0 z-50 bg-white px-4 py-4 shadow-sm md:px-8">
           <div className="relative mx-auto flex w-full max-w-7xl flex-row items-center justify-between gap-x-24 md:justify-normal md:space-y-0 lg:px-0">
@@ -49,18 +26,7 @@ const ClientLayout = ({
                 organization={organization}
               />
 
-              {currentUser ? (
-                <ProfileMenu className="z-50" />
-              ) : (
-                <GithubLoginButton
-                  userSignupType={UserSignupType.BACKER}
-                  posthogProps={{
-                    view: 'Maintainer Page',
-                  }}
-                  text="Sign in with GitHub"
-                  returnTo={pathname || '/feed'}
-                />
-              )}
+              <LayoutTopbarAuth />
             </div>
           </div>
         </div>
@@ -79,7 +45,7 @@ const ClientLayout = ({
         </div>
       </div>
       <Footer wide />
-    </Tabs>
+    </div>
   )
 }
 

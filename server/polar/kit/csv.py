@@ -11,6 +11,8 @@ def get_emails_from_csv(contents: str) -> list[str]:
             row.get("email", None)
             or row.get("EMAIL", None)
             or row.get("Email", None)
+            # Mailchimp uses "Email Address"
+            or row.get("Email Address", None)
             or None
             for row in reader
         ]

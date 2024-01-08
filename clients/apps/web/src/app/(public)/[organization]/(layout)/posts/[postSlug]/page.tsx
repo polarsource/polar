@@ -1,5 +1,6 @@
 import PreviewText from '@/components/Feed/Posts/preview'
 import { getServerSideAPI } from '@/utils/api'
+import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { Article, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -56,6 +57,7 @@ export async function generateMetadata(
   const preview = ReactDOMServer.renderToStaticMarkup(
     <PreviewText article={article} />,
   )
+  const image = firstImageUrlFromMarkdown(article.body)
 
   return {
     title: {
@@ -71,7 +73,7 @@ export async function generateMetadata(
 
       images: [
         {
-          url: `https://polar.sh/og?articleId=${article.id}`,
+          url: image ?? `https://polar.sh/og?articleId=${article.id}`,
           width: 1200,
           height: 630,
         },
@@ -80,7 +82,7 @@ export async function generateMetadata(
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?articleId=${article.id}`,
+          url: image ?? `https://polar.sh/og?articleId=${article.id}`,
           width: 1200,
           height: 630,
           alt: `${article.title}`,

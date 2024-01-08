@@ -6,6 +6,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { EnvelopeIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
@@ -173,8 +174,7 @@ const PostItem = (post: Article) => {
   const ref = useRef<HTMLAnchorElement>(null)
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
-
-  const image = post.body.match(/!\[.*?\]\((.*?)\)/)?.[1]
+  const image = firstImageUrlFromMarkdown(post.body)
 
   return (
     <Link

@@ -6,9 +6,6 @@ const nextConfig = {
   swcMinify: true,
   transpilePackages: ['polarkit'],
 
-  // Temporary (2024-01-08)
-  productionBrowserSourceMaps: true,
-
   images: {
     remotePatterns: [
       {

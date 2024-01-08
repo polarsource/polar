@@ -75,6 +75,7 @@ export const wrapStrictCreateElement = (args: {
       'embed',
       'iframe',
       'img',
+      'pre',
       // our custom components
       'poll',
       'paywall',

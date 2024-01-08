@@ -103,14 +103,12 @@ export default async function Page({
     rewards = rewardsSummary
     pulls = pullRequests.items || []
   } catch (e) {
-    console.error(e)
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
   }
 
   if (!issue) {
-    console.log('amsdamnskjdnaksd')
     notFound()
   }
 

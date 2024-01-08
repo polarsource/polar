@@ -70,5 +70,15 @@ class Account(RecordModel):
     def organizations(cls) -> Mapped[list["Organization"]]:
         return relationship("Organization", lazy="raise", back_populates="account")
 
+    def is_ready(self) -> bool:
+        return self.status in {
+            Account.Status.UNREVIEWED,
+            Account.Status.UNDER_REVIEW,
+            Account.Status.ACTIVE,
+        }
+
     def is_active(self) -> bool:
         return self.status == Account.Status.ACTIVE
+
+    def is_under_review(self) -> bool:
+        return self.status == Account.Status.UNDER_REVIEW

@@ -26,6 +26,7 @@ from polar.authz.service import AccessType, Authz, Subject
 from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
+from polar.held_transfer.service import held_transfer as held_transfer_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -47,6 +48,9 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
 from polar.organization.service import organization as organization_service
+from polar.transaction.service.transfer import (
+    UnderReviewAccount,
+)
 from polar.transaction.service.transfer import (
     transfer_transaction as transfer_transaction_service,
 )
@@ -577,18 +581,26 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             "transferred_at": str(int(utc_now().timestamp())),
         }
 
-        incoming, _ = await transfer_transaction_service.create_transfer_from_charge(
-            session,
-            destination_account=account,
-            charge_id=get_expandable_id(invoice.charge),
-            amount=transfer_amount,
-            subscription=subscription,
-            transfer_metadata=transfer_metadata,
-        )
-
-        invoice_metadata["transfer_id"] = cast(str, incoming.transfer_id)
-        assert invoice.id is not None
-        stripe_service.update_invoice(invoice.id, metadata=invoice_metadata)
+        try:
+            (
+                incoming,
+                _,
+            ) = await transfer_transaction_service.create_transfer_from_charge(
+                session,
+                destination_account=account,
+                charge_id=get_expandable_id(invoice.charge),
+                amount=transfer_amount,
+                subscription=subscription,
+                transfer_metadata=transfer_metadata,
+            )
+        except UnderReviewAccount as e:
+            await held_transfer_service.create(
+                session, held_transfer=e.build_held_transfer()
+            )
+        else:
+            invoice_metadata["transfer_id"] = cast(str, incoming.transfer_id)
+            assert invoice.id is not None
+            stripe_service.update_invoice(invoice.id, metadata=invoice_metadata)
 
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription

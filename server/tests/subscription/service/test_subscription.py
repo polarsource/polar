@@ -11,6 +11,7 @@ from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Anonymous, Authz
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.held_transfer.service import held_transfer as held_transfer_service
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -42,9 +43,12 @@ from polar.subscription.service.subscription import (
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service.subscription import subscription as subscription_service
-from polar.transaction.service.transfer import TransferTransactionService
+from polar.transaction.service.transfer import (
+    TransferTransactionService,
+)
 from polar.user.service import user as user_service
 from tests.fixtures.random_objects import create_user
+from tests.transaction.conftest import create_transaction
 
 from ..conftest import (
     add_subscription_benefits,
@@ -583,6 +587,46 @@ class TestTransferSubscriptionPaidInvoice:
             await subscription_service.transfer_subscription_paid_invoice(
                 session, invoice=stripe_invoice
             )
+
+    async def test_account_under_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        organization_account: Account,
+    ) -> None:
+        organization_account.status = Account.Status.UNDER_REVIEW
+        session.add(organization_account)
+
+        stripe_invoice = construct_stripe_invoice(
+            subscription_id=subscription.stripe_subscription_id
+        )
+
+        stripe_service_mock = mocker.patch(
+            "polar.subscription.service.subscription.stripe_service", spec=StripeService
+        )
+
+        payment_transaction = await create_transaction(
+            session, type=TransactionType.payment, subscription=subscription
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        session.add(payment_transaction)
+
+        await session.commit()
+
+        # then
+        session.expunge_all()
+
+        await subscription_service.transfer_subscription_paid_invoice(
+            session, invoice=stripe_invoice
+        )
+
+        stripe_service_mock.update_invoice.assert_not_called()
+
+        held_transfer = await held_transfer_service.get_by(
+            session, account_id=organization_account.id
+        )
+        assert held_transfer is not None
 
     async def test_valid(
         self,

@@ -19,6 +19,8 @@ class Account(RecordModel):
     class Status(str, Enum):
         CREATED = "created"
         ONBOARDING_STARTED = "onboarding_started"
+        UNREVIEWED = "unreviewed"
+        UNDER_REVIEW = "under_review"
         ACTIVE = "active"
 
     __tablename__ = "accounts"

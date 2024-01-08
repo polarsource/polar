@@ -4,7 +4,7 @@ import LongformPost from '@/components/Feed/LongformPost'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { useAuth } from '@/hooks/auth'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { Article, Organization } from '@polar-sh/sdk'
+import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
@@ -13,37 +13,31 @@ import { useEffect } from 'react'
 
 const postViewKey = 'posts_viewed'
 
-export default function Page({
-  post,
-  organization,
-}: {
-  post: Article
-  organization: Organization
-}) {
+export default function Page({ article }: { article: Article }) {
   useEffect(() => {
     // Track view
     const views = JSON.parse(localStorage.getItem(postViewKey) ?? '{}')
 
     // already viewed by user, skip tracking
-    if (views[post.id]) {
+    if (views[article.id]) {
       return
     }
 
-    views[post.id] = '1'
+    views[article.id] = '1'
     localStorage.setItem(postViewKey, JSON.stringify(views))
 
     // record page view
-    api.articles.viewed({ id: post.id })
-  }, [post])
+    api.articles.viewed({ id: article.id })
+  }, [article])
 
   const { currentUser } = useAuth()
 
   const userSubs = useUserSubscriptions(
     currentUser?.id,
-    post.organization.name,
+    article.organization.name,
     true,
     30,
-    post.organization.platform,
+    article.organization.platform,
   )
 
   const isSubscriber =
@@ -53,7 +47,7 @@ export default function Page({
     <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
       <Link
         className="absolute left-16 top-16 hidden flex-shrink md:block"
-        href={`/${organization.name}`}
+        href={`/${article.organization.name}`}
       >
         <Button
           size="sm"
@@ -64,7 +58,7 @@ export default function Page({
         </Button>
       </Link>
       <LongformPost
-        article={post}
+        article={article}
         isSubscriber={isSubscriber}
         showPaywalledContent={true} // Can safely be true. If the user doesn't have permissions to see the paywalled content it will already be stripped out.
       />

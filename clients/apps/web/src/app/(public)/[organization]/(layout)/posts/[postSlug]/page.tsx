@@ -23,11 +23,14 @@ export async function generateMetadata(
   let article: Article | undefined
 
   try {
-    article = await api.articles.lookup({
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-      slug: params.postSlug,
-    })
+    article = await api.articles.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+        slug: params.postSlug,
+      },
+      cacheConfig,
+    )
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -110,24 +113,28 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [post, organization] = await Promise.all([
-    api.articles.lookup({
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-      slug: params.postSlug,
-    }),
-    api.organizations.lookup(
+  let article: Article | undefined
+
+  try {
+    article = await api.articles.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
+        slug: params.postSlug,
       },
       cacheConfig,
-    ),
-  ])
+    )
+  } catch (e) {
+    if (e instanceof ResponseError && e.response.status === 404) {
+      notFound()
+    } else {
+      throw e
+    }
+  }
 
-  if (!post || !organization) {
+  if (!article) {
     notFound()
   }
 
-  return <ClientPage post={post} organization={organization} />
+  return <ClientPage article={article} />
 }

@@ -1,5 +1,7 @@
-import { NotificationsOutlined } from '@mui/icons-material'
+import { NotificationsOutlined, VerifiedUser } from '@mui/icons-material'
 import {
+  MaintainerAccountReviewedNotification,
+  MaintainerAccountUnderReviewNotification,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
@@ -580,6 +582,57 @@ const TeamAdminMemberPledged = ({
   )
 }
 
+const MaintainerAccountUnderReview = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: MaintainerAccountUnderReviewNotification
+}) => {
+  return (
+    <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
+      {{
+        text: (
+          <>
+            Your{' '}
+            <Link href="/finance/account">
+              <>payout account</>
+            </Link>{' '}
+            is under review. Transfers are paused until we complete the review
+            of your account.
+          </>
+        ),
+        icon: <VerifiedUser />,
+      }}
+    </Item>
+  )
+}
+
+const MaintainerAccountReviewed = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: MaintainerAccountReviewedNotification
+}) => {
+  return (
+    <Item n={n} iconClasses="bg-green-200 text-green-500">
+      {{
+        text: (
+          <>
+            Your{' '}
+            <Link href="/finance/account">
+              <>payout account</>
+            </Link>{' '}
+            has been reviewed successfully. Transfers are resumed.
+          </>
+        ),
+        icon: <VerifiedUser />,
+      }}
+    </Item>
+  )
+}
+
 export const Notification = ({
   n,
   setIsInNestedModal,
@@ -657,6 +710,25 @@ export const Notification = ({
       if (n.team_admin_member_pledged) {
         return (
           <TeamAdminMemberPledged n={n} payload={n.team_admin_member_pledged} />
+        )
+      }
+
+    case NotificationType.MAINTAINER_ACCOUNT_UNDER_REVIEW_NOTIFICATION:
+      if (n.maintainer_account_under_review) {
+        return (
+          <MaintainerAccountUnderReview
+            n={n}
+            payload={n.maintainer_account_under_review}
+          />
+        )
+      }
+    case NotificationType.MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION:
+      if (n.maintainer_account_reviewed) {
+        return (
+          <MaintainerAccountReviewed
+            n={n}
+            payload={n.maintainer_account_reviewed}
+          />
         )
       }
   }

@@ -10,6 +10,8 @@ export const ACCOUNT_TYPE_DISPLAY_NAMES: Record<AccountType, string> = {
 export const ACCOUNT_STATUS_DISPLAY_NAMES: Record<Status, string> = {
   [Status.CREATED]: 'Onboarding incomplete',
   [Status.ONBOARDING_STARTED]: 'Onboarding incomplete',
+  [Status.UNREVIEWED]: 'Active',
+  [Status.UNDER_REVIEW]: 'Under review',
   [Status.ACTIVE]: 'Active',
 }
 

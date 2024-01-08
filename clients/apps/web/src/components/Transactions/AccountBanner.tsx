@@ -33,6 +33,10 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
     organizationAccount !== undefined &&
     personalAccount !== undefined &&
     organizationAccount.id !== personalAccount.id
+  const isActive =
+    currentAccount?.status === Status.UNREVIEWED ||
+    currentAccount?.status === Status.ACTIVE
+  const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
 
   if (!currentAccount) {
     return (
@@ -76,7 +80,30 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
     )
   }
 
-  if (currentAccount && currentAccount.status !== Status.ACTIVE) {
+  if (currentAccount && isUnderReview) {
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[currentAccount.account_type]
+    return (
+      <Banner
+        color="default"
+        right={
+          <Link href={setupLink}>
+            <Button size="sm">Read more</Button>
+          </Link>
+        }
+      >
+        <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
+        <span className="text-sm">
+          Your{' '}
+          <strong>
+            {ACCOUNT_TYPE_DISPLAY_NAMES[currentAccount.account_type]}
+          </strong>{' '}
+          account is under review
+        </span>
+      </Banner>
+    )
+  }
+
+  if (currentAccount && !isActive && !isUnderReview) {
     const AccountTypeIcon = ACCOUNT_TYPE_ICON[currentAccount.account_type]
     return (
       <Banner
@@ -99,7 +126,7 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
     )
   }
 
-  if (currentAccount && currentAccount.status === Status.ACTIVE) {
+  if (currentAccount && isActive) {
     const accountType = currentAccount.account_type
     const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
     return (

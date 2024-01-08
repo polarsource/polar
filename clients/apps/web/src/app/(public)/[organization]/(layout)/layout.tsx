@@ -34,6 +34,10 @@ export default async function Layout({
     notFound()
   }
 
+  if (!organization) {
+    notFound()
+  }
+
   return (
     <EmptyLayout>
       <ClientLayout organization={organization}>{children}</ClientLayout>

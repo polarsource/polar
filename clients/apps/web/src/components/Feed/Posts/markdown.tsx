@@ -109,18 +109,17 @@ export const wrapStrictCreateElement = (args: {
         children = undefined // can never have children
       }
 
+      if (['subscribenow', 'paywall'].includes(customComponentName)) {
+        trimProps.article = args.article
+        // Default to true in the client side renderer. When rendering posts for end-users, the premium content is already stripped out by the backend.
+        trimProps.showPaywalledContent = args.showPaywalledContent ?? true
+        trimProps.isSubscriber = args.isSubscriber ?? false
+      }
+
       return React.createElement(
         type,
-
         {
           ...trimProps,
-
-          // Dependency inject article to all components
-          article: args.article,
-
-          // Default to true in the client side renderer. When rendering posts for end-users, the premium content is already stripped out by the backend.
-          showPaywalledContent: args.showPaywalledContent ?? true,
-          isSubscriber: args.isSubscriber ?? false,
         } as JSX.IntrinsicAttributes,
         children,
       )

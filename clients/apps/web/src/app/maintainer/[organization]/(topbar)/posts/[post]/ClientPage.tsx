@@ -6,9 +6,11 @@ import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
+import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
+import { Banner } from 'polarkit/components/ui/molecules'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -16,6 +18,7 @@ const ClientPage = () => {
   const { post: postSlug, organization: organizationName } = useParams()
   const post = useArticleLookup(organizationName as string, postSlug as string)
   const router = useRouter()
+  const [animateSaveBanner, setAnimateSaveBanner] = useState(false)
 
   const [updateArticle, setUpdateArticle] = useState<
     ArticleUpdate & { title: string; body: string }
@@ -39,10 +42,18 @@ const ClientPage = () => {
       return
     }
 
-    await update.mutateAsync({
-      id: post.data.id,
-      articleUpdate: updateArticle,
-    })
+    try {
+      await update.mutateAsync({
+        id: post.data.id,
+        articleUpdate: updateArticle,
+      })
+
+      setAnimateSaveBanner(true)
+
+      setTimeout(() => {
+        setAnimateSaveBanner(false)
+      }, 2000)
+    } catch (err) {}
   }, [post, update, updateArticle])
 
   const handleContinue = useCallback(async () => {
@@ -114,6 +125,18 @@ const ClientPage = () => {
           showPaywalledContent: true,
         }}
       />
+      <AnimatePresence>
+        {animateSaveBanner && (
+          <motion.div
+            className="fixed bottom-24 left-1/2 z-10 -translate-x-1/2"
+            animate={{ opacity: 1 }}
+            initial={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <Banner color="muted">Post was saved ✨</Banner>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Tabs>
   )
 }

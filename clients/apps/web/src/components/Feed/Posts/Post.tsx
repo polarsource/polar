@@ -123,7 +123,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
         {props.article.title}
       </Link>
       <div className="flex flex-col flex-wrap">
-        <div className="prose prose-headings:first:mt-0 prose-p:first:mt-0 prose-img:first:mt-0 prose-p:last:mb-0 dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-polar-50 prose-headings:font-normal prose-p:text-gray-600 prose-img:rounded-2xl dark:prose-p:text-polar-300 dark:text-polar-300 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline w-full max-w-none text-gray-600">
+        <div className="prose prose-headings:first:mt-0 prose-p:first:mt-0 prose-img:first:mt-0 prose-p:last:mb-0 dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 dark:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline w-full max-w-none text-gray-600">
           <AbbreviatedBrowserRender article={props.article} />
         </div>
       </div>

@@ -209,14 +209,9 @@ const PostItem = (post: Article) => {
             <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
               {post.title}
             </h3>
-            <p
-              className={twMerge(
-                'text-md line-clamp-4 w-full flex-wrap truncate whitespace-break-spaces break-words leading-loose text-gray-500 transition-colors duration-200',
-                'dark:text-polar-400 text-gray-700',
-              )}
-            >
+            <div className="prose prose-headings:first:mt-0 prose-p:first:mt-0 prose-img:first:mt-0 prose-p:last:mb-0 dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 dark:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline w-full max-w-none text-gray-600">
               <AbbreviatedBrowserRender article={post} />
-            </p>
+            </div>
           </div>
           <div className="flex flex-row items-center justify-between whitespace-nowrap">
             <div className="dark:text-polar-300  flex w-full flex-row flex-wrap gap-x-3 text-sm text-gray-500">

@@ -9,6 +9,7 @@ import structlog
 from sqlalchemy import Select, and_, select
 from sqlalchemy.orm import joinedload
 
+from polar.config import settings
 from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.open_collective.service import (
@@ -20,7 +21,9 @@ from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.models import Account, Organization, User
+from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
+from polar.transaction.service.transaction import transaction as transaction_service
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -37,6 +40,13 @@ class AccountAlreadyExistsError(AccountServiceError):
 
 
 class AccountDoesNotExist(AccountServiceError):
+    def __init__(self, id: UUID) -> None:
+        self.id = id
+        message = f"The account with id {id} does not exist."
+        super().__init__(message)
+
+
+class AccountExternalIdDoesNotExist(AccountServiceError):
     def __init__(self, external_id: str) -> None:
         self.external_id = external_id
         message = f"No associated account exists with external ID {external_id}"
@@ -111,7 +121,26 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         else:
             raise AccountServiceError("Unknown account type")
 
-        print(account.users)
+        return account
+
+    async def check_review_threshold(
+        self, session: AsyncSession, account_id: UUID
+    ) -> Account:
+        account = await self.get_by_id(session, account_id)
+        if account is None:
+            raise AccountDoesNotExist(account_id)
+
+        if account.is_active():
+            return account
+
+        transfers_sum = await transaction_service.get_transactions_sum(
+            session, account_id, type=TransactionType.transfer
+        )
+        if transfers_sum >= settings.ACCOUNT_TRANSFERS_REVIEW_THRESHOLD:
+            account.status = Account.Status.UNDER_REVIEW
+            session.add(account)
+            await session.commit()
+
         return account
 
     async def _build_stripe_account_name(
@@ -199,7 +228,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     ) -> Account:
         account = await self.get_by_stripe_id(session, stripe_account.id)
         if account is None:
-            raise AccountDoesNotExist(stripe_account.id)
+            raise AccountExternalIdDoesNotExist(stripe_account.id)
 
         account.email = stripe_account.email
         account.country = stripe_account.country

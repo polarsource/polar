@@ -171,6 +171,8 @@ class TransferTransactionService(BaseTransactionService):
         session.add(incoming_transaction)
         await session.commit()
 
+        await account_service.check_review_threshold(session, destination_account.id)
+
         return (outgoing_transaction, incoming_transaction)
 
     async def create_transfer_from_charge(

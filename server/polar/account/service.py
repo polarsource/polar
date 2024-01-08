@@ -24,6 +24,7 @@ from polar.models import Account, Organization, User
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.worker import enqueue_job
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -37,13 +38,6 @@ class AccountServiceError(PolarError):
 class AccountAlreadyExistsError(AccountServiceError):
     def __init__(self) -> None:
         super().__init__("An account already exists for this organization.")
-
-
-class AccountDoesNotExist(AccountServiceError):
-    def __init__(self, id: UUID) -> None:
-        self.id = id
-        message = f"The account with id {id} does not exist."
-        super().__init__(message)
 
 
 class AccountExternalIdDoesNotExist(AccountServiceError):
@@ -124,22 +118,29 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return account
 
     async def check_review_threshold(
-        self, session: AsyncSession, account_id: UUID
+        self, session: AsyncSession, account: Account
     ) -> Account:
-        account = await self.get_by_id(session, account_id)
-        if account is None:
-            raise AccountDoesNotExist(account_id)
-
         if account.is_active():
             return account
 
         transfers_sum = await transaction_service.get_transactions_sum(
-            session, account_id, type=TransactionType.transfer
+            session, account.id, type=TransactionType.transfer
         )
         if transfers_sum >= settings.ACCOUNT_TRANSFERS_REVIEW_THRESHOLD:
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
             await session.commit()
+
+        return account
+
+    async def confirm_account_reviewed(
+        self, session: AsyncSession, account: Account
+    ) -> Account:
+        account.status = Account.Status.ACTIVE
+        session.add(account)
+        await session.commit()
+
+        await enqueue_job("account.reviewed", account_id=account.id)
 
         return account
 

@@ -227,7 +227,7 @@ class TransferTransactionService(BaseTransactionService):
         session.add(incoming_transaction)
         await session.commit()
 
-        await account_service.check_review_threshold(session, destination_account.id)
+        await account_service.check_review_threshold(session, destination_account)
 
         return (outgoing_transaction, incoming_transaction)
 

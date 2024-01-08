@@ -6,6 +6,7 @@ from textual.binding import Binding
 from polar.worker import lifespan
 
 from .db import engine
+from .screens.accounts.list import AccountsListScreen
 from .screens.dashboard import DashboardScreen
 from .screens.organizations.list import OrganizationsListScreen
 from .screens.pledges.list import PledgesListScreen
@@ -15,12 +16,14 @@ from .screens.repositories.list import RepositoriesListScreen
 class PolarBackOffice(App[None]):
     MODES = {
         "dashboard": DashboardScreen,
+        "accounts": AccountsListScreen,
         "pledges": PledgesListScreen,
         "organizations": OrganizationsListScreen,
         "repositories": RepositoriesListScreen,
     }
     BINDINGS = [
         ("d", "switch_mode('dashboard')", "Dashboard"),
+        ("a", "switch_mode('accounts')", "Accounts"),
         ("p", "switch_mode('pledges')", "Pledges"),
         ("o", "switch_mode('organizations')", "Organizations"),
         ("r", "switch_mode('repositories')", "Repositories"),

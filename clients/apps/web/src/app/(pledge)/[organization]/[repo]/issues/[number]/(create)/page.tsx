@@ -103,19 +103,17 @@ export default async function Page({
     rewards = rewardsSummary
     pulls = pullRequests.items || []
   } catch (e) {
-    console.error(e)
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
   }
 
   if (!issue) {
-    console.log('amsdamnskjdnaksd')
     notFound()
   }
 
   return (
-    <div className="flex w-full flex-col gap-y-12">
+    <>
       <Pledge
         issue={issue}
         htmlBody={issueHTMLBody}
@@ -124,6 +122,6 @@ export default async function Page({
         gotoURL={undefined}
         pullRequests={pulls}
       />
-    </div>
+    </>
   )
 }

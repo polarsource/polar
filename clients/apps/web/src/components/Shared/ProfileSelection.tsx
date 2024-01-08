@@ -5,6 +5,7 @@ import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useListAllOrganizations } from 'polarkit/hooks'
@@ -49,9 +50,11 @@ const ProfileSelection = ({
     return currentOrgFromURL && useOrgFromURL ? currentOrgFromURL : undefined
   }, [currentOrgFromURL, useOrgFromURL])
 
+  const router = useRouter()
+
   const onLogout = async () => {
     await logout()
-    window.location.href = '/'
+    router.push('/')
   }
 
   if (!loggedUser) {
@@ -195,9 +198,11 @@ export const ProfileMenu = ({ className = '' }) => {
     setOpen(false)
   })
 
+  const router = useRouter()
+
   const onLogout = async () => {
     await logout()
-    window.location.href = '/'
+    router.push('/')
   }
 
   if (!loggedUser) {

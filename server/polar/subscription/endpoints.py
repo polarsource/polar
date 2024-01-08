@@ -3,7 +3,7 @@ from datetime import date
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
+from fastapi import APIRouter, Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4, EmailStr
 
@@ -23,7 +23,6 @@ from polar.organization.dependencies import (
 )
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.posthog import posthog
 from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
@@ -58,26 +57,7 @@ from .service.subscription_tier import subscription_tier as subscription_tier_se
 
 log = structlog.get_logger()
 
-
-async def is_feature_flag_enabled(auth: Auth = Depends(Auth.optional_user)) -> None:
-    if not posthog.client:
-        # allowed
-        return None
-
-    if auth.subject is None or auth.user is None:
-        raise HTTPException(403, "You don't have access to this feature.")
-
-    if not posthog.client.feature_enabled(
-        "subscriptions", auth.user.posthog_distinct_id
-    ):
-        raise HTTPException(403, "You don't have access to this feature.")
-
-
-router = APIRouter(
-    prefix="/subscriptions",
-    tags=["subscriptions"],
-    dependencies=[Depends(is_feature_flag_enabled)],
-)
+router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
 
 @router.get(

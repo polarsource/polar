@@ -1,6 +1,5 @@
 import random
 import string
-from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock
@@ -9,7 +8,6 @@ import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
 
-from polar.app import app
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.db.postgres import AsyncSession
@@ -28,7 +26,6 @@ from polar.models import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
-from polar.subscription.endpoints import is_feature_flag_enabled
 from tests.fixtures.random_objects import create_organization, create_user
 
 
@@ -47,15 +44,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     )
     mocker.patch("polar.subscription.service.subscription.stripe_service", new=mock)
     return mock
-
-
-@pytest.fixture(autouse=True, scope="package")
-def override_is_feature_flag_enabled() -> Iterator[None]:
-    app.dependency_overrides[is_feature_flag_enabled] = lambda: True
-
-    yield
-
-    app.dependency_overrides.pop(is_feature_flag_enabled)
 
 
 async def create_subscription_tier(

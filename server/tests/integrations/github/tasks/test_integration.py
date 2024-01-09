@@ -35,6 +35,16 @@ async def test_installation_no_notifications(
     """
 
     async def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
+        for arq_kwarg in {
+            "_job_id",
+            "_queue_name",
+            "_defer_until",
+            "_defer_by",
+            "_expires",
+            "_job_try",
+        }:
+            kwargs.pop(arq_kwarg, None)
+
         if name == "github.repo.sync.issues":
             return await tasks.repo.sync_repository_issues(job_context, *args, **kwargs)
         if name == "github.repo.sync.pull_requests":

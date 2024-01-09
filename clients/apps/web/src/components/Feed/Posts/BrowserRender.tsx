@@ -39,7 +39,7 @@ const BrowserSyntaxHighlighter = dynamic(
 const BrowserSyntaxHighlighterLoading = () => {
   const value = useContext(SyntaxHighlighterContext)
   return (
-    <pre className="w-[2000px] max-w-full">
+    <pre className="w-full">
       <code className="text-black dark:text-white">{value}</code>
     </pre>
   )

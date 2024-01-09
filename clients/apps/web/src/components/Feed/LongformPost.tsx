@@ -95,7 +95,7 @@ export default function LongformPost({
 
   return (
     <StaggerReveal
-      className="max-w-2xl"
+      className="w-full max-w-2xl"
       transition={staggerTransition}
       variants={animationVariants}
     >

@@ -45,7 +45,10 @@ export const Default: Story = {
     repository: repoWithData,
     repositories: [repo],
     totalIssueCount: 4,
-    issuesFunding: [issueFunding, issueFunding, issueFunding, issueFunding],
+    issuesFunding: {
+      items: [issueFunding, issueFunding, issueFunding, issueFunding],
+      pagination: { max_page: 4, total_count: 100 },
+    },
   },
   render: (args) => {
     return (

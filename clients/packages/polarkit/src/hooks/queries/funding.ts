@@ -7,7 +7,7 @@ import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { api } from '../../..'
 import { defaultRetry } from './retry'
 
-export const useSearchFundedIssues: (v: {
+export const useSearchFunding: (v: {
   organizationName?: string
   repositoryName?: string
   q?: string

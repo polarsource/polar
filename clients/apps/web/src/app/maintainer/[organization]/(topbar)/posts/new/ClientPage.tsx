@@ -57,6 +57,7 @@ const ClientPage = () => {
           article: { ...article, organization: org, byline: org },
           isSubscriber: true,
           showPaywalledContent: true,
+          animation: false,
         }}
       />
     </Tabs>

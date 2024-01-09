@@ -94,6 +94,7 @@ export const PostEditor = ({
                 <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative my-8 flex h-full min-h-screen w-full flex-col items-center rounded-[3rem] md:bg-white md:p-12 md:shadow-xl dark:md:border">
                   <LongformPost
                     {...previewProps}
+                    animation={false}
                     revealTransition={{ duration: 0 }}
                     staggerTransition={{ staggerChildren: 0 }}
                     showPaywalledContent={previewAs === 'premium'}

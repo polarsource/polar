@@ -1,4 +1,8 @@
-import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  ReadonlyURLSearchParams,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation'
 import { Paginator } from 'polarkit/components/ui/atoms'
 import {
   PropsWithChildren,
@@ -15,6 +19,7 @@ interface PaginationProps extends PropsWithChildren {
   siblingCount?: number
   onPageChange: (page: number) => void
   className?: string
+  currentURL: ReadonlyURLSearchParams
 }
 
 const Pagination = ({ children, ...paginatorProps }: PaginationProps) => {

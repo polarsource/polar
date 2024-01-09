@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Button from './Button'
 
@@ -12,6 +12,7 @@ interface PaginatorProps {
   siblingCount?: number
   onPageChange: (page: number) => void
   className?: string
+  currentURL: URLSearchParams
 }
 
 const Paginator = ({
@@ -21,6 +22,7 @@ const Paginator = ({
   siblingCount = 1,
   onPageChange,
   className,
+  currentURL,
 }: PaginatorProps) => {
   const paginationRange = usePagination({
     totalCount,
@@ -29,13 +31,11 @@ const Paginator = ({
     siblingCount,
   })
 
-  const onNext = useCallback(() => {
-    onPageChange(currentPage + 1)
-  }, [onPageChange, currentPage])
-
-  const onPrevious = useCallback(() => {
-    onPageChange(currentPage - 1)
-  }, [onPageChange, currentPage])
+  const buildUrlForPage = (page: number): URLSearchParams => {
+    const url = new URLSearchParams(currentURL)
+    url.set('page', page.toString())
+    return url
+  }
 
   // If there are less than 2 times in pagination range we shall not render the component
   if (currentPage === 0 || (paginationRange?.length ?? 0) < 2) {
@@ -51,14 +51,21 @@ const Paginator = ({
         className,
       )}
     >
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={onPrevious}
-        disabled={currentPage === 1}
-      >
-        <ChevronLeft fontSize="small" />
-      </Button>
+      <a href={`?${buildUrlForPage(currentPage > 1 ? currentPage - 1 : 1)}`}>
+        <Button
+          variant="secondary"
+          size="sm"
+          asChild
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            onPageChange(currentPage - 1)
+          }}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft fontSize="small" />
+        </Button>
+      </a>
       {paginationRange?.map((pageNumber, idx) => {
         // If the pageItem is a DOT, render the DOTS unicode character
         if (typeof pageNumber === 'symbol') {
@@ -71,26 +78,42 @@ const Paginator = ({
 
         // Render our Page Pills
         return (
-          <Button
-            key={pageNumber}
-            variant={pageNumber === currentPage ? 'default' : 'secondary'}
-            size="sm"
-            onClick={() =>
-              pageNumber !== currentPage && onPageChange(pageNumber)
-            }
-          >
-            {pageNumber}
-          </Button>
+          <a href={`?${buildUrlForPage(pageNumber)}`} key={pageNumber}>
+            <Button
+              asChild
+              variant={pageNumber === currentPage ? 'default' : 'secondary'}
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                pageNumber !== currentPage && onPageChange(pageNumber)
+              }}
+            >
+              {pageNumber}
+            </Button>
+          </a>
         )
       })}
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={onNext}
-        disabled={currentPage === lastPage}
+
+      <a
+        href={`?${buildUrlForPage(
+          typeof lastPage === 'number' ? lastPage : 0,
+        )}`}
       >
-        <ChevronRight fontSize="small" />
-      </Button>
+        <Button
+          variant="secondary"
+          asChild
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            onPageChange(currentPage + 1)
+          }}
+          disabled={currentPage === lastPage}
+        >
+          <ChevronRight fontSize="small" />
+        </Button>
+      </a>
     </div>
   )
 }

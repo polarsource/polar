@@ -17,7 +17,7 @@ export const ImageOverlay = (props: ComponentProps<'img'>) => {
         modalContent={
           <img
             {...props}
-            className={twMerge(props.className, 'w-full')}
+            className={twMerge(props.className, 'w-full max-w-screen-xl')}
             onClick={show}
           />
         }

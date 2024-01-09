@@ -1,5 +1,10 @@
 import { getServerSideAPI } from '@/utils/api'
-import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
+import {
+  ListResourceArticle,
+  Organization,
+  Platforms,
+  ResponseError,
+} from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -91,18 +96,31 @@ export default async function Page({
   const api = getServerSideAPI()
 
   let organization: Organization | undefined
+  let articles: ListResourceArticle | undefined
 
   try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    )
+    const [loadOrganization, loadArticles] = await Promise.all([
+      api.organizations.lookup(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.articles.search(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+    ])
+
+    organization = loadOrganization
+    articles = loadArticles
   } catch (e) {
     notFound()
   }
 
-  return <ClientPage organization={organization} />
+  return <ClientPage organization={organization} articles={articles} />
 }

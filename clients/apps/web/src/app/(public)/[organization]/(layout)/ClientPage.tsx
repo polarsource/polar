@@ -3,13 +3,11 @@
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { Modal, ModalHeader } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import Spinner from '@/components/Shared/Spinner'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { useAuth } from '@/hooks'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RssIcon } from '@heroicons/react/24/outline'
 import { ViewDayOutlined } from '@mui/icons-material'
 import {
@@ -29,7 +27,6 @@ import {
   CardFooter,
   CardHeader,
   CopyToClipboardInput,
-  ShadowBoxOnMd,
 } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import {
@@ -96,7 +93,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     [subscribers, subscribersCount],
   )
 
-  return isFeatureEnabled('feed') ? (
+  return (
     <div className="flex flex-col-reverse gap-x-16 md:flex-row">
       <div className="flex w-full flex-grow flex-col gap-y-6 md:max-w-xl">
         <h2 className="text-lg">Posts</h2>
@@ -290,15 +287,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
         }
       />
     </div>
-  ) : (
-    <ShadowBoxOnMd>
-      <div className="p-4">
-        <div className="flex flex-row items-start justify-between pb-8">
-          <h2 className="text-lg font-medium">Issues looking for funding</h2>
-        </div>
-        <IssuesLookingForFunding organization={organization} />
-      </div>
-    </ShadowBoxOnMd>
   )
 }
 

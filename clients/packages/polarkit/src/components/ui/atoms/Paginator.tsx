@@ -42,7 +42,8 @@ const Paginator = ({
     return null
   }
 
-  const lastPage = paginationRange?.[paginationRange.length - 1]
+  const maybeLastPage = paginationRange?.[paginationRange.length - 1]
+  const lastPage = typeof maybeLastPage === 'number' ? maybeLastPage : 1
 
   return (
     <div
@@ -51,16 +52,21 @@ const Paginator = ({
         className,
       )}
     >
-      <a href={`?${buildUrlForPage(currentPage > 1 ? currentPage - 1 : 1)}`}>
+      <a
+        // Navigation both with and without JS
+        href={`?${buildUrlForPage(currentPage > 1 ? currentPage - 1 : 1)}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          e.preventDefault()
+          if (currentPage > 1) {
+            onPageChange(currentPage - 1)
+          }
+        }}
+      >
         <Button
           variant="secondary"
           size="sm"
           asChild
-          onClick={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-            onPageChange(currentPage - 1)
-          }}
           disabled={currentPage === 1}
         >
           <ChevronLeft fontSize="small" />
@@ -78,16 +84,19 @@ const Paginator = ({
 
         // Render our Page Pills
         return (
-          <a href={`?${buildUrlForPage(pageNumber)}`} key={pageNumber}>
+          <a
+            href={`?${buildUrlForPage(pageNumber)}`}
+            key={pageNumber}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              pageNumber !== currentPage && onPageChange(pageNumber)
+            }}
+          >
             <Button
               asChild
               variant={pageNumber === currentPage ? 'default' : 'secondary'}
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                pageNumber !== currentPage && onPageChange(pageNumber)
-              }}
             >
               {pageNumber}
             </Button>
@@ -96,20 +105,20 @@ const Paginator = ({
       })}
 
       <a
-        href={`?${buildUrlForPage(
-          typeof lastPage === 'number' ? lastPage : 0,
-        )}`}
+        href={`?${buildUrlForPage(lastPage)}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          e.preventDefault()
+          if (currentPage < lastPage) {
+            onPageChange(currentPage + 1)
+          }
+        }}
       >
         <Button
           variant="secondary"
           asChild
           size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-            onPageChange(currentPage + 1)
-          }}
-          disabled={currentPage === lastPage}
+          disabled={currentPage >= lastPage}
         >
           <ChevronRight fontSize="small" />
         </Button>

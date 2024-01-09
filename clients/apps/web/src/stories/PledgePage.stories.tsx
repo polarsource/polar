@@ -32,7 +32,7 @@ export const Default: Story = {
   render: (args) => {
     return (
       <PolarQueryClientProvider>
-        <PublicLayout>
+        <PublicLayout showUpsellFooter={true}>
           <Pledge {...args} />
         </PublicLayout>
       </PolarQueryClientProvider>

@@ -4,14 +4,21 @@ import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { UpsellFooter } from './UpsellFooter'
 
-const Footer = ({ wide }: { wide?: boolean }) => {
+const Footer = ({
+  wide,
+  showUpsellFooter,
+}: {
+  wide?: boolean
+  showUpsellFooter: boolean
+}) => {
   return (
     <div
       className={twMerge(
         'dark:border-polar-800 dark:bg-polar-900 border-gray-75 flex w-full flex-col items-center space-y-24 border-t bg-white py-24 md:py-32',
       )}
     >
-      <UpsellFooter wide={wide} />
+      {showUpsellFooter ? <UpsellFooter wide={wide} /> : null}
+
       <div
         className={twMerge(
           'flex w-full flex-col gap-x-16 gap-y-24 px-8 md:flex-row md:justify-between md:gap-y-12',

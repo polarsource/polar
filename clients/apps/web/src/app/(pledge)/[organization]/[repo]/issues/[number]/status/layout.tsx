@@ -1,10 +1,24 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
 import TopbarLayout from '@/components/Layout/TopbarLayout'
+import { getServerSideAPI } from '@/utils/api'
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const api = getServerSideAPI()
+
+  const [authenticatedUser] = await Promise.all([
+    // Handle unauthenticated
+    api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+      return undefined
+    }),
+  ])
+
   return (
     <TopbarLayout logoPosition="center" isFixed={false} hideProfile={true}>
-      <PublicLayout>
+      <PublicLayout showUpsellFooter={!!authenticatedUser}>
         <>{children}</>
       </PublicLayout>
     </TopbarLayout>

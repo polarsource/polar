@@ -1,5 +1,6 @@
 import Markdown from 'markdown-to-jsx'
 import dynamic from 'next/dynamic'
+import { createContext, useContext } from 'react'
 import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'
 import BrowserPoll from './BrowserPoll'
@@ -14,10 +15,27 @@ import {
 } from './markdown'
 
 const BrowserMermaid = dynamic(() => import('./BrowserMermaid'), { ssr: false })
+
+// Dynamically load the SyntaxHighlighter (heavily reduces bundle sizes)
+//
+// While loading (and SSR), render a placeholder without syntax highlighting
+const SyntaxHighlighterContext = createContext('')
 const BrowserSyntaxHighlighter = dynamic(
   () => import('./SyntaxHighlighter/BrowserSyntaxHighlighter'),
-  { ssr: false },
+  {
+    ssr: false,
+    loading: () => <BrowserSyntaxHighlighterLoading />,
+  },
 )
+
+const BrowserSyntaxHighlighterLoading = () => {
+  const value = useContext(SyntaxHighlighterContext)
+  return (
+    <pre>
+      <code className="text-black dark:text-white">{value}</code>
+    </pre>
+  )
+}
 
 export const opts = {
   ...markdownOpts,
@@ -40,10 +58,14 @@ export const opts = {
           )
         }
         return (
-          <BrowserSyntaxHighlighter
-            language={language}
-            {...args.children.props}
-          />
+          <SyntaxHighlighterContext.Provider
+            value={args.children.props.children}
+          >
+            <BrowserSyntaxHighlighter
+              language={language}
+              {...args.children.props}
+            />
+          </SyntaxHighlighterContext.Provider>
         )
       }
       return <></>

@@ -1,5 +1,5 @@
+import { UserRead } from '@polar-sh/sdk'
 import { LogoIcon, LogoType } from 'polarkit/components/brand'
-import { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TopbarRight from './TopbarRight'
 
@@ -13,6 +13,7 @@ const Topbar = (props: {
   }
   hideProfile?: boolean
   useOrgFromURL: boolean
+  authenticatedUser?: UserRead
 }) => {
   const className = twMerge(
     props.isFixed !== false ? 'fixed z-20' : 'z-10',
@@ -57,9 +58,7 @@ const Topbar = (props: {
 
         <div className="relative flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
           {!hideProfile && (
-            <Suspense>
-              <TopbarRight />
-            </Suspense>
+            <TopbarRight authenticatedUser={props.authenticatedUser} />
           )}
         </div>
       </div>

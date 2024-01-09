@@ -1,20 +1,19 @@
-'use client'
-
-import { useAuth } from '@/hooks'
+import { UserRead } from '@polar-sh/sdk'
 import GithubLoginButton from './GithubLoginButton'
 import { ProfileMenu } from './ProfileSelection'
 
-const TopbarRight = () => {
-  const { currentUser, hydrated } = useAuth()
-
-  if (!hydrated) {
-    return <></>
-  }
-
+const TopbarRight = ({
+  authenticatedUser,
+}: {
+  authenticatedUser?: UserRead
+}) => {
   return (
     <>
-      {currentUser && <ProfileMenu authenticatedUser={currentUser} />}
-      {!currentUser && <GithubLoginButton text="Continue with GitHub" />}
+      {authenticatedUser ? (
+        <ProfileMenu authenticatedUser={authenticatedUser} />
+      ) : (
+        <GithubLoginButton text="Continue with GitHub" />
+      )}
     </>
   )
 }

@@ -16,7 +16,7 @@ export default async function Layout({
   ])
 
   return (
-    <PublicLayout showUpsellFooter={!!authenticatedUser}>
+    <PublicLayout showUpsellFooter={authenticatedUser === undefined}>
       <>{children}</>
     </PublicLayout>
   )

@@ -89,7 +89,7 @@ export default async function Layout({
             </div>
           </div>
         </div>
-        <Footer wide showUpsellFooter={!!authenticatedUser} />
+        <Footer wide showUpsellFooter={authenticatedUser === undefined} />
       </div>
     </EmptyLayout>
   )

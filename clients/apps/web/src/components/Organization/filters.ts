@@ -105,7 +105,6 @@ export const urlSearchFromObj = (
   const urlSearch = new URLSearchParams()
   if (searchParams.sort) {
     for (const s of searchParams.sort.split(',')) {
-      console.log('sort', s)
       urlSearch.append('sort', s)
     }
   }

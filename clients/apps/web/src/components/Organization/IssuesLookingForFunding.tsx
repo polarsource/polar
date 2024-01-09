@@ -96,6 +96,7 @@ const IssuesLookingForFunding = ({
             clientIssues.data?.pagination.total_count ??
             issues.pagination.total_count
           }
+          currentURL={search}
         >
           <div className="dark:divider-polar-700 -mx-6 flex flex-col divide-y md:divide-y-0">
             {listIssues.map((i) => (

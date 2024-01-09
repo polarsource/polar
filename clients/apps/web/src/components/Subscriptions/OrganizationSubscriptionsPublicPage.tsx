@@ -5,7 +5,6 @@ import {
   SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
-import { motion } from 'framer-motion'
 import React, { useMemo } from 'react'
 import SubscriptionGroupPublic from './SubscriptionGroupPublic'
 import { getSubscriptionTiersByType } from './utils'
@@ -24,12 +23,7 @@ const OrganizationSubscriptionsPublicPage: React.FC<
   )
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="flex flex-col"
-    >
+    <div className="flex flex-col">
       <h2 className="text-lg">Subscriptions</h2>
       <div className="dark:divide-polar-700 flex flex-col divide-y">
         <SubscriptionGroupPublic
@@ -57,7 +51,7 @@ const OrganizationSubscriptionsPublicPage: React.FC<
           subscribePath="/subscribe"
         />
       </div>
-    </motion.div>
+    </div>
   )
 }
 

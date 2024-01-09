@@ -120,7 +120,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     async def check_review_threshold(
         self, session: AsyncSession, account: Account
     ) -> Account:
-        if account.is_active():
+        if account.is_active() or account.is_under_review():
             return account
 
         transfers_sum = await transaction_service.get_transactions_sum(

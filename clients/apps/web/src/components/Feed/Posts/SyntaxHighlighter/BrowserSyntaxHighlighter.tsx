@@ -19,7 +19,7 @@ const BrowserSyntaxHighlighter = (props: {
   }
 
   return (
-    <div className="relative my-2 w-full">
+    <div className="relative my-2 w-[2000px] max-w-full">
       <ReactSyntaxHighlighter
         language={props.language}
         style={style}

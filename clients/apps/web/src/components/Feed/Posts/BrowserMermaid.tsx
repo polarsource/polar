@@ -39,7 +39,10 @@ export const BrowserMermaid: React.FC<BrowserMermaidProps> = ({
   return syntaxError ? (
     <pre>{syntaxError}</pre>
   ) : (
-    <div ref={divRef} className="flex items-center justify-center"></div>
+    <div
+      ref={divRef}
+      className="flex w-[2000px] max-w-full items-center justify-center"
+    ></div>
   )
 }
 

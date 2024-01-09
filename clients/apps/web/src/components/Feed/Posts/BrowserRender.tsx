@@ -1,5 +1,6 @@
 import Markdown from 'markdown-to-jsx'
 import dynamic from 'next/dynamic'
+import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { createContext, useContext } from 'react'
 import Embed from './BrowserEmbed'
 import Iframe from './BrowserIframe'
@@ -14,7 +15,14 @@ import {
   wrapStrictCreateElement,
 } from './markdown'
 
-const BrowserMermaid = dynamic(() => import('./BrowserMermaid'), { ssr: false })
+const BrowserMermaid = dynamic(() => import('./BrowserMermaid'), {
+  ssr: false,
+  loading: () => (
+    <Skeleton className="w-full p-8 font-mono text-sm">
+      Initializing Mermaid Renderer...
+    </Skeleton>
+  ),
+})
 
 // Dynamically load the SyntaxHighlighter (heavily reduces bundle sizes)
 //
@@ -31,7 +39,7 @@ const BrowserSyntaxHighlighter = dynamic(
 const BrowserSyntaxHighlighterLoading = () => {
   const value = useContext(SyntaxHighlighterContext)
   return (
-    <pre>
+    <pre className="w-[2000px] max-w-full">
       <code className="text-black dark:text-white">{value}</code>
     </pre>
   )

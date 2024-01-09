@@ -12,6 +12,7 @@ import { ViewDayOutlined } from '@mui/icons-material'
 import {
   Article,
   CreatePersonalAccessTokenResponse,
+  ListResourceArticle,
   Organization,
   SubscriptionTier,
   SubscriptionTierType,
@@ -37,7 +38,13 @@ import { getCentsInDollarString } from 'polarkit/money'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 
-const ClientPage = ({ organization }: { organization: Organization }) => {
+const ClientPage = ({
+  organization,
+  articles,
+}: {
+  organization: Organization
+  articles: ListResourceArticle
+}) => {
   const {
     isShown: rssModalIsShown,
     hide: hideRssModal,
@@ -48,7 +55,10 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   const infinitePosts =
     posts.data?.pages
       .flatMap((page) => page.items)
-      .filter((item): item is Article => Boolean(item)) ?? []
+      .filter((item): item is Article => Boolean(item)) ??
+    // Fallback to server side loaded articles
+    articles.items ??
+    []
 
   const [ref, inView] = useInView()
 

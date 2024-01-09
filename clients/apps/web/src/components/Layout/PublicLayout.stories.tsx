@@ -18,7 +18,7 @@ export const Default: Story = {
   },
   render: (args) => (
     <PolarQueryClientProvider>
-      <PublicLayout {...args}>
+      <PublicLayout {...args} showUpsellFooter={true}>
         <div className="bg-red-200 text-black">Content</div>
       </PublicLayout>
     </PolarQueryClientProvider>

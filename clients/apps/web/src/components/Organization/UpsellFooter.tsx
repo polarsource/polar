@@ -1,6 +1,3 @@
-'use client'
-
-import { useAuth } from '@/hooks'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   ArrowForward,
@@ -13,12 +10,6 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { twMerge } from 'tailwind-merge'
 
 export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
-  const { currentUser } = useAuth()
-
-  if (!!currentUser) {
-    return null
-  }
-
   return (
     <>
       <div

@@ -37,7 +37,7 @@ export default async function Layout({
         cacheConfig,
       ),
       // Handle unauthenticated
-      api.users.getAuthenticated(cacheConfig).catch(() => {
+      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
         return undefined
       }),
     ])
@@ -89,7 +89,7 @@ export default async function Layout({
             </div>
           </div>
         </div>
-        <Footer wide />
+        <Footer wide showUpsellFooter={!!authenticatedUser} />
       </div>
     </EmptyLayout>
   )

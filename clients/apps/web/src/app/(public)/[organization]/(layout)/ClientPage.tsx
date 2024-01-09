@@ -13,6 +13,8 @@ import {
   Article,
   CreatePersonalAccessTokenResponse,
   ListResourceArticle,
+  ListResourceSubscriptionSummary,
+  ListResourceSubscriptionTier,
   Organization,
   SubscriptionTier,
   SubscriptionTierType,
@@ -29,11 +31,7 @@ import {
   CopyToClipboardInput,
 } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
-import {
-  useSearchArticles,
-  useSubscriptionSummary,
-  useSubscriptionTiers,
-} from 'polarkit/hooks'
+import { useSearchArticles } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -41,9 +39,13 @@ import { useInView } from 'react-intersection-observer'
 const ClientPage = ({
   organization,
   articles,
+  subscriptionTiers,
+  subscriptionSummary,
 }: {
   organization: Organization
   articles: ListResourceArticle
+  subscriptionTiers: ListResourceSubscriptionTier
+  subscriptionSummary: ListResourceSubscriptionSummary
 }) => {
   const {
     isShown: rssModalIsShown,
@@ -68,20 +70,10 @@ const ClientPage = ({
     }
   }, [inView, posts])
 
-  const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
   const highlightedTiers = useMemo(
     () => subscriptionTiers?.items?.filter((tier) => tier.is_highlighted),
     [subscriptionTiers],
   )
-  const {
-    data: {
-      items: subscriptionSummary,
-      pagination: { total_count: subscribersCount },
-    } = {
-      items: [],
-      pagination: { total_count: 0 },
-    },
-  } = useSubscriptionSummary(organization.name)
 
   const getSubscriptionTierAudience = (tier: SubscriptionTier) => {
     switch (tier.type) {
@@ -93,12 +85,14 @@ const ClientPage = ({
   }
 
   const subscribers = useMemo(
-    () => subscriptionSummary?.slice(0, 11) ?? [],
+    () => (subscriptionSummary.items ?? []).slice(0, 11),
     [subscriptionSummary],
   )
 
+  const subscribersCount = subscriptionSummary.pagination.total_count
+
   const subscribersHiddenCount = useMemo(
-    () => subscribersCount - (subscribers.length ?? 0),
+    () => subscribersCount - subscribers.length,
     [subscribers, subscribersCount],
   )
 

@@ -1,5 +1,5 @@
 import { Article } from '@polar-sh/sdk'
-import React from 'react'
+import React, { JSXElementConstructor } from 'react'
 
 export type RenderArticle = Pick<
   Article,
@@ -12,6 +12,10 @@ export const wrapStrictCreateElement = (args: {
   showPaywalledContent?: boolean
   isSubscriber?: boolean
   defaultOverride?: React.FunctionComponent
+  overridableComponents?: (
+    | keyof JSX.IntrinsicElements
+    | JSXElementConstructor<any>
+  )[]
 }): ((
   type:
     | string
@@ -80,6 +84,7 @@ export const wrapStrictCreateElement = (args: {
       'poll',
       'paywall',
       'subscribenow',
+      ...(args.overridableComponents ?? []),
     ]
 
     // Custom components

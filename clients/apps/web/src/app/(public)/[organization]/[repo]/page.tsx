@@ -1,8 +1,12 @@
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
+import {
+  FilterSearchParams,
+  buildFundingFilters,
+  urlSearchFromObj,
+} from '@/components/Organization/filters'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
 import {
-  ListFundingSortBy,
   ListResourceRepository,
   Organization,
   Platforms,
@@ -93,51 +97,49 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: { organization: string; repo: string }
+  searchParams: FilterSearchParams
 }) {
   const api = getServerSideAPI()
+  const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  const organization = await api.organizations.lookup(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    },
-    cacheConfig,
-  )
+  const [repositories, issuesFunding, noFilterSearch] = await Promise.all([
+    api.repositories.search(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+        repositoryName: params.repo,
+      },
+      cacheConfig,
+    ),
+    api.funding.search(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+        repositoryName: params.repo,
+        query: filters.q,
+        sorting: filters.sort,
+        badged: filters.badged,
+        limit: 20,
+        closed: filters.closed,
+        page: searchParams.page ? parseInt(searchParams.page) : 1,
+      },
+      cacheConfig,
+    ),
+    api.funding.search(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+        repositoryName: params.repo,
+        limit: 20,
+      },
+      cacheConfig,
+    ),
+  ])
 
-  const repositories = await api.repositories.search(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    },
-    cacheConfig,
-  )
-
-  const issuesFunding = await api.funding.search(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-      repositoryName: params.repo,
-      badged: true,
-      closed: false,
-      sorting: [
-        ListFundingSortBy.MOST_FUNDED,
-        ListFundingSortBy.MOST_ENGAGEMENT,
-        ListFundingSortBy.NEWEST,
-      ],
-      limit: 20,
-    },
-    cacheConfig,
-  )
-
-  const totalIssueCount = issuesFunding.pagination.total_count
-
-  if (
-    organization === undefined ||
-    repositories === undefined ||
-    totalIssueCount === undefined
-  ) {
+  if (repositories === undefined) {
     return <PageNotFound />
   }
 
@@ -149,11 +151,11 @@ export default async function Page({
 
   return (
     <RepositoryPublicPage
-      organization={organization}
+      organization={repo.organization}
       repositories={repositories.items || []}
       repository={repo}
-      issuesFunding={issuesFunding.items || []}
-      totalIssueCount={totalIssueCount}
+      issuesFunding={issuesFunding}
+      totalIssueCount={noFilterSearch.pagination.total_count}
     />
   )
 }

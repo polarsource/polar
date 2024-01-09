@@ -6,7 +6,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, UserRead } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import { LogoType } from 'polarkit/components/brand'
-import React from 'react'
+import React, { Suspense } from 'react'
 import LayoutTopbarAuth from './LayoutTopbarAuth'
 
 const cacheConfig = {
@@ -83,7 +83,9 @@ export default async function Layout({
                   organization={organization}
                 />
               </div>
-              <div className="flex h-full w-full flex-col">{children}</div>
+              <div className="flex h-full w-full flex-col">
+                <Suspense>{children}</Suspense>
+              </div>
             </div>
           </div>
         </div>

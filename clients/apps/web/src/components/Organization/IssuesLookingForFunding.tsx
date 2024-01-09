@@ -7,8 +7,12 @@ import {
   SearchOutlined,
   SwapVertOutlined,
 } from '@mui/icons-material'
-import { ListFundingSortBy, Organization, Repository } from '@polar-sh/sdk'
-import { motion } from 'framer-motion'
+import {
+  ListFundingSortBy,
+  ListResourceIssueFunding,
+  Organization,
+  Repository,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -32,81 +36,38 @@ import {
   Fragment,
   SetStateAction,
   useCallback,
-  useMemo,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Pagination, { usePagination } from '../Shared/Pagination'
 import Spinner from '../Shared/Spinner'
 import {
-  DefaultFilters,
   FundingFilters,
+  buildFundingFilters,
   fundingSortingOptions,
   getFundSortingTitle,
 } from './filters'
-
-const getSort = (sort: string[] | null): ListFundingSortBy[] => {
-  const sorting: ListFundingSortBy[] = []
-
-  if (sort?.includes('oldest')) {
-    sorting.push(ListFundingSortBy.OLDEST)
-  }
-  if (sort?.includes('newest')) {
-    sorting.push(ListFundingSortBy.NEWEST)
-  }
-  if (sort?.includes('most_engagement')) {
-    sorting.push(ListFundingSortBy.MOST_ENGAGEMENT)
-  }
-  if (sort?.includes('most_funded')) {
-    sorting.push(ListFundingSortBy.MOST_FUNDED)
-  }
-  if (sort?.includes('most_recently_funded')) {
-    sorting.push(ListFundingSortBy.MOST_RECENTLY_FUNDED)
-  }
-
-  return sorting
-}
 
 interface IssuesLookingForFundingProps {
   repository?: Repository
   organization: Organization
   pageSize?: number
+  issues: ListResourceIssueFunding
 }
 
 const IssuesLookingForFunding = ({
   organization,
   repository,
   pageSize = 20,
+  issues,
 }: IssuesLookingForFundingProps) => {
   const search = useSearchParams()
-  const router = useRouter()
-
-  const initialFilter = useMemo(() => {
-    const s = search
-
-    const f: FundingFilters = {
-      ...DefaultFilters,
-    }
-    if (s?.has('q')) {
-      f.q = s.get('q') || ''
-    }
-    if (s?.has('sort')) {
-      f.sort = getSort(s.get('sort')?.split(',') ?? [])
-    }
-    if (s?.has('badged')) {
-      f.badged = true
-    }
-    if (s?.has('showClosed')) {
-      f.closed = undefined // undefined to show both closed and open issues
-    }
-
-    return f
-  }, [])
+  const initialFilter = buildFundingFilters(search)
 
   const [filters, setFilters] = useState<FundingFilters>(initialFilter)
   const { currentPage, setCurrentPage } = usePagination()
 
-  const issues = useSearchFunding({
+  const clientIssues = useSearchFunding({
     organizationName: organization.name,
     repositoryName: repository?.name,
     sort: filters.sort,
@@ -117,7 +78,9 @@ const IssuesLookingForFunding = ({
     limit: pageSize,
   })
 
-  const listIssues = issues.data?.items ?? []
+  // const listIssues = issues.data?.items ?? []
+  const listIssues =
+    (clientIssues.isFetched ? clientIssues.data?.items : issues.items) ?? []
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -129,14 +92,12 @@ const IssuesLookingForFunding = ({
           pageSize={pageSize}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          totalCount={issues?.data?.pagination.total_count ?? 0}
+          totalCount={
+            clientIssues.data?.pagination.total_count ??
+            issues.pagination.total_count
+          }
         >
-          <motion.div
-            className="dark:divider-polar-700 -mx-6 flex flex-col divide-y md:divide-y-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="dark:divider-polar-700 -mx-6 flex flex-col divide-y md:divide-y-0">
             {listIssues.map((i) => (
               <Fragment key={i.issue.id}>
                 <IssueSummary
@@ -169,11 +130,11 @@ const IssuesLookingForFunding = ({
                 )}
               </Fragment>
             ))}
-          </motion.div>
+          </div>
         </Pagination>
       ) : (
         <>
-          {issues.isFetched && listIssues.length === 0 ? (
+          {clientIssues.isFetched && listIssues.length === 0 ? (
             <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
               <span className="text-6xl">
                 <HowToVoteOutlined fontSize="inherit" />
@@ -199,7 +160,6 @@ interface IssuesFilterProps {
 export const IssuesFilter = ({
   filters,
   onSetFilters,
-  totalCount,
   spinner,
 }: IssuesFilterProps) => {
   const router = useRouter()
@@ -226,7 +186,8 @@ export const IssuesFilter = ({
 
       const url = new URL(window.location.href)
       const newPath = `${url.pathname}?${params.toString()}`
-      router.replace(newPath, { scroll: false })
+      // "Shallow navigation" (don't execute any nextjs navigation)
+      window.history.pushState({}, '', newPath)
     },
     [router],
   )

@@ -1,4 +1,9 @@
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
+import {
+  FilterSearchParams,
+  buildFundingFilters,
+  urlSearchFromObj,
+} from '@/components/Organization/filters'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
@@ -75,16 +80,32 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: { organization: string }
+  searchParams: FilterSearchParams
 }) {
   const api = getServerSideAPI()
+  const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  const [organization] = await Promise.all([
+  const [organization, issues] = await Promise.all([
     api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
+      },
+      cacheConfig,
+    ),
+    api.funding.search(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+        query: filters.q,
+        sorting: filters.sort,
+        badged: filters.badged,
+        limit: 20,
+        closed: filters.closed,
+        page: searchParams.page ? parseInt(searchParams.page) : 1,
       },
       cacheConfig,
     ),
@@ -101,7 +122,10 @@ export default async function Page({
           <div className="flex flex-row items-start justify-between pb-8">
             <h2 className="text-lg font-medium">Issues looking for funding</h2>
           </div>
-          <IssuesLookingForFunding organization={organization} />
+          <IssuesLookingForFunding
+            organization={organization}
+            issues={issues}
+          />
         </div>
       </ShadowBoxOnMd>
     </div>

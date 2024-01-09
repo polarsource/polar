@@ -1,4 +1,8 @@
-import { IssueFunding, Organization, Repository } from '@polar-sh/sdk'
+import {
+  ListResourceIssueFunding,
+  Organization,
+  Repository,
+} from '@polar-sh/sdk'
 import { formatStarsNumber } from 'polarkit/utils'
 import { externalURL, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
@@ -15,7 +19,7 @@ const RepositoryPublicPage = ({
   organization: Organization
   repository: Repository
   repositories: Repository[]
-  issuesFunding: IssueFunding[]
+  issuesFunding: ListResourceIssueFunding
   totalIssueCount: number
 }) => {
   return (
@@ -58,6 +62,7 @@ const RepositoryPublicPage = ({
       <IssuesLookingForFunding
         organization={organization}
         repository={repository}
+        issues={issuesFunding}
       />
 
       <HowItWorks />

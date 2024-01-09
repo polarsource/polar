@@ -96,7 +96,7 @@ async def payment_intent_succeeded(
                         session=session,
                         payload=payload,
                     )
-                    return
+                return
 
             log.error(
                 "stripe.webhook.payment_intent.succeeded.not_handled",

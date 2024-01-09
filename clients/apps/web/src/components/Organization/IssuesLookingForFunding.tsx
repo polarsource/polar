@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useSearchFundedIssues } from 'polarkit/hooks'
+import { useSearchFunding } from 'polarkit/hooks'
 import {
   ChangeEvent,
   Dispatch,
@@ -106,7 +106,7 @@ const IssuesLookingForFunding = ({
   const [filters, setFilters] = useState<FundingFilters>(initialFilter)
   const { currentPage, setCurrentPage } = usePagination()
 
-  const fundedIssues = useSearchFundedIssues({
+  const issues = useSearchFunding({
     organizationName: organization.name,
     repositoryName: repository?.name,
     sort: filters.sort,
@@ -117,17 +117,19 @@ const IssuesLookingForFunding = ({
     limit: pageSize,
   })
 
+  const listIssues = issues.data?.items ?? []
+
   return (
     <div className="flex flex-col gap-y-8">
       <div className="flex flex-row items-center">
         <IssuesFilter filters={filters} onSetFilters={setFilters} />
       </div>
-      {(fundedIssues.data?.items?.length ?? 0) > 0 ? (
+      {listIssues.length > 0 ? (
         <Pagination
           pageSize={pageSize}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-          totalCount={fundedIssues.data?.pagination.total_count ?? 0}
+          totalCount={issues?.data?.pagination.total_count ?? 0}
         >
           <motion.div
             className="dark:divider-polar-700 -mx-6 flex flex-col divide-y md:divide-y-0"
@@ -135,7 +137,7 @@ const IssuesLookingForFunding = ({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
-            {fundedIssues.data?.items?.map((i) => (
+            {listIssues.map((i) => (
               <Fragment key={i.issue.id}>
                 <IssueSummary
                   issue={i.issue}
@@ -170,12 +172,16 @@ const IssuesLookingForFunding = ({
           </motion.div>
         </Pagination>
       ) : (
-        <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
-          <span className="text-6xl">
-            <HowToVoteOutlined fontSize="inherit" />
-          </span>
-          <h2 className="text-lg">No funded issues found</h2>
-        </div>
+        <>
+          {issues.isFetched && listIssues.length === 0 ? (
+            <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
+              <span className="text-6xl">
+                <HowToVoteOutlined fontSize="inherit" />
+              </span>
+              <h2 className="text-lg">No issues found</h2>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   )

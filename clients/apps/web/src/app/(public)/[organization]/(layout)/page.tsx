@@ -1,6 +1,8 @@
 import { getServerSideAPI } from '@/utils/api'
 import {
   ListResourceArticle,
+  ListResourceSubscriptionSummary,
+  ListResourceSubscriptionTier,
   Organization,
   Platforms,
   ResponseError,
@@ -97,9 +99,16 @@ export default async function Page({
 
   let organization: Organization | undefined
   let articles: ListResourceArticle | undefined
+  let subscriptionTiers: ListResourceSubscriptionTier | undefined
+  let subscriptionSummary: ListResourceSubscriptionSummary | undefined
 
   try {
-    const [loadOrganization, loadArticles] = await Promise.all([
+    const [
+      loadOrganization,
+      loadArticles,
+      loadSubscriptionTiers,
+      loadSubscriptionSummary,
+    ] = await Promise.all([
       api.organizations.lookup(
         {
           platform: Platforms.GITHUB,
@@ -114,13 +123,36 @@ export default async function Page({
         },
         cacheConfig,
       ),
+      api.subscriptions.searchSubscriptionTiers(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.subscriptions.searchSubscriptionsSummary(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
     ])
 
     organization = loadOrganization
     articles = loadArticles
+    subscriptionTiers = loadSubscriptionTiers
+    subscriptionSummary = loadSubscriptionSummary
   } catch (e) {
     notFound()
   }
 
-  return <ClientPage organization={organization} articles={articles} />
+  return (
+    <ClientPage
+      organization={organization}
+      articles={articles}
+      subscriptionTiers={subscriptionTiers}
+      subscriptionSummary={subscriptionSummary}
+    />
+  )
 }

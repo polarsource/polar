@@ -4,6 +4,7 @@ import { useCurrentOrgAndRepoFromURL, useGitHubAccount } from '@/hooks'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
+import { UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Avatar } from 'polarkit/components/ui/atoms'
@@ -185,9 +186,15 @@ const ProfileSelection = ({
 
 export default ProfileSelection
 
-export const ProfileMenu = ({ className = '' }) => {
+export const ProfileMenu = ({
+  className,
+  authenticatedUser,
+}: {
+  className?: string
+  authenticatedUser: UserRead | undefined
+}) => {
   const classNames = twMerge('relative', className)
-  const { currentUser: loggedUser, logout } = useAuth()
+  const { logout } = useAuth()
   const personalOrg = usePersonalOrganization()
 
   const [isOpen, setOpen] = useState<boolean>(false)
@@ -204,6 +211,8 @@ export const ProfileMenu = ({ className = '' }) => {
     await logout()
     router.push('/')
   }
+
+  const loggedUser = authenticatedUser
 
   if (!loggedUser) {
     return <></>

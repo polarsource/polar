@@ -1,8 +1,8 @@
+import OrganizationSubscriptionsPublicPage from '@/components/Subscriptions/OrganizationSubscriptionsPublicPage'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
-import ClientPage from './ClientPage'
 
 const cacheConfig = {
   next: {
@@ -41,10 +41,12 @@ export async function generateMetadata(
   }
 
   return {
-    title: `${organization.name}`, // " | Polar is added by the template"
+    title: `${organization.pretty_name || organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.name} seeks funding for issues`,
-      description: `${organization.name} seeks funding for issues on Polar`,
+      title: `${organization.pretty_name || organization.name} subscriptions`,
+      description: `Subscribe to ${
+        organization.pretty_name || organization.name
+      }`,
       siteName: 'Polar',
 
       images: [
@@ -61,12 +63,14 @@ export async function generateMetadata(
           url: `https://polar.sh/og?org=${organization.name}`,
           width: 1200,
           height: 630,
-          alt: `${organization.name} seeks funding for issues`,
+          alt: `${organization.pretty_name || organization.name} subscriptions`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.name} seeks funding for issues`,
-      description: `${organization.name} seeks funding for issues on Polar`,
+      title: `${organization.pretty_name || organization.name} subscriptions`,
+      description: `Subscribe to ${
+        organization.pretty_name || organization.name
+      }`,
     },
   }
 }
@@ -78,11 +82,19 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [organization] = await Promise.all([
+  const [organization, subscriptionTiers] = await Promise.all([
     api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
+      },
+      cacheConfig,
+    ),
+    api.subscriptions.searchSubscriptionTiers(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+        limit: 100,
       },
       cacheConfig,
     ),
@@ -92,5 +104,10 @@ export default async function Page({
     notFound()
   }
 
-  return <ClientPage organization={organization} />
+  return (
+    <OrganizationSubscriptionsPublicPage
+      organization={organization}
+      subscriptionTiers={subscriptionTiers.items || []}
+    />
+  )
 }

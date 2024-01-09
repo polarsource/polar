@@ -1,3 +1,4 @@
+import { UserRead } from '@polar-sh/sdk'
 import { ReactNode } from 'react'
 import Topbar, { LogoPosition } from '../Shared/Topbar'
 import EmptyLayout from './EmptyLayout'
@@ -7,12 +8,14 @@ const TopbarLayout = ({
   logoPosition,
   isFixed,
   hideProfile,
+  authenticatedUser,
 }: {
   children: ReactNode
   logoPosition?: LogoPosition
   logoTile?: string
   isFixed?: boolean
   hideProfile?: boolean
+  authenticatedUser?: UserRead
 }) => {
   return (
     <EmptyLayout>
@@ -24,6 +27,7 @@ const TopbarLayout = ({
           isFixed={isFixed}
           useOrgFromURL={false}
           hideProfile={hideProfile}
+          authenticatedUser={authenticatedUser}
         />
         {children}
       </>

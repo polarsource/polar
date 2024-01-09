@@ -33,7 +33,6 @@ export default function ClientPage() {
     [org],
   )
 
-  console.log('accid', org?.account_id)
   const { data: organizationAccount } = useAccount(org?.account_id)
 
   const transfers = useTransferTransactions({
@@ -80,6 +79,7 @@ export default function ClientPage() {
               totalCount={transfers.data?.pagination.total_count ?? 0}
               pageSize={20}
               onPageChange={setCurrentPage}
+              currentURL={params}
             >
               <TransactionsList transactions={transfers.data?.items ?? []} />
             </Pagination>
@@ -90,6 +90,7 @@ export default function ClientPage() {
               totalCount={transfers.data?.pagination.total_count ?? 0}
               pageSize={20}
               onPageChange={setCurrentPage}
+              currentURL={params}
             >
               <TransactionsList transactions={payouts.data?.items ?? []} />
             </Pagination>

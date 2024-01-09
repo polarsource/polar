@@ -4,6 +4,7 @@ import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useOrganizationPaymentTransactions } from 'polarkit/hooks'
@@ -11,6 +12,7 @@ import { useOrganizationPaymentTransactions } from 'polarkit/hooks'
 export default function ClientPage() {
   const { currentPage, setCurrentPage } = usePagination()
   const { org } = useCurrentOrgAndRepoFromURL()
+  const params = useSearchParams()
 
   const transactions = useOrganizationPaymentTransactions({
     organizationId: org?.id,
@@ -35,6 +37,7 @@ export default function ClientPage() {
           totalCount={transactions.data?.pagination.total_count ?? 0}
           pageSize={20}
           onPageChange={setCurrentPage}
+          currentURL={params}
         >
           <TransactionsList transactions={transactions.data?.items ?? []} />
         </Pagination>

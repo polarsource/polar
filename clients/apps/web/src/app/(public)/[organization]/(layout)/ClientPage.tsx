@@ -4,7 +4,6 @@ import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { Modal, ModalHeader } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
-import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { useAuth } from '@/hooks'
@@ -97,14 +96,12 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     <div className="flex flex-col-reverse gap-x-16 md:flex-row">
       <div className="flex w-full flex-grow flex-col gap-y-6 md:max-w-xl">
         <h2 className="text-lg">Posts</h2>
-        <StaggerReveal className="flex w-full flex-col gap-y-6">
+        <div className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-6">
             {infinitePosts.length > 0 ? (
               <>
                 {infinitePosts.map((post) => (
-                  <StaggerReveal.Child key={post.id}>
-                    <PostComponent article={post} key={post.id} />
-                  </StaggerReveal.Child>
+                  <PostComponent article={post} key={post.id} />
                 ))}
                 <div ref={ref} />
               </>
@@ -124,7 +121,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               </>
             )}
           </div>
-        </StaggerReveal>
+        </div>
       </div>
 
       <div className="flex w-full flex-shrink flex-col gap-y-10 self-start md:max-w-[300px]">

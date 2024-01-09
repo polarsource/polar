@@ -103,7 +103,7 @@ async def test_list_rewards(
     assert org_tuple[1].github_username is None
     assert org_tuple[1].organization_id is organization.id
     assert org_tuple[1].share_thousands == 700
-    assert org_tuple[2].amount == round(pledge.amount * 0.9 * 0.7)  # hmmm
+    assert org_tuple[2].amount == round(pledge.amount * 0.95 * 0.7)  # hmmm
 
 
 @pytest.mark.asyncio

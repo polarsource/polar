@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.organization import Organization
@@ -54,7 +55,12 @@ class IssueReward(RecordModel):
         return relationship(User, lazy="raise")
 
     def get_share_amount(self, pledge: "Pledge") -> int:
-        return round(pledge.amount * 0.9 * self.share_thousands / 1000)
+        return round(
+            pledge.amount
+            * ((100 - settings.PLEDGE_FEE_PERCENT) / 100)
+            * self.share_thousands
+            / 1000
+        )
 
     def get_rewarded(self) -> "Organization | User | None":
         if self.organization is not None:

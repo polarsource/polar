@@ -674,7 +674,7 @@ class TestTransferSubscriptionPaidInvoice:
         )
         assert (
             transaction_service_mock.create_transfer_from_charge.call_args[1]["amount"]
-            == 9000
+            == 9500
         )
 
         stripe_service_mock.update_invoice.assert_called_once()

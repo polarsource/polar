@@ -100,7 +100,8 @@ class Settings(BaseSettings):
 
     ACCOUNT_TRANSFERS_REVIEW_THRESHOLD: int = 10000
 
-    SUBSCRIPTION_FEE_PERCENT: int = 10
+    SUBSCRIPTION_FEE_PERCENT: int = 5
+    PLEDGE_FEE_PERCENT: int = 5
 
     # Default organization setting for minimum pledge amount ($20)
     MINIMUM_ORG_PLEDGE_AMOUNT: int = 2000

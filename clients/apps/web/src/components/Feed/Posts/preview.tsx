@@ -31,7 +31,12 @@ export default function PreviewText(props: { article: Article }) {
         wrapper: (args: any) => <>{args.children}</>,
       }}
     >
-      {props.article.body.substring(0, 500)}
+      {props.article.body
+        .substring(0, 500)
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .trim()}
     </Markdown>
   )
 }

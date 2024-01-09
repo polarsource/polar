@@ -30,16 +30,21 @@ async def create_transaction(
 
 @pytest.mark.asyncio
 class TestCheckReviewThreshold:
-    async def test_active_account(
-        self, mocker: MockerFixture, session: AsyncSession, user: User
+    @pytest.mark.parametrize(
+        "status", [Account.Status.ACTIVE, Account.Status.UNDER_REVIEW]
+    )
+    async def test_not_applicable_account(
+        self,
+        status: Account.Status,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        user: User,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
 
-        account = await create_account(
-            session, admin=user, status=Account.Status.ACTIVE
-        )
+        account = await create_account(session, admin=user, status=status)
         updated_account = await account_service.check_review_threshold(session, account)
-        assert updated_account.status == Account.Status.ACTIVE
+        assert updated_account.status == status
 
         enqueue_job_mock.assert_not_called()
 

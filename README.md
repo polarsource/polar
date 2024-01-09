@@ -1,20 +1,22 @@
 <p align="center">
 
   <a href="https://polar.sh">
-    <img src="https://github.com/polarsource/polar/assets/281715/4a106e03-bb10-4399-9d72-6ef2af004986" />
-  </a>
+      <img src="https://github.com/polarsource/polar/assets/281715/98fa24e4-7289-46a3-8afb-db818bf17f74" />
 
+  </a>
 
 </p>
 
 <hr />
 <div align="center">
 
+<span>Public Beta - <a href="https://polar.sh/signup/maintainer">Get started</a></span>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>Public Alpha - <a href="https://polar.sh/signup/maintainer">Get started</a></span>
+<a href="https://polar.sh/polarsource">Blog</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://docs.polar.sh/faq/">FAQ</a>
+<a href="https://docs.polar.sh/">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://docs.polar.sh/api/">API</a>
 
@@ -36,40 +38,74 @@
 </div>
 <hr />
 
-## Polar: Empowering Open Source Maintainers to Become Entrepreneurs
-Our goal is to build a platform for open source maintainers to seamlessly set up, operate and scale value-add services and subscriptions to their backers – individuals and businesses alike.
+## Polar.sh: A Patreon for Open Source Developers
+A creator platform for developers and the open source ecosystem – built open source (Apache 2.0).
 
-Crafting on-demand and tiered subscription services tailored to suit their initiative, community and their users’ needs. From a suite of offerings such as:
-- **Prioritized issues**. What Polar is today with more to come (see below).
-- **Backer management & communication**. Automated and streamlined promotions, i.e tiered logos on README/Sites, newsletters, polls etc.
-- **Premium support**. Questions, implementation guidance to consultation scheduling etc.
-- **Premium access**. Educational material, roadmap voting, early or private access to repositories and packages and more.
-- **Custom**. We’ll have a Polar API to enable unlimited creativity for other services you might want to build across your domains and other platforms.
+Offering you – as a developer –  a platform on top of your GitHub repositories to:
 
-All available in a dashboard designed to make managing these services a delightful experience. In combination with insights and marketing tools to help grow them over time.
+- Build, own & reach your audience through free- and premium posts and newsletters.
+- Offer subscriptions of value-add benefits designed for our ecosystem & built-in to Polar. We'll handle value-add taxes.
+- Get funding behind your GitHub issues & split it with contributors (Rewards)
+- Integrate it all on your own docs, sites or services using our API & SDK.
 
-[Read more](https://blog.polar.sh/polar-v1-0-lets-fix-open-source-funding/) about our v1.0 goals and our announcement of having raised a $1.8M pre-seed to pursue this vision.
+### Subscriptions
 
-## Polar Public Alpha (v0.1)
-  <a href="https://polar.sh">
+- **Reach your entire audience with free tier(s).** You can build, grow & reach your entire audience (you own it and can export them at any time). They can subscribe for free with email-only and upgrade to paid later. Substack-style.
+- **Polar handles value-add taxes for paid tier(s).** We're proud to be the merchant of record & manage value-add taxes to enable this for individual developers.
+- **Unique business subscriptions.** Enabling all their team members to gain access to benefits. Offering unparalleled opportunities and value to subscriptions offered via Polar to businesses.
+- **Powerful, built-in, benefits.** Going beyond free text upsells to built-in services you can easily manage via Polar. Delightful for backers to consume.
 
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/polarsource/polar/assets/281715/94db6844-f5db-43db-bb57-78bfb51e8783">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/polarsource/polar/assets/281715/94db6844-f5db-43db-bb57-78bfb51e8783">
-    <img alt="Polar" src="https://github.com/polarsource/polar/assets/281715/94db6844-f5db-43db-bb57-78bfb51e8783">
-    </picture>
-  </a>
+We're going to invest heavily in automating typical benefits offered within the open source ecosystem. Making it seamless for you to manage & delightful for your backers to use. Some ideas in our pipeline short-term:
 
-Today, Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.
+- **Discord invites (unique roles per tier)**
+- **Sponsor Logo Automation.** Businesses can setup their logotype & description once and it automatically propagating across your README (PR/SVG) to sites/docs (SDK)
+- **Early access (private repo collaborators)**
+- **Sponsored Posts**
 
-For maintainers:
-1. **Embedded pledges.** Our GitHub app can automatically embed the Polar badge to get backers to pledge behind specific issues or features. You can enable it for all or select issues.
-2. **Better backlog.** Sorted by feedback and pledges. Filters by progress and stage.
-3. **Chrome extension.** Bring Polar with you to enhance GitHub Issues.
+_You can read more about this, posts & newsletters on our blog [here](https://polar.sh/polarsource/posts/polar-creator-platform-for-open-source-developers)._
 
-For backers (maintainers too):
-1. **Track dependencies.** Automatic detection of internal references to open source issues
-2. **Seamless pledging.** Ability to pledge behind them with a credit-card on file.
+### Posts & Newsletters
+![image](https://github.com/polarsource/polar/assets/281715/35be6500-21b4-4cb4-956d-17e8616bf161)
+
+**Features**
+- Public posts
+- Premium posts (paid subscribers)
+- Hybrid, i.e public with paywall sections
+- Publish online
+- Send email (newsletters)
+- Schedule posts
+
+**Editor & Content**
+- Markdown editor
+- Preview on web & email
+- Syntax highlighting
+- Youtube embeds
+- Issue embeds with funding promotion
+- Subscribe Now-button embeds
+- Paywall sections to paid subscribers
+- Drop images to embed them
+- _More to come_
+
+### Issue Funding & Contributor Rewards
+![image](https://github.com/polarsource/polar/assets/281715/89ab2fd6-8491-4706-b49f-8c6fcca2d34f)
+
+- Your users can pool funding behind issues/feature requests
+- Beautiful Funding SVG to automatically embed on select issues
+- Set public funding goals
+- Split funding with contributors - PR authors automatically suggested
+- Setup public rewards, i.e a percentage split to promote in advance
+- Fund such rewards yourself, i.e bounties.
+
+However, Issue Funding & Contributor Rewards on Polar is built for maintainers, not bounty hunters. You can read more about this feature and our principles around it [here](https://polar.sh/polarsource/posts/introducing-rewards).
+
+### Polar API & SDK
+You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api) and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
+
+## Pricing
+
+- No fixed, monthly, costs
+- 5% (Polar) + payment & payout fees (Stripe)
+- _We'll also cover Stripe fees from our 5% until March 31st, 2024._
 
 ## Roadmap, Issues & Feature Requests
 [Join our Discord](https://discord.gg/STfRufb32V) or [GitHub Discussions](https://github.com/orgs/polarsource/discussions) to help shape the future of Polar and to see what we're working on. We're excited to hear from you!
@@ -77,9 +113,6 @@ For backers (maintainers too):
 **🐛 Found a bug?** [Submit it here](https://github.com/polarsource/polar/issues).
 
 **🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures to security@polar.sh. See [Security](./README.md#Security)
-
-## Polar SDK
-Build your own integration with Polar using the [Polar SDK](./clients/packages/sdk) - a JavaScript library which exposes a client based on the Polar OpenAPI schema.
 
 ## Contributions
 
@@ -89,11 +122,17 @@ You can develop on Polar in GitHub Codespaces. The environment is pre-configured
 
 You can also develop on Polar locally on your computer, which is the recommended way of working if you want to get into the deep of how Polar works. Documentation on how to setup a development environment is incoming. Until then, if you're feeling adventurous checkout our repository structure below and [clients/README](./clients/README.md) and [server/README](./server/README.md) in particular.
 
+### Contributors
+<a href="https://github.com/polarsource/polar/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=polarsource/polar" />
+</a>
+
+
 ## Monorepo
 * **[server](./server/README.md)** – Python / FastAPI / Arq / SQLAlchemy (PostgreSQL) / Redis
 * **[clients](./clients/README.md)** – Turborepo
   * [web](./clients/apps/web) (Dashboard) – NextJS (TypeScript)
-  * [chrome-extension](./clients/apps/chrome-extension) – React (TypeScript)
+  * [chrome-extension](./clients/apps/chrome-extension) – React (TypeScript) - _To be deprecated_
   * [polarkit](./clients/packages/polarkit) - Shared React components
   * [SDK](./clients/packages/sdk) - Polar SDK
 

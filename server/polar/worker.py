@@ -1,5 +1,6 @@
 import functools
 import types
+import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -42,10 +43,10 @@ glob_arq_pool: ArqRedis | None = None
 
 
 @asynccontextmanager
-async def lifespan() -> AsyncIterator[None]:
+async def lifespan() -> AsyncIterator[ArqRedis]:
     global arq_pool
     arq_pool = await create_pool()
-    yield
+    yield arq_pool
     await arq_pool.close(True)
     arq_pool = None
 
@@ -142,12 +143,16 @@ async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
         "correlation_id"
     )
 
+    # Prefix job ID by task name by default
+    _job_id = kwargs.pop("_job_id", f"{name}:{uuid.uuid4().hex}")
+
     return await _enqueue_job(
         name,
         *args,
         request_correlation_id=request_correlation_id,
         polar_context=polar_context,
         **kwargs,
+        _job_id=_job_id,
     )
 
 

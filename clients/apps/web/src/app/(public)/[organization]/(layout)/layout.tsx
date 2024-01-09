@@ -3,7 +3,7 @@ import Footer from '@/components/Organization/Footer'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api'
-import { Organization, Platforms } from '@polar-sh/sdk'
+import { Organization, Platforms, UserRead } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import { LogoType } from 'polarkit/components/brand'
 import React from 'react'
@@ -25,15 +25,25 @@ export default async function Layout({
   const api = getServerSideAPI()
 
   let organization: Organization | undefined
+  let authenticatedUser: UserRead | undefined
 
   try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    )
+    const [loadOrganization, loadAuthenticatedUser] = await Promise.all([
+      api.organizations.lookup(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      // Handle unauthenticated
+      api.users.getAuthenticated(cacheConfig).catch(() => {
+        return undefined
+      }),
+    ])
+
+    organization = loadOrganization
+    authenticatedUser = loadAuthenticatedUser
   } catch (e) {
     notFound()
   }
@@ -59,7 +69,7 @@ export default async function Layout({
                   organization={organization}
                 />
 
-                <LayoutTopbarAuth />
+                <LayoutTopbarAuth authenticatedUser={authenticatedUser} />
               </div>
             </div>
           </div>

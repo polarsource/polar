@@ -13,7 +13,7 @@ const TopbarRight = () => {
 
   return (
     <>
-      {currentUser && <ProfileMenu />}
+      {currentUser && <ProfileMenu authenticatedUser={currentUser} />}
       {!currentUser && <GithubLoginButton text="Continue with GitHub" />}
     </>
   )

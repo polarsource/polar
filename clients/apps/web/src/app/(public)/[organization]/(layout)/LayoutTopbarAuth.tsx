@@ -1,29 +1,20 @@
-'use client'
-
-import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import { ProfileMenu } from '@/components/Shared/ProfileSelection'
-import { useAuth } from '@/hooks/auth'
-import { UserSignupType } from '@polar-sh/sdk'
-import { usePathname } from 'next/navigation'
+import { UserRead } from '@polar-sh/sdk'
+import LayoutTopbarGitHubLogin from './LayoutTopbarGitHubLogin'
 
-const LayoutTopbarAuth = () => {
-  const { currentUser } = useAuth()
-  const pathName = usePathname()
-
-  if (currentUser) {
-    return <ProfileMenu className="z-50" />
+const LayoutTopbarAuth = (props: {
+  authenticatedUser: UserRead | undefined
+}) => {
+  if (props.authenticatedUser) {
+    return (
+      <ProfileMenu
+        className="z-50"
+        authenticatedUser={props.authenticatedUser}
+      />
+    )
   }
 
-  return (
-    <GithubLoginButton
-      userSignupType={UserSignupType.BACKER}
-      posthogProps={{
-        view: 'Maintainer Page',
-      }}
-      text="Sign in with GitHub"
-      returnTo={pathName || '/feed'}
-    />
-  )
+  return <LayoutTopbarGitHubLogin />
 }
 
 export default LayoutTopbarAuth

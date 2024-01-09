@@ -291,7 +291,7 @@ const renderArticle = async (
               <Hr />
 
               <Row>
-                <Column className="prose dark:prose-invert dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-3xl dark:prose-p:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline mb-8 space-y-16">
+                <Column className="prose dark:prose-invert dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline mb-8 space-y-16">
                   <EmailRender article={article} />
                 </Column>
               </Row>

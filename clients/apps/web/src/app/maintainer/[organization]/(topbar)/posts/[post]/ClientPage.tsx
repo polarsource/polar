@@ -123,6 +123,7 @@ const ClientPage = () => {
           },
           isSubscriber: true,
           showPaywalledContent: true,
+          animation: false,
         }}
       />
       <AnimatePresence>

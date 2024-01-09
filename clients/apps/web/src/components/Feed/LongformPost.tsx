@@ -24,6 +24,7 @@ interface LongformPostProps {
   revealTransition?: typeof defaultRevealTransition
   showPaywalledContent: boolean
   isSubscriber: boolean
+  animation: boolean
 }
 
 export default function LongformPost({
@@ -32,6 +33,7 @@ export default function LongformPost({
   revealTransition,
   showPaywalledContent,
   isSubscriber,
+  animation,
 }: LongformPostProps) {
   const { currentUser } = useAuth()
   const organization = article.organization
@@ -56,6 +58,19 @@ export default function LongformPost({
   staggerTransition = staggerTransition ?? defaultStaggerTransition
   revealTransition = revealTransition ?? defaultRevealTransition
 
+  const noAnimationVariants = {
+    hidden: { opacity: 1 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0,
+      },
+    },
+  }
+
+  // Use downstream defaults if animation is enabled
+  const animationVariants = animation ? {} : noAnimationVariants
+
   const publishedDate = useMemo(
     () => (article.published_at ? new Date(article.published_at) : undefined),
     [article],
@@ -79,22 +94,38 @@ export default function LongformPost({
   )
 
   return (
-    <StaggerReveal className="max-w-2xl" transition={staggerTransition}>
+    <StaggerReveal
+      className="max-w-2xl"
+      transition={staggerTransition}
+      variants={animationVariants}
+    >
       <div className="flex flex-col items-center gap-y-16 pb-16 pt-4">
-        <StaggerReveal.Child transition={revealTransition}>
+        <StaggerReveal.Child
+          transition={revealTransition}
+          variants={animationVariants}
+        >
           <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
         </StaggerReveal.Child>
-        <StaggerReveal.Child transition={revealTransition}>
+        <StaggerReveal.Child
+          transition={revealTransition}
+          variants={animationVariants}
+        >
           <span className="dark:text-polar-500 text-gray-500">
             {publishedDateText}
           </span>
         </StaggerReveal.Child>
-        <StaggerReveal.Child transition={revealTransition}>
+        <StaggerReveal.Child
+          transition={revealTransition}
+          variants={animationVariants}
+        >
           <h1 className="text-center text-4xl font-bold leading-normal md:leading-relaxed">
             {article.title}
           </h1>
         </StaggerReveal.Child>
-        <StaggerReveal.Child transition={revealTransition}>
+        <StaggerReveal.Child
+          transition={revealTransition}
+          variants={animationVariants}
+        >
           <div className="flex flex-row items-center gap-x-3">
             <Avatar
               className="h-8 w-8"
@@ -108,7 +139,10 @@ export default function LongformPost({
         </StaggerReveal.Child>
       </div>
 
-      <StaggerReveal.Child transition={revealTransition}>
+      <StaggerReveal.Child
+        transition={revealTransition}
+        variants={animationVariants}
+      >
         <div className="prose dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline mb-8 w-full max-w-none space-y-16">
           <BrowserRender
             article={article}
@@ -122,6 +156,7 @@ export default function LongformPost({
         <StaggerReveal.Child
           className="flex flex-col gap-y-16"
           transition={revealTransition}
+          variants={animationVariants}
         >
           <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16">
             <Avatar

@@ -1,7 +1,6 @@
 'use client'
 
 import LongformPost from '@/components/Feed/LongformPost'
-import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { useAuth } from '@/hooks/auth'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
@@ -44,7 +43,7 @@ export default function Page({ article }: { article: Article }) {
     (userSubs.data?.items && userSubs.data.items?.length > 0) ?? false
 
   return (
-    <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
+    <div className="dark:md:bg-polar-900 dark:md:border-polar-800 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
       <Link
         className="absolute left-16 top-16 hidden flex-shrink md:block"
         href={`/${article.organization.name}`}
@@ -61,7 +60,8 @@ export default function Page({ article }: { article: Article }) {
         article={article}
         isSubscriber={isSubscriber}
         showPaywalledContent={true} // Can safely be true. If the user doesn't have permissions to see the paywalled content it will already be stripped out.
+        animation={false}
       />
-    </StaggerReveal>
+    </div>
   )
 }

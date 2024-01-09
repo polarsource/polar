@@ -34,16 +34,17 @@ export interface StaggerRevealProps extends HTMLMotionProps<'div'> {
 export const StaggerReveal = ({ transition, ...props }: StaggerRevealProps) => {
   return (
     <motion.div
-      {...props}
       variants={{
         ...revealVariants,
         visible: {
           ...revealVariants.visible,
           transition: { ...revealVariants.visible.transition, ...transition },
         },
+        ...props.variants,
       }}
       initial="hidden"
       animate="visible"
+      {...props}
     />
   )
 }
@@ -53,7 +54,6 @@ StaggerReveal.displayName = 'StaggerReveal'
 StaggerReveal.Child = ({ transition, ...props }: StaggerRevealProps) => {
   return (
     <motion.div
-      {...props}
       variants={{
         ...staggerRevealVariants,
         visible: {
@@ -62,8 +62,10 @@ StaggerReveal.Child = ({ transition, ...props }: StaggerRevealProps) => {
             ...staggerRevealVariants.visible.transition,
             ...transition,
           },
+          ...props.variants,
         },
       }}
+      {...props}
     />
   )
 }

@@ -16,12 +16,15 @@ class EmailSender(ABC):
     @abstractmethod
     def send_to_user(
         self,
+        *,
         to_email_addr: str,
         subject: str,
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "notifications@polar.sh",
         email_headers: dict[str, str] = {},
+        reply_to_name: str | None = None,
+        reply_to_email_addr: str | None = None,
     ) -> None:
         pass
 
@@ -29,12 +32,15 @@ class EmailSender(ABC):
 class LoggingEmailSender(EmailSender):
     def send_to_user(
         self,
+        *,
         to_email_addr: str,
         subject: str,
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "notifications@polar.sh",
         email_headers: dict[str, str] = {},
+        reply_to_name: str | None = None,
+        reply_to_email_addr: str | None = None,
     ) -> None:
         log.info(
             "logging email",
@@ -54,18 +60,24 @@ class SendgridEmailSender(EmailSender):
 
     def send_to_user(
         self,
+        *,
         to_email_addr: str,
         subject: str,
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "notifications@polar.sh",  # not used
         email_headers: dict[str, str] = {},  # not used
+        reply_to_name: str | None = None,
+        reply_to_email_addr: str | None = None,
     ) -> None:
         from_email = Email(email="notifications@polar.sh", name=from_name)
         to_email = To(to_email_addr)
         content = Content("text/html", content=html_content)
         mail = Mail(from_email, to_email, subject, content)
-        mail.reply_to = ReplyTo("support@polar.sh", "Polar Support")
+
+        if reply_to_name and reply_to_email_addr:
+            mail.reply_to = ReplyTo(reply_to_email_addr, reply_to_name)
+
         response = self.sg.client.mail.send.post(request_body=mail.get())  # type: ignore
         log.info(
             "sendgrid.send",
@@ -82,12 +94,15 @@ class ResendEmailSender(EmailSender):
 
     def send_to_user(
         self,
+        *,
         to_email_addr: str,
         subject: str,
         html_content: str,
         from_name: str = "Polar",
         from_email_addr: str = "polarsource@posts.polar.sh",
         email_headers: dict[str, str] = {},
+        reply_to_name: str | None = None,
+        reply_to_email_addr: str | None = None,
     ) -> None:
         params = {
             "from": f"{from_name} <{from_email_addr}>",
@@ -96,6 +111,9 @@ class ResendEmailSender(EmailSender):
             "html": html_content,
             "headers": email_headers,
         }
+
+        if reply_to_name and reply_to_email_addr:
+            params["reply_to"] = f"{reply_to_name} <{reply_to_email_addr}>"
 
         email = resend.Emails.send(params)
 
@@ -110,6 +128,9 @@ class ResendEmailSender(EmailSender):
 def get_email_sender(type: str = "notification") -> EmailSender:
     # Experimenting with Resend for sending posts
     if settings.RESEND_API_KEY and type == "article":
+        return ResendEmailSender()
+
+    if settings.EMAIL_SENDER == EmailSenderType.resend:
         return ResendEmailSender()
 
     # Using sendgrid by default

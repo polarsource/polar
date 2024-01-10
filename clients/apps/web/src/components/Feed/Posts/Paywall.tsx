@@ -1,5 +1,6 @@
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { twMerge } from 'tailwind-merge'
 
 const Paywall = (props: {
   children?: React.ReactNode
@@ -15,7 +16,9 @@ const Paywall = (props: {
         showPaywalledContent={props.showPaywalledContent}
         isSubscriber={props.isSubscriber}
         article={props.article}
-      />
+      >
+        {props.children}
+      </C>
     )
   }
 
@@ -30,11 +33,12 @@ const Paywall = (props: {
   )
 }
 
-const BrowserPaywall = (props: {
+const BasePaywall = (props: {
   showPaywalledContent: boolean
   isSubscriber: boolean
   article: Article
   children?: React.ReactNode
+  classNames?: string
 }) => {
   if (
     props.showPaywalledContent === false ||
@@ -42,7 +46,12 @@ const BrowserPaywall = (props: {
     (Array.isArray(props.children) && props.children.length === 0)
   ) {
     return (
-      <div className="dark:bg-polar-700 my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4">
+      <div
+        className={twMerge(
+          'my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4',
+          props.classNames,
+        )}
+      >
         {props.isSubscriber ? (
           <p>
             This section is for premium subscribers only. Upgrade{' '}
@@ -66,6 +75,24 @@ const BrowserPaywall = (props: {
     )
   }
   return <p>{props.children}</p>
+}
+
+const BrowserPaywall = (props: {
+  showPaywalledContent: boolean
+  isSubscriber: boolean
+  article: Article
+  children?: React.ReactNode
+}) => {
+  return <BasePaywall {...props} classNames="dark:bg-polar-700" />
+}
+
+export const EmailPaywall = (props: {
+  showPaywalledContent: boolean
+  isSubscriber: boolean
+  article: Article
+  children?: React.ReactNode
+}) => {
+  return <BasePaywall {...props} />
 }
 
 export default Paywall

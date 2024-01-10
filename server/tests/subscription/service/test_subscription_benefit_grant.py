@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -576,6 +576,9 @@ class TestHandlePreconditionError:
 
         send_to_user_mock: MagicMock = email_sender_mock.send_to_user
         assert send_to_user_mock.called
-        to_email_addr = send_to_user_mock.call_args[0][0]
 
-        assert user.email == to_email_addr
+        send_to_user_mock.assert_called_once_with(
+            to_email_addr=user.email,
+            html_content=ANY,
+            subject="Email subject",
+        )

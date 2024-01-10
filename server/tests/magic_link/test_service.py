@@ -1,7 +1,7 @@
 import os
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 from uuid import UUID
 
 import pytest
@@ -106,12 +106,16 @@ async def test_send(
 
     send_to_user_mock: MagicMock = email_sender_mock.send_to_user
     assert send_to_user_mock.called
-    to_email_addr = send_to_user_mock.call_args[0][0]
-    subject = send_to_user_mock.call_args[0][1]
-    body = send_to_user_mock.call_args[0][2]
 
-    assert to_email_addr == "user@example.com"
-    expected_content = f"{subject}\n<hr>\n{body}"
+    send_to_user_mock.assert_called_once_with(
+        to_email_addr="user@example.com",
+        html_content=ANY,
+        subject="Sign in to Polar",
+    )
+
+    sent_subject = send_to_user_mock.call_args_list[0].kwargs["subject"]
+    sent_body = send_to_user_mock.call_args_list[0].kwargs["html_content"]
+    sent_content = f"{sent_subject}\n<hr>\n{sent_body}"
 
     # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
     record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
@@ -119,11 +123,11 @@ async def test_send(
 
     if record:
         with open(record_file_name, "w+") as f:
-            f.write(expected_content)
+            f.write(sent_content)
 
     with open(record_file_name) as f:
         content = f.read()
-        assert content == expected_content
+        assert content == sent_content
 
 
 @pytest.mark.asyncio

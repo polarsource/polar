@@ -255,7 +255,11 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             },
         )
 
-        email_sender.send_to_user(user.email, subject, body)
+        email_sender.send_to_user(
+            to_email_addr=user.email,
+            subject=subject,
+            html_content=body,
+        )
 
     async def get_outdated_grants(
         self,

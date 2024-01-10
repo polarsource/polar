@@ -85,7 +85,11 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
             },
         )
 
-        email_sender.send_to_user(magic_link.user_email, subject, body)
+        email_sender.send_to_user(
+            to_email_addr=magic_link.user_email,
+            subject=subject,
+            html_content=body,
+        )
 
     async def authenticate(self, session: AsyncSession, token: str) -> User:
         token_hash = get_token_hash(token, secret=settings.SECRET)

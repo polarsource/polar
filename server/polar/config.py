@@ -14,6 +14,7 @@ class Environment(str, Enum):
 class EmailSender(str, Enum):
     logger = "logger"
     sendgrid = "sendgrid"
+    resend = "resend"
 
 
 class Settings(BaseSettings):

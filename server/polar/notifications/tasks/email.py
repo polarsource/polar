@@ -52,4 +52,7 @@ async def notifications_send(
                 to_email_addr=user.email,
                 subject=f"[Polar] {subject}",
                 html_content=body,
+                from_email_addr="notifications@notifications.polar.sh",
+                reply_to_email_addr="support@polar.sh",
+                reply_to_name="Polar Support",
             )

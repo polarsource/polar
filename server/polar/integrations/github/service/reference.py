@@ -19,6 +19,7 @@ from polar.issue.hooks import (
     issue_reference_updated,
 )
 from polar.kit import utils
+from polar.logging import Logger
 from polar.models import Organization, Repository
 from polar.models.issue import Issue
 from polar.models.issue_reference import (
@@ -30,7 +31,7 @@ from polar.models.issue_reference import (
 from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
 
-log = structlog.get_logger()
+log: Logger = structlog.get_logger()
 
 
 class UnknownIssueEvent(github.rest.GitHubRestModel):
@@ -266,11 +267,11 @@ class GitHubIssueReferencesService:
                         # persist
                         await self.create_reference(session, ref)
             except ValidationError as e:
-                log.error(
+                log.warning(
                     "github.sync_issue_references.parsing_failed",
                     issue_id=issue.id,
+                    errors=e.json(indent=None),
                 )
-                raise e
 
             # No more pages
             if len(res.parsed_data) < 100:

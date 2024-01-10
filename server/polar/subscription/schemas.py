@@ -138,6 +138,9 @@ subscription_benefit_schema_map: dict[
 
 # SubscriptionTier
 
+# Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
+MAXIMUM_PRICE_AMOUNT = 99999999
+
 
 class SubscriptionTierCreate(Schema):
     type: Literal[
@@ -151,7 +154,7 @@ class SubscriptionTierCreate(Schema):
         default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
     )
     is_highlighted: bool = False
-    price_amount: int = Field(..., gt=0)
+    price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
     price_currency: str = Field("USD", regex="USD")
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
@@ -190,7 +193,7 @@ class SubscriptionTierUpdate(Schema):
         default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
     )
     is_highlighted: bool | None = None
-    price_amount: int | None = Field(default=None, gt=0)
+    price_amount: int | None = Field(default=None, gt=0, le=MAXIMUM_PRICE_AMOUNT)
     price_currency: str | None = Field(default=None, regex="USD")
 
     # FIXME: in Pydantic V2, replace with an annotated type

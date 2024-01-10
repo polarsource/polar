@@ -162,6 +162,9 @@ class PledgeSpending(Schema):
 
 # Internal APIs below
 
+# Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
+MAXIMUM_AMOUNT = 99999999
+
 
 class CreatePledgeFromPaymentIntent(Schema):
     payment_intent_id: str
@@ -169,7 +172,7 @@ class CreatePledgeFromPaymentIntent(Schema):
 
 class CreatePledgePayLater(Schema):
     issue_id: UUID
-    amount: int = Field(gt=0)
+    amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
     on_behalf_of_organization_id: UUID | None = Field(
         description="The organization to give credit to. The pledge will be paid by the authenticated user."
     )
@@ -195,7 +198,7 @@ class CreatePledgePayLater(Schema):
 class PledgeStripePaymentIntentCreate(Schema):
     issue_id: UUID
     email: str
-    amount: int = Field(gt=0)
+    amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
     setup_future_usage: Literal["on_session"] | None = Field(
         description="If the payment method should be saved for future usage."
     )
@@ -206,9 +209,7 @@ class PledgeStripePaymentIntentCreate(Schema):
 
 class PledgeStripePaymentIntentUpdate(Schema):
     email: str
-    amount: int = Field(
-        gt=0,
-    )
+    amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
     setup_future_usage: Literal["on_session"] | None = Field(
         description="If the payment method should be saved for future usage."
     )

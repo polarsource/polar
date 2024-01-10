@@ -14,15 +14,17 @@ import { AbbreviatedBrowserRender } from './BrowserRender'
 
 type FeedPost = { article: Article }
 
+const articleHref = (art: Article): string => {
+  return `/${art.organization.name}/posts/${art.slug}`
+}
+
 export const Post = (props: FeedPost) => {
   const ref = useRef<HTMLDivElement>(null)
   const isHovered = useHoverDirty(ref)
 
   const router = useRouter()
   const onClick = () => {
-    router.push(
-      `/${props.article.organization.name}/posts/${props.article.slug}`,
-    )
+    router.push(articleHref(props.article))
   }
 
   return (
@@ -102,6 +104,7 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
         className="hidden md:flex"
         active={props.isHovered}
         variant="secondary"
+        href={articleHref(props.article)}
       >
         <ArrowForward fontSize="inherit" />
       </AnimatedIconButton>
@@ -118,7 +121,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
     >
       <Link
         className="dark:text-polar-50 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950"
-        href={`/${props.article.organization.name}/posts/${props.article.slug}`}
+        href={articleHref(props.article)}
       >
         {props.article.title}
       </Link>
@@ -135,6 +138,7 @@ export const AnimatedIconButton = (
     className?: string
     active?: boolean | undefined
     variant?: ButtonProps['variant']
+    href: string
   }>,
 ) => {
   const x = useSpring(0, { damping: 15, velocity: 5 })
@@ -155,28 +159,31 @@ export const AnimatedIconButton = (
   )
 
   return (
-    <Button
-      size="icon"
-      variant={props.active ? 'default' : props.variant}
-      className={twMerge(
-        'h-8 w-8 overflow-hidden rounded-full',
-        props.className,
-      )}
-      onMouseEnter={handleMouse(1)}
-      onMouseLeave={handleMouse(0)}
-    >
-      <motion.div
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ x: incomingX }}
+    <Link href={props.href}>
+      <Button
+        size="icon"
+        variant={props.active ? 'default' : props.variant}
+        className={twMerge(
+          'h-8 w-8 overflow-hidden rounded-full',
+          props.className,
+        )}
+        onMouseEnter={handleMouse(1)}
+        onMouseLeave={handleMouse(0)}
+        asChild
       >
-        {props.children}
-      </motion.div>
-      <motion.div
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ x: outgoingX }}
-      >
-        {props.children}
-      </motion.div>
-    </Button>
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ x: incomingX }}
+        >
+          {props.children}
+        </motion.div>
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ x: outgoingX }}
+        >
+          {props.children}
+        </motion.div>
+      </Button>
+    </Link>
   )
 }

@@ -77,6 +77,8 @@ async def articles_send_to_user(
                 json=render_data,
                 # Authenticating to the renderer as the user we're sending the email to
                 headers={"Cookie": f"polar_session={jwt};"},
+                # Increase the default timeout because it can be slow to render
+                timeout=60,
             )
 
         if not response.is_success:

@@ -249,6 +249,76 @@ const nextConfig = {
         destination: '/settings',
         permanent: false,
       },
+
+      // Old blog redirects
+      {
+        // https://blog.polar.sh/funding-goals-reward-contributors-v1-backer-dashboard-api/
+        source:
+          '/funding-goals-reward-contributors-v1-backer-dashboard-api(.*)',
+        destination:
+          'https://polar.sh/polarsource/posts/funding-goals-reward-contributors-v1-backer-dashboard-api',
+        permanent: false,
+        has: [
+          {
+            type: 'host',
+            value: 'blog.polar.sh',
+          },
+        ],
+      },
+
+      {
+        // https://blog.polar.sh/polar-v1-0-lets-fix-open-source-funding/
+        source: '/polar-v1-0-lets-fix-open-source-funding(.*)',
+        destination:
+          'https://polar.sh/polarsource/posts/polar-v1-0-lets-fix-open-source-funding',
+        permanent: false,
+        has: [
+          {
+            type: 'host',
+            value: 'blog.polar.sh',
+          },
+        ],
+      },
+
+      {
+        // https://blog.polar.sh/new-funding-page-method-a-better-backer-experience/
+        source: '/new-funding-page-method-a-better-backer-experience(.*)',
+        destination:
+          'https://polar.sh/polarsource/posts/new-funding-page-method-a-better-backer-experience',
+        permanent: false,
+        has: [
+          {
+            type: 'host',
+            value: 'blog.polar.sh',
+          },
+        ],
+      },
+
+      {
+        // https://blog.polar.sh/introducing-rewards/
+        source: '/introducing-rewards(.*)',
+        destination: 'https://polar.sh/polarsource/posts/introducing-rewards',
+        permanent: false,
+        has: [
+          {
+            type: 'host',
+            value: 'blog.polar.sh',
+          },
+        ],
+      },
+
+      // Fallback blog redirect
+      {
+        source: '/:path*',
+        destination: 'https://polar.sh/polarsource',
+        has: [
+          {
+            type: 'host',
+            value: 'blog.polar.sh',
+          },
+        ],
+        permanent: false,
+      },
     ]
   },
 }

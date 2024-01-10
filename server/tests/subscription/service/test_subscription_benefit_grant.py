@@ -581,4 +581,7 @@ class TestHandlePreconditionError:
             to_email_addr=user.email,
             html_content=ANY,
             subject="Email subject",
+            from_email_addr="notifications@notifications.polar.sh",
+            reply_to_email_addr="support@polar.sh",
+            reply_to_name="Polar Support",
         )

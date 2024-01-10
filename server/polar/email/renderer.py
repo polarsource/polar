@@ -1,3 +1,4 @@
+import datetime
 from collections.abc import Mapping
 from typing import Any
 
@@ -57,6 +58,8 @@ class EmailRenderer:
             {body}
         {{% endblock %}}
         """
+
+        context["current_year"] = datetime.datetime.now().year
 
         rendered_body = self.env.from_string(wrapped_body).render(context).strip()
         return rendered_subject, rendered_body

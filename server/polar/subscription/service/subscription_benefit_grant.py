@@ -1,3 +1,4 @@
+import datetime
 from collections.abc import Sequence
 
 import structlog
@@ -251,6 +252,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
                 "subscription_tier": subscription.subscription_tier,
                 "subscription_benefit": subscription_benefit,
                 "user": user,
+                "current_year": datetime.datetime.now().year,
                 **error.email_extra_context,
             },
         )

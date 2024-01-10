@@ -82,6 +82,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
             {
                 "token_lifetime_minutes": token_lifetime_minutes,
                 "url": f"{base_url}?{urlencode(url_params)}",
+                "current_year": datetime.datetime.now().year,
             },
         )
 

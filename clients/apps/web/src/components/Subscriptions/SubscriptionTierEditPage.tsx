@@ -3,12 +3,15 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
+  ResponseError,
   SubscriptionTier,
   SubscriptionTierBenefit,
   SubscriptionTierType,
   SubscriptionTierUpdate,
+  ValidationError,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
+import { setValidationErrors } from 'polarkit/api/errors'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
 import {
@@ -75,7 +78,7 @@ const SubscriptionTierEdit = ({
     defaultValues: subscriptionTier,
     shouldUnregister: true,
   })
-  const { handleSubmit, watch } = form
+  const { handleSubmit, watch, setError } = form
 
   const editingSubscriptionTier = watch()
 
@@ -92,21 +95,28 @@ const SubscriptionTierEdit = ({
 
   const onSubmit = useCallback(
     async (subscriptionTierUpdate: SubscriptionTierUpdate) => {
-      console.log(subscriptionTierUpdate)
-      await updateSubscriptionTier.mutateAsync({
-        id: subscriptionTier.id,
-        subscriptionTierUpdate,
-      })
-
-      await updateSubscriptionTierBenefits.mutateAsync({
-        id: subscriptionTier.id,
-        subscriptionTierBenefitsUpdate: {
-          benefits: enabledBenefitIds,
-        },
-      })
-
-      router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
-      router.refresh()
+      try {
+        await updateSubscriptionTier.mutateAsync({
+          id: subscriptionTier.id,
+          subscriptionTierUpdate,
+        })
+        await updateSubscriptionTierBenefits.mutateAsync({
+          id: subscriptionTier.id,
+          subscriptionTierBenefitsUpdate: {
+            benefits: enabledBenefitIds,
+          },
+        })
+        router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
+        router.refresh()
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          const body = await e.response.json()
+          if (e.response.status === 422) {
+            const validationErrors = body['detail'] as ValidationError[]
+            setValidationErrors(validationErrors, setError)
+          }
+        }
+      }
     },
     [
       router,
@@ -115,6 +125,7 @@ const SubscriptionTierEdit = ({
       enabledBenefitIds,
       updateSubscriptionTier,
       updateSubscriptionTierBenefits,
+      setError,
     ],
   )
 

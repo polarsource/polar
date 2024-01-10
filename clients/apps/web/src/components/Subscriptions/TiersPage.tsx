@@ -2,11 +2,11 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Add, Bolt } from '@mui/icons-material'
-import { Organization, Status } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useAccount, useSubscriptionTiers } from 'polarkit/hooks'
-import React, { useMemo } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmptyLayout from '../Layout/EmptyLayout'
 import AccountBanner from '../Transactions/AccountBanner'
@@ -19,10 +19,6 @@ interface TiersPageProps {
 const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
   const { data: account } = useAccount(organization.account_id)
-  const isAccountActive = useMemo(
-    () => account && account.status === Status.ACTIVE,
-    [account],
-  )
 
   if (!subscriptionTiers?.items?.length) {
     return (
@@ -60,11 +56,9 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
               href={{
                 pathname: `/maintainer/${organization.name}/subscriptions/tiers/new`,
               }}
-              className={twMerge(
-                ...(!isAccountActive ? ['pointer-events-none'] : []),
-              )}
+              className={twMerge(...(!account ? ['pointer-events-none'] : []))}
             >
-              <Button disabled={!isAccountActive}>
+              <Button disabled={!account}>
                 <Add className="mr-2" fontSize="small" />
                 New Tier
               </Button>

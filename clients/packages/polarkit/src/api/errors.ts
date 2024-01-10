@@ -1,4 +1,5 @@
 import { ResponseError, ValidationError } from '@polar-sh/sdk'
+import { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form'
 
 type ValidationErrorsMap = Record<string, string[]>
 
@@ -18,6 +19,19 @@ export const getValidationErrorsMap = (
       [loc]: [error.msg],
     }
   }, {})
+}
+
+export const setValidationErrors = <TFieldValues extends FieldValues>(
+  errors: ValidationError[],
+  setError: UseFormSetError<TFieldValues>,
+): void => {
+  errors.forEach((error) => {
+    const loc = error.loc.slice(1).join('.') as FieldPath<TFieldValues>
+    setError(loc, {
+      type: error.type,
+      message: error.msg,
+    })
+  })
 }
 
 export type DetailError = {

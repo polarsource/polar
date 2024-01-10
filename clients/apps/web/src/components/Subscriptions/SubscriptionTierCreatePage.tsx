@@ -3,11 +3,14 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
+  ResponseError,
   SubscriptionTierBenefit,
   SubscriptionTierCreate,
   SubscriptionTierCreateTypeEnum,
+  ValidationError,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
+import { setValidationErrors } from 'polarkit/api/errors'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
 import {
@@ -71,7 +74,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
       ...(type ? { type } : {}),
     },
   })
-  const { handleSubmit, watch } = form
+  const { handleSubmit, watch, setError } = form
 
   const newSubscriptionTier = watch()
 
@@ -84,19 +87,27 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 
   const onSubmit = useCallback(
     async (subscriptionTierCreate: SubscriptionTierCreate) => {
-      const tier = await createSubscriptionTier.mutateAsync(
-        subscriptionTierCreate,
-      )
-
-      await updateSubscriptionTierBenefits.mutateAsync({
-        id: tier.id,
-        subscriptionTierBenefitsUpdate: {
-          benefits: enabledBenefitIds,
-        },
-      })
-
-      router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
-      router.refresh()
+      try {
+        const tier = await createSubscriptionTier.mutateAsync(
+          subscriptionTierCreate,
+        )
+        await updateSubscriptionTierBenefits.mutateAsync({
+          id: tier.id,
+          subscriptionTierBenefitsUpdate: {
+            benefits: enabledBenefitIds,
+          },
+        })
+        router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
+        router.refresh()
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          const body = await e.response.json()
+          if (e.response.status === 422) {
+            const validationErrors = body['detail'] as ValidationError[]
+            setValidationErrors(validationErrors, setError)
+          }
+        }
+      }
     },
     [
       router,
@@ -104,6 +115,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
       enabledBenefitIds,
       createSubscriptionTier,
       updateSubscriptionTierBenefits,
+      setError,
     ],
   )
 

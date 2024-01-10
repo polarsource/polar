@@ -176,11 +176,13 @@ const PostItem = (post: Article) => {
   const isHovered = useHoverDirty(ref)
   const image = firstImageUrlFromMarkdown(post.body)
 
+  const href = `/maintainer/${currentOrg?.name}/posts/${post.slug}`
+
   return (
     <Link
       className="flex h-full flex-col overflow-hidden"
       ref={ref}
-      href={`/maintainer/${currentOrg?.name}/posts/${post.slug}`}
+      href={href}
     >
       <div
         className={twMerge(
@@ -288,7 +290,11 @@ const PostItem = (post: Article) => {
             </div>
 
             <div className="hidden flex-row items-center gap-x-4 lg:flex">
-              <AnimatedIconButton active={isHovered} variant="secondary">
+              <AnimatedIconButton
+                active={isHovered}
+                variant="secondary"
+                href={href}
+              >
                 <ArrowForward fontSize="inherit" />
               </AnimatedIconButton>
             </div>

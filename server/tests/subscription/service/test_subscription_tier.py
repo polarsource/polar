@@ -564,13 +564,10 @@ class TestUserCreate:
                 session, authz, create_schema, user
             )
 
-        (tiers, _) = await subscription_tier_service.search(
-            session,
-            organization=organization,
-            auth_subject=user,
-            pagination=PaginationParams(page=1, limit=10),
+        subscription_tier = await subscription_tier_service.get_by(
+            session, name="Subscription Tier"
         )
-        assert len(tiers) == 0
+        assert subscription_tier is None
 
     async def test_valid_highlighted(
         self,
@@ -617,6 +614,40 @@ class TestUserCreate:
         )
         assert updated_highlighted_subscription_tier is not None
         assert not updated_highlighted_subscription_tier.is_highlighted
+
+    async def test_empty_description(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        repository: Repository,
+        user_organization_admin: UserOrganization,
+        organization_account: Account,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        create_product_with_price_mock: (
+            MagicMock
+        ) = stripe_service_mock.create_product_with_price
+        create_product_with_price_mock.return_value = SimpleNamespace(
+            id="PRODUCT_ID", default_price="PRICE_ID"
+        )
+
+        create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.individual,
+            name="Subscription Tier",
+            description="",
+            price_amount=1000,
+            price_currency="USD",
+            repository_id=repository.id,
+        )
+
+        # then
+        session.expunge_all()
+
+        subscription_tier = await subscription_tier_service.user_create(
+            session, authz, create_schema, user
+        )
+        assert subscription_tier.description is None
 
 
 @pytest.mark.asyncio
@@ -709,6 +740,37 @@ class TestUserUpdate:
             updated_subscription_tier.stripe_product_id,
             description="Description update",
         )
+
+    async def test_empty_description_update(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        update_product_mock: MagicMock = stripe_service_mock.update_product
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
+        update_schema = SubscriptionTierUpdate(description="")
+        updated_subscription_tier = await subscription_tier_service.user_update(
+            session, authz, subscription_tier_organization_loaded, update_schema, user
+        )
+        assert (
+            updated_subscription_tier.description
+            == subscription_tier_organization.description
+        )
+
+        update_product_mock.assert_not_called()
 
     async def test_valid_price_change(
         self,

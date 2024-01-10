@@ -174,6 +174,13 @@ class SubscriptionTierCreate(Schema):
             )
         return values
 
+    # FIXME: in Pydantic V2, replace with an annotated type
+    @validator("description")
+    def empty_str_to_none(cls, v: str | None) -> str | None:
+        if v == "":
+            return None
+        return v
+
 
 class SubscriptionTierUpdate(Schema):
     name: str | None = Field(
@@ -185,6 +192,13 @@ class SubscriptionTierUpdate(Schema):
     is_highlighted: bool | None = None
     price_amount: int | None = Field(default=None, gt=0)
     price_currency: str | None = Field(default=None, regex="USD")
+
+    # FIXME: in Pydantic V2, replace with an annotated type
+    @validator("description")
+    def empty_str_to_none(cls, v: str | None) -> str | None:
+        if v == "":
+            return None
+        return v
 
 
 class SubscriptionTierBenefitsUpdate(Schema):

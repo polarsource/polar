@@ -300,7 +300,7 @@ class SubscriptionTierService(
             )
 
         return await subscription_tier.update(
-            session, **update_schema.dict(exclude_unset=True)
+            session, **update_schema.dict(exclude_unset=True, exclude_none=True)
         )
 
     async def create_free(

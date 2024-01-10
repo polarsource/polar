@@ -111,6 +111,7 @@ async def test_send(
         to_email_addr="user@example.com",
         html_content=ANY,
         subject="Sign in to Polar",
+        from_email_addr="noreply@notifications.polar.sh",
     )
 
     sent_subject = send_to_user_mock.call_args_list[0].kwargs["subject"]

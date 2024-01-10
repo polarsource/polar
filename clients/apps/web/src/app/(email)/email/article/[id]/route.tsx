@@ -213,7 +213,9 @@ const renderArticle = async (
   const html = render(
     <Html lang="en">
       <Tailwind config={twConfig}>
-        <Head />
+        <Head>
+          <title>{post.title}</title>
+        </Head>
         <Body className="font-sans">
           {/* "Preview" text. Is showin in email list views in most email readers. */}
           <div

@@ -1,5 +1,4 @@
 import functools
-import types
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -39,7 +38,6 @@ async def create_pool() -> ArqRedis:
 
 
 arq_pool: ArqRedis | None = None
-glob_arq_pool: ArqRedis | None = None
 
 
 @asynccontextmanager
@@ -77,7 +75,7 @@ class PolarWorkerContext(BaseModel):
 
 
 class WorkerSettings:
-    functions: list[Function | types.CoroutineType] = []  # type: ignore
+    functions: list[Function] = []
     cron_jobs: list[CronJob] = []
 
     redis_settings = RedisSettings().from_dsn(settings.redis_url)

@@ -1,5 +1,6 @@
 from contextlib import AsyncExitStack
 
+from arq import ArqRedis
 from textual.app import App
 from textual.binding import Binding
 
@@ -11,6 +12,7 @@ from .screens.dashboard import DashboardScreen
 from .screens.organizations.list import OrganizationsListScreen
 from .screens.pledges.list import PledgesListScreen
 from .screens.repositories.list import RepositoriesListScreen
+from .screens.tasks.list import TasksListScreen
 
 
 class PolarBackOffice(App[None]):
@@ -20,6 +22,7 @@ class PolarBackOffice(App[None]):
         "pledges": PledgesListScreen,
         "organizations": OrganizationsListScreen,
         "repositories": RepositoriesListScreen,
+        "tasks": TasksListScreen,
     }
     BINDINGS = [
         ("d", "switch_mode('dashboard')", "Dashboard"),
@@ -27,12 +30,15 @@ class PolarBackOffice(App[None]):
         ("p", "switch_mode('pledges')", "Pledges"),
         ("o", "switch_mode('organizations')", "Organizations"),
         ("r", "switch_mode('repositories')", "Repositories"),
+        ("t", "switch_mode('tasks')", "Tasks"),
         Binding("f19", "take_screenshot()", "Take screenshot", show=False),
     ]
 
+    arq_pool: ArqRedis | None = None
+
     async def on_load(self) -> None:
         self.exit_stack = AsyncExitStack()
-        await self.exit_stack.enter_async_context(lifespan())
+        self.arq_pool = await self.exit_stack.enter_async_context(lifespan())
 
     def on_mount(self) -> None:
         self.title = "🌀 Polar.sh"

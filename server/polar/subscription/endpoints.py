@@ -10,7 +10,7 @@ from pydantic import UUID4, EmailStr
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Anonymous, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
-from polar.kit.csv import get_emails_from_csv
+from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Repository, SubscriptionBenefit, SubscriptionTier
@@ -578,8 +578,7 @@ async def subscriptions_import(
     if not await authz.can(auth.subject, AccessType.write, organization):
         raise Unauthorized()
 
-    contents = await file.read()
-    emails = get_emails_from_csv(contents.decode("utf-8"))
+    emails = get_emails_from_csv(get_iterable_from_binary_io(file.file))
 
     count = 0
 

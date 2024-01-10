@@ -35,7 +35,6 @@ class AccountsListScreen(Screen[None]):
         yield DataTable(cursor_type="row")
         yield Footer()
         yield SearchBar()
-        self._merge_bindings
 
     def on_mount(self) -> None:
         self.sub_title = "Accounts"

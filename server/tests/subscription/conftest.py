@@ -61,6 +61,7 @@ async def create_subscription_tier(
     subscription_tier = SubscriptionTier(
         type=type,
         name=name,
+        description="Description",
         price_amount=price_amount,
         price_currency="USD",
         is_highlighted=is_highlighted,
@@ -70,7 +71,6 @@ async def create_subscription_tier(
         stripe_product_id=rstr("PRODUCT_ID"),
         stripe_price_id=rstr("PRICE_ID"),
         subscription_tier_benefits=[],
-        description="x",
     )
     session.add(subscription_tier)
     await session.commit()

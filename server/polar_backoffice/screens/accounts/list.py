@@ -105,12 +105,19 @@ class AccountsListScreen(Screen[None]):
                         0,
                     ).label("balance"),
                 )
-                .join(Transaction, onclause=Transaction.account_id == Account.id)
+                .join(
+                    Transaction,
+                    onclause=Transaction.account_id == Account.id,
+                    isouter=True,
+                )
                 .where(Account.deleted_at.is_(None))
                 .order_by(
                     case(
-                        (Account.status == Account.Status.UNREVIEWED, 1),
-                        (Account.status != Account.Status.UNREVIEWED, 2),
+                        (Account.status == Account.Status.UNDER_REVIEW, 1),
+                        (Account.status == Account.Status.UNREVIEWED, 2),
+                        (Account.status == Account.Status.ACTIVE, 3),
+                        (Account.status == Account.Status.ONBOARDING_STARTED, 4),
+                        (Account.status == Account.Status.CREATED, 5),
                     ),
                     desc(text("balance")),
                     Account.created_at.desc(),

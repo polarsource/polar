@@ -62,19 +62,25 @@ const Paginator = ({
             onPageChange(currentPage - 1)
           }
         }}
+        className={twMerge(currentPage === 1 ? 'cursor-default' : '')}
       >
         <Button
           variant="secondary"
           size="sm"
           asChild
           disabled={currentPage === 1}
+          className={twMerge(
+            currentPage === 1
+              ? 'border-gray-200 bg-transparent text-gray-500 hover:bg-transparent dark:border-gray-400 dark:text-gray-400'
+              : '',
+          )}
         >
           <ChevronLeft fontSize="small" />
         </Button>
       </a>
       {paginationRange?.map((pageNumber, idx) => {
         // If the pageItem is a DOT, render the DOTS unicode character
-        if (typeof pageNumber === 'symbol') {
+        if (typeof pageNumber !== 'number') {
           return (
             <div className="dark:text-polar-400 text-gray-400" key={idx}>
               &#8230;
@@ -82,11 +88,11 @@ const Paginator = ({
           )
         }
 
-        // Render our Page Pills
+        // Render page pills
         return (
           <a
             href={`?${buildUrlForPage(pageNumber)}`}
-            key={pageNumber}
+            key={idx}
             onClick={(e) => {
               e.stopPropagation()
               e.preventDefault()
@@ -113,12 +119,18 @@ const Paginator = ({
             onPageChange(currentPage + 1)
           }
         }}
+        className={twMerge(currentPage >= lastPage ? 'cursor-default' : '')}
       >
         <Button
           variant="secondary"
           asChild
           size="sm"
           disabled={currentPage >= lastPage}
+          className={twMerge(
+            currentPage >= lastPage
+              ? 'border-gray-200 bg-transparent text-gray-500 hover:bg-transparent dark:border-gray-400 dark:text-gray-400'
+              : '',
+          )}
         >
           <ChevronRight fontSize="small" />
         </Button>

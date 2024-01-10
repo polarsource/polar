@@ -4,7 +4,7 @@ import { Container } from '@react-email/components'
 import Embed from './EmailEmbed'
 import Iframe from './EmailIframe'
 import EmailMermaid from './EmailMermaid'
-import Paywall from './Paywall'
+import Paywall, { EmailPaywall } from './Paywall'
 import Poll from './Poll'
 import EmailSyntaxHighlighter from './SyntaxHighlighter/EmailSyntaxHighlighter'
 import {
@@ -20,7 +20,7 @@ export const opts = {
 
     // email overrides
     poll: (args: any) => <Poll {...args} renderer={EmailPoll} />,
-    Paywall: (args: any) => <Paywall {...args} />,
+    Paywall: (args: any) => <Paywall {...args} renderer={EmailPaywall} />,
     SubscribeNow: () => <></>, // do not render
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,

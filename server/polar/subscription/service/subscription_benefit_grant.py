@@ -261,6 +261,9 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             to_email_addr=user.email,
             subject=subject,
             html_content=body,
+            from_email_addr="notifications@notifications.polar.sh",
+            reply_to_email_addr="support@polar.sh",
+            reply_to_name="Polar Support",
         )
 
     async def get_outdated_grants(

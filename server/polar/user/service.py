@@ -2,7 +2,6 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import func
-from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
@@ -36,25 +35,17 @@ class InvalidAccount(UserError):
 
 class UserService(ResourceService[User, UserCreate, UserUpdate]):
     async def get_loaded(self, session: AsyncSession, id: UUID) -> User | None:
-        query = (
-            sql.select(User)
-            .where(
-                User.id == id,
-                User.deleted_at.is_(None),
-            )
-            .options(joinedload(User.oauth_accounts))
+        query = sql.select(User).where(
+            User.id == id,
+            User.deleted_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
     async def get_by_email(self, session: AsyncSession, email: str) -> User | None:
-        query = (
-            sql.select(User)
-            .where(
-                func.lower(User.email) == email.lower(),
-                User.deleted_at.is_(None),
-            )
-            .options(joinedload(User.oauth_accounts))
+        query = sql.select(User).where(
+            func.lower(User.email) == email.lower(),
+            User.deleted_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
@@ -62,13 +53,9 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
     async def get_by_username(
         self, session: AsyncSession, username: str
     ) -> User | None:
-        query = (
-            sql.select(User)
-            .where(
-                User.username == username,
-                User.deleted_at.is_(None),
-            )
-            .options(joinedload(User.oauth_accounts))
+        query = sql.select(User).where(
+            User.username == username,
+            User.deleted_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
@@ -76,13 +63,9 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
     async def get_by_stripe_customer_id(
         self, session: AsyncSession, stripe_customer_id: str
     ) -> User | None:
-        query = (
-            sql.select(User)
-            .where(
-                User.stripe_customer_id == stripe_customer_id,
-                User.deleted_at.is_(None),
-            )
-            .options(joinedload(User.oauth_accounts))
+        query = sql.select(User).where(
+            User.stripe_customer_id == stripe_customer_id,
+            User.deleted_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
@@ -107,7 +90,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         return user
 
     async def signup_by_email(self, session: AsyncSession, email: str) -> User:
-        user = User(username=email, email=email)
+        user = User(username=email, email=email, oauth_accounts=[])
         session.add(user)
         await session.commit()
 

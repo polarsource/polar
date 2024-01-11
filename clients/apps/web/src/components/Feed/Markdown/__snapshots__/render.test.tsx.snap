@@ -1,0 +1,45 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`demo 1`] = `
+<div>
+  <div>
+    <h1>
+      h1
+    </h1>
+    <h2>
+      h2
+    </h2>
+    <h3>
+      h3
+    </h3>
+    <p>
+        Hello 
+      <strong>
+        world
+      </strong>
+      !
+    </p>
+    <p>
+        
+      <a
+        href="https://polar.sh/"
+      >
+        Polar
+      </a>
+    </p>
+    <div
+      class="my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4 dark:bg-polar-700"
+    >
+      <p>
+        This section is for premium subscribers only. Subscribe to
+         
+        <strong>
+          Pydantic
+        </strong>
+         
+        to get access to it.
+      </p>
+    </div>
+  </div>
+</div>
+`;

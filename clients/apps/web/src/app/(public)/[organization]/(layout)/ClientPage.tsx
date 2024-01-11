@@ -233,29 +233,33 @@ const ClientPage = ({
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-y-4 px-6 py-4">
+                    <CardContent className="flex flex-col gap-y-4 px-6 pb-6 pt-4">
                       <p className="dark:text-polar-400 text-sm leading-normal text-gray-600">
                         {tier.description}
                       </p>
                     </CardContent>
-                    <Separator />
-                    <CardFooter className="flex flex-col items-start gap-y-2 p-6">
-                      {tier.benefits?.map((benefit) => (
-                        <div
-                          key={benefit.id}
-                          className="dark:text-polar-200 flex flex-row items-start text-gray-950"
-                        >
-                          <div className="flex flex-row items-center gap-x-2 text-blue-500 dark:text-blue-400">
-                            <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
-                              {resolveBenefitIcon(benefit, 'inherit')}
-                            </span>
-                            <span className="text-xs">
-                              {benefit.description}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </CardFooter>
+                    {tier.benefits.length > 0 && (
+                      <>
+                        <Separator />
+                        <CardFooter className="flex flex-col items-start gap-y-2 p-6">
+                          {tier.benefits?.map((benefit) => (
+                            <div
+                              key={benefit.id}
+                              className="dark:text-polar-200 flex flex-row items-start text-gray-950"
+                            >
+                              <div className="flex flex-row items-center gap-x-2 text-blue-500 dark:text-blue-400">
+                                <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
+                                  {resolveBenefitIcon(benefit, 'inherit')}
+                                </span>
+                                <span className="text-xs">
+                                  {benefit.description}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </CardFooter>
+                      </>
+                    )}
                   </Card>
                 </Link>
               ))}

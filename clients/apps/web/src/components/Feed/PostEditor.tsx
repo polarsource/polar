@@ -61,7 +61,7 @@ export const PostEditor = ({
   const [previewAs, setPreviewAs] = useState<string>('premium')
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  if (!org || !article) {
+  if (!org) {
     return null
   }
 
@@ -108,7 +108,7 @@ export const PostEditor = ({
                 value="settings"
                 className="flex flex-col gap-16 md:mt-8 md:flex-row md:items-start md:justify-between"
               >
-                <PublishSettings article={article} />
+                {article && <PublishSettings article={article} />}
               </TabsContent>
             </div>
           </div>

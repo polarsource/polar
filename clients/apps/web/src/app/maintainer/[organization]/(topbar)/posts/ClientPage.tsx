@@ -1,6 +1,6 @@
 'use client'
 
-import { AbbreviatedBrowserRender } from '@/components/Feed/Posts/BrowserRender'
+import { AbbreviatedBrowserRender } from '@/components/Feed/Markdown/BrowserRender'
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'

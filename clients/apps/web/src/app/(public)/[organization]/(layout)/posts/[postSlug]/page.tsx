@@ -1,4 +1,4 @@
-import PreviewText from '@/components/Feed/Posts/preview'
+import PreviewText from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { Article, Platforms, ResponseError } from '@polar-sh/sdk'

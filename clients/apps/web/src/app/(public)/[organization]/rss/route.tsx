@@ -1,4 +1,4 @@
-import EmailRender from '@/components/Feed/Posts/EmailRender'
+import EmailRender from '@/components/Feed/Markdown/EmailRender'
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'

@@ -2,20 +2,20 @@ import Markdown from 'markdown-to-jsx'
 import dynamic from 'next/dynamic'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { createContext, useContext } from 'react'
-import Embed from './BrowserEmbed'
-import Iframe from './BrowserIframe'
-import BrowserPoll from './BrowserPoll'
-import { ImageOverlay } from './ImageOverlay'
-import Paywall from './Paywall'
-import Poll from './Poll'
-import SubscribeNow from './SubscribeNow'
+import Embed from './Embed/BrowserEmbed'
+import Iframe from './Iframe/BrowserIframe'
+import { ImageOverlay } from './Img/ImageOverlay'
+import Paywall from './Paywall/Paywall'
+import BrowserPoll from './Poll/BrowserPoll'
+import Poll from './Poll/Poll'
+import SubscribeNow from './SubscribeNow/SubscribeNow'
 import {
   RenderArticle,
   markdownOpts,
   wrapStrictCreateElement,
 } from './markdown'
 
-const BrowserMermaid = dynamic(() => import('./BrowserMermaid'), {
+const BrowserMermaid = dynamic(() => import('./Mermaid/BrowserMermaid'), {
   ssr: false,
   loading: () => (
     <Skeleton className="w-full p-8 font-mono text-sm">

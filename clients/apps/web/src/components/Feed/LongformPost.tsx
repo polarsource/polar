@@ -7,8 +7,8 @@ import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations, useUserSubscriptions } from 'polarkit/hooks'
 import { useMemo } from 'react'
-import BrowserRender from './Posts/BrowserRender'
-import { RenderArticle } from './Posts/markdown'
+import BrowserRender from './Markdown/BrowserRender'
+import { RenderArticle } from './Markdown/markdown'
 
 const defaultStaggerTransition = {
   staggerChildren: 0.2,

@@ -10,7 +10,7 @@ import { ButtonProps } from 'polarkit/components/ui/button'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
-import { AbbreviatedBrowserRender } from './BrowserRender'
+import { AbbreviatedBrowserRender } from '../Markdown/BrowserRender'
 
 type FeedPost = { article: Article }
 

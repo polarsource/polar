@@ -1,11 +1,11 @@
 import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
-import Embed from './EmailEmbed'
-import Iframe from './EmailIframe'
-import EmailMermaid from './EmailMermaid'
-import Paywall, { EmailPaywall } from './Paywall'
-import Poll from './Poll'
+import Embed from './Embed/EmailEmbed'
+import Iframe from './Iframe/EmailIframe'
+import EmailMermaid from './Mermaid/EmailMermaid'
+import Paywall, { EmailPaywall } from './Paywall/Paywall'
+import Poll from './Poll/Poll'
 import EmailSyntaxHighlighter from './SyntaxHighlighter/EmailSyntaxHighlighter'
 import {
   RenderArticle,

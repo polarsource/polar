@@ -1,5 +1,5 @@
-import EmailRender from '@/components/Feed/Posts/EmailRender'
-import PreviewText from '@/components/Feed/Posts/preview'
+import EmailRender from '@/components/Feed/Markdown/EmailRender'
+import PreviewText from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { Article } from '@polar-sh/sdk'
 import { getMagicLinkAuthenticateURL } from 'polarkit/auth'

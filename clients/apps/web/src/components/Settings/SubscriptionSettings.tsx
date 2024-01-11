@@ -71,6 +71,8 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
 
   const canUnsubscribe = !canceled && !subscription.cancel_at_period_end
 
+  const isFreeTier = subscription.subscription_tier.type === 'free'
+
   if (!organization.data) {
     return null
   }
@@ -131,7 +133,11 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
                 isShown={showCancelModal}
                 hide={() => setShowCancelModal(false)}
                 title={`Unsubscribe from ${subscription.subscription_tier.name}?`}
-                description={`At the end of your billing period, you won't have access to your benefits anymore.`}
+                description={
+                  isFreeTier
+                    ? `You won't have access to your benefits anymore.`
+                    : `At the end of your billing period, you won't have access to your benefits anymore.`
+                }
                 destructiveText="Unsubscribe"
                 onConfirm={() => cancelSubscription()}
                 destructive

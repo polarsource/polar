@@ -256,7 +256,7 @@ const VisibilityModalContent = ({
 
         {article.visibility !== ArticleUpdateVisibilityEnum.PUBLIC ? (
           <Banner color={'blue'}>
-            To publish this post, click &quot;Continue&quot;.
+            To publish this post, click &quot;Publish&quot; in the Toolbar.
           </Banner>
         ) : null}
 

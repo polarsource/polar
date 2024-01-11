@@ -110,14 +110,6 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
             </li>
           ) : null}
 
-          {articleReceivers?.organization_members !== undefined ? (
-            <li>
-              {articleReceivers.organization_members} member
-              {plural(articleReceivers.organization_members)} of{' '}
-              {article.organization.name}
-            </li>
-          ) : null}
-
           {!article.paid_subscribers_only ? (
             <li>Anyone on the web</li>
           ) : (

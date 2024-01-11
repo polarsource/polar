@@ -75,15 +75,5 @@ export const useArticleActions = (
     }
   }, [articleUpdate, handlePublish, isPublished, isPublishing])
 
-  const cancelAction: ArticleAction = useMemo(
-    () => ({
-      text: 'Cancel',
-      button: { variant: 'ghost' },
-      onClick: () =>
-        router.replace(`/maintainer/${org?.name}/posts/${articleUpdate.slug}`),
-    }),
-    [router, org, articleUpdate],
-  )
-
-  return [publishAction, cancelAction]
+  return [publishAction]
 }

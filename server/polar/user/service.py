@@ -5,14 +5,20 @@ from sqlalchemy import func
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
-from polar.enums import UserSignupType
-from polar.exceptions import PolarError
+from polar.enums import Platforms, UserSignupType
+from polar.exceptions import PolarError, ResourceAlreadyExists, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
+from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import User
+from polar.models import Organization, User
+from polar.organization.schemas import OrganizationCreate
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import UserCreate, UserUpdate, UserUpdateSettings
 
@@ -41,6 +47,50 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
+
+    async def create_personal_github_org(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> Organization | None:
+        current_user_org = await user_organization_service.get_users_personal_org(
+            session,
+            platform=Platforms.github,
+            user_id=user.id,
+        )
+        if current_user_org:
+            log.debug("user.create_github_org", found_existing=True)
+            raise ResourceAlreadyExists("User already has a personal org")
+
+        github_account = user.get_platform_oauth_account(Platforms.github)
+        if not github_account:
+            log.error(
+                "user.create_github_org",
+                error="No GitHub OAuth account found",
+                user_id=user.id,
+            )
+            raise ResourceNotFound()
+
+        # GitHub users cannot have an empty avatar_url, but needed for typing
+        avatar_url = user.avatar_url
+        if not avatar_url:
+            avatar_url = ""
+
+        new = OrganizationCreate(
+            platform=Platforms.github,
+            name=user.username,
+            avatar_url=avatar_url,
+            # Cast to GitHub ID (int)
+            external_id=int(github_account.account_id),
+            is_personal=True,
+            # TODO: Should we really set this here?
+            onboarded_at=utc_now(),
+        )
+        org = await organization_service.create(session, new)
+        await organization_service.add_user(
+            session, organization=org, user=user, is_admin=True
+        )
+        return org
 
     async def get_by_email(self, session: AsyncSession, email: str) -> User | None:
         query = sql.select(User).where(

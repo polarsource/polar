@@ -8,7 +8,7 @@ import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
@@ -17,8 +17,8 @@ import { useCallback, useEffect, useState } from 'react'
 const ClientPage = () => {
   const { post: postSlug, organization: organizationName } = useParams()
   const post = useArticleLookup(organizationName as string, postSlug as string)
-  const router = useRouter()
   const [animateSaveBanner, setAnimateSaveBanner] = useState(false)
+  const [isInSavedState, setIsInSavedState] = useState(false)
 
   const [updateArticle, setUpdateArticle] = useState<
     ArticleUpdate & { title: string; body: string }
@@ -26,6 +26,13 @@ const ClientPage = () => {
     title: '',
     body: '',
   })
+
+  useEffect(() => {
+    setIsInSavedState(
+      updateArticle.title === post.data?.title &&
+        updateArticle.body === post.data?.body,
+    )
+  }, [post.data, updateArticle])
 
   useEffect(() => {
     setUpdateArticle((a) => ({
@@ -56,11 +63,6 @@ const ClientPage = () => {
     } catch (err) {}
   }, [post, update, updateArticle])
 
-  const handleContinue = useCallback(async () => {
-    await handleSave()
-    router.push(`/maintainer/${organizationName}/posts/${postSlug}/publish`)
-  }, [organizationName, postSlug, handleSave])
-
   useEffect(() => {
     const savePost = (e: KeyboardEvent) => {
       if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
@@ -76,13 +78,6 @@ const ClientPage = () => {
     }
   }, [handleSave])
 
-  const isPublished = Boolean(
-    post.data &&
-      post.data.published_at &&
-      new Date(post.data.published_at) <= new Date() &&
-      post.data.visibility === ArticleVisibilityEnum.PUBLIC,
-  )
-
   if (!post.data) {
     return (
       <DashboardBody>
@@ -91,10 +86,20 @@ const ClientPage = () => {
     )
   }
 
+  const isPublished = Boolean(
+    post.data &&
+      post.data.published_at &&
+      new Date(post.data.published_at) <= new Date() &&
+      post.data.visibility === ArticleVisibilityEnum.PUBLIC,
+  )
+
   return (
     <Tabs className="flex flex-col" defaultValue="edit">
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
+          <span className="dark:text-polar-500 px-4 text-sm text-gray-500">
+            {isPublished ? 'Published' : 'Unpublished'}
+          </span>
           <Link
             href={`/${post.data.organization.name}/posts/${post.data.slug}`}
             target="_blank"
@@ -104,8 +109,12 @@ const ClientPage = () => {
               <ArrowUpRightIcon className="ml-2 h-3 w-3" />
             </Button>
           </Link>
-          <Button onClick={handleContinue}>
-            {isPublished ? 'Settings' : 'Continue'}
+          <Button
+            disabled={isInSavedState}
+            onClick={handleSave}
+            loading={update.isPending}
+          >
+            Save
           </Button>
         </div>
       </DashboardTopbar>

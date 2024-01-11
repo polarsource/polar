@@ -6,6 +6,7 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
 import { StaggerReveal } from '../Shared/StaggerReveal'
 import LongformPost from './LongformPost'
+import { PublishSettings } from './Publishing/PublishSettings'
 import { PostToolbar } from './Toolbar/PostToolbar'
 import { EditorHelpers, useEditorHelpers } from './useEditorHelpers'
 
@@ -60,7 +61,7 @@ export const PostEditor = ({
   const [previewAs, setPreviewAs] = useState<string>('premium')
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  if (!org) {
+  if (!org || !article) {
     return null
   }
 
@@ -101,6 +102,12 @@ export const PostEditor = ({
                     isSubscriber={previewAs === 'premium'}
                   />
                 </StaggerReveal>
+              </TabsContent>
+              <TabsContent
+                value="settings"
+                className="flex flex-col gap-16 md:mt-8 md:flex-row md:items-start md:justify-between"
+              >
+                <PublishSettings article={article} />
               </TabsContent>
             </div>
           </div>

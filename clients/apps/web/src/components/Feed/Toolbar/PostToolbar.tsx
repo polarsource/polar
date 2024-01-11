@@ -1,4 +1,4 @@
-import { Article } from '@polar-sh/sdk'
+import { Article, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import {
   TabsContent,
   TabsList,
@@ -18,6 +18,13 @@ export const PostToolbar = ({
   previewAs,
   onPreviewAsChange,
 }: PostToolbarProps) => {
+  const isPublished = Boolean(
+    article &&
+      article.published_at &&
+      new Date(article.published_at) <= new Date() &&
+      article.visibility === ArticleVisibilityEnum.PUBLIC,
+  )
+
   return (
     <div className="dark:border-polar-800 dark:bg-polar-900 sticky top-0 z-20 flex w-full flex-col border-b border-gray-100 bg-white">
       <div className="relative mx-auto flex w-full min-w-0 max-w-screen-xl flex-row items-center justify-between gap-x-4 px-4 py-4 sm:px-6 md:px-8">
@@ -27,6 +34,9 @@ export const PostToolbar = ({
           </TabsTrigger>
           <TabsTrigger value="preview" size="small">
             Preview
+          </TabsTrigger>
+          <TabsTrigger value="settings" size="small">
+            {isPublished ? 'Settings' : 'Publish'}
           </TabsTrigger>
         </TabsList>
         <TabsContent

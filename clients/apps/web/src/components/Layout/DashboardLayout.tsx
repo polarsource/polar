@@ -8,11 +8,9 @@ import {
 } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
-import { Repository, UserSignupType } from '@polar-sh/sdk'
-import Link from 'next/link'
+import { Repository } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { LogoIcon } from 'polarkit/components/brand'
-import { Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
 import { PropsWithChildren, Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -21,8 +19,8 @@ import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
+import { GitHubAuthUpsell, MaintainerUpsell } from '../Dashboard/Upsell'
 import Popover from '../Notifications/Popover'
-import GithubLoginButton from '../Shared/GithubLoginButton'
 import ProfileSelection from '../Shared/ProfileSelection'
 
 const DashboardSidebar = () => {
@@ -167,52 +165,6 @@ const MobileNav = () => {
       ) : (
         header
       )}
-    </div>
-  )
-}
-
-const GitHubAuthUpsell = () => {
-  const pathname = usePathname()
-  return (
-    <Upsell
-      title="Connect with GitHub"
-      description="Unlock more features by connecting your account with GitHub"
-    >
-      <GithubLoginButton
-        className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
-        text="Connect with GitHub"
-        returnTo={pathname || '/feed'}
-        userSignupType={UserSignupType.BACKER}
-      />
-    </Upsell>
-  )
-}
-
-const MaintainerUpsell = () => {
-  return (
-    <Upsell
-      title="Become a creator"
-      description="Enable funding on your issues & reward your contributors"
-    >
-      <Link href="/maintainer" className="font-medium text-blue-500">
-        <Button className="-z-1" fullWidth>
-          Get Started
-        </Button>
-      </Link>
-    </Upsell>
-  )
-}
-
-const Upsell = ({
-  title,
-  description,
-  children,
-}: PropsWithChildren<{ title: string; description: string }>) => {
-  return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 flex flex-col gap-y-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
-      <h3 className="dark:text-polar-50 font-medium text-blue-500">{title}</h3>
-      <p className="dark:text-polar-300 -mt-2 text-blue-400">{description}</p>
-      {children}
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { Modal, ModalProps } from '../Modal'
 
 export interface ConfirmModalProps extends Omit<ModalProps, 'modalContent'> {
   title: string
-  description: string
+  description?: string
   destructive?: boolean
   destructiveText?: string
   onConfirm: () => void
@@ -39,9 +39,11 @@ export const ConfirmModal = ({
           <div className="flex flex-col items-center gap-y-6 px-6 py-12 text-center">
             <>
               <h3 className="text-xl font-medium">{title}</h3>
-              <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500 md:max-w-[480px]">
-                {description}
-              </p>
+              {description && (
+                <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500 md:max-w-[480px]">
+                  {description}
+                </p>
+              )}
               <div className="flex flex-row items-center justify-center gap-x-4 pt-6">
                 <Button
                   variant={destructive ? 'destructive' : 'default'}

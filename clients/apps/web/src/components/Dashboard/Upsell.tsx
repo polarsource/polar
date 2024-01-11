@@ -1,6 +1,6 @@
 import { UserSignupType } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
 import { PropsWithChildren } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
@@ -23,16 +23,20 @@ export const GitHubAuthUpsell = () => {
 }
 
 export const MaintainerUpsell = () => {
+  const upgrade = async () => {
+    const response = await api.users.maintainerUpgrade()
+    // TODO: Change state instead to update - ideally - without refresh
+    window.location.reload()
+  }
+
   return (
     <Upsell
       title="Become a creator"
       description="Enable funding on your issues & reward your contributors"
     >
-      <Link href="/maintainer" className="font-medium text-blue-500">
-        <Button className="-z-1" fullWidth>
-          Get Started
-        </Button>
-      </Link>
+      <Button className="-z-1" fullWidth onClick={upgrade}>
+        Get Started
+      </Button>
     </Upsell>
   )
 }

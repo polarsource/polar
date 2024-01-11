@@ -1,3 +1,4 @@
+import structlog
 from fastapi import APIRouter, Depends, Response
 
 from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
@@ -5,6 +6,7 @@ from polar.auth.service import AuthService, LoginResponse, LogoutResponse
 from polar.authz.service import Authz, Scope
 from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.service import user as user_service
 
@@ -15,6 +17,8 @@ from .schemas import (
     UserStripePortalSession,
     UserUpdateSettings,
 )
+
+log = structlog.get_logger()
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -71,6 +75,33 @@ async def update_preferences(
         raise ResourceNotFound()
 
     return UserRead.from_orm(user_loaded)
+
+
+@router.post("/me/upgrade", response_model=Organization)
+async def maintainer_upgrade(
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    log.info("user.maintainer_upgrade", user_id=auth.user.id)
+    user_loaded = await user_service.get_loaded(session, auth.user.id)
+    if not user_loaded:
+        log.error("user.maintainer.upgrade", error="User not found")
+        raise ResourceNotFound()
+
+    personal_org = await user_service.create_personal_github_org(
+        session,
+        user=user_loaded,
+    )
+    if not personal_org:
+        log.error("user.maintainer.upgrade", error="Org creation failed")
+        raise InternalServerError("Unable to create maintainer organization")
+
+    log.info(
+        "user.maintainer_upgrade",
+        user_id=auth.user.id,
+        new_org_id=personal_org.id,
+    )
+    return Organization.from_orm(personal_org)
 
 
 @router.patch("/me/account", response_model=UserRead)

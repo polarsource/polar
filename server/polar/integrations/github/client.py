@@ -18,7 +18,7 @@ from pydantic import Field
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github.cache import RedisCache
-from polar.models.user import User
+from polar.models.user import OAuthAccount, User
 from polar.postgres import AsyncSession
 from polar.types import JSONAny
 from polar.user.oauth_service import oauth_account_service
@@ -124,6 +124,12 @@ async def get_user_client(
     if not oauth:
         raise Exception("no github oauth account found")
 
+    return await get_refreshed_oauth_client(session, oauth, user)
+
+
+async def get_refreshed_oauth_client(
+    session: AsyncSession, oauth: OAuthAccount, user: User
+) -> GitHub[TokenAuthStrategy]:
     # if token expires within 30 minutes, refresh it
     if (
         oauth.expires_at

@@ -5,9 +5,8 @@ import { Organization, SubscriptionTier, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import { Button } from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
-import { Input } from 'polarkit/components/ui/input'
 import { useCreateFreeSubscription, useUserSubscriptions } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
@@ -129,16 +128,16 @@ export const AnonymousFreeTierSubscribe = ({
         isShown={showModal}
         hide={() => setShowModal(false)}
         modalContent={
-          <div className="flex flex-col items-center justify-center gap-y-6 px-8 py-10">
+          <div className="flex min-h-[240px] w-full flex-col items-center justify-center gap-y-6 px-16 py-10">
             {!success && (
               <>
-                <div>
+                <div className="flex flex-col items-center text-center">
                   <h2 className="text-lg">Subscribe to {organization.name}</h2>
                 </div>
                 <Form {...form}>
                   <form
                     onSubmit={handleSubmit(onSubscribeFree)}
-                    className="w-1/2"
+                    className="w-full max-w-lg"
                   >
                     <FormField
                       control={control}
@@ -146,8 +145,8 @@ export const AnonymousFreeTierSubscribe = ({
                       rules={{ required: 'Your email is required' }}
                       render={({ field }) => {
                         return (
-                          <div className="flex flex-col gap-2">
-                            <div className="flex w-full items-center space-x-2">
+                          <div className="flex w-full flex-col gap-2">
+                            <div className="flex w-full flex-col items-center gap-4 space-x-2 md:flex-row">
                               <Input
                                 {...field}
                                 type="email"

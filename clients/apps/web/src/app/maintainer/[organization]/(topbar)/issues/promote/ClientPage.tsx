@@ -1,5 +1,6 @@
 'use client'
 
+import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
@@ -22,6 +23,7 @@ export default function ClientPage() {
   return (
     <DashboardBody>
       <div className="relative z-0">
+        {!org?.has_app_installed && <GitHubAppInstallationUpsell />}
         <div className="dark:divide-polar-700 divide-y divide-gray-200">
           {org && (
             <Section>

@@ -54,10 +54,16 @@ const ClientPage = () => {
         onTitleChange={(title) => setArticle((a) => ({ ...a, title }))}
         onBodyChange={(body) => setArticle((a) => ({ ...a, body }))}
         previewProps={{
-          article: { ...article, organization: org, byline: org },
+          article: {
+            ...article,
+            organization: org,
+            byline: org,
+            slug: 'preview',
+          },
           isSubscriber: true,
           showPaywalledContent: true,
           animation: false,
+          showShare: false,
         }}
       />
     </Tabs>

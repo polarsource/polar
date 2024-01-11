@@ -56,8 +56,8 @@
   "dependencies": {
     "@heroicons/react": "^2.0.16",
     "@hookform/resolvers": "^3.3.2",
-    "@mui/icons-material": "^5.14.12",
-    "@mui/material": "^5.14.12",
+    "@mui/icons-material": "^5.15.4",
+    "@mui/material": "^5.15.4",
     "@polar-sh/sdk": "workspace:*",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-checkbox": "^1.0.4",

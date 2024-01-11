@@ -3,6 +3,7 @@
 import LongformPost from '@/components/Feed/LongformPost'
 import { useAuth } from '@/hooks/auth'
 import { ArrowBackOutlined } from '@mui/icons-material'
+
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
@@ -61,6 +62,7 @@ export default function Page({ article }: { article: Article }) {
         isSubscriber={isSubscriber}
         showPaywalledContent={true} // Can safely be true. If the user doesn't have permissions to see the paywalled content it will already be stripped out.
         animation={false}
+        showShare={true}
       />
     </div>
   )

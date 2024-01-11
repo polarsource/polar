@@ -4,8 +4,9 @@ from uuid import UUID
 import structlog
 from sqlalchemy.orm import joinedload
 
+from polar.enums import Platforms
 from polar.kit.utils import utc_now
-from polar.models import UserOrganization
+from polar.models import Organization, UserOrganization
 from polar.postgres import AsyncSession, sql
 
 log = structlog.get_logger()
@@ -50,6 +51,25 @@ class UserOrganizationervice:
         )
         res = await session.execute(stmt)
         return res.scalars().unique().all()
+
+    async def get_users_personal_org(
+        self, session: AsyncSession, platform: Platforms, user_id: UUID
+    ) -> UserOrganization | None:
+        stmt = (
+            sql.select(UserOrganization)
+            .join(Organization, Organization.id == UserOrganization.organization_id)
+            .where(
+                UserOrganization.user_id == user_id,
+                UserOrganization.deleted_at.is_(None),
+                Organization.platform == platform,
+                Organization.is_personal.is_(True),
+            )
+            .options(
+                joinedload(UserOrganization.user),
+            )
+        )
+        res = await session.execute(stmt)
+        return res.scalars().one_or_none()
 
     async def get_by_user_and_org(
         self,

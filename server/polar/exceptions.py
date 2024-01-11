@@ -72,3 +72,8 @@ class StripeError(PolarError):
 class ResourceNotFound(PolarError):
     def __init__(self, message: str = "Not found", status_code: int = 404) -> None:
         super().__init__(message, status_code)
+
+
+class ResourceAlreadyExists(PolarError):
+    def __init__(self, message: str = "Already exists", status_code: int = 409) -> None:
+        super().__init__(message, status_code)

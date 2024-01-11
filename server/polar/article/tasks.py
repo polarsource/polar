@@ -1,4 +1,3 @@
-from datetime import timedelta
 from uuid import UUID
 
 import httpx
@@ -7,9 +6,7 @@ import structlog
 from polar.auth.service import AuthService
 from polar.config import settings
 from polar.email.sender import get_email_sender
-from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.magic_link.service import magic_link as magic_link_service
 from polar.models.article import Article
 from polar.user.service import user as user_service
 from polar.worker import (
@@ -48,18 +45,18 @@ async def articles_send_to_user(
 
         (jwt, _) = AuthService.generate_token(user)
 
-        _, magic_link_token = await magic_link_service.request(
-            session,
-            user.email,
-            source="article_links",
-            expires_at=utc_now() + timedelta(hours=24),
-        )
+        # _, magic_link_token = await magic_link_service.request(
+        #     session,
+        #     user.email,
+        #     source="article_links",
+        #     expires_at=utc_now() + timedelta(hours=24),
+        # )
 
         email_headers: dict[str, str] = {}
 
         render_data = {
             # Add pre-authenticated tokens to the end of all links in the email
-            "inject_magic_link_token": magic_link_token,
+            # "inject_magic_link_token": magic_link_token,
         }
 
         # Get subscriber ID (if exists)

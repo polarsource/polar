@@ -5,6 +5,9 @@ from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAu
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
 from polar.authz.service import Authz, Scope
 from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
+from polar.integrations.github.service.organization import (
+    github_organization as github_organization_service,
+)
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
@@ -88,7 +91,7 @@ async def maintainer_upgrade(
         log.error("user.maintainer.upgrade", error="User not found")
         raise ResourceNotFound()
 
-    personal_org = await user_service.create_personal_github_org(
+    personal_org = await github_organization_service.create_for_user(
         session,
         user=user_loaded,
     )

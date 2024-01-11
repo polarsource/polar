@@ -19,6 +19,7 @@ from polar.posthog import posthog
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
 
 from .schemas import UserCreate, UserUpdate, UserUpdateSettings
 
@@ -90,6 +91,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         await organization_service.add_user(
             session, organization=org, user=user, is_admin=True
         )
+        await enqueue_job("organization.post_user_upgrade", organization_id=org.id)
         return org
 
     async def get_by_email(self, session: AsyncSession, email: str) -> User | None:

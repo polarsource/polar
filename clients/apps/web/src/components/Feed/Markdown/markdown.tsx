@@ -1,5 +1,5 @@
 import { Article } from '@polar-sh/sdk'
-import React, { JSXElementConstructor } from 'react'
+import React, { Fragment, JSXElementConstructor } from 'react'
 
 export type RenderArticle = Pick<
   Article,
@@ -171,6 +171,39 @@ export const wrapStrictCreateElement = (args: {
       children = undefined // can never have children
     }
 
+    if (type === 'p' && Array.isArray(children)) {
+      return React.createElement(
+        type,
+        trimProps,
+        <Fragment>
+          {children.map((ch, idx) => {
+            // Double whitespace as newline.
+            if (typeof ch === 'object' && ch.key === null) {
+              return (
+                <Fragment key={idx}>
+                  <br />
+                </Fragment>
+              )
+            }
+
+            return <Fragment key={idx}>{ch}</Fragment>
+          })}
+        </Fragment>,
+      )
+    }
+
+    if (Array.isArray(children)) {
+      return React.createElement(
+        type,
+        trimProps,
+        <Fragment>
+          {children.map((ch, idx) => (
+            <Fragment key={idx}>{ch}</Fragment>
+          ))}
+        </Fragment>,
+      )
+    }
+
     return React.createElement(
       type,
 
@@ -184,6 +217,7 @@ export const wrapStrictCreateElement = (args: {
 
 export const markdownOpts = {
   disableParsingRawHTML: false,
+  forceBlock: true,
   overrides: {
     // Do not render by default.
     // The web and email renderers will register their corresponding implementations

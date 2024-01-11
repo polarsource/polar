@@ -198,8 +198,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             query = query.where(Subscription.deleted_at.is_(None))
 
         query = query.options(
-            joinedload(Subscription.user).joinedload(User.oauth_accounts),
-            joinedload(Subscription.organization),
+            joinedload(Subscription.user), joinedload(Subscription.organization)
         )
 
         res = await session.execute(query)
@@ -284,7 +283,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         statement = statement.options(
             contains_eager(Subscription.subscription_tier),
-            contains_eager(Subscription.user).joinedload(User.oauth_accounts),
+            contains_eager(Subscription.user),
             joinedload(Subscription.organization),
         )
 
@@ -304,7 +303,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             select(Subscription)
             .join(Subscription.subscription_tier)
             .options(
-                joinedload(Subscription.user).joinedload(User.oauth_accounts),
+                joinedload(Subscription.user),
                 joinedload(Subscription.organization),
                 contains_eager(Subscription.subscription_tier),
             )

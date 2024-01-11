@@ -519,12 +519,7 @@ async def create_free_subscription(
         auth_method=auth.auth_method,
     )
 
-    # get for return with loaded relations (User.oauth_accounts)
-    ret_sub = await subscription_service.get(session, sub.id)
-    if not ret_sub:
-        raise ResourceNotFound()
-
-    return SubscriptionSchema.from_db(ret_sub, include_user_email=False)
+    return SubscriptionSchema.from_db(sub, include_user_email=False)
 
 
 @router.post(
@@ -689,12 +684,7 @@ async def upgrade_subscription(
         user=auth.subject,
     )
 
-    # get for return with loaded relations (User.oauth_accounts)
-    ret_sub = await subscription_service.get(session, sub.id)
-    if not ret_sub:
-        raise ResourceNotFound()
-
-    return SubscriptionSchema.from_db(ret_sub, include_user_email=False)
+    return SubscriptionSchema.from_db(sub, include_user_email=False)
 
 
 @router.delete(
@@ -714,12 +704,7 @@ async def cancel_subscription(
         session, subscription=subscription, authz=authz, user=auth.subject
     )
 
-    # get for return with loaded relations (User.oauth_accounts)
-    ret_sub = await subscription_service.get(session, sub.id)
-    if not ret_sub:
-        raise ResourceNotFound()
-
-    return SubscriptionSchema.from_db(ret_sub, include_user_email=False)
+    return SubscriptionSchema.from_db(sub, include_user_email=False)
 
 
 @router.get(

@@ -76,7 +76,7 @@ class User(RecordModel):
 
     @declared_attr
     def oauth_accounts(cls) -> Mapped[list[OAuthAccount]]:
-        return relationship(OAuthAccount, lazy="raise", back_populates="user")
+        return relationship(OAuthAccount, lazy="joined", back_populates="user")
 
     invite_only_approved: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False

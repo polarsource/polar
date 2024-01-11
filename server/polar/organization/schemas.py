@@ -38,6 +38,10 @@ class Organization(Schema):
 
     account_id: UUID4 | None = None
 
+    has_app_installed: bool = Field(
+        description="Whether the organization has the Polar GitHub App installed for repositories or not."
+    )
+
     # Team fields
     billing_email: str | None = Field(
         description="Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization"
@@ -75,6 +79,7 @@ class Organization(Schema):
             pledge_badge_show_amount=o.pledge_badge_show_amount,
             default_upfront_split_to_contributors=o.default_upfront_split_to_contributors,
             account_id=o.account_id,
+            has_app_installed=o.installation_id is not None,
             #
             billing_email=o.billing_email if include_member_fields else None,
             #

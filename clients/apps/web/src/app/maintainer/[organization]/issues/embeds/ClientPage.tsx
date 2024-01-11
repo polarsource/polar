@@ -1,5 +1,6 @@
 'use client'
 
+import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -83,6 +84,7 @@ export default function ClientPage() {
       </DashboardTopbar>
       <DashboardBody>
         <div className="space-y-4">
+          {!org?.has_app_installed && <GitHubAppInstallationUpsell />}
           <h2 className="text-lg font-medium">GitHub Sponsors</h2>
           <p className="dark:text-polar-400 text-sm text-gray-500">
             Make sure to link to your public funding page from GitHub&apos;s

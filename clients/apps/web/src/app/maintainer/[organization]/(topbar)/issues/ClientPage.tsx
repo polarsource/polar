@@ -1,6 +1,7 @@
 'use client'
 
 import IssueList, { Header } from '@/components/Dashboard/IssueList'
+import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import {
   DashboardFilters,
   DefaultFilters,
@@ -261,6 +262,7 @@ const OrganizationIssues = ({
 
   return (
     <DashboardBody className="flex flex-col gap-y-8">
+      {!currentOrg.has_app_installed && <GitHubAppInstallationUpsell />}
       {showAddBadgeBanner && <OnboardingAddBadge />}
       <ShadowBoxOnMd className="md:rounded-3xl md:px-12 md:py-8">
         <h2 className="mb-6 text-lg font-medium">Issues Overview</h2>

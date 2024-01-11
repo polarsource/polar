@@ -2751,6 +2751,12 @@ export interface Organization {
      */
     account_id?: string;
     /**
+     * Whether the organization has the Polar GitHub App installed for repositories or not.
+     * @type {boolean}
+     * @memberof Organization
+     */
+    has_app_installed: boolean;
+    /**
      * Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization
      * @type {string}
      * @memberof Organization

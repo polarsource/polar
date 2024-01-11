@@ -18,6 +18,7 @@ import type {
   HTTPValidationError,
   LoginResponse,
   LogoutResponse,
+  Organization,
   UserRead,
   UserScopes,
   UserSetAccount,
@@ -177,7 +178,7 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Maintainer Upgrade
      */
-    async maintainerUpgradeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
+    async maintainerUpgradeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -203,7 +204,7 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Maintainer Upgrade
      */
-    async maintainerUpgrade(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
+    async maintainerUpgrade(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.maintainerUpgradeRaw(initOverrides);
         return await response.value();
     }

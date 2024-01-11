@@ -1,7 +1,11 @@
+import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { UserSignupType } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { CONFIG } from 'polarkit'
 import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
+import { Banner } from 'polarkit/components/ui/molecules'
 import { PropsWithChildren } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 
@@ -52,5 +56,26 @@ export const Upsell = ({
       <p className="dark:text-polar-300 -mt-2 text-blue-400">{description}</p>
       {children}
     </div>
+  )
+}
+
+export const GitHubAppInstallationUpsell = () => {
+  return (
+    <>
+      <Banner
+        color="default"
+        right={
+          <Link href={CONFIG.GITHUB_INSTALLATION_URL}>
+            <Button size="sm">Install GitHub App</Button>
+          </Link>
+        }
+      >
+        <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+        <span className="text-sm">
+          You need to install our <strong>GitHub App</strong> on at least one of
+          your repositories to use issue funding.
+        </span>
+      </Banner>
+    </>
   )
 }

@@ -1,14 +1,13 @@
 'use client'
 
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { useAuth } from '@/hooks'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
-import { useListAdminOrganizations, useUserSubscriptions } from 'polarkit/hooks'
 import { useMemo } from 'react'
 import BrowserRender from './Markdown/BrowserRender'
 import { RenderArticle } from './Markdown/markdown'
+import Share from './Posts/Share'
 
 const defaultStaggerTransition = {
   staggerChildren: 0.2,
@@ -25,6 +24,7 @@ interface LongformPostProps {
   showPaywalledContent: boolean
   isSubscriber: boolean
   animation: boolean
+  showShare: boolean
 }
 
 export default function LongformPost({
@@ -34,26 +34,11 @@ export default function LongformPost({
   showPaywalledContent,
   isSubscriber,
   animation,
+  showShare,
 }: LongformPostProps) {
-  const { currentUser } = useAuth()
   const organization = article.organization
-  const orgs = useListAdminOrganizations()
 
-  const userSubs = useUserSubscriptions(
-    currentUser?.id,
-    article.organization.name,
-    true,
-    30,
-    article.organization.platform,
-  )
-
-  const shouldRenderUpsell = useMemo(
-    () =>
-      userSubs.data?.items &&
-      userSubs.data?.items.length < 1 &&
-      !orgs.data?.items?.map((o) => o.id).includes(article.organization.id),
-    [userSubs, article, orgs],
-  )
+  const shouldRenderUpsell = isSubscriber
 
   staggerTransition = staggerTransition ?? defaultStaggerTransition
   revealTransition = revealTransition ?? defaultRevealTransition
@@ -184,6 +169,8 @@ export default function LongformPost({
           </div>
         </StaggerReveal.Child>
       )}
+
+      {showShare ? <Share className="my-8 flex" article={article} /> : null}
     </StaggerReveal>
   )
 }

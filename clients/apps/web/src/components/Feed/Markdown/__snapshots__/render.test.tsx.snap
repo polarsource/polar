@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`demo 1`] = `
+exports[`basic 1`] = `
 <div>
   <div>
     <h1>
@@ -40,6 +40,322 @@ exports[`demo 1`] = `
         to get access to it.
       </p>
     </div>
+    <p>
+        This is a normal 
+      <strong>
+        block
+      </strong>
+       of text 
+      <a
+        href="https://polar.sh/"
+      >
+        Polar
+      </a>
+       with 
+      <em>
+        various
+      </em>
+       formatting.
+  And here it continues in the same block.
+    </p>
+    <p>
+        This is a different block.
+      <br />
+        With a linebreak! (double whitespace)
+    </p>
+    <blockquote>
+      <p>
+        This is a quoute!
+      </p>
+    </blockquote>
+  </div>
+</div>
+`;
+
+exports[`double-whitespace 1`] = `
+<div>
+  <div>
+    <p>
+      Normal 
+      <strong>
+        block
+      </strong>
+       example
+    </p>
+    <p>
+      With-doublespace
+      <br />
+      With-doublespace
+    </p>
+  </div>
+</div>
+`;
+
+exports[`polar 1`] = `
+<div>
+  <div>
+    <p>
+      <img
+        src="https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-fCQqIZt3zubCpaMQzy6ZONZAOG6QDq.png"
+        style="max-width: 100%;"
+      />
+    </p>
+    <p>
+      Today, we're thrilled to announce & launch the next chapter of Polar.
+    </p>
+    <p>
+      A creator platform for developers and the open source ecosystem – built open source (
+      <a
+        href="https://github.com/polarsource/polar"
+      >
+        fork us on GitHub
+      </a>
+      ).
+    </p>
+    <p>
+      Offering you – as a developer –  a platform on top of your GitHub repositories to:
+    </p>
+    <ol>
+      <li>
+        Build, own & reach your audience through free- and premium posts and newsletters.
+      </li>
+      <li>
+        Offer subscriptions of value-add benefits designed for our ecosystem & built-in to Polar. We'll also handle value-add taxes so you don't have to.
+      </li>
+      <li>
+        Ability to integrate it all on your own docs, sites or services using our API & SDK.
+      </li>
+    </ol>
+    <p>
+      We're also excited to share our updated pricing (it's better for you) and that our team is going to subscribe to open source developers on Polar for $30K in 2024 🎉
+    </p>
+    <p>
+      Let's dive in.
+    </p>
+    <h3>
+      Subscriptions & Benefits
+    </h3>
+    <p>
+      <img
+        src="https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Screenshot%202024-01-09%20at%2010.44.55-uy562dyst8J1Hk4QScE5i6DE3Aa2jA.png"
+        style="max-width: 100%;"
+      />
+    </p>
+    <p>
+      You can now setup subscriptions with Polar 🚀 They're beautiful & come with some incredibly powerful features beyond what you'd expect.
+    </p>
+    <p>
+      <strong>
+        Reach your entire audience with free tier(s)
+      </strong>
+    </p>
+    <p>
+      You automatically have a built-in - free - tier offering newsletter access to your Public Posts on Polar. Of course, you can edit it to add even more benefits too.
+    </p>
+    <p>
+      Enabling your entire audience to subscribe with email-only at first and for you to have one platform to reach them all.
+    </p>
+    <p>
+      <strong>
+        Paid tiers & managed value-add taxes
+      </strong>
+    </p>
+    <p>
+      Of course, you can offer paid tiers too that backers can upgrade to seamlessly over time.
+    </p>
+    <p>
+      Many developers shy away from offering paid services & benefits due to the value-add tax implications. Calculating, capturing & remitting value-add taxes internationally is a crushing overhead for individual developers.
+    </p>
+    <p>
+      That's why we're incredibly proud to be the merchant of record and handle value-add taxes so you don't have to. Read more about the details 
+      <a
+        href="https://docs.polar.sh/payment/"
+      >
+        here
+      </a>
+      .
+    </p>
+    <p>
+      <strong>
+        Unparalleled business offerings
+      </strong>
+    </p>
+    <p>
+      Open source developers tend to have sponsorship tiers for individual users vs. businesses, but they're all treated the same. Not with Polar.
+    </p>
+    <p>
+      Polar has the concept of subscription audiences: Individual vs. Business. Separating them publicly for clarity, but also ensuring benefits are granted to all individual team members of the organization that subscribes 🤯
+    </p>
+    <p>
+      Offering unparalleled opportunities and value to subscriptions offered via Polar to businesses.
+    </p>
+    <p>
+      <strong>
+        Powerful, built-in, benefits
+      </strong>
+    </p>
+    <p>
+      You can setup custom benefits with Polar (free text) for maximum flexibility. However, we're going to invest heavily in automating typical benefits offered within our ecosystem. Making it seamless for you to manage & delightful for your backers to use.
+    </p>
+    <p>
+      From Discord invites (roles/tier) to automating how businesses can setup their logotype & description once and it automatically propagating across your README (PR/SVG) to sites/docs (SDK). Or how about early access to new features, i.e invite to private repositories? Sponsored posts? Just to mention a few ideas in our pipeline.
+    </p>
+    <p>
+      Our first built-in benefit is Posts & Newsletters. Enabling a vital communication channel to an audience you own & can reach fully - regardless of which benefits you offer today or tomorrow.
+    </p>
+    <h3>
+      Posts & Newsletters
+    </h3>
+    <p>
+      <img
+        src="https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-QKge9Wh9vpdhZRIPLnsMWFesg8SPEY.png"
+        style="max-width: 100%;"
+      />
+    </p>
+    <p>
+      It's a bit meta, but you're reading a Polar post right now 😎 It's written in markdown, I previewed it easily both on the web & email and I can share it publicly or to paid subscribers.
+    </p>
+    <p>
+      Or how about a hybrid? This is a public post, but the below is a section reserved for paid subscribers. You see that by the upgrade module below (don't worry - I only hid "1337" in there :-)
+    </p>
+    <p>
+      1337
+    </p>
+    <p>
+      We love to write & share code too, so of course we support syntax highlighting in Polar Posts.
+    </p>
+    <p>
+      I can embed Youtube videos, images, links or even GitHub issues you can fund using Polar issue funding & rewards.
+    </p>
+    <p>
+      We've battled with the email gods to make all of this a delightful experience over email too. I can easily choose to share this post over the web only or also email it to all my subscribers (newsletter).
+    </p>
+    <p>
+      Now might be a good time to promote subscribing to our own Polar Posts in the future. So let me embed that nudge easily below.
+    </p>
+    <p>
+      We're working on polls and other embeddables too. We can't wait to hear what you think & how we can improve posts for your initiatives!
+    </p>
+    <h3>
+      API & SDK
+    </h3>
+    <p>
+      You get a personal page on Polar that you can easily promote Posts, Subscriptions & Issue Funding from Day 1: e.g 
+      <code>
+        polar.sh/polarsource
+      </code>
+      .
+    </p>
+    <p>
+      We don't think it makes any sense to offer customization abilities to our audience; setting up custom color hex codes, templates etc like other creator platforms. Instead, we're building everything on our public API & offering SDKs (JS first - beta). Since we believe you'd rather integrate it directly on your site, docs and/or services.
+    </p>
+    <p>
+      Our goal is that the developer page, e.g 
+      <code>
+        polar.sh/polarsource
+      </code>
+      , should be a living example of an API/SDK integration that you can cherry-pick components from. We'd love to hear from you and your use case and work together to ensure we support it - 
+      <a
+        href="https://discord.gg/AVgbMhTtBq"
+      >
+        join our Discord
+      </a>
+       to chat about it.
+    </p>
+    <p>
+      In the meantime, don't hesitate to checkout our:
+    </p>
+    <ul>
+      <li>
+        <a
+          href="https://api.polar.sh/redoc"
+        >
+          Public Polar API
+        </a>
+      </li>
+      <li>
+        <a
+          href="https://github.com/polarsource/polar/releases/tag/jssdk%2Fv0.2.0"
+        >
+          JS SDK
+        </a>
+      </li>
+    </ul>
+    <p>
+      <em>
+        It's in early development and we'd love your feedback. We are mindful to maintain backward compatibility, but cannot guarantee it at this stage.
+      </em>
+    </p>
+    <h3>
+      Pricing
+    </h3>
+    <p>
+      We're incredibly excited to share that we're updating our pricing with this launch. In order to drive even more capital to open source developers.
+    </p>
+    <p>
+      Moving forward, our pricing is:
+    </p>
+    <ul>
+      <li>
+        No fixed costs
+      </li>
+      <li>
+        5% + payment & payout fees (Stripe) instead of our former 10% + payment & payout fees.
+      </li>
+      <li>
+        <em>
+          We'll also cover Stripe fees from our 5% until March 31st, 2024
+        </em>
+        .
+      </li>
+    </ul>
+    <p>
+      Let's go 🚀
+    </p>
+    <h3>
+      $30K in 2024 from Team Polar
+    </h3>
+    <p>
+      Finally, we're happy to share that we're going to invest $30K of our own to subscribe to open source developers throughout 2024. So don't hesitate to ping @polar_sh on Twitter with your posts to share it with us and we might subscribe :-)
+    </p>
+    <p>
+      How is this funded?
+    </p>
+    <ol>
+      <li>
+        Birk lost it in 2023 and pledged $30K personally and has $20K left to spend.
+      </li>
+      <li>
+        Polar supports businesses to setup open source allowances for team members (invite-only for now). Polar has an employee benefit of each engineer getting $200/month. We're 4 people so that's $800/month or $9,600/year. 
+        <em>
+          We're rounding up the rest :-)
+        </em>
+      </li>
+    </ol>
+    <hr />
+    <p>
+      Phew. That's all. This is our biggest update since launching Polar and a big step towards our long-term vision of building a platform for developers to get more funding to even building independent businesses around their initiatives.
+    </p>
+    <p>
+      As always, don't hesitate to share your feedback, thoughts or requests on 
+      <a
+        href="https://github.com/polarsource/polar"
+      >
+        GitHub
+      </a>
+       or chat with us directly on 
+      <a
+        href="https://discord.gg/AVgbMhTtBq"
+      >
+        Discord
+      </a>
+      . We're here to serve fellow developers!
+    </p>
+    <p>
+      All our best,
+      <br />
+      Birk, Gustav, Francois & Emil @ Polar
+    </p>
   </div>
 </div>
 `;

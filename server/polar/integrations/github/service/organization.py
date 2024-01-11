@@ -2,6 +2,11 @@ from datetime import datetime
 from uuid import UUID
 
 import structlog
+from githubkit import (
+    AppInstallationAuthStrategy,
+    GitHub,
+    TokenAuthStrategy,
+)
 from githubkit.rest.models import Installation as GitHubInstallation
 from githubkit.rest.models import SimpleUser as GitHubSimpleUser
 from githubkit.webhooks.models import Installation as GitHubWebhookInstallation
@@ -9,6 +14,7 @@ from githubkit.webhooks.models import User as GitHubUser
 from pydantic import BaseModel
 
 from polar.enums import Platforms
+from polar.exceptions import ResourceAlreadyExists, ResourceNotFound
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -126,6 +132,59 @@ class GithubOrganizationService(OrganizationService):
 
         return organization
 
+    async def create_for_user(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> Organization | None:
+        current_user_org = await user_organization_service.get_personal_org(
+            session,
+            platform=Platforms.github,
+            user_id=user.id,
+        )
+        if current_user_org:
+            log.debug("user.create_github_org", found_existing=True)
+            raise ResourceAlreadyExists("User already has a personal org")
+
+        oauth = await oauth_account_service.get_by_platform_and_user_id(
+            session, Platforms.github, user.id
+        )
+        if not oauth:
+            log.error(
+                "user.create_github_org",
+                error="No GitHub OAuth account found",
+                user_id=user.id,
+            )
+            raise ResourceNotFound()
+
+        # GitHub users cannot have an empty avatar_url, but needed for typing
+        avatar_url = user.avatar_url
+        if not avatar_url:
+            avatar_url = ""
+
+        new = OrganizationCreate(
+            platform=Platforms.github,
+            name=user.username,
+            avatar_url=avatar_url,
+            # Cast to GitHub ID (int)
+            external_id=int(oauth.account_id),
+            is_personal=True,
+            # TODO: Should we really set this here?
+            onboarded_at=utc_now(),
+        )
+        org = await organization_service.create(session, new, autocommit=False)
+
+        await organization_service.add_user(
+            session, organization=org, user=user, is_admin=True
+        )
+
+        # Invoked from authenticated user
+        client = await github.get_refreshed_oauth_client(session, oauth, user)
+        await self._populate_github_user_metadata(session, client, org)
+
+        await enqueue_job("organization.post_user_upgrade", organization_id=org.id)
+        return org
+
     async def suspend(
         self,
         session: AsyncSession,
@@ -217,15 +276,18 @@ class GithubOrganizationService(OrganizationService):
         if not org.installation_id:
             return None
 
+        client = github.get_app_installation_client(org.safe_installation_id)
         if org.is_personal:
-            return await self._populate_github_user_metadata(session, org)
+            return await self._populate_github_user_metadata(session, client, org)
 
-        return await self._populate_github_org_metadata(session, org)
+        return await self._populate_github_org_metadata(session, client, org)
 
     async def _populate_github_org_metadata(
-        self, session: AsyncSession, org: Organization
+        self,
+        session: AsyncSession,
+        client: GitHub[AppInstallationAuthStrategy],
+        org: Organization,
     ) -> None:
-        client = github.get_app_installation_client(org.safe_installation_id)
         github_org = await client.rest.orgs.async_get(org.name)
 
         gh = github_org.parsed_data
@@ -241,9 +303,11 @@ class GithubOrganizationService(OrganizationService):
         await org.save(session=session)
 
     async def _populate_github_user_metadata(
-        self, session: AsyncSession, org: Organization
+        self,
+        session: AsyncSession,
+        client: GitHub[AppInstallationAuthStrategy] | GitHub[TokenAuthStrategy],
+        org: Organization,
     ) -> None:
-        client = github.get_app_installation_client(org.safe_installation_id)
         github_org = await client.rest.users.async_get_by_username(org.name)
 
         gh = github_org.parsed_data

@@ -52,7 +52,7 @@ class UserOrganizationervice:
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 
-    async def get_users_personal_org(
+    async def get_personal_org(
         self, session: AsyncSession, platform: Platforms, user_id: UUID
     ) -> UserOrganization | None:
         stmt = (

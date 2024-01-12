@@ -887,7 +887,10 @@ class TestUpdateSubscriptionBenefit:
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
-            json={"description": "Updated Name"},
+            json={
+                "type": subscription_benefit_organization.type,
+                "description": "Updated Name",
+            },
         )
 
         assert response.status_code == 401
@@ -896,7 +899,7 @@ class TestUpdateSubscriptionBenefit:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/benefits/{uuid.uuid4()}",
-            json={"description": "Updated Name"},
+            json={"type": "custom", "description": "Updated Name"},
         )
 
         assert response.status_code == 404
@@ -925,7 +928,7 @@ class TestUpdateSubscriptionBenefit:
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
-            json=payload,
+            json={"type": subscription_benefit_organization.type, **payload},
         )
 
         assert response.status_code == 422
@@ -939,7 +942,10 @@ class TestUpdateSubscriptionBenefit:
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
-            json={"description": "Updated Description"},
+            json={
+                "type": subscription_benefit_organization.type,
+                "description": "Updated Description",
+            },
         )
 
         assert response.status_code == 200
@@ -965,6 +971,7 @@ class TestUpdateSubscriptionBenefit:
         response = await client.post(
             f"/api/v1/subscriptions/benefits/{benefit.id}",
             json={
+                "type": benefit.type,
                 "description": "Updated Description",
                 "properties": {"paid_articles": True},
             },
@@ -976,6 +983,37 @@ class TestUpdateSubscriptionBenefit:
         assert json["description"] == "Updated Description"
         assert "properties" in json
         assert json["properties"]["paid_articles"] is False
+
+    @pytest.mark.authenticated
+    async def test_can_update_custom_properties(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        benefit = await create_subscription_benefit(
+            session,
+            type=SubscriptionBenefitType.custom,
+            organization=organization,
+            properties={"note": "NOTE"},
+        )
+
+        response = await client.post(
+            f"/api/v1/subscriptions/benefits/{benefit.id}",
+            json={
+                "type": benefit.type,
+                "description": "Updated Description",
+                "properties": {"note": "UPDATED NOTE"},
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["description"] == "Updated Description"
+        assert "properties" in json
+        assert json["properties"]["note"] == "UPDATED NOTE"
 
 
 @pytest.mark.asyncio

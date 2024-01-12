@@ -311,6 +311,9 @@ async def update_subscription_benefit(
     if subscription_benefit is None:
         raise ResourceNotFound()
 
+    if subscription_benefit_update.type != subscription_benefit.type:
+        raise BadRequest("The type of a benefit can't be changed.")
+
     return await subscription_benefit_service.user_update(
         session, authz, subscription_benefit, subscription_benefit_update, auth.user
     )

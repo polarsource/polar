@@ -4,6 +4,22 @@ import { IssueLabel } from 'polarkit/components/Issue'
 import { twMerge } from 'tailwind-merge'
 import BadgeRepository from './Repository'
 
+const DEMO_REPO = {
+  id: '',
+  // Polar GitHub Avatar
+  avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=200&v=4',
+  name: 'Your repositories would show here',
+  synced_issues: 0,
+  open_issues: 0,
+  auto_embedded_issues: 0,
+  label_embedded_issues: 0,
+  pull_requests: 0,
+  badge_auto_embed: false,
+  badge_label: 'Fund',
+  is_private: false,
+  is_sync_completed: true,
+}
+
 export const BadgeRepositories = ({
   repos,
   showControls,
@@ -18,6 +34,7 @@ export const BadgeRepositories = ({
   ) => void
   isSettingPage?: boolean
 }) => {
+  const hasRepos = repos.length > 0
   const badgeLabels = new Set(repos.map(({ badge_label }) => badge_label))
   return (
     <>
@@ -53,21 +70,37 @@ export const BadgeRepositories = ({
         </div>
       </div>
       <ul className="dark:ring-polar-700 dark:divide-polar-700 mt-7 divide-y divide-gray-200 overflow-hidden rounded-xl shadow dark:ring-1">
-        {repos.map((repo, index) => {
-          return (
-            <li key={`badge-repo-${index}`}>
-              <BadgeRepository
-                repo={repo}
-                isSettingPage={isSettingPage}
-                showControls={showControls}
-                showIndividualBadgeLabel={badgeLabels.size > 1}
-                onEnableBadgeChange={(badge: boolean) =>
-                  onEnableBadgeChange(repo, badge)
-                }
-              />
-            </li>
-          )
-        })}
+        {!hasRepos && (
+          <li key={`badge-repo-demo`}>
+            <BadgeRepository
+              repo={DEMO_REPO}
+              isSettingPage={isSettingPage}
+              showControls={showControls}
+              showIndividualBadgeLabel={badgeLabels.size > 1}
+              onEnableBadgeChange={
+                // noop
+                (badge: boolean) => {}
+              }
+            />
+          </li>
+        )}
+
+        {hasRepos &&
+          repos.map((repo, index) => {
+            return (
+              <li key={`badge-repo-${index}`}>
+                <BadgeRepository
+                  repo={repo}
+                  isSettingPage={isSettingPage}
+                  showControls={showControls}
+                  showIndividualBadgeLabel={badgeLabels.size > 1}
+                  onEnableBadgeChange={(badge: boolean) =>
+                    onEnableBadgeChange(repo, badge)
+                  }
+                />
+              </li>
+            )
+          })}
       </ul>
     </>
   )

@@ -2,7 +2,7 @@
 
 ### What does Polar cost?
 
-Polar has no fixed, monthly, fees. We take a 10% commission once transfers are
+Polar has no fixed, monthly, fees. We take a 5% commission once transfers are
 made for successfully funded & completed issues. Payment processing fees apply
 in addition (Stripe).
 

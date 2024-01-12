@@ -104,7 +104,7 @@ async def maintainer_upgrade(
         user_id=auth.user.id,
         new_org_id=personal_org.id,
     )
-    return Organization.from_orm(personal_org)
+    return Organization.from_db(personal_org)
 
 
 @router.patch("/me/account", response_model=UserRead)

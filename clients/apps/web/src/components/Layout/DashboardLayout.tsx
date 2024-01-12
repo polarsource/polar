@@ -25,12 +25,8 @@ import Popover from '../Notifications/Popover'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import ProfileSelection from '../Shared/ProfileSelection'
 
-interface DashboardSidebarProps {
-  fullWidth?: boolean
-}
-
-const DashboardSidebar = ({ fullWidth }: DashboardSidebarProps) => {
-  const { currentUser, hasChecked } = useAuth()
+const DashboardSidebar = () => {
+  const { currentUser } = useAuth()
   const { org: currentOrg, isLoaded: isCurrentOrgLoaded } =
     useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()

@@ -8,7 +8,6 @@ from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validat
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
-from polar.models.subscription import Subscription as SubscriptionModel
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import (
     SubscriptionBenefitArticlesProperties,
@@ -18,7 +17,6 @@ from polar.models.subscription_benefit import (
 )
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
-from polar.models.user import User
 
 TIER_NAME_MIN_LENGTH = 3
 TIER_NAME_MAX_LENGTH = 24
@@ -135,6 +133,31 @@ subscription_benefit_schema_map: dict[
     SubscriptionBenefitType.custom: SubscriptionBenefitCustom,
 }
 
+# SubscriptionBenefitSubscriber
+
+
+class SubscriptionBenefitArticlesSubscriberProperties(Schema):
+    ...
+
+
+class SubscriptionBenefitArticlesSubscriber(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.articles]
+    properties: SubscriptionBenefitArticlesSubscriberProperties
+
+
+class SubscriptionBenefitCustomSubscriberProperties(Schema):
+    note: str | None
+
+
+class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.custom]
+    properties: SubscriptionBenefitCustomSubscriberProperties
+
+
+SubscriptionBenefitSubscriber = (
+    SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber
+)
+
 
 # SubscriptionTier
 
@@ -212,7 +235,7 @@ class SubscriptionTierBenefit(SubscriptionBenefitBase):
     ...
 
 
-class SubscriptionTier(TimestampedSchema):
+class SubscriptionTierBase(TimestampedSchema):
     id: UUID4
     type: SubscriptionTierType
     name: str
@@ -223,12 +246,26 @@ class SubscriptionTier(TimestampedSchema):
     is_archived: bool
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
+
+
+class SubscriptionTier(SubscriptionTierBase):
     benefits: list[SubscriptionTierBenefit]
 
     @validator("benefits", pre=True)
     def benefits_association_proxy_fix(
         cls, v: Iterable[SubscriptionTierBenefit]
     ) -> list[SubscriptionTierBenefit]:
+        # FIXME: Not needed in Pydantic V2
+        return list(v)
+
+
+class SubscriptionTierSubscriber(SubscriptionTierBase):
+    benefits: list[SubscriptionBenefitSubscriber]
+
+    @validator("benefits", pre=True)
+    def benefits_association_proxy_fix(
+        cls, v: Iterable[SubscriptionBenefitSubscriber]
+    ) -> list[SubscriptionBenefitSubscriber]:
         # FIXME: Not needed in Pydantic V2
         return list(v)
 
@@ -322,33 +359,14 @@ class SubscribeSession(Schema):
 # Subscriptions
 
 
-class SubscriptionUser(Schema):
-    name: str
+class SubscriptionPublicUser(Schema):
+    public_name: str
     github_username: str | None = None
-    avatar_url: str | None
-    email: str | None
+    avatar_url: str | None = None
 
-    class Config:
-        orm_mode = False
 
-    @classmethod
-    def from_db(cls, user: User, include_user_email: bool) -> Self:
-        # show usernames if the user has a connected github account
-        gh = user.get_platform_oauth_account(Platforms.github)
-        if gh:
-            return cls(
-                name=user.username,
-                github_username=user.username,
-                avatar_url=user.avatar_url,
-                email=user.email if include_user_email else None,
-            )
-
-        return cls(
-            # The username is an email address. Do not show it. Use the first character as a workaround.
-            name=user.username[0],
-            avatar_url=user.avatar_url,
-            email=user.email if include_user_email else None,
-        )
+class SubscriptionUser(SubscriptionPublicUser):
+    email: str
 
 
 class SubscriptionOrganization(Schema):
@@ -357,7 +375,7 @@ class SubscriptionOrganization(Schema):
     avatar_url: str
 
 
-class Subscription(TimestampedSchema):
+class SubscriptionBase(TimestampedSchema):
     id: UUID4
     status: SubscriptionStatus
     current_period_start: datetime
@@ -373,38 +391,16 @@ class Subscription(TimestampedSchema):
     organization_id: UUID4 | None = None
     subscription_tier_id: UUID4
 
+
+class Subscription(SubscriptionBase):
     user: SubscriptionUser
     organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
 
-    class Config:
-        orm_mode = False
 
-    @classmethod
-    def from_db(cls, subscription: SubscriptionModel, include_user_email: bool) -> Self:
-        return cls(
-            id=subscription.id,
-            status=subscription.status,
-            current_period_start=subscription.current_period_start,
-            current_period_end=subscription.current_period_end,
-            cancel_at_period_end=subscription.cancel_at_period_end,
-            started_at=subscription.started_at,
-            ended_at=subscription.ended_at,
-            price_currency=subscription.price_currency,
-            price_amount=subscription.price_amount,
-            user_id=subscription.user_id,
-            organization_id=subscription.organization_id,
-            subscription_tier_id=subscription.subscription_tier_id,
-            user=SubscriptionUser.from_db(
-                subscription.user, include_user_email=include_user_email
-            ),
-            organization=SubscriptionOrganization.from_orm(subscription.organization)
-            if subscription.organization
-            else None,
-            subscription_tier=SubscriptionTier.from_orm(subscription.subscription_tier),
-            created_at=subscription.created_at,
-            modified_at=subscription.modified_at,
-        )
+class SubscriptionSubscriber(SubscriptionBase):
+    subscription_tier: SubscriptionTierSubscriber
+    organization: SubscriptionOrganization | None = None
 
 
 class FreeSubscriptionCreate(Schema):
@@ -426,24 +422,9 @@ class SubscriptionUpgrade(Schema):
 
 
 class SubscriptionSummary(Schema):
-    user: SubscriptionUser
+    user: SubscriptionPublicUser
     organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
-
-    class Config:
-        orm_mode = False
-
-    @classmethod
-    def from_db(cls, subscription: SubscriptionModel, include_user_email: bool) -> Self:
-        return cls(
-            user=SubscriptionUser.from_db(
-                subscription.user, include_user_email=include_user_email
-            ),
-            organization=SubscriptionOrganization.from_orm(subscription.organization)
-            if subscription.organization
-            else None,
-            subscription_tier=SubscriptionTier.from_orm(subscription.subscription_tier),
-        )
 
 
 class SubscriptionsStatisticsPeriod(Schema):

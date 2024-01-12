@@ -87,7 +87,7 @@ async def create_subscription_benefit(
     description: str = "Subscription Benefit",
     selectable: bool = True,
     deletable: bool = True,
-    properties: dict[str, Any] = {},
+    properties: dict[str, Any] = {"note": None},
 ) -> SubscriptionBenefit:
     assert (organization is not None) != (repository is not None)
     subscription_benefit = SubscriptionBenefit(

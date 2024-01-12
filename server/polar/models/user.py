@@ -124,3 +124,10 @@ class User(RecordModel):
     @property
     def posthog_distinct_id(self) -> str:
         return f"user:{self.id}"
+
+    @property
+    def public_name(self) -> str:
+        github_oauth_account = self.get_platform_oauth_account(Platforms.github)
+        if github_oauth_account is not None:
+            return self.username
+        return self.email[0]

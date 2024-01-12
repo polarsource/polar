@@ -13,7 +13,7 @@ from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Repository, SubscriptionBenefit, SubscriptionTier
+from polar.models import Repository, Subscription, SubscriptionBenefit, SubscriptionTier
 from polar.models.organization import Organization
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
@@ -35,6 +35,7 @@ from .schemas import (
     SubscriptionBenefitUpdate,
     SubscriptionsImported,
     SubscriptionsStatistics,
+    SubscriptionSubscriber,
     SubscriptionSummary,
     SubscriptionTierBenefitsUpdate,
     SubscriptionTierCreate,
@@ -42,9 +43,7 @@ from .schemas import (
     SubscriptionUpgrade,
     subscription_benefit_schema_map,
 )
-from .schemas import (
-    Subscription as SubscriptionSchema,
-)
+from .schemas import Subscription as SubscriptionSchema
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscribe_session import subscribe_session as subscribe_session_service
@@ -439,7 +438,7 @@ async def search_subscriptions(
     auth: UserRequiredAuth,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    organization_name_platform: OptionalOrganizationNamePlatform,
+    organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
     type: SubscriptionTierType | None = Query(None),
@@ -448,8 +447,66 @@ async def search_subscriptions(
     subscriber_organization_id: UUID4 | None = Query(None),
     active: bool | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> ListResource[SubscriptionSchema]:
+    organization_name, platform = organization_name_platform
+    organization = await organization_service.get_by_name(
+        session, platform, organization_name
+    )
+    if organization is None:
+        raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        if organization is None:
+            raise BadRequest(
+                "organization_name and platform are required when repository_name is set"
+            )
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    results, count = await subscription_service.search(
+        session,
+        auth.user,
+        type=type,
+        organization=organization,
+        repository=repository,
+        direct_organization=direct_organization,
+        subscription_tier_id=subscription_tier_id,
+        subscriber_user_id=subscriber_user_id,
+        subscriber_organization_id=subscriber_organization_id,
+        active=active,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [SubscriptionSchema.from_orm(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
+    "/subscriptions/subscribed",
+    response_model=ListResource[SubscriptionSubscriber],
+    tags=[Tags.PUBLIC],
+)
+async def search_subscribed_subscriptions(
+    auth: UserRequiredAuth,
+    pagination: PaginationParamsQuery,
+    sorting: SearchSorting,
+    organization_name_platform: OptionalOrganizationNamePlatform,
+    repository_name: OptionalRepositoryNameQuery = None,
+    direct_organization: bool = Query(True),
+    type: SubscriptionTierType | None = Query(None),
+    subscription_tier_id: UUID4 | None = Query(None),
+    subscriber_user_id: UUID4 | None = Query(None),
+    subscriber_organization_id: UUID4 | None = Query(None),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[SubscriptionSubscriber]:
     organization: Organization | None = None
     if organization_name_platform is not None:
         organization_name, platform = organization_name_platform
@@ -471,12 +528,7 @@ async def search_subscriptions(
         if repository is None:
             raise ResourceNotFound("Repository not found")
 
-    # email authz
-    can_see_emails = False
-    if organization:
-        can_see_emails = await authz.can(auth.subject, AccessType.write, organization)
-
-    results, count = await subscription_service.search(
+    results, count = await subscription_service.search_subscribed(
         session,
         auth.user,
         type=type,
@@ -486,16 +538,13 @@ async def search_subscriptions(
         subscription_tier_id=subscription_tier_id,
         subscriber_user_id=subscriber_user_id,
         subscriber_organization_id=subscriber_organization_id,
-        active=active,
+        active=True,
         pagination=pagination,
         sorting=sorting,
     )
 
     return ListResource.from_paginated_results(
-        [
-            SubscriptionSchema.from_db(result, include_user_email=can_see_emails)
-            for result in results
-        ],
+        [SubscriptionSubscriber.from_orm(result) for result in results],
         count,
         pagination,
     )
@@ -511,15 +560,13 @@ async def create_free_subscription(
     free_subscription_create: FreeSubscriptionCreate,
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionSchema:
-    sub = await subscription_service.create_free_subscription(
+) -> Subscription:
+    return await subscription_service.create_free_subscription(
         session,
         free_subscription_create=free_subscription_create,
         auth_subject=auth.subject,
         auth_method=auth.auth_method,
     )
-
-    return SubscriptionSchema.from_db(sub, include_user_email=False)
 
 
 @router.post(
@@ -671,20 +718,18 @@ async def upgrade_subscription(
     auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionSchema:
+) -> Subscription:
     subscription = await subscription_service.get(session, id)
     if subscription is None:
         raise ResourceNotFound()
 
-    sub = await subscription_service.upgrade_subscription(
+    return await subscription_service.upgrade_subscription(
         session,
         subscription=subscription,
         subscription_upgrade=subscription_upgrade,
         authz=authz,
         user=auth.subject,
     )
-
-    return SubscriptionSchema.from_db(sub, include_user_email=False)
 
 
 @router.delete(
@@ -695,16 +740,14 @@ async def cancel_subscription(
     auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionSchema:
+) -> Subscription:
     subscription = await subscription_service.get(session, id)
     if subscription is None:
         raise ResourceNotFound()
 
-    sub = await subscription_service.cancel_subscription(
+    return await subscription_service.cancel_subscription(
         session, subscription=subscription, authz=authz, user=auth.subject
     )
-
-    return SubscriptionSchema.from_db(sub, include_user_email=False)
 
 
 @router.get(
@@ -717,8 +760,6 @@ async def search_subscriptions_summary(
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
-    authz: Authz = Depends(Authz.authz),
 ) -> ListResource[SubscriptionSummary]:
     organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
@@ -742,13 +783,8 @@ async def search_subscriptions_summary(
         pagination=pagination,
     )
 
-    can_see_emails = await authz.can(auth.subject, AccessType.write, organization)
-
     return ListResource.from_paginated_results(
-        [
-            SubscriptionSummary.from_db(result, include_user_email=can_see_emails)
-            for result in results
-        ],
+        [SubscriptionSummary.from_orm(result) for result in results],
         count,
         pagination,
     )

@@ -1,10 +1,16 @@
 'use client'
 
-import { Benefit, resolveBenefitTypeIcon } from '@/components/Benefit/Benefit'
+import {
+  BenefitSubscriber,
+  resolveBenefitTypeIcon,
+} from '@/components/Benefit/Benefit'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { DiamondOutlined } from '@mui/icons-material'
-import { SubscriptionTier } from '@polar-sh/sdk'
+import {
+  SubscriptionSubscriber,
+  SubscriptionTierSubscriber,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar, Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
@@ -12,15 +18,15 @@ import { useOrganization } from 'polarkit/hooks'
 import { useState } from 'react'
 
 const ClientPage = ({
-  subscriptionTiers,
+  subscriptions,
 }: {
-  subscriptionTiers: SubscriptionTier[]
+  subscriptions: SubscriptionSubscriber[]
 }) => {
-  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>(
-    subscriptionTiers[0]?.benefits[0],
-  )
+  const [selectedBenefit, setSelectedBenefit] = useState<
+    BenefitSubscriber | undefined
+  >(subscriptions[0].subscription_tier.benefits[0])
 
-  return subscriptionTiers.length < 1 ? (
+  return subscriptions.length === 0 ? (
     <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
       <DiamondOutlined fontSize="inherit" />
       <div className="flex flex-col items-center gap-y-2">
@@ -33,10 +39,10 @@ const ClientPage = ({
   ) : (
     <div className="relative flex flex-row items-start gap-x-12">
       <div className="flex w-2/3 flex-col gap-y-4">
-        {subscriptionTiers.map((tier) => (
+        {subscriptions.map((subscription) => (
           <Subscription
-            key={tier.id}
-            tier={tier}
+            key={subscription.id}
+            tier={subscription.subscription_tier}
             selectedBenefit={selectedBenefit}
             onSelectBenefit={setSelectedBenefit}
           />
@@ -50,9 +56,9 @@ const ClientPage = ({
 export default ClientPage
 
 interface SubscriptionOrganizationProps {
-  tier: SubscriptionTier
-  selectedBenefit: Benefit | undefined
-  onSelectBenefit: (benefit: Benefit) => void
+  tier: SubscriptionTierSubscriber
+  selectedBenefit: BenefitSubscriber | undefined
+  onSelectBenefit: (benefit: BenefitSubscriber) => void
 }
 
 const Subscription = ({
@@ -112,7 +118,7 @@ const Subscription = ({
 }
 
 interface BenefitContextWidgetProps {
-  benefit: Benefit | undefined
+  benefit: BenefitSubscriber | undefined
 }
 
 const BenefitContextWidget = ({ benefit }: BenefitContextWidgetProps) => {
@@ -136,6 +142,12 @@ const BenefitContextWidget = ({ benefit }: BenefitContextWidgetProps) => {
       <p className="dark:text-polar-500 text-sm text-gray-500">
         {benefit.description}
       </p>
+      {benefit.type === 'custom' && benefit.properties.note && (
+        <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm dark:bg-blue-950">
+          <p className="mb-4 font-medium">Note from {org?.name}</p>
+          <p className="whitespace-pre-line">{benefit.properties.note}</p>
+        </div>
+      )}
       <Separator />
       <div className="flex flex-col gap-y-2">
         <div className="flex flex-row items-center gap-x-2">

@@ -1,13 +1,14 @@
+import { AutoAwesome } from '@mui/icons-material'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Benefit, resolveBenefitTypeIcon } from './Benefit'
+import { BenefitSubscriber, resolveBenefitTypeIcon } from './Benefit'
 import { useBenefitActions } from './useBenefitAction'
 
 interface BenefitRowProps {
-  benefit: Benefit
+  benefit: BenefitSubscriber
   selected?: boolean
-  onSelect?: (benefit: Benefit) => void
+  onSelect?: (benefit: BenefitSubscriber) => void
 }
 
 export const BenefitRow = ({
@@ -45,6 +46,14 @@ export const BenefitRow = ({
           </p>
         </div>
       </div>
+      {benefit.type === 'custom' && benefit.properties.note && (
+        <div className="flex items-center gap-2 text-sm text-blue-500 dark:text-blue-400">
+          <span className="text-xs">
+            <AutoAwesome fontSize="inherit" />
+          </span>
+          <span>Private note</span>
+        </div>
+      )}
       {benefitActions.length > 0 && (
         <div className="flex flex-row items-center gap-x-4">
           {benefitActions.map((action) => (

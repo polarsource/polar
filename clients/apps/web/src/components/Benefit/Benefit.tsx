@@ -1,7 +1,12 @@
 import { CheckOutlined, ShortTextOutlined } from '@mui/icons-material'
-import { SubscriptionBenefitType, SubscriptionTierBenefit } from '@polar-sh/sdk'
+import {
+  BenefitsInner,
+  SubscriptionBenefitType,
+  SubscriptionTierBenefit,
+} from '@polar-sh/sdk'
 
 export type Benefit = SubscriptionTierBenefit
+export type BenefitSubscriber = BenefitsInner
 
 export const resolveBenefitTypeIcon = (type: SubscriptionBenefitType) => {
   switch (type) {

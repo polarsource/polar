@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
 from polar.models import (
     Account,
     Organization,
@@ -20,7 +19,6 @@ from polar.models import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
-from polar.models.user import OAuthAccount
 from polar.postgres import AsyncSession
 
 from .conftest import (
@@ -153,7 +151,6 @@ class TestSearchSubscriptionTiers:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
-    @pytest.mark.http_auto_expunge(False)
     async def test_with_benefits(
         self,
         session: AsyncSession,
@@ -763,6 +760,7 @@ class TestCreateSubscriptionBenefit:
             json={
                 "type": "custom",
                 "description": "Subscription Benefit",
+                "properties": {"note": None},
                 "organization_id": str(uuid.uuid4()),
             },
         )
@@ -783,6 +781,7 @@ class TestCreateSubscriptionBenefit:
             json={
                 "type": "custom",
                 "description": "Subscription Benefit",
+                "properties": {"note": None},
                 "organization_id": str(organization.id),
                 "repository_id": str(public_repository.id),
             },
@@ -802,6 +801,7 @@ class TestCreateSubscriptionBenefit:
             json={
                 "type": "custom",
                 "description": "Subscription Benefit",
+                "properties": {"note": None},
             },
         )
 
@@ -812,7 +812,7 @@ class TestCreateSubscriptionBenefit:
         [
             {
                 "is_tax_applicable": True,
-                "properties": {},
+                "properties": {"note": None},
                 "description": (
                     "This is a way too long description that shall never fit "
                     "in the space we have in a single subscription benefit card. "
@@ -823,10 +823,10 @@ class TestCreateSubscriptionBenefit:
             },
             {
                 "is_tax_applicable": True,
-                "properties": {},
+                "properties": {"note": None},
                 "description": "Th",
             },
-            {"description": "Subscription Benefit", "properties": {}},
+            {"description": "Subscription Benefit", "properties": {"note": None}},
             {
                 "type": "articles",
                 "description": "My articles benefit",
@@ -866,7 +866,7 @@ class TestCreateSubscriptionBenefit:
                 "type": "custom",
                 "description": "Subscription Benefit",
                 "is_tax_applicable": True,
-                "properties": {},
+                "properties": {"note": None},
                 "organization_id": str(organization.id),
             },
         )
@@ -1229,162 +1229,6 @@ class TestSearchSubscriptions:
         assert response.status_code == 404
 
     @pytest.mark.authenticated
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        subscription_tier_organization: SubscriptionTier,
-    ) -> None:
-        await create_active_subscription(
-            session,
-            subscription_tier=subscription_tier_organization,
-            user=user,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-
-        response = await client.get("/api/v1/subscriptions/subscriptions/search")
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        for item in json["items"]:
-            assert "user" in item
-            assert item["user"]["name"] == user.username[0]
-            assert item["user"]["github_username"] is None
-            assert (
-                item["user"]["email"] is None
-            )  # unauthenticated request, can not see email
-            assert "subscription_tier" in item
-            assert item["subscription_tier"]["id"] == str(
-                subscription_tier_organization.id
-            )
-
-    @pytest.mark.authenticated
-    async def test_valid_user_is_github_user(
-        self,
-        session: AsyncSession,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_github_oauth: OAuthAccount,  # add github account to user
-        user_organization: UserOrganization,
-        subscription_tier_organization: SubscriptionTier,
-    ) -> None:
-        await create_active_subscription(
-            session,
-            subscription_tier=subscription_tier_organization,
-            user=user,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-
-        response = await client.get("/api/v1/subscriptions/subscriptions/search")
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        for item in json["items"]:
-            assert "user" in item
-            assert item["user"]["name"] == user.username  # full name
-            assert item["user"]["github_username"] == user.username  # full username
-            assert (
-                item["user"]["email"] is None
-            )  # unauthenticated request, can not see email
-            assert "subscription_tier" in item
-            assert item["subscription_tier"]["id"] == str(
-                subscription_tier_organization.id
-            )
-
-    @pytest.mark.authenticated
-    async def test_valid_authed(
-        self,
-        session: AsyncSession,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        subscription_tier_organization: SubscriptionTier,
-        auth_jwt: str,
-    ) -> None:
-        user_organization.is_admin = True
-        await user_organization.save(session)
-
-        await create_active_subscription(
-            session,
-            subscription_tier=subscription_tier_organization,
-            user=user,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-
-        response = await client.get(
-            "/api/v1/subscriptions/subscriptions/search",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        for item in json["items"]:
-            assert "user" in item
-            # authenticated, but not listing a single org, not showing
-            assert item["user"]["github_username"] is None
-            assert item["user"]["email"] is None
-            assert "subscription_tier" in item
-            assert item["subscription_tier"]["id"] == str(
-                subscription_tier_organization.id
-            )
-
-    @pytest.mark.authenticated
-    async def test_valid_authed_single_org(
-        self,
-        session: AsyncSession,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_github_oauth: OAuthAccount,
-        user_organization: UserOrganization,
-        subscription_tier_organization: SubscriptionTier,
-        auth_jwt: str,
-    ) -> None:
-        user_organization.is_admin = True
-        await user_organization.save(session)
-
-        await create_active_subscription(
-            session,
-            subscription_tier=subscription_tier_organization,
-            user=user,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-
-        response = await client.get(
-            f"/api/v1/subscriptions/subscriptions/search?organization_name={organization.name}&platform=github",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        for item in json["items"]:
-            assert "user" in item
-            # can see email and username!
-            assert item["user"]["github_username"] == user.username
-            assert item["user"]["email"] == user.email
-            assert "subscription_tier" in item
-            assert item["subscription_tier"]["id"] == str(
-                subscription_tier_organization.id
-            )
-
-    @pytest.mark.authenticated
     async def test_valid_organization(
         self,
         session: AsyncSession,
@@ -1414,6 +1258,68 @@ class TestSearchSubscriptions:
 
         json = response.json()
         assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert "user" in item
+            assert "github_username" in item["user"]
+            assert "email" in item["user"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestSearchSubscribedSubscriptions:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/subscriptions/subscriptions/subscribed")
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing_organization(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/subscribed",
+            params={"platform": "github", "organization_name": "not_existing"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_not_existing_repository(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/subscribed",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": "not_existing",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        response = await client.get("/api/v1/subscriptions/subscriptions/subscribed")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert "user" not in item
 
 
 @pytest.mark.asyncio
@@ -1594,109 +1500,8 @@ class TestSearchSubscriptionsSummary:
         assert json["pagination"]["total_count"] == 1
         for item in json["items"]:
             assert "user" in item
-            assert item["user"]["name"] == user.username[0]
-            assert item["user"]["github_username"] is None
-            assert item["user"]["email"] is None  # no auth
-            assert "subscription_tier" in item
-            assert item["subscription_tier"]["id"] == str(
-                subscription_tier_organization.id
-            )
-            assert "status" not in item
-            assert "price_amount" not in item
-
-    async def test_valid_authed(
-        self,
-        session: AsyncSession,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        subscription_tier_organization: SubscriptionTier,
-        user_organization: UserOrganization,
-        auth_jwt: str,
-    ) -> None:
-        user_organization.is_admin = True
-        await user_organization.save(session)
-
-        await create_active_subscription(
-            session,
-            subscription_tier=subscription_tier_organization,
-            user=user,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-
-        # then
-        session.expunge_all()
-
-        response = await client.get(
-            "/api/v1/subscriptions/subscriptions/summary",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-
-        assert json["pagination"]["total_count"] == 1
-        for item in json["items"]:
-            assert "user" in item
-            assert item["user"]["name"] == user.username[0]
-            assert item["user"]["github_username"] is None
-            assert item["user"]["email"] == user.email
-            assert "subscription_tier" in item
-            assert item["subscription_tier"]["id"] == str(
-                subscription_tier_organization.id
-            )
-            assert "status" not in item
-            assert "price_amount" not in item
-
-    async def test_valid_authed_github_user(
-        self,
-        session: AsyncSession,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_github_oauth: OAuthAccount,  # adds github connection to user
-        subscription_tier_organization: SubscriptionTier,
-        user_organization: UserOrganization,
-        auth_jwt: str,
-    ) -> None:
-        user_organization.is_admin = True
-        await user_organization.save(session)
-
-        await create_active_subscription(
-            session,
-            subscription_tier=subscription_tier_organization,
-            user=user,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-
-        # then
-        session.expunge_all()
-
-        response = await client.get(
-            "/api/v1/subscriptions/subscriptions/summary",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-
-        assert json["pagination"]["total_count"] == 1
-        for item in json["items"]:
-            assert "user" in item
-            # visible
-            assert item["user"]["name"] == user.username
-            assert item["user"]["github_username"] == user.username
-            assert item["user"]["email"] == user.email
+            assert item["user"]["public_name"] != user.email
+            assert "email" not in item["user"]
             assert "subscription_tier" in item
             assert item["subscription_tier"]["id"] == str(
                 subscription_tier_organization.id

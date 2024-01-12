@@ -37,36 +37,12 @@ class SubscriptionBenefitProperties(TypedDict):
     """Configurable properties for this benefit."""
 
 
-class SubscriptionBenefitSubscriberProperties(TypedDict):
-    """Properties visible to the subscribers having access to this benefit."""
-
-    ...
-
-
-# Custom
-
-
 class SubscriptionBenefitCustomProperties(SubscriptionBenefitProperties):
     note: str | None
 
 
-class SubscriptionBenefitCustomSubscriberProperties(
-    SubscriptionBenefitSubscriberProperties
-):
-    note: str | None
-
-
-# Articles
-
-
 class SubscriptionBenefitArticlesProperties(SubscriptionBenefitProperties):
     paid_articles: bool
-
-
-class SubscriptionBenefitArticlesSubscriberProperties(
-    SubscriptionBenefitSubscriberProperties
-):
-    ...
 
 
 class SubscriptionBenefit(RecordModel):

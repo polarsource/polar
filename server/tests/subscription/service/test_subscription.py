@@ -980,6 +980,47 @@ class TestUpdateOrganizationBenefitsGrants:
 
 @pytest.mark.asyncio
 class TestSearch:
+    async def test_own_subscription(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_second: User,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        """
+        Checks that own subscriptions are not returned by this method.
+
+        This is the role of `.search_subscribed`.
+        """
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        # then
+        session.expunge_all()
+
+        results, count = await subscription_service.search(
+            session,
+            user_second,
+            organization=organization,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(results) == 0
+        assert count == 0
+
     async def test_not_organization_member(
         self,
         session: AsyncSession,
@@ -1033,11 +1074,14 @@ class TestSearch:
         assert len(results) == 1
         assert count == 1
 
-    async def test_own_subscription(
+
+@pytest.mark.asyncio
+class TestSearchSubscribed:
+    async def test_valid(
         self,
         session: AsyncSession,
-        organization: Organization,
         user: User,
+        user_organization: UserOrganization,
         user_second: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
@@ -1059,10 +1103,9 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await subscription_service.search(
+        results, count = await subscription_service.search_subscribed(
             session,
-            user_second,
-            organization=organization,
+            user,
             pagination=PaginationParams(1, 10),
         )
 

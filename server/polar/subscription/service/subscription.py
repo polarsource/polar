@@ -209,7 +209,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         user: User,
         *,
-        organization: Organization | None = None,
+        organization: Organization,
         repository: Repository | None = None,
         direct_organization: bool = True,
         type: SubscriptionTierType | None = None,
@@ -284,6 +284,90 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = statement.options(
             contains_eager(Subscription.subscription_tier),
             contains_eager(Subscription.user),
+            joinedload(Subscription.organization),
+        )
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
+
+    async def search_subscribed(
+        self,
+        session: AsyncSession,
+        user: User,
+        *,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+        direct_organization: bool = True,
+        type: SubscriptionTierType | None = None,
+        subscription_tier_id: uuid.UUID | None = None,
+        subscriber_user_id: uuid.UUID | None = None,
+        subscriber_organization_id: uuid.UUID | None = None,
+        active: bool | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[SearchSortProperty]] = [
+            (SearchSortProperty.started_at, True)
+        ],
+    ) -> tuple[Sequence[Subscription], int]:
+        statement = self._get_subscribed_subscriptions_statement(user).where(
+            Subscription.started_at.is_not(None)
+        )
+
+        if organization is not None:
+            clauses = [SubscriptionTier.organization_id == organization.id]
+            if not direct_organization:
+                clauses.append(Repository.organization_id == organization.id)
+            statement = statement.where(or_(*clauses))
+
+        if repository is not None:
+            statement = statement.where(SubscriptionTier.repository_id == repository.id)
+
+        if type is not None:
+            statement = statement.where(SubscriptionTier.type == type)
+
+        if subscription_tier_id is not None:
+            statement = statement.where(SubscriptionTier.id == subscription_tier_id)
+
+        if subscriber_user_id is not None:
+            statement = statement.where(
+                Subscription.user_id == subscriber_user_id,
+                Subscription.organization_id.is_(None),
+            )
+
+        if subscriber_organization_id is not None:
+            statement = statement.where(
+                Subscription.organization_id == subscriber_organization_id
+            )
+
+        if active is not None:
+            if active:
+                statement = statement.where(Subscription.active.is_(True))
+            else:
+                statement = statement.where(Subscription.canceled.is_(True))
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SearchSortProperty.user:
+                order_by_clauses.append(clause_function(User.username))
+            if criterion == SearchSortProperty.status:
+                order_by_clauses.append(clause_function(Subscription.status))
+            if criterion == SearchSortProperty.started_at:
+                order_by_clauses.append(clause_function(Subscription.started_at))
+            if criterion == SearchSortProperty.current_period_end:
+                order_by_clauses.append(
+                    clause_function(Subscription.current_period_end)
+                )
+            if criterion == SearchSortProperty.price_amount:
+                order_by_clauses.append(clause_function(Subscription.price_amount))
+            if criterion == SearchSortProperty.subscription_tier_type:
+                order_by_clauses.append(clause_function(SubscriptionTier.type))
+            if criterion == SearchSortProperty.subscription_tier:
+                order_by_clauses.append(clause_function(SubscriptionTier.name))
+        statement = statement.order_by(*order_by_clauses)
+
+        statement = statement.options(
+            joinedload(Subscription.subscription_tier),
             joinedload(Subscription.organization),
         )
 
@@ -1007,9 +1091,28 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             .where(
                 Subscription.deleted_at.is_(None),
                 or_(
-                    Subscription.user_id == user.id,
                     UserOrganization.user_id == user.id,
                     RepositoryUserOrganization.user_id == user.id,
+                ),
+            )
+        )
+
+    def _get_subscribed_subscriptions_statement(self, user: User) -> Select[Any]:
+        return (
+            select(Subscription)
+            .join(
+                UserOrganization,
+                isouter=True,
+                onclause=and_(
+                    UserOrganization.organization_id == Subscription.organization_id,
+                    UserOrganization.user_id == user.id,
+                ),
+            )
+            .where(
+                Subscription.deleted_at.is_(None),
+                or_(
+                    Subscription.user_id == user.id,
+                    UserOrganization.user_id == user.id,
                 ),
             )
         )

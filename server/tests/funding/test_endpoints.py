@@ -92,7 +92,6 @@ class TestSearch:
         json = response.json()
         assert json["items"][0]["issue"]["id"] == str(issues_pledges[-1][0].id)
 
-    @pytest.mark.http_auto_expunge(False)
     async def test_private_repository(
         self,
         client: AsyncClient,

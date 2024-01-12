@@ -236,7 +236,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={},
+            properties={"note": None},
             organization_id=uuid.uuid4(),
         )
 
@@ -259,7 +259,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={},
+            properties={"note": None},
             organization_id=organization.id,
         )
 
@@ -283,7 +283,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={},
+            properties={"note": None},
             organization_id=organization.id,
         )
 
@@ -302,7 +302,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={},
+            properties={"note": None},
             repository_id=uuid.uuid4(),
         )
 
@@ -325,7 +325,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={},
+            properties={"note": None},
             repository_id=repository.id,
         )
 
@@ -349,7 +349,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={},
+            properties={"note": None},
             repository_id=repository.id,
         )
 

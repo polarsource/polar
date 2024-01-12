@@ -178,6 +178,7 @@ const Issues = ({
       statuses={statuses}
       orgName={org.name}
       repoName={repo?.name}
+      hasAppInstalled={org.has_app_installed}
     />
   )
 }
@@ -188,12 +189,14 @@ const OrganizationIssues = ({
   filters,
   statuses,
   onSetFilters,
+  hasAppInstalled,
 }: {
   orgName: string
   repoName: string | undefined
   filters: DashboardFilters
   statuses: Array<IssueStatus>
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+  hasAppInstalled: boolean
 }) => {
   const dashboardQuery = useDashboard(
     orgName,
@@ -204,6 +207,7 @@ const OrganizationIssues = ({
     filters.sort,
     filters.onlyPledged,
     filters.onlyBadged,
+    hasAppInstalled,
   )
   const dashboard = dashboardQuery.data
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
@@ -256,7 +260,7 @@ const OrganizationIssues = ({
     (r) => r?.organization?.id === currentOrg?.id,
   )
 
-  if (!currentOrg || !allRepositories) {
+  if (!currentOrg || (!allRepositories && hasAppInstalled)) {
     return <></>
   }
 
@@ -299,7 +303,7 @@ const OrganizationIssues = ({
             />
           ) : null}
 
-          {!haveIssues && dashboardQuery.isFetched ? (
+          {!haveIssues && (dashboardQuery.isFetched || !hasAppInstalled) ? (
             <EmptyLayout>
               <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
                 <span className="text-6xl">

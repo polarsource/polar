@@ -9,12 +9,7 @@ from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validat
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitArticlesProperties,
-    SubscriptionBenefitCustomProperties,
-    SubscriptionBenefitProperties,
-    SubscriptionBenefitType,
-)
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
 
@@ -23,6 +18,28 @@ TIER_NAME_MAX_LENGTH = 24
 TIER_DESCRIPTION_MAX_LENGTH = 240
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
+
+# SubscriptionBenefitProperties
+
+
+class SubscriptionBenefitProperties(Schema):
+    ...
+
+
+class SubscriptionBenefitArticlesProperties(Schema):
+    paid_articles: bool
+
+
+class SubscriptionBenefitArticlesSubscriberProperties(Schema):
+    ...
+
+
+class SubscriptionBenefitCustomProperties(Schema):
+    note: str | None = None
+
+
+class SubscriptionBenefitCustomSubscriberProperties(Schema):
+    note: str | None = None
 
 
 # SubscriptionBenefitCreate
@@ -36,7 +53,6 @@ class SubscriptionBenefitCreateBase(Schema):
     )
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
-    properties: SubscriptionBenefitProperties
 
     @root_validator
     def check_either_organization_or_repository(
@@ -88,10 +104,11 @@ class SubscriptionBenefitUpdateBase(Schema):
 class SubscriptionBenefitArticlesUpdate(SubscriptionBenefitUpdateBase):
     # Don't allow to update properties, as both Free and Premium posts
     # are pre-created by us and shouldn't change
-    ...
+    type: Literal[SubscriptionBenefitType.articles]
 
 
 class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
+    type: Literal[SubscriptionBenefitType.custom]
     properties: SubscriptionBenefitCustomProperties | None = None
 
 
@@ -136,17 +153,9 @@ subscription_benefit_schema_map: dict[
 # SubscriptionBenefitSubscriber
 
 
-class SubscriptionBenefitArticlesSubscriberProperties(Schema):
-    ...
-
-
 class SubscriptionBenefitArticlesSubscriber(SubscriptionBenefitBase):
     type: Literal[SubscriptionBenefitType.articles]
     properties: SubscriptionBenefitArticlesSubscriberProperties
-
-
-class SubscriptionBenefitCustomSubscriberProperties(Schema):
-    note: str | None
 
 
 class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):

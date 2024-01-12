@@ -17,6 +17,7 @@ from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import (
     SubscriptionBenefitCustomCreate,
+    SubscriptionBenefitCustomProperties,
     SubscriptionBenefitCustomUpdate,
 )
 from polar.subscription.service.subscription_benefit import (  # type: ignore[attr-defined]
@@ -236,7 +237,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={"note": None},
+            properties=SubscriptionBenefitCustomProperties(),
             organization_id=uuid.uuid4(),
         )
 
@@ -259,7 +260,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={"note": None},
+            properties=SubscriptionBenefitCustomProperties(),
             organization_id=organization.id,
         )
 
@@ -283,7 +284,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={"note": None},
+            properties=SubscriptionBenefitCustomProperties(),
             organization_id=organization.id,
         )
 
@@ -302,7 +303,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={"note": None},
+            properties=SubscriptionBenefitCustomProperties(),
             repository_id=uuid.uuid4(),
         )
 
@@ -325,7 +326,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={"note": None},
+            properties=SubscriptionBenefitCustomProperties(),
             repository_id=repository.id,
         )
 
@@ -349,7 +350,7 @@ class TestUserCreate:
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
-            properties={"note": None},
+            properties=SubscriptionBenefitCustomProperties(),
             repository_id=repository.id,
         )
 
@@ -372,7 +373,8 @@ class TestUserUpdate:
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
         update_schema = SubscriptionBenefitCustomUpdate(
-            description="Subscription Benefit Update"
+            type=SubscriptionBenefitType.custom,
+            description="Subscription Benefit Update",
         )
 
         # then
@@ -411,7 +413,7 @@ class TestUserUpdate:
         )
 
         update_schema = SubscriptionBenefitCustomUpdate(
-            description="Description update"
+            type=SubscriptionBenefitType.custom, description="Description update"
         )
 
         # then

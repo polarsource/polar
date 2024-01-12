@@ -71,6 +71,8 @@ nav:
         - 3. Customize Polar Badge: maintainers/issue-funding/getting-started/badge-settings.md
       - Workflow: maintainers/issue-funding/workflow.md
       - Promote Funding: maintainers/issue-funding/promote.md
+    - Posts:
+      - Overview: maintainers/posts/index.md
     - FAQ: maintainers/faq.md
   - Payment & Taxes: payment.md
   - API:

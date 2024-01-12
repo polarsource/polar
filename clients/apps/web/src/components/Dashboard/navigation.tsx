@@ -294,7 +294,16 @@ export const metaRoutes: Route[] = [
   {
     id: 'blog',
     title: 'Blog',
-    link: `https://blog.polar.sh`,
+    link: `https://polar.sh/polarsource`,
+    icon: undefined,
+    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'docs',
+    title: 'Docs & Support',
+    link: `https://docs.polar.sh`,
     icon: undefined,
     postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
     if: true,

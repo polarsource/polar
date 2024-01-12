@@ -22,6 +22,7 @@ export const useDashboard = (
   sort?: IssueSortBy,
   onlyPledged?: boolean,
   onlyBadged?: boolean,
+  hasAppInstalled?: boolean,
 ): UseInfiniteQueryResult<InfiniteData<IssueListResponse, unknown>> =>
   useInfiniteQuery({
     queryKey: [
@@ -35,6 +36,7 @@ export const useDashboard = (
       sort,
       onlyPledged,
       onlyBadged,
+      hasAppInstalled,
     ],
     queryFn: ({ signal, pageParam = 1 }) => {
       const promise = api.dashboard.getDashboard({
@@ -61,7 +63,7 @@ export const useDashboard = (
       return lastPage.pagination.next_page
     },
     initialPageParam: 1,
-    enabled: !!orgName,
+    enabled: !!orgName && !!hasAppInstalled,
     retry: defaultRetry,
   })
 

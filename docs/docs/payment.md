@@ -60,10 +60,10 @@ applicable.
 
 ### Fees
 
-Polar has no fixed, monthly, fees. We take a 10% commission once transfers are
+Polar has no fixed, monthly, fees. We take a 5% commission once transfers are
 made for successfully funded & completed issues and monthly subscriptions.
 
-Payment processing fees apply in addition (Stripe).
+Stripe transaction- and payout fees apply before transfers. _We're covering this up until March 31st, 2024._
 
 
 ### Payouts

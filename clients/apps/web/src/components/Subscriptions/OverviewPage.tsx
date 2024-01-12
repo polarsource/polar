@@ -262,7 +262,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
                           name={
                             subscription.organization
                               ? subscription.organization.name
-                              : subscription.user.name
+                              : subscription.user.public_name
                           }
                           className="h-8 w-8"
                         />

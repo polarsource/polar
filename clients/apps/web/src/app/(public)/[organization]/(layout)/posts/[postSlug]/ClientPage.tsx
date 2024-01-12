@@ -35,7 +35,6 @@ export default function Page({ article }: { article: Article }) {
   const userSubs = useUserSubscriptions(
     currentUser?.id,
     article.organization.name,
-    true,
     30,
     article.organization.platform,
   )

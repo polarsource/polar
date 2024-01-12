@@ -1,6 +1,6 @@
 'use client'
 
-import { Subscription } from '@polar-sh/sdk'
+import { SubscriptionSubscriber } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit'
 import {
@@ -21,11 +21,7 @@ export type Settings = {
 const SubscriptionSettings = () => {
   const user = useUser()
 
-  const subscriptions = useUserSubscriptions(
-    user.data?.id ?? '',
-    undefined,
-    true,
-  )
+  const subscriptions = useUserSubscriptions(user.data?.id ?? '', undefined)
 
   return (
     <ShadowListGroup>
@@ -52,7 +48,7 @@ const SubscriptionSettings = () => {
 export default SubscriptionSettings
 
 interface SubscriptionItemProps {
-  subscription: Subscription
+  subscription: SubscriptionSubscriber
 }
 
 const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {

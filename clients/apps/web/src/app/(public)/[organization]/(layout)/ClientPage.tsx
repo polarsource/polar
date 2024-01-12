@@ -170,7 +170,7 @@ const ClientPage = ({
                       ) : (
                         <Avatar
                           className="h-10 w-10"
-                          name={user.name}
+                          name={user.public_name}
                           avatar_url={user.avatar_url}
                         />
                       )}

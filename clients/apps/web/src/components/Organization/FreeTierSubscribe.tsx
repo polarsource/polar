@@ -28,7 +28,6 @@ export const AuthenticatedFreeTierSubscribe = ({
   const { data } = useUserSubscriptions(
     user.id,
     organization.name,
-    true,
     10,
     organization.platform,
   )

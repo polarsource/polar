@@ -95,20 +95,13 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   )
 
   const { data: userSubscriptionsList, refetch: refetchUserSubscriptions } =
-    useUserSubscriptions(
-      user.id,
-      organization.name,
-      true,
-      10,
-      organization.platform,
-    )
+    useUserSubscriptions(user.id, organization.name, 10, organization.platform)
   const {
     data: organizationSubscriptionsList,
     refetch: refetchOrganizationSubscriptions,
   } = useOrganizationSubscriptions(
     !isUserSelected ? selectedSubscriber.id : undefined,
     organization.name,
-    true,
     10,
     organization.platform,
   )

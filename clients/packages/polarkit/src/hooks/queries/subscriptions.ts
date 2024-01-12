@@ -242,16 +242,14 @@ export const useDeleteSubscriptionBenefit = (orgName?: string) =>
 export const useUserSubscriptions = (
   userId?: string,
   orgName?: string,
-  active?: boolean,
   limit = 30,
   platform = Platforms.GITHUB,
 ) =>
   useQuery({
     queryKey: ['userSubscriptions', 'organization', orgName, userId],
     queryFn: () =>
-      api.subscriptions.searchSubscriptions({
+      api.subscriptions.searchSubscribedSubscriptions({
         organizationName: orgName,
-        active,
         limit,
         platform,
         subscriberUserId: userId,
@@ -286,7 +284,6 @@ export const useCreateFreeSubscription = () =>
 export const useOrganizationSubscriptions = (
   subscriberOrganizationId?: string,
   orgName?: string,
-  active?: boolean,
   limit = 30,
   platform = Platforms.GITHUB,
 ) =>
@@ -298,9 +295,8 @@ export const useOrganizationSubscriptions = (
       subscriberOrganizationId,
     ],
     queryFn: () =>
-      api.subscriptions.searchSubscriptions({
+      api.subscriptions.searchSubscribedSubscriptions({
         organizationName: orgName,
-        active,
         limit,
         platform,
         subscriberOrganizationId,
@@ -310,8 +306,8 @@ export const useOrganizationSubscriptions = (
   })
 
 export const useSearchSubscriptions = (variables: {
-  organizationName?: string
-  platform?: Platforms
+  organizationName: string
+  platform: Platforms
   limit: number
   page: number
   subscriptionTierId?: string

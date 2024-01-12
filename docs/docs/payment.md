@@ -5,6 +5,10 @@ hide:
 
 # Payment & Taxes
 
+## Pricing
+
+Short version: Polar is free to use. When you're making money through Polar, through subscriptions or issue funding, we take a 5% commision (after payment fees).
+
 ## Payment (Backers)
 
 Polar uses [Stripe](https://stripe.com) for all payments.

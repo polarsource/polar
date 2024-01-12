@@ -18,6 +18,7 @@ import type {
   FreeSubscriptionCreate,
   HTTPValidationError,
   ListResourceSubscription,
+  ListResourceSubscriptionSubscriber,
   ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
   ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitCustom,
@@ -92,6 +93,20 @@ export interface SubscriptionsApiLookupSubscriptionTierRequest {
     subscriptionTierId: string;
 }
 
+export interface SubscriptionsApiSearchSubscribedSubscriptionsRequest {
+    repositoryName?: string;
+    directOrganization?: boolean;
+    type?: SubscriptionTierType;
+    subscriptionTierId?: string;
+    subscriberUserId?: string;
+    subscriberOrganizationId?: string;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
+    organizationName?: string;
+    platform?: Platforms;
+}
+
 export interface SubscriptionsApiSearchSubscriptionBenefitsRequest {
     organizationName: string;
     platform: Platforms;
@@ -114,6 +129,8 @@ export interface SubscriptionsApiSearchSubscriptionTiersRequest {
 }
 
 export interface SubscriptionsApiSearchSubscriptionsRequest {
+    organizationName: string;
+    platform: Platforms;
     repositoryName?: string;
     directOrganization?: boolean;
     type?: SubscriptionTierType;
@@ -124,8 +141,6 @@ export interface SubscriptionsApiSearchSubscriptionsRequest {
     page?: number;
     limit?: number;
     sorting?: Array<string>;
-    organizationName?: string;
-    platform?: Platforms;
 }
 
 export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
@@ -656,6 +671,84 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Search Subscribed Subscriptions
+     */
+    async searchSubscribedSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscribedSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSubscriber>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.repositoryName !== undefined) {
+            queryParameters['repository_name'] = requestParameters.repositoryName;
+        }
+
+        if (requestParameters.directOrganization !== undefined) {
+            queryParameters['direct_organization'] = requestParameters.directOrganization;
+        }
+
+        if (requestParameters.type !== undefined) {
+            queryParameters['type'] = requestParameters.type;
+        }
+
+        if (requestParameters.subscriptionTierId !== undefined) {
+            queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        }
+
+        if (requestParameters.subscriberUserId !== undefined) {
+            queryParameters['subscriber_user_id'] = requestParameters.subscriberUserId;
+        }
+
+        if (requestParameters.subscriberOrganizationId !== undefined) {
+            queryParameters['subscriber_organization_id'] = requestParameters.subscriberOrganizationId;
+        }
+
+        if (requestParameters.page !== undefined) {
+            queryParameters['page'] = requestParameters.page;
+        }
+
+        if (requestParameters.limit !== undefined) {
+            queryParameters['limit'] = requestParameters.limit;
+        }
+
+        if (requestParameters.sorting) {
+            queryParameters['sorting'] = requestParameters.sorting;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscriptions/subscribed`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Search Subscribed Subscriptions
+     */
+    async searchSubscribedSubscriptions(requestParameters: SubscriptionsApiSearchSubscribedSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSubscriber> {
+        const response = await this.searchSubscribedSubscriptionsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Search Subscription Benefits
      */
     async searchSubscriptionBenefitsRaw(requestParameters: SubscriptionsApiSearchSubscriptionBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitCustom>> {
@@ -803,6 +896,14 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscriptions
      */
     async searchSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscription>> {
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling searchSubscriptions.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling searchSubscriptions.');
+        }
+
         const queryParameters: any = {};
 
         if (requestParameters.repositoryName !== undefined) {
@@ -876,7 +977,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     /**
      * Search Subscriptions
      */
-    async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
+    async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
         const response = await this.searchSubscriptionsRaw(requestParameters, initOverrides);
         return await response.value();
     }

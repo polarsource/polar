@@ -803,6 +803,12 @@ export interface BackofficeReward {
     pledger_email?: string;
 }
 /**
+ * @type BenefitsInner
+ * @export
+ */
+export type BenefitsInner = SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber;
+
+/**
  * 
  * @export
  * @interface Byline
@@ -1895,6 +1901,25 @@ export interface ListResourceSubscription {
      * 
      * @type {Pagination}
      * @memberof ListResourceSubscription
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceSubscriptionSubscriber
+ */
+export interface ListResourceSubscriptionSubscriber {
+    /**
+     * 
+     * @type {Array<SubscriptionSubscriber>}
+     * @memberof ListResourceSubscriptionSubscriber
+     */
+    items?: Array<SubscriptionSubscriber>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceSubscriptionSubscriber
      */
     pagination: Pagination;
 }
@@ -4356,6 +4381,83 @@ export interface SubscriptionBenefitArticlesProperties {
 /**
  * 
  * @export
+ * @interface SubscriptionBenefitArticlesSubscriber
+ */
+export interface SubscriptionBenefitArticlesSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    type: SubscriptionBenefitArticlesSubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof SubscriptionBenefitArticlesSubscriber
+     */
+    properties: object;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitArticlesSubscriberTypeEnum = {
+    ARTICLES: 'articles'
+} as const;
+export type SubscriptionBenefitArticlesSubscriberTypeEnum = typeof SubscriptionBenefitArticlesSubscriberTypeEnum[keyof typeof SubscriptionBenefitArticlesSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface SubscriptionBenefitArticlesUpdate
  */
 export interface SubscriptionBenefitArticlesUpdate {
@@ -4365,7 +4467,23 @@ export interface SubscriptionBenefitArticlesUpdate {
      * @memberof SubscriptionBenefitArticlesUpdate
      */
     description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitArticlesUpdate
+     */
+    type: SubscriptionBenefitArticlesUpdateTypeEnum;
 }
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitArticlesUpdateTypeEnum = {
+    ARTICLES: 'articles'
+} as const;
+export type SubscriptionBenefitArticlesUpdateTypeEnum = typeof SubscriptionBenefitArticlesUpdateTypeEnum[keyof typeof SubscriptionBenefitArticlesUpdateTypeEnum];
+
 /**
  * @type SubscriptionBenefitCreate
  * @export
@@ -4434,10 +4552,10 @@ export interface SubscriptionBenefitCustom {
     repository_id?: string;
     /**
      * 
-     * @type {object}
+     * @type {SubscriptionBenefitCustomProperties}
      * @memberof SubscriptionBenefitCustom
      */
-    properties: object;
+    properties: SubscriptionBenefitCustomProperties;
     /**
      * 
      * @type {boolean}
@@ -4481,12 +4599,6 @@ export interface SubscriptionBenefitCustomBisCreate {
     repository_id?: string;
     /**
      * 
-     * @type {object}
-     * @memberof SubscriptionBenefitCustomBisCreate
-     */
-    properties: object;
-    /**
-     * 
      * @type {string}
      * @memberof SubscriptionBenefitCustomBisCreate
      */
@@ -4497,6 +4609,12 @@ export interface SubscriptionBenefitCustomBisCreate {
      * @memberof SubscriptionBenefitCustomBisCreate
      */
     is_tax_applicable: boolean;
+    /**
+     * 
+     * @type {SubscriptionBenefitCustomProperties}
+     * @memberof SubscriptionBenefitCustomBisCreate
+     */
+    properties: SubscriptionBenefitCustomProperties;
 }
 
 
@@ -4534,12 +4652,6 @@ export interface SubscriptionBenefitCustomCreate {
     repository_id?: string;
     /**
      * 
-     * @type {object}
-     * @memberof SubscriptionBenefitCustomCreate
-     */
-    properties: object;
-    /**
-     * 
      * @type {string}
      * @memberof SubscriptionBenefitCustomCreate
      */
@@ -4550,6 +4662,12 @@ export interface SubscriptionBenefitCustomCreate {
      * @memberof SubscriptionBenefitCustomCreate
      */
     is_tax_applicable: boolean;
+    /**
+     * 
+     * @type {SubscriptionBenefitCustomProperties}
+     * @memberof SubscriptionBenefitCustomCreate
+     */
+    properties: SubscriptionBenefitCustomProperties;
 }
 
 
@@ -4564,6 +4682,109 @@ export type SubscriptionBenefitCustomCreateTypeEnum = typeof SubscriptionBenefit
 /**
  * 
  * @export
+ * @interface SubscriptionBenefitCustomProperties
+ */
+export interface SubscriptionBenefitCustomProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomProperties
+     */
+    note?: string;
+}
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitCustomSubscriber
+ */
+export interface SubscriptionBenefitCustomSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    type: SubscriptionBenefitCustomSubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {SubscriptionBenefitCustomSubscriberProperties}
+     * @memberof SubscriptionBenefitCustomSubscriber
+     */
+    properties: SubscriptionBenefitCustomSubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitCustomSubscriberTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type SubscriptionBenefitCustomSubscriberTypeEnum = typeof SubscriptionBenefitCustomSubscriberTypeEnum[keyof typeof SubscriptionBenefitCustomSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitCustomSubscriberProperties
+ */
+export interface SubscriptionBenefitCustomSubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomSubscriberProperties
+     */
+    note?: string;
+}
+/**
+ * 
+ * @export
  * @interface SubscriptionBenefitCustomUpdate
  */
 export interface SubscriptionBenefitCustomUpdate {
@@ -4575,11 +4796,27 @@ export interface SubscriptionBenefitCustomUpdate {
     description?: string;
     /**
      * 
-     * @type {object}
+     * @type {string}
      * @memberof SubscriptionBenefitCustomUpdate
      */
-    properties?: object;
+    type: SubscriptionBenefitCustomUpdateTypeEnum;
+    /**
+     * 
+     * @type {SubscriptionBenefitCustomProperties}
+     * @memberof SubscriptionBenefitCustomUpdate
+     */
+    properties?: SubscriptionBenefitCustomProperties;
 }
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitCustomUpdateTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type SubscriptionBenefitCustomUpdateTypeEnum = typeof SubscriptionBenefitCustomUpdateTypeEnum[keyof typeof SubscriptionBenefitCustomUpdateTypeEnum];
+
 
 /**
  * An enumeration.
@@ -4622,6 +4859,31 @@ export interface SubscriptionOrganization {
      */
     avatar_url: string;
 }
+/**
+ * 
+ * @export
+ * @interface SubscriptionPublicUser
+ */
+export interface SubscriptionPublicUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionPublicUser
+     */
+    public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionPublicUser
+     */
+    github_username?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionPublicUser
+     */
+    avatar_url?: string;
+}
 
 /**
  * An enumeration.
@@ -4641,15 +4903,118 @@ export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof Subscrip
 /**
  * 
  * @export
+ * @interface SubscriptionSubscriber
+ */
+export interface SubscriptionSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof SubscriptionSubscriber
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    current_period_start: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    current_period_end?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionSubscriber
+     */
+    cancel_at_period_end: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    started_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    ended_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    price_currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionSubscriber
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    subscription_tier_id: string;
+    /**
+     * 
+     * @type {SubscriptionTierSubscriber}
+     * @memberof SubscriptionSubscriber
+     */
+    subscription_tier: SubscriptionTierSubscriber;
+    /**
+     * 
+     * @type {SubscriptionOrganization}
+     * @memberof SubscriptionSubscriber
+     */
+    organization?: SubscriptionOrganization;
+}
+/**
+ * 
+ * @export
  * @interface SubscriptionSummary
  */
 export interface SubscriptionSummary {
     /**
      * 
-     * @type {SubscriptionUser}
+     * @type {SubscriptionPublicUser}
      * @memberof SubscriptionSummary
      */
-    user: SubscriptionUser;
+    user: SubscriptionPublicUser;
     /**
      * 
      * @type {SubscriptionOrganization}
@@ -4888,6 +5253,91 @@ export const SubscriptionTierCreateTypeEnum = {
 } as const;
 export type SubscriptionTierCreateTypeEnum = typeof SubscriptionTierCreateTypeEnum[keyof typeof SubscriptionTierCreateTypeEnum];
 
+/**
+ * 
+ * @export
+ * @interface SubscriptionTierSubscriber
+ */
+export interface SubscriptionTierSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof SubscriptionTierSubscriber
+     */
+    type: SubscriptionTierType;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionTierSubscriber
+     */
+    is_highlighted: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionTierSubscriber
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    price_currency: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionTierSubscriber
+     */
+    is_archived: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierSubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {Array<BenefitsInner>}
+     * @memberof SubscriptionTierSubscriber
+     */
+    benefits: Array<BenefitsInner>;
+}
 
 /**
  * An enumeration.
@@ -4961,7 +5411,7 @@ export interface SubscriptionUser {
      * @type {string}
      * @memberof SubscriptionUser
      */
-    name: string;
+    public_name: string;
     /**
      * 
      * @type {string}
@@ -4979,7 +5429,7 @@ export interface SubscriptionUser {
      * @type {string}
      * @memberof SubscriptionUser
      */
-    email?: string;
+    email: string;
 }
 /**
  * 

@@ -172,8 +172,16 @@ class GithubOrganizationService(OrganizationService):
             # TODO: Should we really set this here?
             onboarded_at=utc_now(),
         )
-        org = await organization_service.create(session, new, autocommit=False)
-
+        # User has no org, but org could potentially exist due to it being
+        # referenced as a dependency issue. So we need to update it in that
+        # case prior to linking.
+        #
+        # The create_or_update action would wipe some existing columns, i.e
+        # `installation_id`. However, that's a good security feature vs. bug.
+        # None should exist without the user already being linked to it.
+        # Or having deleted their account. In both cases, we should wipe any
+        # existing installation to force a new one.
+        org = await organization_service.create_or_update(session, new)
         await organization_service.add_user(
             session, organization=org, user=user, is_admin=True
         )

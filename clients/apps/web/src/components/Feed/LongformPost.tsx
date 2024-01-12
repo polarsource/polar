@@ -84,7 +84,7 @@ export default function LongformPost({
       transition={staggerTransition}
       variants={animationVariants}
     >
-      <div className="flex flex-col items-center gap-y-16 pb-16 pt-4">
+      <div className="flex flex-col items-center gap-y-8 pb-16 pt-4">
         <StaggerReveal.Child
           transition={revealTransition}
           variants={animationVariants}
@@ -103,7 +103,7 @@ export default function LongformPost({
           transition={revealTransition}
           variants={animationVariants}
         >
-          <h1 className="text-center text-4xl font-bold leading-normal md:leading-relaxed">
+          <h1 className="text-center text-4xl !font-semibold leading-normal md:leading-relaxed">
             {article.title}
           </h1>
         </StaggerReveal.Child>

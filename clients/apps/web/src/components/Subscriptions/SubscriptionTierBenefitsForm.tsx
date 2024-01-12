@@ -6,10 +6,12 @@ import {
 import {
   Organization,
   SubscriptionBenefitCreate,
+  SubscriptionBenefitCustomCreate,
+  SubscriptionBenefitType,
   SubscriptionBenefitUpdate,
   SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
-import { Button, Input, Switch } from 'polarkit/components/ui/atoms'
+import { Button, Input, Switch, TextArea } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   DropdownMenu,
@@ -20,6 +22,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -349,12 +352,17 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
   )
 
   const handleUpdateNewBenefit = useCallback(
-    async (subscriptionBenefitUpdate: SubscriptionBenefitUpdate) => {
+    async (
+      subscriptionBenefitUpdate: Omit<SubscriptionBenefitUpdate, 'type'>,
+    ) => {
       try {
         setIsLoading(true)
         await updateSubscriptionBenefit.mutateAsync({
           id: benefit.id,
-          subscriptionBenefitUpdate,
+          subscriptionBenefitUpdate: {
+            type: benefit.type,
+            ...subscriptionBenefitUpdate,
+          },
         })
 
         hideModal()
@@ -367,7 +375,7 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
     [hideModal, updateSubscriptionBenefit, benefit],
   )
 
-  const form = useForm<SubscriptionBenefitUpdate>({
+  const form = useForm<Omit<SubscriptionBenefitUpdate, 'type'>>({
     defaultValues: {
       organization_id: organization.id,
       ...benefit,
@@ -391,7 +399,7 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
             className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(handleUpdateNewBenefit)}
           >
-            <NewBenefitForm update={true} />
+            <UpdateBenefitForm type={benefit.type} />
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button className="self-start" type="submit" loading={isLoading}>
                 Update
@@ -411,11 +419,27 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
   )
 }
 
-interface NewBenefitFormProps {
+export const NewBenefitForm = () => {
+  const { watch } = useFormContext<SubscriptionBenefitCreate>()
+  const type = watch('type')
+
+  return <BenefitForm type={type} />
+}
+
+interface UpdateBenefitFormProps {
+  type: SubscriptionBenefitType
+}
+
+export const UpdateBenefitForm = ({ type }: UpdateBenefitFormProps) => {
+  return <BenefitForm type={type} update={true} />
+}
+
+interface BenefitFormProps {
+  type: SubscriptionBenefitType
   update?: boolean
 }
 
-export const NewBenefitForm = ({ update = false }: NewBenefitFormProps) => {
+export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
   const { control } = useFormContext<SubscriptionBenefitCreate>()
 
   return (
@@ -445,6 +469,43 @@ export const NewBenefitForm = ({ update = false }: NewBenefitFormProps) => {
               <FormControl>
                 <Input {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+      {type === 'custom' && <CustomBenefitForm update={update} />}
+    </>
+  )
+}
+
+interface CustomBenefitFormProps {
+  update?: boolean
+}
+
+export const CustomBenefitForm = ({
+  update = false,
+}: CustomBenefitFormProps) => {
+  const { control } = useFormContext<SubscriptionBenefitCustomCreate>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="properties.note"
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Note to subscribers</FormLabel>
+              </div>
+              <FormControl>
+                <TextArea {...field} />
+              </FormControl>
+              <FormDescription>
+                This will be shared with your subscribers. Use it to share
+                specific instructions, a private email address or URL!
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )

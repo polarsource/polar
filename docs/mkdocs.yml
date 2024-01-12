@@ -62,7 +62,7 @@ extra_css:
 nav:
   - Home:
     - index.md
-  - For Maintainers:
+  - For Creators:
     - Issue Funding:
       - Overview: maintainers/issue-funding/index.md
       - Getting Started:
@@ -84,3 +84,5 @@ nav:
     - For Backers: faq/backers.md
     - For Contributors: faq/contributors.md
   - Support: support.md
+
+edit_uri: https://example.com/project/repo/blob/main/docs/

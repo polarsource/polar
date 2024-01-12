@@ -72,8 +72,8 @@ export const GitHubAppInstallationUpsell = () => {
       >
         <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
         <span className="text-sm">
-          You need to install our <strong>GitHub App</strong> on at least one of
-          your repositories to use issue funding.
+          Install our <strong>GitHub App</strong> on at least one of your
+          repositories to enable this feature.
         </span>
       </Banner>
     </>

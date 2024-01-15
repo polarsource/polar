@@ -59,6 +59,7 @@ const ClientPage = () => {
             organization: org,
             byline: org,
             slug: 'preview',
+            is_preview: false,
           },
           isSubscriber: true,
           showPaywalledContent: true,

@@ -332,6 +332,7 @@ export const article: Article = {
 
   So we'll start keeping a changelog to highlight some of the gems. Let's dive right into some of the highlights from the last month.`,
   visibility: 'public',
+  is_preview: false,
   byline: {
     name: 'birkjernstrom',
     avatar_url: 'https://avatars.githubusercontent.com/u/281715?v=4',

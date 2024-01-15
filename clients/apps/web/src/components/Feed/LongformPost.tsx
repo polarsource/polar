@@ -7,6 +7,7 @@ import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import BrowserRender from './Markdown/BrowserRender'
 import { RenderArticle } from './Markdown/markdown'
+import PostPaywall from './PostPaywall'
 import Share from './Posts/Share'
 
 const defaultStaggerTransition = {
@@ -38,7 +39,8 @@ export default function LongformPost({
 }: LongformPostProps) {
   const organization = article.organization
 
-  const shouldRenderUpsell = isSubscriber
+  const shouldRenderPaywall = article.is_preview
+  const shouldRenderUpsell = isSubscriber && !shouldRenderPaywall
 
   staggerTransition = staggerTransition ?? defaultStaggerTransition
   revealTransition = revealTransition ?? defaultRevealTransition
@@ -136,6 +138,15 @@ export default function LongformPost({
           />
         </div>
       </StaggerReveal.Child>
+
+      {shouldRenderPaywall && (
+        <StaggerReveal.Child
+          transition={revealTransition}
+          variants={animationVariants}
+        >
+          <PostPaywall article={article} isSubscriber={isSubscriber} />
+        </StaggerReveal.Child>
+      )}
 
       {shouldRenderUpsell && (
         <StaggerReveal.Child

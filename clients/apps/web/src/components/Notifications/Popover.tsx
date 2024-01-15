@@ -2,6 +2,7 @@ import { NotificationsOutlined, VerifiedUser } from '@mui/icons-material'
 import {
   MaintainerAccountReviewedNotification,
   MaintainerAccountUnderReviewNotification,
+  MaintainerNewPaidSubscriptionNotification,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
@@ -14,6 +15,7 @@ import {
   RewardPaidNotification,
   TeamAdminMemberPledgedNotification,
 } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { GitMergeIcon } from 'polarkit/components/icons'
 import { Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import {
@@ -23,6 +25,7 @@ import {
   useNotifications,
   useNotificationsMarkRead,
 } from 'polarkit/hooks'
+import { getCentsInDollarString } from 'polarkit/money'
 import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -201,12 +204,12 @@ const MaintainerPledgeCreated = ({
         text: (
           <>
             New ${payload.pledge_amount} pledge behind{' '}
-            <Link href={payload.issue_url}>
+            <ExternalLink href={payload.issue_url}>
               <>
                 {payload.issue_org_name}/{payload.issue_repo_name}#
                 {payload.issue_number}
               </>
-            </Link>
+            </ExternalLink>
           </>
         ),
         icon: <DollarSignIcon />,
@@ -372,12 +375,12 @@ export const MaintainerPledgeConfirmationPending = ({
           <div className="flex flex-col space-y-1">
             <div>
               Confirm that{' '}
-              <Link href={payload.issue_url}>
+              <ExternalLink href={payload.issue_url}>
                 <>
                   {payload.issue_org_name}/{payload.issue_repo_name}#
                   {payload.issue_number}
                 </>
-              </Link>{' '}
+              </ExternalLink>{' '}
               has been solved.
             </div>
             <div>
@@ -422,12 +425,12 @@ const MaintainerPledgePending = ({
         text: (
           <>
             ${payload.pledge_amount} pending for completing{' '}
-            <Link href={payload.issue_url}>
+            <ExternalLink href={payload.issue_url}>
               <>
                 {payload.issue_org_name}/{payload.issue_repo_name}#
                 {payload.issue_number}
               </>
-            </Link>
+            </ExternalLink>
           </>
         ),
         icon: <GitMergeIcon />,
@@ -451,12 +454,12 @@ const MaintainerPledgedIssuePending = ({
         text: (
           <>
             ${payload.pledge_amount_sum} pending for completing{' '}
-            <Link href={payload.issue_url}>
+            <ExternalLink href={payload.issue_url}>
               <>
                 {payload.issue_org_name}/{payload.issue_repo_name}#
                 {payload.issue_number}
               </>
-            </Link>
+            </ExternalLink>
           </>
         ),
         icon: <GitMergeIcon />,
@@ -481,12 +484,12 @@ const MaintainerPledgePaid = ({
         text: (
           <>
             ${payload.paid_out_amount} for{' '}
-            <Link href={payload.issue_url}>
+            <ExternalLink href={payload.issue_url}>
               <>
                 {payload.issue_org_name}/{payload.issue_repo_name}#
                 {payload.issue_number}
               </>
-            </Link>{' '}
+            </ExternalLink>{' '}
             has been transferred
           </>
         ),
@@ -512,12 +515,12 @@ const RewardPaid = ({
         text: (
           <>
             ${payload.paid_out_amount} for{' '}
-            <Link href={payload.issue_url}>
+            <ExternalLink href={payload.issue_url}>
               <>
                 {payload.issue_org_name}/{payload.issue_repo_name}#
                 {payload.issue_number}
               </>
-            </Link>{' '}
+            </ExternalLink>{' '}
             has paid out
           </>
         ),
@@ -539,12 +542,12 @@ const PledgerPledgePending = ({
       {{
         text: (
           <>
-            <Link href={payload.issue_url}>
+            <ExternalLink href={payload.issue_url}>
               <>
                 {payload.issue_org_name}/{payload.issue_repo_name}#
                 {payload.issue_number}
               </>
-            </Link>{' '}
+            </ExternalLink>{' '}
             has been closed. Review it.
           </>
         ),
@@ -567,12 +570,12 @@ const TeamAdminMemberPledged = ({
         text: (
           <>
             {payload.team_member_name} pledged ${payload.pledge_amount} towards{' '}
-            <Link href={payload.issue_url}>
+            <ExternalLink href={payload.issue_url}>
               <>
                 {payload.issue_org_name}/{payload.issue_repo_name}#
                 {payload.issue_number}
               </>
-            </Link>{' '}
+            </ExternalLink>{' '}
             on behalf of {payload.team_name}.
           </>
         ),
@@ -595,14 +598,41 @@ const MaintainerAccountUnderReview = ({
         text: (
           <>
             Your{' '}
-            <Link href="/finance/account">
+            <InternalLink href="/finance/account">
               <>payout account</>
-            </Link>{' '}
+            </InternalLink>{' '}
             is under review. Transfers are paused until we complete the review
             of your account.
           </>
         ),
         icon: <VerifiedUser />,
+      }}
+    </Item>
+  )
+}
+
+const MaintainerNewPaidSubscription = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: MaintainerNewPaidSubscriptionNotification
+}) => {
+  return (
+    <Item n={n} iconClasses="bg-green-200 text-green-500">
+      {{
+        text: (
+          <>
+            {payload.subscriber_name} is now subscribing to{' '}
+            <InternalLink
+              href={`/maintainer/${payload.tier_organization_name}/subscriptions`}
+            >
+              <>{payload.tier_name}</>
+            </InternalLink>{' '}
+            (${getCentsInDollarString(payload.tier_price_amount)})
+          </>
+        ),
+        icon: <DollarSignIcon />,
       }}
     </Item>
   )
@@ -621,9 +651,9 @@ const MaintainerAccountReviewed = ({
         text: (
           <>
             Your{' '}
-            <Link href="/finance/account">
+            <InternalLink href="/finance/account">
               <>payout account</>
-            </Link>{' '}
+            </InternalLink>{' '}
             has been reviewed successfully. Transfers are resumed.
           </>
         ),
@@ -728,6 +758,16 @@ export const Notification = ({
           <MaintainerAccountReviewed
             n={n}
             payload={n.maintainer_account_reviewed}
+          />
+        )
+      }
+
+    case NotificationType.MAINTAINER_NEW_PAID_SUBSCRIPTION_NOTIFICATION:
+      if (n.maintainer_new_paid_subscription) {
+        return (
+          <MaintainerNewPaidSubscription
+            n={n}
+            payload={n.maintainer_new_paid_subscription}
           />
         )
       }
@@ -839,7 +879,10 @@ const BranchCreatedIcon = () => {
   )
 }
 
-const Link = (props: { href: string; children: React.ReactElement }) => {
+const ExternalLink = (props: {
+  href: string
+  children: React.ReactElement
+}) => {
   return (
     <a
       className="font-bold hover:underline"
@@ -849,5 +892,16 @@ const Link = (props: { href: string; children: React.ReactElement }) => {
     >
       {props.children}
     </a>
+  )
+}
+
+const InternalLink = (props: {
+  href: string
+  children: React.ReactElement
+}) => {
+  return (
+    <Link className="font-bold hover:underline" href={props.href}>
+      {props.children}
+    </Link>
   )
 }

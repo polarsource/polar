@@ -2123,6 +2123,37 @@ export interface MaintainerAccountUnderReviewNotification {
 /**
  * 
  * @export
+ * @interface MaintainerNewPaidSubscriptionNotification
+ */
+export interface MaintainerNewPaidSubscriptionNotification {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewPaidSubscriptionNotification
+     */
+    subscriber_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewPaidSubscriptionNotification
+     */
+    tier_name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof MaintainerNewPaidSubscriptionNotification
+     */
+    tier_price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewPaidSubscriptionNotification
+     */
+    tier_organization_name: string;
+}
+/**
+ * 
+ * @export
  * @interface MaintainerPledgeConfirmationPendingNotification
  */
 export interface MaintainerPledgeConfirmationPendingNotification {
@@ -2558,6 +2589,12 @@ export interface NotificationRead {
      * @memberof NotificationRead
      */
     maintainer_account_reviewed?: MaintainerAccountReviewedNotification;
+    /**
+     * 
+     * @type {MaintainerNewPaidSubscriptionNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_new_paid_subscription?: MaintainerNewPaidSubscriptionNotification;
 }
 
 /**
@@ -2575,7 +2612,8 @@ export const NotificationType = {
     MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION: 'MaintainerPledgedIssuePendingNotification',
     TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION: 'TeamAdminMemberPledgedNotification',
     MAINTAINER_ACCOUNT_UNDER_REVIEW_NOTIFICATION: 'MaintainerAccountUnderReviewNotification',
-    MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION: 'MaintainerAccountReviewedNotification'
+    MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION: 'MaintainerAccountReviewedNotification',
+    MAINTAINER_NEW_PAID_SUBSCRIPTION_NOTIFICATION: 'MaintainerNewPaidSubscriptionNotification'
 } as const;
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
 

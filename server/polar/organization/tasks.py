@@ -27,7 +27,7 @@ class OrganizationDoesNotExist(OrganizationTaskError):
 async def organization_post_creation_actions(
     session: AsyncSession,
     organization_id: uuid.UUID,
-):
+) -> None:
     organization = await organization_service.get(session, organization_id)
     if organization is None:
         raise OrganizationDoesNotExist(organization_id)

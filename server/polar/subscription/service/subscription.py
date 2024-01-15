@@ -309,8 +309,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             (SearchSortProperty.started_at, True)
         ],
     ) -> tuple[Sequence[Subscription], int]:
-        statement = self._get_subscribed_subscriptions_statement(user).where(
-            Subscription.started_at.is_not(None)
+        statement = (
+            self._get_subscribed_subscriptions_statement(user)
+            .join(SubscriptionTier)
+            .where(Subscription.started_at.is_not(None))
         )
 
         if organization is not None:
@@ -367,7 +369,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
-            joinedload(Subscription.subscription_tier),
+            contains_eager(Subscription.subscription_tier),
             joinedload(Subscription.organization),
         )
 
@@ -1107,11 +1109,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     UserOrganization.organization_id == Subscription.organization_id,
                     UserOrganization.user_id == user.id,
                 ),
-            )
-            .join(
-                SubscriptionTier,
-                isouter=True,
-                onclause=Subscription.subscription_tier_id == SubscriptionTier.id,
             )
             .where(
                 Subscription.deleted_at.is_(None),

@@ -34,7 +34,7 @@ export default function Page() {
 
     // redirect to first org
     if (personalOrg) {
-      router.push(`/maintainer/${personalOrg.name}/issues`)
+      router.push(`/maintainer/${personalOrg.name}/posts`)
       return
     }
   }, [listOrganizationsQuery, orgs, router, authenticated, hasChecked])

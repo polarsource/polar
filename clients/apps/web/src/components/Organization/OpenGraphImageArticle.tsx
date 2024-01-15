@@ -63,7 +63,7 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
           fontWeight: 600,
           fontSize: '48px',
           textAlign: 'center',
-          /** ts-ignore */
+          /** @ts-ignore */
           textWrap: 'balance',
         }}
       >

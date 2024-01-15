@@ -29,17 +29,23 @@ class Article(Schema):
     visibility: Visibility
     organization: Organization
     published_at: datetime.datetime | None
+    paid_subscribers_only: bool | None
+    is_preview: bool
 
     notify_subscribers: bool | None
     notifications_sent_at: datetime.datetime | None
     email_sent_to_count: int | None
     web_view_count: int | None
-    paid_subscribers_only: bool | None
 
     @classmethod
-    def strip_paywalled_content(cls, body: str, is_paid_subscriber: bool) -> str:
+    def cut_premium_content(
+        cls, body: str, paid_subscribers_only: bool, is_paid_subscriber: bool
+    ) -> str:
         """
-        strip_paywalled_content removes paywalled content between <paywall></paywall> tags from the body
+        Modifies the body for non-premium subscribers:
+
+        * Removes paywalled content between <paywall></paywall> tags
+        * Cuts the content at an arbitrary limit, so free subscribers only have a preview.
 
         For paying subscribers, no changes to the body are made.
 
@@ -48,7 +54,13 @@ class Article(Schema):
         if is_paid_subscriber:
             return body
 
-        return re.sub(paywall_regex, "<Paywall></Paywall>", body, 0, re.MULTILINE)
+        body = re.sub(paywall_regex, "<Paywall></Paywall>", body, 0, re.MULTILINE)
+
+        if paid_subscribers_only:
+            # Keep up to 4 lines, but no more than 500 characters
+            return "\n".join(body[:500].splitlines()[:4])
+
+        return body
 
     @classmethod
     def from_db(
@@ -83,20 +95,21 @@ class Article(Schema):
             id=i.id,
             slug=i.slug,
             title=i.title,
-            body=cls.strip_paywalled_content(i.body, is_paid_subscriber),
+            body=cls.cut_premium_content(
+                i.body, i.paid_subscribers_only, is_paid_subscriber
+            ),
             byline=byline,
             visibility=visibility,
             organization=Organization.from_db(i.organization),
             published_at=i.published_at,
+            paid_subscribers_only=i.paid_subscribers_only,
+            is_preview=i.paid_subscribers_only and not is_paid_subscriber,
             notify_subscribers=i.notify_subscribers if include_admin_fields else None,
             notifications_sent_at=i.notifications_sent_at
             if include_admin_fields
             else None,
             email_sent_to_count=i.email_sent_to_count if include_admin_fields else None,
             web_view_count=i.web_view_count if include_admin_fields else None,
-            paid_subscribers_only=i.paid_subscribers_only
-            if include_admin_fields
-            else None,
         )
 
 

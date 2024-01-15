@@ -231,6 +231,7 @@ class TestList:
         session: AsyncSession,
         articles: list[Article],
         article_public_free_published: Article,
+        article_public_paid_published: Article,
         organization: Organization,
         user_second: User,
     ) -> None:
@@ -245,12 +246,14 @@ class TestList:
             session, user_second, pagination=PaginationParams(1, 10)
         )
 
-        assert len(results) == 1
-        assert count == 1
+        assert len(results) == 2
+        assert count == 2
 
-        article, is_paid_subscriber = results[0]
-        assert article.id == article_public_free_published.id
-        assert is_paid_subscriber is False
+        assert article_public_free_published.id in get_articles_ids(results)
+        assert article_public_paid_published.id in get_articles_ids(results)
+
+        for _, is_paid_subscriber in results:
+            assert is_paid_subscriber is False
 
     async def test_paid_subscription(
         self,
@@ -290,6 +293,7 @@ class TestSearch:
         session: AsyncSession,
         articles: list[Article],
         article_public_free_published: Article,
+        article_public_paid_published: Article,
         organization: Organization,
         user_second: User,
     ) -> None:
@@ -303,18 +307,21 @@ class TestSearch:
             pagination=PaginationParams(1, 10),
         )
 
-        assert len(results) == 1
-        assert count == 1
+        assert len(results) == 2
+        assert count == 2
 
-        article, is_paid_subscriber = results[0]
-        assert article.id == article_public_free_published.id
-        assert is_paid_subscriber is False
+        assert article_public_free_published.id in get_articles_ids(results)
+        assert article_public_paid_published.id in get_articles_ids(results)
+
+        for _, is_paid_subscriber in results:
+            assert is_paid_subscriber is False
 
     async def test_no_subscription(
         self,
         session: AsyncSession,
         articles: list[Article],
         article_public_free_published: Article,
+        article_public_paid_published: Article,
         organization: Organization,
         user_second: User,
     ) -> None:
@@ -328,18 +335,21 @@ class TestSearch:
             pagination=PaginationParams(1, 10),
         )
 
-        assert len(results) == 1
-        assert count == 1
+        assert len(results) == 2
+        assert count == 2
 
-        article, is_paid_subscriber = results[0]
-        assert article.id == article_public_free_published.id
-        assert is_paid_subscriber is False
+        assert article_public_free_published.id in get_articles_ids(results)
+        assert article_public_paid_published.id in get_articles_ids(results)
+
+        for _, is_paid_subscriber in results:
+            assert is_paid_subscriber is False
 
     async def test_no_subscription_show_unpublished(
         self,
         session: AsyncSession,
         articles: list[Article],
         article_public_free_published: Article,
+        article_public_paid_published: Article,
         organization: Organization,
         user_second: User,
     ) -> None:
@@ -354,12 +364,14 @@ class TestSearch:
             pagination=PaginationParams(1, 10),
         )
 
-        assert len(results) == 1
-        assert count == 1
+        assert len(results) == 2
+        assert count == 2
 
-        article, is_paid_subscriber = results[0]
-        assert article.id == article_public_free_published.id
-        assert is_paid_subscriber is False
+        assert article_public_free_published.id in get_articles_ids(results)
+        assert article_public_paid_published.id in get_articles_ids(results)
+
+        for _, is_paid_subscriber in results:
+            assert is_paid_subscriber is False
 
     async def test_no_subscription_org_member(
         self,
@@ -504,14 +516,16 @@ class TestGetReadableBy:
         assert result[1] is False
 
         result = await getter(session, user_second, article_public_paid_published)
-        assert result is None
+        assert result is not None
+        assert result[1] is False
 
         result = await getter(session, user_second, article_hidden_free_published)
         assert result is not None
         assert result[1] is False
 
         result = await getter(session, user_second, article_hidden_paid_published)
-        assert result is None
+        assert result is not None
+        assert result[1] is False
 
         result = await getter(session, user_second, article_private_published)
         assert result is None
@@ -575,14 +589,16 @@ class TestGetReadableBy:
         assert result[1] is False
 
         result = await getter(session, user_second, article_public_paid_published)
-        assert result is None
+        assert result is not None
+        assert result[1] is False
 
         result = await getter(session, user_second, article_hidden_free_published)
         assert result is not None
         assert result[1] is False
 
         result = await getter(session, user_second, article_hidden_paid_published)
-        assert result is None
+        assert result is not None
+        assert result[1] is False
 
         result = await getter(session, user_second, article_private_published)
         assert result is None

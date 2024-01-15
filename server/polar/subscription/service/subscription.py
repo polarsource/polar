@@ -1108,6 +1108,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     UserOrganization.user_id == user.id,
                 ),
             )
+            .join(
+                SubscriptionTier,
+                isouter=True,
+                onclause=Subscription.subscription_tier_id == SubscriptionTier.id,
+            )
             .where(
                 Subscription.deleted_at.is_(None),
                 or_(

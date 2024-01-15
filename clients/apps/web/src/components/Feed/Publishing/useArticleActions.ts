@@ -1,6 +1,4 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
+import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { ButtonProps } from 'polarkit/components/ui/button'
 import { useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useMemo, useState } from 'react'
@@ -15,15 +13,14 @@ export const useArticleActions = (
   id: string,
   articleUpdate: ArticleUpdate,
   isPublished: boolean,
+  onPublish?: (article: Article) => void,
 ): ArticleAction[] => {
   const [isPublishing, setIsPublishing] = useState(false)
-  const { org } = useCurrentOrgAndRepoFromURL()
   const update = useUpdateArticle()
-  const router = useRouter()
 
   const handlePublish = useCallback(
     async (publishAt?: string | undefined) => {
-      const updated = await update.mutateAsync({
+      return await update.mutateAsync({
         id,
         articleUpdate: {
           ...articleUpdate,
@@ -35,12 +32,8 @@ export const useArticleActions = (
           visibility: ArticleVisibilityEnum.PUBLIC,
         },
       })
-
-      router.push(
-        `/maintainer/${updated.organization.name}/posts/${updated.slug}`,
-      )
     },
-    [articleUpdate, router, update, id],
+    [articleUpdate, update, id],
   )
 
   const publishAction: ArticleAction = useMemo(() => {
@@ -69,11 +62,12 @@ export const useArticleActions = (
       },
       onClick: async () => {
         setIsPublishing(true)
-        await handlePublish(articleUpdate.published_at)
+        const article = await handlePublish(articleUpdate.published_at)
         setIsPublishing(false)
+        onPublish?.(article)
       },
     }
-  }, [articleUpdate, handlePublish, isPublished, isPublishing])
+  }, [articleUpdate, handlePublish, isPublished, isPublishing, onPublish])
 
   return [publishAction]
 }

@@ -32,27 +32,10 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         color: 'white',
-        padding: '92px 64px',
+        padding: '64px',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          fontSize: '32px',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          style={{
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {article.byline.name}
-        </div>
-      </div>
+      <LogoIcon size={72} />
       <span
         style={{
           display: 'flex',
@@ -69,7 +52,35 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
       >
         {article.title}
       </span>
-      <LogoIcon size={72} />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          fontSize: '32px',
+          gap: '16px',
+        }}
+      >
+        <img
+          src={article.byline.avatar_url}
+          height={48}
+          width={48}
+          style={{
+            height: 48,
+            width: 48,
+            borderRadius: 48,
+            flexShrink: 0,
+          }}
+        />
+        <div
+          style={{
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {article.byline.name}
+        </div>
+      </div>
     </div>
   )
 }

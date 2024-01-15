@@ -114,6 +114,10 @@ class TransferTransactionService(BaseTransactionService):
         else:
             raise UnsupportedAccountType(destination_account)
 
+        destination_account = await account_service.check_review_threshold(
+            session, destination_account, amount
+        )
+
         if destination_account.is_under_review():
             raise UnderReviewAccount(
                 destination_account=destination_account,
@@ -226,8 +230,6 @@ class TransferTransactionService(BaseTransactionService):
         session.add(outgoing_transaction)
         session.add(incoming_transaction)
         await session.commit()
-
-        await account_service.check_review_threshold(session, destination_account)
 
         return (outgoing_transaction, incoming_transaction)
 

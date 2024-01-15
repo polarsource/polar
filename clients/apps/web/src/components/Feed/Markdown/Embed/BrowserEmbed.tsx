@@ -72,6 +72,7 @@ const EmbedIssue = (props: { src: string }) => {
         name: m[1],
         avatar_url: '',
         is_personal: false,
+        has_app_installed: false,
         pledge_minimum_amount: 0,
         pledge_badge_show_amount: false,
         is_teams_enabled: false,

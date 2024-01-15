@@ -414,14 +414,14 @@ async def test_list(
     )
     assert create_future.status_code == 200
 
-    # no auth
+    # no auth, can see public posts (both free and premium)
     get = await client.get(
         f"/api/v1/articles/search?platform=github&organization_name={organization.name}",
     )
     assert get.status_code == 200
     list_json = get.json()
-    assert len(list_json["items"]) == 1
-    assert list_json["pagination"]["total_count"] == 1
+    assert len(list_json["items"]) == 2
+    assert list_json["pagination"]["total_count"] == 2
     for art in list_json["items"]:
         assert art["visibility"] == "public"
 

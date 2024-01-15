@@ -4,17 +4,18 @@ from polar.article.schemas import Article
 
 
 @pytest.mark.asyncio
-async def test_strip_paywalled_content() -> None:
+async def test_cut_premium_content() -> None:
     assert (
-        Article.strip_paywalled_content(
+        Article.cut_premium_content(
             "before <Paywall>inside</Paywall> after",
+            False,
             False,
         )
         == "before <Paywall></Paywall> after"
     )
 
     assert (
-        Article.strip_paywalled_content(
+        Article.cut_premium_content(
             """
             before
 
@@ -30,6 +31,7 @@ async def test_strip_paywalled_content() -> None:
             after
             """,
             False,
+            False,
         )
         == """
             before
@@ -41,3 +43,5 @@ async def test_strip_paywalled_content() -> None:
             after
             """
     )
+
+    assert Article.cut_premium_content("a" * 1200, True, False) == "a" * 500

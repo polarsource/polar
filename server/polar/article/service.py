@@ -387,28 +387,15 @@ class ArticleService:
     def _get_readable_articles_statement(
         self, auth_subject: Subject
     ) -> Select[tuple[Article, bool]]:
-        # Free articles
-        paid_subscriber_clause = Article.paid_subscribers_only.is_(False)
-        # OR there is a user and they are a paid subscriber
-        if isinstance(auth_subject, User):
-            paid_subscriber_clause |= and_(
-                ArticlesSubscription.user_id == auth_subject.id,
-                ArticlesSubscription.paid_subscriber.is_(True),
-            )
-
-        # Articles are visible if
-        visibility_clause = and_(
-            or_(
-                # They are public and published
-                and_(
-                    Article.published_at <= utc_now(),
-                    Article.visibility == Article.Visibility.public,
-                ),
-                # OR they are hidden
-                Article.visibility == Article.Visibility.hidden,
+        # Articles are readable if
+        visibility_clause = or_(
+            # They are public and published
+            and_(
+                Article.visibility == Article.Visibility.public,
+                Article.published_at <= utc_now(),
             ),
-            # AND the user can access to it
-            paid_subscriber_clause,
+            # OR they are hidden
+            Article.visibility == Article.Visibility.hidden,
         )
 
         # OR if the user is member of the organization

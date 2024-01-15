@@ -96,7 +96,7 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]  # See: https://github
 
 [tool.ruff]
 target-version = "py311"
-extend-select = ["I", "UP"]
+extend-select = ["I", "UP", "T20"]
 ignore = [
     "F841", # remove unused variables
 ]
@@ -104,6 +104,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "migrations/*" = [
     "F401", # remove unused import
+]
+"scripts/*" = [
+    "T20"
 ]
 
 [tool.mypy]

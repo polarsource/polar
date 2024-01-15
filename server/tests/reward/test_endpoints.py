@@ -78,8 +78,6 @@ async def test_search(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    print(response.text)
-
     assert response.status_code == 200
     assert len(response.json()["items"]) == 2
 

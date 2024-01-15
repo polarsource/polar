@@ -1,7 +1,10 @@
+import { useModal } from '@/components/Modal/useModal'
 import { Article, ArticleVisibilityEnum } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { useArticleReceivers } from 'polarkit/hooks'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { PublishShareModal } from './PublishShareModal'
 import { useArticleActions } from './useArticleActions'
 
 interface ArticleSummaryProps {
@@ -9,6 +12,15 @@ interface ArticleSummaryProps {
 }
 
 export const PublishSummary = ({ article }: ArticleSummaryProps) => {
+  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+  const router = useRouter()
+
+  const onHideModal = useCallback(() => {
+    hideModal()
+
+    router.push(`/${article.organization.name}/posts/${article.slug}`)
+  }, [article, router, hideModal])
+
   const { data: articleReceivers, refetch: refetchArticleReceivers } =
     useArticleReceivers(
       article.organization.name,
@@ -33,6 +45,7 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
       byline: undefined,
     },
     isPublished,
+    showModal,
   )
 
   const plural = (count: number) => {
@@ -137,6 +150,11 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
           </Button>
         ))}
       </div>
+      <PublishShareModal
+        isShown={isModalShown}
+        hide={onHideModal}
+        article={article}
+      />
     </ShadowBoxOnMd>
   )
 }

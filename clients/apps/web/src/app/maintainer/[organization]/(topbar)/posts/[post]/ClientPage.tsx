@@ -94,7 +94,7 @@ const ClientPage = () => {
   )
 
   return (
-    <Tabs className="flex flex-col" defaultValue="edit">
+    <Tabs className="flex h-full flex-col" defaultValue="edit">
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
           <span className="dark:text-polar-500 px-4 text-sm text-gray-500">

@@ -36,7 +36,7 @@ export const MaintainerUpsell = () => {
   return (
     <Upsell
       title="Become a creator"
-      description="Enable funding on your issues & reward your contributors"
+      description="Unlock tools to build, engage & convert your own community of free- and paid subscribers."
     >
       <Button className="-z-1" fullWidth onClick={upgrade}>
         Get Started

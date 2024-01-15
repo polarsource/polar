@@ -25,15 +25,11 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: polar-light
-      primary: indigo
-      accent: indigo
       toggle:
           icon: material/weather-sunny
           name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: polar-dark
-      primary: indigo
-      accent: indigo
       toggle:
           icon: material/weather-night
           name: Switch to light mode

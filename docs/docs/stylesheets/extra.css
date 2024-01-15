@@ -1,13 +1,49 @@
 :root {
-  --white: #ffffff;
-  --beige: #FEFDF9;
-  --dark-blue: #303F78;
-  --dark-gray: #26282B;
+  --blue-default: #0062FF;
+  --blue-50: #E5EFFF;
+  --blue-100: #CCE0FF;
+  --blue-200: #99C0FF;
+  --blue-300: #66A1FF;
+  --blue-400: #3381FF;
+  --blue-500: #0062FF;
+  --blue-600: #0054DB;
+  --blue-700: #0047B8;
+  --blue-800: #003994;
+  --blue-900: #002B70;
+  --blue-950: #00245E;
 
-  --black: #121317;
-  --blue: rgb(70, 103, 202);
-  --light-blue: rgb(209, 223, 242);
-  --light-gray: #E5E5E1;
+  --gray-50: #FCFCFD;
+  --gray-75: #F8F9FB;
+  --gray-100: #F3F4F7;
+  --gray-200: #E3E7ED;
+  --gray-300: #D0D7E1;
+  --gray-400: #A2AEC3;
+  --gray-500: #78859B;
+  --gray-600: #5F6C81;
+  --gray-700: #4A5363;
+  --gray-800: #343B46;
+  --gray-900: #1E2229;
+  --gray-950: #13161A;
+
+  --polar-50: #D2D4DF;
+  --polar-100: #C2C4D3;
+  --polar-200: #A1A5BB;
+  --polar-300: #8186A4;
+  --polar-400: #636989;
+  --polar-500: #4C5069;
+  --polar-600: #343748;
+  --polar-700: #1D1E27;
+  --polar-800: #16171F;
+  --polar-900: #101116;
+  --polar-950: #0C0D11;
+
+  --white: #ffffff;
+
+  --light-background: hsl(0 0% 100%);
+  --light-foreground: hsl(230 15% 8%);
+
+  --dark-background: hsl(233 17% 10%);
+  --dark-foreground: hsl(231 16% 46%);
 }
 
   /* Our logo contains our name. No need to repeat it. */
@@ -33,15 +69,23 @@
 }
 
   [data-md-color-scheme="polar-light"] {
-    --md-primary-fg-color: var(--beige);
-    --md-primary-bg-color: var(--blue);
-    --md-default-bg-color: var(--beige);
-    --md-default-fg-color--light: var(--dark-blue);
+    --md-primary-fg-color: var(--light-background);
+    --md-primary-bg-color: var(--blue-default);
+    --md-default-bg-color: var(--light-background);
+    --md-default-fg-color--light: var(--blue-default);
+
+    --md-accent-fg-color: var(--blue-default);
+
+    --md-typeset-color: var(--light-foreground);
+    --md-typeset-a-color: var(--blue-default);
 
     --md-footer-logo-dark: none;
     --md-footer-logo-light: block;
 
-    --md-footer-bg-color: var(--dark-blue);
+    --md-footer-bg-color--dark: var(--gray-75);
+    --md-footer-fg-color: var(--light-foreground);
+    --md-footer-fg-color--lighter: var(--light-foreground);
+    --md-footer-fg-color--light: var(--light-foreground);
   }
 
   [data-md-color-scheme="polar-light"] header.md-header--shadow {
@@ -100,16 +144,15 @@
 }
 
   [data-md-color-scheme="polar-dark"] {
-    --md-primary-fg-color: var(--dark-gray);
+    --md-primary-fg-color: var(--dark-background);
     --md-primary-bg-color: var(--white);
-    --md-default-bg-color: var(--black);
+    --md-default-bg-color: var(--polar-950);
 
-    --md-default-fg-color--light: var(--light-gray);
-    --md-typeset-color: var(--light-gray);
-    --md-typeset-a-color: var(--blue);
+    --md-default-fg-color--light: var(--white);
+    --md-accent-fg-color: var(--blue-default);
 
-    --md-typeset-color: var(--white);
-    --md-default-fg-color: var(--white);
+    --md-typeset-color: var(--polar-200);
+    --md-typeset-a-color: var(--blue-default);
 
     --md-code-bg-color: var(--dark-gray);
     --md-code-fg-color: #8E9091;
@@ -117,18 +160,20 @@
     --md-footer-logo-dark: block;
     --md-footer-logo-light: none;
 
-    --md-admonition-bg-color: var(--dark-gray);
-    --md-admonition-fg-color: var(--light-gray);
+    --md-footer-bg-color--dark: var(--dark-background);
 
-    --md-typeset-table-color: var(--light-gray);
+    --md-admonition-bg-color: var(--dark-gray);
+    --md-admonition-fg-color: var(--polar-50);
+
+    --md-typeset-table-color: var(--polar-50);
   }
 
   [data-md-color-scheme="polar-dark"] .md-button {
-    color: var(--light-gray);
+    color: var(--polar-50);
   }
 
   [data-md-color-scheme="polar-dark"] .md-annotation__index:before {
-    background-color: var(--light-gray);
+    background-color: var(--polar-50);
   }
 
   [data-md-color-scheme="polar-dark"] .md-tooltip--active {

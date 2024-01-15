@@ -10,8 +10,6 @@
 <hr />
 <div align="center">
 
-<span>Public Beta - <a href="https://polar.sh/signup/maintainer">Get started</a></span>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/polarsource">Blog</a>
@@ -48,55 +46,9 @@ Offering you – as a developer –  a platform on top of your GitHub repositori
 - Get funding behind your GitHub issues & split it with contributors (Rewards)
 - Integrate it all on your own docs, sites or services using our API & SDK.
 
-### Subscriptions
+Start building, engaging & converting your own community into free- and paid subscribers.
 
-- **Reach your entire audience with free tier(s).** You can build, grow & reach your entire audience (you own it and can export them at any time). They can subscribe for free with email-only and upgrade to paid later. Substack-style.
-- **Polar handles value-add taxes for paid tier(s).** We're proud to be the merchant of record & manage value-add taxes to enable this for individual developers.
-- **Unique business subscriptions.** Enabling all their team members to gain access to benefits. Offering unparalleled opportunities and value to subscriptions offered via Polar to businesses.
-- **Powerful, built-in, benefits.** Going beyond free text upsells to built-in services you can easily manage via Polar. Delightful for backers to consume.
-
-We're going to invest heavily in automating typical benefits offered within the open source ecosystem. Making it seamless for you to manage & delightful for your backers to use. Some ideas in our pipeline short-term:
-
-- **Discord invites (unique roles per tier)**
-- **Sponsor Logo Automation.** Businesses can setup their logotype & description once and it automatically propagating across your README (PR/SVG) to sites/docs (SDK)
-- **Early access (private repo collaborators)**
-- **Sponsored Posts**
-
-_You can read more about this, posts & newsletters on our blog [here](https://polar.sh/polarsource/posts/polar-creator-platform-for-open-source-developers)._
-
-### Posts & Newsletters
-![image](https://github.com/polarsource/polar/assets/281715/35be6500-21b4-4cb4-956d-17e8616bf161)
-
-**Features**
-- Public posts
-- Premium posts (paid subscribers)
-- Hybrid, i.e public with paywall sections
-- Publish online
-- Send email (newsletters)
-- Schedule posts
-
-**Editor & Content**
-- Markdown editor
-- Preview on web & email
-- Syntax highlighting
-- Youtube embeds
-- Issue embeds with funding promotion
-- Subscribe Now-button embeds
-- Paywall sections to paid subscribers
-- Drop images to embed them
-- _More to come_
-
-### Issue Funding & Contributor Rewards
-![image](https://github.com/polarsource/polar/assets/281715/89ab2fd6-8491-4706-b49f-8c6fcca2d34f)
-
-- Your users can pool funding behind issues/feature requests
-- Beautiful Funding SVG to automatically embed on select issues
-- Set public funding goals
-- Split funding with contributors - PR authors automatically suggested
-- Setup public rewards, i.e a percentage split to promote in advance
-- Fund such rewards yourself, i.e bounties.
-
-However, Issue Funding & Contributor Rewards on Polar is built for maintainers, not bounty hunters. You can read more about this feature and our principles around it [here](https://polar.sh/polarsource/posts/introducing-rewards).
+_Subscribe to us on Polar (eh... meta) [here](https://polar.sh/polarsource/posts/polar-creator-platform-for-open-source-developers). We ship features & improvements fast._
 
 ### Polar API & SDK
 You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api) and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)

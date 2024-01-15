@@ -6,6 +6,7 @@ from polar.account.service import account as account_service
 from polar.config import settings
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.service import issue as issue_service
+from polar.kit.money import get_cents_in_dollar_string
 from polar.models import Issue
 from polar.models.account import Account
 from polar.models.organization import Organization
@@ -16,7 +17,6 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import (
     PartialNotification,
-    get_cents_in_dollar_string,
 )
 from polar.notifications.service import (
     notifications as notification_service,

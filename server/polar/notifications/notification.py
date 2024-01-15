@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from polar.email.renderer import get_email_renderer
+from polar.kit.money import get_cents_in_dollar_string
 from polar.models.pledge import PledgeType
 from polar.models.user import User
 
@@ -328,4 +329,19 @@ class MaintainerAccountReviewedNotification(NotificationBase):
 We are pleased to inform you that the review of your {self.account_type} account has been successfully completed, and we appreciate your patience throughout this process.<br><br>
 
 Your payout account is now fully active, and money transfers are resumed without any restrictions. We apologize for any inconvenience caused during the brief review period and want to assure you that it was conducted to ensure the security of your account.<br><br>
+"""  # noqa: E501
+
+
+class MaintainerNewPaidSubscriptionNotification(NotificationBase):
+    subscriber_name: str
+    tier_name: str
+    tier_price_amount: int
+
+    def subject(self) -> str:
+        return f"{self.subscriber_name} is now subscribing to {self.tier_name} (${get_cents_in_dollar_string(self.tier_price_amount)})"
+
+    def body(self) -> str:
+        return f"""Congratulations!<br><br>
+
+{self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount)}/month.<br><br>
 """  # noqa: E501

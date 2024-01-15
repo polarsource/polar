@@ -6,6 +6,7 @@ from polar.models.notification import Notification
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotification,
     MaintainerAccountUnderReviewNotification,
+    MaintainerNewPaidSubscriptionNotification,
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgedIssueConfirmationPendingNotification,
@@ -72,6 +73,8 @@ async def get(
                 notif.maintainer_account_under_review = payload
             if isinstance(payload, MaintainerAccountReviewedNotification):
                 notif.maintainer_account_reviewed = payload
+            if isinstance(payload, MaintainerNewPaidSubscriptionNotification):
+                notif.maintainer_new_paid_subscription = payload
 
             return notif
         except Exception as e:

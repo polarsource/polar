@@ -33,6 +33,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.issue.service import issue as issue_service
 from polar.kit.hook import Hook
+from polar.kit.money import get_cents_in_dollar_string
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models.account import Account
@@ -52,7 +53,6 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import (
     PartialNotification,
-    get_cents_in_dollar_string,
 )
 from polar.notifications.service import (
     notifications as notification_service,

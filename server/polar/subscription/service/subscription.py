@@ -47,6 +47,9 @@ from polar.models import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
+from polar.notifications.notification import MaintainerNewPaidSubscriptionNotification
+from polar.notifications.service import PartialNotification
+from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.transaction.service.transfer import (
     UnderReviewAccount,

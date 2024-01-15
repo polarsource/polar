@@ -143,7 +143,7 @@ class GithubOrganizationService(OrganizationService):
             user_id=user.id,
         )
         if current_user_org:
-            log.debug("user.create_github_org", found_existing=True)
+            log.info("user.create_github_org", found_existing=True)
             raise ResourceAlreadyExists("User already has a personal org")
 
         oauth = await oauth_account_service.get_by_platform_and_user_id(

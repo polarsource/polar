@@ -41,7 +41,7 @@ export const OrganizationPublicSidebar = ({
   )
 
   return (
-    <div className="flex h-fit w-full shrink-0 flex-col gap-y-10 md:sticky md:top-32 md:w-64">
+    <div className="flex h-fit w-full shrink-0 flex-col gap-y-10  md:sticky md:top-32 md:w-64">
       <>
         <div className="flex flex-col items-start gap-y-6">
           <div className="flex flex-col items-start gap-y-2">

@@ -20,11 +20,13 @@ from polar.models import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
+from tests.fixtures.random_objects import create_organization
 
 from .conftest import (
     add_subscription_benefits,
     create_active_subscription,
     create_subscription_benefit,
+    create_subscription_tier,
 )
 
 
@@ -1351,6 +1353,50 @@ class TestSearchSubscribedSubscriptions:
         )
 
         response = await client.get("/api/v1/subscriptions/subscriptions/subscribed")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert "user" not in item
+
+    @pytest.mark.authenticated
+    async def test_with_multiple_subscriptions(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        # subscribe to multiple orgs
+        for _ in range(3):
+            org1 = await create_organization(session)
+            sub1 = await create_subscription_tier(session, organization=org1)
+            await create_active_subscription(
+                session,
+                subscription_tier=sub1,
+                user=user,
+                started_at=datetime(2023, 1, 1),
+                ended_at=datetime(2023, 6, 15),
+            )
+
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/subscribed",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
 
         assert response.status_code == 200
 

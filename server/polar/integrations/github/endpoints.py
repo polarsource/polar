@@ -120,6 +120,10 @@ async def github_callback(
         raise OAuthCallbackError("Invalid token data", return_to=return_to) from e
 
     state_user_id = state_data.get("user_id")
+    state_user_type = UserSignupType.backer
+    if state_data.get("user_signup_type") == UserSignupType.maintainer:
+        state_user_type = UserSignupType.maintainer
+
     try:
         if (
             auth.user is not None
@@ -130,7 +134,9 @@ async def github_callback(
                 session, user=auth.user, tokens=tokens
             )
         else:
-            user = await github_user.login_or_signup(session, tokens=tokens)
+            user = await github_user.login_or_signup(
+                session, tokens=tokens, signup_type=state_user_type
+            )
     except GithubUserServiceError as e:
         raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
 

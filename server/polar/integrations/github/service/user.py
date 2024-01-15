@@ -3,7 +3,7 @@ from typing import Any
 import structlog
 
 from polar.enums import Platforms, UserSignupType
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, ResourceAlreadyExists
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.extensions.sqlalchemy import sql
@@ -236,6 +236,19 @@ class GithubUserService(UserService):
                 )
                 event_name = "User Signed Up"
                 signup = True
+
+        if signup and signup_type == UserSignupType.maintainer:
+            try:
+                # TODO: Cleaner dependency relationship between org<>user by
+                # moving some to the `user_organization` namespace? Local to
+                # GitHub integration
+                from polar.integrations.github.service.organization import (
+                    github_organization as github_organization_service,
+                )
+
+                await github_organization_service.create_for_user(session, user=user)
+            except ResourceAlreadyExists:
+                ...
 
         org_count = await self._run_sync_github_orgs(
             session,

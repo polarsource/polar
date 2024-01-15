@@ -6,6 +6,7 @@ from polar.kit.schemas import Schema
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotification,
     MaintainerAccountUnderReviewNotification,
+    MaintainerNewPaidSubscriptionNotification,
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgedIssueConfirmationPendingNotification,
@@ -38,6 +39,9 @@ class NotificationType(StrEnum):
         "MaintainerAccountUnderReviewNotification"
     )
     MaintainerAccountReviewedNotification = "MaintainerAccountReviewedNotification"
+    MaintainerNewPaidSubscriptionNotification = (
+        "MaintainerNewPaidSubscriptionNotification"
+    )
 
 
 class NotificationRead(Schema):
@@ -64,6 +68,7 @@ class NotificationRead(Schema):
         None
     )
     maintainer_account_reviewed: MaintainerAccountReviewedNotification | None = None
+    maintainer_new_paid_subscription: MaintainerNewPaidSubscriptionNotification | None = None
 
 
 class NotificationsList(Schema):

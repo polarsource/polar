@@ -15,6 +15,7 @@ from polar.models.user_notification import UserNotification
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotification,
     MaintainerAccountUnderReviewNotification,
+    MaintainerNewPaidSubscriptionNotification,
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgedIssueConfirmationPendingNotification,
@@ -175,6 +176,7 @@ class NotificationsService:
         | TeamAdminMemberPledgedNotification
         | MaintainerAccountUnderReviewNotification
         | MaintainerAccountReviewedNotification
+        | MaintainerNewPaidSubscriptionNotification
     ):
         match n.type:
             case "MaintainerPledgeCreatedNotification":
@@ -205,6 +207,10 @@ class NotificationsService:
                 return parse_obj_as(MaintainerAccountUnderReviewNotification, n.payload)
             case "MaintainerAccountReviewedNotification":
                 return parse_obj_as(MaintainerAccountReviewedNotification, n.payload)
+            case "MaintainerNewPaidSubscriptionNotification":
+                return parse_obj_as(
+                    MaintainerNewPaidSubscriptionNotification, n.payload
+                )
 
         raise ValueError(f"unknown notificaiton type {n.type}")
 
@@ -229,13 +235,6 @@ class NotificationsService:
         )
         await session.execute(stmt)
         await session.commit()
-
-
-def get_cents_in_dollar_string(cents: int) -> str:
-    dollars = cents / 100
-    if cents % 100 == 0:
-        return "%d" % round(dollars)
-    return "%.2f" % round(dollars, 2)
 
 
 notifications = NotificationsService()

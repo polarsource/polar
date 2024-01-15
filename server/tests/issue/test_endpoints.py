@@ -302,8 +302,6 @@ async def test_confirm_solved(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    print(pledges_response.text)
-
     assert pledges_response.status_code == 200
     assert len(pledges_response.json()["items"]) == 1
     assert pledges_response.json()["items"][0]["state"] == "created"
@@ -326,8 +324,6 @@ async def test_confirm_solved(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    print(response.text)
-
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
 
@@ -336,8 +332,6 @@ async def test_confirm_solved(
         f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
-
-    print(pledges_response.text)
 
     assert pledges_response.status_code == 200
     assert len(pledges_response.json()["items"]) == 1

@@ -416,7 +416,6 @@ async def test_summary(
         f"/api/v1/pledges/summary?issue_id={pledge.issue_id}",
     )
 
-    print(response.json())
     assert response.status_code == 200
     assert response.json() == {
         "funding": {

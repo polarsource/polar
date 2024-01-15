@@ -47,7 +47,7 @@ from .schemas import Subscription as SubscriptionSchema
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscribe_session import subscribe_session as subscribe_session_service
-from .service.subscription import SearchSortProperty
+from .service.subscription import AlreadySubscribed, SearchSortProperty
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -639,6 +639,8 @@ async def subscriptions_import(
                 auth_method=None,
             )
             count += 1
+        except AlreadySubscribed:
+            pass
         except Exception as e:
             log.error("subscriptions_import.failed", e=e)
 

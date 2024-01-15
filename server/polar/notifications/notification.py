@@ -336,6 +336,7 @@ class MaintainerNewPaidSubscriptionNotification(NotificationBase):
     subscriber_name: str
     tier_name: str
     tier_price_amount: int
+    tier_organization_name: str
 
     def subject(self) -> str:
         return f"{self.subscriber_name} is now subscribing to {self.tier_name} (${get_cents_in_dollar_string(self.tier_price_amount)})"

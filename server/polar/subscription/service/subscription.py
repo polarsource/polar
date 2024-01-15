@@ -520,6 +520,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise AssociatedSubscriptionTierDoesNotExist(
                 stripe_subscription.id, product_id
             )
+
+        subscription_tier_org = await organization_service.get(
+            session, subscription_tier.managing_organization_id
+        )
+        if not subscription_tier_org:
+            raise AssociatedSubscriptionTierDoesNotExist(
+                stripe_subscription.id, product_id
+            )
+
         subscription: Subscription | None = None
 
         # Upgrade from free subscription tier sets the origin subscription in metadata
@@ -594,6 +603,20 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         session.add(subscription)
         await session.commit()
+
+        # Send notification to managing org
+        await notifications_service.send_to_org_admins(
+            session,
+            org_id=subscription_tier_org.id,
+            notif=PartialNotification(
+                payload=MaintainerNewPaidSubscriptionNotification(
+                    subscriber_name=customer_email,
+                    tier_name=subscription_tier.name,
+                    tier_price_amount=subscription_tier.price_amount,
+                    tier_organization_name=subscription_tier_org.name,
+                )
+            ),
+        )
 
         return subscription
 

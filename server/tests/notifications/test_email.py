@@ -381,6 +381,7 @@ async def test_MaintainerNewPaidSubscriptionNotification(
         subscriber_name="John Doe",
         tier_name="My Paid Tier",
         tier_price_amount=500,
+        tier_organization_name="myorg",
     )
 
     await check_diff(n.render(predictable_user))

@@ -111,6 +111,38 @@ const convert = (schema) => {
 
     return value
   })
+
+  // Hack! Downgrade schema to be compatible with the schema geneated by FastAPI v0.95.2 (pre Pydantic v2)
+  walk(schema, (key, value) => {
+    // Remove consts
+    //
+    // Input: (FastAPI v0.100 and later)
+    //
+    //    "setup_future_usage": {
+    //      "title": "Setup Future Usage",
+    //      "description": "If the payment method should be saved for future usage.",
+    //      "const": "on_session"
+    //  },
+    //
+    //
+    // Output
+    // "setup_future_usage": {
+    //   "description": "If the payment method should be saved for future usage.",
+    //   "enum": ["on_session"],
+    //   "title": "Setup Future Usage",
+    //   "type": "string"
+    // }
+
+    if (value && typeof value === 'object' && 'const' in value) {
+      return {
+        ...value,
+        enum: [value['const']],
+        const: undefined,
+      }
+    }
+
+    return value
+  })
 }
 
 const walk = (object, callback) => {

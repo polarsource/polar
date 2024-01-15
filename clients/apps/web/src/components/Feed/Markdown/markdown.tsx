@@ -3,7 +3,13 @@ import React, { Fragment, JSXElementConstructor } from 'react'
 
 export type RenderArticle = Pick<
   Article,
-  'title' | 'body' | 'published_at' | 'byline' | 'organization' | 'slug'
+  | 'title'
+  | 'body'
+  | 'published_at'
+  | 'byline'
+  | 'organization'
+  | 'slug'
+  | 'is_preview'
 >
 
 // strictCreateElement removes unsupported types and attributes

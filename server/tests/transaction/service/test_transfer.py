@@ -4,6 +4,8 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.account.service import AccountService
+from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Account, IssueReward, Pledge, Subscription, Transaction, User
@@ -93,6 +95,49 @@ class TestCreateTransfer:
             currency="usd",
         )
         payment_transaction = await create_payment_transaction(session)
+
+        # then
+        session.expunge_all()
+
+        with pytest.raises(UnderReviewAccount):
+            await transfer_transaction_service.create_transfer(
+                session,
+                destination_account=account,
+                payment_transaction=payment_transaction,
+                amount=1000,
+            )
+
+    async def test_would_exceed_threshold(
+        self, mocker: MockerFixture, session: AsyncSession, user: User
+    ) -> None:
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        payment_transaction = await create_payment_transaction(session)
+
+        check_review_threshold_mock = mocker.patch.object(
+            account_service,
+            "check_review_threshold",
+            spec=AccountService.check_review_threshold,
+        )
+
+        async def _check_review_threshold_mock(
+            session: AsyncSession, account: Account, new_transfer_amount: int
+        ) -> Account:
+            account.status = Account.Status.UNDER_REVIEW
+            session.add(account)
+            await session.commit()
+            return account
+
+        check_review_threshold_mock.side_effect = _check_review_threshold_mock
 
         # then
         session.expunge_all()

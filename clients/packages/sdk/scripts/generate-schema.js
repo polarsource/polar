@@ -59,6 +59,70 @@ const convert = (schema) => {
     }
   }
   console.log()
+
+  // Hack! Downgrade schema to be compatible with the schema geneated by FastAPI v0.95.2 (pre Pydantic v2)
+  walk(schema, (key, value) => {
+    // Drop anyOf where one of the types if null. The schemas where this happens are already marked as non-required.
+    //
+    //
+    // Input: (FastAPI v0.100 and later)
+    //
+    //    {
+    //      "name": "payment_intent_id",
+    //      "in": "query",±
+    //      "required": false,
+    //      "schema": {
+    //          "anyOf": [
+    //              {
+    //                  "type": "string"
+    //              },
+    //              {
+    //                  "type": "null"
+    //              }
+    //          ],
+    //          "title": "Payment Intent Id"
+    //      }
+    //  },
+    //
+    //
+    // Output
+    //     {
+    //       "name": "payment_intent_id",
+    //       "in": "query",
+    //       "required": false,
+    //       "schema": {
+    //           "title": "Payment Intent Id",
+    //           "type": "string"
+    //       }
+    //   },
+
+    if (value && typeof value === 'object' && 'anyOf' in value) {
+      const anyOf = value['anyOf']
+
+      if (anyOf.length === 2 && anyOf[1].type === 'null') {
+        const res = {
+          ...value,
+          ...anyOf[0],
+          anyOf: undefined,
+        }
+        return res
+      }
+    }
+
+    return value
+  })
+}
+
+const walk = (object, callback) => {
+  for (const [key, val] of Object.entries(object)) {
+    object[key] = callback(key, val)
+
+    if (object[key] && typeof object[key] === 'object') {
+      object[key] = walk(object[key], callback)
+    }
+  }
+
+  return object
 }
 
 const getOpenAPISchema = async (schemaUrl) => {

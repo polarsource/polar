@@ -21,11 +21,11 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
         <div className="flex w-full flex-col gap-y-8 md:w-1/2">
           <LogoIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
           <h1 className="text-4xl !font-light leading-normal">
-            Turn your coding endeavors into a sustainable income
+            Better funding & community tools for developers
           </h1>
           <a
             className="flex flex-row items-center text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-            href="https://blog.polar.sh/polar-v1-0-lets-fix-open-source-funding/"
+            href="https://polar.sh/polarsource/posts/polar-creator-platform-for-open-source-developers"
             target="_blank"
           >
             Learn more about our mission
@@ -37,11 +37,11 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
             <HiveOutlined className="text-blue-500 dark:text-blue-400" />
             <div className="flex flex-col gap-y-3">
               <h3 className="dark:text-polar-50 text-base font-medium text-gray-950">
-                Maintainer
+                Creator
               </h3>
               <p className="dark:text-polar-400 leading-relaxed text-gray-500">
-                Connect your GitHub repositories & embed the Polar funding-badge
-                on your issues
+                Build, leverage & manage your own community using Subscriptions,
+                Benefits & Posts
               </p>
             </div>
             <Link
@@ -59,8 +59,8 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
                 Backer
               </h3>
               <p className="dark:text-polar-400 leading-relaxed text-gray-500">
-                Fund issues in open source projects or receive rewards for your
-                contributions
+                Support your favorite open source projects by subscribing &
+                receive exclusive benefits as a bonus
               </p>
             </div>
             <Link

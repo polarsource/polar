@@ -169,6 +169,18 @@ export interface Article {
      * @type {boolean}
      * @memberof Article
      */
+    paid_subscribers_only?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Article
+     */
+    is_preview: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Article
+     */
     notify_subscribers?: boolean;
     /**
      * 
@@ -188,12 +200,6 @@ export interface Article {
      * @memberof Article
      */
     web_view_count?: number;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Article
-     */
-    paid_subscribers_only?: boolean;
 }
 
 

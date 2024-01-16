@@ -7,6 +7,7 @@ from githubkit import (
     GitHub,
     TokenAuthStrategy,
 )
+from githubkit.exception import RequestFailed
 from pydantic import BaseModel
 
 from polar.enums import Platforms
@@ -292,7 +293,14 @@ class GithubOrganizationService(OrganizationService):
         client: GitHub[AppInstallationAuthStrategy],
         org: Organization,
     ) -> None:
-        github_org = await client.rest.orgs.async_get(org.name)
+        try:
+            github_org = await client.rest.orgs.async_get(org.name)
+        except RequestFailed as e:
+            # org not found
+            if e.response.status_code == 404:
+                return
+            else:
+                raise e
 
         gh = github_org.parsed_data
 
@@ -312,7 +320,14 @@ class GithubOrganizationService(OrganizationService):
         client: GitHub[AppInstallationAuthStrategy] | GitHub[TokenAuthStrategy],
         org: Organization,
     ) -> None:
-        github_org = await client.rest.users.async_get_by_username(org.name)
+        try:
+            github_org = await client.rest.users.async_get_by_username(org.name)
+        except RequestFailed as e:
+            # org not found
+            if e.response.status_code == 404:
+                return
+            else:
+                raise e
 
         gh = github_org.parsed_data
 

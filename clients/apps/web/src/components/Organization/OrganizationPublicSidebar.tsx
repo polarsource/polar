@@ -60,6 +60,11 @@ export const OrganizationPublicSidebar = ({
               @{organization.name}
             </Link>
           </div>
+          {organization.bio && (
+            <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
+              {organization.bio}
+            </p>
+          )}
           {shouldRenderDashboardButton ? (
             <Link
               className="w-full"
@@ -73,11 +78,6 @@ export const OrganizationPublicSidebar = ({
               organization={organization}
             />
           ) : null}
-          {organization.bio && (
-            <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
-              {organization.bio}
-            </p>
-          )}
           <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
             {organization.company && (
               <div className="flex flex-row items-center gap-x-3">

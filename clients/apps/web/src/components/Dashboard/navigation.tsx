@@ -12,6 +12,7 @@ import {
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
+  SpaceDashboardOutlined,
   TuneOutlined,
   ViewDayOutlined,
   WifiTetheringOutlined,
@@ -34,6 +35,20 @@ export type Route = {
 }
 
 export const maintainerRoutes = (org: Organization): Route[] => [
+  ...(isFeatureEnabled('subscriptions')
+    ? [
+        {
+          id: 'overview',
+          title: 'Overview',
+          icon: (
+            <SpaceDashboardOutlined className="h-5 w-5" fontSize="inherit" />
+          ),
+          postIcon: undefined,
+          link: `/maintainer/${org.name}/overview`,
+          if: true,
+        },
+      ]
+    : []),
   ...(isFeatureEnabled('feed')
     ? [
         {
@@ -57,10 +72,6 @@ export const maintainerRoutes = (org: Organization): Route[] => [
           link: `/maintainer/${org.name}/subscriptions`,
           if: true,
           subs: [
-            {
-              title: 'Overview',
-              link: `/maintainer/${org.name}/subscriptions`,
-            },
             {
               title: 'Tiers',
               link: `/maintainer/${org.name}/subscriptions/tiers`,

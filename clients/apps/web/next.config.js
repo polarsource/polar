@@ -222,6 +222,11 @@ const nextConfig = {
         permanent: false,
       },
       {
+        source: '/maintainer/:organization',
+        destination: '/maintainer/:organization/overview',
+        permanent: false,
+      },
+      {
         source: '/maintainer/:organization/promote',
         destination: '/maintainer/:organization/promote/issues',
         permanent: false,
@@ -234,6 +239,11 @@ const nextConfig = {
       {
         source: '/maintainer/:organization/finance',
         destination: '/maintainer/:organization/finance/incoming',
+        permanent: false,
+      },
+      {
+        source: '/maintainer/:organization/subscriptions',
+        destination: '/maintainer/:organization/subscriptions/tiers',
         permanent: false,
       },
 

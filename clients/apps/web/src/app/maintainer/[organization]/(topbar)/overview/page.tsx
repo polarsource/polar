@@ -1,7 +1,7 @@
-import OverviewPage from '@/components/Subscriptions/OverviewPage'
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
+import ClientPage from './ClientPage'
 
 export async function generateMetadata(
   {
@@ -33,17 +33,15 @@ export default async function Page({
   startOfMonth.setUTCHours(0, 0, 0, 0)
   startOfMonth.setUTCDate(1)
 
-  const startOfMonthOneYearAgo = new Date()
-  startOfMonthOneYearAgo.setUTCHours(0, 0, 0, 0)
-  startOfMonthOneYearAgo.setUTCDate(1)
-  startOfMonthOneYearAgo.setUTCFullYear(
-    startOfMonthOneYearAgo.getUTCFullYear() - 1,
-  )
+  const startOfMonthThreeMonthsAgo = new Date()
+  startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
+  startOfMonthThreeMonthsAgo.setUTCDate(1)
+  startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
 
   return (
-    <OverviewPage
+    <ClientPage
       organization={organization}
-      startDate={startOfMonthOneYearAgo}
+      startDate={startOfMonthThreeMonthsAgo}
       endDate={startOfMonth}
       subscriptionTierType={searchParams.type}
       subscriptionTierId={searchParams.subscription_tier_id}

@@ -53,9 +53,12 @@ export const OrganizationPublicSidebar = ({
             <h1 className="dark:text-polar-50 text-2xl font-normal capitalize text-gray-800">
               {organization.pretty_name ?? organization.name}
             </h1>
-            <h3 className="text-md font-normal text-blue-500 dark:text-blue-400">
+            <Link
+              href={`/${organization.name}`}
+              className="text-md font-normal text-blue-500 dark:text-blue-400"
+            >
               @{organization.name}
-            </h3>
+            </Link>
           </div>
           {shouldRenderDashboardButton ? (
             <Link

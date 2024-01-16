@@ -105,7 +105,7 @@ export default function LongformPost({
           transition={revealTransition}
           variants={animationVariants}
         >
-          <h1 className="text-center text-4xl !font-semibold leading-normal md:leading-relaxed">
+          <h1 className="text-center text-4xl !font-semibold leading-normal [text-wrap:balance] md:leading-relaxed">
             {article.title}
           </h1>
         </StaggerReveal.Child>

@@ -89,3 +89,51 @@ async def test_parse_issue_timeline(
 
     assert parsed[3].external_id == "471f58636e9b66228141d5e2c76be24f20f1553f"
     assert parsed[3].reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT
+
+
+@pytest.mark.asyncio
+async def test_parse_issue_timeline_rclone(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    pull_request: PullRequest,
+) -> None:
+    raw = read_cassette("github/references/issue_timeline_rclone.json")
+    payload = parse_obj_as(list[TimelineEventType], raw)
+
+    organization.name = "zegloforko"
+    organization.external_id = 456
+    await organization.save(session)
+
+    repository.name = "polarforkotest"
+    repository.external_id = 617059064
+    await repository.save(session)
+
+    pull_request.number = 1
+    pull_request.external_id = 1234
+    await pull_request.save(session)
+    await session.commit()
+    await session.flush()
+
+    client = github.get_client("fake")
+
+    # then
+    session.expunge_all()
+
+    parsed = [
+        await github_reference.parse_issue_timeline_event(
+            session,
+            organization,
+            repository,
+            issue,
+            event,
+            client=client,
+        )
+        for event in payload
+    ]
+
+    assert len(parsed) == 4
+
+    if len(parsed) < 4:
+        return

@@ -71,7 +71,7 @@ const DashboardSidebar = () => {
     !personalOrg
 
   const subscriptionsToRender =
-    (currentOrg
+    (currentOrg && currentOrg.id !== personalOrg?.id
       ? orgSubscriptions.data?.items?.flatMap((item) => item.subscription_tier)
       : userSubscriptions.data?.items?.flatMap(
           (item) => item.subscription_tier,

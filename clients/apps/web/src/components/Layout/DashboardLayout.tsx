@@ -11,7 +11,11 @@ import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { LogoIcon } from 'polarkit/components/brand'
-import { useListAdminOrganizations } from 'polarkit/hooks'
+import {
+  useListAdminOrganizations,
+  useOrganizationSubscriptions,
+  useUserSubscriptions,
+} from 'polarkit/hooks'
 import { PropsWithChildren, Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import BackerNavigation from '../Dashboard/BackerNavigation'
@@ -19,6 +23,7 @@ import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
+import { MySubscriptionsNavigation } from '../Dashboard/MySubscriptionsNavigation'
 import { GitHubAuthUpsell, MaintainerUpsell } from '../Dashboard/Upsell'
 import Popover from '../Notifications/Popover'
 import ProfileSelection from '../Shared/ProfileSelection'
@@ -29,6 +34,18 @@ const DashboardSidebar = () => {
     useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
+
+  const userSubscriptions = useUserSubscriptions(
+    currentUser?.id,
+    undefined,
+    9999,
+  )
+
+  const orgSubscriptions = useOrganizationSubscriptions(
+    currentOrg?.id,
+    undefined,
+    9999,
+  )
 
   const orgs = listOrganizationQuery?.data?.items
 
@@ -52,6 +69,13 @@ const DashboardSidebar = () => {
     !listOrganizationQuery.isLoading &&
     !currentOrg &&
     !personalOrg
+
+  const subscriptionsToRender =
+    (currentOrg
+      ? orgSubscriptions.data?.items?.flatMap((item) => item.subscription_tier)
+      : userSubscriptions.data?.items?.flatMap(
+          (item) => item.subscription_tier,
+        )) ?? []
 
   return (
     <aside
@@ -89,6 +113,12 @@ const DashboardSidebar = () => {
             <MaintainerUpsell />
           ) : null}
         </div>
+
+        {subscriptionsToRender.length > 0 && (
+          <MySubscriptionsNavigation
+            subscriptionTiers={subscriptionsToRender}
+          />
+        )}
       </div>
       <div className="flex flex-col gap-y-2">
         <MetaNavigation />

@@ -38,7 +38,7 @@ const SubscriptionOrganizationItem = ({
 
   return (
     <Link
-      className="dark:text-polar-500 dark:hover:text-polar-50 group flex items-center justify-between rounded-lg border border-transparent px-4 py-2 text-gray-700 transition-colors hover:text-blue-500"
+      className="dark:text-polar-500 dark:hover:text-polar-50 group flex items-center justify-between rounded-lg border border-transparent px-4 py-1 text-gray-700 transition-colors hover:text-blue-500"
       href={`/${organization?.name}`}
     >
       <div className="flex flex-row items-center gap-x-3">

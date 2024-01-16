@@ -100,6 +100,7 @@ export const AnonymousFreeTierSubscribe = ({
           customer_email: data.customer_email,
         })
 
+        setShowModal(true)
         setEmail(data.customer_email)
         setSuccess(true)
       },

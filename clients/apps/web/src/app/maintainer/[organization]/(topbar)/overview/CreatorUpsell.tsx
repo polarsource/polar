@@ -1,8 +1,9 @@
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
   ArrowForward,
+  AttachMoneyOutlined,
   DiamondOutlined,
   ViewDayOutlined,
 } from '@mui/icons-material'
@@ -23,8 +24,16 @@ import {
 import { useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
+import Icon from '@/components/Icons/Icon'
+import { Status } from '@polar-sh/sdk'
+import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
+import { useAccount } from 'polarkit/hooks'
+
 const useUpsellCards = () => {
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
+  const { currentUser } = useAuth()
+
+  const isPersonal = currentOrg?.name === currentUser?.username
 
   const { data: tiers, isPending: tiersPending } = useSubscriptionTiers(
     currentOrg?.name ?? '',
@@ -37,10 +46,53 @@ const useUpsellCards = () => {
   const { data: benefits, isPending: benefitsPending } =
     useSubscriptionBenefits(currentOrg?.name ?? '')
 
+  const { data: organizationAccount, isPending: organizationAccountPending } =
+    useAccount(currentOrg?.account_id)
+  const { data: personalAccount, isPending: personalAccountPending } =
+    useAccount(currentUser?.account_id)
+
+  const setupLink = isPersonal
+    ? '/finance/account'
+    : `/maintainer/${currentOrg?.name}/finance/account`
+
+  const currentAccount = isPersonal
+    ? organizationAccount || personalAccount
+    : organizationAccount
+  const isAccountActive =
+    currentAccount?.status === Status.UNREVIEWED ||
+    currentAccount?.status === Status.ACTIVE
+  const isAccountUnderReview = currentAccount?.status === Status.UNDER_REVIEW
+
   const upsellCards: UpsellCardProps[] = []
 
   if (tiersPending || articlesPending || benefitsPending) {
     return upsellCards
+  }
+
+  if (!currentAccount) {
+    upsellCards.push({
+      icon: (
+        <AttachMoneyOutlined className="text-blue-500 dark:text-blue-400" />
+      ),
+      title: 'Setup your payout account',
+      description:
+        'Setup your Stripe or Open Collective account to receive payments',
+      href: setupLink,
+    })
+  }
+
+  if (currentAccount && !isAccountActive && !isAccountUnderReview) {
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[currentAccount.account_type]
+    upsellCards.push({
+      icon: <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />,
+      title: `Continue setting up your ${
+        ACCOUNT_TYPE_DISPLAY_NAMES[currentAccount.account_type]
+      } account`,
+      description: `Continue the setup of your ${
+        ACCOUNT_TYPE_DISPLAY_NAMES[currentAccount.account_type]
+      } account to receive transfers`,
+      href: setupLink,
+    })
   }
 
   if (posts?.items?.length === 0) {

@@ -146,7 +146,7 @@ const ProfileSelection = ({
                   <Link
                     href={
                       isFeatureEnabled('feed')
-                        ? `/maintainer/${org.name}`
+                        ? `/maintainer/${org.name}/overview`
                         : `/maintainer/${org.name}/issues`
                     }
                     className="w-full"

@@ -103,7 +103,7 @@ export const AnonymousFreeTierSubscribe = ({
         setEmail(data.customer_email)
         setSuccess(true)
       },
-      [subscriptionTier],
+      [subscriptionTier, createFreeSubscription],
     )
 
   const [emailSignInClicked, setEmailSignInClicked] = useState(false)
@@ -118,9 +118,41 @@ export const AnonymousFreeTierSubscribe = ({
   return (
     <>
       <div className="flex w-full">
-        <Button className="grow" onClick={() => setShowModal(true)}>
-          Subscribe
-        </Button>
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubscribeFree)}
+            className="w-full max-w-lg"
+          >
+            <FormField
+              control={control}
+              name="customer_email"
+              rules={{ required: 'Your email is required' }}
+              render={({ field }) => {
+                return (
+                  <div className="flex w-full flex-col gap-2">
+                    <div className="flex w-full flex-col items-center gap-2 space-x-1 md:flex-row">
+                      <Input
+                        {...field}
+                        className="h-fit rounded-md px-2.5 py-1.5"
+                        type="email"
+                        placeholder="Email"
+                      />
+                      <Button
+                        className="h-full"
+                        size="sm"
+                        type="submit"
+                        loading={createFreeSubscription.isPending}
+                      >
+                        Subscribe
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </div>
+                )
+              }}
+            />
+          </form>
+        </Form>
       </div>
       <Modal
         className="overflow-visible"
@@ -128,45 +160,6 @@ export const AnonymousFreeTierSubscribe = ({
         hide={() => setShowModal(false)}
         modalContent={
           <div className="flex min-h-[240px] w-full flex-col items-center justify-center gap-y-6 px-16 py-10">
-            {!success && (
-              <>
-                <div className="flex flex-col items-center text-center">
-                  <h2 className="text-lg">Subscribe to {organization.name}</h2>
-                </div>
-                <Form {...form}>
-                  <form
-                    onSubmit={handleSubmit(onSubscribeFree)}
-                    className="w-full max-w-lg"
-                  >
-                    <FormField
-                      control={control}
-                      name="customer_email"
-                      rules={{ required: 'Your email is required' }}
-                      render={({ field }) => {
-                        return (
-                          <div className="flex w-full flex-col gap-2">
-                            <div className="flex w-full flex-col items-center gap-4 space-x-2 md:flex-row">
-                              <Input
-                                {...field}
-                                type="email"
-                                placeholder="Type your email..."
-                              />
-                              <Button
-                                type="submit"
-                                loading={createFreeSubscription.isPending}
-                              >
-                                Subscribe
-                              </Button>
-                            </div>
-                            <FormMessage />
-                          </div>
-                        )
-                      }}
-                    />
-                  </form>
-                </Form>
-              </>
-            )}
             {success && (
               <>
                 <SubscriptionTierCelebration type={subscriptionTier.type} />

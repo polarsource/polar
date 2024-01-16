@@ -8,30 +8,34 @@ import {
   PullRequest,
   RewardsSummary,
 } from '@polar-sh/sdk'
-import { generateMarkdownTitle } from 'polarkit/components/Issue'
+import Link from 'next/link'
+import {
+  DiffStat,
+  Pledgers,
+  generateMarkdownTitle,
+} from 'polarkit/components/Issue'
+import {
+  GitMergeIcon,
+  GitPullRequestClosedIcon,
+  GitPullRequestIcon,
+} from 'polarkit/components/icons'
 import {
   Alert,
+  Avatar,
   IssueBodyRenderer,
   PolarTimeAgo,
 } from 'polarkit/components/ui/atoms'
+import { githubIssueUrl } from 'polarkit/github'
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Pledgers } from '.'
-import { githubIssueUrl } from '../../github'
-import { DiffStat } from '../Issue/IssueReference'
-import GitMergeIcon from '../icons/GitMergeIcon'
-import GitPullRequestClosedIcon from '../icons/GitPullRequestClosedIcon'
-import GitPullRequestIcon from '../icons/GitPullRequestIcon'
-import Avatar from '../ui/atoms/Avatar'
 
 const IssueCard = ({
   issue,
   htmlBody,
   pledgers,
   currentPledgeAmount,
-  className,
   rewards,
   pullRequests,
 }: {
@@ -39,7 +43,6 @@ const IssueCard = ({
   htmlBody?: string
   pledgers: Pledger[]
   currentPledgeAmount: number
-  className?: string
   rewards?: RewardsSummary
   pullRequests?: PullRequest[]
 }) => {
@@ -138,19 +141,25 @@ const IssueCard = ({
         {/* Name/description */}
         <div className="col-span-1 flex flex-row items-start gap-4 sm:col-span-2">
           <div className="min-w-max">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={organization.avatar_url}
-              alt={organization.name}
-              className="h-8 w-8 rounded-full"
-            />
+            <Link href={`/${organization.name}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={organization.avatar_url}
+                alt={organization.name}
+                className="h-8 w-8 rounded-full"
+              />
+            </Link>
           </div>
           <div className="dark:text-polar-500 flex flex-col justify-center text-gray-500">
             <div className="flex flex-row items-center">
-              {organization.name}&nbsp;/&nbsp;
-              <span className="dark:text-polar-200 font-medium text-gray-600">
+              <Link href={`/${organization.name}`}>{organization.name}</Link>
+              &nbsp;/&nbsp;
+              <Link
+                className="dark:text-polar-200 font-medium text-gray-600"
+                href={`/${organization.name}/${repository.name}`}
+              >
                 {repository.name}
-              </span>
+              </Link>
             </div>
             <div className="mt-2 text-sm">
               {repository.description && <div>{repository.description}</div>}
@@ -311,7 +320,11 @@ const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
   <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-white py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
       {rewards.receivers.map((r) => (
-        <Avatar avatar_url={r.avatar_url} name={r.name} />
+        <Avatar
+          avatar_url={r.avatar_url}
+          name={r.name}
+          key={r.name + (r.avatar_url ?? '')}
+        />
       ))}
     </div>
     <span className="flex-shrink-0 whitespace-nowrap text-blue-500">
@@ -324,7 +337,7 @@ const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
   <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
       {assignees.map((a) => (
-        <Avatar avatar_url={a.avatar_url} name={a.login} />
+        <Avatar avatar_url={a.avatar_url} name={a.login} key={a.login} />
       ))}
     </div>
     <span className="flex-shrink-0 whitespace-nowrap text-sm text-blue-500">

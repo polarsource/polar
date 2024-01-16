@@ -41,7 +41,6 @@
     "./components/ui/separator": "./src/components/ui/separator.tsx",
     "./components/ui/table": "./src/components/ui/table.tsx",
     "./components/ui/accordion": "./src/components/ui/accordion.tsx",
-    "./components/pledge": "./src/components/pledge/index.ts",
     "./components/brand": "./src/components/brand/index.ts",
     "./components/badge": "./src/components/badge/index.ts",
     "./components/ui/Cards": "./src/components/ui/Cards/index.ts",

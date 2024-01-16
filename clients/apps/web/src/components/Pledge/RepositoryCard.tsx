@@ -1,7 +1,7 @@
 import { Organization, type Repository } from '@polar-sh/sdk'
+import { GrayCard } from 'polarkit/components/ui/Cards'
+import { githubRepoUrl } from 'polarkit/github'
 import { formatStarsNumber } from 'polarkit/utils'
-import { githubRepoUrl } from '../../github'
-import { GrayCard } from '../ui/Cards'
 
 const prettyURL = (url: string): string => {
   if (url.indexOf('https://') === 0) {

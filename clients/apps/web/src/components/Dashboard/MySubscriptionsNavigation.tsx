@@ -2,6 +2,7 @@ import { SubscriptionTierSubscriber } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { useOrganization } from 'polarkit/hooks'
+import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 
 export interface MySubscriptionsNavigationProps {
   subscriptionTiers: SubscriptionTierSubscriber[]
@@ -19,10 +20,7 @@ export const MySubscriptionsNavigation = ({
       </div>
       <div className="flex flex-col px-4 py-3">
         {subscriptionTiers.map((tier) => (
-          <SubscriptionOrganizationItem
-            key={tier.id}
-            organizationId={tier.organization_id}
-          />
+          <SubscriptionOrganizationItem key={tier.id} tier={tier} />
         ))}
       </div>
     </div>
@@ -30,11 +28,11 @@ export const MySubscriptionsNavigation = ({
 }
 
 const SubscriptionOrganizationItem = ({
-  organizationId,
+  tier,
 }: {
-  organizationId?: string
+  tier: SubscriptionTierSubscriber
 }) => {
-  const { data: organization } = useOrganization(organizationId ?? '')
+  const { data: organization } = useOrganization(tier.organization_id ?? '')
 
   return (
     <Link
@@ -43,12 +41,13 @@ const SubscriptionOrganizationItem = ({
     >
       <div className="flex flex-row items-center gap-x-3">
         <Avatar
-          className="h-8 w-8 border-transparent transition-colors duration-500 group-hover:border-blue-200"
+          className="h-8 w-8 border-transparent transition-colors duration-300 group-hover:border-blue-200 dark:group-hover:border-blue-400"
           avatar_url={organization?.avatar_url}
           name={organization?.name ?? ''}
         />
         <span className="w-full truncate text-sm">{organization?.name}</span>
       </div>
+      <SubscriptionGroupIcon type={tier.type} />
     </Link>
   )
 }

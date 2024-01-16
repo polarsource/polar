@@ -115,9 +115,12 @@ const ClientPage = ({
                   <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
                     <ViewDayOutlined fontSize="large" />
                     <div className="flex flex-col items-center gap-y-2">
-                      <h3 className="p-2 text-lg font-medium">No Posts yet</h3>
+                      <h3 className="p-2 text-lg font-medium">
+                        {organization.name} is typing...
+                      </h3>
                       <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
-                        {organization.name} has not posted anything yet
+                        Subscribe to {organization.name} to get future posts
+                        fresh out of the press.
                       </p>
                     </div>
                   </div>

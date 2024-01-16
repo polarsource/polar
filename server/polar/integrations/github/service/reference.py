@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any, Union
 from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
 from githubkit import GitHub
+from githubkit.compat import GitHubModel
 from githubkit.exception import RequestFailed
-from pydantic import ValidationError, parse_obj_as
+from pydantic import Discriminator, Field, Tag, ValidationError, parse_obj_as
 
 import polar.integrations.github.client as github
 from polar.exceptions import IntegrityError
@@ -34,30 +35,37 @@ from polar.worker import enqueue_job
 log: Logger = structlog.get_logger()
 
 
-TimelineEventType = (
-    github.models.LabeledIssueEvent
-    | github.models.UnlabeledIssueEvent
-    | github.models.MilestonedIssueEvent
-    | github.models.DemilestonedIssueEvent
-    | github.models.RenamedIssueEvent
-    | github.models.ReviewRequestedIssueEvent
-    | github.models.ReviewRequestRemovedIssueEvent
-    | github.models.ReviewDismissedIssueEvent
-    | github.models.LockedIssueEvent
-    | github.models.AddedToProjectIssueEvent
-    | github.models.MovedColumnInProjectIssueEvent
-    | github.models.RemovedFromProjectIssueEvent
-    | github.models.ConvertedNoteToIssueIssueEvent
-    | github.models.TimelineCommentEvent
-    | github.models.TimelineCrossReferencedEvent
-    | github.models.TimelineCommittedEvent
-    | github.models.TimelineReviewedEvent
-    | github.models.TimelineLineCommentedEvent
-    | github.models.TimelineCommitCommentedEvent
-    | github.models.TimelineAssignedIssueEvent
-    | github.models.TimelineUnassignedIssueEvent
-    | github.models.StateChangeIssueEvent
-)
+class FallbackCommitEvent(GitHubModel):
+    actor: github.models.SimpleUser = Field()
+    event: str = Field()
+    commit_id: str | None = Field()
+    commit_url: str | None = Field()
+
+
+class FallbackAny(GitHubModel):
+    pass
+
+
+def supported_or_fallback(v: str) -> str:
+    if v in ["cross-referenced", "referenced"]:
+        return v
+    return "fallback"
+
+
+def get_discriminator_value(v: Any) -> str:
+    if isinstance(v, dict):
+        return supported_or_fallback(v.get("event", "fallback"))
+    return supported_or_fallback(getattr(v, "event", "fallback"))
+
+
+TimelineEventType = Annotated[
+    Union[  # noqa: UP007
+        Annotated[github.models.TimelineCrossReferencedEvent, Tag("cross-referenced")],
+        Annotated[FallbackCommitEvent, Tag("referenced")],
+        Annotated[FallbackAny, Tag("fallback")],
+    ],
+    Discriminator(get_discriminator_value),
+]
 
 
 class GitHubIssueReferencesService:
@@ -287,10 +295,7 @@ class GitHubIssueReferencesService:
             )
 
         # For some reason, this events maps to the StateChangeIssueEvent type
-        if (
-            isinstance(event, github.models.StateChangeIssueEvent)
-            and event.event == "referenced"
-        ):
+        if (isinstance(event, FallbackCommitEvent)) and event.event == "referenced":
             return await self.parse_issue_commit_reference(event, issue)
 
         return None
@@ -359,7 +364,7 @@ class GitHubIssueReferencesService:
 
     async def parse_issue_commit_reference(
         self,
-        event: github.models.StateChangeIssueEvent,
+        event: FallbackCommitEvent,
         issue: Issue,
     ) -> IssueReference | None:
         if not event.commit_url or not event.commit_id:

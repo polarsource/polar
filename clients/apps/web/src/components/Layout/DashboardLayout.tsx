@@ -106,13 +106,15 @@ const DashboardSidebar = () => {
 
         {shouldRenderDashboardNavigation && <DashboardNavigation />}
 
-        <div className="flex flex-col pt-4">
-          {shouldShowGitHubAuthUpsell ? (
+        {shouldShowGitHubAuthUpsell ? (
+          <div className="flex flex-col pt-4">
             <GitHubAuthUpsell />
-          ) : shouldShowMaintainerUpsell ? (
+          </div>
+        ) : shouldShowMaintainerUpsell ? (
+          <div className="flex flex-col pt-4">
             <MaintainerUpsell />
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {subscriptionsToRender.length > 0 && (
           <MySubscriptionsNavigation

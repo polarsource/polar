@@ -31,7 +31,7 @@ export const RepositoriesOverivew = ({
         <>
           <h2 className="text-lg">Repositories</h2>
           <div className="mt-6 flex w-full flex-col gap-y-8">
-            <div className="relative grid w-full grid-cols-2 justify-stretch gap-6">
+            <div className="relative flex w-full flex-col justify-stretch gap-6 md:grid md:grid-cols-2">
               {repositoriesAsCards.map((repository) => (
                 <Link
                   href={`/${organization.name}/${repository.name}`}

@@ -60,7 +60,7 @@ export const OrganizationPublicSidebar = ({
           {shouldRenderDashboardButton ? (
             <Link
               className="w-full"
-              href={`/maintainer/${organization.name}/issues`}
+              href={`/maintainer/${organization.name}/overview`}
             >
               <Button fullWidth>View Dashboard</Button>
             </Link>

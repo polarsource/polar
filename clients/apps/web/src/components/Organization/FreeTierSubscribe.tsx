@@ -130,10 +130,10 @@ export const AnonymousFreeTierSubscribe = ({
               render={({ field }) => {
                 return (
                   <div className="flex w-full flex-col gap-2">
-                    <div className="flex w-full flex-col items-center gap-2 space-x-1 md:flex-row">
+                    <div className="flex w-full flex-col items-center gap-x-1 space-x-1 md:flex-row">
                       <Input
                         {...field}
-                        className="h-fit rounded-md px-2.5 py-1.5"
+                        className="h-fit rounded-md px-2.5 py-[5px]"
                         type="email"
                         placeholder="Email"
                       />

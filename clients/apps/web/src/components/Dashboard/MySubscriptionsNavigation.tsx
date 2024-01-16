@@ -47,7 +47,10 @@ const SubscriptionOrganizationItem = ({
         />
         <span className="w-full truncate text-sm">{organization?.name}</span>
       </div>
-      <SubscriptionGroupIcon type={tier.type} />
+      <SubscriptionGroupIcon
+        className="opacity-0 group-hover:opacity-100"
+        type={tier.type}
+      />
     </Link>
   )
 }

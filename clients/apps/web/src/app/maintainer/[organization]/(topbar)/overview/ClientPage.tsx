@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import React from 'react'
+import { CreatorUpsell } from './CreatorUpsell'
 import SubscriptionsOverview from './SubscriptionsOverview'
 
 interface OverviewPageProps {
@@ -21,7 +22,8 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
   subscriptionTierType,
 }) => {
   return (
-    <DashboardBody>
+    <DashboardBody className="flex flex-col gap-y-24 pb-24">
+      <CreatorUpsell />
       <SubscriptionsOverview
         organization={organization}
         startDate={startDate}

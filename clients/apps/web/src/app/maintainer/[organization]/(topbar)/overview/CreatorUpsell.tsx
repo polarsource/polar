@@ -26,15 +26,22 @@ import { useHoverDirty } from 'react-use'
 const useUpsellCards = () => {
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
 
-  const { data: tiers } = useSubscriptionTiers(currentOrg?.name ?? '')
-  const { data: posts } = useOrganizationArticles({
+  const { data: tiers, isPending: tiersPending } = useSubscriptionTiers(
+    currentOrg?.name ?? '',
+  )
+  const { data: posts, isPending: articlesPending } = useOrganizationArticles({
     orgName: currentOrg?.name,
     platform: Platforms.GITHUB,
     showUnpublished: false,
   })
-  const { data: benefits } = useSubscriptionBenefits(currentOrg?.name ?? '')
+  const { data: benefits, isPending: benefitsPending } =
+    useSubscriptionBenefits(currentOrg?.name ?? '')
 
-  const upsellCards = []
+  const upsellCards: UpsellCardProps[] = []
+
+  if (tiersPending || articlesPending || benefitsPending) {
+    return upsellCards
+  }
 
   if (posts?.items?.length === 0) {
     upsellCards.push({

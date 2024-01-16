@@ -164,8 +164,8 @@ export const AnonymousFreeTierSubscribe = ({
             {success && (
               <>
                 <SubscriptionTierCelebration type={subscriptionTier.type} />
-                <p className="text-muted-foreground">Thank you!</p>
-                <h2 className="text-lg">
+                <p className="text-muted-foreground text-center">Thank you!</p>
+                <h2 className="text-center text-lg">
                   You&apos;re now subscribed to {organization.name}
                 </h2>
                 <Button

@@ -16,18 +16,22 @@ const postViewKey = 'posts_viewed'
 export default function Page({ article }: { article: Article }) {
   useEffect(() => {
     // Track view
-    const views = JSON.parse(localStorage.getItem(postViewKey) ?? '{}')
+    try {
+      const views = JSON.parse(localStorage.getItem(postViewKey) ?? '{}')
 
-    // already viewed by user, skip tracking
-    if (views[article.id]) {
-      return
+      // already viewed by user, skip tracking
+      if (views[article.id]) {
+        return
+      }
+
+      views[article.id] = '1'
+      localStorage.setItem(postViewKey, JSON.stringify(views))
+
+      // record page view
+      api.articles.viewed({ id: article.id })
+    } catch (e) {
+      console.error(e)
     }
-
-    views[article.id] = '1'
-    localStorage.setItem(postViewKey, JSON.stringify(views))
-
-    // record page view
-    api.articles.viewed({ id: article.id })
   }, [article])
 
   const { currentUser } = useAuth()

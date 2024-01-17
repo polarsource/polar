@@ -14,7 +14,6 @@ from sqlalchemy import asc, or_
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
-from polar.integrations.github import client as github
 from polar.integrations.loops.service import loops as loops_service
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import IssueCreate, IssueUpdate
@@ -34,6 +33,8 @@ from polar.repository.hooks import (
     repository_issues_sync_completed,
 )
 
+from .. import client as github
+from .. import types
 from ..badge import GithubBadge
 from .organization import github_organization
 from .paginated import ErrorCount, SyncedCount, github_paginated_service
@@ -52,12 +53,12 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        data: github.models.WebhookIssuesOpenedPropIssue
-        | github.models.WebhookIssuesEditedPropIssue
-        | github.models.WebhookIssuesClosedPropIssue
-        | github.models.WebhookIssuesReopenedPropIssue
-        | github.models.WebhookIssuesDeletedPropIssue
-        | github.models.Issue,
+        data: types.WebhookIssuesOpenedPropIssue
+        | types.WebhookIssuesEditedPropIssue
+        | types.WebhookIssuesClosedPropIssue
+        | types.WebhookIssuesReopenedPropIssue
+        | types.WebhookIssuesDeletedPropIssue
+        | types.Issue,
         organization: Organization,
         repository: Repository,
         autocommit: bool = True,
@@ -76,34 +77,34 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         *,
         data: list[
-            github.models.WebhookIssuesOpenedPropIssue
-            | github.models.WebhookIssuesEditedPropIssue
-            | github.models.WebhookIssuesClosedPropIssue
-            | github.models.WebhookIssuesReopenedPropIssue
-            | github.models.WebhookIssuesDeletedPropIssue
-            | github.models.Issue,
+            types.WebhookIssuesOpenedPropIssue
+            | types.WebhookIssuesEditedPropIssue
+            | types.WebhookIssuesClosedPropIssue
+            | types.WebhookIssuesReopenedPropIssue
+            | types.WebhookIssuesDeletedPropIssue
+            | types.Issue,
         ],
         organization: Organization,
         repository: Repository,
         autocommit: bool = True,
     ) -> Sequence[Issue]:
         def parse(
-            issue: github.models.WebhookIssuesOpenedPropIssue
-            | github.models.WebhookIssuesEditedPropIssue
-            | github.models.WebhookIssuesClosedPropIssue
-            | github.models.WebhookIssuesReopenedPropIssue
-            | github.models.WebhookIssuesDeletedPropIssue
-            | github.models.Issue,
+            issue: types.WebhookIssuesOpenedPropIssue
+            | types.WebhookIssuesEditedPropIssue
+            | types.WebhookIssuesClosedPropIssue
+            | types.WebhookIssuesReopenedPropIssue
+            | types.WebhookIssuesDeletedPropIssue
+            | types.Issue,
         ) -> IssueCreate:
             return IssueCreate.from_github(issue, organization, repository)
 
         def filter(
-            issue: github.models.WebhookIssuesOpenedPropIssue
-            | github.models.WebhookIssuesEditedPropIssue
-            | github.models.WebhookIssuesClosedPropIssue
-            | github.models.WebhookIssuesReopenedPropIssue
-            | github.models.WebhookIssuesDeletedPropIssue
-            | github.models.Issue,
+            issue: types.WebhookIssuesOpenedPropIssue
+            | types.WebhookIssuesEditedPropIssue
+            | types.WebhookIssuesClosedPropIssue
+            | types.WebhookIssuesReopenedPropIssue
+            | types.WebhookIssuesDeletedPropIssue
+            | types.Issue,
         ) -> bool:
             if issue.pull_request:
                 log.error(
@@ -495,9 +496,9 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         issue: Issue,
         repository: Repository,
-        github_labels: list[github.models.Label]
-        | list[github.models.WebhookIssuesLabeledPropIssuePropLabelsItems]
-        | list[github.models.WebhookIssuesUnlabeledPropIssuePropLabelsItems],
+        github_labels: list[types.Label]
+        | list[types.WebhookIssuesLabeledPropIssuePropLabelsItems]
+        | list[types.WebhookIssuesUnlabeledPropIssuePropLabelsItems],
     ) -> Issue:
         labels = github.jsonify(github_labels)
         issue.labels = labels
@@ -656,9 +657,9 @@ class GithubIssueService(IssueService):
         # We get PRs in the issues list too, but super slim versions of them.
         # Since we sync PRs separately, we therefore skip them here.
         def skip_if_pr(
-            data: github.models.Issue | github.models.PullRequestSimple,
+            data: types.Issue | types.PullRequestSimple,
         ) -> bool:
-            if isinstance(data, github.models.PullRequestSimple):
+            if isinstance(data, types.PullRequestSimple):
                 return True
             if data.pull_request:
                 return True
@@ -672,7 +673,7 @@ class GithubIssueService(IssueService):
 
         client = github.get_app_installation_client(installation_id)
 
-        paginator: Paginator[github.models.Issue] = client.paginate(
+        paginator: Paginator[types.Issue] = client.paginate(
             client.rest.issues.async_list_for_repo,
             owner=organization.name,
             repo=repository.name,
@@ -755,8 +756,7 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         organization: Organization,
         repository: Repository,
-        data: github.models.Issue
-        | github.models.WebhookIssuesTransferredPropChangesPropNewIssue,
+        data: types.Issue | types.WebhookIssuesTransferredPropChangesPropNewIssue,
     ) -> Issue:
         issue = await self.get_by_external_id(session, data.id)
 
@@ -784,7 +784,7 @@ class GithubIssueService(IssueService):
 
 
 async def recommended_in_repo(
-    sessionmaker: AsyncSessionMaker, r: github.models.Repository, client: GitHub[Any]
+    sessionmaker: AsyncSessionMaker, r: types.Repository, client: GitHub[Any]
 ) -> list[Issue]:
     # this job runs in it's own thread/job, making sure to create our own db session
     async with sessionmaker() as session:

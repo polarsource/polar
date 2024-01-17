@@ -33,6 +33,7 @@ from polar.user_organization.service import (
 from polar.worker import enqueue_job
 
 from .. import client as github
+from .. import types
 from .repository import github_repository
 
 log: Logger = structlog.get_logger(service="GithubOrganizationService")
@@ -85,7 +86,7 @@ class GithubOrganizationService(OrganizationService):
                     installation_id=installation.id,
                 )
                 continue
-            elif not isinstance(account, github.models.SimpleUser):
+            elif not isinstance(account, types.SimpleUser):
                 log.warning(
                     "unsupported installation with an Enterprise account",
                     installation=installation.id,
@@ -247,9 +248,9 @@ class GithubOrganizationService(OrganizationService):
     async def create_or_update_from_github(
         self,
         session: AsyncSession,
-        data: github.models.SimpleUser,
+        data: types.SimpleUser,
         *,
-        installation: github.models.Installation | None = None,
+        installation: types.Installation | None = None,
     ) -> Organization:
         organization = await self.get_by_external_id(session, data.id)
 

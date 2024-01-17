@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 
 from polar.enums import Platforms
 from polar.integrations.github import client as github
-from polar.integrations.github import service
+from polar.integrations.github import service, types
 from polar.integrations.github.tasks import webhook as webhook_tasks
 from polar.kit import utils
 from polar.kit.extensions.sqlalchemy import sql
@@ -51,11 +51,11 @@ async def create_org(
 ) -> Organization:
     hook = github_webhook.create("installation.created")
     event = github.webhooks.parse_obj("installation", hook.json)
-    if not isinstance(event, github.models.WebhookInstallationCreated):
+    if not isinstance(event, types.WebhookInstallationCreated):
         raise Exception("unexpected type")
 
     account = event.installation.account
-    assert isinstance(account, github.models.SimpleUser)
+    assert isinstance(account, types.SimpleUser)
     is_personal = account.type.lower() == "user"
     create_schema = OrganizationCreate(
         platform=Platforms.github,
@@ -93,7 +93,7 @@ async def create_repositories(
     hook = github_webhook.create("installation_repositories.added")
 
     parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
-    if not isinstance(parsed, github.models.WebhookInstallationRepositoriesAdded):
+    if not isinstance(parsed, types.WebhookInstallationRepositoriesAdded):
         raise Exception("unexpected webhook payload")
 
     for repo in parsed.repositories_added:
@@ -251,12 +251,12 @@ async def test_webhook_installation_delete(
 
 
 def hook_as_obj(
-    hook: github.models.WebhookInstallationRepositoriesAdded,
-) -> github.models.InstallationRepositoriesGetResponse200:
-    return github.models.InstallationRepositoriesGetResponse200(
+    hook: types.WebhookInstallationRepositoriesAdded,
+) -> types.InstallationRepositoriesGetResponse200:
+    return types.InstallationRepositoriesGetResponse200(
         total_count=len(hook.repositories_added),
         repositories=[
-            github.models.Repository(
+            types.Repository(
                 id=repo.id,
                 node_id=repo.node_id,
                 name=repo.name,
@@ -266,14 +266,14 @@ def hook_as_obj(
                 license_=None,
                 organization=None,
                 forks=0,
-                permissions=github.models.RepositoryPropPermissions(
+                permissions=types.RepositoryPropPermissions(
                     admin=True,
                     pull=True,
                     push=True,
                     maintain=True,
                     triage=True,
                 ),
-                owner=github.models.SimpleUser(
+                owner=types.SimpleUser(
                     login="xx",
                     id=123,
                     node_id="what",
@@ -404,7 +404,7 @@ async def test_webhook_repositories_added(
 
     # def lister(*args: Any, **kwargs: Any) -> httpx.Response:
     parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
-    if not isinstance(parsed, github.models.WebhookInstallationRepositoriesAdded):
+    if not isinstance(parsed, types.WebhookInstallationRepositoriesAdded):
         raise Exception("wat")
 
     # fake it
@@ -463,7 +463,7 @@ async def test_webhook_repositories_removed(
             httpx.Response(
                 200,
                 request=httpx.Request("POST", ""),
-                content=github.models.InstallationRepositoriesGetResponse200(
+                content=types.InstallationRepositoriesGetResponse200(
                     total_count=0, repositories=[], repository_selection="x"
                 ).json(),
             ),

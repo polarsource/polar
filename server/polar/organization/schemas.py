@@ -12,7 +12,7 @@ from polar.kit.schemas import Schema
 from polar.models.organization import Organization as OrganizationModel
 
 if TYPE_CHECKING:
-    from polar.integrations.github.client import models
+    from polar.integrations.github import types
 
 
 # Public API
@@ -155,9 +155,9 @@ class OrganizationCreate(Schema):
     @classmethod
     def from_github(
         cls,
-        user: "models.SimpleUser",
+        user: "types.SimpleUser",
         *,
-        installation: "models.Installation | None" = None,
+        installation: "types.Installation | None" = None,
     ) -> Self:
         if installation is None:
             return cls(

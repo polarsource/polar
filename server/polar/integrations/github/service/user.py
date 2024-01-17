@@ -15,12 +15,13 @@ from polar.user.oauth_service import oauth_account_service
 from polar.user.service import UserService
 
 from .. import client as github
+from .. import types
 from ..schemas import OAuthAccessToken
 
 log = structlog.get_logger()
 
 
-GithubUser = github.models.PrivateUser | github.models.PublicUser
+GithubUser = types.PrivateUser | types.PublicUser
 
 GithubEmail = tuple[str, bool]
 
@@ -349,7 +350,7 @@ class GithubUserService(UserService):
             if not i.account:
                 continue
 
-            if isinstance(i.account, github.models.Enterprise):
+            if isinstance(i.account, types.Enterprise):
                 log.error("sync_github_orgs.github_enterprise_not_supported")
                 continue
 
@@ -445,13 +446,13 @@ class GithubUserService(UserService):
 
     def map_installations_func(
         self,
-        r: github.Response[github.models.UserInstallationsGetResponse200],
-    ) -> list[github.models.Installation]:
+        r: github.Response[types.UserInstallationsGetResponse200],
+    ) -> list[types.Installation]:
         return r.parsed_data.installations
 
     async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User
-    ) -> list[github.models.Installation]:
+    ) -> list[types.Installation]:
         """
         Load user accessible installations from GitHub API
         Finds the union between app installations and the users user-to-server token.

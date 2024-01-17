@@ -247,13 +247,6 @@ class SubscriptionTier(SubscriptionTierBase):
 class SubscriptionTierSubscriber(SubscriptionTierBase):
     benefits: list[SubscriptionBenefitSubscriber]
 
-    # @field_validator("benefits", pre=True)
-    # def benefits_association_proxy_fix(
-    #     cls, v: Iterable[SubscriptionBenefitSubscriber]
-    # ) -> list[SubscriptionBenefitSubscriber]:
-    #     # FIXME: Not needed in Pydantic V2
-    #     return list(v)
-
 
 # SubscribeSession
 

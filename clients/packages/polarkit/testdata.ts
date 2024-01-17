@@ -4,13 +4,16 @@ import {
   IssueFunding,
   IssueStateEnum,
   MaintainerPledgeConfirmationPendingNotification,
+  MaintainerPledgeConfirmationPendingNotificationPayload,
   MaintainerPledgeCreatedNotification,
+  MaintainerPledgeCreatedNotificationPayload,
   MaintainerPledgePaidNotification,
+  MaintainerPledgePaidNotificationPayload,
   MaintainerPledgePendingNotification,
+  MaintainerPledgePendingNotificationPayload,
   MaintainerPledgedIssueConfirmationPendingNotification,
-  MaintainerPledgedIssuePendingNotification,
-  NotificationRead,
-  NotificationType,
+  MaintainerPledgedIssueConfirmationPendingNotificationPayload,
+  MaintainerPledgedIssuePendingNotificationPayload,
   Organization,
   Platforms,
   Pledge,
@@ -18,11 +21,13 @@ import {
   PledgeType,
   Pledger,
   PledgerPledgePendingNotification,
+  PledgerPledgePendingNotificationPayload,
   PledgesTypeSummaries,
   PullRequest,
   Reactions,
   Repository,
   RewardPaidNotification,
+  RewardPaidNotificationPayload,
   UserRead,
   Visibility,
 } from '@polar-sh/sdk'
@@ -161,7 +166,7 @@ export const pledgePublicAPI: Pledge = {
   pledger: pledger,
 }
 
-const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =
+const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotificationPayload =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -173,7 +178,7 @@ const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =
     maintainer_has_stripe_account: false,
   }
 
-const maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmationPendingNotification =
+const maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmationPendingNotificationPayload =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -185,7 +190,7 @@ const maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmat
     maintainer_has_stripe_account: false,
   }
 
-const maintainerPledgePendingNotification: MaintainerPledgePendingNotification =
+const maintainerPledgePendingNotification: MaintainerPledgePendingNotificationPayload =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -197,26 +202,28 @@ const maintainerPledgePendingNotification: MaintainerPledgePendingNotification =
     maintainer_has_stripe_account: false,
   }
 
-const maintainerPledgePaidNotification: MaintainerPledgePaidNotification = {
-  paid_out_amount: '123.50',
-  issue_url: '#',
-  issue_title: 'Hello World',
-  issue_org_name: 'polarsource',
-  issue_repo_name: 'polar',
-  issue_number: 123,
-}
+const maintainerPledgePaidNotification: MaintainerPledgePaidNotificationPayload =
+  {
+    paid_out_amount: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+  }
 
-const pledgerPledgePendingNotification: PledgerPledgePendingNotification = {
-  pledge_amount: '50.50',
-  issue_url: '#',
-  issue_title: 'Hello World',
-  issue_org_name: 'polarsource',
-  issue_repo_name: 'polar',
-  issue_number: 123,
-  pledge_date: addDays(new Date(), -2).toISOString(),
-}
+const pledgerPledgePendingNotification: PledgerPledgePendingNotificationPayload =
+  {
+    pledge_amount: '50.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    pledge_date: addDays(new Date(), -2).toISOString(),
+  }
 
-const rewardPaidNotification: RewardPaidNotification = {
+const rewardPaidNotification: RewardPaidNotificationPayload = {
   paid_out_amount: '123.50',
   issue_url: '#',
   issue_title: 'Hello World',
@@ -226,7 +233,7 @@ const rewardPaidNotification: RewardPaidNotification = {
   issue_id: 'xx',
   pledge_id: 'yyy',
 }
-const maintainerPledgedIssuePendingNotification: MaintainerPledgedIssuePendingNotification =
+const maintainerPledgedIssuePendingNotification: MaintainerPledgedIssuePendingNotificationPayload =
   {
     pledge_amount_sum: '123.50',
     issue_url: '#',
@@ -238,7 +245,7 @@ const maintainerPledgedIssuePendingNotification: MaintainerPledgedIssuePendingNo
     maintainer_has_account: false,
   }
 
-const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIssueConfirmationPendingNotification =
+const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIssueConfirmationPendingNotificationPayload =
   {
     pledge_amount_sum: '123.50',
     issue_url: '#',
@@ -250,67 +257,67 @@ const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIs
     maintainer_has_account: false,
   }
 
-export const notification_maintainerPledgeCreatedNotification: NotificationRead =
+export const notification_maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    type: NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION,
-    maintainer_pledge_created: maintainerPledgeCreatedNotification,
+    type: 'MaintainerPledgeCreatedNotification',
+    payload: maintainerPledgeCreatedNotification,
   }
 
-export const notification_maintainerPledgeConfirmationPendingNotification: NotificationRead =
+export const notification_maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmationPendingNotification =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    type: NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION,
-    maintainer_pledge_confirmation_pending:
-      maintainerPledgeConfirmationPendingNotification,
+    type: 'MaintainerPledgeConfirmationPendingNotification',
+    payload: maintainerPledgeConfirmationPendingNotification,
   }
 
-export const notification_maintainerPledgePendingNotification: NotificationRead =
+export const notification_maintainerPledgePendingNotification: MaintainerPledgePendingNotification =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    type: NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION,
-    maintainer_pledge_pending: maintainerPledgePendingNotification,
+    type: 'MaintainerPledgePendingNotification',
+    payload: maintainerPledgePendingNotification,
   }
 
-export const notification_maintainerPledgePaidNotification: NotificationRead = {
+export const notification_maintainerPledgePaidNotification: MaintainerPledgePaidNotification =
+  {
+    id: 'x',
+    created_at: addDays(new Date(), -2).toISOString(),
+    type: 'MaintainerPledgePaidNotification',
+    payload: maintainerPledgePaidNotification,
+  }
+
+export const notification_pledgerPledgePendingNotification: PledgerPledgePendingNotification =
+  {
+    id: 'x',
+    created_at: addDays(new Date(), -2).toISOString(),
+    type: 'PledgerPledgePendingNotification',
+    payload: pledgerPledgePendingNotification,
+  }
+
+export const notification_rewardPaidNotification: RewardPaidNotification = {
   id: 'x',
   created_at: addDays(new Date(), -2).toISOString(),
-  type: NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION,
-  maintainer_pledge_paid: maintainerPledgePaidNotification,
+  type: 'RewardPaidNotification',
+  payload: rewardPaidNotification,
 }
 
-export const notification_pledgerPledgePendingNotification: NotificationRead = {
-  id: 'x',
-  created_at: addDays(new Date(), -2).toISOString(),
-  type: NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION,
-  pledger_pledge_pending: pledgerPledgePendingNotification,
-}
-
-export const notification_rewardPaidNotification: NotificationRead = {
-  id: 'x',
-  created_at: addDays(new Date(), -2).toISOString(),
-  type: NotificationType.REWARD_PAID_NOTIFICATION,
-  reward_paid: rewardPaidNotification,
-}
-
-export const notification_maintainerPledgedIssuePendingNotification: NotificationRead =
+export const notification_maintainerPledgedIssuePendingNotification: MaintainerPledgedIssueConfirmationPendingNotification =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
-    maintainer_pledged_issue_pending: maintainerPledgedIssuePendingNotification,
+    type: 'MaintainerPledgedIssueConfirmationPendingNotification',
+    payload: maintainerPledgedIssuePendingNotification,
   }
 
-export const notification_maintainerPledgedIssueConfirmationPendingNotification: NotificationRead =
+export const notification_maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIssueConfirmationPendingNotification =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
-    maintainer_pledged_issue_confirmation_pending:
-      maintainerPledgedIssueConfirmationPendingNotification,
+    type: 'MaintainerPledgedIssueConfirmationPendingNotification',
+    payload: maintainerPledgedIssueConfirmationPendingNotification,
   }
 
 export const pullRequest: PullRequest = {

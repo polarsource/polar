@@ -2,10 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import { PolarQueryClientProvider } from '@/app/providers'
 import {
-  MaintainerPledgedIssueConfirmationPendingNotification,
-  NotificationType,
-} from '@polar-sh/sdk'
-import {
   addDays,
   notification_maintainerPledgeConfirmationPendingNotification,
   notification_maintainerPledgeCreatedNotification,
@@ -60,8 +56,6 @@ export const MaintainerPledgeConfirmationPendingNotificationItem: StoryConfirmat
   {
     args: {
       n: notification_maintainerPledgeConfirmationPendingNotification,
-      payload:
-        notification_maintainerPledgeConfirmationPendingNotification.maintainer_pledge_confirmation_pending,
       canMarkSolved: false,
       isMarkedSolved: false,
       onMarkSoved: async () => {},
@@ -105,8 +99,8 @@ export const MaintainerPledgedIssuePendingNotificationItem: Story = {
     n: {
       id: 'x',
       created_at: new Date().toISOString(),
-      type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
-      maintainer_pledged_issue_pending: {
+      type: 'MaintainerPledgedIssuePendingNotification',
+      payload: {
         pledge_amount_sum: '123.50',
         issue_url: '#',
         issue_title: 'Hello World',
@@ -126,8 +120,8 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
       n: {
         id: 'x',
         created_at: new Date().toISOString(),
-        type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
-        maintainer_pledged_issue_confirmation_pending: {
+        type: 'MaintainerPledgedIssueConfirmationPendingNotification',
+        payload: {
           pledge_amount_sum: '123.50',
           issue_url: '#',
           issue_title: 'Hello World',
@@ -138,16 +132,6 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
           maintainer_has_account: false,
         },
       },
-      payload: {
-        pledge_amount_sum: '123.50',
-        issue_url: '#',
-        issue_title: 'Hello World',
-        issue_org_name: 'polarsource',
-        issue_repo_name: 'polar',
-        issue_number: 123,
-        issue_id: 'xx',
-        maintainer_has_account: false,
-      } as MaintainerPledgedIssueConfirmationPendingNotification,
       canMarkSolved: false,
       isMarkedSolved: false,
       onMarkSoved: async () => {},
@@ -166,8 +150,8 @@ export const TeamAdminMemberPledgedNotificationItem: Story = {
     n: {
       id: 'x',
       created_at: addDays(new Date(), -2).toISOString(),
-      type: NotificationType.TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION,
-      team_admin_member_pledged: {
+      type: 'TeamAdminMemberPledgedNotification',
+      payload: {
         pledge_amount: '123.50',
         issue_url: '#',
         issue_title: 'Hello World',

@@ -2,6 +2,7 @@ from uuid import UUID
 
 import structlog
 
+from polar.integrations.github.tasks.utils import github_rate_limit_retry
 from polar.organization.service import organization as organization_service
 from polar.worker import (
     AsyncSessionMaker,
@@ -33,6 +34,7 @@ async def cron_org_members_schedule(ctx: JobContext) -> None:
 
 
 @task("github.organization.synchronize_members")
+@github_rate_limit_retry
 async def organization_refresh_members(
     ctx: JobContext,
     organization_id: UUID,
@@ -68,6 +70,7 @@ async def cron_org_metadata(ctx: JobContext) -> None:
 
 
 @task("github.organization.populate_org_metadata")
+@github_rate_limit_retry
 async def populate_org_metadata(
     ctx: JobContext,
     organization_id: UUID,

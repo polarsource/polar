@@ -24,6 +24,7 @@ from polar.worker import (
 from .. import service, types
 from .utils import (
     get_organization_and_repo,
+    github_rate_limit_retry,
 )
 
 log = structlog.get_logger()
@@ -106,6 +107,7 @@ async def organization_updated(
         return dict(success=True)
 
 
+@github_rate_limit_retry
 async def organization_synchronize_members(
     session: AsyncSession,
     event: types.WebhookOrganizationMemberAdded
@@ -181,6 +183,7 @@ async def organizations_member_removed(
 # ------------------------------------------------------------------------------
 
 
+@github_rate_limit_retry
 async def repositories_changed(
     session: AsyncSession,
     event: types.WebhookInstallationRepositoriesAdded
@@ -215,6 +218,7 @@ async def repositories_changed(
         await organization_upserted.call(OrganizationHook(session, org))
 
 
+@github_rate_limit_retry
 async def create_from_installation(
     session: AsyncSession,
     installation: types.Installation,

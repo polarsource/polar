@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 import { ButtonProps, Button as ShadcnButton } from '../button'
 
 const buttonVariants = cva(
-  'relative font-normal inline-flex items-center justify-center rounded-lg text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'relative font-normal inline-flex items-center justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -21,9 +21,9 @@ const buttonVariants = cva(
         link: 'text-blue-400 underline-offset-4 hover:underline bg-transparent hover:bg-transparent',
       },
       size: {
-        default: 'h-9 px-4 py-1.5 rounded-lg text-sm',
-        sm: 'h-7 rounded-md px-3 py-1.5 text-xs',
-        lg: 'h-10 rounded-lg px-5 py-4 text-sm',
+        default: 'h-9 px-4 py-1.5 rounded-full text-sm',
+        sm: 'h-7 rounded-full px-3 py-1.5 text-xs',
+        lg: 'h-10 rounded-full px-5 py-4 text-sm',
         icon: 'flex items-center justify-center h-8 h-8 p-2 text-sm',
       },
     },

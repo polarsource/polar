@@ -20,7 +20,7 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
       >
         <div className="flex w-full flex-col gap-y-8 md:w-1/2">
           <LogoIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
-          <h1 className="text-4xl !font-light leading-normal">
+          <h1 className="text-4xl !font-normal leading-normal">
             Better funding & community tools for developers
           </h1>
           <a

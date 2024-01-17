@@ -26,7 +26,6 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
@@ -123,8 +122,6 @@ const DashboardSidebar = () => {
           onScroll={handleScroll}
         >
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
-
-          {shouldRenderDashboardNavigation && <DashboardNavigation />}
 
           {shouldShowGitHubAuthUpsell ? (
             <div className="flex flex-col pt-4">

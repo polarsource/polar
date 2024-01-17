@@ -113,6 +113,60 @@ export type AccountType = typeof AccountType[keyof typeof AccountType];
 /**
  * 
  * @export
+ * @interface AdvertisementCampaign
+ */
+export interface AdvertisementCampaign {
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
+    format: AdvertisementCampaignFormatEnum;
+    /**
+     * 
+     * @type {number}
+     * @memberof AdvertisementCampaign
+     */
+    views: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof AdvertisementCampaign
+     */
+    clicks: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
+    image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
+    text: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
+    link_url: string;
+}
+
+
+/**
+ * @export
+ */
+export const AdvertisementCampaignFormatEnum = {
+    RECT: 'rect',
+    SMALL_LEADERBOARD: 'small_leaderboard'
+} as const;
+export type AdvertisementCampaignFormatEnum = typeof AdvertisementCampaignFormatEnum[keyof typeof AdvertisementCampaignFormatEnum];
+
+/**
+ * 
+ * @export
  * @interface Article
  */
 export interface Article {
@@ -871,6 +925,54 @@ export interface ConfirmIssueSplit {
      */
     share_thousands: number;
 }
+/**
+ * 
+ * @export
+ * @interface CreateAdvertisementCampaign
+ */
+export interface CreateAdvertisementCampaign {
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateAdvertisementCampaign
+     */
+    subscription_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateAdvertisementCampaign
+     */
+    format: CreateAdvertisementCampaignFormatEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateAdvertisementCampaign
+     */
+    image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateAdvertisementCampaign
+     */
+    text: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateAdvertisementCampaign
+     */
+    link_url: string;
+}
+
+
+/**
+ * @export
+ */
+export const CreateAdvertisementCampaignFormatEnum = {
+    RECT: 'rect',
+    SMALL_LEADERBOARD: 'small_leaderboard'
+} as const;
+export type CreateAdvertisementCampaignFormatEnum = typeof CreateAdvertisementCampaignFormatEnum[keyof typeof CreateAdvertisementCampaignFormatEnum];
+
 /**
  * 
  * @export
@@ -1660,6 +1762,25 @@ export interface ListResourceAccount {
      * 
      * @type {Pagination}
      * @memberof ListResourceAccount
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceAdvertisementCampaign
+ */
+export interface ListResourceAdvertisementCampaign {
+    /**
+     * 
+     * @type {Array<AdvertisementCampaign>}
+     * @memberof ListResourceAdvertisementCampaign
+     */
+    items?: Array<AdvertisementCampaign>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceAdvertisementCampaign
      */
     pagination: Pagination;
 }

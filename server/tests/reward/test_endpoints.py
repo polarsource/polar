@@ -79,19 +79,20 @@ async def test_search(
     )
 
     assert response.status_code == 200
-    assert len(response.json()["items"]) == 2
+    json = response.json()
+    assert len(json["items"]) == 2
 
-    assert response.json()["items"][0]["pledge"]["id"] == str(pledge.id)
-    assert response.json()["items"][1]["pledge"]["id"] == str(pledge.id)
+    assert json["items"][0]["pledge"]["id"] == str(pledge.id)
+    assert json["items"][1]["pledge"]["id"] == str(pledge.id)
 
-    assert response.json()["items"][0]["pledge"]["issue"]["id"] == str(pledge.issue_id)
-    assert response.json()["items"][1]["pledge"]["issue"]["id"] == str(pledge.issue_id)
+    assert json["items"][0]["pledge"]["issue"]["id"] == str(pledge.issue_id)
+    assert json["items"][1]["pledge"]["issue"]["id"] == str(pledge.issue_id)
 
-    assert response.json()["items"][0]["user"]["username"] == "zegl"
-    assert response.json()["items"][0]["organization"] is None
+    assert json["items"][0]["user"]["username"] == "zegl"
+    assert json["items"][0]["organization"] is None
 
-    assert response.json()["items"][1]["user"] is None
-    assert response.json()["items"][1]["organization"]["name"] == organization.name
+    assert json["items"][1]["user"] is None
+    assert json["items"][1]["organization"]["name"] == organization.name
 
-    assert response.json()["items"][0]["state"] == "pending"
-    assert response.json()["items"][1]["state"] == "pending"
+    assert json["items"][0]["state"] == "pending"
+    assert json["items"][1]["state"] == "pending"

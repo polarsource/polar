@@ -169,7 +169,7 @@ class PaymentIntentService:
         if not intent:
             raise ResourceNotFound()
 
-        metadata = PledgePaymentIntentMetadata.parse_obj(intent["metadata"])
+        metadata = PledgePaymentIntentMetadata.model_validate(intent["metadata"])
 
         issue_id = metadata.issue_id
         if not issue_id:

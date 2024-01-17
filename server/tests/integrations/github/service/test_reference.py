@@ -1,5 +1,5 @@
 import pytest
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 import polar.integrations.github.client as github
 from polar.integrations.github import types
@@ -19,7 +19,7 @@ from tests.fixtures.vcr import read_cassette
 @pytest.mark.asyncio
 async def test_parse_repository_issues() -> None:
     raw = read_cassette("github/references/repo_issue_events.json")
-    payload = parse_obj_as(list[types.IssueEvent], raw)
+    payload = TypeAdapter(list[types.IssueEvent]).validate_python(raw)
     issues_to_sync = github_reference.external_issue_ids_to_sync(payload)
     assert issues_to_sync == {1634181886}
 
@@ -33,7 +33,7 @@ async def test_parse_issue_timeline(
     pull_request: PullRequest,
 ) -> None:
     raw = read_cassette("github/references/issue_timeline.json")
-    payload = parse_obj_as(list[TimelineEventType], raw)
+    payload = TypeAdapter(list[TimelineEventType]).validate_python(raw)
 
     # Create Org/Repo/Issue (setup to match names and ids in issue_timeline.json)
     organization.name = "zegloforko"
@@ -101,7 +101,7 @@ async def test_parse_issue_timeline_rclone(
     pull_request: PullRequest,
 ) -> None:
     raw = read_cassette("github/references/issue_timeline_rclone.json")
-    payload = parse_obj_as(list[TimelineEventType], raw)
+    payload = TypeAdapter(list[TimelineEventType]).validate_python(raw)
 
     organization.name = "zegloforko"
     organization.external_id = 456

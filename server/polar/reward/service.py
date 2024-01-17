@@ -47,7 +47,7 @@ class RewardService:
                 )
             )
             .where(Pledge.state.in_(PledgeState.active_states()))
-            .order_by(Pledge.created_at)
+            .order_by(Pledge.created_at, IssueReward.created_at)
         )
 
         if pledge_id:

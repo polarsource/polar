@@ -9,8 +9,7 @@ import {
   MaintainerPledgePendingNotification,
   MaintainerPledgedIssueConfirmationPendingNotification,
   MaintainerPledgedIssuePendingNotification,
-  NotificationRead,
-  NotificationType,
+  NotificationsInner,
   PledgerPledgePendingNotification,
   RewardPaidNotification,
   TeamAdminMemberPledgedNotification,
@@ -34,6 +33,8 @@ import DollarSignIcon from '../Icons/DollarSignIcon'
 import Icon from '../Icons/Icon'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+
+type NotificationSchema = NotificationsInner
 
 const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
   const [show, setShow] = useState(false)
@@ -134,7 +135,7 @@ export const List = ({
   notifications,
   setIsInNestedModal,
 }: {
-  notifications: NotificationRead[]
+  notifications: NotificationSchema[]
   setIsInNestedModal: (_: boolean) => void
 }) => {
   return (
@@ -172,7 +173,7 @@ const Item = ({
   iconClasses,
 }: {
   iconClasses: string
-  n: NotificationRead
+  n: NotificationSchema
   children: { icon: React.ReactElement; text: React.ReactElement }
 }) => {
   return (
@@ -190,11 +191,10 @@ const Item = ({
 
 const MaintainerPledgeCreated = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: MaintainerPledgeCreatedNotification
+  n: MaintainerPledgeCreatedNotification
 }) => {
+  const { payload } = n
   return (
     <Item
       n={n}
@@ -220,13 +220,12 @@ const MaintainerPledgeCreated = ({
 
 const MaintainerPledgeConfirmationPendingWrapper = ({
   n,
-  payload,
   setIsInNestedModal,
 }: {
-  n: NotificationRead
-  payload: MaintainerPledgeConfirmationPendingNotification
+  n: MaintainerPledgeConfirmationPendingNotification
   setIsInNestedModal: (_: boolean) => void
 }) => {
+  const { payload } = n
   const pledge = useGetPledge(payload.pledge_id)
 
   const { isShown, hide: hideModal, show: showModal } = useModal()
@@ -255,7 +254,6 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
     <>
       <MaintainerPledgeConfirmationPending
         n={n}
-        payload={payload}
         canMarkSolved={canMarkSolved}
         isMarkedSolved={isMarkedSolved}
         isLoading={markSolved.isPending}
@@ -281,13 +279,12 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
 
 const MaintainerPledgedIssueConfirmationPendingWrapper = ({
   n,
-  payload,
   setIsInNestedModal,
 }: {
-  n: NotificationRead
-  payload: MaintainerPledgedIssueConfirmationPendingNotification
+  n: MaintainerPledgedIssueConfirmationPendingNotification
   setIsInNestedModal: (_: boolean) => void
 }) => {
+  const { payload } = n
   const pledges = useListPledesForIssue(payload.issue_id)
 
   const { isShown, hide: hideModal, show: showModal } = useModal()
@@ -331,7 +328,6 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
     <>
       <MaintainerPledgeConfirmationPending
         n={n}
-        payload={payload}
         canMarkSolved={canMarkSolved}
         isMarkedSolved={isMarkedSolved}
         isLoading={markSolved.isPending}
@@ -350,14 +346,12 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
 
 export const MaintainerPledgeConfirmationPending = ({
   n,
-  payload,
   canMarkSolved,
   isMarkedSolved,
   isLoading,
   onMarkSoved,
 }: {
-  n: NotificationRead
-  payload:
+  n:
     | MaintainerPledgeConfirmationPendingNotification
     | MaintainerPledgedIssueConfirmationPendingNotification
   canMarkSolved: boolean
@@ -365,6 +359,7 @@ export const MaintainerPledgeConfirmationPending = ({
   isLoading: boolean
   onMarkSoved: () => Promise<void>
 }) => {
+  const { payload } = n
   return (
     <Item
       n={n}
@@ -411,11 +406,10 @@ export const MaintainerPledgeConfirmationPending = ({
 
 const MaintainerPledgePending = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: MaintainerPledgePendingNotification
+  n: MaintainerPledgePendingNotification
 }) => {
+  const { payload } = n
   return (
     <Item
       n={n}
@@ -440,11 +434,10 @@ const MaintainerPledgePending = ({
 }
 const MaintainerPledgedIssuePending = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: MaintainerPledgedIssuePendingNotification
+  n: MaintainerPledgedIssuePendingNotification
 }) => {
+  const { payload } = n
   return (
     <Item
       n={n}
@@ -470,11 +463,10 @@ const MaintainerPledgedIssuePending = ({
 
 const MaintainerPledgePaid = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: MaintainerPledgePaidNotification
+  n: MaintainerPledgePaidNotification
 }) => {
+  const { payload } = n
   return (
     <Item
       n={n}
@@ -499,13 +491,8 @@ const MaintainerPledgePaid = ({
   )
 }
 
-const RewardPaid = ({
-  n,
-  payload,
-}: {
-  n: NotificationRead
-  payload: RewardPaidNotification
-}) => {
+const RewardPaid = ({ n }: { n: RewardPaidNotification }) => {
+  const { payload } = n
   return (
     <Item
       n={n}
@@ -532,11 +519,10 @@ const RewardPaid = ({
 
 const PledgerPledgePending = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: PledgerPledgePendingNotification
+  n: PledgerPledgePendingNotification
 }) => {
+  const { payload } = n
   return (
     <Item n={n} iconClasses="bg-blue-200 text-blue-500">
       {{
@@ -559,11 +545,10 @@ const PledgerPledgePending = ({
 
 const TeamAdminMemberPledged = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: TeamAdminMemberPledgedNotification
+  n: TeamAdminMemberPledgedNotification
 }) => {
+  const { payload } = n
   return (
     <Item n={n} iconClasses="bg-blue-200 text-blue-500">
       {{
@@ -587,10 +572,8 @@ const TeamAdminMemberPledged = ({
 
 const MaintainerAccountUnderReview = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: MaintainerAccountUnderReviewNotification
+  n: MaintainerAccountUnderReviewNotification
 }) => {
   return (
     <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
@@ -611,13 +594,36 @@ const MaintainerAccountUnderReview = ({
   )
 }
 
+const MaintainerAccountReviewed = ({
+  n,
+}: {
+  n: MaintainerAccountReviewedNotification
+}) => {
+  const { payload } = n
+  return (
+    <Item n={n} iconClasses="bg-green-200 text-green-500">
+      {{
+        text: (
+          <>
+            Your{' '}
+            <InternalLink href="/finance/account">
+              <>payout account</>
+            </InternalLink>{' '}
+            has been reviewed successfully. Transfers are resumed.
+          </>
+        ),
+        icon: <VerifiedUser />,
+      }}
+    </Item>
+  )
+}
+
 const MaintainerNewPaidSubscription = ({
   n,
-  payload,
 }: {
-  n: NotificationRead
-  payload: MaintainerNewPaidSubscriptionNotification
+  n: MaintainerNewPaidSubscriptionNotification
 }) => {
+  const { payload } = n
   return (
     <Item n={n} iconClasses="bg-green-200 text-green-500">
       {{
@@ -638,245 +644,59 @@ const MaintainerNewPaidSubscription = ({
   )
 }
 
-const MaintainerAccountReviewed = ({
-  n,
-  payload,
-}: {
-  n: NotificationRead
-  payload: MaintainerAccountReviewedNotification
-}) => {
-  return (
-    <Item n={n} iconClasses="bg-green-200 text-green-500">
-      {{
-        text: (
-          <>
-            Your{' '}
-            <InternalLink href="/finance/account">
-              <>payout account</>
-            </InternalLink>{' '}
-            has been reviewed successfully. Transfers are resumed.
-          </>
-        ),
-        icon: <VerifiedUser />,
-      }}
-    </Item>
-  )
-}
-
 export const Notification = ({
   n,
   setIsInNestedModal,
 }: {
-  n: NotificationRead
+  n: NotificationSchema
   setIsInNestedModal: (_: boolean) => void
 }) => {
   switch (n.type) {
-    case NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION:
-      if (n.maintainer_pledge_created) {
-        return (
-          <MaintainerPledgeCreated
-            n={n}
-            payload={n.maintainer_pledge_created}
-          />
-        )
-      }
+    case 'MaintainerPledgeCreatedNotification':
+      return <MaintainerPledgeCreated n={n} />
 
-    case NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION:
-      if (n.maintainer_pledge_confirmation_pending) {
-        return (
-          <MaintainerPledgeConfirmationPendingWrapper
-            n={n}
-            payload={n.maintainer_pledge_confirmation_pending}
-            setIsInNestedModal={setIsInNestedModal}
-          />
-        )
-      }
+    case 'MaintainerPledgeConfirmationPendingNotification':
+      return (
+        <MaintainerPledgeConfirmationPendingWrapper
+          n={n}
+          setIsInNestedModal={setIsInNestedModal}
+        />
+      )
 
-    case NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION:
-      if (n.maintainer_pledged_issue_confirmation_pending) {
-        return (
-          <MaintainerPledgedIssueConfirmationPendingWrapper
-            n={n}
-            payload={n.maintainer_pledged_issue_confirmation_pending}
-            setIsInNestedModal={setIsInNestedModal}
-          />
-        )
-      }
+    case 'MaintainerPledgedIssueConfirmationPendingNotification':
+      return (
+        <MaintainerPledgedIssueConfirmationPendingWrapper
+          n={n}
+          setIsInNestedModal={setIsInNestedModal}
+        />
+      )
 
-    case NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION:
-      if (n.maintainer_pledge_pending) {
-        return (
-          <MaintainerPledgePending
-            n={n}
-            payload={n.maintainer_pledge_pending}
-          />
-        )
-      }
+    case 'MaintainerPledgePendingNotification':
+      return <MaintainerPledgePending n={n} />
 
-    case NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION:
-      if (n.maintainer_pledged_issue_pending) {
-        return (
-          <MaintainerPledgedIssuePending
-            n={n}
-            payload={n.maintainer_pledged_issue_pending}
-          />
-        )
-      }
+    case 'MaintainerPledgedIssuePendingNotification':
+      return <MaintainerPledgedIssuePending n={n} />
 
-    case NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION:
-      if (n.maintainer_pledge_paid) {
-        return <MaintainerPledgePaid n={n} payload={n.maintainer_pledge_paid} />
-      }
-    case NotificationType.REWARD_PAID_NOTIFICATION:
-      if (n.reward_paid) {
-        return <RewardPaid n={n} payload={n.reward_paid} />
-      }
-    case NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION:
-      if (n.pledger_pledge_pending) {
-        return <PledgerPledgePending n={n} payload={n.pledger_pledge_pending} />
-      }
+    case 'MaintainerPledgePaidNotification':
+      return <MaintainerPledgePaid n={n} />
 
-    case NotificationType.TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION:
-      if (n.team_admin_member_pledged) {
-        return (
-          <TeamAdminMemberPledged n={n} payload={n.team_admin_member_pledged} />
-        )
-      }
+    case 'RewardPaidNotification':
+      return <RewardPaid n={n} />
 
-    case NotificationType.MAINTAINER_ACCOUNT_UNDER_REVIEW_NOTIFICATION:
-      if (n.maintainer_account_under_review) {
-        return (
-          <MaintainerAccountUnderReview
-            n={n}
-            payload={n.maintainer_account_under_review}
-          />
-        )
-      }
-    case NotificationType.MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION:
-      if (n.maintainer_account_reviewed) {
-        return (
-          <MaintainerAccountReviewed
-            n={n}
-            payload={n.maintainer_account_reviewed}
-          />
-        )
-      }
+    case 'PledgerPledgePendingNotification':
+      return <PledgerPledgePending n={n} />
 
-    case NotificationType.MAINTAINER_NEW_PAID_SUBSCRIPTION_NOTIFICATION:
-      if (n.maintainer_new_paid_subscription) {
-        return (
-          <MaintainerNewPaidSubscription
-            n={n}
-            payload={n.maintainer_new_paid_subscription}
-          />
-        )
-      }
+    case 'TeamAdminMemberPledgedNotification':
+      return <TeamAdminMemberPledged n={n} />
+
+    case 'MaintainerAccountUnderReviewNotification':
+      return <MaintainerAccountUnderReview n={n} />
+    case 'MaintainerAccountReviewedNotification':
+      return <MaintainerAccountReviewed n={n} />
+
+    case 'MaintainerNewPaidSubscriptionNotification':
+      return <MaintainerNewPaidSubscription n={n} />
   }
-
-  return <></>
-}
-
-const PullRequestCreatedIcon = () => {
-  return (
-    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M13.5 15.75C14.7426 15.75 15.75 14.7426 15.75 13.5C15.75 12.2574 14.7426 11.25 13.5 11.25C12.2574 11.25 11.25 12.2574 11.25 13.5C11.25 14.7426 12.2574 15.75 13.5 15.75Z"
-        stroke="#24A065"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4.5 6.75C5.74264 6.75 6.75 5.74264 6.75 4.5C6.75 3.25736 5.74264 2.25 4.5 2.25C3.25736 2.25 2.25 3.25736 2.25 4.5C2.25 5.74264 3.25736 6.75 4.5 6.75Z"
-        stroke="#24A065"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9.75 4.5H12C12.3978 4.5 12.7794 4.65804 13.0607 4.93934C13.342 5.22064 13.5 5.60218 13.5 6V11.25"
-        stroke="#24A065"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4.5 6.75V15.75"
-        stroke="#24A065"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-const PullRequestMergedIcon = () => {
-  return (
-    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M13.5 15.75C14.7426 15.75 15.75 14.7426 15.75 13.5C15.75 12.2574 14.7426 11.25 13.5 11.25C12.2574 11.25 11.25 12.2574 11.25 13.5C11.25 14.7426 12.2574 15.75 13.5 15.75Z"
-        stroke="#633EB7"
-        strokeOpacity="0.8"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4.5 6.75C5.74264 6.75 6.75 5.74264 6.75 4.5C6.75 3.25736 5.74264 2.25 4.5 2.25C3.25736 2.25 2.25 3.25736 2.25 4.5C2.25 5.74264 3.25736 6.75 4.5 6.75Z"
-        stroke="#633EB7"
-        strokeOpacity="0.8"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4.5 15.75V6.75C4.5 8.54021 5.21116 10.2571 6.47703 11.523C7.7429 12.7888 9.45979 13.5 11.25 13.5"
-        stroke="#633EB7"
-        strokeOpacity="0.8"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-const BranchCreatedIcon = () => {
-  return (
-    <svg viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <g opacity="0.58">
-        <path
-          d="M4.5 2.5V11.5"
-          stroke="#232323"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M13.5 7C14.7426 7 15.75 5.99264 15.75 4.75C15.75 3.50736 14.7426 2.5 13.5 2.5C12.2574 2.5 11.25 3.50736 11.25 4.75C11.25 5.99264 12.2574 7 13.5 7Z"
-          stroke="#232323"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M4.5 16C5.74264 16 6.75 14.9926 6.75 13.75C6.75 12.5074 5.74264 11.5 4.5 11.5C3.25736 11.5 2.25 12.5074 2.25 13.75C2.25 14.9926 3.25736 16 4.5 16Z"
-          stroke="#232323"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M13.5 7C13.5 8.79021 12.7888 10.5071 11.523 11.773C10.2571 13.0388 8.54021 13.75 6.75 13.75"
-          stroke="#232323"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </g>
-    </svg>
-  )
 }
 
 const ExternalLink = (props: {

@@ -155,16 +155,19 @@ export const CreatorUpsell = () => {
 
   return (
     <div className="flex flex-col gap-y-8">
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-1 flex flex-col gap-y-8 py-6">
-          <LogoIcon className="text-blue-500 dark:text-blue-400" size={48} />
+      <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">
+        <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-8 md:py-6 lg:col-span-1">
+          <LogoIcon
+            className="hidden text-blue-500 dark:text-blue-400 md:block"
+            size={48}
+          />
           <h2 className="text-2xl font-bold">Next Up</h2>
           <p className="dark:text-polar-400 text-gray-600 [text-wrap:balance]">
             Here are a few things you can do to kickstart your community on
             Polar.
           </p>
         </div>
-        <div className="col-span-2 grid grid-cols-3 gap-6">
+        <div className="col-span-2 flex grid-cols-3 flex-col gap-6 md:grid">
           {cards.map((card) => (
             <UpsellCard key={card.title} {...card} />
           ))}

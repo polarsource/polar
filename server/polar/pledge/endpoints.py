@@ -150,13 +150,13 @@ async def search(
     organization_name: str | None = Query(
         default=None,
         min_length=1,
-        example="my-org",
+        examples=["my-org"],
         description="Search pledges in the organization with this name. Requires platform to be set.",  # noqa: E501
     ),
     repository_name: str | None = Query(
         default=None,
         min_length=1,
-        example="my-repo",
+        examples=["my-repo"],
         description="Search pledges in the repository with this name. Can only be used if organization_name is set.",  # noqa: E501
     ),
     issue_id: UUID | None = Query(

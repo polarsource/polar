@@ -4,7 +4,7 @@ from fastapi import Query
 
 _RepositoryNameQuery = Query(
     min_length=1,
-    example="my-repo",
+    examples=["my-repo"],
     description="Filter by repository name.",
 )
 

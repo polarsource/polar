@@ -1,11 +1,9 @@
 'use client'
 
-import {
-  BenefitSubscriber,
-  resolveBenefitTypeIcon,
-} from '@/components/Benefit/Benefit'
+import { BenefitSubscriber } from '@/components/Benefit/Benefit'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
+import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { DiamondOutlined } from '@mui/icons-material'
 import {
   SubscriptionSubscriber,
@@ -123,7 +121,6 @@ interface BenefitContextWidgetProps {
 
 const BenefitContextWidget = ({ benefit }: BenefitContextWidgetProps) => {
   const { data: org } = useOrganization(benefit?.organization_id ?? '')
-  const BenefitTypeIcon = resolveBenefitTypeIcon(benefit?.type ?? 'custom')
 
   if (!benefit) {
     return null
@@ -134,7 +131,7 @@ const BenefitContextWidget = ({ benefit }: BenefitContextWidgetProps) => {
       <div className="flex flex-row items-center gap-x-2">
         <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-blue-400">
           <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-sm dark:bg-blue-950">
-            <BenefitTypeIcon fontSize="inherit" />
+            {resolveBenefitIcon(benefit, 'inherit')}
           </span>
         </div>
         <h2 className="font-medium capitalize">{benefit.type}</h2>

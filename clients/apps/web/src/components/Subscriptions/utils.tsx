@@ -1,4 +1,8 @@
-import { CheckOutlined, ShortTextOutlined } from '@mui/icons-material'
+import {
+  CheckOutlined,
+  ShortTextOutlined,
+  WebOutlined,
+} from '@mui/icons-material'
 import {
   ItemsInner,
   SubscriptionBenefitType,
@@ -57,13 +61,15 @@ export const getSubscriptionTiersByType = (tiers: SubscriptionTier[]) =>
   ) ?? defaultSubscriptionTiersByType
 
 export const resolveBenefitIcon = (
-  benefit: SubscriptionTierBenefit,
+  benefit?: SubscriptionTierBenefit,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
 ) => {
   const className = twMerge('h-4 w-4')
 
-  if (benefit.type === SubscriptionBenefitType.ARTICLES) {
+  if (benefit && benefit.type === SubscriptionBenefitType.ARTICLES) {
     return <ShortTextOutlined className={className} fontSize={fontSize} />
+  } else if (benefit && benefit.type === SubscriptionBenefitType.ADS) {
+    return <WebOutlined className={className} fontSize={fontSize} />
   } else {
     return <CheckOutlined className={className} fontSize={fontSize} />
   }

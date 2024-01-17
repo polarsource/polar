@@ -1,3 +1,4 @@
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   AutoAwesome,
   LoyaltyOutlined,
@@ -11,7 +12,16 @@ import {
   SubscriptionBenefitUpdate,
   SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
-import { Button, Input, Switch, TextArea } from 'polarkit/components/ui/atoms'
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  Switch,
+  TextArea,
+} from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   DropdownMenu,
@@ -28,6 +38,7 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { SelectValue } from 'polarkit/components/ui/select'
 import {
   useCreateSubscriptionBenefit,
   useDeleteSubscriptionBenefit,
@@ -442,6 +453,8 @@ interface BenefitFormProps {
 export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
   const { control } = useFormContext<SubscriptionBenefitCreate>()
 
+  const hasAds = isFeatureEnabled('ads-benefit')
+
   return (
     <>
       <FormField
@@ -474,6 +487,8 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
           )
         }}
       />
+
+      {hasAds && !update ? <BenefitTypeSelect /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
     </>
   )
@@ -533,5 +548,36 @@ export const CustomBenefitForm = ({
         />
       )}
     </>
+  )
+}
+
+const BenefitTypeSelect = ({}) => {
+  const { control } = useFormContext<SubscriptionBenefitCustomCreate>()
+  return (
+    <FormField
+      control={control}
+      name="type"
+      render={({ field }) => {
+        return (
+          <FormItem>
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Type</FormLabel>
+            </div>
+            <FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a benefit type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectItem value="ads">Ad</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
   )
 }

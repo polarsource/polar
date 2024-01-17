@@ -50,7 +50,7 @@ class FullPullRequestService(
     async def create_or_update(
         self, session: AsyncSession, r: FullPullRequestCreate
     ) -> PullRequest:
-        insert_stmt = sql.insert(PullRequest).values(**r.dict())
+        insert_stmt = sql.insert(PullRequest).values(**r.model_dump())
         stmt = (
             insert_stmt.on_conflict_do_update(
                 index_elements=[PullRequest.external_id],

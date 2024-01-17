@@ -157,7 +157,7 @@ class RepositoryService(
         log.info(
             "repository.update_badge_settings",
             repository_id=repository.id,
-            settings=settings.dict(),
+            settings=settings.model_dump(mode="json"),
         )
 
         # Skip badge jobs for private repositories
@@ -272,7 +272,7 @@ class RepositoryService(
             "deleted_at",
         }
 
-        insert_stmt = sql.insert(Repository).values(**r.dict())
+        insert_stmt = sql.insert(Repository).values(**r.model_dump())
 
         stmt = (
             insert_stmt.on_conflict_do_update(

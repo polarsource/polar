@@ -80,6 +80,12 @@ class SubscriptionBenefitCustomCreate(SubscriptionBenefitCreateBase):
     properties: SubscriptionBenefitCustomProperties
 
 
+class SubscriptionBenefitAdsCreate(SubscriptionBenefitCreateBase):
+    type: Literal[SubscriptionBenefitType.ads]
+    # is_tax_applicable: bool
+    # properties: SubscriptionBenefitAdsProperties
+
+
 # This is a dummy schema only there to produce a valid union below
 # Remove it when we have other create schemas to add
 class SubscriptionBenefitCustomBisCreate(SubscriptionBenefitCustomCreate):
@@ -87,7 +93,9 @@ class SubscriptionBenefitCustomBisCreate(SubscriptionBenefitCustomCreate):
 
 
 SubscriptionBenefitCreate = (
-    SubscriptionBenefitCustomCreate | SubscriptionBenefitCustomBisCreate
+    SubscriptionBenefitCustomCreate
+    | SubscriptionBenefitAdsCreate
+    | SubscriptionBenefitCustomBisCreate
 )
 
 
@@ -108,13 +116,19 @@ class SubscriptionBenefitArticlesUpdate(SubscriptionBenefitUpdateBase):
     type: Literal[SubscriptionBenefitType.articles]
 
 
+class SubscriptionBenefitAdsUpdate(SubscriptionBenefitUpdateBase):
+    type: Literal[SubscriptionBenefitType.ads]
+
+
 class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
     type: Literal[SubscriptionBenefitType.custom]
     properties: SubscriptionBenefitCustomProperties | None = None
 
 
 SubscriptionBenefitUpdate = (
-    SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate
+    SubscriptionBenefitArticlesUpdate
+    | SubscriptionBenefitAdsUpdate
+    | SubscriptionBenefitCustomUpdate
 )
 
 
@@ -136,18 +150,25 @@ class SubscriptionBenefitArticles(SubscriptionBenefitBase):
     properties: SubscriptionBenefitArticlesProperties
 
 
+class SubscriptionBenefitAds(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.ads]
+
+
 class SubscriptionBenefitCustom(SubscriptionBenefitBase):
     type: Literal[SubscriptionBenefitType.custom]
     properties: SubscriptionBenefitCustomProperties
     is_tax_applicable: bool
 
 
-SubscriptionBenefit = SubscriptionBenefitArticles | SubscriptionBenefitCustom
+SubscriptionBenefit = (
+    SubscriptionBenefitArticles | SubscriptionBenefitAds | SubscriptionBenefitCustom
+)
 
 subscription_benefit_schema_map: dict[
     SubscriptionBenefitType, type[SubscriptionBenefit]
 ] = {
     SubscriptionBenefitType.articles: SubscriptionBenefitArticles,
+    SubscriptionBenefitType.ads: SubscriptionBenefitAds,
     SubscriptionBenefitType.custom: SubscriptionBenefitCustom,
 }
 
@@ -159,13 +180,19 @@ class SubscriptionBenefitArticlesSubscriber(SubscriptionBenefitBase):
     properties: SubscriptionBenefitArticlesSubscriberProperties
 
 
+class SubscriptionBenefitAdsSubscriber(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.ads]
+
+
 class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
     type: Literal[SubscriptionBenefitType.custom]
     properties: SubscriptionBenefitCustomSubscriberProperties
 
 
 SubscriptionBenefitSubscriber = (
-    SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber
+    SubscriptionBenefitArticlesSubscriber
+    | SubscriptionBenefitAdsSubscriber
+    | SubscriptionBenefitCustomSubscriber
 )
 
 

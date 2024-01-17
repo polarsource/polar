@@ -115,8 +115,8 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     ],
   },
   {
-    id: 'public-site',
-    title: 'Public site',
+    id: 'public-page',
+    title: 'Public Page',
     link: `/${org.name}`,
     postIcon: undefined,
     icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,

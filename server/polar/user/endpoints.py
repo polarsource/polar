@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, Response
 from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
 from polar.authz.service import Authz, Scope
-from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
+from polar.exceptions import InternalServerError, Unauthorized
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.organization.schemas import Organization
+from polar.models import Organization, User
+from polar.organization.schemas import Organization as OrganizationSchema
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.service import user as user_service
 
@@ -34,16 +35,10 @@ AuthUserRead = AuthenticatedWithScope(
 
 
 @router.get("/me", response_model=UserRead)
-async def get_authenticated(
-    auth: Auth = Depends(AuthUserRead),
-    session: AsyncSession = Depends(get_db_session),
-) -> UserRead:
+async def get_authenticated(auth: Auth = Depends(AuthUserRead)) -> User:
     if not auth.user:
         raise Unauthorized()
-
-    # get for return
-    user = await user_service.get_loaded(session, auth.user.id)
-    return UserRead.from_orm(user)
+    return auth.user
 
 
 @router.get("/me/scopes", response_model=UserScopes)
@@ -69,31 +64,18 @@ async def update_preferences(
     settings: UserUpdateSettings,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> UserRead:
-    user = await user_service.update_preferences(session, auth.user, settings)
-
-    # get for return
-    user_loaded = await user_service.get_loaded(session, user.id)
-    if not user_loaded:
-        raise ResourceNotFound()
-
-    return UserRead.from_orm(user_loaded)
+) -> User:
+    return await user_service.update_preferences(session, auth.user, settings)
 
 
-@router.post("/me/upgrade", response_model=Organization)
+@router.post("/me/upgrade", response_model=OrganizationSchema)
 async def maintainer_upgrade(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     log.info("user.maintainer_upgrade", user_id=auth.user.id)
-    user_loaded = await user_service.get_loaded(session, auth.user.id)
-    if not user_loaded:
-        log.error("user.maintainer.upgrade", error="User not found")
-        raise ResourceNotFound()
-
     personal_org = await github_organization_service.create_for_user(
-        session,
-        user=user_loaded,
+        session, user=auth.user
     )
     if not personal_org:
         log.error("user.maintainer.upgrade", error="Org creation failed")
@@ -104,7 +86,7 @@ async def maintainer_upgrade(
         user_id=auth.user.id,
         new_org_id=personal_org.id,
     )
-    return Organization.from_db(personal_org)
+    return personal_org
 
 
 @router.patch("/me/account", response_model=UserRead)
@@ -113,17 +95,10 @@ async def set_account(
     auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> UserRead:
-    user = await user_service.set_account(
+) -> User:
+    return await user_service.set_account(
         session, authz=authz, user=auth.user, account_id=set_account.account_id
     )
-
-    # get for return
-    user_loaded = await user_service.get_loaded(session, user.id)
-    if not user_loaded:
-        raise ResourceNotFound()
-
-    return UserRead.from_orm(user_loaded)
 
 
 @router.get("/logout")

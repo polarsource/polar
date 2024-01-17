@@ -101,7 +101,7 @@ async def search_subscription_tiers(
     )
 
     return ListResource.from_paginated_results(
-        [SubscriptionTierSchema.from_orm(result) for result in results],
+        [SubscriptionTierSchema.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -249,7 +249,7 @@ async def search_subscription_benefits(
 
     return ListResource.from_paginated_results(
         [
-            subscription_benefit_schema_map[result.type].from_orm(result)
+            subscription_benefit_schema_map[result.type].model_validate(result)
             for result in results
         ],
         count,
@@ -486,7 +486,7 @@ async def search_subscriptions(
     )
 
     return ListResource.from_paginated_results(
-        [SubscriptionSchema.from_orm(result) for result in results],
+        [SubscriptionSchema.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -547,7 +547,7 @@ async def search_subscribed_subscriptions(
     )
 
     return ListResource.from_paginated_results(
-        [SubscriptionSubscriber.from_orm(result) for result in results],
+        [SubscriptionSubscriber.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -788,7 +788,7 @@ async def search_subscriptions_summary(
     )
 
     return ListResource.from_paginated_results(
-        [SubscriptionSummary.from_orm(result) for result in results],
+        [SubscriptionSummary.model_validate(result) for result in results],
         count,
         pagination,
     )

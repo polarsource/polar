@@ -49,7 +49,7 @@ async def search_transactions(
     )
 
     return ListResource.from_paginated_results(
-        [Transaction.from_orm(result) for result in results],
+        [Transaction.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -61,7 +61,7 @@ async def lookup_transaction(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> TransactionDetails:
-    return TransactionDetails.from_orm(
+    return TransactionDetails.model_validate(
         await transaction_service.lookup(session, transaction_id, auth.subject)
     )
 

@@ -121,6 +121,18 @@ export interface AdvertisementCampaign {
      * @type {string}
      * @memberof AdvertisementCampaign
      */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
+    subscription_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
     format: AdvertisementCampaignFormatEnum;
     /**
      * 

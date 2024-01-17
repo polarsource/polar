@@ -26,7 +26,6 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import BackerNavigation from '../Dashboard/BackerNavigation'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
@@ -59,10 +58,6 @@ const DashboardSidebar = () => {
   const orgs = listOrganizationQuery?.data?.items
 
   const isOrgAdmin = useIsOrganizationAdmin(currentOrg)
-
-  const shouldRenderBackerNavigation = currentOrg
-    ? currentOrg.name === currentUser?.username || currentOrg.is_teams_enabled
-    : true
 
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
@@ -127,8 +122,6 @@ const DashboardSidebar = () => {
           className="flex w-full flex-grow flex-col gap-y-2 md:h-full md:overflow-y-auto"
           onScroll={handleScroll}
         >
-          {shouldRenderBackerNavigation && <BackerNavigation />}
-
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
 
           {shouldRenderDashboardNavigation && <DashboardNavigation />}

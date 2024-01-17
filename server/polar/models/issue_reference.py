@@ -10,6 +10,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
 from polar.models.pull_request import PullRequest
+from polar.types import JSONAny
 
 
 class ExternalGitHubPullRequestReference(Schema):
@@ -88,6 +89,4 @@ class IssueReference(TimestampedModel):
         )
 
     # If referenced by an external resource
-    external_source: Mapped[
-        ExternalGitHubPullRequestReference | ExternalGitHubCommitReference | None
-    ] = mapped_column(JSONB, nullable=True, default=None)
+    external_source: Mapped[JSONAny] = mapped_column(JSONB, nullable=True, default=None)

@@ -12,7 +12,7 @@ export const MySubscriptionsNavigation = ({
   subscriptionTiers,
 }: MySubscriptionsNavigationProps) => {
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto">
+    <div className="flex h-full w-full flex-col">
       <div className="flex w-full flex-row items-center gap-x-2 px-7 pt-2">
         <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
           My Subscriptions

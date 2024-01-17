@@ -27,8 +27,7 @@ from polar.subscription.service.subscribe_session import (
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
-
-from ..conftest import (
+from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
     create_subscription_benefit,

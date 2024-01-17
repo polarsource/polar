@@ -31,8 +31,7 @@ from polar.subscription.service.subscription_benefit import (
 from polar.subscription.service.subscription_benefit_grant import (
     SubscriptionBenefitGrantService,
 )
-
-from ..conftest import create_subscription_benefit
+from tests.fixtures.random_objects import create_subscription_benefit
 
 
 @pytest.fixture

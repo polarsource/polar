@@ -878,12 +878,18 @@ async def issue_assigned_async(
         return
 
     # modify assignee
+
+    assignee = event.issue.assignee
+    assignees = event.issue.assignees
+
     stmt = (
         sql.Update(Issue)
         .where(Issue.id == issue.id)
         .values(
-            assignee=github.jsonify(event.issue.assignee),
-            assignees=github.jsonify(event.issue.assignees),
+            assignee=assignee.model_dump(mode="json") if assignee else None,
+            assignees=[
+                assignee.model_dump(mode="json") for assignee in assignees if assignee
+            ],
             issue_modified_at=event.issue.updated_at,
         )
     )

@@ -500,7 +500,7 @@ class GithubIssueService(IssueService):
         | list[types.WebhookIssuesLabeledPropIssuePropLabelsItems]
         | list[types.WebhookIssuesUnlabeledPropIssuePropLabelsItems],
     ) -> Issue:
-        labels = github.jsonify(github_labels)
+        labels = [label.model_dump(mode="json") for label in github_labels]
         issue.labels = labels
         issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(
             labels, repository.pledge_badge_label

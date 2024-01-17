@@ -6,7 +6,6 @@ from typing import Literal, Self, cast
 from uuid import UUID
 
 import structlog
-from fastapi.encoders import jsonable_encoder
 from pydantic import ConfigDict, Field, HttpUrl
 
 from polar.currency.schemas import CurrencyAmount
@@ -283,6 +282,11 @@ class IssueAndPullRequestBase(Base):
                 eyes=data.reactions.eyes,
             )
 
+        closed_by: github.Missing[types.SimpleUser | None] = getattr(
+            data, "closed_by", None
+        )
+        state_reason: github.Missing[str | None] = getattr(data, "state_reason", None)
+
         return cls(
             platform=Platforms.github,
             external_id=data.id,
@@ -292,17 +296,29 @@ class IssueAndPullRequestBase(Base):
             title=data.title,
             body=data.body if data.body else "",
             comments=getattr(data, "comments", None),
-            author=github.jsonify(data.user),
+            author=data.user.model_dump(mode="json") if data.user else None,
             author_association=data.author_association,
-            labels=github.jsonify(data.labels),
-            assignee=github.jsonify(data.assignee),
-            assignees=github.jsonify(data.assignees),
-            milestone=github.jsonify(data.milestone),
-            # TODO: Verify this
-            closed_by=github.jsonify(github.attr(data, "closed_by")),
-            reactions=jsonable_encoder(reactions),
+            labels=[
+                label if isinstance(label, str) else label.model_dump(mode="json")
+                for label in data.labels
+            ]
+            if data.labels
+            else None,
+            assignee=data.assignee.model_dump(mode="json") if data.assignee else None,
+            assignees=[
+                assignee.model_dump(mode="json")
+                for assignee in data.assignees
+                if assignee
+            ]
+            if data.assignees
+            else None,
+            milestone=data.milestone.model_dump(mode="json")
+            if data.milestone
+            else None,
+            closed_by=closed_by.model_dump(mode="json") if closed_by else None,
+            reactions=reactions.model_dump(mode="json") if reactions else None,
             state=IssueModel.State(data.state),
-            state_reason=github.attr(data, "state_reason"),
+            state_reason=state_reason if state_reason else None,
             issue_closed_at=data.closed_at,
             issue_created_at=data.created_at,
             issue_modified_at=data.updated_at,

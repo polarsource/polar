@@ -179,8 +179,8 @@ class GithubBadge:
         github.ensure_expected_response(latest)
         data = latest.parsed_data
         body = ""
-        if github.is_set(data, "body") and data.body is not None:
-            body = str(data.body)
+        if data.body:
+            body = data.body
         return body
 
     async def update_body(

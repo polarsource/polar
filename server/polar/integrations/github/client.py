@@ -2,7 +2,6 @@ import time
 from typing import Any
 
 import structlog
-from fastapi.encoders import jsonable_encoder
 from githubkit import (
     AppAuthStrategy,
     AppInstallationAuthStrategy,
@@ -12,6 +11,7 @@ from githubkit import (
     utils,
     webhooks,
 )
+from githubkit.typing import Missing
 from pydantic import BaseModel, Field
 
 from polar.config import settings
@@ -19,7 +19,6 @@ from polar.enums import Platforms
 from polar.integrations.github.cache import RedisCache
 from polar.models.user import OAuthAccount, User
 from polar.postgres import AsyncSession
-from polar.types import JSONAny
 from polar.user.oauth_service import oauth_account_service
 
 log = structlog.get_logger()
@@ -51,34 +50,6 @@ HTTP_EXCEPTIONS = {
     404: NotFound,
     422: ValidationFailed,
 }
-
-###############################################################################
-# GITHUBKIT WORKAROUNDS
-# TODO: Investigate improvement from githubkit - this is not ergonomic or pretty..
-###############################################################################
-
-
-def is_set(obj: object, name: str) -> bool:
-    attr = getattr(obj, name, None)
-    if attr is None:
-        return False
-    return not isinstance(attr, utils.Unset)
-
-
-def jsonify(obj: Any) -> JSONAny:
-    if not obj:
-        return None
-
-    if isinstance(obj, list):
-        return [jsonable_encoder(utils.exclude_unset(o.dict())) for o in obj]
-    return jsonable_encoder(utils.exclude_unset(obj.dict()))
-
-
-def attr(obj: object, attr: str) -> Any:
-    if is_set(obj, attr):
-        return getattr(obj, attr)
-    return None
-
 
 ###############################################################################
 # GITHUB API HELPERS
@@ -217,6 +188,7 @@ __all__ = [
     "get_app_installation_client",
     "get_user_client",
     "GitHub",
+    "Missing",
     "AppInstallationAuthStrategy",
     "TokenAuthStrategy",
     "utils",

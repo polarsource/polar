@@ -446,7 +446,7 @@ async def update_badge_settings(
     log.info(
         "organization.update_badge_settings",
         organization_id=org.id,
-        settings=settings.dict(),
+        settings=settings.model_dump(mode="json"),
     )
 
     # get for return

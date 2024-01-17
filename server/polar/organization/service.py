@@ -216,7 +216,7 @@ class OrganizationService(
         log.info(
             "organization.update_settings",
             organization_id=organization.id,
-            settings=settings.dict(),
+            settings=settings.model_dump(mode="json"),
         )
 
         return updated
@@ -288,7 +288,7 @@ class OrganizationService(
             "deleted_at",
         }
 
-        insert_stmt = sql.insert(Organization).values(**r.dict())
+        insert_stmt = sql.insert(Organization).values(**r.model_dump())
 
         stmt = (
             insert_stmt.on_conflict_do_update(

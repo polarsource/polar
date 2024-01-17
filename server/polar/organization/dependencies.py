@@ -7,7 +7,7 @@ from polar.exceptions import BadRequest
 
 _OrganizationNameQuery = Query(
     min_length=1,
-    example="my-org",
+    examples=["my-org"],
     description="Filter by organization name.",
 )
 

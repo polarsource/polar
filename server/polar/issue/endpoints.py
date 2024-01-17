@@ -139,7 +139,7 @@ async def lookup(
     external_url: str | None = Query(
         default=None,
         description="URL to issue on external source",
-        example="https://github.com/polarsource/polar/issues/897",
+        examples=["https://github.com/polarsource/polar/issues/897"],
     ),
     authz: Authz = Depends(Authz.authz),
     auth: Auth = Depends(Auth.optional_user),

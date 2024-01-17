@@ -3,6 +3,7 @@ import { Organization } from '@polar-sh/sdk'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
+  AllInclusiveOutlined,
   AttachMoneyOutlined,
   Bolt,
   CardGiftcardOutlined,
@@ -137,7 +138,10 @@ export const backerRoutes = (
                 title: 'Feed',
                 link: `/feed`,
                 icon: (
-                  <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />
+                  <AllInclusiveOutlined
+                    className="h-5 w-5"
+                    fontSize="inherit"
+                  />
                 ),
                 postIcon: undefined,
                 if: isPersonal,

@@ -1,9 +1,6 @@
-/* istanbul ignore file */
-/* tslint:disable */
-/* eslint-disable */
-
 import {
   AccountsApi,
+  AdvertisementsApi,
   ArticlesApi,
   BackofficeApi,
   Configuration,
@@ -31,6 +28,7 @@ import {
 
 export class PolarAPI {
   public readonly accounts: AccountsApi
+  public readonly advertisements: AdvertisementsApi
   public readonly articles: ArticlesApi
   public readonly backoffice: BackofficeApi
   public readonly dashboard: DashboardApi
@@ -56,6 +54,7 @@ export class PolarAPI {
 
   constructor(config: Configuration) {
     this.accounts = new AccountsApi(config)
+    this.advertisements = new AdvertisementsApi(config)
     this.articles = new ArticlesApi(config)
     this.backoffice = new BackofficeApi(config)
     this.dashboard = new DashboardApi(config)

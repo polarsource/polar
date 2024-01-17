@@ -1,4 +1,5 @@
 apis/AccountsApi.ts
+apis/AdvertisementsApi.ts
 apis/ArticlesApi.ts
 apis/BackofficeApi.ts
 apis/DashboardApi.ts

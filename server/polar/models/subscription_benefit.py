@@ -24,10 +24,13 @@ class TaxApplicationMustBeSpecified(PolarError):
 class SubscriptionBenefitType(StrEnum):
     custom = "custom"
     articles = "articles"
+    ads = "ads"
 
     def is_tax_applicable(self) -> bool:
         try:
-            _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {}
+            _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {
+                SubscriptionBenefitType.ads: True,
+            }
             return _is_tax_applicable_map[self]
         except KeyError as e:
             raise TaxApplicationMustBeSpecified(self) from e
@@ -43,6 +46,10 @@ class SubscriptionBenefitCustomProperties(SubscriptionBenefitProperties):
 
 class SubscriptionBenefitArticlesProperties(SubscriptionBenefitProperties):
     paid_articles: bool
+
+
+class SubscriptionBenefitAdsProperties(SubscriptionBenefitProperties):
+    pass
 
 
 class SubscriptionBenefit(RecordModel):
@@ -100,5 +107,16 @@ class SubscriptionBenefitArticles(SubscriptionBenefit):
 
     __mapper_args__ = {
         "polymorphic_identity": SubscriptionBenefitType.articles,
+        "polymorphic_load": "inline",
+    }
+
+
+class SubscriptionBenefitAds(SubscriptionBenefit):
+    properties: Mapped[SubscriptionBenefitAdsProperties] = mapped_column(
+        use_existing_column=True
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": SubscriptionBenefitType.ads,
         "polymorphic_load": "inline",
     }

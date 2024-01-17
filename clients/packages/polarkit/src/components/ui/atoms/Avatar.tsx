@@ -4,10 +4,14 @@ const Avatar = ({
   name,
   avatar_url,
   className,
+  height,
+  width,
 }: {
   name: string
   avatar_url: string | undefined
   className?: string
+  height?: number | undefined
+  width?: number | undefined
 }) => {
   if (avatar_url) {
     {
@@ -20,6 +24,8 @@ const Avatar = ({
           'dark:bg-polar-900 dark:border-polar-700 h-6 w-6 flex-shrink-0 rounded-full border-2 border-white bg-white',
           className,
         )}
+        height={height}
+        width={width}
       />
     )
   }

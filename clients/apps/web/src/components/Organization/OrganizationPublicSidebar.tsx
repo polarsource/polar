@@ -49,6 +49,8 @@ export const OrganizationPublicSidebar = ({
               className="mb-6 h-32 w-32 md:h-60 md:w-60"
               name={organization.name}
               avatar_url={organization.avatar_url}
+              height={240}
+              width={240}
             />
             <h1 className="dark:text-polar-50 text-2xl font-normal capitalize text-gray-800">
               {organization.pretty_name ?? organization.name}

@@ -12,8 +12,6 @@ from githubkit import (
     utils,
     webhooks,
 )
-from githubkit.versions.latest import models
-from githubkit.versions.latest import webhooks as events
 from pydantic import BaseModel, Field
 
 from polar.config import settings
@@ -224,6 +222,4 @@ __all__ = [
     "utils",
     "Response",
     "webhooks",
-    "models",
-    "events",
 ]

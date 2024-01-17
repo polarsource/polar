@@ -6,12 +6,13 @@ from typing import Any, Literal
 import structlog
 from githubkit import Paginator
 
-from polar.integrations.github import client as github
 from polar.kit.hook import Hook
 from polar.models import Issue, Organization, Repository
 from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession
 from polar.repository.hooks import SyncCompletedHook, SyncedHook
+
+from .. import types
 
 log = structlog.get_logger()
 
@@ -25,17 +26,14 @@ class GitHubPaginatedService:
         self,
         session: AsyncSession,
         *,
-        paginator: Paginator[github.models.Issue]
-        | Paginator[github.models.PullRequestSimple],
+        paginator: Paginator[types.Issue] | Paginator[types.PullRequestSimple],
         store_resource_method: Callable[
             ..., Coroutine[Any, Any, Issue | PullRequest | None]
         ],
         organization: Organization,
         repository: Repository,
         resource_type: Literal["issue", "pull_request"],
-        skip_condition: Callable[
-            [github.models.Issue | github.models.PullRequestSimple], bool
-        ]
+        skip_condition: Callable[[types.Issue | types.PullRequestSimple], bool]
         | None = None,
         on_sync_signal: Hook[SyncedHook] | None = None,
         on_completed_signal: Hook[SyncCompletedHook] | None = None,

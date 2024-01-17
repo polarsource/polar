@@ -8,6 +8,7 @@ from polar.kit import template
 from polar.models import Issue, Organization, Repository
 
 from . import client as github
+from . import types
 
 log = structlog.get_logger()
 
@@ -184,7 +185,7 @@ class GithubBadge:
 
     async def update_body(
         self, client: GitHub[AppInstallationAuthStrategy], body: str
-    ) -> github.models.Issue:
+    ) -> types.Issue:
         updated = await client.rest.issues.async_update(
             owner=self.organization.name,
             repo=self.repository.name,

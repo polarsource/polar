@@ -13,6 +13,7 @@ from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.funding.funding_schema import Funding
 from polar.integrations.github import client as github
+from polar.integrations.github import types
 from polar.integrations.github.badge import GithubBadge
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue as IssueModel
@@ -236,20 +237,20 @@ class IssueAndPullRequestBase(Base):
     @classmethod
     def get_normalized_github_issue(
         cls: type[Self],
-        data: github.models.Issue
-        | github.models.WebhookIssuesOpenedPropIssue
-        | github.models.WebhookIssuesEditedPropIssue
-        | github.models.WebhookIssuesClosedPropIssue
-        | github.models.WebhookIssuesReopenedPropIssue
-        | github.models.WebhookIssuesDeletedPropIssue
-        | github.models.WebhookIssuesTransferredPropChangesPropNewIssue
-        | github.models.PullRequest
-        | github.models.PullRequestSimple
-        | github.models.WebhookPullRequestOpenedPropPullRequest
-        | github.models.WebhookPullRequestEditedPropPullRequest
-        | github.models.WebhookPullRequestClosedPropPullRequest
-        | github.models.WebhookPullRequestReopenedPropPullRequest
-        | github.models.WebhookPullRequestSynchronizePropPullRequest,
+        data: types.Issue
+        | types.WebhookIssuesOpenedPropIssue
+        | types.WebhookIssuesEditedPropIssue
+        | types.WebhookIssuesClosedPropIssue
+        | types.WebhookIssuesReopenedPropIssue
+        | types.WebhookIssuesDeletedPropIssue
+        | types.WebhookIssuesTransferredPropChangesPropNewIssue
+        | types.PullRequest
+        | types.PullRequestSimple
+        | types.WebhookPullRequestOpenedPropPullRequest
+        | types.WebhookPullRequestEditedPropPullRequest
+        | types.WebhookPullRequestClosedPropPullRequest
+        | types.WebhookPullRequestReopenedPropPullRequest
+        | types.WebhookPullRequestSynchronizePropPullRequest,
         organization: OrganizationModel,
         repository: RepositoryModel,
     ) -> Self:
@@ -264,15 +265,13 @@ class IssueAndPullRequestBase(Base):
 
         # All issue types have reactions, pull request types does not
         if (
-            isinstance(data, github.models.Issue)
-            or isinstance(data, github.models.WebhookIssuesOpenedPropIssue)
-            or isinstance(data, github.models.WebhookIssuesEditedPropIssue)
-            or isinstance(data, github.models.WebhookIssuesClosedPropIssue)
-            or isinstance(data, github.models.WebhookIssuesReopenedPropIssue)
-            or isinstance(data, github.models.WebhookIssuesDeletedPropIssue)
-            or isinstance(
-                data, github.models.WebhookIssuesTransferredPropChangesPropNewIssue
-            )
+            isinstance(data, types.Issue)
+            or isinstance(data, types.WebhookIssuesOpenedPropIssue)
+            or isinstance(data, types.WebhookIssuesEditedPropIssue)
+            or isinstance(data, types.WebhookIssuesClosedPropIssue)
+            or isinstance(data, types.WebhookIssuesReopenedPropIssue)
+            or isinstance(data, types.WebhookIssuesDeletedPropIssue)
+            or isinstance(data, types.WebhookIssuesTransferredPropChangesPropNewIssue)
         ) and data.reactions:
             reactions = Reactions(
                 total_count=data.reactions.total_count,
@@ -322,13 +321,13 @@ class IssueCreate(IssueAndPullRequestBase):
     @classmethod
     def from_github(
         cls,
-        data: github.models.Issue
-        | github.models.WebhookIssuesOpenedPropIssue
-        | github.models.WebhookIssuesEditedPropIssue
-        | github.models.WebhookIssuesClosedPropIssue
-        | github.models.WebhookIssuesReopenedPropIssue
-        | github.models.WebhookIssuesDeletedPropIssue
-        | github.models.WebhookIssuesTransferredPropChangesPropNewIssue,
+        data: types.Issue
+        | types.WebhookIssuesOpenedPropIssue
+        | types.WebhookIssuesEditedPropIssue
+        | types.WebhookIssuesClosedPropIssue
+        | types.WebhookIssuesReopenedPropIssue
+        | types.WebhookIssuesDeletedPropIssue
+        | types.WebhookIssuesTransferredPropChangesPropNewIssue,
         organization: OrganizationModel,
         repository: RepositoryModel,
     ) -> Self:

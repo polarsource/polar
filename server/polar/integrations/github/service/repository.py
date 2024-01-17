@@ -12,6 +12,7 @@ from polar.repository.service import RepositoryService
 from polar.worker import enqueue_job
 
 from .. import client as github
+from .. import types
 
 log: Logger = structlog.get_logger()
 
@@ -81,9 +82,9 @@ class GithubRepositoryService(RepositoryService):
         self,
         session: AsyncSession,
         organization: Organization,
-        data: github.models.Repository
-        | github.models.FullRepository
-        | github.models.WebhookIssuesTransferredPropChangesPropNewRepository,
+        data: types.Repository
+        | types.FullRepository
+        | types.WebhookIssuesTransferredPropChangesPropNewRepository,
     ) -> Repository:
         repository = await self.get_by_external_id(session, data.id)
 

@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import Field
 
 from polar.enums import Platforms
-from polar.integrations.github import client as github
+from polar.integrations.github import types
 from polar.kit.schemas import Schema
 from polar.models import Repository as RepositoryModel
 from polar.organization.schemas import Organization as OrganizationSchema
@@ -74,10 +74,10 @@ class RepositoryCreate(Schema):
     @classmethod
     def from_github(
         cls,
-        repository: github.models.Repository
-        | github.models.FullRepository
-        | github.models.RepositoryWebhooks
-        | github.models.WebhookIssuesTransferredPropChangesPropNewRepository,
+        repository: types.Repository
+        | types.FullRepository
+        | types.RepositoryWebhooks
+        | types.WebhookIssuesTransferredPropChangesPropNewRepository,
         organization_id: UUID,
     ) -> Self:
         topics = repository.topics if repository.topics else None

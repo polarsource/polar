@@ -10,7 +10,6 @@ from githubkit.compat import GitHubModel
 from githubkit.exception import RequestFailed
 from pydantic import Discriminator, Field, Tag, ValidationError, parse_obj_as
 
-import polar.integrations.github.client as github
 from polar.exceptions import IntegrityError
 from polar.integrations.github.service.issue import github_issue
 from polar.integrations.github.service.pull_request import github_pull_request
@@ -32,11 +31,14 @@ from polar.models.issue_reference import (
 from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
 
+from .. import client as github
+from .. import types
+
 log: Logger = structlog.get_logger()
 
 
 class FallbackCommitEvent(GitHubModel):
-    actor: github.models.SimpleUser = Field()
+    actor: types.SimpleUser = Field()
     event: str = Field()
     commit_id: str | None = Field()
     commit_url: str | None = Field()
@@ -60,7 +62,7 @@ def get_discriminator_value(v: Any) -> str:
 
 TimelineEventType = Annotated[
     Union[  # noqa: UP007
-        Annotated[github.models.TimelineCrossReferencedEvent, Tag("cross-referenced")],
+        Annotated[types.TimelineCrossReferencedEvent, Tag("cross-referenced")],
         Annotated[FallbackCommitEvent, Tag("referenced")],
         Annotated[FallbackAny, Tag("fallback")],
     ],
@@ -168,9 +170,7 @@ class GitHubIssueReferencesService:
 
         return None
 
-    def external_issue_ids_to_sync(
-        self, events: list[github.models.IssueEvent]
-    ) -> set[int]:
+    def external_issue_ids_to_sync(self, events: list[types.IssueEvent]) -> set[int]:
         res: set[int] = set()
 
         for event in events:
@@ -284,7 +284,7 @@ class GitHubIssueReferencesService:
         event: TimelineEventType,
         client: GitHub[Any],
     ) -> IssueReference | None:
-        if isinstance(event, github.models.TimelineCrossReferencedEvent):
+        if isinstance(event, types.TimelineCrossReferencedEvent):
             return await self.parse_issue_pull_request_reference(
                 session,
                 org,
@@ -305,7 +305,7 @@ class GitHubIssueReferencesService:
         session: AsyncSession,
         org: Organization,
         repo: Repository,
-        event: github.models.TimelineCrossReferencedEvent,
+        event: types.TimelineCrossReferencedEvent,
         issue: Issue,
         client: GitHub[Any],
     ) -> IssueReference | None:
@@ -315,7 +315,7 @@ class GitHubIssueReferencesService:
         # Mention was not from a pull request
         if not isinstance(
             event.source.issue.pull_request,
-            github.models.IssuePropPullRequest,
+            types.IssuePropPullRequest,
         ):
             return None
 
@@ -396,7 +396,7 @@ class GitHubIssueReferencesService:
 
     def parse_external_reference(
         self,
-        event: github.models.TimelineCrossReferencedEvent,
+        event: types.TimelineCrossReferencedEvent,
         issue: Issue,
     ) -> IssueReference | None:
         if not event.source.issue:
@@ -410,7 +410,7 @@ class GitHubIssueReferencesService:
         # Mention was not from a pull request
         if not isinstance(
             i.pull_request,
-            github.models.IssuePropPullRequest,
+            types.IssuePropPullRequest,
         ):
             return None
 

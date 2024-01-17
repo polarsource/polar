@@ -2,6 +2,7 @@ import pytest
 from pydantic import parse_obj_as
 
 import polar.integrations.github.client as github
+from polar.integrations.github import types
 from polar.integrations.github.service.reference import (
     TimelineEventType,
     github_reference,
@@ -18,7 +19,7 @@ from tests.fixtures.vcr import read_cassette
 @pytest.mark.asyncio
 async def test_parse_repository_issues() -> None:
     raw = read_cassette("github/references/repo_issue_events.json")
-    payload = parse_obj_as(list[github.models.IssueEvent], raw)
+    payload = parse_obj_as(list[types.IssueEvent], raw)
     issues_to_sync = github_reference.external_issue_ids_to_sync(payload)
     assert issues_to_sync == {1634181886}
 

@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import text
 
-from polar.integrations.github import client as github
+from polar.integrations.github import types
 from polar.integrations.github.service import (
     github_pull_request,
 )
@@ -11,14 +11,14 @@ from polar.postgres import AsyncSession
 from tests.fixtures.vcr import read_cassette
 
 
-def simple_pull_request() -> github.models.PullRequestSimple:
+def simple_pull_request() -> types.PullRequestSimple:
     body = read_cassette("github/pull_request/simple.json")
-    return github.models.PullRequestSimple(**body)
+    return types.PullRequestSimple(**body)
 
 
-def full_pull_request() -> github.models.PullRequest:
+def full_pull_request() -> types.PullRequest:
     body = read_cassette("github/pull_request/full.json")
-    return github.models.PullRequest(**body)
+    return types.PullRequest(**body)
 
 
 @pytest.mark.asyncio

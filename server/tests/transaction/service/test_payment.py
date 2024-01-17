@@ -16,7 +16,7 @@ from polar.transaction.service.payment import (
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
-from tests.subscription.conftest import create_subscription, create_subscription_tier
+from tests.fixtures.random_objects import create_subscription, create_subscription_tier
 
 
 def build_stripe_balance_transaction(

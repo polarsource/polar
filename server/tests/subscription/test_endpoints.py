@@ -20,11 +20,10 @@ from polar.models import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
-from tests.fixtures.random_objects import create_organization
-
-from .conftest import (
+from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
+    create_organization,
     create_subscription_benefit,
     create_subscription_tier,
 )

@@ -46,14 +46,13 @@ from polar.transaction.service.transfer import (
     TransferTransactionService,
 )
 from polar.user.service import user as user_service
-from tests.fixtures.random_objects import create_user
-from tests.transaction.conftest import create_transaction
-
-from ..conftest import (
+from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
     create_subscription,
+    create_user,
 )
+from tests.transaction.conftest import create_transaction
 
 
 def construct_stripe_subscription(

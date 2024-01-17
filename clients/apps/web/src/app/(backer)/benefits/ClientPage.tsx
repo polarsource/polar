@@ -2,6 +2,7 @@
 
 import { BenefitSubscriber } from '@/components/Benefit/Benefit'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
+import ConfigureAdCampaigns from '@/components/Benefit/ads/ConfigureAdCampaigns'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { DiamondOutlined } from '@mui/icons-material'
@@ -24,6 +25,9 @@ const ClientPage = ({
     BenefitSubscriber | undefined
   >(subscriptions[0].subscription_tier.benefits[0])
 
+  const [selectedBenefitSubscription, setSelectedBenefitSubscription] =
+    useState<SubscriptionSubscriber | undefined>(subscriptions[0])
+
   return subscriptions.length === 0 ? (
     <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
       <DiamondOutlined fontSize="inherit" />
@@ -42,11 +46,20 @@ const ClientPage = ({
             key={subscription.id}
             tier={subscription.subscription_tier}
             selectedBenefit={selectedBenefit}
-            onSelectBenefit={setSelectedBenefit}
+            onSelectBenefit={(b) => {
+              setSelectedBenefit(b)
+              setSelectedBenefitSubscription(subscription)
+            }}
           />
         ))}
       </div>
-      <BenefitContextWidget benefit={selectedBenefit} />
+
+      {selectedBenefitSubscription && selectedBenefit ? (
+        <BenefitContextWidget
+          subscription={selectedBenefitSubscription}
+          benefit={selectedBenefit}
+        />
+      ) : null}
     </div>
   )
 }
@@ -116,15 +129,15 @@ const Subscription = ({
 }
 
 interface BenefitContextWidgetProps {
-  benefit: BenefitSubscriber | undefined
+  benefit: BenefitSubscriber
+  subscription: SubscriptionSubscriber
 }
 
-const BenefitContextWidget = ({ benefit }: BenefitContextWidgetProps) => {
+const BenefitContextWidget = ({
+  benefit,
+  subscription,
+}: BenefitContextWidgetProps) => {
   const { data: org } = useOrganization(benefit?.organization_id ?? '')
-
-  if (!benefit) {
-    return null
-  }
 
   return (
     <ShadowBoxOnMd className="sticky top-8 flex w-1/3 flex-col gap-y-6">
@@ -145,6 +158,11 @@ const BenefitContextWidget = ({ benefit }: BenefitContextWidgetProps) => {
           <p className="whitespace-pre-line">{benefit.properties.note}</p>
         </div>
       )}
+
+      {benefit.type === 'ads' ? (
+        <ConfigureAdCampaigns benefit={benefit} subscription={subscription} />
+      ) : null}
+
       <Separator />
       <div className="flex flex-col gap-y-2">
         <div className="flex flex-row items-center gap-x-2">

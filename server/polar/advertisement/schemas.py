@@ -7,6 +7,9 @@ AdvertisementCampaignFormat = Literal["rect", "small_leaderboard"]
 
 
 class AdvertisementCampaign(Schema):
+    id: UUID
+    subscription_id: UUID
+
     format: AdvertisementCampaignFormat
     views: int
     clicks: int

@@ -4,7 +4,6 @@ from uuid import UUID
 
 import structlog
 
-from polar.integrations.github import client as github
 from polar.integrations.github import types
 from polar.issue.schemas import Author, IssueAndPullRequestBase
 from polar.kit.schemas import Schema
@@ -116,12 +115,24 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
     ) -> Self:
         create = cls.get_normalized_github_issue(pr, organization, repository)
 
-        create.requested_reviewers = github.jsonify(pr.requested_reviewers)
-        create.requested_teams = github.jsonify(pr.requested_teams)
+        create.requested_reviewers = (
+            [
+                reviewer.model_dump(mode="json")
+                for reviewer in pr.requested_reviewers
+                if reviewer
+            ]
+            if pr.requested_reviewers
+            else None
+        )
+        create.requested_teams = (
+            [team.model_dump(mode="json") for team in pr.requested_teams if team]
+            if pr.requested_teams
+            else None
+        )
         create.merged_at = pr.merged_at
         create.merge_commit_sha = pr.merge_commit_sha
-        create.head = github.jsonify(pr.head)
-        create.base = github.jsonify(pr.base)
+        create.head = pr.head.model_dump(mode="json")
+        create.base = pr.base.model_dump(mode="json")
         create.is_draft = bool(pr.draft)
 
         return create
@@ -166,7 +177,9 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
     ) -> Self:
         create = cls.minimal_pull_request_from_github(pr, organization, repository)
 
-        create.merged_by = github.jsonify(pr.merged_by)
+        create.merged_by = (
+            pr.merged_by.model_dump(mode="json") if pr.merged_by else None
+        )
 
         create.commits = pr.commits
         create.additions = pr.additions

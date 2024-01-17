@@ -6,7 +6,6 @@ import pytest
 
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
-from polar.integrations.github import client as github
 from polar.integrations.github import types
 from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
@@ -356,7 +355,7 @@ async def test_list_by_github_milestone_number(
         )
 
         issue.title = f"issue_in_{number}"
-        issue.milestone = github.jsonify(ms)
+        issue.milestone = ms.model_dump(mode="json")
         await issue.save(session)
         return issue
 

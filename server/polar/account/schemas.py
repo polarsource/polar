@@ -57,7 +57,7 @@ class Account(Schema):
             open_collective_slug=o.open_collective_slug,
             is_details_submitted=o.is_details_submitted,
             country=o.country or "SE",
-            users=[UserBase.from_orm(user) for user in o.users],
+            users=[UserBase.model_validate(user) for user in o.users],
             organizations=[
                 Organization.from_db(organization) for organization in o.organizations
             ],

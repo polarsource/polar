@@ -34,14 +34,6 @@ class InvalidAccount(UserError):
 
 
 class UserService(ResourceService[User, UserCreate, UserUpdate]):
-    async def get_loaded(self, session: AsyncSession, id: UUID) -> User | None:
-        query = sql.select(User).where(
-            User.id == id,
-            User.deleted_at.is_(None),
-        )
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
     async def get_by_email(self, session: AsyncSession, email: str) -> User | None:
         query = sql.select(User).where(
             func.lower(User.email) == email.lower(),

@@ -50,7 +50,7 @@ async def search(
     )
 
     return ListResource(
-        items=[WebhookIntegrationSchema.from_orm(r) for r in results],
+        items=[WebhookIntegrationSchema.model_validate(r) for r in results],
         pagination=Pagination(total_count=len(results), max_page=1),
     )
 
@@ -79,7 +79,7 @@ async def create(
 
     res = await webhook_notifications_service.create(session, create_schema=create)
 
-    return WebhookIntegrationSchema.from_orm(res)
+    return WebhookIntegrationSchema.model_validate(res)
 
 
 @router.post(
@@ -111,7 +111,7 @@ async def update(
 
     res = await webhook_notifications_service.update(session, webhook=wn, update=update)
 
-    return WebhookIntegrationSchema.from_orm(res)
+    return WebhookIntegrationSchema.model_validate(res)
 
 
 @router.delete(
@@ -142,4 +142,4 @@ async def delete(
 
     res = await webhook_notifications_service.delete(session, webhook=wn)
 
-    return WebhookIntegrationSchema.from_orm(res)
+    return WebhookIntegrationSchema.model_validate(res)

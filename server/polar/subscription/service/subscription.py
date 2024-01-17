@@ -47,7 +47,10 @@ from polar.models import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
-from polar.notifications.notification import MaintainerNewPaidSubscriptionNotification
+from polar.notifications.notification import (
+    MaintainerNewPaidSubscriptionNotificationPayload,
+    NotificationType,
+)
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
@@ -609,12 +612,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session,
             org_id=subscription_tier_org.id,
             notif=PartialNotification(
-                payload=MaintainerNewPaidSubscriptionNotification(
+                type=NotificationType.maintainer_new_paid_subscription,
+                payload=MaintainerNewPaidSubscriptionNotificationPayload(
                     subscriber_name=customer_email,
                     tier_name=subscription_tier.name,
                     tier_price_amount=subscription_tier.price_amount,
                     tier_organization_name=subscription_tier_org.name,
-                )
+                ),
             ),
         )
 

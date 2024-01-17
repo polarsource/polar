@@ -11,7 +11,10 @@ from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.notifications.notification import MaintainerPledgeCreatedNotification
+from polar.notifications.notification import (
+    MaintainerPledgeCreatedNotificationPayload,
+    NotificationType,
+)
 from polar.notifications.service import NotificationsService, PartialNotification
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
@@ -61,7 +64,8 @@ async def test_create_pledge_from_created(
         notif=PartialNotification(
             issue_id=issue.id,
             pledge_id=pledge.id,
-            payload=MaintainerPledgeCreatedNotification(
+            type=NotificationType.maintainer_pledge_created,
+            payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
                 pledger_name=organization.name,
                 pledge_amount="123",
@@ -122,7 +126,8 @@ async def test_create_pledge_from_created_by_user(
         notif=PartialNotification(
             issue_id=issue.id,
             pledge_id=pledge.id,
-            payload=MaintainerPledgeCreatedNotification(
+            type=NotificationType.maintainer_pledge_created,
+            payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
                 pledger_name=user.username,
                 pledge_amount="123",
@@ -184,7 +189,8 @@ async def test_create_pledge_from_created_on_behalf_of(
         notif=PartialNotification(
             issue_id=issue.id,
             pledge_id=pledge.id,
-            payload=MaintainerPledgeCreatedNotification(
+            type=NotificationType.maintainer_pledge_created,
+            payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
                 pledger_name=organization.name,
                 pledge_amount="123",

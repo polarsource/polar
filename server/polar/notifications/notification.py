@@ -1,15 +1,38 @@
 from abc import abstractmethod
+from datetime import datetime
+from enum import StrEnum
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import UUID4, BaseModel, Discriminator
 
 from polar.email.renderer import get_email_renderer
 from polar.kit.money import get_cents_in_dollar_string
+from polar.kit.schemas import Schema
 from polar.models.pledge import PledgeType
 from polar.models.user import User
 
 
-class NotificationBase(BaseModel):
+class NotificationType(StrEnum):
+    maintainer_pledge_created = "MaintainerPledgeCreatedNotification"
+    maintainer_pledge_confirmation_pending = (
+        "MaintainerPledgeConfirmationPendingNotification"
+    )
+    maintainer_pledged_issue_confirmation_pending = (
+        "MaintainerPledgedIssueConfirmationPendingNotification"
+    )
+    maintainer_pledge_pending = "MaintainerPledgePendingNotification"
+    maintainer_pledged_issue_pending = "MaintainerPledgedIssuePendingNotification"
+    maintainer_pledge_paid = "MaintainerPledgePaidNotification"
+    reward_paid = "RewardPaidNotification"
+    pledger_pledge_pending = "PledgerPledgePendingNotification"
+    team_admin_member_pledged = "TeamAdminMemberPledgedNotification"
+    maintainer_account_under_review = "MaintainerAccountUnderReviewNotification"
+    maintainer_account_reviewed = "MaintainerAccountReviewedNotification"
+    maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
+
+
+class NotificationPayloadBase(BaseModel):
     @abstractmethod
     def subject(self) -> str:
         pass
@@ -29,7 +52,13 @@ class NotificationBase(BaseModel):
         return email_renderer.render_from_string(self.subject(), self.body(), m)
 
 
-class MaintainerPledgeCreatedNotification(NotificationBase):
+class NotificationBase(Schema):
+    id: UUID4
+    created_at: datetime
+    type: NotificationType
+
+
+class MaintainerPledgeCreatedNotificationPayload(NotificationPayloadBase):
     pledger_name: str | None = None
     pledge_amount: str
     issue_url: str
@@ -70,9 +99,14 @@ We'll notify you about the next steps when {{issue_org_name}}/{{issue_repo_name}
 """  # noqa: E501
 
 
+class MaintainerPledgeCreatedNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_pledge_created]
+    payload: MaintainerPledgeCreatedNotificationPayload
+
+
 # No longer sent as of 2023-08-22.
 # Replaced by MaintainerPledgedIssueConfirmationPendingNotification
-class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
+class MaintainerPledgeConfirmationPendingNotificationPayload(NotificationPayloadBase):
     pledger_name: str
     pledge_amount: str
     issue_url: str
@@ -100,7 +134,14 @@ Create a Stripe account with Polar today to ensure we can transfer the funds dir
 """  # noqa: E501
 
 
-class MaintainerPledgedIssueConfirmationPendingNotification(NotificationBase):
+class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_pledge_confirmation_pending]
+    payload: MaintainerPledgeConfirmationPendingNotificationPayload
+
+
+class MaintainerPledgedIssueConfirmationPendingNotificationPayload(
+    NotificationPayloadBase
+):
     pledge_amount_sum: str
     issue_id: UUID
     issue_url: str
@@ -133,9 +174,14 @@ Create a Stripe account with Polar today to ensure we can transfer the funds dir
 """  # noqa: E501
 
 
+class MaintainerPledgedIssueConfirmationPendingNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_pledged_issue_confirmation_pending]
+    payload: MaintainerPledgedIssueConfirmationPendingNotificationPayload
+
+
 # No longer sent as of 2023-08-22.
 # Replaced by MaintainerPledgedIssuePendingNotification
-class MaintainerPledgePendingNotification(NotificationBase):
+class MaintainerPledgePendingNotificationPayload(NotificationPayloadBase):
     pledger_name: str
     pledge_amount: str
     issue_url: str
@@ -163,8 +209,13 @@ Create a Stripe account with Polar today to ensure we can transfer the funds dir
 """  # noqa: E501
 
 
+class MaintainerPledgePendingNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_pledge_pending]
+    payload: MaintainerPledgePendingNotificationPayload
+
+
 # Sent to mainatiners after marking an issue as completed, and setting the rewards.
-class MaintainerPledgedIssuePendingNotification(NotificationBase):
+class MaintainerPledgedIssuePendingNotificationPayload(NotificationPayloadBase):
     pledge_amount_sum: str
     issue_id: UUID
     issue_url: str
@@ -197,8 +248,13 @@ Create a Stripe account with Polar today to ensure we can transfer the funds as 
 """  # noqa: E501
 
 
+class MaintainerPledgedIssuePendingNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_pledged_issue_pending]
+    payload: MaintainerPledgedIssuePendingNotificationPayload
+
+
 # No longer sent as of 2023-08-16
-class MaintainerPledgePaidNotification(NotificationBase):
+class MaintainerPledgePaidNotificationPayload(NotificationPayloadBase):
     paid_out_amount: str
     issue_url: str
     issue_title: str
@@ -223,7 +279,12 @@ Polar
 """  # noqa: E501
 
 
-class RewardPaidNotification(NotificationBase):
+class MaintainerPledgePaidNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_pledge_paid]
+    payload: MaintainerPledgePaidNotificationPayload
+
+
+class RewardPaidNotificationPayload(NotificationPayloadBase):
     paid_out_amount: str
     issue_url: str
     issue_title: str
@@ -249,7 +310,12 @@ Polar
 """  # noqa: E501
 
 
-class PledgerPledgePendingNotification(NotificationBase):
+class RewardPaidNotification(NotificationBase):
+    type: Literal[NotificationType.reward_paid]
+    payload: RewardPaidNotificationPayload
+
+
+class PledgerPledgePendingNotificationPayload(NotificationPayloadBase):
     pledge_amount: str
     issue_url: str
     issue_title: str
@@ -279,7 +345,12 @@ Polar
 """  # noqa: E501
 
 
-class TeamAdminMemberPledgedNotification(NotificationBase):
+class PledgerPledgePendingNotification(NotificationBase):
+    type: Literal[NotificationType.pledger_pledge_pending]
+    payload: PledgerPledgePendingNotificationPayload
+
+
+class TeamAdminMemberPledgedNotificationPayload(NotificationPayloadBase):
     team_member_name: str
     team_name: str
     pledge_amount: str
@@ -300,7 +371,12 @@ class TeamAdminMemberPledgedNotification(NotificationBase):
 """  # noqa: E501
 
 
-class MaintainerAccountUnderReviewNotification(NotificationBase):
+class TeamAdminMemberPledgedNotification(NotificationBase):
+    type: Literal[NotificationType.team_admin_member_pledged]
+    payload: TeamAdminMemberPledgedNotificationPayload
+
+
+class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
     account_type: str
 
     def subject(self) -> str:
@@ -317,7 +393,12 @@ Our team is working diligently to complete the review promptly. We appreciate yo
 """  # noqa: E501
 
 
-class MaintainerAccountReviewedNotification(NotificationBase):
+class MaintainerAccountUnderReviewNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_account_under_review]
+    payload: MaintainerAccountUnderReviewNotificationPayload
+
+
+class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
     account_type: str
 
     def subject(self) -> str:
@@ -332,7 +413,12 @@ Your payout account is now fully active, and money transfers are resumed without
 """  # noqa: E501
 
 
-class MaintainerNewPaidSubscriptionNotification(NotificationBase):
+class MaintainerAccountReviewedNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_account_reviewed]
+    payload: MaintainerAccountReviewedNotificationPayload
+
+
+class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     subscriber_name: str
     tier_name: str
     tier_price_amount: int
@@ -346,3 +432,40 @@ class MaintainerNewPaidSubscriptionNotification(NotificationBase):
 
 {self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount)}/month.<br><br>
 """  # noqa: E501
+
+
+class MaintainerNewPaidSubscriptionNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_new_paid_subscription]
+    payload: MaintainerNewPaidSubscriptionNotificationPayload
+
+
+NotificationPayload = (
+    MaintainerPledgeCreatedNotificationPayload
+    | MaintainerPledgeConfirmationPendingNotificationPayload
+    | MaintainerPledgedIssueConfirmationPendingNotificationPayload
+    | MaintainerPledgePendingNotificationPayload
+    | MaintainerPledgedIssuePendingNotificationPayload
+    | MaintainerPledgePaidNotificationPayload
+    | RewardPaidNotificationPayload
+    | PledgerPledgePendingNotificationPayload
+    | TeamAdminMemberPledgedNotificationPayload
+    | MaintainerAccountUnderReviewNotificationPayload
+    | MaintainerAccountReviewedNotificationPayload
+    | MaintainerNewPaidSubscriptionNotificationPayload
+)
+
+Notification = Annotated[
+    MaintainerPledgeCreatedNotification
+    | MaintainerPledgeConfirmationPendingNotification
+    | MaintainerPledgedIssueConfirmationPendingNotification
+    | MaintainerPledgePendingNotification
+    | MaintainerPledgedIssuePendingNotification
+    | MaintainerPledgePaidNotification
+    | RewardPaidNotification
+    | PledgerPledgePendingNotification
+    | TeamAdminMemberPledgedNotification
+    | MaintainerAccountUnderReviewNotification
+    | MaintainerAccountReviewedNotification
+    | MaintainerNewPaidSubscriptionNotification,
+    Discriminator(discriminator="type"),
+]

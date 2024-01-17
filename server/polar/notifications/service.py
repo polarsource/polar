@@ -2,8 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
-from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, parse_obj_as
+from pydantic import BaseModel, TypeAdapter
 from sqlalchemy import desc
 
 from polar.kit.extensions.sqlalchemy import sql
@@ -12,21 +11,8 @@ from polar.models.notification import Notification
 from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.user_notification import UserNotification
-from polar.notifications.notification import (
-    MaintainerAccountReviewedNotification,
-    MaintainerAccountUnderReviewNotification,
-    MaintainerNewPaidSubscriptionNotification,
-    MaintainerPledgeConfirmationPendingNotification,
-    MaintainerPledgeCreatedNotification,
-    MaintainerPledgedIssueConfirmationPendingNotification,
-    MaintainerPledgedIssuePendingNotification,
-    MaintainerPledgePaidNotification,
-    MaintainerPledgePendingNotification,
-    NotificationBase,
-    PledgerPledgePendingNotification,
-    RewardPaidNotification,
-    TeamAdminMemberPledgedNotification,
-)
+from polar.notifications.notification import Notification as NotificationSchema
+from polar.notifications.notification import NotificationPayload, NotificationType
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -41,7 +27,8 @@ class PartialNotification(BaseModel):
     pledge_id: UUID | None = None
     pull_request_id: UUID | None = None
     issue_reference_id: UUID | None = None
-    payload: NotificationBase
+    type: NotificationType
+    payload: NotificationPayload
 
 
 class NotificationsService:
@@ -77,15 +64,13 @@ class NotificationsService:
         user_id: UUID,
         notif: PartialNotification,
     ) -> bool:
-        typ = type(notif.payload).__name__
-
         notification = Notification(
             user_id=user_id,
-            type=typ,
+            type=notif.type,
             issue_id=notif.issue_id,
             pledge_id=notif.pledge_id,
             pull_request_id=notif.pull_request_id,
-            payload=jsonable_encoder(notif.payload),
+            payload=notif.payload.model_dump(mode="json"),
         )
 
         session.add(notification)
@@ -117,15 +102,13 @@ class NotificationsService:
         email_addr: str,
         notif: PartialNotification,
     ) -> None:
-        typ = type(notif.payload).__name__
-
         notification = Notification(
             email_addr=email_addr,
-            type=typ,
+            type=notif.type,
             issue_id=notif.issue_id,
             pledge_id=notif.pledge_id,
             pull_request_id=notif.pull_request_id,
-            payload=jsonable_encoder(notif.payload),
+            payload=notif.payload.model_dump(mode="json"),
         )
 
         session.add(notification)
@@ -162,57 +145,10 @@ class NotificationsService:
             )
             return
 
-    def parse_payload(
-        self, n: Notification
-    ) -> (
-        MaintainerPledgeCreatedNotification
-        | MaintainerPledgeConfirmationPendingNotification
-        | MaintainerPledgePendingNotification
-        | MaintainerPledgePaidNotification
-        | PledgerPledgePendingNotification
-        | RewardPaidNotification
-        | MaintainerPledgedIssueConfirmationPendingNotification
-        | MaintainerPledgedIssuePendingNotification
-        | TeamAdminMemberPledgedNotification
-        | MaintainerAccountUnderReviewNotification
-        | MaintainerAccountReviewedNotification
-        | MaintainerNewPaidSubscriptionNotification
-    ):
-        match n.type:
-            case "MaintainerPledgeCreatedNotification":
-                return parse_obj_as(MaintainerPledgeCreatedNotification, n.payload)
-            case "MaintainerPledgeConfirmationPendingNotification":
-                return parse_obj_as(
-                    MaintainerPledgeConfirmationPendingNotification, n.payload
-                )
-            case "MaintainerPledgePendingNotification":
-                return parse_obj_as(MaintainerPledgePendingNotification, n.payload)
-            case "MaintainerPledgePaidNotification":
-                return parse_obj_as(MaintainerPledgePaidNotification, n.payload)
-            case "PledgerPledgePendingNotification":
-                return parse_obj_as(PledgerPledgePendingNotification, n.payload)
-            case "RewardPaidNotification":
-                return parse_obj_as(RewardPaidNotification, n.payload)
-            case "MaintainerPledgedIssueConfirmationPendingNotification":
-                return parse_obj_as(
-                    MaintainerPledgedIssueConfirmationPendingNotification, n.payload
-                )
-            case "MaintainerPledgedIssuePendingNotification":
-                return parse_obj_as(
-                    MaintainerPledgedIssuePendingNotification, n.payload
-                )
-            case "TeamAdminMemberPledgedNotification":
-                return parse_obj_as(TeamAdminMemberPledgedNotification, n.payload)
-            case "MaintainerAccountUnderReviewNotification":
-                return parse_obj_as(MaintainerAccountUnderReviewNotification, n.payload)
-            case "MaintainerAccountReviewedNotification":
-                return parse_obj_as(MaintainerAccountReviewedNotification, n.payload)
-            case "MaintainerNewPaidSubscriptionNotification":
-                return parse_obj_as(
-                    MaintainerNewPaidSubscriptionNotification, n.payload
-                )
-
-        raise ValueError(f"unknown notificaiton type {n.type}")
+    def parse_payload(self, n: Notification) -> NotificationPayload:
+        NotificationTypeAdapter = TypeAdapter(NotificationSchema)
+        notification = NotificationTypeAdapter.validate_python(n)
+        return notification.payload  # type: ignore
 
     async def get_user_last_read(
         self, session: AsyncSession, user_id: UUID

@@ -8,8 +8,9 @@ from polar.exceptions import PolarError
 from polar.held_transfer.service import held_transfer as held_transfer_service
 from polar.models import Account
 from polar.notifications.notification import (
-    MaintainerAccountReviewedNotification,
-    MaintainerAccountUnderReviewNotification,
+    MaintainerAccountReviewedNotificationPayload,
+    MaintainerAccountUnderReviewNotificationPayload,
+    NotificationType,
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
@@ -65,9 +66,10 @@ async def account_under_review(
             session=session,
             user_id=account.admin_id,
             notif=PartialNotification(
-                payload=MaintainerAccountUnderReviewNotification(
+                type=NotificationType.maintainer_account_under_review,
+                payload=MaintainerAccountUnderReviewNotificationPayload(
                     account_type=AccountType.get_display_name(account.account_type)
-                )
+                ),
             ),
         )
 
@@ -89,8 +91,9 @@ async def account_reviewed(
             session=session,
             user_id=account.admin_id,
             notif=PartialNotification(
-                payload=MaintainerAccountReviewedNotification(
+                type=NotificationType.maintainer_account_reviewed,
+                payload=MaintainerAccountReviewedNotificationPayload(
                     account_type=AccountType.get_display_name(account.account_type)
-                )
+                ),
             ),
         )

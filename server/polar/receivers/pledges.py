@@ -13,7 +13,8 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeType
 from polar.models.repository import Repository
 from polar.notifications.notification import (
-    MaintainerPledgeCreatedNotification,
+    MaintainerPledgeCreatedNotificationPayload,
+    NotificationType,
 )
 from polar.notifications.service import (
     PartialNotification,
@@ -214,7 +215,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_created_notification.no_repo_found")
         return
 
-    n = MaintainerPledgeCreatedNotification(
+    n = MaintainerPledgeCreatedNotificationPayload(
         pledger_name=pledger_name(pledge),
         pledge_amount=get_cents_in_dollar_string(pledge.amount),
         issue_url=issue_url(org, repo, issue),
@@ -231,7 +232,10 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         session=session,
         org_id=org.id,
         notif=PartialNotification(
-            issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
+            issue_id=pledge.issue_id,
+            pledge_id=pledge.id,
+            type=NotificationType.maintainer_pledge_created,
+            payload=n,
         ),
     )
 

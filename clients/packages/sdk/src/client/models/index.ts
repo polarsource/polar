@@ -812,7 +812,7 @@ export interface BackofficeReward {
  * @type BenefitsInner
  * @export
  */
-export type BenefitsInner = SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber;
+export type BenefitsInner = SubscriptionBenefitAdsSubscriber | SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber;
 
 /**
  * 
@@ -1609,7 +1609,7 @@ export interface IssueUpdateBadgeMessage {
  * @type ItemsInner
  * @export
  */
-export type ItemsInner = SubscriptionBenefitArticles | SubscriptionBenefitCustom;
+export type ItemsInner = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom;
 
 /**
  * 
@@ -1989,19 +1989,19 @@ export interface ListResourceTransaction {
 /**
  * 
  * @export
- * @interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitCustom
+ * @interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustom
  */
-export interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitCustom {
+export interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustom {
     /**
      * 
      * @type {Array<ItemsInner>}
-     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitCustom
+     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustom
      */
     items?: Array<ItemsInner>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitCustom
+     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustom
      */
     pagination: Pagination;
 }
@@ -4273,19 +4273,19 @@ export interface RepositoryBadgeSettingsUpdate {
  * @type ResponseSubscriptionsCreateSubscriptionBenefit
  * @export
  */
-export type ResponseSubscriptionsCreateSubscriptionBenefit = SubscriptionBenefitArticles | SubscriptionBenefitCustom;
+export type ResponseSubscriptionsCreateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom;
 
 /**
  * @type ResponseSubscriptionsLookupSubscriptionBenefit
  * @export
  */
-export type ResponseSubscriptionsLookupSubscriptionBenefit = SubscriptionBenefitArticles | SubscriptionBenefitCustom;
+export type ResponseSubscriptionsLookupSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom;
 
 /**
  * @type ResponseSubscriptionsUpdateSubscriptionBenefit
  * @export
  */
-export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefitArticles | SubscriptionBenefitCustom;
+export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom;
 
 /**
  * 
@@ -4681,6 +4681,218 @@ export interface Subscription {
 /**
  * 
  * @export
+ * @interface SubscriptionBenefitAds
+ */
+export interface SubscriptionBenefitAds {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAds
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAds
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAds
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAds
+     */
+    type: SubscriptionBenefitAdsTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAds
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitAds
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitAds
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAds
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAds
+     */
+    repository_id?: string;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitAdsTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type SubscriptionBenefitAdsTypeEnum = typeof SubscriptionBenefitAdsTypeEnum[keyof typeof SubscriptionBenefitAdsTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitAdsCreate
+ */
+export interface SubscriptionBenefitAdsCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsCreate
+     */
+    type: SubscriptionBenefitAdsCreateTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitAdsCreateTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type SubscriptionBenefitAdsCreateTypeEnum = typeof SubscriptionBenefitAdsCreateTypeEnum[keyof typeof SubscriptionBenefitAdsCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitAdsSubscriber
+ */
+export interface SubscriptionBenefitAdsSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    type: SubscriptionBenefitAdsSubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    repository_id?: string;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitAdsSubscriberTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type SubscriptionBenefitAdsSubscriberTypeEnum = typeof SubscriptionBenefitAdsSubscriberTypeEnum[keyof typeof SubscriptionBenefitAdsSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitAdsUpdate
+ */
+export interface SubscriptionBenefitAdsUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitAdsUpdate
+     */
+    type: SubscriptionBenefitAdsUpdateTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitAdsUpdateTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type SubscriptionBenefitAdsUpdateTypeEnum = typeof SubscriptionBenefitAdsUpdateTypeEnum[keyof typeof SubscriptionBenefitAdsUpdateTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface SubscriptionBenefitArticles
  */
 export interface SubscriptionBenefitArticles {
@@ -4878,7 +5090,7 @@ export type SubscriptionBenefitArticlesUpdateTypeEnum = typeof SubscriptionBenef
  * @type SubscriptionBenefitCreate
  * @export
  */
-export type SubscriptionBenefitCreate = SubscriptionBenefitCustomBisCreate | SubscriptionBenefitCustomCreate;
+export type SubscriptionBenefitCreate = SubscriptionBenefitAdsCreate | SubscriptionBenefitCustomBisCreate | SubscriptionBenefitCustomCreate;
 
 /**
  * 
@@ -5214,7 +5426,8 @@ export type SubscriptionBenefitCustomUpdateTypeEnum = typeof SubscriptionBenefit
  */
 export const SubscriptionBenefitType = {
     CUSTOM: 'custom',
-    ARTICLES: 'articles'
+    ARTICLES: 'articles',
+    ADS: 'ads'
 } as const;
 export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeof SubscriptionBenefitType];
 
@@ -5222,7 +5435,7 @@ export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeo
  * @type SubscriptionBenefitUpdate
  * @export
  */
-export type SubscriptionBenefitUpdate = SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate;
+export type SubscriptionBenefitUpdate = SubscriptionBenefitAdsUpdate | SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate;
 
 /**
  * 

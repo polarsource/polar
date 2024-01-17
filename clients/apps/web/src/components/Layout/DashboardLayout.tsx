@@ -101,7 +101,7 @@ const DashboardSidebar = () => {
   return (
     <aside
       className={twMerge(
-        'dark:bg-polar-900 dark:border-r-polar-800 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 border-r border-r-gray-100 bg-white md:w-[320px]',
+        'dark:bg-polar-900 dark:border-r-polar-800 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto border-r border-r-gray-100 bg-white md:w-[320px] md:overflow-y-visible',
       )}
     >
       <div className="flex h-full flex-col">
@@ -124,7 +124,7 @@ const DashboardSidebar = () => {
         </div>
 
         <div
-          className="flex h-full w-full flex-grow flex-col gap-y-2 overflow-y-auto"
+          className="flex w-full flex-grow flex-col gap-y-2 md:h-full md:overflow-y-auto"
           onScroll={handleScroll}
         >
           {shouldRenderBackerNavigation && <BackerNavigation />}

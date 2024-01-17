@@ -45,11 +45,12 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.notifications.notification import (
-    MaintainerPledgedIssueConfirmationPendingNotification,
-    MaintainerPledgedIssuePendingNotification,
-    PledgerPledgePendingNotification,
-    RewardPaidNotification,
-    TeamAdminMemberPledgedNotification,
+    MaintainerPledgedIssueConfirmationPendingNotificationPayload,
+    MaintainerPledgedIssuePendingNotificationPayload,
+    NotificationType,
+    PledgerPledgePendingNotificationPayload,
+    RewardPaidNotificationPayload,
+    TeamAdminMemberPledgedNotificationPayload,
 )
 from polar.notifications.service import (
     PartialNotification,
@@ -328,7 +329,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         pledge_amount_sum = sum([p.amount for p in pledges])
 
-        n = MaintainerPledgedIssueConfirmationPendingNotification(
+        n = MaintainerPledgedIssueConfirmationPendingNotificationPayload(
             pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
             issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
@@ -342,7 +343,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await notification_service.send_to_org_admins(
             session=session,
             org_id=org.id,
-            notif=PartialNotification(issue_id=issue.id, payload=n),
+            notif=PartialNotification(
+                issue_id=issue.id,
+                type=NotificationType.maintainer_pledged_issue_confirmation_pending,
+                payload=n,
+            ),
         )
 
     async def mark_pending_by_issue_id(
@@ -424,7 +429,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         pledge_amount_sum = sum([p.amount for p in pledges])
 
         # Thanks for confirming that X is completed...
-        n = MaintainerPledgedIssuePendingNotification(
+        n = MaintainerPledgedIssuePendingNotificationPayload(
             pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
             issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
@@ -438,7 +443,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await notification_service.send_to_org_admins(
             session=session,
             org_id=org.id,
-            notif=PartialNotification(issue_id=issue_id, payload=n),
+            notif=PartialNotification(
+                issue_id=issue_id,
+                type=NotificationType.maintainer_pledged_issue_pending,
+                payload=n,
+            ),
         )
 
     async def send_team_admin_member_pledged_notification(
@@ -468,7 +477,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledging_org:
             raise Exception("pledging org not found")
 
-        n = TeamAdminMemberPledgedNotification(
+        n = TeamAdminMemberPledgedNotificationPayload(
             pledge_amount=get_cents_in_dollar_string(pledge.amount),
             issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
@@ -483,7 +492,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await notification_service.send_to_org_admins(
             session=session,
             org_id=pledge.by_organization_id,
-            notif=PartialNotification(issue_id=pledge.issue_id, payload=n),
+            notif=PartialNotification(
+                issue_id=pledge.issue_id,
+                type=NotificationType.team_admin_member_pledged,
+                payload=n,
+            ),
         )
 
     async def send_pledger_pending_notification(
@@ -507,7 +520,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not repo:
             raise Exception("repo not found")
 
-        pledger_notif = PledgerPledgePendingNotification(
+        pledger_notif = PledgerPledgePendingNotificationPayload(
             pledge_amount=get_cents_in_dollar_string(pledge.amount),
             pledge_date=pledge.created_at.strftime("%Y-%m-%d"),
             issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
@@ -523,7 +536,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
             session,
             pledge,
             notif=PartialNotification(
-                issue_id=pledge.issue_id, pledge_id=pledge.id, payload=pledger_notif
+                issue_id=pledge.issue_id,
+                pledge_id=pledge.id,
+                type=NotificationType.pledger_pledge_pending,
+                payload=pledger_notif,
             ),
         )
 
@@ -910,7 +926,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             log.error("pledge_paid_notification.no_repo_found")
             return
 
-        n = RewardPaidNotification(
+        n = RewardPaidNotificationPayload(
             issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
             issue_org_name=org.name,
@@ -926,7 +942,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 session=session,
                 org_id=split.organization_id,
                 notif=PartialNotification(
-                    issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
+                    issue_id=pledge.issue_id,
+                    pledge_id=pledge.id,
+                    type=NotificationType.reward_paid,
+                    payload=n,
                 ),
             )
         elif split.user_id:
@@ -934,7 +953,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 session=session,
                 user_id=split.user_id,
                 notif=PartialNotification(
-                    issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
+                    issue_id=pledge.issue_id,
+                    pledge_id=pledge.id,
+                    type=NotificationType.reward_paid,
+                    payload=n,
                 ),
             )
 

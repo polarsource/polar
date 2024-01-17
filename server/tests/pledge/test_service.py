@@ -1008,10 +1008,10 @@ async def test_pledge_states(
                 close_issue_after_test_pledge=True,
                 expected_pre_pledge_close_notifications={},
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
                 },
                 expected_post_close_notifications={
-                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgedIssueConfirmationPendingNotificationPayload": 1,  # Your backers funded ... please confirm it
                 },
             ),
             TestCase(
@@ -1022,10 +1022,10 @@ async def test_pledge_states(
                 close_issue_after_test_pledge=True,
                 expected_pre_pledge_close_notifications={},
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
                 },
                 expected_post_close_notifications={
-                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgedIssueConfirmationPendingNotificationPayload": 1,  # Your backers funded ... please confirm it
                 },
             ),
             #
@@ -1039,8 +1039,8 @@ async def test_pledge_states(
                 close_issue_after_test_pledge=False,
                 expected_pre_pledge_close_notifications={},
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotificationPayload": 1,  # Your backers funded ... please confirm it
                 },
                 expected_post_close_notifications={},
             ),
@@ -1055,9 +1055,9 @@ async def test_pledge_states(
                 close_issue_after_test_pledge=False,
                 expected_pre_pledge_close_notifications={},
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
-                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotificationPayload": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotificationPayload": 1,  # Good news: X is completed!
                 },
                 expected_post_close_notifications={},
             ),
@@ -1072,8 +1072,8 @@ async def test_pledge_states(
                 close_issue_after_test_pledge=False,
                 expected_pre_pledge_close_notifications={},
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotificationPayload": 1,  # Your backers funded ... please confirm it
                 },
                 expected_post_close_notifications={},
             ),
@@ -1088,9 +1088,9 @@ async def test_pledge_states(
                 close_issue_after_test_pledge=False,
                 expected_pre_pledge_close_notifications={},
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
-                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotificationPayload": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotificationPayload": 1,  # Good news: X is completed!
                 },
                 expected_post_close_notifications={},
             ),
@@ -1104,15 +1104,15 @@ async def test_pledge_states(
                 is_confirm_before_test_pledge=True,
                 close_issue_after_test_pledge=False,
                 expected_pre_pledge_close_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
-                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
-                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotificationPayload": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgedIssuePendingNotificationPayload": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotificationPayload": 1,  # Good news: X is completed!
                 },
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
-                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotificationPayload": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotificationPayload": 1,  # Good news: X is completed!
                 },
                 expected_post_close_notifications={},
             ),
@@ -1126,15 +1126,15 @@ async def test_pledge_states(
                 is_confirm_before_test_pledge=True,
                 close_issue_after_test_pledge=False,
                 expected_pre_pledge_close_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
-                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
-                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotificationPayload": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgedIssuePendingNotificationPayload": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotificationPayload": 1,  # Good news: X is completed!
                 },
                 expected_post_pledge_notifications={
-                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
-                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
-                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                    "MaintainerPledgeCreatedNotificationPayload": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotificationPayload": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotificationPayload": 1,  # Good news: X is completed!
                 },
                 expected_post_close_notifications={},
             ),
@@ -1250,8 +1250,8 @@ async def test_pledge_states(
                 assert (
                     notifications_sent
                     == {
-                        "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
-                        "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                        "PledgerPledgePendingNotificationPayload": 1,  # Good news: X is completed!
+                        "MaintainerPledgedIssuePendingNotificationPayload": 1,  # Thanks for confirming that X is completed...
                     }
                 )
 

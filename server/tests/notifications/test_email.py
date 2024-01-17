@@ -8,16 +8,16 @@ from polar.models.organization import Organization
 from polar.models.pledge import PledgeType
 from polar.models.user import User
 from polar.notifications.notification import (
-    MaintainerNewPaidSubscriptionNotification,
-    MaintainerPledgeConfirmationPendingNotification,
-    MaintainerPledgeCreatedNotification,
-    MaintainerPledgedIssueConfirmationPendingNotification,
-    MaintainerPledgedIssuePendingNotification,
-    MaintainerPledgePaidNotification,
-    MaintainerPledgePendingNotification,
-    PledgerPledgePendingNotification,
-    RewardPaidNotification,
-    TeamAdminMemberPledgedNotification,
+    MaintainerNewPaidSubscriptionNotificationPayload,
+    MaintainerPledgeConfirmationPendingNotificationPayload,
+    MaintainerPledgeCreatedNotificationPayload,
+    MaintainerPledgedIssueConfirmationPendingNotificationPayload,
+    MaintainerPledgedIssuePendingNotificationPayload,
+    MaintainerPledgePaidNotificationPayload,
+    MaintainerPledgePendingNotificationPayload,
+    PledgerPledgePendingNotificationPayload,
+    RewardPaidNotificationPayload,
+    TeamAdminMemberPledgedNotificationPayload,
 )
 
 
@@ -45,7 +45,7 @@ async def check_diff(email: tuple[str, str]) -> None:
 async def test_MaintainerPledgeCreatedNotification_no_stripe(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgeCreatedNotification(
+    n = MaintainerPledgeCreatedNotificationPayload(
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -65,7 +65,7 @@ async def test_MaintainerPledgeCreatedNotification_no_stripe(
 async def test_MaintainerPledgeCreatedNotification_with_stripe(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgeCreatedNotification(
+    n = MaintainerPledgeCreatedNotificationPayload(
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -85,7 +85,7 @@ async def test_MaintainerPledgeCreatedNotification_with_stripe(
 async def test_MaintainerPledgeCreatedNotification_anonymous(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgeCreatedNotification(
+    n = MaintainerPledgeCreatedNotificationPayload(
         pledger_name=None,
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -105,7 +105,7 @@ async def test_MaintainerPledgeCreatedNotification_anonymous(
 async def test_MaintainerPledgeCreatedNotification_pay_on_completion(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgeCreatedNotification(
+    n = MaintainerPledgeCreatedNotificationPayload(
         pledger_name="pledger_name",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -125,7 +125,7 @@ async def test_MaintainerPledgeCreatedNotification_pay_on_completion(
 async def test_MaintainerPledgeConfirmationPendingdNotification_no_stripe(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgeConfirmationPendingNotification(
+    n = MaintainerPledgeConfirmationPendingNotificationPayload(
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -144,7 +144,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_no_stripe(
 async def test_MaintainerPledgeConfirmationPendingdNotification_with_stripe(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgeConfirmationPendingNotification(
+    n = MaintainerPledgeConfirmationPendingNotificationPayload(
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -163,7 +163,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_with_stripe(
 async def test_MaintainerPledgePendingdNotification_no_stripe(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgePendingNotification(
+    n = MaintainerPledgePendingNotificationPayload(
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -183,7 +183,7 @@ async def test_MaintainerPledgePendingdNotification_no_stripe(
 async def test_MaintainerPledgePendingdNotification_with_stripe(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgePendingNotification(
+    n = MaintainerPledgePendingNotificationPayload(
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -203,7 +203,7 @@ async def test_MaintainerPledgePendingdNotification_with_stripe(
 async def test_PledgerPledgePendingNotification(
     predictable_user: User,
 ) -> None:
-    n = PledgerPledgePendingNotification(
+    n = PledgerPledgePendingNotificationPayload(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         issue_number=123,
@@ -223,7 +223,7 @@ async def test_PledgerPledgePendingNotification(
 async def test_PledgerPledgePendingNotification_pay_on_completion(
     predictable_user: User,
 ) -> None:
-    n = PledgerPledgePendingNotification(
+    n = PledgerPledgePendingNotificationPayload(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         issue_number=123,
@@ -243,7 +243,7 @@ async def test_PledgerPledgePendingNotification_pay_on_completion(
 async def test_MaintainerPledgePaidNotification(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgePaidNotification(
+    n = MaintainerPledgePaidNotificationPayload(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         issue_number=123,
@@ -261,7 +261,7 @@ async def test_MaintainerPledgePaidNotification(
 async def test_RewardPaidNotification(
     predictable_user: User,
 ) -> None:
-    n = RewardPaidNotification(
+    n = RewardPaidNotificationPayload(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         issue_number=123,
@@ -280,7 +280,7 @@ async def test_RewardPaidNotification(
 async def test_MaintainerPledgedIssueConfirmationPendingNotification(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgedIssueConfirmationPendingNotification(
+    n = MaintainerPledgedIssueConfirmationPendingNotificationPayload(
         issue_id=uuid.uuid4(),
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -299,7 +299,7 @@ async def test_MaintainerPledgedIssueConfirmationPendingNotification(
 async def test_MaintainerPledgedIssueConfirmationPendingNotification_with_account(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgedIssueConfirmationPendingNotification(
+    n = MaintainerPledgedIssueConfirmationPendingNotificationPayload(
         issue_id=uuid.uuid4(),
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -318,7 +318,7 @@ async def test_MaintainerPledgedIssueConfirmationPendingNotification_with_accoun
 async def test_MaintainerPledgedIssuePendingNotification(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgedIssuePendingNotification(
+    n = MaintainerPledgedIssuePendingNotificationPayload(
         issue_id=uuid.uuid4(),
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -337,7 +337,7 @@ async def test_MaintainerPledgedIssuePendingNotification(
 async def test_MaintainerPledgedIssuePendingNotification_with_account(
     predictable_user: User,
 ) -> None:
-    n = MaintainerPledgedIssuePendingNotification(
+    n = MaintainerPledgedIssuePendingNotificationPayload(
         issue_id=uuid.uuid4(),
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -357,7 +357,7 @@ async def test_TeamAdminMemberPledgedNotification(
     predictable_user: User,
     predictable_organization: Organization,
 ) -> None:
-    n = TeamAdminMemberPledgedNotification(
+    n = TeamAdminMemberPledgedNotificationPayload(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         issue_number=123,
@@ -377,7 +377,7 @@ async def test_TeamAdminMemberPledgedNotification(
 async def test_MaintainerNewPaidSubscriptionNotification(
     predictable_user: User,
 ) -> None:
-    n = MaintainerNewPaidSubscriptionNotification(
+    n = MaintainerNewPaidSubscriptionNotificationPayload(
         subscriber_name="John Doe",
         tier_name="My Paid Tier",
         tier_price_amount=500,

@@ -1,66 +1,28 @@
 import { UserRead } from '@polar-sh/sdk'
-import { LogoIcon, LogoType } from 'polarkit/components/brand'
-import { twMerge } from 'tailwind-merge'
+import { LogoIcon } from 'polarkit/components/brand'
+import BackerNavigation from '../Dashboard/BackerNavigation'
+import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import TopbarRight from './TopbarRight'
 
-export type LogoPosition = 'center' | 'left'
-
-const Topbar = (props: {
-  isFixed?: boolean
-  logo?: {
-    title?: string
-    position?: LogoPosition
-  }
+const Topbar = ({
+  hideProfile,
+  authenticatedUser,
+}: {
   hideProfile?: boolean
-  useOrgFromURL: boolean
   authenticatedUser?: UserRead
 }) => {
-  const className = twMerge(
-    props.isFixed !== false ? 'fixed z-20' : 'z-10',
-    'flex h-16 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-950 px-4 drop-shadow dark:border-b dark:border-polar-700 flex-shrink-0',
-  )
-
-  const hideProfile = props?.hideProfile
-
-  const logoPosition: LogoPosition = props?.logo?.position || 'left'
-
-  const logo = (
-    <>
-      <a
-        href="/"
-        className="flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex"
-      >
-        <LogoType />
-      </a>
-    </>
-  )
-
   return (
     <>
-      <div className={className}>
-        <div className="flex items-center space-x-4 md:flex-1">
-          {logoPosition === 'left' && !props.logo?.title && logo}
-          {logoPosition === 'left' && props.logo?.title && (
-            <>
-              <LogoIcon />
-              <span className="font-display text-xl">{props.logo?.title}</span>
-            </>
-          )}
+      <div className="flex flex-row items-center gap-x-16">
+        <LogoIcon className="text-blue-500 dark:text-blue-400" size={42} />
+        <div className="dark:bg-polar-900 dark:ring-polar-800 flex flex-row items-center gap-4 rounded-full bg-white p-2 px-6 shadow-sm ring-1 ring-gray-100">
+          <BackerNavigation />
+          <DashboardNavigation />
         </div>
+      </div>
 
-        {logoPosition == 'center' && !props.logo?.title && logo}
-        {logoPosition == 'center' && props.logo?.title && (
-          <>
-            <LogoIcon />
-            <span className="font-display text-xl">{props.logo?.title}</span>
-          </>
-        )}
-
-        <div className="relative flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
-          {!hideProfile && (
-            <TopbarRight authenticatedUser={props.authenticatedUser} />
-          )}
-        </div>
+      <div className="relative flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
+        {!hideProfile && <TopbarRight authenticatedUser={authenticatedUser} />}
       </div>
     </>
   )

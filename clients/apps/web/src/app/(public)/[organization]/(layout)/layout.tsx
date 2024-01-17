@@ -1,5 +1,4 @@
 import EmptyLayout from '@/components/Layout/EmptyLayout'
-import Footer from '@/components/Organization/Footer'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api'
@@ -83,11 +82,16 @@ export default async function Layout({
                   mobileLayout
                 />
               </div>
-              <div className="flex h-full w-full flex-col">{children}</div>
+              <div className="flex h-full w-full flex-col gap-y-8">
+                <OrganizationPublicPageNav
+                  className="hidden md:flex"
+                  organization={organization}
+                />
+                {children}
+              </div>
             </div>
           </div>
         </div>
-        <Footer wide showUpsellFooter={authenticatedUser === undefined} />
       </div>
     </EmptyLayout>
   )

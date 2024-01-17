@@ -24,7 +24,6 @@ const OrganizationSubscriptionsPublicPage: React.FC<
 
   return (
     <div className="flex flex-col">
-      <h2 className="text-lg">Subscriptions</h2>
       <div className="dark:divide-polar-700 flex flex-col divide-y">
         <SubscriptionGroupPublic
           title="Free"

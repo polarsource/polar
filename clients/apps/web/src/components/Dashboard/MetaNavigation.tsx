@@ -3,7 +3,7 @@ import { metaRoutes } from './navigation'
 
 const MetaNavigation = () => {
   return (
-    <div className="flex flex-col gap-2 px-4 py-6">
+    <div className="flex flex-col gap-2 px-4 py-8">
       {metaRoutes.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
           <a

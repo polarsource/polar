@@ -16,7 +16,15 @@ import {
   useOrganizationSubscriptions,
   useUserSubscriptions,
 } from 'polarkit/hooks'
-import { PropsWithChildren, Suspense, useEffect, useState } from 'react'
+import {
+  PropsWithChildren,
+  Suspense,
+  UIEventHandler,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import BackerNavigation from '../Dashboard/BackerNavigation'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
@@ -29,6 +37,7 @@ import Popover from '../Notifications/Popover'
 import ProfileSelection from '../Shared/ProfileSelection'
 
 const DashboardSidebar = () => {
+  const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
   const { org: currentOrg, isLoaded: isCurrentOrgLoaded } =
     useCurrentOrgAndRepoFromURL()
@@ -77,53 +86,72 @@ const DashboardSidebar = () => {
           (item) => item.subscription_tier,
         )) ?? []
 
+  const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
+    setScrollTop(e.currentTarget.scrollTop)
+  }, [])
+  const shouldRenderBorder = useMemo(() => scrollTop > 0, [scrollTop])
+  const scrollClassName = useMemo(
+    () =>
+      shouldRenderBorder
+        ? 'border-b dark:border-b-polar-800 border-b-gray-100'
+        : '',
+    [shouldRenderBorder],
+  )
+
   return (
     <aside
       className={twMerge(
-        'dark:bg-polar-900 dark:border-r-polar-800 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto border-r border-r-gray-100 bg-white md:w-[320px]',
+        'dark:bg-polar-900 dark:border-r-polar-800 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 border-r border-r-gray-100 bg-white md:w-[320px]',
       )}
     >
-      <div className="flex flex-col gap-y-2">
-        <div className="relative z-10 mt-5 hidden translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8 md:flex">
-          <a
-            href="/"
-            className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
-          >
-            <LogoIcon className="h-10 w-10" />
-          </a>
+      <div className="flex h-full flex-col">
+        <div className={scrollClassName}>
+          <div className="relative z-10 mt-5 hidden translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8 md:flex">
+            <a
+              href="/"
+              className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
+            >
+              <LogoIcon className="h-10 w-10" />
+            </a>
 
-          <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
+            <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
+          </div>
+          <div className="mb-4 mt-8 flex px-4">
+            {currentUser && (
+              <ProfileSelection useOrgFromURL={true} className="shadow-xl" />
+            )}
+          </div>
         </div>
-        <div className="mb-4 mt-8 flex px-4">
-          {currentUser && (
-            <ProfileSelection useOrgFromURL={true} className="shadow-xl" />
+
+        <div
+          className="flex h-full w-full flex-grow flex-col gap-y-2 overflow-y-auto"
+          onScroll={handleScroll}
+        >
+          {shouldRenderBackerNavigation && <BackerNavigation />}
+
+          {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
+
+          {shouldRenderDashboardNavigation && <DashboardNavigation />}
+
+          {shouldShowGitHubAuthUpsell ? (
+            <div className="flex flex-col pt-4">
+              <GitHubAuthUpsell />
+            </div>
+          ) : shouldShowMaintainerUpsell ? (
+            <div className="flex flex-col pt-4">
+              <MaintainerUpsell />
+            </div>
+          ) : null}
+
+          {subscriptionsToRender.length > 0 && (
+            <MySubscriptionsNavigation
+              subscriptionTiers={subscriptionsToRender}
+            />
           )}
         </div>
-
-        {shouldRenderBackerNavigation && <BackerNavigation />}
-
-        {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
-
-        {shouldRenderDashboardNavigation && <DashboardNavigation />}
-
-        {shouldShowGitHubAuthUpsell ? (
-          <div className="flex flex-col pt-4">
-            <GitHubAuthUpsell />
-          </div>
-        ) : shouldShowMaintainerUpsell ? (
-          <div className="flex flex-col pt-4">
-            <MaintainerUpsell />
-          </div>
-        ) : null}
-
-        {subscriptionsToRender.length > 0 && (
-          <MySubscriptionsNavigation
-            subscriptionTiers={subscriptionsToRender}
-          />
-        )}
-      </div>
-      <div className="flex flex-col gap-y-2">
-        <MetaNavigation />
+        <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
+          <MetaNavigation />
+        </div>
       </div>
     </aside>
   )

@@ -1,6 +1,7 @@
 from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
+from .advertisement_campaign import AdvertisementCampaign
 from .article import Article
 from .articles_subscription import ArticlesSubscription
 from .held_transfer import HeldTransfer
@@ -31,6 +32,7 @@ from .webhook_notifications import WebhookNotification
 
 __all__ = [
     "Account",
+    "AdvertisementCampaign",
     "Article",
     "ArticlesSubscription",
     "HeldTransfer",

@@ -42,6 +42,9 @@ const convert = (schema) => {
   }
   console.log()
 
+  // Hack! Pretend the schema is OpenAPI 3.0
+  schema.openapi = '3.0.3'
+
   // Hack! Replace the backends JSONAny with ts any
   // Only done for PullRequests and Issues
   console.log('🛠️  JSONAny -> Any')

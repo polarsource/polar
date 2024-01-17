@@ -128,7 +128,6 @@ def configure_openapi() -> None:
     openapi_schema = get_openapi(
         title="Polar API",
         version="0.1.0",
-        openapi_version="3.0.3",
         description="""
 Welcome to the **Polar API** for [polar.sh](https://polar.sh).
 

@@ -13,7 +13,7 @@ from polar.worker import (
 )
 
 from ..service.issue import github_issue
-from .utils import get_organization_and_repo
+from .utils import get_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
 
@@ -21,6 +21,7 @@ BADGE_UPDATE_MAX_RETRIES = 5
 
 
 @task("github.badge.embed_on_issue")
+@github_rate_limit_retry
 async def embed_badge(
     ctx: JobContext,
     issue_id: UUID,
@@ -57,6 +58,7 @@ async def embed_badge(
 
 
 @task("github.badge.update_on_issue")
+@github_rate_limit_retry
 async def update_on_issue(
     ctx: JobContext,
     issue_id: UUID,
@@ -92,6 +94,7 @@ async def update_on_issue(
 
 
 @task("github.badge.remove_on_issue")
+@github_rate_limit_retry
 async def remove_badge(
     ctx: JobContext,
     issue_id: UUID,
@@ -128,6 +131,7 @@ async def remove_badge(
 
 
 @task("github.badge.embed_retroactively_on_repository")
+@github_rate_limit_retry
 async def embed_badge_retroactively_on_repository(
     ctx: JobContext,
     organization_id: UUID,
@@ -155,6 +159,7 @@ async def embed_badge_retroactively_on_repository(
 
 
 @task("github.badge.remove_on_repository")
+@github_rate_limit_retry
 async def remove_badges_on_repository(
     ctx: JobContext,
     organization_id: UUID,

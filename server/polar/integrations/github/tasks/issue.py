@@ -19,12 +19,13 @@ from polar.worker import (
 
 from ..service.api import github_api
 from ..service.issue import github_issue
-from .utils import get_organization_and_repo
+from .utils import get_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
 
 
 @task("github.issue.sync")
+@github_rate_limit_retry
 async def issue_sync(
     ctx: JobContext,
     issue_id: UUID,
@@ -57,6 +58,7 @@ async def issue_sync(
 
 
 @task("github.issue.sync.issue_references")
+@github_rate_limit_retry
 async def issue_sync_issue_references(
     ctx: JobContext,
     issue_id: UUID,
@@ -89,6 +91,7 @@ async def issue_sync_issue_references(
 
 
 @task("github.issue.sync.issue_dependencies")
+@github_rate_limit_retry
 async def issue_sync_issue_dependencies(
     ctx: JobContext,
     issue_id: UUID,
@@ -132,6 +135,7 @@ async def issue_sync_issue_dependencies(
     },
     second=0,
 )
+@github_rate_limit_retry
 async def cron_refresh_issues(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         orgs = await organization_service.list_installed(session)
@@ -191,6 +195,7 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
     },
     second=0,
 )
+@github_rate_limit_retry
 async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         orgs = await organization_service.list_installed(session)

@@ -11,12 +11,13 @@ from polar.worker import (
     task,
 )
 
-from .utils import get_organization_and_repo
+from .utils import get_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
 
 
 @task("github.repo.sync.repositories")
+@github_rate_limit_retry
 async def sync_repositories(
     ctx: JobContext,
     organization_id: UUID,
@@ -36,6 +37,7 @@ async def sync_repositories(
 
 
 @task("github.repo.sync.issues")
+@github_rate_limit_retry
 async def sync_repository_issues(
     ctx: JobContext,
     organization_id: UUID,
@@ -58,6 +60,7 @@ async def sync_repository_issues(
 
 
 @task("github.repo.sync.pull_requests")
+@github_rate_limit_retry
 async def sync_repository_pull_requests(
     ctx: JobContext,
     organization_id: UUID,
@@ -85,6 +88,7 @@ async def sync_repository_pull_requests(
 
 
 @task("github.repo.sync.issue_references")
+@github_rate_limit_retry
 async def repo_sync_issue_references(
     ctx: JobContext,
     organization_id: UUID,

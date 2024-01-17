@@ -8,12 +8,11 @@ from pydantic import (
     AnyHttpUrl,
     EmailStr,
     Field,
-    field_validator,
     model_validator,
 )
 
 from polar.enums import Platforms
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import EmptyStrToNone, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
@@ -184,7 +183,7 @@ class SubscriptionTierCreate(Schema):
     name: str = Field(
         ..., min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
     )
-    description: str | None = Field(
+    description: EmptyStrToNone = Field(
         default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
     )
     is_highlighted: bool = False
@@ -207,33 +206,17 @@ class SubscriptionTierCreate(Schema):
             )
         return self
 
-    # FIXME: in Pydantic V2, replace with an annotated type
-    @field_validator("description")
-    @classmethod
-    def empty_str_to_none(cls, v: str | None) -> str | None:
-        if v == "":
-            return None
-        return v
-
 
 class SubscriptionTierUpdate(Schema):
     name: str | None = Field(
         default=None, min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
     )
-    description: str | None = Field(
+    description: EmptyStrToNone = Field(
         default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
     )
     is_highlighted: bool | None = None
     price_amount: int | None = Field(default=None, gt=0, le=MAXIMUM_PRICE_AMOUNT)
     price_currency: str | None = Field(default=None, pattern="USD")
-
-    # FIXME: in Pydantic V2, replace with an annotated type
-    @field_validator("description")
-    @classmethod
-    def empty_str_to_none(cls, v: str | None) -> str | None:
-        if v == "":
-            return None
-        return v
 
 
 class SubscriptionTierBenefitsUpdate(Schema):

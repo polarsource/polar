@@ -152,7 +152,7 @@ The Polar API is online at `https://api.polar.sh`.
         servers=[{"url": "https://api.polar.sh"}],
     )
     openapi_schema["info"]["x-logo"] = {
-        "url": "https://blog.polar.sh/content/images/2023/07/Frame-647--1-.png"
+        "url": "https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-Yq60IIuVbCa1dEBIFFDYKlZo74PzKl.png"
     }
     app.openapi_schema = openapi_schema
 

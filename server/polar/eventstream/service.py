@@ -40,7 +40,7 @@ class Event(BaseModel):
 
 
 async def send(event: Event, channels: list[str]) -> None:
-    event_json = event.json()
+    event_json = event.model_dump_json()
     for channel in channels:
         await redis.publish(channel, event_json)
 

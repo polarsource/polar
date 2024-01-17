@@ -417,7 +417,7 @@ async def test_webhook_repositories_added(
             httpx.Response(
                 200,
                 request=httpx.Request("POST", ""),
-                content=x.json(),
+                content=x.model_dump_json(),
             ),
         ],
     )
@@ -466,7 +466,7 @@ async def test_webhook_repositories_removed(
                 request=httpx.Request("POST", ""),
                 content=types.InstallationRepositoriesGetResponse200(
                     total_count=0, repositories=[], repository_selection="x"
-                ).json(),
+                ).model_dump_json(),
             ),
         ],
     )

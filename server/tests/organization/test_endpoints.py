@@ -24,7 +24,7 @@ async def test_get_organization(
 
     assert response.status_code == 200
 
-    org = OrganizationSchema.parse_obj(response.json())
+    org = OrganizationSchema.model_validate(response.json())
     assert response.json()["id"] == str(organization.id)
     assert org.id == organization.id
 
@@ -47,7 +47,7 @@ async def test_get_organization_member_only_fields_no_member(
 
     assert response.status_code == 200
 
-    org = OrganizationSchema.parse_obj(response.json())
+    org = OrganizationSchema.model_validate(response.json())
     assert response.json()["id"] == str(organization.id)
     assert org.id == organization.id
     assert org.billing_email is None
@@ -72,7 +72,7 @@ async def test_get_organization_member_only_fields_is_member(
 
     assert response.status_code == 200
 
-    org = OrganizationSchema.parse_obj(response.json())
+    org = OrganizationSchema.model_validate(response.json())
     assert response.json()["id"] == str(organization.id)
     assert org.id == organization.id
     assert org.billing_email == "billing@polar.sh"
@@ -99,7 +99,7 @@ async def test_update_organization_billing_email(
 
     assert response.status_code == 200
 
-    org = OrganizationSchema.parse_obj(response.json())
+    org = OrganizationSchema.model_validate(response.json())
     assert response.json()["id"] == str(organization.id)
     assert org.id == organization.id
     assert org.billing_email is None
@@ -114,7 +114,7 @@ async def test_update_organization_billing_email(
     )
 
     assert response.status_code == 200
-    org = OrganizationSchema.parse_obj(response.json())
+    org = OrganizationSchema.model_validate(response.json())
     assert org.billing_email == "billing_via_api@polar.sh"
 
     # get again!
@@ -124,7 +124,7 @@ async def test_update_organization_billing_email(
     )
 
     assert response.status_code == 200
-    org = OrganizationSchema.parse_obj(response.json())
+    org = OrganizationSchema.model_validate(response.json())
     assert org.billing_email == "billing_via_api@polar.sh"
 
 
@@ -348,7 +348,7 @@ async def test_list_members(
     assert response.status_code == 200
 
     items_r: list[dict[str, Any]] = response.json()["items"]
-    items = [OrganizationMember.parse_obj(r) for r in items_r]
+    items = [OrganizationMember.model_validate(r) for r in items_r]
 
     assert len(items) == 2
 

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Self
+from typing import Literal, Self, cast
 from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from pydantic import ConfigDict, Field, HttpUrl, parse_obj_as
+from pydantic import ConfigDict, Field, HttpUrl
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
@@ -147,11 +147,9 @@ class Issue(Schema):
             issue_created_at=i.issue_created_at,
             needs_confirmation_solved=i.needs_confirmation_solved,
             confirmed_solved_at=i.confirmed_solved_at,
-            author=parse_obj_as(Author, i.author) if i.author else None,
-            assignees=parse_obj_as(list[Assignee], i.assignees)
-            if i.assignees
-            else None,
-            reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
+            author=cast(Author, i.author) if i.author else None,
+            assignees=cast(list[Assignee], i.assignees) if i.assignees else None,
+            reactions=cast(Reactions, i.reactions) if i.reactions else None,
             funding=funding,
             repository=Repository.from_db(i.repository),
             labels=labels,
@@ -475,8 +473,8 @@ class IssueReferenceRead(Schema):
 
             case ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST:
                 if m.external_source:
-                    prx = parse_obj_as(
-                        ExternalGitHubPullRequestReferenceModel, m.external_source
+                    prx = ExternalGitHubPullRequestReferenceModel.model_validate(
+                        m.external_source
                     )
                     ext_pr_ref = ExternalGitHubPullRequestReference(
                         title=prx.title,
@@ -495,8 +493,8 @@ class IssueReferenceRead(Schema):
 
             case ReferenceType.EXTERNAL_GITHUB_COMMIT:
                 if m.external_source:
-                    r = parse_obj_as(
-                        ExternalGitHubCommitReferenceModel, m.external_source
+                    r = ExternalGitHubCommitReferenceModel.model_validate(
+                        m.external_source
                     )
                     ext_commit_ref = ExternalGitHubCommitReference(
                         author_login=r.user_login,

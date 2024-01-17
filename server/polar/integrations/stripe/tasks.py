@@ -1,7 +1,6 @@
 import stripe
 import structlog
 from arq import Retry
-from pydantic import parse_obj_as
 
 from polar.account.service import account as account_service
 from polar.exceptions import PolarError
@@ -74,7 +73,7 @@ async def payment_intent_succeeded(
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             payment_intent = event["data"]["object"]
-            payload = parse_obj_as(PaymentIntentSuccessWebhook, payment_intent)
+            payload = PaymentIntentSuccessWebhook.model_validate(payment_intent)
 
             # payments for pay_upfront (pi has metadata)
             if payment_intent.metadata.get("type") == ProductType.pledge:

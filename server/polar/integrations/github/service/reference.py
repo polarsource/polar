@@ -8,7 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from githubkit import GitHub
 from githubkit.compat import GitHubModel
 from githubkit.exception import RequestFailed
-from pydantic import Discriminator, Field, Tag, ValidationError, parse_obj_as
+from pydantic import Discriminator, Field, Tag, ValidationError
 
 from polar.exceptions import IntegrityError
 from polar.integrations.github.service.issue import github_issue
@@ -443,20 +443,20 @@ class GitHubIssueReferencesService:
         client: GitHub[Any],
     ) -> IssueReference:
         if ref.reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT:
-            r = parse_obj_as(ExternalGitHubCommitReference, ref.external_source)
+            r = ExternalGitHubCommitReference.model_validate(ref.external_source)
 
             # use fields from existing db entry if set
             existing = await self.get(
                 session, ref.issue_id, ref.reference_type, ref.external_id
             )
-            existingRef = (
-                parse_obj_as(ExternalGitHubCommitReference, existing.external_source)
+            existing_ref = (
+                ExternalGitHubCommitReference.model_validate(existing.external_source)
                 if existing
                 else None
             )
 
             ref.external_source = jsonable_encoder(
-                await self.annotate_issue_commit_reference(org, r, existingRef, client)
+                await self.annotate_issue_commit_reference(org, r, existing_ref, client)
             )
 
         return ref

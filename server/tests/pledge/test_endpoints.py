@@ -95,7 +95,7 @@ async def test_get_pledge_member_sending_org(
     assert response.status_code == 200
 
     assert response.json()["id"] == str(pledge.id)
-    res: PledgeSchema = PledgeSchema.parse_obj(response.json())
+    res: PledgeSchema = PledgeSchema.model_validate(response.json())
     assert res.id == pledge.id
     assert res.created_by is not None
     assert res.created_by.name == pledge_created_by_user.username
@@ -144,7 +144,7 @@ async def test_get_pledge_member_receiving_org(
     assert response.status_code == 200
 
     assert response.json()["id"] == str(pledge.id)
-    res: PledgeSchema = PledgeSchema.parse_obj(response.json())
+    res: PledgeSchema = PledgeSchema.model_validate(response.json())
     assert res.id == pledge.id
     assert res.created_by is None  # created_by should not be available!
 

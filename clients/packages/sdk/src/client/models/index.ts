@@ -2111,6 +2111,47 @@ export interface MaintainerAccountReviewedNotification {
      * @type {string}
      * @memberof MaintainerAccountReviewedNotification
      */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountReviewedNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountReviewedNotification
+     */
+    type: MaintainerAccountReviewedNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerAccountReviewedNotificationPayload}
+     * @memberof MaintainerAccountReviewedNotification
+     */
+    payload: MaintainerAccountReviewedNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerAccountReviewedNotificationTypeEnum = {
+    MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION: 'MaintainerAccountReviewedNotification'
+} as const;
+export type MaintainerAccountReviewedNotificationTypeEnum = typeof MaintainerAccountReviewedNotificationTypeEnum[keyof typeof MaintainerAccountReviewedNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerAccountReviewedNotificationPayload
+ */
+export interface MaintainerAccountReviewedNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountReviewedNotificationPayload
+     */
     account_type: string;
 }
 /**
@@ -2123,6 +2164,47 @@ export interface MaintainerAccountUnderReviewNotification {
      * 
      * @type {string}
      * @memberof MaintainerAccountUnderReviewNotification
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountUnderReviewNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountUnderReviewNotification
+     */
+    type: MaintainerAccountUnderReviewNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerAccountUnderReviewNotificationPayload}
+     * @memberof MaintainerAccountUnderReviewNotification
+     */
+    payload: MaintainerAccountUnderReviewNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerAccountUnderReviewNotificationTypeEnum = {
+    MAINTAINER_ACCOUNT_UNDER_REVIEW_NOTIFICATION: 'MaintainerAccountUnderReviewNotification'
+} as const;
+export type MaintainerAccountUnderReviewNotificationTypeEnum = typeof MaintainerAccountUnderReviewNotificationTypeEnum[keyof typeof MaintainerAccountUnderReviewNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerAccountUnderReviewNotificationPayload
+ */
+export interface MaintainerAccountUnderReviewNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerAccountUnderReviewNotificationPayload
      */
     account_type: string;
 }
@@ -2137,23 +2219,64 @@ export interface MaintainerNewPaidSubscriptionNotification {
      * @type {string}
      * @memberof MaintainerNewPaidSubscriptionNotification
      */
-    subscriber_name: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof MaintainerNewPaidSubscriptionNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewPaidSubscriptionNotification
+     */
+    type: MaintainerNewPaidSubscriptionNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerNewPaidSubscriptionNotificationPayload}
+     * @memberof MaintainerNewPaidSubscriptionNotification
+     */
+    payload: MaintainerNewPaidSubscriptionNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerNewPaidSubscriptionNotificationTypeEnum = {
+    MAINTAINER_NEW_PAID_SUBSCRIPTION_NOTIFICATION: 'MaintainerNewPaidSubscriptionNotification'
+} as const;
+export type MaintainerNewPaidSubscriptionNotificationTypeEnum = typeof MaintainerNewPaidSubscriptionNotificationTypeEnum[keyof typeof MaintainerNewPaidSubscriptionNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerNewPaidSubscriptionNotificationPayload
+ */
+export interface MaintainerNewPaidSubscriptionNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewPaidSubscriptionNotificationPayload
+     */
+    subscriber_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewPaidSubscriptionNotificationPayload
      */
     tier_name: string;
     /**
      * 
      * @type {number}
-     * @memberof MaintainerNewPaidSubscriptionNotification
+     * @memberof MaintainerNewPaidSubscriptionNotificationPayload
      */
     tier_price_amount: number;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerNewPaidSubscriptionNotification
+     * @memberof MaintainerNewPaidSubscriptionNotificationPayload
      */
     tier_organization_name: string;
 }
@@ -2168,53 +2291,94 @@ export interface MaintainerPledgeConfirmationPendingNotification {
      * @type {string}
      * @memberof MaintainerPledgeConfirmationPendingNotification
      */
-    pledger_name: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof MaintainerPledgeConfirmationPendingNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgeConfirmationPendingNotification
+     */
+    type: MaintainerPledgeConfirmationPendingNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerPledgeConfirmationPendingNotificationPayload}
+     * @memberof MaintainerPledgeConfirmationPendingNotification
+     */
+    payload: MaintainerPledgeConfirmationPendingNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerPledgeConfirmationPendingNotificationTypeEnum = {
+    MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgeConfirmationPendingNotification'
+} as const;
+export type MaintainerPledgeConfirmationPendingNotificationTypeEnum = typeof MaintainerPledgeConfirmationPendingNotificationTypeEnum[keyof typeof MaintainerPledgeConfirmationPendingNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerPledgeConfirmationPendingNotificationPayload
+ */
+export interface MaintainerPledgeConfirmationPendingNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
+     */
+    pledger_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     pledge_amount: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeConfirmationPendingNotification
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeConfirmationPendingNotification
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeConfirmationPendingNotification
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeConfirmationPendingNotification
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {number}
-     * @memberof MaintainerPledgeConfirmationPendingNotification
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {boolean}
-     * @memberof MaintainerPledgeConfirmationPendingNotification
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     maintainer_has_stripe_account: boolean;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeConfirmationPendingNotification
+     * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
     pledge_id?: string;
 }
@@ -2229,59 +2393,100 @@ export interface MaintainerPledgeCreatedNotification {
      * @type {string}
      * @memberof MaintainerPledgeCreatedNotification
      */
-    pledger_name?: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof MaintainerPledgeCreatedNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgeCreatedNotification
+     */
+    type: MaintainerPledgeCreatedNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerPledgeCreatedNotificationPayload}
+     * @memberof MaintainerPledgeCreatedNotification
+     */
+    payload: MaintainerPledgeCreatedNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerPledgeCreatedNotificationTypeEnum = {
+    MAINTAINER_PLEDGE_CREATED_NOTIFICATION: 'MaintainerPledgeCreatedNotification'
+} as const;
+export type MaintainerPledgeCreatedNotificationTypeEnum = typeof MaintainerPledgeCreatedNotificationTypeEnum[keyof typeof MaintainerPledgeCreatedNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerPledgeCreatedNotificationPayload
+ */
+export interface MaintainerPledgeCreatedNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgeCreatedNotificationPayload
+     */
+    pledger_name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     pledge_amount: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {number}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {boolean}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     maintainer_has_stripe_account: boolean;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     pledge_id?: string;
     /**
      * 
      * @type {PledgeType}
-     * @memberof MaintainerPledgeCreatedNotification
+     * @memberof MaintainerPledgeCreatedNotificationPayload
      */
     pledge_type?: PledgeType;
 }
@@ -2296,41 +2501,82 @@ export interface MaintainerPledgePaidNotification {
      * @type {string}
      * @memberof MaintainerPledgePaidNotification
      */
-    paid_out_amount: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof MaintainerPledgePaidNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgePaidNotification
+     */
+    type: MaintainerPledgePaidNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerPledgePaidNotificationPayload}
+     * @memberof MaintainerPledgePaidNotification
+     */
+    payload: MaintainerPledgePaidNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerPledgePaidNotificationTypeEnum = {
+    MAINTAINER_PLEDGE_PAID_NOTIFICATION: 'MaintainerPledgePaidNotification'
+} as const;
+export type MaintainerPledgePaidNotificationTypeEnum = typeof MaintainerPledgePaidNotificationTypeEnum[keyof typeof MaintainerPledgePaidNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerPledgePaidNotificationPayload
+ */
+export interface MaintainerPledgePaidNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgePaidNotificationPayload
+     */
+    paid_out_amount: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgePaidNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePaidNotification
+     * @memberof MaintainerPledgePaidNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePaidNotification
+     * @memberof MaintainerPledgePaidNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePaidNotification
+     * @memberof MaintainerPledgePaidNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {number}
-     * @memberof MaintainerPledgePaidNotification
+     * @memberof MaintainerPledgePaidNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePaidNotification
+     * @memberof MaintainerPledgePaidNotificationPayload
      */
     pledge_id?: string;
 }
@@ -2345,53 +2591,94 @@ export interface MaintainerPledgePendingNotification {
      * @type {string}
      * @memberof MaintainerPledgePendingNotification
      */
-    pledger_name: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof MaintainerPledgePendingNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgePendingNotification
+     */
+    type: MaintainerPledgePendingNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerPledgePendingNotificationPayload}
+     * @memberof MaintainerPledgePendingNotification
+     */
+    payload: MaintainerPledgePendingNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerPledgePendingNotificationTypeEnum = {
+    MAINTAINER_PLEDGE_PENDING_NOTIFICATION: 'MaintainerPledgePendingNotification'
+} as const;
+export type MaintainerPledgePendingNotificationTypeEnum = typeof MaintainerPledgePendingNotificationTypeEnum[keyof typeof MaintainerPledgePendingNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerPledgePendingNotificationPayload
+ */
+export interface MaintainerPledgePendingNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgePendingNotificationPayload
+     */
+    pledger_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     pledge_amount: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePendingNotification
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePendingNotification
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePendingNotification
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePendingNotification
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {number}
-     * @memberof MaintainerPledgePendingNotification
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {boolean}
-     * @memberof MaintainerPledgePendingNotification
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     maintainer_has_stripe_account: boolean;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgePendingNotification
+     * @memberof MaintainerPledgePendingNotificationPayload
      */
     pledge_id?: string;
 }
@@ -2406,47 +2693,88 @@ export interface MaintainerPledgedIssueConfirmationPendingNotification {
      * @type {string}
      * @memberof MaintainerPledgedIssueConfirmationPendingNotification
      */
-    pledge_amount_sum: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     */
+    type: MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerPledgedIssueConfirmationPendingNotificationPayload}
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     */
+    payload: MaintainerPledgedIssueConfirmationPendingNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum = {
+    MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgedIssueConfirmationPendingNotification'
+} as const;
+export type MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum = typeof MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum[keyof typeof MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerPledgedIssueConfirmationPendingNotificationPayload
+ */
+export interface MaintainerPledgedIssueConfirmationPendingNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
+     */
+    pledge_amount_sum: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
      */
     issue_id: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {number}
-     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {boolean}
-     * @memberof MaintainerPledgedIssueConfirmationPendingNotification
+     * @memberof MaintainerPledgedIssueConfirmationPendingNotificationPayload
      */
     maintainer_has_account: boolean;
 }
@@ -2461,168 +2789,97 @@ export interface MaintainerPledgedIssuePendingNotification {
      * @type {string}
      * @memberof MaintainerPledgedIssuePendingNotification
      */
-    pledge_amount_sum: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof MaintainerPledgedIssuePendingNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgedIssuePendingNotification
+     */
+    type: MaintainerPledgedIssuePendingNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerPledgedIssuePendingNotificationPayload}
+     * @memberof MaintainerPledgedIssuePendingNotification
+     */
+    payload: MaintainerPledgedIssuePendingNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerPledgedIssuePendingNotificationTypeEnum = {
+    MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION: 'MaintainerPledgedIssuePendingNotification'
+} as const;
+export type MaintainerPledgedIssuePendingNotificationTypeEnum = typeof MaintainerPledgedIssuePendingNotificationTypeEnum[keyof typeof MaintainerPledgedIssuePendingNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerPledgedIssuePendingNotificationPayload
+ */
+export interface MaintainerPledgedIssuePendingNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
+     */
+    pledge_amount_sum: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
      */
     issue_id: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssuePendingNotification
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssuePendingNotification
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssuePendingNotification
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof MaintainerPledgedIssuePendingNotification
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {number}
-     * @memberof MaintainerPledgedIssuePendingNotification
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {boolean}
-     * @memberof MaintainerPledgedIssuePendingNotification
+     * @memberof MaintainerPledgedIssuePendingNotificationPayload
      */
     maintainer_has_account: boolean;
 }
 /**
- * 
- * @export
- * @interface NotificationRead
- */
-export interface NotificationRead {
-    /**
-     * 
-     * @type {string}
-     * @memberof NotificationRead
-     */
-    id: string;
-    /**
-     * 
-     * @type {NotificationType}
-     * @memberof NotificationRead
-     */
-    type: NotificationType;
-    /**
-     * 
-     * @type {string}
-     * @memberof NotificationRead
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {MaintainerPledgePaidNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_pledge_paid?: MaintainerPledgePaidNotification;
-    /**
-     * 
-     * @type {MaintainerPledgeConfirmationPendingNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_pledge_confirmation_pending?: MaintainerPledgeConfirmationPendingNotification;
-    /**
-     * 
-     * @type {MaintainerPledgePendingNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_pledge_pending?: MaintainerPledgePendingNotification;
-    /**
-     * 
-     * @type {MaintainerPledgeCreatedNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_pledge_created?: MaintainerPledgeCreatedNotification;
-    /**
-     * 
-     * @type {PledgerPledgePendingNotification}
-     * @memberof NotificationRead
-     */
-    pledger_pledge_pending?: PledgerPledgePendingNotification;
-    /**
-     * 
-     * @type {RewardPaidNotification}
-     * @memberof NotificationRead
-     */
-    reward_paid?: RewardPaidNotification;
-    /**
-     * 
-     * @type {MaintainerPledgedIssueConfirmationPendingNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_pledged_issue_confirmation_pending?: MaintainerPledgedIssueConfirmationPendingNotification;
-    /**
-     * 
-     * @type {MaintainerPledgedIssuePendingNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_pledged_issue_pending?: MaintainerPledgedIssuePendingNotification;
-    /**
-     * 
-     * @type {TeamAdminMemberPledgedNotification}
-     * @memberof NotificationRead
-     */
-    team_admin_member_pledged?: TeamAdminMemberPledgedNotification;
-    /**
-     * 
-     * @type {MaintainerAccountUnderReviewNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_account_under_review?: MaintainerAccountUnderReviewNotification;
-    /**
-     * 
-     * @type {MaintainerAccountReviewedNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_account_reviewed?: MaintainerAccountReviewedNotification;
-    /**
-     * 
-     * @type {MaintainerNewPaidSubscriptionNotification}
-     * @memberof NotificationRead
-     */
-    maintainer_new_paid_subscription?: MaintainerNewPaidSubscriptionNotification;
-}
-
-/**
+ * @type NotificationsInner
  * 
  * @export
  */
-export const NotificationType = {
-    MAINTAINER_PLEDGE_PAID_NOTIFICATION: 'MaintainerPledgePaidNotification',
-    MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgeConfirmationPendingNotification',
-    MAINTAINER_PLEDGE_PENDING_NOTIFICATION: 'MaintainerPledgePendingNotification',
-    MAINTAINER_PLEDGE_CREATED_NOTIFICATION: 'MaintainerPledgeCreatedNotification',
-    PLEDGER_PLEDGE_PENDING_NOTIFICATION: 'PledgerPledgePendingNotification',
-    REWARD_PAID_NOTIFICATION: 'RewardPaidNotification',
-    MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgedIssueConfirmationPendingNotification',
-    MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION: 'MaintainerPledgedIssuePendingNotification',
-    TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION: 'TeamAdminMemberPledgedNotification',
-    MAINTAINER_ACCOUNT_UNDER_REVIEW_NOTIFICATION: 'MaintainerAccountUnderReviewNotification',
-    MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION: 'MaintainerAccountReviewedNotification',
-    MAINTAINER_NEW_PAID_SUBSCRIPTION_NOTIFICATION: 'MaintainerNewPaidSubscriptionNotification'
-} as const;
-export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
-
+export type NotificationsInner = { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
 /**
  * 
  * @export
@@ -2631,10 +2888,10 @@ export type NotificationType = typeof NotificationType[keyof typeof Notification
 export interface NotificationsList {
     /**
      * 
-     * @type {Array<NotificationRead>}
+     * @type {Array<NotificationsInner>}
      * @memberof NotificationsList
      */
-    notifications: Array<NotificationRead>;
+    notifications: Array<NotificationsInner>;
     /**
      * 
      * @type {string}
@@ -3498,53 +3755,94 @@ export interface PledgerPledgePendingNotification {
      * @type {string}
      * @memberof PledgerPledgePendingNotification
      */
-    pledge_amount: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof PledgerPledgePendingNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PledgerPledgePendingNotification
+     */
+    type: PledgerPledgePendingNotificationTypeEnum;
+    /**
+     * 
+     * @type {PledgerPledgePendingNotificationPayload}
+     * @memberof PledgerPledgePendingNotification
+     */
+    payload: PledgerPledgePendingNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const PledgerPledgePendingNotificationTypeEnum = {
+    PLEDGER_PLEDGE_PENDING_NOTIFICATION: 'PledgerPledgePendingNotification'
+} as const;
+export type PledgerPledgePendingNotificationTypeEnum = typeof PledgerPledgePendingNotificationTypeEnum[keyof typeof PledgerPledgePendingNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface PledgerPledgePendingNotificationPayload
+ */
+export interface PledgerPledgePendingNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof PledgerPledgePendingNotificationPayload
+     */
+    pledge_amount: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof PledgerPledgePendingNotification
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {number}
-     * @memberof PledgerPledgePendingNotification
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {string}
-     * @memberof PledgerPledgePendingNotification
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof PledgerPledgePendingNotification
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {string}
-     * @memberof PledgerPledgePendingNotification
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     pledge_date: string;
     /**
      * 
      * @type {string}
-     * @memberof PledgerPledgePendingNotification
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     pledge_id?: string;
     /**
      * 
      * @type {PledgeType}
-     * @memberof PledgerPledgePendingNotification
+     * @memberof PledgerPledgePendingNotificationPayload
      */
     pledge_type?: PledgeType;
 }
@@ -4043,47 +4341,88 @@ export interface RewardPaidNotification {
      * @type {string}
      * @memberof RewardPaidNotification
      */
-    paid_out_amount: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof RewardPaidNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof RewardPaidNotification
+     */
+    type: RewardPaidNotificationTypeEnum;
+    /**
+     * 
+     * @type {RewardPaidNotificationPayload}
+     * @memberof RewardPaidNotification
+     */
+    payload: RewardPaidNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const RewardPaidNotificationTypeEnum = {
+    REWARD_PAID_NOTIFICATION: 'RewardPaidNotification'
+} as const;
+export type RewardPaidNotificationTypeEnum = typeof RewardPaidNotificationTypeEnum[keyof typeof RewardPaidNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface RewardPaidNotificationPayload
+ */
+export interface RewardPaidNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof RewardPaidNotificationPayload
+     */
+    paid_out_amount: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof RewardPaidNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof RewardPaidNotification
+     * @memberof RewardPaidNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {string}
-     * @memberof RewardPaidNotification
+     * @memberof RewardPaidNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof RewardPaidNotification
+     * @memberof RewardPaidNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {number}
-     * @memberof RewardPaidNotification
+     * @memberof RewardPaidNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {string}
-     * @memberof RewardPaidNotification
+     * @memberof RewardPaidNotificationPayload
      */
     issue_id: string;
     /**
      * 
      * @type {string}
-     * @memberof RewardPaidNotification
+     * @memberof RewardPaidNotificationPayload
      */
     pledge_id: string;
 }
@@ -5588,53 +5927,94 @@ export interface TeamAdminMemberPledgedNotification {
      * @type {string}
      * @memberof TeamAdminMemberPledgedNotification
      */
-    team_member_name: string;
+    id: string;
     /**
      * 
      * @type {string}
      * @memberof TeamAdminMemberPledgedNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    type: TeamAdminMemberPledgedNotificationTypeEnum;
+    /**
+     * 
+     * @type {TeamAdminMemberPledgedNotificationPayload}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    payload: TeamAdminMemberPledgedNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const TeamAdminMemberPledgedNotificationTypeEnum = {
+    TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION: 'TeamAdminMemberPledgedNotification'
+} as const;
+export type TeamAdminMemberPledgedNotificationTypeEnum = typeof TeamAdminMemberPledgedNotificationTypeEnum[keyof typeof TeamAdminMemberPledgedNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface TeamAdminMemberPledgedNotificationPayload
+ */
+export interface TeamAdminMemberPledgedNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotificationPayload
+     */
+    team_member_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     team_name: string;
     /**
      * 
      * @type {string}
-     * @memberof TeamAdminMemberPledgedNotification
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     pledge_amount: string;
     /**
      * 
      * @type {string}
-     * @memberof TeamAdminMemberPledgedNotification
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     issue_url: string;
     /**
      * 
      * @type {string}
-     * @memberof TeamAdminMemberPledgedNotification
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     issue_title: string;
     /**
      * 
      * @type {number}
-     * @memberof TeamAdminMemberPledgedNotification
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     issue_number: number;
     /**
      * 
      * @type {string}
-     * @memberof TeamAdminMemberPledgedNotification
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     issue_org_name: string;
     /**
      * 
      * @type {string}
-     * @memberof TeamAdminMemberPledgedNotification
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     issue_repo_name: string;
     /**
      * 
      * @type {string}
-     * @memberof TeamAdminMemberPledgedNotification
+     * @memberof TeamAdminMemberPledgedNotificationPayload
      */
     pledge_id: string;
 }

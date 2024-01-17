@@ -4,7 +4,6 @@ from typing import Annotated, Any, Union
 from uuid import UUID
 
 import structlog
-from fastapi.encoders import jsonable_encoder
 from githubkit import GitHub
 from githubkit.compat import GitHubModel
 from githubkit.exception import RequestFailed
@@ -389,7 +388,7 @@ class GitHubIssueReferencesService:
             issue_id=issue.id,
             external_id=event.commit_id,
             reference_type=ReferenceType.EXTERNAL_GITHUB_COMMIT,
-            external_source=jsonable_encoder(obj),
+            external_source=obj.model_dump(mode="json"),
         )
 
         return ref
@@ -430,7 +429,7 @@ class GitHubIssueReferencesService:
             issue_id=issue.id,
             external_id=i.pull_request.html_url,
             reference_type=ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
-            external_source=jsonable_encoder(obj),
+            external_source=obj.model_dump(mode="json"),
         )
 
         return ref
@@ -455,9 +454,10 @@ class GitHubIssueReferencesService:
                 else None
             )
 
-            ref.external_source = jsonable_encoder(
-                await self.annotate_issue_commit_reference(org, r, existing_ref, client)
+            external_source = await self.annotate_issue_commit_reference(
+                org, r, existing_ref, client
             )
+            ref.external_source = external_source.model_dump(mode="json")
 
         return ref
 

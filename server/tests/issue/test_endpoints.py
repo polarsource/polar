@@ -1,5 +1,4 @@
 import pytest
-from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -52,19 +51,17 @@ async def test_get_issue_reactions(
     repository.is_private = False
     await repository.save(session)
 
-    issue.reactions = jsonable_encoder(
-        Reactions(
-            total_count=3,
-            plus_one=2,
-            minus_one=0,
-            laugh=0,
-            hooray=0,
-            confused=0,
-            heart=1,
-            rocket=0,
-            eyes=0,
-        )
-    )
+    issue.reactions = Reactions(
+        total_count=3,
+        plus_one=2,
+        minus_one=0,
+        laugh=0,
+        hooray=0,
+        confused=0,
+        heart=1,
+        rocket=0,
+        eyes=0,
+    ).model_dump(mode="json")
     await issue.save(session)
 
     response = await client.get(

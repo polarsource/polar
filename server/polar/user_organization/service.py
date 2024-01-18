@@ -69,7 +69,7 @@ class UserOrganizationervice:
             )
         )
         res = await session.execute(stmt)
-        return res.scalars().one_or_none()
+        return res.unique().scalar_one_or_none()
 
     async def get_by_user_and_org(
         self,

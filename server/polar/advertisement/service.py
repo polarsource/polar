@@ -5,7 +5,10 @@ from sqlalchemy import (
     select,
 )
 
-from polar.advertisement.schemas import CreateAdvertisementCampaign
+from polar.advertisement.schemas import (
+    CreateAdvertisementCampaign,
+    EditAdvertisementCampaign,
+)
 from polar.kit.db.postgres import AsyncSession
 from polar.models import (
     Subscription,
@@ -38,6 +41,18 @@ class AdvertisementCampaignService:
             link_url=create.link_url,
         )
         session.add(campaign)
+        await session.commit()
+        return campaign
+
+    async def edit(
+        self,
+        session: AsyncSession,
+        campaign: AdvertisementCampaign,
+        edit: EditAdvertisementCampaign,
+    ) -> AdvertisementCampaign:
+        campaign.image_url = edit.image_url
+        campaign.link_url = edit.link_url
+        campaign.text = edit.text
         await session.commit()
         return campaign
 

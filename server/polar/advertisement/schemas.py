@@ -25,3 +25,9 @@ class CreateAdvertisementCampaign(Schema):
     image_url: str
     text: str
     link_url: str
+
+
+class EditAdvertisementCampaign(Schema):
+    image_url: str
+    text: str
+    link_url: str

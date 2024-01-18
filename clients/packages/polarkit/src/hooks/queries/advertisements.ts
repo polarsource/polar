@@ -1,6 +1,7 @@
 import {
   AdvertisementCampaign,
   CreateAdvertisementCampaign,
+  EditAdvertisementCampaign,
   ListResourceAdvertisementCampaign,
 } from '@polar-sh/sdk'
 import {
@@ -41,6 +42,35 @@ export const useCreateAdvertisementCampaigns: () => UseMutationResult<
     }) => {
       return api.advertisements.createCampaign({
         createAdvertisementCampaign,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['advertisements', 'campaigns', result.subscription_id],
+      })
+    },
+  })
+
+export const useEditAdvertisementCampaigns: () => UseMutationResult<
+  AdvertisementCampaign,
+  Error,
+  {
+    id: string
+    editAdvertisementCampaign: EditAdvertisementCampaign
+  },
+  unknown
+> = () =>
+  useMutation({
+    mutationFn: ({
+      id,
+      editAdvertisementCampaign,
+    }: {
+      id: string
+      editAdvertisementCampaign: EditAdvertisementCampaign
+    }) => {
+      return api.advertisements.editCampaign({
+        id,
+        editAdvertisementCampaign,
       })
     },
     onSuccess: (result, variables, ctx) => {

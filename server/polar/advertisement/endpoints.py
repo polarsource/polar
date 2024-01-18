@@ -77,3 +77,25 @@ async def edit_campaign(
 
     edited = await advertisement_campaign_service.edit(session, ad, campaign)
     return AdvertisementCampaign.model_validate(edited)
+
+
+@router.delete(
+    "/advertisements/campaigns/{id}",
+    response_model=AdvertisementCampaign,
+    tags=[Tags.PUBLIC],
+    status_code=200,
+)
+async def delete_campaign(
+    id: UUID,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+) -> AdvertisementCampaign:
+    # TODO: authz
+
+    ad = await advertisement_campaign_service.get(session, id)
+    if not ad:
+        raise ResourceNotFound()
+
+    await advertisement_campaign_service.delete(session, ad)
+
+    return AdvertisementCampaign.model_validate(ad)

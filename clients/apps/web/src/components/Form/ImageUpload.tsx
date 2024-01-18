@@ -4,15 +4,21 @@ import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { PhotoIcon } from '@heroicons/react/24/outline'
 import { type PutBlobResult } from '@vercel/blob'
 import { upload } from '@vercel/blob/client'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ImageUpload = ({
   onUploaded,
+  validate,
   defaultValue,
+  height,
+  width,
 }: {
   onUploaded: (url: string) => void
+  validate?: (el: HTMLImageElement) => string | undefined
   defaultValue?: string
+  height?: number
+  width?: number
 }) => {
   const inputFileRef = useRef<HTMLInputElement>(null)
   const [blob, setBlob] = useState<PutBlobResult | null>(null)
@@ -48,6 +54,22 @@ const ImageUpload = ({
     }
   }
 
+  const onLoad = (e: React.ChangeEvent<HTMLImageElement>) => {
+    if (validate) {
+      const res = validate(e.currentTarget)
+      setErrorMessage(res)
+    }
+  }
+
+  const imageRef = useRef<HTMLImageElement>(null)
+
+  useEffect(() => {
+    if (validate && imageRef.current) {
+      const res = validate(imageRef.current)
+      setErrorMessage(res)
+    }
+  }, [height, width, validate, imageRef])
+
   return (
     <>
       <form
@@ -82,19 +104,24 @@ const ImageUpload = ({
           }}
         />
 
-        <div className="flex items-end gap-4">
+        <div className="flex flex-col items-start gap-4">
           {imagePreviewSrc ? (
             <div className="relative">
               <img
+                ref={imageRef}
                 src={imagePreviewSrc}
                 className={twMerge(
-                  'flex h-32 w-32 cursor-pointer items-center justify-center rounded-sm border border-gray-100 bg-gray-50 hover:opacity-80',
+                  'flex cursor-pointer items-center justify-center rounded-sm border border-gray-100 bg-gray-50 hover:opacity-80',
                   isLoading ? 'opacity-50' : '',
                   errorMessage ? 'border-red-800' : '',
+                  !height && !width ? 'h-32 w-32' : '',
                 )}
                 onClick={(e) => {
                   inputFileRef.current?.click()
                 }}
+                onLoad={onLoad}
+                height={height}
+                width={width}
               />
               {isLoading ? (
                 <div className="absolute bottom-0 left-0 right-0 top-0 flex items-center justify-center">
@@ -107,9 +134,23 @@ const ImageUpload = ({
               onClick={(e) => {
                 inputFileRef.current?.click()
               }}
-              className="flex h-32 w-32 cursor-pointer items-center justify-center rounded-sm border border-gray-100 bg-gray-50  hover:bg-gray-100 "
+              className={twMerge(
+                'flex cursor-pointer flex-col items-center justify-center rounded-sm border border-gray-100 bg-gray-50  hover:bg-gray-100 ',
+                !height && !width ? 'h-32 w-32' : '',
+              )}
+              style={{
+                maxWidth: width,
+                maxHeight: height,
+                width: '100%',
+                aspectRatio: `${width} / ${height}`,
+              }}
             >
               <PhotoIcon className="h-6 w-6 text-gray-600" />
+              {height && width ? (
+                <div className="text-xs text-gray-600">
+                  {height} x {width}px
+                </div>
+              ) : null}
             </div>
           )}
 

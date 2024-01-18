@@ -10,6 +10,7 @@ from polar.advertisement.schemas import (
     EditAdvertisementCampaign,
 )
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 from polar.models import (
     Subscription,
 )
@@ -53,6 +54,15 @@ class AdvertisementCampaignService:
         campaign.image_url = edit.image_url
         campaign.link_url = edit.link_url
         campaign.text = edit.text
+        await session.commit()
+        return campaign
+
+    async def delete(
+        self,
+        session: AsyncSession,
+        campaign: AdvertisementCampaign,
+    ) -> AdvertisementCampaign:
+        campaign.deleted_at = utc_now()
         await session.commit()
         return campaign
 

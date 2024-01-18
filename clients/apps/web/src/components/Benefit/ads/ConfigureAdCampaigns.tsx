@@ -2,6 +2,7 @@ import ImageUpload from '@/components/Form/ImageUpload'
 import {
   AdvertisementCampaign,
   CreateAdvertisementCampaign,
+  CreateAdvertisementCampaignFormatEnum,
   EditAdvertisementCampaign,
   SubscriptionSubscriber,
 } from '@polar-sh/sdk'
@@ -25,6 +26,7 @@ import {
 import {
   useAdvertisementCampaigns,
   useCreateAdvertisementCampaigns,
+  useDeleteAdvertisementCampaigns,
   useEditAdvertisementCampaigns,
 } from 'polarkit/hooks'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -102,6 +104,7 @@ const CreateCampaign = ({
 
 const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
   const edit = useEditAdvertisementCampaigns()
+  const deleteAd = useDeleteAdvertisementCampaigns()
 
   const form = useForm<EditAdvertisementCampaign>({
     defaultValues: {
@@ -116,6 +119,12 @@ const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
     await edit.mutateAsync({
       id: campaign.id,
       editAdvertisementCampaign,
+    })
+  }
+
+  const onDelete = async () => {
+    await deleteAd.mutateAsync({
+      id: campaign.id,
     })
   }
 
@@ -134,7 +143,18 @@ const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
               <FormLinkURL />
               <FormText />
 
-              <Button type="submit">Save</Button>
+              <div className="flex gap-2">
+                <Button type="submit" loading={edit.isPending}>
+                  Save
+                </Button>
+                <Button
+                  variant={'destructive'}
+                  onClick={onDelete}
+                  loading={deleteAd.isPending}
+                >
+                  Delete
+                </Button>
+              </div>
             </form>
           </div>
         </div>
@@ -180,7 +200,30 @@ const FormFormat = ({}) => {
 }
 
 const FormImageURL = ({}) => {
-  const { control } = useFormContext<CreateAdvertisementCampaign>()
+  const { control, watch } = useFormContext<CreateAdvertisementCampaign>()
+
+  const format = watch('format')
+
+  const formatSizes: Record<
+    CreateAdvertisementCampaignFormatEnum,
+    [number, number]
+  > = {
+    rect: [240, 100],
+    small_leaderboard: [700, 90],
+  }
+
+  const size = formatSizes[format]
+
+  if (!size) {
+    return <></>
+  }
+
+  const expectedSizes = [
+    [size[0], size[1]],
+    [size[0] * 2, size[1] * 2],
+    [size[0] * 3, size[1] * 3],
+  ]
+
   return (
     <FormField
       control={control}
@@ -195,15 +238,29 @@ const FormImageURL = ({}) => {
             <div className="flex flex-row items-center justify-between">
               <FormLabel>Image</FormLabel>
             </div>
-            <ImageUpload
-              onUploaded={field.onChange}
-              defaultValue={field.value}
-            />
             <FormControl>
-              <Input
-                type="text"
-                onChange={field.onChange}
+              <ImageUpload
+                onUploaded={field.onChange}
                 defaultValue={field.value}
+                width={expectedSizes[0][0]}
+                height={expectedSizes[0][1]}
+                validate={(el) => {
+                  if (el.naturalWidth === 0 && el.naturalHeight === 0) {
+                    return undefined
+                  }
+
+                  const size = [el.naturalWidth, el.naturalHeight]
+
+                  for (const expect of expectedSizes) {
+                    if (expect[0] === size[0] && expect[1] === size[1]) {
+                      return undefined
+                    }
+                  }
+
+                  return `Expected an image with a resolution of ${expectedSizes
+                    .map((v) => v.join('x'))
+                    .join(' or ')} got ${size.join('x')}`
+                }}
               />
             </FormControl>
             <FormMessage />

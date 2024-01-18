@@ -26,6 +26,10 @@ export interface AdvertisementsApiCreateCampaignRequest {
     createAdvertisementCampaign: CreateAdvertisementCampaign;
 }
 
+export interface AdvertisementsApiDeleteCampaignRequest {
+    id: string;
+}
+
 export interface AdvertisementsApiEditCampaignRequest {
     id: string;
     editAdvertisementCampaign: EditAdvertisementCampaign;
@@ -78,6 +82,44 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      */
     async createCampaign(requestParameters: AdvertisementsApiCreateCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaign> {
         const response = await this.createCampaignRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Delete Campaign
+     */
+    async deleteCampaignRaw(requestParameters: AdvertisementsApiDeleteCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling deleteCampaign.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Delete Campaign
+     */
+    async deleteCampaign(requestParameters: AdvertisementsApiDeleteCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaign> {
+        const response = await this.deleteCampaignRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

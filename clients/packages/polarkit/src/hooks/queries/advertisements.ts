@@ -79,3 +79,24 @@ export const useEditAdvertisementCampaigns: () => UseMutationResult<
       })
     },
   })
+
+export const useDeleteAdvertisementCampaigns: () => UseMutationResult<
+  AdvertisementCampaign,
+  Error,
+  {
+    id: string
+  },
+  unknown
+> = () =>
+  useMutation({
+    mutationFn: ({ id }: { id: string }) => {
+      return api.advertisements.deleteCampaign({
+        id,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['advertisements', 'campaigns', result.subscription_id],
+      })
+    },
+  })

@@ -17,12 +17,18 @@ import * as runtime from '../runtime';
 import type {
   AdvertisementCampaign,
   CreateAdvertisementCampaign,
+  EditAdvertisementCampaign,
   HTTPValidationError,
   ListResourceAdvertisementCampaign,
 } from '../models/index';
 
 export interface AdvertisementsApiCreateCampaignRequest {
     createAdvertisementCampaign: CreateAdvertisementCampaign;
+}
+
+export interface AdvertisementsApiEditCampaignRequest {
+    id: string;
+    editAdvertisementCampaign: EditAdvertisementCampaign;
 }
 
 export interface AdvertisementsApiSearchCampaignsRequest {
@@ -72,6 +78,51 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      */
     async createCampaign(requestParameters: AdvertisementsApiCreateCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaign> {
         const response = await this.createCampaignRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Edit Campaign
+     */
+    async editCampaignRaw(requestParameters: AdvertisementsApiEditCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling editCampaign.');
+        }
+
+        if (requestParameters.editAdvertisementCampaign === null || requestParameters.editAdvertisementCampaign === undefined) {
+            throw new runtime.RequiredError('editAdvertisementCampaign','Required parameter requestParameters.editAdvertisementCampaign was null or undefined when calling editCampaign.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.editAdvertisementCampaign,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Edit Campaign
+     */
+    async editCampaign(requestParameters: AdvertisementsApiEditCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaign> {
+        const response = await this.editCampaignRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

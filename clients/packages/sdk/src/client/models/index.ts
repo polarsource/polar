@@ -1137,6 +1137,31 @@ export interface CurrencyAmount {
 /**
  * 
  * @export
+ * @interface EditAdvertisementCampaign
+ */
+export interface EditAdvertisementCampaign {
+    /**
+     * 
+     * @type {string}
+     * @memberof EditAdvertisementCampaign
+     */
+    image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof EditAdvertisementCampaign
+     */
+    text: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof EditAdvertisementCampaign
+     */
+    link_url: string;
+}
+/**
+ * 
+ * @export
  * @interface Entry
  */
 export interface Entry {

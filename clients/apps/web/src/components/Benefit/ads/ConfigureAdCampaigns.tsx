@@ -1,5 +1,8 @@
+import ImageUpload from '@/components/Form/ImageUpload'
 import {
+  AdvertisementCampaign,
   CreateAdvertisementCampaign,
+  EditAdvertisementCampaign,
   SubscriptionSubscriber,
 } from '@polar-sh/sdk'
 import {
@@ -22,6 +25,7 @@ import {
 import {
   useAdvertisementCampaigns,
   useCreateAdvertisementCampaigns,
+  useEditAdvertisementCampaigns,
 } from 'polarkit/hooks'
 import { useForm, useFormContext } from 'react-hook-form'
 import { BenefitSubscriber } from '../Benefit'
@@ -35,9 +39,14 @@ const ConfigureAdCampaigns = ({
 }) => {
   const campaigns = useAdvertisementCampaigns(subscription.id)
 
+  const camps = campaigns.data?.items ?? []
+
   return (
     <div>
-      {JSON.stringify({ campaigns })}
+      {camps.map((c) => (
+        <EditCampaign campaign={c} key={c.id} />
+      ))}
+      <hr />
       <CreateCampaign subscription={subscription} />
     </div>
   )
@@ -83,6 +92,49 @@ const CreateCampaign = ({
               <FormText />
 
               <Button type="submit">Create</Button>
+            </form>
+          </div>
+        </div>
+      </Form>
+    </div>
+  )
+}
+
+const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
+  const edit = useEditAdvertisementCampaigns()
+
+  const form = useForm<EditAdvertisementCampaign>({
+    defaultValues: {
+      ...campaign,
+    },
+  })
+  const { handleSubmit } = form
+
+  const onSubmit = async (
+    editAdvertisementCampaign: EditAdvertisementCampaign,
+  ) => {
+    await edit.mutateAsync({
+      id: campaign.id,
+      editAdvertisementCampaign,
+    })
+  }
+
+  return (
+    <div>
+      <Form {...form}>
+        <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
+          <div className="relative flex w-full flex-col gap-y-12 md:w-2/3">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="mb-8 flex items-center justify-between">
+                <h1 className="text-lg font-medium">Edit ad</h1>
+              </div>
+
+              <FormFormat />
+              <FormImageURL />
+              <FormLinkURL />
+              <FormText />
+
+              <Button type="submit">Save</Button>
             </form>
           </div>
         </div>
@@ -143,6 +195,10 @@ const FormImageURL = ({}) => {
             <div className="flex flex-row items-center justify-between">
               <FormLabel>Image</FormLabel>
             </div>
+            <ImageUpload
+              onUploaded={field.onChange}
+              defaultValue={field.value}
+            />
             <FormControl>
               <Input
                 type="text"

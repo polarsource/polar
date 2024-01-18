@@ -4,6 +4,7 @@ import structlog
 from fastapi import APIRouter, Depends, Query
 
 from polar.auth.dependencies import UserRequiredAuth
+from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
@@ -11,6 +12,7 @@ from polar.tags.api import Tags
 from .schemas import (
     AdvertisementCampaign,
     CreateAdvertisementCampaign,
+    EditAdvertisementCampaign,
 )
 from .service import advertisement_campaign_service
 
@@ -53,3 +55,25 @@ async def create_campaign(
 
     created = await advertisement_campaign_service.create(session, create)
     return AdvertisementCampaign.model_validate(created)
+
+
+@router.post(
+    "/advertisements/campaigns/{id}",
+    response_model=AdvertisementCampaign,
+    tags=[Tags.PUBLIC],
+    status_code=200,
+)
+async def edit_campaign(
+    id: UUID,
+    campaign: EditAdvertisementCampaign,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+) -> AdvertisementCampaign:
+    # TODO: authz
+
+    ad = await advertisement_campaign_service.get(session, id)
+    if not ad:
+        raise ResourceNotFound()
+
+    edited = await advertisement_campaign_service.edit(session, ad, campaign)
+    return AdvertisementCampaign.model_validate(edited)

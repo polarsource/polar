@@ -9,8 +9,8 @@ from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.models import Organization, User
-from polar.organization.schemas import Organization as OrganizationSchema
+from polar.models import User
+from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.service import user as user_service
 
@@ -68,7 +68,7 @@ async def update_preferences(
     return await user_service.update_preferences(session, auth.user, settings)
 
 
-@router.post("/me/upgrade", response_model=OrganizationSchema)
+@router.post("/me/upgrade", response_model=Organization)
 async def maintainer_upgrade(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
@@ -86,7 +86,7 @@ async def maintainer_upgrade(
         user_id=auth.user.id,
         new_org_id=personal_org.id,
     )
-    return personal_org
+    return Organization.from_db(personal_org)
 
 
 @router.patch("/me/account", response_model=UserRead)

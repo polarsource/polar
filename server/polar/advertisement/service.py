@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 
 from sqlalchemy import (
+    and_,
     select,
 )
 
@@ -12,13 +13,16 @@ from polar.advertisement.schemas import (
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models.advertisement_campaign import AdvertisementCampaign
+from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 
 
 class AdvertisementCampaignService:
     async def get(
         self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
     ) -> AdvertisementCampaign | None:
-        query = select(AdvertisementCampaign).where(AdvertisementCampaign.id == id)
+        query = select(AdvertisementCampaign).where(
+            AdvertisementCampaign.id == id,
+        )
 
         if not allow_deleted:
             query = query.where(AdvertisementCampaign.deleted_at.is_(None))
@@ -69,8 +73,21 @@ class AdvertisementCampaignService:
         subscription_id: uuid.UUID | None,
         subscription_benefit_id: uuid.UUID | None,
     ) -> Sequence[AdvertisementCampaign]:
-        statement = select(AdvertisementCampaign).where(
-            AdvertisementCampaign.deleted_at.is_(None)
+        statement = (
+            select(AdvertisementCampaign)
+            .join(
+                SubscriptionBenefitGrant,
+                onclause=and_(
+                    SubscriptionBenefitGrant.subscription_benefit_id
+                    == AdvertisementCampaign.subscription_benefit_id,
+                    SubscriptionBenefitGrant.subscription_id
+                    == AdvertisementCampaign.subscription_id,
+                ),
+            )
+            .where(
+                AdvertisementCampaign.deleted_at.is_(None),
+                SubscriptionBenefitGrant.revoked_at.is_(None),
+            )
         )
 
         if subscription_id:

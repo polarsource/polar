@@ -86,7 +86,7 @@ const CreateCampaign = ({
     <div>
       <Form {...form}>
         <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
-          <div className="relative flex w-full flex-col gap-y-12 md:w-2/3">
+          <div className="relative flex w-full flex-col gap-y-12 ">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="mb-8 flex items-center justify-between">
                 <h1 className="text-lg font-medium">Configure ad</h1>

@@ -3,6 +3,7 @@ from httpx import AsyncClient
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 from polar.models.advertisement_campaign import AdvertisementCampaign
 from polar.models.subscription import Subscription
 from polar.models.subscription_benefit import SubscriptionBenefit
@@ -229,6 +230,13 @@ class TestAdvertisementCampaign:
         user_organization.is_admin = True
         await session.commit()
 
+        await create_subscription_benefit_grant(
+            session,
+            user,
+            subscription,
+            subscription_benefit_organization,
+        )
+
         # appears in search
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
@@ -239,6 +247,40 @@ class TestAdvertisementCampaign:
 
         assert searched.status_code == 200
         assert len(searched.json()["items"]) == 1
+
+    @pytest.mark.authenticated
+    async def test_search_benefit_id_grant_revoked(
+        self,
+        client: AsyncClient,
+        user: User,
+        user_organization: UserOrganization,  # member
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
+        advertisement_campaign: AdvertisementCampaign,
+    ) -> None:
+        user_organization.is_admin = True
+        await session.commit()
+
+        grant = await create_subscription_benefit_grant(
+            session,
+            user,
+            subscription,
+            subscription_benefit_organization,
+        )
+        grant.revoked_at = utc_now()
+        await session.commit()
+
+        # appears in search
+        searched = await client.get(
+            "/api/v1/advertisements/campaigns/search",
+            params={
+                "subscription_benefit_id": str(subscription_benefit_organization.id),
+            },
+        )
+
+        assert searched.status_code == 200
+        assert len(searched.json()["items"]) == 0
 
     @pytest.mark.authenticated
     async def test_search_benefit_id_no_member(

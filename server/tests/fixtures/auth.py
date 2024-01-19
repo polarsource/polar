@@ -18,3 +18,18 @@ async def auth_jwt(
         expires_at=expires_at,
     )
     return token
+
+
+@pytest_asyncio.fixture(scope="function")
+async def user_second_auth_jwt(
+    user_second: User,
+) -> str:
+    expires_at = jwt.create_expiration_dt(seconds=settings.AUTH_COOKIE_TTL_SECONDS)
+    token = jwt.encode(
+        data={
+            "user_id": str(user_second.id),
+        },
+        secret=settings.SECRET,
+        expires_at=expires_at,
+    )
+    return token

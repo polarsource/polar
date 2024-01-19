@@ -1,4 +1,3 @@
-from enum import StrEnum
 from uuid import UUID
 
 from sqlalchemy import (

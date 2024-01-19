@@ -39,7 +39,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         *,
         attempt: int = 1,
     ) -> SubscriptionBenefitGrant:
-        grant = await self._get_by_subscription_user_and_benefit(
+        grant = await self.get_by_subscription_user_and_benefit(
             session, subscription, user, subscription_benefit
         )
 
@@ -86,7 +86,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         *,
         attempt: int = 1,
     ) -> SubscriptionBenefitGrant:
-        grant = await self._get_by_subscription_user_and_benefit(
+        grant = await self.get_by_subscription_user_and_benefit(
             session, subscription, user, subscription_benefit
         )
 
@@ -293,7 +293,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         result = await session.execute(statement)
         return result.scalars().all()
 
-    async def _get_by_subscription_user_and_benefit(
+    async def get_by_subscription_user_and_benefit(
         self,
         session: AsyncSession,
         subscription: Subscription,

@@ -11,9 +11,6 @@ from polar.advertisement.schemas import (
 )
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import (
-    Subscription,
-)
 from polar.models.advertisement_campaign import AdvertisementCampaign
 
 
@@ -24,7 +21,7 @@ class AdvertisementCampaignService:
         query = select(AdvertisementCampaign).where(AdvertisementCampaign.id == id)
 
         if not allow_deleted:
-            query = query.where(Subscription.deleted_at.is_(None))
+            query = query.where(AdvertisementCampaign.deleted_at.is_(None))
 
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()

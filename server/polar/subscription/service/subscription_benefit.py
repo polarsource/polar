@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import aliased, contains_eager
+from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, PolarError
@@ -59,6 +59,26 @@ class SubscriptionBenefitService(
         SubscriptionBenefit, SubscriptionBenefitCreate, SubscriptionBenefitUpdate
     ]
 ):
+    async def get(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        allow_deleted: bool = False,
+        loaded: bool = False,
+    ) -> SubscriptionBenefit | None:
+        query = select(SubscriptionBenefit).where(SubscriptionBenefit.id == id)
+        if not allow_deleted:
+            query = query.where(SubscriptionBenefit.deleted_at.is_(None))
+
+        if loaded:
+            query = query.options(
+                joinedload(SubscriptionBenefit.organization),
+                joinedload(SubscriptionBenefit.repository),
+            )
+
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
+
     async def search(
         self,
         session: AsyncSession,

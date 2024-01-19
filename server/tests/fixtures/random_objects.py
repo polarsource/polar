@@ -32,6 +32,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import (
     SubscriptionBenefitType,
 )
+from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.user import OAuthAccount
 from polar.organization.schemas import OrganizationCreate
@@ -692,3 +693,19 @@ async def subscription_organization(
         user=user_second,
         organization=organization_subscriber,
     )
+
+
+async def create_subscription_benefit_grant(
+    session: AsyncSession,
+    user: User,
+    subscription: Subscription,
+    subscription_benefit: SubscriptionBenefit,
+) -> SubscriptionBenefitGrant:
+    grant = SubscriptionBenefitGrant(
+        subscription=subscription,
+        subscription_benefit=subscription_benefit,
+        user=user,
+    )
+    session.add(grant)
+    await session.commit()
+    return grant

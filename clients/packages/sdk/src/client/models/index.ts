@@ -133,7 +133,7 @@ export interface AdvertisementCampaign {
      * @type {string}
      * @memberof AdvertisementCampaign
      */
-    format: AdvertisementCampaignFormatEnum;
+    subscription_benefit_id: string;
     /**
      * 
      * @type {number}
@@ -165,17 +165,6 @@ export interface AdvertisementCampaign {
      */
     link_url: string;
 }
-
-
-/**
- * @export
- */
-export const AdvertisementCampaignFormatEnum = {
-    RECT: 'rect',
-    SMALL_LEADERBOARD: 'small_leaderboard'
-} as const;
-export type AdvertisementCampaignFormatEnum = typeof AdvertisementCampaignFormatEnum[keyof typeof AdvertisementCampaignFormatEnum];
-
 /**
  * 
  * @export
@@ -954,7 +943,7 @@ export interface CreateAdvertisementCampaign {
      * @type {string}
      * @memberof CreateAdvertisementCampaign
      */
-    format: CreateAdvertisementCampaignFormatEnum;
+    subscription_benefit_id: string;
     /**
      * 
      * @type {string}
@@ -974,17 +963,6 @@ export interface CreateAdvertisementCampaign {
      */
     link_url: string;
 }
-
-
-/**
- * @export
- */
-export const CreateAdvertisementCampaignFormatEnum = {
-    RECT: 'rect',
-    SMALL_LEADERBOARD: 'small_leaderboard'
-} as const;
-export type CreateAdvertisementCampaignFormatEnum = typeof CreateAdvertisementCampaignFormatEnum[keyof typeof CreateAdvertisementCampaignFormatEnum];
-
 /**
  * 
  * @export
@@ -4896,6 +4874,12 @@ export interface SubscriptionBenefitAds {
      * @memberof SubscriptionBenefitAds
      */
     repository_id?: string;
+    /**
+     * 
+     * @type {SubscriptionBenefitAdsProperties}
+     * @memberof SubscriptionBenefitAds
+     */
+    properties: SubscriptionBenefitAdsProperties;
 }
 
 
@@ -4937,6 +4921,12 @@ export interface SubscriptionBenefitAdsCreate {
      * @memberof SubscriptionBenefitAdsCreate
      */
     type: SubscriptionBenefitAdsCreateTypeEnum;
+    /**
+     * 
+     * @type {SubscriptionBenefitAdsProperties}
+     * @memberof SubscriptionBenefitAdsCreate
+     */
+    properties: SubscriptionBenefitAdsProperties;
 }
 
 
@@ -4948,6 +4938,25 @@ export const SubscriptionBenefitAdsCreateTypeEnum = {
 } as const;
 export type SubscriptionBenefitAdsCreateTypeEnum = typeof SubscriptionBenefitAdsCreateTypeEnum[keyof typeof SubscriptionBenefitAdsCreateTypeEnum];
 
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitAdsProperties
+ */
+export interface SubscriptionBenefitAdsProperties {
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionBenefitAdsProperties
+     */
+    image_height?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionBenefitAdsProperties
+     */
+    image_width?: number;
+}
 /**
  * 
  * @export
@@ -5008,6 +5017,12 @@ export interface SubscriptionBenefitAdsSubscriber {
      * @memberof SubscriptionBenefitAdsSubscriber
      */
     repository_id?: string;
+    /**
+     * 
+     * @type {SubscriptionBenefitAdsProperties}
+     * @memberof SubscriptionBenefitAdsSubscriber
+     */
+    properties: SubscriptionBenefitAdsProperties;
 }
 
 
@@ -5037,6 +5052,12 @@ export interface SubscriptionBenefitAdsUpdate {
      * @memberof SubscriptionBenefitAdsUpdate
      */
     type: SubscriptionBenefitAdsUpdateTypeEnum;
+    /**
+     * 
+     * @type {SubscriptionBenefitAdsProperties}
+     * @memberof SubscriptionBenefitAdsUpdate
+     */
+    properties?: SubscriptionBenefitAdsProperties;
 }
 
 

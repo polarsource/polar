@@ -36,7 +36,7 @@ class AdvertisementCampaignService:
     ) -> AdvertisementCampaign:
         campaign = AdvertisementCampaign(
             subscription_id=create.subscription_id,
-            format=create.format,
+            subscription_benefit_id=create.subscription_benefit_id,
             image_url=create.image_url,
             text=create.text,
             link_url=create.link_url,
@@ -70,6 +70,7 @@ class AdvertisementCampaignService:
         self,
         session: AsyncSession,
         subscription_id: uuid.UUID | None,
+        subscription_benefit_id: uuid.UUID | None,
     ) -> Sequence[AdvertisementCampaign]:
         statement = select(AdvertisementCampaign).where(
             AdvertisementCampaign.deleted_at.is_(None)
@@ -78,6 +79,10 @@ class AdvertisementCampaignService:
         if subscription_id:
             statement = statement.where(
                 AdvertisementCampaign.subscription_id == subscription_id
+            )
+        if subscription_benefit_id:
+            statement = statement.where(
+                AdvertisementCampaign.subscription_benefit_id == subscription_benefit_id
             )
 
         res = await session.execute(statement)

@@ -3,14 +3,12 @@ from uuid import UUID
 
 from polar.kit.schemas import Schema
 
-AdvertisementCampaignFormat = Literal["rect", "small_leaderboard"]
-
 
 class AdvertisementCampaign(Schema):
     id: UUID
     subscription_id: UUID
+    subscription_benefit_id: UUID
 
-    format: AdvertisementCampaignFormat
     views: int
     clicks: int
 
@@ -21,7 +19,8 @@ class AdvertisementCampaign(Schema):
 
 class CreateAdvertisementCampaign(Schema):
     subscription_id: UUID
-    format: AdvertisementCampaignFormat
+    subscription_benefit_id: UUID
+
     image_url: str
     text: str
     link_url: str

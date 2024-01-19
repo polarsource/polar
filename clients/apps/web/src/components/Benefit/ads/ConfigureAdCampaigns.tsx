@@ -2,19 +2,10 @@ import ImageUpload from '@/components/Form/ImageUpload'
 import {
   AdvertisementCampaign,
   CreateAdvertisementCampaign,
-  CreateAdvertisementCampaignFormatEnum,
   EditAdvertisementCampaign,
   SubscriptionSubscriber,
 } from '@polar-sh/sdk'
-import {
-  Button,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import {
   Form,
   FormControl,
@@ -39,17 +30,23 @@ const ConfigureAdCampaigns = ({
   benefit: BenefitSubscriber
   subscription: SubscriptionSubscriber
 }) => {
-  const campaigns = useAdvertisementCampaigns(subscription.id)
+  const campaigns = useAdvertisementCampaigns(subscription.id, benefit.id)
 
   const camps = campaigns.data?.items ?? []
 
+  const hasCampaign = camps.length !== 0
+
   return (
     <div>
-      {camps.map((c) => (
-        <EditCampaign campaign={c} key={c.id} />
-      ))}
-      <hr />
-      <CreateCampaign subscription={subscription} />
+      {hasCampaign ? (
+        <>
+          {camps.map((c) => (
+            <EditCampaign campaign={c} key={c.id} benefit={benefit} />
+          ))}
+        </>
+      ) : (
+        <CreateCampaign subscription={subscription} benefit={benefit} />
+      )}
     </div>
   )
 }
@@ -57,8 +54,10 @@ const ConfigureAdCampaigns = ({
 export default ConfigureAdCampaigns
 
 const CreateCampaign = ({
+  benefit,
   subscription,
 }: {
+  benefit: BenefitSubscriber
   subscription: SubscriptionSubscriber
 }) => {
   const create = useCreateAdvertisementCampaigns()
@@ -66,6 +65,7 @@ const CreateCampaign = ({
   const form = useForm<CreateAdvertisementCampaign>({
     defaultValues: {
       subscription_id: subscription.id,
+      subscription_benefit_id: benefit.id,
     },
   })
   const { handleSubmit } = form
@@ -78,6 +78,10 @@ const CreateCampaign = ({
     })
   }
 
+  if (!('image_height' in benefit.properties)) {
+    return <></>
+  }
+
   return (
     <div>
       <Form {...form}>
@@ -85,11 +89,14 @@ const CreateCampaign = ({
           <div className="relative flex w-full flex-col gap-y-12 md:w-2/3">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-lg font-medium">Create ad</h1>
+                <h1 className="text-lg font-medium">Configure ad</h1>
               </div>
 
-              <FormFormat />
-              <FormImageURL />
+              <FormImageURL
+                height={benefit.properties.image_height ?? 100}
+                width={benefit.properties.image_width ?? 240}
+              />
+
               <FormLinkURL />
               <FormText />
 
@@ -102,7 +109,13 @@ const CreateCampaign = ({
   )
 }
 
-const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
+const EditCampaign = ({
+  campaign,
+  benefit,
+}: {
+  campaign: AdvertisementCampaign
+  benefit: BenefitSubscriber
+}) => {
   const edit = useEditAdvertisementCampaigns()
   const deleteAd = useDeleteAdvertisementCampaigns()
 
@@ -128,6 +141,10 @@ const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
     })
   }
 
+  if (!('image_height' in benefit.properties)) {
+    return <></>
+  }
+
   return (
     <div>
       <Form {...form}>
@@ -135,11 +152,14 @@ const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
           <div className="relative flex w-full flex-col gap-y-12 md:w-2/3">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-lg font-medium">Edit ad</h1>
+                <h1 className="text-lg font-medium">Update ad</h1>
               </div>
 
-              <FormFormat />
-              <FormImageURL />
+              <FormImageURL
+                height={benefit.properties.image_height ?? 100}
+                width={benefit.properties.image_width ?? 240}
+              />
+
               <FormLinkURL />
               <FormText />
 
@@ -152,7 +172,7 @@ const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
                   onClick={onDelete}
                   loading={deleteAd.isPending}
                 >
-                  Delete
+                  Remove ad
                 </Button>
               </div>
             </form>
@@ -163,65 +183,13 @@ const EditCampaign = ({ campaign }: { campaign: AdvertisementCampaign }) => {
   )
 }
 
-const FormFormat = ({}) => {
+const FormImageURL = ({ height, width }: { height: number; width: number }) => {
   const { control } = useFormContext<CreateAdvertisementCampaign>()
-  return (
-    <FormField
-      control={control}
-      name="format"
-      rules={{
-        required: 'This field is required',
-      }}
-      render={({ field }) => {
-        return (
-          <FormItem>
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Format</FormLabel>
-            </div>
-            <FormControl>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select ad format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="rect">Rect</SelectItem>
-                  <SelectItem value="small_leaderboard">
-                    Small leaderboard
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )
-      }}
-    />
-  )
-}
-
-const FormImageURL = ({}) => {
-  const { control, watch } = useFormContext<CreateAdvertisementCampaign>()
-
-  const format = watch('format')
-
-  const formatSizes: Record<
-    CreateAdvertisementCampaignFormatEnum,
-    [number, number]
-  > = {
-    rect: [240, 100],
-    small_leaderboard: [700, 90],
-  }
-
-  const size = formatSizes[format]
-
-  if (!size) {
-    return <></>
-  }
 
   const expectedSizes = [
-    [size[0], size[1]],
-    [size[0] * 2, size[1] * 2],
-    [size[0] * 3, size[1] * 3],
+    [width, height],
+    [width * 2, height * 2],
+    [width * 3, height * 3],
   ]
 
   return (

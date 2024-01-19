@@ -29,10 +29,15 @@ router = APIRouter(tags=["advertisements"])
 )
 async def search_campaigns(
     auth: UserRequiredAuth,
-    subscription_id: UUID = Query(None),
+    subscription_id: UUID,
+    subscription_benefit_id: UUID,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[AdvertisementCampaign]:
-    ads = await advertisement_campaign_service.search(session, subscription_id)
+    ads = await advertisement_campaign_service.search(
+        session,
+        subscription_id=subscription_id,
+        subscription_benefit_id=subscription_benefit_id,
+    )
 
     return ListResource(
         items=[AdvertisementCampaign.model_validate(ad) for ad in ads],

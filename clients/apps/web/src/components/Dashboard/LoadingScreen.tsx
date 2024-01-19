@@ -31,7 +31,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
       viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={'dark:text-polar-950 m-auto h-[500px] w-[500px] text-gray-50'}
+      className={'dark:text-polar-950 m-auto text-gray-50'}
       animate={{
         rotate: [0, 90, 180],
       }}
@@ -41,7 +41,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
         cx="20"
         cy="20"
         r="20"
-        className="fill-red-700 dark:fill-blue-600"
+        className="fill-blue-700 dark:fill-blue-600"
       />
       <motion.circle
         animate={{
@@ -63,7 +63,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
         cx="20"
         cy="20"
         r="19.5"
-        className="fill-orange-700 dark:fill-blue-600"
+        className="fill-blue-700 dark:fill-blue-600"
       />
       <motion.circle
         animate={{

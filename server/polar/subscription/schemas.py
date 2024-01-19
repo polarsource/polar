@@ -35,6 +35,11 @@ class SubscriptionBenefitArticlesProperties(Schema):
     paid_articles: bool
 
 
+class SubscriptionBenefitAdsProperties(Schema):
+    image_height: int = 400
+    image_width: int = 400
+
+
 class SubscriptionBenefitArticlesSubscriberProperties(Schema):
     ...
 
@@ -82,8 +87,7 @@ class SubscriptionBenefitCustomCreate(SubscriptionBenefitCreateBase):
 
 class SubscriptionBenefitAdsCreate(SubscriptionBenefitCreateBase):
     type: Literal[SubscriptionBenefitType.ads]
-    # is_tax_applicable: bool
-    # properties: SubscriptionBenefitAdsProperties
+    properties: SubscriptionBenefitAdsProperties
 
 
 # This is a dummy schema only there to produce a valid union below
@@ -118,6 +122,7 @@ class SubscriptionBenefitArticlesUpdate(SubscriptionBenefitUpdateBase):
 
 class SubscriptionBenefitAdsUpdate(SubscriptionBenefitUpdateBase):
     type: Literal[SubscriptionBenefitType.ads]
+    properties: SubscriptionBenefitAdsProperties | None = None
 
 
 class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
@@ -152,6 +157,7 @@ class SubscriptionBenefitArticles(SubscriptionBenefitBase):
 
 class SubscriptionBenefitAds(SubscriptionBenefitBase):
     type: Literal[SubscriptionBenefitType.ads]
+    properties: SubscriptionBenefitAdsProperties
 
 
 class SubscriptionBenefitCustom(SubscriptionBenefitBase):
@@ -182,6 +188,7 @@ class SubscriptionBenefitArticlesSubscriber(SubscriptionBenefitBase):
 
 class SubscriptionBenefitAdsSubscriber(SubscriptionBenefitBase):
     type: Literal[SubscriptionBenefitType.ads]
+    properties: SubscriptionBenefitAdsProperties
 
 
 class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):

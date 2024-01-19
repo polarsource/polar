@@ -6,6 +6,7 @@ import {
 } from '@mui/icons-material'
 import {
   Organization,
+  SubscriptionBenefitAdsCreate,
   SubscriptionBenefitCreate,
   SubscriptionBenefitCustomCreate,
   SubscriptionBenefitType,
@@ -490,6 +491,7 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
 
       {hasAds && !update ? <BenefitTypeSelect /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
+      {type === 'ads' && <AdsBenefitForm update={update} />}
     </>
   )
 }
@@ -547,6 +549,57 @@ export const CustomBenefitForm = ({
           }}
         />
       )}
+    </>
+  )
+}
+
+interface AdsBenefitFormProps {
+  update?: boolean
+}
+
+export const AdsBenefitForm = ({ update = false }: AdsBenefitFormProps) => {
+  const { control } = useFormContext<SubscriptionBenefitAdsCreate>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="properties.image_width"
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Image width</FormLabel>
+              </div>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+      <FormField
+        control={control}
+        name="properties.image_height"
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Image height</FormLabel>
+              </div>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormDescription>
+                Expected size of the image in the ad. We recommend 240x100 for
+                ads in READMEs.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
     </>
   )
 }

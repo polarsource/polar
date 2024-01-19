@@ -12,18 +12,6 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 
-class AdvertisementCampaignFormat(StrEnum):
-    rect = "rect"
-    small_leaderboard = "small_leaderboard"
-
-    def image_size(self) -> tuple[int, int]:
-        if self == "rect":
-            return (240, 80)
-        elif self == "small_leaderboard":
-            return (700, 90)
-        raise Exception("unrecognised campaign format")
-
-
 class AdvertisementCampaign(RecordModel):
     __tablename__ = "advertisement_campaigns"
 
@@ -33,7 +21,11 @@ class AdvertisementCampaign(RecordModel):
         nullable=False,
     )
 
-    format: Mapped[AdvertisementCampaignFormat] = mapped_column(String, nullable=False)
+    subscription_benefit_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("subscription_benefits.id"),
+        nullable=False,
+    )
 
     views: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     clicks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

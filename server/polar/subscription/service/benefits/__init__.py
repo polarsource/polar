@@ -3,6 +3,7 @@ from typing import Any
 from polar.models import SubscriptionBenefit
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
+from polar.subscription.service.benefits.ads import SubscriptionBenefitAdsService
 
 from ...schemas import SubscriptionBenefitUpdate
 from .articles import SubscriptionBenefitArticlesService
@@ -20,6 +21,7 @@ _SERVICE_CLASS_MAP: dict[
 ] = {
     SubscriptionBenefitType.custom: SubscriptionBenefitCustomService,
     SubscriptionBenefitType.articles: SubscriptionBenefitArticlesService,
+    SubscriptionBenefitType.ads: SubscriptionBenefitAdsService,
 }
 
 

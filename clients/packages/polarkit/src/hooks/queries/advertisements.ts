@@ -16,12 +16,14 @@ import { defaultRetry } from './retry'
 
 export const useAdvertisementCampaigns = (
   subscription_id: string,
+  benefit_id: string,
 ): UseQueryResult<ListResourceAdvertisementCampaign, Error> =>
   useQuery({
-    queryKey: ['advertisements', 'campaigns', subscription_id],
+    queryKey: ['advertisements', 'campaigns', subscription_id, benefit_id],
     queryFn: () =>
       api.advertisements.searchCampaigns({
         subscriptionId: subscription_id,
+        subscriptionBenefitId: benefit_id,
       }),
     retry: defaultRetry,
   })

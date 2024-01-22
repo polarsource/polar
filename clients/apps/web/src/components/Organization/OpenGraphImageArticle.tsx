@@ -22,8 +22,9 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
         width: 1200,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'start',
         justifyContent: 'space-between',
+        gap: '24px',
         background: 'white',
         backgroundImage: `url(${imageBaseURL}/${generatePostOGFallbackPath(
           article.slug,
@@ -35,17 +36,19 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
         padding: '64px',
       }}
     >
-      <LogoIcon size={72} />
+      <div>
+        <LogoIcon size={82} />
+      </div>
       <span
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'start',
           whiteSpace: 'pre-wrap',
           fontWeight: 600,
-          fontSize: '48px',
-          textAlign: 'center',
+          fontSize: '64px',
+          lineHeight: '1.4em',
           /** @ts-ignore */
           textWrap: 'balance',
         }}
@@ -55,10 +58,10 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           alignItems: 'center',
           fontSize: '32px',
-          gap: '16px',
+          gap: '24px',
         }}
       >
         <img

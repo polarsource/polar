@@ -64,10 +64,9 @@ export default async function Layout({
                 </a>
               </div>
               <div className="flex flex-row items-center justify-between md:w-full">
-                <OrganizationPublicPageNav
-                  className="hidden md:flex"
-                  organization={organization}
-                />
+                <div className="hidden w-full md:flex">
+                  <OrganizationPublicPageNav organization={organization} />
+                </div>
 
                 <LayoutTopbarAuth authenticatedUser={authenticatedUser} />
               </div>
@@ -77,10 +76,11 @@ export default async function Layout({
           <div className="mx-auto mb-16 mt-4 flex w-full max-w-7xl shrink-0 flex-col space-y-8 px-4">
             <div className="flex w-full shrink-0 flex-col gap-8 py-6 md:min-h-screen md:flex-row md:gap-24">
               <OrganizationPublicSidebar organization={organization} />
-              <div className="-mx-4 flex flex-row overflow-x-auto px-4 pb-4 md:hidden">
+              <div className="flex w-full flex-row pb-4 md:hidden">
                 <OrganizationPublicPageNav
-                  className="flex-row"
+                  className="w-full flex-row"
                   organization={organization}
+                  mobileLayout
                 />
               </div>
               <div className="flex h-full w-full flex-col">{children}</div>

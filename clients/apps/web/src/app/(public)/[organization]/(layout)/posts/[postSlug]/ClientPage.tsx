@@ -49,7 +49,7 @@ export default function Page({ article }: { article: Article }) {
   return (
     <div className="dark:md:bg-polar-900 dark:md:border-polar-800 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
       <Link
-        className="absolute left-16 top-16 hidden flex-shrink md:block"
+        className="absolute left-0 top-4 flex flex-shrink md:left-16 md:top-16"
         href={`/${article.organization.name}`}
       >
         <Button

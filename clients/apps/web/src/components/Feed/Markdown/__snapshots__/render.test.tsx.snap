@@ -28,7 +28,7 @@ exports[`basic 1`] = `
       </a>
     </p>
     <div
-      class="my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4 dark:bg-polar-700"
+      class="my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4 text-center dark:bg-polar-700"
     >
       <p>
         This section is for premium subscribers only. Subscribe to

@@ -90,14 +90,14 @@ class TestAdvertisementCampaign:
             json={
                 "subscription_id": str(subscription.id),
                 "subscription_benefit_id": str(subscription_benefit_organization.id),
-                "image_url": "https://example.com",
+                "image_url": "https://example.com/foobar2.jpg",
                 "text": "hello",
                 "link_url": "https://example.com/",
             },
         )
 
         assert response.status_code == 200
-        assert response.json()["image_url"] == "https://example.com"
+        assert response.json()["image_url"] == "https://example.com/foobar2.jpg"
 
         updated = await client.post(
             f"/api/v1/advertisements/campaigns/{response.json()["id"]}",
@@ -133,14 +133,14 @@ class TestAdvertisementCampaign:
             json={
                 "subscription_id": str(subscription.id),
                 "subscription_benefit_id": str(subscription_benefit_organization.id),
-                "image_url": "https://example.com",
+                "image_url": "https://example.com/foobar.jpg",
                 "text": "hello",
                 "link_url": "https://example.com/",
             },
         )
 
         assert response.status_code == 200
-        assert response.json()["image_url"] == "https://example.com"
+        assert response.json()["image_url"] == "https://example.com/foobar.jpg"
 
         deleted = await client.delete(
             f"/api/v1/advertisements/campaigns/{response.json()["id"]}",

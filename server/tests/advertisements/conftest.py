@@ -17,9 +17,9 @@ async def advertisement_campaign(
     ad = AdvertisementCampaign(
         subscription_id=subscription.id,
         subscription_benefit_id=subscription_benefit_organization.id,
-        image_url="",
+        image_url="https://example.com/img.jpg",
         text="",
-        link_url="",
+        link_url="https://example.com",
     )
     session.add(ad)
     await session.commit()

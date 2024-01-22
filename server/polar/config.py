@@ -15,7 +15,6 @@ class Environment(str, Enum):
 
 class EmailSender(str, Enum):
     logger = "logger"
-    sendgrid = "sendgrid"
     resend = "resend"
 
 
@@ -102,7 +101,6 @@ class Settings(BaseSettings):
     GITHUB_BADGE_EMBED_DEFAULT_LABEL: str = "Fund"
 
     EMAIL_SENDER: EmailSender = EmailSender.logger
-    SENDGRID_API_KEY: str = ""
     RESEND_API_KEY: str = ""
 
     ACCOUNT_TRANSFERS_REVIEW_THRESHOLD: int = 10000

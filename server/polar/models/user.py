@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -43,6 +44,11 @@ class OAuthAccount(RecordModel):
     )
 
     user: Mapped["User"] = relationship("User", back_populates="oauth_accounts")
+
+    def is_access_token_expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+        return time.time() > self.expires_at
 
 
 class User(RecordModel):

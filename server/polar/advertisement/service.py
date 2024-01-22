@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from sqlalchemy import (
     and_,
     select,
+    update,
 )
 
 from polar.advertisement.schemas import (
@@ -59,6 +60,20 @@ class AdvertisementCampaignService:
         campaign.text = edit.text
         await session.commit()
         return campaign
+
+    async def track_view(
+        self,
+        session: AsyncSession,
+        campaign: AdvertisementCampaign,
+    ) -> None:
+        stmt = (
+            update(AdvertisementCampaign)
+            .where(AdvertisementCampaign.id == campaign.id)
+            .values({"views": AdvertisementCampaign.views + 1})
+        )
+
+        await session.execute(stmt)
+        await session.commit()
 
     async def delete(
         self,

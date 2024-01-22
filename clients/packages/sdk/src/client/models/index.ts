@@ -157,7 +157,7 @@ export interface AdvertisementCampaign {
      * @type {string}
      * @memberof AdvertisementCampaign
      */
-    image_url_dark: string;
+    image_url_dark?: string;
     /**
      * 
      * @type {string}
@@ -168,6 +168,43 @@ export interface AdvertisementCampaign {
      * 
      * @type {string}
      * @memberof AdvertisementCampaign
+     */
+    link_url: string;
+}
+/**
+ * 
+ * @export
+ * @interface AdvertisementCampaignPublic
+ */
+export interface AdvertisementCampaignPublic {
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaignPublic
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaignPublic
+     */
+    image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaignPublic
+     */
+    image_url_dark?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaignPublic
+     */
+    text: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaignPublic
      */
     link_url: string;
 }
@@ -961,7 +998,7 @@ export interface CreateAdvertisementCampaign {
      * @type {string}
      * @memberof CreateAdvertisementCampaign
      */
-    image_url_dark: string;
+    image_url_dark?: string;
     /**
      * 
      * @type {string}
@@ -1141,7 +1178,7 @@ export interface EditAdvertisementCampaign {
      * @type {string}
      * @memberof EditAdvertisementCampaign
      */
-    image_url_dark: string;
+    image_url_dark?: string;
     /**
      * 
      * @type {string}

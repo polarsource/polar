@@ -323,3 +323,41 @@ class TestAdvertisementCampaign:
         )
 
         assert searched.status_code == 401
+
+    async def test_track_view(
+        self,
+        client: AsyncClient,
+        user: User,
+        subscription: Subscription,
+        user_organization: UserOrganization,  # member
+        subscription_benefit_organization: SubscriptionBenefit,
+        session: AsyncSession,
+        advertisement_campaign: AdvertisementCampaign,
+        auth_jwt: str,
+    ) -> None:
+        user_organization.is_admin = True
+        await session.commit()
+
+        grant = await create_subscription_benefit_grant(
+            session,
+            user,
+            subscription,
+            subscription_benefit_organization,
+        )
+        await session.commit()
+
+        track = await client.post(
+            f"/api/v1/advertisements/campaigns/{advertisement_campaign.id}/track_view"
+        )
+
+        assert track.status_code == 200
+        assert track.json()["image_url"] == advertisement_campaign.image_url
+
+        # check bumped view counter
+
+        got = await client.get(
+            f"/api/v1/advertisements/campaigns/{advertisement_campaign.id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+        assert got.status_code == 200
+        assert got.json()["views"] == 1

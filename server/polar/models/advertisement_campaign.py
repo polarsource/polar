@@ -30,5 +30,9 @@ class AdvertisementCampaign(RecordModel):
     clicks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     image_url: Mapped[str] = mapped_column(String)
+    image_url_dark: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+
     text: Mapped[str] = mapped_column(String)
     link_url: Mapped[str] = mapped_column(String)

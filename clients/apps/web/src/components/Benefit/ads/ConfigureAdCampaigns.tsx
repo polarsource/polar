@@ -92,9 +92,20 @@ const CreateCampaign = ({
                 <h1 className="text-lg font-medium">Configure ad</h1>
               </div>
 
-              <FormImageURL
+              <FormImage
                 height={benefit.properties.image_height ?? 100}
                 width={benefit.properties.image_width ?? 240}
+                name="image_url"
+                title="Image (light)"
+                required={true}
+              />
+
+              <FormImage
+                height={benefit.properties.image_height ?? 100}
+                width={benefit.properties.image_width ?? 240}
+                name="image_url_dark"
+                title="Image (dark)"
+                required={false}
               />
 
               <FormLinkURL />
@@ -155,9 +166,20 @@ const EditCampaign = ({
                 <h1 className="text-lg font-medium">Update ad</h1>
               </div>
 
-              <FormImageURL
+              <FormImage
                 height={benefit.properties.image_height ?? 100}
                 width={benefit.properties.image_width ?? 240}
+                name="image_url"
+                title="Image (light)"
+                required={true}
+              />
+
+              <FormImage
+                height={benefit.properties.image_height ?? 100}
+                width={benefit.properties.image_width ?? 240}
+                name="image_url_dark"
+                title="Image (dark)"
+                required={false}
               />
 
               <FormLinkURL />
@@ -183,7 +205,19 @@ const EditCampaign = ({
   )
 }
 
-const FormImageURL = ({ height, width }: { height: number; width: number }) => {
+const FormImage = ({
+  height,
+  width,
+  name,
+  title,
+  required,
+}: {
+  height: number
+  width: number
+  name: 'image_url' | 'image_url_dark'
+  title: string
+  required: boolean
+}) => {
   const { control } = useFormContext<CreateAdvertisementCampaign>()
 
   const expectedSizes = [
@@ -195,16 +229,17 @@ const FormImageURL = ({ height, width }: { height: number; width: number }) => {
   return (
     <FormField
       control={control}
-      name="image_url"
+      name={name}
       rules={{
-        required: 'This field is required',
+        required: required ? 'This field is required' : undefined,
         minLength: 3,
+        pattern: /^https:\/\//,
       }}
       render={({ field }) => {
         return (
           <FormItem>
             <div className="flex flex-row items-center justify-between">
-              <FormLabel>Image</FormLabel>
+              <FormLabel>{title}</FormLabel>
             </div>
             <FormControl>
               <ImageUpload
@@ -248,6 +283,7 @@ const FormLinkURL = ({}) => {
       rules={{
         required: 'This field is required',
         minLength: 3,
+        pattern: /^https:\/\//,
       }}
       render={({ field }) => {
         return (

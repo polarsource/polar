@@ -12,6 +12,8 @@ class AdvertisementCampaign(Schema):
     clicks: int
 
     image_url: str
+    image_url_dark: str | None = None
+
     text: str
     link_url: str
 
@@ -21,11 +23,14 @@ class CreateAdvertisementCampaign(Schema):
     subscription_benefit_id: UUID
 
     image_url: str
+    image_url_dark: str | None = None
+
     text: str
     link_url: str
 
 
 class EditAdvertisementCampaign(Schema):
     image_url: str
+    image_url_dark: str | None = None
     text: str
     link_url: str

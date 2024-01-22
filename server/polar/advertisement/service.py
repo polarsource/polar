@@ -39,6 +39,7 @@ class AdvertisementCampaignService:
             subscription_id=create.subscription_id,
             subscription_benefit_id=create.subscription_benefit_id,
             image_url=create.image_url,
+            image_url_dark=create.image_url_dark,
             text=create.text,
             link_url=create.link_url,
         )
@@ -53,6 +54,7 @@ class AdvertisementCampaignService:
         edit: EditAdvertisementCampaign,
     ) -> AdvertisementCampaign:
         campaign.image_url = edit.image_url
+        campaign.image_url_dark = edit.image_url_dark
         campaign.link_url = edit.link_url
         campaign.text = edit.text
         await session.commit()

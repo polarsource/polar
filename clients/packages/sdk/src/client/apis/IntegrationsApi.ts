@@ -25,8 +25,34 @@ import type {
   WebhookResponse,
 } from '../models/index';
 
+export interface IntegrationsApiDiscordGuildLookupRequest {
+    guildToken: string;
+}
+
 export interface IntegrationsApiInstallRequest {
     installationCreate: InstallationCreate;
+}
+
+export interface IntegrationsApiIntegrationsDiscordBotAuthorizeRequest {
+    returnTo?: string;
+}
+
+export interface IntegrationsApiIntegrationsDiscordBotCallbackRequest {
+    code?: string;
+    codeVerifier?: string;
+    state?: string;
+    error?: string;
+}
+
+export interface IntegrationsApiIntegrationsDiscordUserAuthorizeRequest {
+    returnTo?: string;
+}
+
+export interface IntegrationsApiIntegrationsDiscordUserCallbackRequest {
+    code?: string;
+    codeVerifier?: string;
+    state?: string;
+    error?: string;
 }
 
 export interface IntegrationsApiIntegrationsGithubAuthorizeRequest {
@@ -58,6 +84,48 @@ export interface IntegrationsApiSynchronizeMembersRequest {
  * 
  */
 export class IntegrationsApi extends runtime.BaseAPI {
+
+    /**
+     * Discord Guild Lookup
+     */
+    async discordGuildLookupRaw(requestParameters: IntegrationsApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
+        if (requestParameters.guildToken === null || requestParameters.guildToken === undefined) {
+            throw new runtime.RequiredError('guildToken','Required parameter requestParameters.guildToken was null or undefined when calling discordGuildLookup.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.guildToken !== undefined) {
+            queryParameters['guild_token'] = requestParameters.guildToken;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/discord/guild/lookup`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     * Discord Guild Lookup
+     */
+    async discordGuildLookup(requestParameters: IntegrationsApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.discordGuildLookupRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Install
@@ -97,6 +165,198 @@ export class IntegrationsApi extends runtime.BaseAPI {
      */
     async install(requestParameters: IntegrationsApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.installRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Discord.Bot Authorize
+     */
+    async integrationsDiscordBotAuthorizeRaw(requestParameters: IntegrationsApiIntegrationsDiscordBotAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.returnTo !== undefined) {
+            queryParameters['return_to'] = requestParameters.returnTo;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/discord/bot/authorize`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Discord.Bot Authorize
+     */
+    async integrationsDiscordBotAuthorize(requestParameters: IntegrationsApiIntegrationsDiscordBotAuthorizeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsDiscordBotAuthorizeRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Discord.Bot Callback
+     */
+    async integrationsDiscordBotCallbackRaw(requestParameters: IntegrationsApiIntegrationsDiscordBotCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.code !== undefined) {
+            queryParameters['code'] = requestParameters.code;
+        }
+
+        if (requestParameters.codeVerifier !== undefined) {
+            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        }
+
+        if (requestParameters.state !== undefined) {
+            queryParameters['state'] = requestParameters.state;
+        }
+
+        if (requestParameters.error !== undefined) {
+            queryParameters['error'] = requestParameters.error;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/discord/bot/callback`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Discord.Bot Callback
+     */
+    async integrationsDiscordBotCallback(requestParameters: IntegrationsApiIntegrationsDiscordBotCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsDiscordBotCallbackRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Discord.User Authorize
+     */
+    async integrationsDiscordUserAuthorizeRaw(requestParameters: IntegrationsApiIntegrationsDiscordUserAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.returnTo !== undefined) {
+            queryParameters['return_to'] = requestParameters.returnTo;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/discord/user/authorize`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Discord.User Authorize
+     */
+    async integrationsDiscordUserAuthorize(requestParameters: IntegrationsApiIntegrationsDiscordUserAuthorizeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsDiscordUserAuthorizeRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Discord.User Callback
+     */
+    async integrationsDiscordUserCallbackRaw(requestParameters: IntegrationsApiIntegrationsDiscordUserCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.code !== undefined) {
+            queryParameters['code'] = requestParameters.code;
+        }
+
+        if (requestParameters.codeVerifier !== undefined) {
+            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        }
+
+        if (requestParameters.state !== undefined) {
+            queryParameters['state'] = requestParameters.state;
+        }
+
+        if (requestParameters.error !== undefined) {
+            queryParameters['error'] = requestParameters.error;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/discord/user/callback`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Discord.User Callback
+     */
+    async integrationsDiscordUserCallback(requestParameters: IntegrationsApiIntegrationsDiscordUserCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsDiscordUserCallbackRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

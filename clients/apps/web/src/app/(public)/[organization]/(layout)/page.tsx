@@ -57,7 +57,7 @@ export async function generateMetadata(
 
       images: [
         {
-          url: organization.avatar_url,
+          url: `https://polar.sh/og?org=${organization.name}`,
           width: 1200,
           height: 630,
         },
@@ -66,7 +66,7 @@ export async function generateMetadata(
     twitter: {
       images: [
         {
-          url: organization.avatar_url,
+          url: `https://polar.sh/og?org=${organization.name}`,
           width: 1200,
           height: 630,
           alt: `${organization.pretty_name || organization.name} on Polar`,

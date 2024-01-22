@@ -29,3 +29,13 @@ export const getMagicLinkAuthenticateURL = (
   }
   return `${getServerURL()}/api/v1/magic_link/authenticate?${searchParams}`
 }
+
+export const getDiscordAuthorizeURL = (
+  params: IntegrationsApiIntegrationsGithubAuthorizeRequest,
+): string => {
+  const searchParams = new URLSearchParams()
+  if (params.returnTo !== undefined) {
+    searchParams.set('return_to', params.returnTo)
+  }
+  return `${getServerURL()}/api/v1/integrations/discord/user/authorize?${searchParams}`
+}

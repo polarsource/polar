@@ -36,8 +36,8 @@ export interface AdvertisementsApiEditCampaignRequest {
 }
 
 export interface AdvertisementsApiSearchCampaignsRequest {
-    subscriptionId: string;
-    subscriptionBenefitId: string;
+    subscriptionId?: string;
+    subscriptionBenefitId?: string;
 }
 
 /**
@@ -173,14 +173,6 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Search Campaigns
      */
     async searchCampaignsRaw(requestParameters: AdvertisementsApiSearchCampaignsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementCampaign>> {
-        if (requestParameters.subscriptionId === null || requestParameters.subscriptionId === undefined) {
-            throw new runtime.RequiredError('subscriptionId','Required parameter requestParameters.subscriptionId was null or undefined when calling searchCampaigns.');
-        }
-
-        if (requestParameters.subscriptionBenefitId === null || requestParameters.subscriptionBenefitId === undefined) {
-            throw new runtime.RequiredError('subscriptionBenefitId','Required parameter requestParameters.subscriptionBenefitId was null or undefined when calling searchCampaigns.');
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters.subscriptionId !== undefined) {
@@ -214,7 +206,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
     /**
      * Search Campaigns
      */
-    async searchCampaigns(requestParameters: AdvertisementsApiSearchCampaignsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAdvertisementCampaign> {
+    async searchCampaigns(requestParameters: AdvertisementsApiSearchCampaignsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAdvertisementCampaign> {
         const response = await this.searchCampaignsRaw(requestParameters, initOverrides);
         return await response.value();
     }

@@ -157,6 +157,12 @@ export interface AdvertisementCampaign {
      * @type {string}
      * @memberof AdvertisementCampaign
      */
+    image_url_dark: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
     text: string;
     /**
      * 
@@ -955,6 +961,12 @@ export interface CreateAdvertisementCampaign {
      * @type {string}
      * @memberof CreateAdvertisementCampaign
      */
+    image_url_dark: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateAdvertisementCampaign
+     */
     text: string;
     /**
      * 
@@ -1124,6 +1136,12 @@ export interface EditAdvertisementCampaign {
      * @memberof EditAdvertisementCampaign
      */
     image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof EditAdvertisementCampaign
+     */
+    image_url_dark: string;
     /**
      * 
      * @type {string}

@@ -9,6 +9,7 @@ import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 
 import OpenGraphImageArticle from '@/components/Organization/OpenGraphImageArticle'
+import OpenGraphImageCreator from '@/components/Organization/OpenGraphImageCreator'
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
 import { notFound } from 'next/navigation'
 import { getServerURL } from 'polarkit/api/url'
@@ -52,6 +53,36 @@ const renderFundingOG = async (
       //     data: interRegular,
       //     weight: 500,
       //     style: 'normal',
+      //   },
+      //   {
+      //     name: 'Inter',
+      //     data: interMedium,
+      //     weight: 600,
+      //   },
+      // ],
+    },
+  )
+}
+const renderCreatorOG = async (organization: Organization) => {
+  // const [interRegular, interMedium] = await Promise.all([
+  //   fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
+  //     res.arrayBuffer(),
+  //   ),
+  //   fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
+  //     res.arrayBuffer(),
+  //   ),
+  // ])
+
+  return new ImageResponse(
+    <OpenGraphImageCreator organization={organization} />,
+    {
+      height: 630,
+      width: 1200,
+      // fonts: [
+      //   {
+      //     name: 'Inter',
+      //     data: interRegular,
+      //     weight: 500,
       //   },
       //   {
       //     name: 'Inter',
@@ -213,6 +244,7 @@ export async function GET(req: NextRequest) {
       orgData = repoData.organization
     } else if (org) {
       orgData = await getOrg(org)
+      return await renderCreatorOG(orgData)
     }
 
     if (!orgData) {

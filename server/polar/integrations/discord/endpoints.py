@@ -8,7 +8,6 @@ from fastapi import (
     Request,
 )
 from fastapi.responses import RedirectResponse
-from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 
@@ -20,6 +19,7 @@ from polar.kit.http import get_safe_return_url
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
+from . import oauth
 from .service import discord_user as discord_user_service
 
 log = structlog.get_logger()
@@ -51,13 +51,8 @@ def get_decoded_token_state(
 # USER AUTHORIZATION
 # -------------------------------------------------------------------------------
 
-discord_user_oauth_client = DiscordOAuth2(
-    settings.DISCORD_CLIENT_ID,
-    settings.DISCORD_CLIENT_SECRET,
-    scopes=["identify", "email", "guilds.join"],
-)
 oauth2_user_authorize_callback = OAuth2AuthorizeCallback(
-    discord_user_oauth_client, route_name="integrations.discord.user_callback"
+    oauth.user_client, route_name="integrations.discord.user_callback"
 )
 
 
@@ -72,7 +67,7 @@ async def discord_user_authorize(
     state = {"auth_type": "user", "user_id": str(auth.user.id)}
     encoded_state = jwt.encode(data=state, secret=settings.SECRET)
 
-    authorization_url = await discord_user_oauth_client.get_authorization_url(
+    authorization_url = await oauth.user_client.get_authorization_url(
         redirect_uri=str(request.url_for("integrations.discord.user_callback")),
         state=encoded_state,
     )

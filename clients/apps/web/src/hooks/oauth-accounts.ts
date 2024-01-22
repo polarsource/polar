@@ -1,4 +1,4 @@
-import { OAuthAccountRead, Platforms } from '@polar-sh/sdk'
+import { OAuthAccountRead, OAuthPlatform } from '@polar-sh/sdk'
 import { useMemo } from 'react'
 import { useAuth } from '.'
 
@@ -7,13 +7,19 @@ export const useOAuthAccounts = (): OAuthAccountRead[] => {
   return currentUser?.oauth_accounts || []
 }
 
-export const useGitHubAccount = (): OAuthAccountRead | undefined => {
+export const usePlatformOAuthAccount = (
+  platform: OAuthPlatform,
+): OAuthAccountRead | undefined => {
   const oauthAccounts = useOAuthAccounts()
   return useMemo(
     () =>
-      oauthAccounts.find(
-        (oauthAccount) => oauthAccount.platform === Platforms.GITHUB,
-      ),
-    [oauthAccounts],
+      oauthAccounts.find((oauthAccount) => oauthAccount.platform === platform),
+    [oauthAccounts, platform],
   )
 }
+
+export const useGitHubAccount = (): OAuthAccountRead | undefined =>
+  usePlatformOAuthAccount(OAuthPlatform.GITHUB)
+
+export const useDiscordAccount = (): OAuthAccountRead | undefined =>
+  usePlatformOAuthAccount(OAuthPlatform.DISCORD)

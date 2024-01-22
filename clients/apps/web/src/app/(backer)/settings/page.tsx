@@ -2,6 +2,7 @@
 
 import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
+import ConnectedAppSettings from '@/components/Settings/ConnectedAppSettings'
 import GeneralSettings from '@/components/Settings/GeneralSettings'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
@@ -29,6 +30,14 @@ export default function Page() {
             description="Manage your active subscriptions"
           />
           <SubscriptionSettings />
+        </Section>
+
+        <Section>
+          <SectionDescription
+            title="Connected Apps"
+            description="Manage connection to apps"
+          />
+          <ConnectedAppSettings />
         </Section>
 
         <Section>

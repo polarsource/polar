@@ -18,6 +18,16 @@ class AdvertisementCampaign(Schema):
     link_url: str
 
 
+class AdvertisementCampaignPublic(Schema):
+    id: UUID
+
+    image_url: str
+    image_url_dark: str | None = None
+
+    text: str
+    link_url: str
+
+
 class CreateAdvertisementCampaign(Schema):
     subscription_id: UUID
     subscription_benefit_id: UUID

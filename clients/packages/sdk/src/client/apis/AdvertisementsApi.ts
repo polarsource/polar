@@ -16,6 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   AdvertisementCampaign,
+  AdvertisementCampaignPublic,
   CreateAdvertisementCampaign,
   EditAdvertisementCampaign,
   HTTPValidationError,
@@ -35,9 +36,17 @@ export interface AdvertisementsApiEditCampaignRequest {
     editAdvertisementCampaign: EditAdvertisementCampaign;
 }
 
+export interface AdvertisementsApiGetCampaignRequest {
+    id: string;
+}
+
 export interface AdvertisementsApiSearchCampaignsRequest {
     subscriptionId?: string;
     subscriptionBenefitId?: string;
+}
+
+export interface AdvertisementsApiTrackViewRequest {
+    id: string;
 }
 
 /**
@@ -170,6 +179,44 @@ export class AdvertisementsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get Campaign
+     */
+    async getCampaignRaw(requestParameters: AdvertisementsApiGetCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getCampaign.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get Campaign
+     */
+    async getCampaign(requestParameters: AdvertisementsApiGetCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaign> {
+        const response = await this.getCampaignRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Search Campaigns
      */
     async searchCampaignsRaw(requestParameters: AdvertisementsApiSearchCampaignsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementCampaign>> {
@@ -208,6 +255,44 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      */
     async searchCampaigns(requestParameters: AdvertisementsApiSearchCampaignsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAdvertisementCampaign> {
         const response = await this.searchCampaignsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Track View
+     */
+    async trackViewRaw(requestParameters: AdvertisementsApiTrackViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaignPublic>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling trackView.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/advertisements/campaigns/{id}/track_view`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Track View
+     */
+    async trackView(requestParameters: AdvertisementsApiTrackViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaignPublic> {
+        const response = await this.trackViewRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

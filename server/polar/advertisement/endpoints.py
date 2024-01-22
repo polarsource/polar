@@ -24,6 +24,7 @@ from polar.tags.api import Tags
 
 from .schemas import (
     AdvertisementCampaign,
+    AdvertisementCampaignPublic,
     CreateAdvertisementCampaign,
     EditAdvertisementCampaign,
 )
@@ -131,6 +132,49 @@ async def create_campaign(
 
     created = await advertisement_campaign_service.create(session, create)
     return AdvertisementCampaign.model_validate(created)
+
+
+@router.get(
+    "/advertisements/campaigns/{id}",
+    response_model=AdvertisementCampaign,
+    tags=[Tags.PUBLIC],
+    status_code=200,
+)
+async def get_campaign(
+    id: UUID,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+) -> AdvertisementCampaign:
+    ad = await advertisement_campaign_service.get(session, id)
+    if not ad:
+        raise ResourceNotFound()
+
+    grant = await _get_grant(
+        session, auth.user, ad.subscription_id, ad.subscription_benefit_id
+    )
+    if not grant or grant.revoked_at is not None:
+        raise NotPermitted("This benefit does not exist or has been revoked")
+
+    return AdvertisementCampaign.model_validate(ad)
+
+
+@router.post(
+    "/advertisements/campaigns/{id}/track_view",
+    response_model=AdvertisementCampaignPublic,
+    tags=[Tags.PUBLIC],
+    status_code=200,
+)
+async def track_view(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+) -> AdvertisementCampaignPublic:
+    ad = await advertisement_campaign_service.get(session, id)
+    if not ad:
+        raise ResourceNotFound()
+
+    await advertisement_campaign_service.track_view(session, ad)
+
+    return AdvertisementCampaignPublic.model_validate(ad)
 
 
 @router.post(

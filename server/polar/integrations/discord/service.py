@@ -1,3 +1,4 @@
+from typing import Any
 
 import structlog
 from httpx_oauth.oauth2 import OAuth2Token
@@ -9,23 +10,23 @@ from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 
 from . import oauth
-from .client import DiscordClient
+from .client import DiscordClient, bot_client
 
 log: Logger = structlog.get_logger()
 
 
-class DiscordUserError(PolarError):
+class DiscordError(PolarError):
     ...
 
 
-class DiscordAccountNotConnected(DiscordUserError):
+class DiscordAccountNotConnected(DiscordError):
     def __init__(self, user: User) -> None:
         self.user = user
         message = "You don't have a Discord account connected."
         super().__init__(message)
 
 
-class DiscordExpiredAccessToken(DiscordUserError):
+class DiscordExpiredAccessToken(DiscordError):
     def __init__(self, user: User) -> None:
         self.user = user
         message = "The access token is expired and no refresh token is available."
@@ -57,7 +58,9 @@ class DiscordUserService:
         await session.commit()
         return oauth_account
 
-    async def get_access_token(self, session: AsyncSession, user: User) -> str:
+    async def get_oauth_account(
+        self, session: AsyncSession, user: User
+    ) -> OAuthAccount:
         account = user.get_oauth_account(OAuthPlatform.discord)
         if account is None:
             raise DiscordAccountNotConnected(user)
@@ -80,7 +83,24 @@ class DiscordUserService:
             session.add(account)
             await session.commit()
 
-        return account.access_token
+        return account
+
+
+class DiscordBotService:
+    async def get_guild(self, id: str) -> dict[str, Any]:
+        return await bot_client.get_guild(id=id, exclude_bot_roles=True)
+
+    async def add_member(
+        self, session: AsyncSession, guild_id: str, role_id: str, user: User
+    ) -> dict[str, Any] | None:
+        oauth_account = await DiscordUserService().get_oauth_account(session, user)
+        return await bot_client.add_member(
+            guild_id=guild_id,
+            discord_user_id=oauth_account.account_id,
+            discord_user_access_token=oauth_account.access_token,
+            role_id=role_id,
+        )
 
 
 discord_user = DiscordUserService()
+discord_bot = DiscordBotService()

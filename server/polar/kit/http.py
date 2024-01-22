@@ -1,5 +1,5 @@
 from typing import Annotated
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from fastapi import Depends, Query
 from safe_redirect_url import url_has_allowed_host_and_scheme
@@ -27,3 +27,18 @@ async def _get_safe_return_url_dependency(return_to: str | None = Query(None)) -
 
 
 ReturnTo = Annotated[str, Depends(_get_safe_return_url_dependency)]
+
+
+def add_query_parameters(url: str, **kwargs: str | list[str]) -> str:
+    scheme, netloc, path, params, query, fragment = urlparse(url)
+    parsed_query = parse_qs(query)
+    return urlunparse(
+        (
+            scheme,
+            netloc,
+            path,
+            params,
+            urlencode({**parsed_query, **kwargs}, doseq=True),
+            fragment,
+        )
+    )

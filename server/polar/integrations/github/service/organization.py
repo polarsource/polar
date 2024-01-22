@@ -16,7 +16,7 @@ from polar.integrations.github.service.user import github_user as github_user_se
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, User
-from polar.models.user import OAuthAccount
+from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import (
     OrganizationCreate,
@@ -56,7 +56,7 @@ class GithubOrganizationService(OrganizationService):
         self, session: AsyncSession, user: User
     ) -> list[OrganizationCreate] | None:
         oauth = await oauth_account_service.get_by_platform_and_user_id(
-            session, Platforms.github, user.id
+            session, OAuthPlatform.github, user.id
         )
         if not oauth:
             # TODO Handle
@@ -145,7 +145,7 @@ class GithubOrganizationService(OrganizationService):
             raise ResourceAlreadyExists("User already has a personal org")
 
         oauth = await oauth_account_service.get_by_platform_and_user_id(
-            session, Platforms.github, user.id
+            session, OAuthPlatform.github, user.id
         )
         if not oauth:
             log.error(

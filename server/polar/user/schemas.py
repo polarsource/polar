@@ -3,8 +3,8 @@ from typing import Any, Self
 
 from pydantic import UUID4, EmailStr, Field
 
-from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.user import OAuthPlatform
 from polar.models.user import User as UserModel
 
 
@@ -32,7 +32,7 @@ class UserBase(Schema):
 
 
 class OAuthAccountRead(TimestampedSchema):
-    platform: Platforms
+    platform: OAuthPlatform
     account_id: str
     account_email: str
 

@@ -8,6 +8,7 @@ from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models import OAuthAccount, User
+from polar.models.user import OAuthPlatform
 from polar.organization.service import organization
 from polar.postgres import AsyncSession
 from polar.posthog import posthog
@@ -65,7 +66,7 @@ class GithubUserService(UserService):
             sql.select(User)
             .join(OAuthAccount, User.id == OAuthAccount.user_id)
             .where(
-                OAuthAccount.platform == Platforms.github,
+                OAuthAccount.platform == OAuthPlatform.github,
                 OAuthAccount.account_id == str(id),
             )
         )
@@ -81,7 +82,7 @@ class GithubUserService(UserService):
             sql.select(User)
             .join(OAuthAccount, User.id == OAuthAccount.user_id)
             .where(
-                OAuthAccount.platform == Platforms.github,
+                OAuthAccount.platform == OAuthPlatform.github,
                 User.username == username,
             )
         )
@@ -128,7 +129,7 @@ class GithubUserService(UserService):
             profile=profile,
             oauth_accounts=[
                 OAuthAccount(
-                    platform=Platforms.github,
+                    platform=OAuthPlatform.github,
                     access_token=tokens.access_token,
                     expires_at=tokens.expires_at,
                     refresh_token=tokens.refresh_token,
@@ -161,11 +162,11 @@ class GithubUserService(UserService):
         await user.save(session)
 
         oauth_account = await oauth_account_service.get_by_platform_and_user_id(
-            session, Platforms.github, user.id
+            session, OAuthPlatform.github, user.id
         )
         if oauth_account is None:
             oauth_account = OAuthAccount(
-                platform=Platforms.github,
+                platform=OAuthPlatform.github,
                 account_id=str(github_user.id),
                 account_email=email,
                 user=user,
@@ -287,14 +288,14 @@ class GithubUserService(UserService):
 
         # Create or update OAuthAccount
         oauth_account = await oauth_account_service.get_by_platform_and_account_id(
-            session, Platforms.github, account_id
+            session, OAuthPlatform.github, account_id
         )
         if oauth_account is not None:
             if oauth_account.user_id != user.id:
                 raise AccountLinkedToAnotherUserError()
         else:
             oauth_account = OAuthAccount(
-                platform=Platforms.github,
+                platform=OAuthPlatform.github,
                 account_id=account_id,
                 account_email=email,
             )
@@ -340,7 +341,7 @@ class GithubUserService(UserService):
             installation_ids=[i.id for i in installations],
         )
         gh_oauth = await oauth_account_service.get_by_platform_and_user_id(
-            session, Platforms.github, user.id
+            session, OAuthPlatform.github, user.id
         )
         if not gh_oauth:
             log.error("sync_github_orgs.no_platform_oauth_found", user_id=user.id)

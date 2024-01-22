@@ -15,9 +15,8 @@ from githubkit.typing import Missing
 from pydantic import BaseModel, Field
 
 from polar.config import settings
-from polar.enums import Platforms
 from polar.integrations.github.cache import RedisCache
-from polar.models.user import OAuthAccount, User
+from polar.models.user import OAuthAccount, OAuthPlatform, User
 from polar.postgres import AsyncSession
 from polar.user.oauth_service import oauth_account_service
 
@@ -89,7 +88,7 @@ async def get_user_client(
     session: AsyncSession, user: User
 ) -> GitHub[TokenAuthStrategy]:
     oauth = await oauth_account_service.get_by_platform_and_user_id(
-        session, Platforms.github, user.id
+        session, OAuthPlatform.github, user.id
     )
     if not oauth:
         raise Exception("no github oauth account found")

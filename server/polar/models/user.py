@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
@@ -7,11 +8,15 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
-from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 from .account import Account
+
+
+class OAuthPlatform(StrEnum):
+    github = "github"
+    discord = "discord"
 
 
 class OAuthAccount(RecordModel):
@@ -23,7 +28,7 @@ class OAuthAccount(RecordModel):
         ),
     )
 
-    platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
+    platform: Mapped[OAuthPlatform] = mapped_column(String(24), nullable=False)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=False)
     expires_at: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     refresh_token: Mapped[str | None] = mapped_column(
@@ -111,7 +116,7 @@ class User(RecordModel):
         String, nullable=True, default=None, unique=True
     )
 
-    def get_platform_oauth_account(self, platform: Platforms) -> OAuthAccount | None:
+    def get_oauth_account(self, platform: OAuthPlatform) -> OAuthAccount | None:
         return next(
             (
                 account
@@ -127,7 +132,7 @@ class User(RecordModel):
 
     @property
     def public_name(self) -> str:
-        github_oauth_account = self.get_platform_oauth_account(Platforms.github)
+        github_oauth_account = self.get_oauth_account(OAuthPlatform.github)
         if github_oauth_account is not None:
             return self.username
         return self.email[0]

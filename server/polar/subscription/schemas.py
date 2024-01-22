@@ -35,13 +35,22 @@ class SubscriptionBenefitArticlesProperties(Schema):
     paid_articles: bool
 
 
+class SubscriptionBenefitArticlesSubscriberProperties(Schema):
+    paid_articles: bool
+
+
 class SubscriptionBenefitAdsProperties(Schema):
     image_height: int = 400
     image_width: int = 400
 
 
-class SubscriptionBenefitArticlesSubscriberProperties(Schema):
-    paid_articles: bool
+class SubscriptionBenefitDiscordProperties(Schema):
+    guild_id: str
+    role_id: str
+
+
+class SubscriptionBenefitDiscordSubscriberProperties(Schema):
+    ...
 
 
 class SubscriptionBenefitCustomProperties(Schema):
@@ -90,16 +99,15 @@ class SubscriptionBenefitAdsCreate(SubscriptionBenefitCreateBase):
     properties: SubscriptionBenefitAdsProperties
 
 
-# This is a dummy schema only there to produce a valid union below
-# Remove it when we have other create schemas to add
-class SubscriptionBenefitCustomBisCreate(SubscriptionBenefitCustomCreate):
-    ...
+class SubscriptionBenefitDiscordCreate(SubscriptionBenefitCreateBase):
+    type: Literal[SubscriptionBenefitType.discord]
+    properties: SubscriptionBenefitDiscordProperties
 
 
 SubscriptionBenefitCreate = (
     SubscriptionBenefitCustomCreate
     | SubscriptionBenefitAdsCreate
-    | SubscriptionBenefitCustomBisCreate
+    | SubscriptionBenefitDiscordCreate
 )
 
 
@@ -130,10 +138,16 @@ class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
     properties: SubscriptionBenefitCustomProperties | None = None
 
 
+class SubscriptionBenefitDiscordUpdate(SubscriptionBenefitUpdateBase):
+    type: Literal[SubscriptionBenefitType.discord]
+    properties: SubscriptionBenefitDiscordProperties | None = None
+
+
 SubscriptionBenefitUpdate = (
     SubscriptionBenefitArticlesUpdate
     | SubscriptionBenefitAdsUpdate
     | SubscriptionBenefitCustomUpdate
+    | SubscriptionBenefitDiscordUpdate
 )
 
 
@@ -160,6 +174,11 @@ class SubscriptionBenefitAds(SubscriptionBenefitBase):
     properties: SubscriptionBenefitAdsProperties
 
 
+class SubscriptionBenefitDiscord(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.discord]
+    properties: SubscriptionBenefitDiscordProperties
+
+
 class SubscriptionBenefitCustom(SubscriptionBenefitBase):
     type: Literal[SubscriptionBenefitType.custom]
     properties: SubscriptionBenefitCustomProperties
@@ -167,12 +186,16 @@ class SubscriptionBenefitCustom(SubscriptionBenefitBase):
 
 
 SubscriptionBenefit = (
-    SubscriptionBenefitArticles | SubscriptionBenefitAds | SubscriptionBenefitCustom
+    SubscriptionBenefitArticles
+    | SubscriptionBenefitAds
+    | SubscriptionBenefitCustom
+    | SubscriptionBenefitDiscord
 )
 
 subscription_benefit_schema_map: dict[
     SubscriptionBenefitType, type[SubscriptionBenefit]
 ] = {
+    SubscriptionBenefitType.discord: SubscriptionBenefitDiscord,
     SubscriptionBenefitType.articles: SubscriptionBenefitArticles,
     SubscriptionBenefitType.ads: SubscriptionBenefitAds,
     SubscriptionBenefitType.custom: SubscriptionBenefitCustom,
@@ -191,6 +214,11 @@ class SubscriptionBenefitAdsSubscriber(SubscriptionBenefitBase):
     properties: SubscriptionBenefitAdsProperties
 
 
+class SubscriptionBenefitDiscordSubscriber(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.discord]
+    properties: SubscriptionBenefitDiscordSubscriberProperties
+
+
 class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
     type: Literal[SubscriptionBenefitType.custom]
     properties: SubscriptionBenefitCustomSubscriberProperties
@@ -200,6 +228,7 @@ class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
 SubscriptionBenefitSubscriber = (
     SubscriptionBenefitArticlesSubscriber
     | SubscriptionBenefitAdsSubscriber
+    | SubscriptionBenefitDiscordSubscriber
     | SubscriptionBenefitCustomSubscriber
 )
 

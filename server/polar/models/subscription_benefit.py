@@ -25,11 +25,13 @@ class SubscriptionBenefitType(StrEnum):
     custom = "custom"
     articles = "articles"
     ads = "ads"
+    discord = "discord"
 
     def is_tax_applicable(self) -> bool:
         try:
             _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {
                 SubscriptionBenefitType.ads: True,
+                SubscriptionBenefitType.discord: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:
@@ -42,6 +44,11 @@ class SubscriptionBenefitProperties(TypedDict):
 
 class SubscriptionBenefitCustomProperties(SubscriptionBenefitProperties):
     note: str | None
+
+
+class SubscriptionBenefitDiscordProperties(SubscriptionBenefitProperties):
+    guild_id: str
+    role_id: str
 
 
 class SubscriptionBenefitArticlesProperties(SubscriptionBenefitProperties):
@@ -118,5 +125,16 @@ class SubscriptionBenefitAds(SubscriptionBenefit):
 
     __mapper_args__ = {
         "polymorphic_identity": SubscriptionBenefitType.ads,
+        "polymorphic_load": "inline",
+    }
+
+
+class SubscriptionBenefitDiscord(SubscriptionBenefit):
+    properties: Mapped[SubscriptionBenefitDiscordProperties] = mapped_column(
+        use_existing_column=True
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": SubscriptionBenefitType.discord,
         "polymorphic_load": "inline",
     }

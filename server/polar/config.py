@@ -76,6 +76,10 @@ class Settings(BaseSettings):
     # Discord
     DISCORD_CLIENT_ID: str = ""
     DISCORD_CLIENT_SECRET: str = ""
+    DISCORD_BOT_TOKEN: str = ""
+    DISCORD_BOT_PERMISSIONS: str = (
+        "268435459"  # Manage Roles, Kick Members, Create Instant Invite
+    )
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""

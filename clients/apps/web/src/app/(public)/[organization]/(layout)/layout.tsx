@@ -64,7 +64,7 @@ export default async function Layout({
                 </a>
               </div>
               <div className="flex flex-row items-center justify-between md:w-full">
-                <div className="hidden w-full md:flex">
+                <div className="hidden md:flex">
                   <OrganizationPublicPageNav organization={organization} />
                 </div>
 

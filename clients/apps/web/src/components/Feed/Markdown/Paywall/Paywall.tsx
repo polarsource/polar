@@ -55,7 +55,10 @@ const BasePaywall = (props: {
         {props.isSubscriber ? (
           <p>
             This section is for premium subscribers only. Upgrade{' '}
-            <Link href={`/${props.article.organization.name}/subscriptions`}>
+            <Link
+              className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+              href={`/${props.article.organization.name}/subscriptions`}
+            >
               your subscription
             </Link>{' '}
             to a tier with the &quot;Paid Subscription&quot; benefit to get
@@ -64,10 +67,13 @@ const BasePaywall = (props: {
         ) : (
           <p>
             This section is for premium subscribers only. Subscribe to{' '}
-            <strong>
+            <Link
+              className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+              href={`/${props.article.organization.name}/subscriptions`}
+            >
               {props.article.organization.pretty_name ||
                 props.article.organization.name}
-            </strong>{' '}
+            </Link>{' '}
             to get access to it.
           </p>
         )}

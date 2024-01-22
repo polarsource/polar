@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     GITHUB_POLAR_USER_ACCESS_TOKEN: str | None = None
 
+    # Discord
+    DISCORD_CLIENT_ID: str = ""
+    DISCORD_CLIENT_SECRET: str = ""
+
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     # Stripe webhook secrets

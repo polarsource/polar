@@ -8,6 +8,7 @@ from polar.dashboard.endpoints import router as dashboard_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.extension.endpoints import router as extension_router
 from polar.funding.endpoints import router as funding_router
+from polar.integrations.discord.endpoints import router as discord_router
 from polar.integrations.github.endpoints import router as github_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
@@ -33,6 +34,8 @@ router.include_router(user_router)
 router.include_router(github_router)
 # /integrations/stripe
 router.include_router(stripe_router)
+# /integrations/discord
+router.include_router(discord_router)
 # /backoffice
 router.include_router(backoffice_router)
 # /dashboard

@@ -8,9 +8,11 @@ import {
 } from '@mui/icons-material'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations, useSubscriptionTiers } from 'polarkit/hooks'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { externalURL, prettyURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { FreeTierSubscribe } from './FreeTierSubscribe'
@@ -22,6 +24,7 @@ interface OrganizationPublicSidebarProps {
 export const OrganizationPublicSidebar = ({
   organization,
 }: OrganizationPublicSidebarProps) => {
+  const pathname = usePathname()
   const { data: { items: subscriptionTiers } = { items: [] } } =
     useSubscriptionTiers(organization.name, 100)
 
@@ -39,6 +42,8 @@ export const OrganizationPublicSidebar = ({
       adminOrgs?.data?.items?.some((org) => org.name === organization?.name),
     [adminOrgs, organization],
   )
+
+  const isPostView = useMemo(() => pathname.includes('posts'), [pathname])
 
   return (
     <div className="flex h-fit w-full shrink-0 flex-col gap-y-10  md:sticky md:top-32 md:w-64">
@@ -80,7 +85,12 @@ export const OrganizationPublicSidebar = ({
               organization={organization}
             />
           ) : null}
-          <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
+          <div
+            className={twMerge(
+              'dark:text-polar-500 flex flex-col gap-y-2 text-sm',
+              isPostView && 'hidden md:flex',
+            )}
+          >
             {organization.company && (
               <div className="flex flex-row items-center gap-x-3">
                 <span className="text-[17px]">

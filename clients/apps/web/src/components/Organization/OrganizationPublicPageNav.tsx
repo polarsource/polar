@@ -2,21 +2,32 @@
 
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
+import { usePathname, useRouter } from 'next/navigation'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/atoms'
 import { Tabs } from 'polarkit/components/ui/tabs'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface OrganizationPublicPageNavProps {
   className?: string
   organization: Organization
+  mobileLayout?: boolean
 }
 
 export const OrganizationPublicPageNav = ({
   organization,
   className,
+  mobileLayout = false,
 }: OrganizationPublicPageNavProps) => {
+  const router = useRouter()
   const pathname = usePathname()
   const currentTab = useMemo(() => {
     const tabs = ['overview', 'subscriptions', 'issues', 'repositories']
@@ -30,7 +41,27 @@ export const OrganizationPublicPageNav = ({
     }
   }, [pathname])
 
-  return (
+  const handleSelectChange = useCallback(
+    (value: string) => {
+      const path = value === 'overview' ? '' : value
+      router.push(`/${organization.name}/${path}`)
+    },
+    [organization, router],
+  )
+
+  return mobileLayout ? (
+    <Select value={currentTab} onValueChange={handleSelectChange}>
+      <SelectTrigger>
+        <SelectValue placeholder="Select a tier" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="overview">Overview</SelectItem>
+        <SelectItem value="subscriptions">Subscriptions</SelectItem>
+        <SelectItem value="issues">Issues</SelectItem>
+        <SelectItem value="repositories">Repositories</SelectItem>
+      </SelectContent>
+    </Select>
+  ) : (
     <Tabs value={currentTab}>
       <TabsList
         className={twMerge('dark:border-polar-700 flex dark:border', className)}

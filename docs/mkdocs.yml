@@ -73,6 +73,8 @@ nav:
       - Promote Funding: maintainers/issue-funding/promote.md
     - Posts:
       - Overview: maintainers/posts/index.md
+    - Ads:
+      - Overview: maintainers/ads/index.md
     - FAQ: maintainers/faq.md
   - Payment & Taxes: payment.md
   - API:

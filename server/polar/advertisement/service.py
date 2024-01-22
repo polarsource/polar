@@ -39,10 +39,12 @@ class AdvertisementCampaignService:
         campaign = AdvertisementCampaign(
             subscription_id=create.subscription_id,
             subscription_benefit_id=create.subscription_benefit_id,
-            image_url=create.image_url,
-            image_url_dark=create.image_url_dark,
+            image_url=str(create.image_url),
+            image_url_dark=str(create.image_url_dark)
+            if create.image_url_dark
+            else None,
             text=create.text,
-            link_url=create.link_url,
+            link_url=str(create.link_url),
         )
         session.add(campaign)
         await session.commit()
@@ -54,9 +56,11 @@ class AdvertisementCampaignService:
         campaign: AdvertisementCampaign,
         edit: EditAdvertisementCampaign,
     ) -> AdvertisementCampaign:
-        campaign.image_url = edit.image_url
-        campaign.image_url_dark = edit.image_url_dark
-        campaign.link_url = edit.link_url
+        campaign.image_url = str(edit.image_url)
+        campaign.image_url_dark = (
+            str(edit.image_url_dark) if edit.image_url_dark else None
+        )
+        campaign.link_url = str(edit.link_url)
         campaign.text = edit.text
         await session.commit()
         return campaign

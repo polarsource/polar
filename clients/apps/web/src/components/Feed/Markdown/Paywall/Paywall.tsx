@@ -7,6 +7,7 @@ const Paywall = (props: {
   showPaywalledContent: boolean
   isSubscriber: boolean
   article: Article
+  paidArticlesBenefitName?: string
   renderer?: typeof BrowserPaywall
 }) => {
   if (props.renderer) {
@@ -16,6 +17,7 @@ const Paywall = (props: {
         showPaywalledContent={props.showPaywalledContent}
         isSubscriber={props.isSubscriber}
         article={props.article}
+        paidArticlesBenefitName={props.paidArticlesBenefitName}
       >
         {props.children}
       </C>
@@ -27,6 +29,7 @@ const Paywall = (props: {
       showPaywalledContent={props.showPaywalledContent}
       isSubscriber={props.isSubscriber}
       article={props.article}
+      paidArticlesBenefitName={props.paidArticlesBenefitName}
     >
       {props.children}
     </BrowserPaywall>
@@ -35,6 +38,7 @@ const Paywall = (props: {
 
 const BasePaywall = (props: {
   showPaywalledContent: boolean
+  paidArticlesBenefitName?: string
   isSubscriber: boolean
   article: Article
   children?: React.ReactNode
@@ -61,8 +65,9 @@ const BasePaywall = (props: {
             >
               your subscription
             </Link>{' '}
-            to a tier with the &quot;Paid Subscription&quot; benefit to get
-            access to it.
+            to a tier with the &quot;
+            {props.paidArticlesBenefitName ?? 'Premium Articles'}&quot; benefit
+            to get access to it.
           </p>
         ) : (
           <p>
@@ -88,6 +93,7 @@ const BrowserPaywall = (props: {
   isSubscriber: boolean
   article: Article
   children?: React.ReactNode
+  paidArticlesBenefitName?: string
 }) => {
   return <BasePaywall {...props} classNames="dark:bg-polar-700" />
 }
@@ -97,6 +103,7 @@ export const EmailPaywall = (props: {
   isSubscriber: boolean
   article: Article
   children?: React.ReactNode
+  paidArticlesBenefitName?: string
 }) => {
   return <BasePaywall {...props} />
 }

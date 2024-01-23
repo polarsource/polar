@@ -4,7 +4,7 @@ import LongformPost from '@/components/Feed/LongformPost'
 import { useAuth } from '@/hooks/auth'
 import { ArrowBackOutlined } from '@mui/icons-material'
 
-import { Article } from '@polar-sh/sdk'
+import { Article, BenefitsInner, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
@@ -13,7 +13,12 @@ import { useEffect } from 'react'
 
 const postViewKey = 'posts_viewed'
 
-export default function Page({ article }: { article: Article }) {
+interface PostPageProps {
+  subscriptionTiers: SubscriptionTier[]
+  article: Article
+}
+
+export default function Page({ article, subscriptionTiers }: PostPageProps) {
   useEffect(() => {
     // Track view
     try {
@@ -58,6 +63,19 @@ export default function Page({ article }: { article: Article }) {
     (b) => 'paid_articles' in b.properties && b.properties['paid_articles'],
   )
 
+  const isPaidBenefit = (b: BenefitsInner) =>
+    b.type === 'articles' &&
+    'properties' in b &&
+    'paid_articles' in b.properties &&
+    b.properties['paid_articles']
+
+  const tierWithPaidArticlesBenefit = subscriptionTiers.find((t) =>
+    t.benefits.some(isPaidBenefit),
+  )
+
+  const paidArticlesBenefit =
+    tierWithPaidArticlesBenefit?.benefits.find(isPaidBenefit)
+
   return (
     <div className="dark:md:bg-polar-900 dark:md:border-polar-800 relative flex w-full flex-col items-center rounded-3xl md:bg-white md:p-12 md:shadow-xl dark:md:border">
       <Link
@@ -79,6 +97,7 @@ export default function Page({ article }: { article: Article }) {
         showPaywalledContent={true} // Can safely be true. If the user doesn't have permissions to see the paywalled content it will already be stripped out.
         animation={false}
         showShare={true}
+        paidArticlesBenefitName={paidArticlesBenefit?.description}
       />
     </div>
   )

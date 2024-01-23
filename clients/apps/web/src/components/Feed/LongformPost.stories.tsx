@@ -11,14 +11,25 @@ export default meta
 
 type Story = StoryObj<typeof LongformPost>
 
+const articleWithPaywall = {
+  ...article,
+  body: `Hello. This is a demo article. Here is some paywalled content:
+  
+<Paywall>Behind paywall</Paywall>
+  
+Thanks for reading!
+  `,
+}
+
 export const Default: Story = {
   args: {
-    article: article,
-    showPaywalledContent: true,
+    article: articleWithPaywall,
+    showPaywalledContent: false,
     isSubscriber: false,
     hasPaidArticlesBenefit: true,
     animation: false,
     showShare: false,
+    paidArticlesBenefitName: 'ProTier200',
   },
 }
 
@@ -34,6 +45,7 @@ export const IsPaidSubscriber: Story = {
   args: {
     ...Default.args,
     isSubscriber: true,
+    showPaywalledContent: true,
     hasPaidArticlesBenefit: true,
   },
 }

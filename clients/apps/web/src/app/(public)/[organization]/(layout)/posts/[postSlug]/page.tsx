@@ -1,7 +1,12 @@
 import PreviewText from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import { Article, Platforms, ResponseError } from '@polar-sh/sdk'
+import {
+  Article,
+  ListResourceSubscriptionTier,
+  Platforms,
+  ResponseError,
+} from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -116,16 +121,27 @@ export default async function Page({
   const api = getServerSideAPI()
 
   let article: Article | undefined
+  let subscriptionTiers: ListResourceSubscriptionTier | undefined
 
   try {
-    article = await api.articles.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        slug: params.postSlug,
-      },
-      cacheConfig,
-    )
+    ;[article, subscriptionTiers] = await Promise.all([
+      await api.articles.lookup(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          slug: params.postSlug,
+        },
+        cacheConfig,
+      ),
+
+      await api.subscriptions.searchSubscriptionTiers(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+    ])
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -138,5 +154,10 @@ export default async function Page({
     notFound()
   }
 
-  return <ClientPage article={article} />
+  return (
+    <ClientPage
+      article={article}
+      subscriptionTiers={subscriptionTiers.items || []}
+    />
+  )
 }

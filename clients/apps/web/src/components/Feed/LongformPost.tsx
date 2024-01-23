@@ -25,6 +25,7 @@ interface LongformPostProps {
   showPaywalledContent: boolean
   isSubscriber: boolean
   hasPaidArticlesBenefit: boolean
+  paidArticlesBenefitName?: string
   animation: boolean
   showShare: boolean
 }
@@ -36,6 +37,7 @@ export default function LongformPost({
   showPaywalledContent,
   isSubscriber,
   hasPaidArticlesBenefit,
+  paidArticlesBenefitName,
   animation,
   showShare,
 }: LongformPostProps) {
@@ -137,6 +139,7 @@ export default function LongformPost({
             article={article}
             showPaywalledContent={showPaywalledContent}
             isSubscriber={isSubscriber}
+            paidArticlesBenefitName={paidArticlesBenefitName}
           />
         </div>
       </StaggerReveal.Child>

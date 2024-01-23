@@ -111,6 +111,24 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                 </div>
               </div>
             )}
+            {selectedBenefit.type === 'ads' ? (
+              <div className="flex flex-col gap-y-4">
+                <h3 className="text-sm font-medium">ID</h3>
+                <span className="text-sm">
+                  Use this ID when{' '}
+                  <a
+                    href="https://docs.polar.sh/maintainers/ads/"
+                    className="font-medium underline"
+                  >
+                    integrating
+                  </a>{' '}
+                  ads in your README or website
+                </span>
+                <pre>
+                  <code className="text-xs">{selectedBenefit.id}</code>
+                </pre>
+              </div>
+            ) : null}
           </ShadowBoxOnMd>
         )}
 

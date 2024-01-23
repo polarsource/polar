@@ -170,7 +170,8 @@ class SubscriptionBenefitService(
             repository=repository,
             is_tax_applicable=is_tax_applicable,
             **create_schema.model_dump(
-                exclude={"organization_id", "repository_id", "is_tax_applicable"}
+                by_alias=True,
+                exclude={"organization_id", "repository_id", "is_tax_applicable"},
             ),
         )
 
@@ -190,7 +191,10 @@ class SubscriptionBenefitService(
             raise NotPermitted()
 
         updated_subscription_benefit = await subscription_benefit.update(
-            session, **update_schema.model_dump(exclude_unset=True, exclude={"type"})
+            session,
+            **update_schema.model_dump(
+                by_alias=True, exclude_unset=True, exclude={"type"}
+            ),
         )
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(

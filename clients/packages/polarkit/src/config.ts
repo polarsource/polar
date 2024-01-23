@@ -36,7 +36,7 @@ let defaults = {
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_KEY || 'polar',
   LOCALSTORAGE_PERSIST_VERSION: stringToNumber(
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION,
-    5,
+    6,
   ),
   GITHUB_BADGE_EMBED_DEFAULT_LABEL:
     process?.env?.NEXT_PUBLIC_GITHUB_BADGE_EMBED_DEFAULT_LABEL || 'Fund',

@@ -24,6 +24,7 @@ interface LongformPostProps {
   revealTransition?: typeof defaultRevealTransition
   showPaywalledContent: boolean
   isSubscriber: boolean
+  hasPaidArticlesBenefit: boolean
   animation: boolean
   showShare: boolean
 }
@@ -34,13 +35,14 @@ export default function LongformPost({
   revealTransition,
   showPaywalledContent,
   isSubscriber,
+  hasPaidArticlesBenefit,
   animation,
   showShare,
 }: LongformPostProps) {
-  const organization = article.organization
-
   const shouldRenderPaywall = article.is_preview
-  const shouldRenderUpsell = isSubscriber && !shouldRenderPaywall
+  const showNonSubscriberUpsell = !isSubscriber && !shouldRenderPaywall
+  const showSubscriberUpsell =
+    isSubscriber && !hasPaidArticlesBenefit && !showNonSubscriberUpsell
 
   staggerTransition = staggerTransition ?? defaultStaggerTransition
   revealTransition = revealTransition ?? defaultRevealTransition
@@ -148,40 +150,71 @@ export default function LongformPost({
         </StaggerReveal.Child>
       )}
 
-      {shouldRenderUpsell && (
-        <StaggerReveal.Child
-          className="flex flex-col gap-y-16"
-          transition={revealTransition}
-          variants={animationVariants}
-        >
-          <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16 ">
-            <Avatar
-              className="h-12 w-12"
-              avatar_url={article.organization.avatar_url}
-              name={
-                article.organization.pretty_name || article.organization.name
-              }
-            />
-            <h2 className="text-xl font-medium">
-              Subscribe to{' '}
-              {article.organization.pretty_name || article.organization.name}
-            </h2>
-            <p className="dark:text-polar-300 text-center text-gray-500">
-              {organization?.bio
-                ? organization?.bio
-                : `Support ${
-                    article.organization.pretty_name ||
-                    article.organization.name
-                  } by subscribing to their work and get access to exclusive content.`}
-            </p>
-            <Link href={`/${organization.name}/subscriptions`}>
-              <Button className="mt-4">Subscribe</Button>
-            </Link>
-          </div>
-        </StaggerReveal.Child>
-      )}
+      {showNonSubscriberUpsell ? (
+        <UpsellNonSubscriber article={article} />
+      ) : null}
+
+      {showSubscriberUpsell ? (
+        <UpsellFreeSubscriberToPaid article={article} />
+      ) : null}
 
       {showShare ? <Share className="my-8 flex" article={article} /> : null}
     </StaggerReveal>
   )
 }
+
+const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
+  <div className="flex flex-col gap-y-16">
+    <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16 ">
+      <Avatar
+        className="h-12 w-12"
+        avatar_url={article.organization.avatar_url}
+        name={article.organization.pretty_name || article.organization.name}
+      />
+      <h2 className="text-xl font-medium">
+        Subscribe to{' '}
+        {article.organization.pretty_name || article.organization.name}
+      </h2>
+      <p className="dark:text-polar-300 text-center text-gray-500">
+        {article.organization?.bio
+          ? article.organization?.bio
+          : `Support ${
+              article.organization.pretty_name || article.organization.name
+            } by subscribing to their work and get access to exclusive content.`}
+      </p>
+      <Link href={`/${article.organization.name}/subscriptions`}>
+        <Button className="mt-4">Subscribe</Button>
+      </Link>
+    </div>
+  </div>
+)
+
+const UpsellFreeSubscriberToPaid = ({
+  article,
+}: {
+  article: RenderArticle
+}) => (
+  <div className="flex flex-col gap-y-16">
+    <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16 ">
+      <Avatar
+        className="h-12 w-12"
+        avatar_url={article.organization.avatar_url}
+        name={article.organization.pretty_name || article.organization.name}
+      />
+      <h2 className="text-xl font-medium">
+        Upgrade your subscription to{' '}
+        {article.organization.pretty_name || article.organization.name}
+      </h2>
+      <p className="dark:text-polar-300 text-center text-gray-500">
+        {article.organization?.bio
+          ? article.organization?.bio
+          : `Support ${
+              article.organization.pretty_name || article.organization.name
+            } by subscribing to their work and get access to exclusive content.`}
+      </p>
+      <Link href={`/${article.organization.name}/subscriptions`}>
+        <Button className="mt-4">Upgrade</Button>
+      </Link>
+    </div>
+  </div>
+)

@@ -20,6 +20,7 @@ export * from './pledges'
 export * from './rewards'
 export * from './subscriptions'
 export * from './transactions'
+export * from './discord'
 export * from './user'
 export * from './webhookNotifications'
 

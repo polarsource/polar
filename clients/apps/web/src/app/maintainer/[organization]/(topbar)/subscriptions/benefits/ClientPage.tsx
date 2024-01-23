@@ -14,6 +14,7 @@ import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
@@ -36,7 +37,8 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     organization.name,
     100,
   )
-  const { isShown, toggle, hide } = useModal()
+  const searchParams = useSearchParams()
+  const { isShown, toggle, hide } = useModal(!!searchParams?.get('type'))
 
   const benefitSubscriptionTiers = useMemo(
     () =>

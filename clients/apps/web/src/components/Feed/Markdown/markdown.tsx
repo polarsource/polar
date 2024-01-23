@@ -17,6 +17,7 @@ export const wrapStrictCreateElement = (args: {
   article: RenderArticle
   showPaywalledContent?: boolean
   isSubscriber?: boolean
+  paidArticlesBenefitName?: string
   defaultOverride?: React.FunctionComponent
   overridableComponents?: (
     | keyof JSX.IntrinsicElements
@@ -125,6 +126,7 @@ export const wrapStrictCreateElement = (args: {
         // Default to true in the client side renderer. When rendering posts for end-users, the premium content is already stripped out by the backend.
         trimProps.showPaywalledContent = args.showPaywalledContent ?? true
         trimProps.isSubscriber = args.isSubscriber ?? false
+        trimProps.paidArticlesBenefitName = args.paidArticlesBenefitName
       }
 
       return React.createElement(

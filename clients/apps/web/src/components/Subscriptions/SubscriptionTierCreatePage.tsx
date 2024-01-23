@@ -4,7 +4,6 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
   ResponseError,
-  SubscriptionTierBenefit,
   SubscriptionTierCreate,
   SubscriptionTierCreateTypeEnum,
   ValidationError,
@@ -20,6 +19,7 @@ import {
 } from 'polarkit/hooks'
 import React, { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { Benefit } from '../Benefit/Benefit'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
@@ -64,7 +64,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 }) => {
   const router = useRouter()
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    SubscriptionTierBenefit['id'][]
+    Benefit['id'][]
     // Pre-select premium articles benefit
   >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
 
@@ -120,14 +120,14 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: SubscriptionTierBenefit) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: SubscriptionTierBenefit) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefitIds) =>
         benefitIds.filter((b) => b !== benefit.id),
       )

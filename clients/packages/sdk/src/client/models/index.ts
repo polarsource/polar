@@ -910,7 +910,13 @@ export interface BackofficeReward {
  * @type BenefitsInner
  * @export
  */
-export type BenefitsInner = SubscriptionBenefitAdsSubscriber | SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber;
+export type BenefitsInner = SubscriptionBenefitArticles | SubscriptionBenefitBase;
+
+/**
+ * @type BenefitsInner1
+ * @export
+ */
+export type BenefitsInner1 = SubscriptionBenefitAdsSubscriber | SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber;
 
 /**
  * 
@@ -5334,6 +5340,67 @@ export const SubscriptionBenefitArticlesUpdateTypeEnum = {
 export type SubscriptionBenefitArticlesUpdateTypeEnum = typeof SubscriptionBenefitArticlesUpdateTypeEnum[keyof typeof SubscriptionBenefitArticlesUpdateTypeEnum];
 
 /**
+ * 
+ * @export
+ * @interface SubscriptionBenefitBase
+ */
+export interface SubscriptionBenefitBase {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBase
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBase
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBase
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionBenefitType}
+     * @memberof SubscriptionBenefitBase
+     */
+    type: SubscriptionBenefitType;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBase
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitBase
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitBase
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBase
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBase
+     */
+    repository_id?: string;
+}
+/**
  * @type SubscriptionBenefitCreate
  * @export
  */
@@ -5958,71 +6025,10 @@ export interface SubscriptionTier {
     repository_id?: string;
     /**
      * 
-     * @type {Array<SubscriptionTierBenefit>}
+     * @type {Array<BenefitsInner>}
      * @memberof SubscriptionTier
      */
-    benefits: Array<SubscriptionTierBenefit>;
-}
-/**
- * 
- * @export
- * @interface SubscriptionTierBenefit
- */
-export interface SubscriptionTierBenefit {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierBenefit
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierBenefit
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierBenefit
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitType}
-     * @memberof SubscriptionTierBenefit
-     */
-    type: SubscriptionBenefitType;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierBenefit
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTierBenefit
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTierBenefit
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierBenefit
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierBenefit
-     */
-    repository_id?: string;
+    benefits: Array<BenefitsInner>;
 }
 /**
  * 
@@ -6183,10 +6189,10 @@ export interface SubscriptionTierSubscriber {
     repository_id?: string;
     /**
      * 
-     * @type {Array<BenefitsInner>}
+     * @type {Array<BenefitsInner1>}
      * @memberof SubscriptionTierSubscriber
      */
-    benefits: Array<BenefitsInner>;
+    benefits: Array<BenefitsInner1>;
 }
 
 /**

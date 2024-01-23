@@ -1,4 +1,4 @@
-import { BenefitsInner, SubscriptionTierBenefit } from '@polar-sh/sdk'
+import { BenefitsInner, BenefitsInner1 } from '@polar-sh/sdk'
 
-export type Benefit = SubscriptionTierBenefit
-export type BenefitSubscriber = BenefitsInner
+export type Benefit = BenefitsInner
+export type BenefitSubscriber = BenefitsInner1

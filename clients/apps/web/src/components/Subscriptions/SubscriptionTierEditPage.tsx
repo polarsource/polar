@@ -5,7 +5,6 @@ import {
   Organization,
   ResponseError,
   SubscriptionTier,
-  SubscriptionTierBenefit,
   SubscriptionTierType,
   SubscriptionTierUpdate,
   ValidationError,
@@ -23,6 +22,7 @@ import {
 } from 'polarkit/hooks'
 import React, { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { Benefit } from '../Benefit/Benefit'
 import { useModal } from '../Modal/useModal'
 import { ConfirmModal } from '../Shared/ConfirmModal'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
@@ -69,9 +69,9 @@ const SubscriptionTierEdit = ({
   organizationBenefits,
 }: SubscriptionTierEditProps) => {
   const router = useRouter()
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    SubscriptionTierBenefit['id'][]
-  >(subscriptionTier.benefits.map((benefit) => benefit.id) ?? [])
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
+    subscriptionTier.benefits.map((benefit) => benefit.id) ?? [],
+  )
   const isFreeTier = subscriptionTier.type === SubscriptionTierType.FREE
 
   const form = useForm<SubscriptionTierUpdate>({
@@ -130,14 +130,14 @@ const SubscriptionTierEdit = ({
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: SubscriptionTierBenefit) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: SubscriptionTierBenefit) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefits) =>
         benefits.filter((b) => b !== benefit.id),
       )

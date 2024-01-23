@@ -4,11 +4,11 @@ import {
   WebOutlined,
 } from '@mui/icons-material'
 import {
+  BenefitsInner,
   ItemsInner,
   SubscriptionBenefitType,
   SubscriptionStatus,
   SubscriptionTier,
-  SubscriptionTierBenefit,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
@@ -61,7 +61,7 @@ export const getSubscriptionTiersByType = (tiers: SubscriptionTier[]) =>
   ) ?? defaultSubscriptionTiersByType
 
 export const resolveBenefitIcon = (
-  benefit?: SubscriptionTierBenefit,
+  benefit?: BenefitsInner,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
 ) => {
   const className = twMerge('h-4 w-4')

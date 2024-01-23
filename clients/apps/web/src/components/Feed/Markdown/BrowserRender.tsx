@@ -99,10 +99,12 @@ const BrowserRender = ({
   article,
   showPaywalledContent,
   isSubscriber,
+  paidArticlesBenefitName,
 }: {
   article: RenderArticle
   showPaywalledContent: boolean
   isSubscriber: boolean
+  paidArticlesBenefitName?: string
 }) => {
   return (
     <Markdown
@@ -112,6 +114,7 @@ const BrowserRender = ({
           article,
           showPaywalledContent,
           isSubscriber,
+          paidArticlesBenefitName,
         }),
       }}
     >

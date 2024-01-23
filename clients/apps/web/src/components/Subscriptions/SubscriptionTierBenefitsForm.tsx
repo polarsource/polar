@@ -11,7 +11,6 @@ import {
   SubscriptionBenefitCustomCreate,
   SubscriptionBenefitType,
   SubscriptionBenefitUpdate,
-  SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
 import {
   Button,
@@ -48,6 +47,7 @@ import {
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
+import { Benefit } from '../Benefit/Benefit'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { ConfirmModal } from '../Shared/ConfirmModal'
@@ -172,10 +172,10 @@ const BenefitRow = ({
 
 interface SubscriptionTierBenefitsFormProps {
   organization: Organization
-  benefits: SubscriptionTierBenefit[]
+  benefits: Benefit[]
   organizationBenefits: SubscriptionBenefit[]
-  onSelectBenefit: (benefit: SubscriptionTierBenefit) => void
-  onRemoveBenefit: (benefit: SubscriptionTierBenefit) => void
+  onSelectBenefit: (benefit: Benefit) => void
+  onRemoveBenefit: (benefit: Benefit) => void
   className?: string
 }
 
@@ -190,7 +190,7 @@ const SubscriptionTierBenefitsForm = ({
   const { isShown, toggle, hide } = useModal()
 
   const handleCheckedChange = useCallback(
-    (benefit: SubscriptionTierBenefit) => (checked: boolean) => {
+    (benefit: Benefit) => (checked: boolean) => {
       if (checked) {
         onSelectBenefit(benefit)
       } else {
@@ -264,7 +264,7 @@ export default SubscriptionTierBenefitsForm
 
 interface NewSubscriptionTierBenefitModalContentProps {
   organization: Organization
-  onSelectBenefit: (benefit: SubscriptionTierBenefit) => void
+  onSelectBenefit: (benefit: Benefit) => void
   hideModal: () => void
 }
 
@@ -348,7 +348,7 @@ export const NewSubscriptionTierBenefitModalContent = ({
 
 interface UpdateSubscriptionTierBenefitModalContentProps {
   organization: Organization
-  benefit: SubscriptionTierBenefit
+  benefit: Benefit
   hideModal: () => void
 }
 

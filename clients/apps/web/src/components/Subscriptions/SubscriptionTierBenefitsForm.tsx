@@ -1,4 +1,3 @@
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   AutoAwesome,
   LoyaltyOutlined,
@@ -454,8 +453,6 @@ interface BenefitFormProps {
 export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
   const { control } = useFormContext<SubscriptionBenefitCreate>()
 
-  const hasAds = isFeatureEnabled('ads-benefit')
-
   return (
     <>
       <FormField
@@ -489,7 +486,7 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
         }}
       />
 
-      {hasAds && !update ? <BenefitTypeSelect /> : null}
+      {!update ? <BenefitTypeSelect /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'ads' && <AdsBenefitForm update={update} />}
     </>

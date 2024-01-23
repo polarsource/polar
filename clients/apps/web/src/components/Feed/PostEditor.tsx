@@ -100,6 +100,7 @@ export const PostEditor = ({
                     staggerTransition={{ staggerChildren: 0 }}
                     showPaywalledContent={previewAs === 'premium'}
                     isSubscriber={previewAs === 'premium'}
+                    hasPaidArticlesBenefit={previewAs === 'premium'}
                     showShare={false}
                   />
                 </StaggerReveal>

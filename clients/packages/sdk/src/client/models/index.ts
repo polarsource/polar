@@ -5276,10 +5276,10 @@ export interface SubscriptionBenefitArticlesSubscriber {
     repository_id?: string;
     /**
      * 
-     * @type {object}
+     * @type {SubscriptionBenefitArticlesSubscriberProperties}
      * @memberof SubscriptionBenefitArticlesSubscriber
      */
-    properties: object;
+    properties: SubscriptionBenefitArticlesSubscriberProperties;
 }
 
 
@@ -5291,6 +5291,19 @@ export const SubscriptionBenefitArticlesSubscriberTypeEnum = {
 } as const;
 export type SubscriptionBenefitArticlesSubscriberTypeEnum = typeof SubscriptionBenefitArticlesSubscriberTypeEnum[keyof typeof SubscriptionBenefitArticlesSubscriberTypeEnum];
 
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitArticlesSubscriberProperties
+ */
+export interface SubscriptionBenefitArticlesSubscriberProperties {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitArticlesSubscriberProperties
+     */
+    paid_articles: boolean;
+}
 /**
  * 
  * @export

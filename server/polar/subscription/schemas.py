@@ -41,7 +41,7 @@ class SubscriptionBenefitAdsProperties(Schema):
 
 
 class SubscriptionBenefitArticlesSubscriberProperties(Schema):
-    ...
+    paid_articles: bool
 
 
 class SubscriptionBenefitCustomProperties(Schema):

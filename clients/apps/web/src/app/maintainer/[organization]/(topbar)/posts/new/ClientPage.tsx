@@ -65,6 +65,7 @@ const ClientPage = () => {
           showPaywalledContent: true,
           animation: false,
           showShare: false,
+          hasPaidArticlesBenefit: true,
         }}
       />
     </Tabs>

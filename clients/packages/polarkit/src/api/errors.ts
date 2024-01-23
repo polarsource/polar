@@ -24,9 +24,10 @@ export const getValidationErrorsMap = (
 export const setValidationErrors = <TFieldValues extends FieldValues>(
   errors: ValidationError[],
   setError: UseFormSetError<TFieldValues>,
+  slice: number = 1,
 ): void => {
   errors.forEach((error) => {
-    const loc = error.loc.slice(1).join('.') as FieldPath<TFieldValues>
+    const loc = error.loc.slice(slice).join('.') as FieldPath<TFieldValues>
     setError(loc, {
       type: error.type,
       message: error.msg,

@@ -5,12 +5,18 @@ import {
 } from '@mui/icons-material'
 import {
   Organization,
+  ResponseError,
   SubscriptionBenefitAdsCreate,
   SubscriptionBenefitCreate,
   SubscriptionBenefitCustomCreate,
+  SubscriptionBenefitDiscordCreate,
   SubscriptionBenefitType,
   SubscriptionBenefitUpdate,
+  ValidationError,
 } from '@polar-sh/sdk'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { setValidationErrors } from 'polarkit/api/errors'
+import { getBotDiscordAuthorizeURL } from 'polarkit/auth'
 import {
   Button,
   Input,
@@ -41,9 +47,10 @@ import { SelectValue } from 'polarkit/components/ui/select'
 import {
   useCreateSubscriptionBenefit,
   useDeleteSubscriptionBenefit,
+  useDiscordGuild,
   useUpdateSubscriptionBenefit,
 } from 'polarkit/hooks'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Benefit } from '../Benefit/Benefit'
@@ -51,6 +58,7 @@ import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { ConfirmModal } from '../Shared/ConfirmModal'
 import {
+  CreatableSubscriptionBenefit,
   SubscriptionBenefit,
   isPremiumArticlesBenefit,
   resolveBenefitIcon,
@@ -186,7 +194,8 @@ const SubscriptionTierBenefitsForm = ({
   onRemoveBenefit,
   className,
 }: SubscriptionTierBenefitsFormProps) => {
-  const { isShown, toggle, hide } = useModal()
+  const searchParams = useSearchParams()
+  const { isShown, toggle, hide } = useModal(!!searchParams?.get('type'))
 
   const handleCheckedChange = useCallback(
     (benefit: Benefit) => (checked: boolean) => {
@@ -273,10 +282,35 @@ export const NewSubscriptionTierBenefitModalContent = ({
   hideModal,
 }: NewSubscriptionTierBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const { type, description, ...properties } = useMemo<{
+    type?: CreatableSubscriptionBenefit
+    description?: string
+    guild_token?: string
+  }>(() => {
+    if (!searchParams) {
+      return {}
+    }
+    return Object.fromEntries(searchParams.entries())
+  }, [searchParams])
 
   const createSubscriptionBenefit = useCreateSubscriptionBenefit(
     organization.name,
   )
+
+  const form = useForm<SubscriptionBenefitCreate>({
+    defaultValues: {
+      organization_id: organization.id,
+      type: type ? type : 'custom',
+      description: description ? description : undefined,
+      properties: {
+        ...(properties as any),
+      },
+      is_tax_applicable: false,
+    },
+  })
+
+  const { handleSubmit, setError } = form
 
   const handleCreateNewBenefit = useCallback(
     async (subscriptionBenefitCreate: SubscriptionBenefitCreate) => {
@@ -290,25 +324,20 @@ export const NewSubscriptionTierBenefitModalContent = ({
           onSelectBenefit(benefit)
           hideModal()
         }
-      } catch (err) {
-        console.error(err)
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          const body = await e.response.json()
+          if (e.response.status === 422) {
+            const validationErrors = body['detail'] as ValidationError[]
+            setValidationErrors(validationErrors, setError, 2)
+          }
+        }
       } finally {
         setIsLoading(false)
       }
     },
-    [hideModal, onSelectBenefit, createSubscriptionBenefit],
+    [hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
   )
-
-  const form = useForm<SubscriptionBenefitCreate>({
-    defaultValues: {
-      organization_id: organization.id,
-      properties: {},
-      type: 'custom',
-      is_tax_applicable: false,
-    },
-  })
-
-  const { handleSubmit } = form
 
   return (
     <div className="flex flex-col gap-y-6 px-8 py-10">
@@ -391,7 +420,6 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
       organization_id: organization.id,
       ...benefit,
     },
-    shouldUnregister: true,
   })
 
   const { handleSubmit } = form
@@ -489,6 +517,7 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
       {!update ? <BenefitTypeSelect /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'ads' && <AdsBenefitForm update={update} />}
+      {type === 'discord' && <DiscordBenefitForm update={update} />}
     </>
   )
 }
@@ -601,12 +630,98 @@ export const AdsBenefitForm = ({ update = false }: AdsBenefitFormProps) => {
   )
 }
 
+interface DiscordBenefitFormProps {
+  update?: boolean
+}
+
+export const DiscordBenefitForm = ({
+  update = false,
+}: DiscordBenefitFormProps) => {
+  const { control, watch } = useFormContext<SubscriptionBenefitDiscordCreate>()
+  const pathname = usePathname()
+  const description = watch('description')
+  const guildToken = watch('properties.guild_token')
+
+  const authorizeURL = useMemo(() => {
+    const searchParams = new URLSearchParams()
+    searchParams.set('type', SubscriptionBenefitType.DISCORD)
+    searchParams.set('description', description)
+    const returnTo = `${pathname}?${searchParams}`
+    return getBotDiscordAuthorizeURL({ returnTo })
+  }, [pathname, description])
+
+  const { data: discordGuild } = useDiscordGuild(guildToken)
+
+  return (
+    <>
+      {!guildToken && (
+        <Button asChild>
+          <a href={authorizeURL} className="w-full text-center">
+            Connect your Discord server
+          </a>
+        </Button>
+      )}
+      {guildToken && discordGuild && (
+        <>
+          <FormField
+            control={control}
+            name="properties.guild_token"
+            render={({ field }) => {
+              return <input type="hidden" defaultValue={field.value} />
+            }}
+          />
+          <FormItem>
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Connected Discord server</FormLabel>
+            </div>
+            <FormControl>
+              <FormDescription>{discordGuild.name}</FormDescription>
+            </FormControl>
+          </FormItem>
+          <FormField
+            control={control}
+            name="properties.role_id"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <div className="flex flex-row items-center justify-between">
+                    <FormLabel>Granted role</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Role to grant to your subscribers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {discordGuild.roles.map((role: Record<string, any>) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        </>
+      )}
+    </>
+  )
+}
+
 const BenefitTypeSelect = ({}) => {
   const { control } = useFormContext<SubscriptionBenefitCustomCreate>()
   return (
     <FormField
       control={control}
       name="type"
+      shouldUnregister={true}
       render={({ field }) => {
         return (
           <FormItem>
@@ -621,6 +736,7 @@ const BenefitTypeSelect = ({}) => {
                 <SelectContent>
                   <SelectItem value="custom">Custom</SelectItem>
                   <SelectItem value="ads">Ad</SelectItem>
+                  <SelectItem value="discord">Discord invite</SelectItem>
                 </SelectContent>
               </Select>
             </FormControl>

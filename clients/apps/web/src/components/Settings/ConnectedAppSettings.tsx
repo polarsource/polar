@@ -1,7 +1,7 @@
 import { useAuth, useDiscordAccount } from '@/hooks'
 import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
-import { getDiscordAuthorizeURL } from 'polarkit/auth'
+import { getUserDiscordAuthorizeURL } from 'polarkit/auth'
 import {
   Button,
   FormattedDateTime,
@@ -47,7 +47,7 @@ const DiscordConnectedApp: React.FC<DiscordConnectedAppProps> = ({
   oauthAccount,
   returnTo,
 }) => {
-  const authorizeURL = getDiscordAuthorizeURL({ returnTo })
+  const authorizeURL = getUserDiscordAuthorizeURL({ returnTo })
 
   return (
     <ConnectedApp

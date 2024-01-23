@@ -8,10 +8,14 @@ from pydantic import (
     AnyHttpUrl,
     EmailStr,
     Field,
+    computed_field,
+    field_validator,
     model_validator,
 )
 
+from polar.config import settings
 from polar.enums import Platforms
+from polar.kit import jwt
 from polar.kit.schemas import EmptyStrToNone, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
@@ -47,6 +51,27 @@ class SubscriptionBenefitAdsProperties(Schema):
 class SubscriptionBenefitDiscordProperties(Schema):
     guild_id: str
     role_id: str
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def guild_token(self) -> str:
+        return jwt.encode(data={"guild_id": self.guild_id}, secret=settings.SECRET)
+
+
+class SubscriptionBenefitDiscordCreateProperties(Schema):
+    guild_token: str = Field(serialization_alias="guild_id")
+    role_id: str
+
+    @field_validator("guild_token")
+    @classmethod
+    def validate_guild_token(cls, v: str) -> str:
+        try:
+            guild_token_data = jwt.decode(token=v, secret=settings.SECRET)
+            return guild_token_data["guild_id"]
+        except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError) as e:
+            raise ValueError(
+                "Invalid token. Please authenticate your Discord server again."
+            ) from e
 
 
 class SubscriptionBenefitDiscordSubscriberProperties(Schema):
@@ -101,7 +126,7 @@ class SubscriptionBenefitAdsCreate(SubscriptionBenefitCreateBase):
 
 class SubscriptionBenefitDiscordCreate(SubscriptionBenefitCreateBase):
     type: Literal[SubscriptionBenefitType.discord]
-    properties: SubscriptionBenefitDiscordProperties
+    properties: SubscriptionBenefitDiscordCreateProperties
 
 
 SubscriptionBenefitCreate = (
@@ -140,7 +165,7 @@ class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
 
 class SubscriptionBenefitDiscordUpdate(SubscriptionBenefitUpdateBase):
     type: Literal[SubscriptionBenefitType.discord]
-    properties: SubscriptionBenefitDiscordProperties | None = None
+    properties: SubscriptionBenefitDiscordCreateProperties | None = None
 
 
 SubscriptionBenefitUpdate = (

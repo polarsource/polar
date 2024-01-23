@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import AsyncClient
 
+from polar.config import settings
 from polar.models import (
     Account,
     Organization,
@@ -20,6 +21,9 @@ from polar.models import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
+from polar.subscription.service.subscription_benefit import (
+    subscription_benefit as subscription_benefit_service,
+)
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
@@ -1663,3 +1667,116 @@ class TestGetSubscriptionsStatistics:
 
         json = response.json()
         assert len(json["periods"]) == 12
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestBenefitProperties:
+    async def test_note_not_in_public_apis(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        auth_jwt: str,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/benefits/",
+            json={
+                "type": "custom",
+                "description": "Subscription Benefit",
+                "is_tax_applicable": True,
+                "properties": {"note": "SECRET"},
+                "organization_id": str(organization.id),
+            },
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+        assert response.status_code == 201
+        json = response.json()
+        assert "properties" in json
+
+        # add benefit to tier
+        add_benefit = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/benefits",
+            json={"benefits": [response.json()["id"]]},
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+        assert add_benefit.status_code == 200
+
+        # Assert does not show up in unauthorized benefits search
+        benefits_search = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={
+                "organization_id": str(organization.id),
+            },
+        )
+        assert benefits_search.status_code == 401
+
+        # Assert does not show up in unauthorized tiers search
+        tiers_search = await client.get(
+            "/api/v1/subscriptions/tiers/search",
+            params={
+                "platform": organization.platform,
+                "organization_name": organization.name,
+            },
+        )
+        assert tiers_search.status_code == 200
+
+        json = tiers_search.json()
+
+        assert 1 == len(json["items"])
+        assert "properties" not in json["items"][0]
+        assert "SECRET" not in tiers_search.text  # to be sure
+
+    async def test_articles_paid_in_public_apis(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        auth_jwt: str,
+        session: AsyncSession,
+    ) -> None:
+        # create benefits
+        (
+            free_benefit,
+            paid_benefit,
+        ) = await subscription_benefit_service.get_or_create_articles_benefits(
+            session, organization
+        )
+
+        # then
+        session.expunge_all()
+
+        # add benefit to tier
+        add_benefit = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/benefits",
+            json={"benefits": [str(paid_benefit.id)]},
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+        assert add_benefit.status_code == 200
+
+        # Assert does not show up in unauthorized benefits search
+        benefits_search = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={
+                "organization_id": str(organization.id),
+            },
+        )
+        assert benefits_search.status_code == 401
+
+        # Assert does not show up in unauthorized tiers search
+        tiers_search = await client.get(
+            "/api/v1/subscriptions/tiers/search",
+            params={
+                "platform": organization.platform,
+                "organization_name": organization.name,
+            },
+        )
+        assert tiers_search.status_code == 200
+
+        json = tiers_search.json()
+
+        assert 1 == len(json["items"])
+        assert "paid_articles" in tiers_search.text  # to be sure
+        assert json["items"][0]["benefits"][0]["properties"]["paid_articles"] is True

@@ -196,12 +196,15 @@ class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
     properties: SubscriptionBenefitCustomSubscriberProperties
 
 
+# Properties that are available to subscribers only
 SubscriptionBenefitSubscriber = (
     SubscriptionBenefitArticlesSubscriber
     | SubscriptionBenefitAdsSubscriber
     | SubscriptionBenefitCustomSubscriber
 )
 
+# Properties that are public (included in Subscription Tier endpoints)
+SubscriptionBenefitPublic = SubscriptionBenefitBase | SubscriptionBenefitArticles
 
 # SubscriptionTier
 
@@ -275,7 +278,7 @@ class SubscriptionTierBase(TimestampedSchema):
 
 
 class SubscriptionTier(SubscriptionTierBase):
-    benefits: list[SubscriptionTierBenefit]
+    benefits: list[SubscriptionBenefitPublic]
 
 
 class SubscriptionTierSubscriber(SubscriptionTierBase):

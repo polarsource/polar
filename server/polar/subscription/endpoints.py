@@ -3,7 +3,7 @@ from datetime import date
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, Query, Response, UploadFile
+from fastapi import APIRouter, Body, Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
@@ -284,8 +284,10 @@ async def lookup_subscription_benefit(
     tags=[Tags.PUBLIC],
 )
 async def create_subscription_benefit(
-    subscription_benefit_create: SubscriptionBenefitCreate,
     auth: UserRequiredAuth,
+    subscription_benefit_create: SubscriptionBenefitCreate = Body(
+        ..., discriminator="type"
+    ),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionBenefit:

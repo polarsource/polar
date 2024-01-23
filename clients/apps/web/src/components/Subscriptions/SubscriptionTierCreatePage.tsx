@@ -17,7 +17,8 @@ import {
   useSubscriptionBenefits,
   useUpdateSubscriptionTierBenefits,
 } from 'polarkit/hooks'
-import React, { useCallback, useState } from 'react'
+import { useStore } from 'polarkit/store'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Benefit } from '../Benefit/Benefit'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
@@ -63,6 +64,11 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   organizationBenefits,
 }) => {
   const router = useRouter()
+  const {
+    formDrafts: { SubscriptionTierCreate: savedFormValues },
+    saveDraft,
+    clearDraft,
+  } = useStore()
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     Benefit['id'][]
     // Pre-select premium articles benefit
@@ -70,14 +76,14 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 
   const form = useForm<SubscriptionTierCreate>({
     defaultValues: {
-      organization_id: organization.id,
       ...(type ? { type } : {}),
+      ...(savedFormValues ? savedFormValues : {}),
+      organization_id: organization.id,
     },
   })
   const { handleSubmit, watch, setError } = form
 
   const newSubscriptionTier = watch()
-
   const selectedSubscriptionTierType = watch('type')
 
   const createSubscriptionTier = useCreateSubscriptionTier(organization.name)
@@ -97,6 +103,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
             benefits: enabledBenefitIds,
           },
         })
+        clearDraft('SubscriptionTierCreate')
         router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
         router.refresh()
       } catch (e) {
@@ -116,6 +123,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
       createSubscriptionTier,
       updateSubscriptionTierBenefits,
       setError,
+      clearDraft,
     ],
   )
 
@@ -142,6 +150,14 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
       ),
     [organizationBenefits, enabledBenefitIds],
   )
+
+  useEffect(() => {
+    const pagehideListener = () => {
+      saveDraft('SubscriptionTierCreate', newSubscriptionTier)
+    }
+    window.addEventListener('pagehide', pagehideListener)
+    return () => window.removeEventListener('pagehide', pagehideListener)
+  }, [newSubscriptionTier, saveDraft])
 
   return (
     <DashboardBody>

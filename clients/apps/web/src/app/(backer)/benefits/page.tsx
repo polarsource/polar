@@ -4,11 +4,11 @@ import ClientPage from './ClientPage'
 
 export default async function Page() {
   const api = getServerSideAPI()
-  const [subscriptions] = await Promise.all([
-    api.subscriptions.searchSubscribedSubscriptions({
-      limit: 100,
-      platform: Platforms.GITHUB,
-    }),
-  ])
+  return <h1>Hello</h1>
+  const subscriptions = await api.subscriptions.searchSubscribedSubscriptions({
+    limit: 100,
+    platform: Platforms.GITHUB,
+  })
+
   return <ClientPage subscriptions={subscriptions.items || []} />
 }

@@ -61,7 +61,7 @@ oauth2_bot_authorize_callback = OAuth2AuthorizeCallback(
 async def discord_bot_authorize(
     return_to: ReturnTo, request: Request, auth: UserRequiredAuth
 ) -> RedirectResponse:
-    state = {"user_id": str(auth.user.id), "return_to": return_to}
+    state = {"auth_type": "bot", "user_id": str(auth.user.id), "return_to": return_to}
 
     encoded_state = jwt.encode(data=state, secret=settings.SECRET)
 
@@ -87,7 +87,7 @@ async def discord_bot_callback(
     data, state = get_decoded_token_state(access_token_state)
 
     user_id = UUID(state["user_id"])
-    if user_id != auth.user.id:
+    if user_id != auth.user.id or state["auth_type"] != "bot":
         raise Unauthorized()
 
     guild_id = data["guild"]["id"]
@@ -120,9 +120,9 @@ oauth2_user_authorize_callback = OAuth2AuthorizeCallback(
     tags=[Tags.INTERNAL],
 )
 async def discord_user_authorize(
-    request: Request, auth: UserRequiredAuth
+    return_to: ReturnTo, request: Request, auth: UserRequiredAuth
 ) -> RedirectResponse:
-    state = {"auth_type": "user", "user_id": str(auth.user.id)}
+    state = {"auth_type": "user", "user_id": str(auth.user.id), "return_to": return_to}
     encoded_state = jwt.encode(data=state, secret=settings.SECRET)
 
     authorization_url = await oauth.user_client.get_authorization_url(
@@ -145,16 +145,15 @@ async def discord_user_callback(
     data, state = get_decoded_token_state(access_token_state)
 
     user_id = UUID(state["user_id"])
-    if user_id != auth.user.id:
+    if user_id != auth.user.id or state["auth_type"] != "user":
         raise Unauthorized()
 
     try:
         await discord_user_service.create_oauth_account(session, auth.user, data)
-        status = "success"
     except ResourceAlreadyExists:
-        status = "already_connected"
+        pass
 
-    redirect_to = get_safe_return_url(f"/settings?discord_status={status}")
+    redirect_to = get_safe_return_url(state["return_to"])
     return RedirectResponse(redirect_to, 303)
 
 

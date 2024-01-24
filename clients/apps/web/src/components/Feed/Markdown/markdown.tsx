@@ -1,5 +1,5 @@
 import { Article } from '@polar-sh/sdk'
-import React, { Fragment, JSXElementConstructor } from 'react'
+import React, { Fragment } from 'react'
 
 export type RenderArticle = Pick<
   Article,
@@ -19,10 +19,7 @@ export const wrapStrictCreateElement = (args: {
   isSubscriber?: boolean
   paidArticlesBenefitName?: string
   defaultOverride?: React.FunctionComponent
-  overridableComponents?: (
-    | keyof JSX.IntrinsicElements
-    | JSXElementConstructor<any>
-  )[]
+  extraAllowedCustomComponents?: string[]
 }): ((
   type:
     | string
@@ -31,6 +28,8 @@ export const wrapStrictCreateElement = (args: {
   props: JSX.IntrinsicAttributes | any,
   children: any,
 ) => JSX.Element) => {
+  console.log(args.extraAllowedCustomComponents)
+
   const strictCreateElement = (
     type:
       | string
@@ -91,16 +90,18 @@ export const wrapStrictCreateElement = (args: {
       'poll',
       'paywall',
       'subscribenow',
-      ...(args.overridableComponents ?? []),
-    ]
+      ...(args.extraAllowedCustomComponents ?? []),
+    ].map((s) => s.toLowerCase())
 
     // Custom components
     if (
       typeof type === 'function' &&
       type?.name &&
-      allowedCustomComponents.includes(type?.name.toLocaleLowerCase())
+      allowedCustomComponents.includes(type?.name.toLowerCase())
     ) {
-      const customComponentName = type?.name.toLocaleLowerCase()
+      const customComponentName = type?.name.toLowerCase()
+
+      console.log(customComponentName)
 
       if (customComponentName === 'img') {
         trimProps.src = props?.src
@@ -127,6 +128,10 @@ export const wrapStrictCreateElement = (args: {
         trimProps.showPaywalledContent = args.showPaywalledContent ?? true
         trimProps.isSubscriber = args.isSubscriber ?? false
         trimProps.paidArticlesBenefitName = args.paidArticlesBenefitName
+      }
+
+      if (customComponentName === 'ad') {
+        trimProps.subscriptionBenefitId = props?.subscriptionBenefitId
       }
 
       return React.createElement(

@@ -23,7 +23,14 @@ export default function PreviewText(props: { article: Article }) {
         createElement: wrapStrictCreateElement({
           article: props.article,
           showPaywalledContent: false,
-          overridableComponents: ['p', 'div', 'img', 'a', 'strong', 'em'],
+          extraAllowedCustomComponents: [
+            'p',
+            'div',
+            'img',
+            'a',
+            'strong',
+            'em',
+          ],
 
           // Default override that removes all elements
           defaultOverride: (args: any) => <>{args.children}</>,

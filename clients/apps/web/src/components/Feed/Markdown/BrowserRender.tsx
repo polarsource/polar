@@ -2,6 +2,7 @@ import Markdown from 'markdown-to-jsx'
 import dynamic from 'next/dynamic'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { createContext, useContext } from 'react'
+import BrowserAd from './Ad/BrowserAd'
 import Embed from './Embed/BrowserEmbed'
 import Iframe from './Iframe/BrowserIframe'
 import { ImageOverlay } from './Img/ImageOverlay'
@@ -47,6 +48,7 @@ const BrowserSyntaxHighlighterLoading = () => {
 
 export const opts = {
   ...markdownOpts,
+
   overrides: {
     ...markdownOpts.overrides,
 
@@ -78,6 +80,7 @@ export const opts = {
       }
       return <></>
     },
+    Ad: (args: any) => <BrowserAd {...args} />,
   },
 } as const
 
@@ -115,6 +118,7 @@ const BrowserRender = ({
           showPaywalledContent,
           isSubscriber,
           paidArticlesBenefitName,
+          extraAllowedCustomComponents: Object.keys(opts.overrides),
         }),
       }}
     >

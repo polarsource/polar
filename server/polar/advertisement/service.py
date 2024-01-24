@@ -91,8 +91,8 @@ class AdvertisementCampaignService:
     async def search(
         self,
         session: AsyncSession,
-        subscription_id: uuid.UUID | None,
-        subscription_benefit_id: uuid.UUID | None,
+        subscription_id: uuid.UUID | None = None,
+        subscription_benefit_id: uuid.UUID | None = None,
     ) -> Sequence[AdvertisementCampaign]:
         statement = (
             select(AdvertisementCampaign)

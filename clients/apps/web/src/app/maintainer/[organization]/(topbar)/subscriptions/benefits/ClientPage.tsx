@@ -93,7 +93,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             </div>
             {(benefitSubscriptionTiers?.length ?? 0) > 0 && (
               <div className="flex flex-col gap-y-4">
-                <h3 className="text-sm font-medium">Subscription Tiers</h3>
+                <h3 className="font-medium">Subscription Tiers</h3>
                 <div className="flex flex-col gap-y-2">
                   {benefitSubscriptionTiers?.map((tier) => (
                     <Link
@@ -112,20 +112,23 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               </div>
             )}
             {selectedBenefit.type === 'ads' ? (
-              <div className="flex flex-col gap-y-4">
-                <h3 className="text-sm font-medium">ID</h3>
-                <span className="text-sm">
+              <div className="flex flex-col gap-y-3">
+                <h3 className="font-medium">Identifier</h3>
+                <p className="dark:text-polar-400 text-sm text-gray-600">
                   Use this ID when{' '}
                   <a
                     href="https://docs.polar.sh/maintainers/ads/"
-                    className="font-medium underline"
+                    target="_blank"
+                    className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
                   >
                     integrating
                   </a>{' '}
-                  ads in your README or website
-                </span>
+                  ads in your README or website.
+                </p>
                 <pre>
-                  <code className="text-xs">{selectedBenefit.id}</code>
+                  <code className="dark:bg-polar-700 rounded-md bg-gray-100 p-2 text-xs">
+                    {selectedBenefit.id}
+                  </code>
                 </pre>
               </div>
             ) : null}

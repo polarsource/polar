@@ -82,7 +82,7 @@ const Subscription = ({
   return (
     <ShadowBoxOnMd className="flex flex-col gap-y-8">
       <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-row items-center gap-x-4">
+        <div className="flex flex-row items-center gap-x-4 px-4">
           <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-blue-400">
             <Avatar
               className="h-10 w-10"
@@ -102,12 +102,12 @@ const Subscription = ({
         </div>
         <div className="flex flex-row items-center gap-x-2">
           <Link href={`/settings`}>
-            <Button size="sm" variant="secondary" asChild>
+            <Button size="sm" variant="ghost" asChild>
               Manage
             </Button>
           </Link>
           <Link href={`/${org?.name}/subscriptions`}>
-            <Button size="sm" asChild>
+            <Button size="sm" variant="secondary" asChild>
               Upgrade
             </Button>
           </Link>

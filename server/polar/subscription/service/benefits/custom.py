@@ -1,15 +1,17 @@
 from typing import Any
 
 from polar.models import Subscription, User
-from polar.models.subscription_benefit import SubscriptionBenefitCustom
+from polar.models.subscription_benefit import (
+    SubscriptionBenefitCustom,
+    SubscriptionBenefitCustomProperties,
+)
 
-from ...schemas import SubscriptionBenefitCustomUpdate
 from .base import SubscriptionBenefitServiceProtocol
 
 
 class SubscriptionBenefitCustomService(
     SubscriptionBenefitServiceProtocol[
-        SubscriptionBenefitCustom, SubscriptionBenefitCustomUpdate
+        SubscriptionBenefitCustom, SubscriptionBenefitCustomProperties
     ]
 ):
     async def grant(
@@ -38,6 +40,6 @@ class SubscriptionBenefitCustomService(
     async def requires_update(
         self,
         benefit: SubscriptionBenefitCustom,
-        update: SubscriptionBenefitCustomUpdate,
+        previous_properties: SubscriptionBenefitCustomProperties,
     ) -> bool:
         return False

@@ -6,15 +6,15 @@ from polar.models import (
 )
 from polar.models.subscription_benefit import (
     SubscriptionBenefitAds,
+    SubscriptionBenefitAdsProperties,
 )
 
-from ...schemas import SubscriptionBenefitAdsUpdate
 from .base import SubscriptionBenefitServiceProtocol
 
 
 class SubscriptionBenefitAdsService(
     SubscriptionBenefitServiceProtocol[
-        SubscriptionBenefitAds, SubscriptionBenefitAdsUpdate
+        SubscriptionBenefitAds, SubscriptionBenefitAdsProperties
     ]
 ):
     async def grant(
@@ -45,6 +45,6 @@ class SubscriptionBenefitAdsService(
     async def requires_update(
         self,
         benefit: SubscriptionBenefitAds,
-        update: SubscriptionBenefitAdsUpdate,
+        previous_properties: SubscriptionBenefitAdsProperties,
     ) -> bool:
         return False

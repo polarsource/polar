@@ -190,6 +190,8 @@ class SubscriptionBenefitService(
         if not await authz.can(user, AccessType.write, subscription_benefit):
             raise NotPermitted()
 
+        previous_properties = subscription_benefit.properties
+
         updated_subscription_benefit = await subscription_benefit.update(
             session,
             **update_schema.model_dump(
@@ -198,7 +200,7 @@ class SubscriptionBenefitService(
         )
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
-            session, updated_subscription_benefit, update_schema
+            session, updated_subscription_benefit, previous_properties
         )
 
         return updated_subscription_benefit

@@ -15,17 +15,17 @@ from polar.models import (
 )
 from polar.models.subscription_benefit import (
     SubscriptionBenefitArticles,
+    SubscriptionBenefitArticlesProperties,
     SubscriptionBenefitType,
 )
 from polar.redis import redis
 
-from ...schemas import SubscriptionBenefitArticlesUpdate
 from .base import SubscriptionBenefitServiceProtocol
 
 
 class SubscriptionBenefitArticlesService(
     SubscriptionBenefitServiceProtocol[
-        SubscriptionBenefitArticles, SubscriptionBenefitArticlesUpdate
+        SubscriptionBenefitArticles, SubscriptionBenefitArticlesProperties
     ]
 ):
     async def grant(
@@ -88,7 +88,7 @@ class SubscriptionBenefitArticlesService(
     async def requires_update(
         self,
         benefit: SubscriptionBenefitArticles,
-        update: SubscriptionBenefitArticlesUpdate,
+        previous_properties: SubscriptionBenefitArticlesProperties,
     ) -> bool:
         return False
 

@@ -16,11 +16,11 @@ from polar.models import (
     SubscriptionTierBenefit,
     User,
 )
+from polar.models.subscription_benefit import SubscriptionBenefitProperties
 from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
-from ..schemas import SubscriptionBenefitUpdate
 from .benefits import (
     SubscriptionBenefitPreconditionError,
     get_subscription_benefit_service,
@@ -118,13 +118,13 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         self,
         session: AsyncSession,
         subscription_benefit: SubscriptionBenefit,
-        update_schema: SubscriptionBenefitUpdate,
+        previous_properties: SubscriptionBenefitProperties,
     ) -> None:
         benefit_service = get_subscription_benefit_service(
             subscription_benefit.type, session
         )
         if not await benefit_service.requires_update(
-            subscription_benefit, update_schema
+            subscription_benefit, previous_properties
         ):
             return
 

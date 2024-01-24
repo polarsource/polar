@@ -6,9 +6,8 @@ from polar.models import (
     SubscriptionBenefit,
     User,
 )
+from polar.models.subscription_benefit import SubscriptionBenefitProperties
 from polar.postgres import AsyncSession
-
-from ...schemas import SubscriptionBenefitUpdate
 
 
 class SubscriptionBenefitServiceError(PolarError):
@@ -72,10 +71,10 @@ class SubscriptionBenefitPreconditionError(SubscriptionBenefitServiceError):
 
 
 SB = TypeVar("SB", bound=SubscriptionBenefit, contravariant=True)
-SBU = TypeVar("SBU", bound=SubscriptionBenefitUpdate, contravariant=True)
+SBP = TypeVar("SBP", bound=SubscriptionBenefitProperties, contravariant=True)
 
 
-class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
+class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
     """
     Protocol that should be implemented by each benefit type service.
 
@@ -159,7 +158,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
         """
         ...
 
-    async def requires_update(self, benefit: SB, update: SBU) -> bool:
+    async def requires_update(self, benefit: SB, previous_properties: SBP) -> bool:
         """
         Determines if a benefit update requires to trigger the granting logic again.
 
@@ -169,7 +168,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBU]):
 
         Args:
             benefit: The updated SubscriptionBenefit.
-            update: The SubscriptionBenefitUpdate schema.
+            previous_properties: The SubscriptionBenefit properties before the update.
             Use it to check which fields have been updated.
         """
         ...

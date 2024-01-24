@@ -1,11 +1,13 @@
 from typing import Any
 
 from polar.models import SubscriptionBenefit
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.subscription_benefit import (
+    SubscriptionBenefitProperties,
+    SubscriptionBenefitType,
+)
 from polar.postgres import AsyncSession
 from polar.subscription.service.benefits.ads import SubscriptionBenefitAdsService
 
-from ...schemas import SubscriptionBenefitUpdate
 from .articles import SubscriptionBenefitArticlesService
 from .base import (
     SubscriptionBenefitPreconditionError,
@@ -27,7 +29,9 @@ _SERVICE_CLASS_MAP: dict[
 
 def get_subscription_benefit_service(
     type: SubscriptionBenefitType, session: AsyncSession
-) -> SubscriptionBenefitServiceProtocol[SubscriptionBenefit, SubscriptionBenefitUpdate]:
+) -> SubscriptionBenefitServiceProtocol[
+    SubscriptionBenefit, SubscriptionBenefitProperties
+]:
     return _SERVICE_CLASS_MAP[type](session)
 
 

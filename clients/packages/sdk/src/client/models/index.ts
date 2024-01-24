@@ -1863,6 +1863,25 @@ export interface ListResourceAdvertisementCampaign {
 /**
  * 
  * @export
+ * @interface ListResourceAdvertisementCampaignPublic
+ */
+export interface ListResourceAdvertisementCampaignPublic {
+    /**
+     * 
+     * @type {Array<AdvertisementCampaignPublic>}
+     * @memberof ListResourceAdvertisementCampaignPublic
+     */
+    items?: Array<AdvertisementCampaignPublic>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceAdvertisementCampaignPublic
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceArticle
  */
 export interface ListResourceArticle {

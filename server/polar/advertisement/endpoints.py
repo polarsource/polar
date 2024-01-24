@@ -113,6 +113,30 @@ async def search_campaigns(
     )
 
 
+@router.get(
+    "/advertisements/display/search",
+    response_model=ListResource[AdvertisementCampaignPublic],
+    tags=[Tags.PUBLIC],
+    status_code=200,
+)
+async def search_display(
+    subscription_benefit_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[AdvertisementCampaignPublic]:
+    if subscription_benefit_id is None:
+        raise BadRequest("No search criteria specified")
+
+    ads = await advertisement_campaign_service.search(
+        session,
+        subscription_benefit_id=subscription_benefit_id,
+    )
+
+    return ListResource(
+        items=[AdvertisementCampaignPublic.model_validate(ad) for ad in ads],
+        pagination=Pagination(total_count=len(ads), max_page=1),
+    )
+
+
 @router.post(
     "/advertisements/campaigns",
     response_model=AdvertisementCampaign,

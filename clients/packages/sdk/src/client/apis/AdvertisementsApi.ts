@@ -21,6 +21,7 @@ import type {
   EditAdvertisementCampaign,
   HTTPValidationError,
   ListResourceAdvertisementCampaign,
+  ListResourceAdvertisementCampaignPublic,
 } from '../models/index';
 
 export interface AdvertisementsApiCreateCampaignRequest {
@@ -43,6 +44,10 @@ export interface AdvertisementsApiGetCampaignRequest {
 export interface AdvertisementsApiSearchCampaignsRequest {
     subscriptionId?: string;
     subscriptionBenefitId?: string;
+}
+
+export interface AdvertisementsApiSearchDisplayRequest {
+    subscriptionBenefitId: string;
 }
 
 export interface AdvertisementsApiTrackViewRequest {
@@ -255,6 +260,48 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      */
     async searchCampaigns(requestParameters: AdvertisementsApiSearchCampaignsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAdvertisementCampaign> {
         const response = await this.searchCampaignsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Search Display
+     */
+    async searchDisplayRaw(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementCampaignPublic>> {
+        if (requestParameters.subscriptionBenefitId === null || requestParameters.subscriptionBenefitId === undefined) {
+            throw new runtime.RequiredError('subscriptionBenefitId','Required parameter requestParameters.subscriptionBenefitId was null or undefined when calling searchDisplay.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.subscriptionBenefitId !== undefined) {
+            queryParameters['subscription_benefit_id'] = requestParameters.subscriptionBenefitId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/advertisements/display/search`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Search Display
+     */
+    async searchDisplay(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAdvertisementCampaignPublic> {
+        const response = await this.searchDisplayRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

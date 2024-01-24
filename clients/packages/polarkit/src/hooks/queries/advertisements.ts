@@ -28,6 +28,16 @@ export const useAdvertisementCampaigns = (
     retry: defaultRetry,
   })
 
+export const useAdvertisementDisplays = (benefit_id: string) =>
+  useQuery({
+    queryKey: ['advertisements', 'displays', benefit_id],
+    queryFn: () =>
+      api.advertisements.searchDisplay({
+        subscriptionBenefitId: benefit_id,
+      }),
+    retry: defaultRetry,
+  })
+
 export const useCreateAdvertisementCampaigns: () => UseMutationResult<
   AdvertisementCampaign,
   Error,

@@ -7,6 +7,9 @@ from polar.models import (
     User,
 )
 from polar.models.subscription_benefit import SubscriptionBenefitProperties
+from polar.notifications.notification import (
+    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+)
 from polar.postgres import AsyncSession
 
 
@@ -32,41 +35,23 @@ class SubscriptionBenefitPreconditionError(SubscriptionBenefitServiceError):
     """
     Some conditions are missing to grant the benefit.
 
-    It accepts an email subject and body templates. When set, an email will
-    be sent to the backer to explain them what happened. It'll be generated with
-    the following context:
-
-    ```py
-    class Context:
-        subscription: Subscription
-        subscription_tier: SubscriptionTier
-        subscription_benefit: SubscriptionBenefit
-        user: User
-    ```
-
-    An additional context dictionary can also be passed.
+    It accepts a payload schema.
+    When set, a notification will be sent to the backer to explain them what happened.
     """
 
     def __init__(
         self,
         message: str,
         *,
-        email_subject: str | None = None,
-        email_body_template: str | None = None,
-        email_extra_context: dict[str, Any] | None = None,
+        payload: SubscriptionBenefitPreconditionErrorNotificationContextualPayload
+        | None = None,
     ) -> None:
         """
         Args:
-            message: The plain error message
-            email_subject: Template string for the email subject
-            we'll send to the backer.
-            email_body_template: Path to the email template body
-            we'll send to the backer.
-            It's expected to be under `subscription/email_templates` directory.
+            message: The plain error message.
+            payload: The payload to build the notification.
         """
-        self.email_subject = email_subject
-        self.email_body_template = email_body_template
-        self.email_extra_context = email_extra_context or {}
+        self.payload = payload
         super().__init__(message)
 
 

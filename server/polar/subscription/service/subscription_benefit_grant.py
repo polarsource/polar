@@ -1,11 +1,8 @@
-import datetime
 from collections.abc import Sequence
 
 import structlog
 from sqlalchemy import select
 
-from polar.email.renderer import get_email_renderer
-from polar.email.sender import get_email_sender
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import (
@@ -17,6 +14,13 @@ from polar.models import (
     User,
 )
 from polar.models.subscription_benefit import SubscriptionBenefitProperties
+from polar.notifications.notification import (
+    NotificationType,
+    SubscriptionBenefitPreconditionErrorNotificationPayload,
+)
+from polar.notifications.service import PartialNotification
+from polar.notifications.service import notifications as notification_service
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
@@ -230,40 +234,40 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         user: User,
         subscription_benefit: SubscriptionBenefit,
     ) -> None:
-        if error.email_subject is None or error.email_body_template is None:
+        if error.payload is None:
             log.warning(
                 "A precondition error was raised but the user was not notified. "
-                "We probably should implement an email for this error.",
+                "We probably should implement a notification for this error.",
                 subscription_id=str(subscription.id),
                 subscription_benefit_id=str(subscription_benefit.id),
             )
             return
 
-        email_renderer = get_email_renderer({"subscription": "polar.subscription"})
-        email_sender = get_email_sender()
-
         await session.refresh(subscription, {"user", "subscription_tier"})
+        subscription_tier = subscription.subscription_tier
 
-        subject, body = email_renderer.render_from_template(
-            error.email_subject,
-            f"subscription/{error.email_body_template}",
-            {
-                "subscription": subscription,
-                "subscription_tier": subscription.subscription_tier,
-                "subscription_benefit": subscription_benefit,
-                "user": user,
-                "current_year": datetime.datetime.now().year,
-                **error.email_extra_context,
-            },
+        managing_organization = await organization_service.get(
+            session, subscription_tier.managing_organization_id
+        )
+        assert managing_organization is not None
+
+        notification_payload = SubscriptionBenefitPreconditionErrorNotificationPayload(
+            subscription_id=subscription.id,
+            subscription_tier_id=subscription_tier.id,
+            subscription_benefit_id=subscription_benefit.id,
+            subscription_tier_name=subscription_tier.name,
+            subscription_benefit_description=subscription_benefit.description,
+            organization_name=managing_organization.name,
+            **error.payload.model_dump(),
         )
 
-        email_sender.send_to_user(
-            to_email_addr=user.email,
-            subject=subject,
-            html_content=body,
-            from_email_addr="notifications@notifications.polar.sh",
-            reply_to_email_addr="support@polar.sh",
-            reply_to_name="Polar Support",
+        await notification_service.send_to_user(
+            session=session,
+            user_id=user.id,
+            notif=PartialNotification(
+                type=NotificationType.subscription_benefit_precondition_error,
+                payload=notification_payload,
+            ),
         )
 
     async def get_outdated_grants(

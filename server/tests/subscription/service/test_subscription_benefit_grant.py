@@ -1,4 +1,4 @@
-from unittest.mock import ANY, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -9,12 +9,19 @@ from polar.models import (
     SubscriptionBenefitGrant,
     User,
 )
+from polar.notifications.notification import (
+    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+)
+from polar.notifications.service import NotificationsService
 from polar.postgres import AsyncSession
 from polar.subscription.service.benefits import (
     SubscriptionBenefitPreconditionError,
     SubscriptionBenefitServiceProtocol,
 )
 from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service.subscription_benefit_grant import (  # type: ignore[attr-defined]
+    notification_service,
+)
 from polar.subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
@@ -513,24 +520,21 @@ class TestDeleteBenefitGrant:
 
 
 @pytest.fixture
-def email_sender_mock(mocker: MockerFixture) -> MagicMock:
-    email_sender_mock = MagicMock()
-    mocker.patch(
-        "polar.subscription.service.subscription_benefit_grant.get_email_sender",
-        return_value=email_sender_mock,
+def notification_send_to_user_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch.object(
+        notification_service, "send_to_user", spec=NotificationsService.send_to_user
     )
-    return email_sender_mock
 
 
 @pytest.mark.asyncio
 class TestHandlePreconditionError:
-    async def test_no_email(
+    async def test_no_notification(
         self,
         session: AsyncSession,
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
         user: User,
-        email_sender_mock: MagicMock,
+        notification_send_to_user_mock: MagicMock,
     ) -> None:
         error = SubscriptionBenefitPreconditionError("Error")
 
@@ -541,7 +545,7 @@ class TestHandlePreconditionError:
             session, error, subscription, user, subscription_benefit_organization
         )
 
-        email_sender_mock.assert_not_called()
+        notification_send_to_user_mock.assert_not_called()
 
     async def test_email(
         self,
@@ -549,13 +553,15 @@ class TestHandlePreconditionError:
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
         user: User,
-        email_sender_mock: MagicMock,
+        notification_send_to_user_mock: MagicMock,
     ) -> None:
         error = SubscriptionBenefitPreconditionError(
             "Error",
-            email_subject="Email subject",
-            email_body_template="benefits/custom/precondition_failed.html",
-            email_extra_context={"foo": "bar"},
+            payload=SubscriptionBenefitPreconditionErrorNotificationContextualPayload(
+                subject_template="Action required for granting {subscription_benefit_name}",
+                body_template="Go here to fix this: {extra_context[url]}",
+                extra_context={"url": "https://polar.sh"},
+            ),
         )
 
         # then
@@ -569,14 +575,4 @@ class TestHandlePreconditionError:
             session, error, session_loaded, user, subscription_benefit_organization
         )
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        assert send_to_user_mock.called
-
-        send_to_user_mock.assert_called_once_with(
-            to_email_addr=user.email,
-            html_content=ANY,
-            subject="Email subject",
-            from_email_addr="notifications@notifications.polar.sh",
-            reply_to_email_addr="support@polar.sh",
-            reply_to_name="Polar Support",
-        )
+        notification_send_to_user_mock.assert_called_once()

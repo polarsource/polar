@@ -75,7 +75,7 @@ class SubscriptionBenefitDiscordCreateProperties(Schema):
 
 
 class SubscriptionBenefitDiscordSubscriberProperties(Schema):
-    ...
+    guild_id: str
 
 
 class SubscriptionBenefitCustomProperties(Schema):

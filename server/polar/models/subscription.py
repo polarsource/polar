@@ -25,7 +25,12 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Organization, SubscriptionTier, User
+    from polar.models import (
+        Organization,
+        SubscriptionBenefitGrant,
+        SubscriptionTier,
+        User,
+    )
 
 
 class SubscriptionStatus(StrEnum):
@@ -95,6 +100,15 @@ class Subscription(RecordModel):
     @declared_attr
     def subscription_tier(cls) -> Mapped["SubscriptionTier"]:
         return relationship("SubscriptionTier", lazy="raise")
+
+    @declared_attr
+    def grants(cls) -> Mapped[list["SubscriptionBenefitGrant"]]:
+        return relationship(
+            "SubscriptionBenefitGrant",
+            lazy="raise",
+            order_by="SubscriptionBenefitGrant.subscription_benefit_id",
+            back_populates="subscription",
+        )
 
     def is_incomplete(self) -> bool:
         return self.status in [

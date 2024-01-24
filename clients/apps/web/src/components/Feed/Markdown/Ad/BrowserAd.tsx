@@ -1,6 +1,6 @@
 import { useAdvertisementDisplays } from 'polarkit/hooks'
 
-const Ad = (props: { subscriptionBenefitId: string }) => {
+const BrowserAd = (props: { subscriptionBenefitId: string }) => {
   const display = useAdvertisementDisplays(props.subscriptionBenefitId)
 
   if (typeof props.subscriptionBenefitId !== 'string') {
@@ -39,4 +39,4 @@ const Ad = (props: { subscriptionBenefitId: string }) => {
   )
 }
 
-export default Ad
+export default BrowserAd

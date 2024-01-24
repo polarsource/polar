@@ -4,6 +4,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { Article } from '@polar-sh/sdk'
 import { getMagicLinkAuthenticateURL } from 'polarkit/auth'
 
+import { parseBenefitIdsFromBody } from '@/components/Feed/Markdown/Ad/EmailAd'
 import {
   Body,
   Column,
@@ -178,8 +179,10 @@ const renderArticle = async (
 ): Promise<NextResponse> => {
   let article: Article
 
+  const api = getServerSideAPI()
+
   try {
-    article = await getServerSideAPI().articles.get({
+    article = await api.articles.get({
       id: articleId,
     })
     if (!article) {
@@ -209,6 +212,18 @@ const renderArticle = async (
     unsubscribeLink ??
     // If we don't have a subscription token. Send user to the subscriptions page.
     preAuthLink(`/${post.organization.name}/subscriptions`)
+
+  // Fetch and create ads context
+  const benefitIds = parseBenefitIdsFromBody(article.body)
+  const ads = await Promise.all(
+    benefitIds.map((id) =>
+      api.advertisements.searchDisplay({ subscriptionBenefitId: id }),
+    ),
+  )
+  const adsContext = benefitIds.map((id, idx) => ({
+    benefitId: id,
+    ads: ads[idx].items ?? [],
+  }))
 
   const html = render(
     <Html lang="en">
@@ -294,7 +309,7 @@ const renderArticle = async (
 
               <Row>
                 <Column className="prose prose-p:text-gray-700 prose-img:rounded-2xl prose-a:text-blue-500 hover:prose-a:text-blue-400 prose-a:no-underline mb-8 space-y-16">
-                  <EmailRender article={article} />
+                  <EmailRender article={article} adsContext={adsContext} />
                 </Column>
               </Row>
 

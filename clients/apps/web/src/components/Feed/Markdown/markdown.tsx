@@ -1,4 +1,4 @@
-import { Article } from '@polar-sh/sdk'
+import { AdvertisementCampaignPublic, Article } from '@polar-sh/sdk'
 import React, { Fragment } from 'react'
 
 export type RenderArticle = Pick<
@@ -12,6 +12,11 @@ export type RenderArticle = Pick<
   | 'is_preview'
 >
 
+export type BenefitAds = {
+  benefitId: string
+  ads: Array<AdvertisementCampaignPublic>
+}
+
 // strictCreateElement removes unsupported types and attributes
 export const wrapStrictCreateElement = (args: {
   article: RenderArticle
@@ -20,6 +25,7 @@ export const wrapStrictCreateElement = (args: {
   paidArticlesBenefitName?: string
   defaultOverride?: React.FunctionComponent
   extraAllowedCustomComponents?: string[]
+  adsContext?: BenefitAds[]
 }): ((
   type:
     | string
@@ -101,8 +107,6 @@ export const wrapStrictCreateElement = (args: {
     ) {
       const customComponentName = type?.name.toLowerCase()
 
-      console.log(customComponentName)
-
       if (customComponentName === 'img') {
         trimProps.src = props?.src
         trimProps.height = props?.height
@@ -132,6 +136,7 @@ export const wrapStrictCreateElement = (args: {
 
       if (customComponentName === 'ad') {
         trimProps.subscriptionBenefitId = props?.subscriptionBenefitId
+        trimProps.adsContext = args.adsContext
       }
 
       return React.createElement(

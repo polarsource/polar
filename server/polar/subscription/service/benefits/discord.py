@@ -88,7 +88,7 @@ class SubscriptionBenefitDiscordService(
         role_id = benefit.properties["role_id"]
 
         # If we already granted this benefit, make sure we revoke the previous config
-        if update:
+        if update and grant_properties:
             bound_logger.debug("Grant benefit update")
             previous_guild_id = grant_properties["guild_id"]
             previous_role_id = grant_properties["role_id"]

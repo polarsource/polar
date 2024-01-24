@@ -9,9 +9,7 @@ from polar.models import (
     SubscriptionBenefitGrant,
     User,
 )
-from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
-from polar.subscription.schemas import SubscriptionBenefitCustomUpdate
 from polar.subscription.service.benefits import (
     SubscriptionBenefitPreconditionError,
     SubscriptionBenefitServiceProtocol,
@@ -238,11 +236,7 @@ class TestEnqueueBenefitGrantUpdates:
         session.expunge_all()
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
-            session,
-            subscription_benefit_organization,
-            SubscriptionBenefitCustomUpdate(
-                type=SubscriptionBenefitType.custom, description="Update"
-            ),
+            session, subscription_benefit_organization, {}
         )
 
         enqueue_job_mock.assert_not_called()
@@ -292,11 +286,7 @@ class TestEnqueueBenefitGrantUpdates:
         session.expunge_all()
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
-            session,
-            subscription_benefit_organization,
-            SubscriptionBenefitCustomUpdate(
-                type=SubscriptionBenefitType.custom, description="Update"
-            ),
+            session, subscription_benefit_organization, {}
         )
 
         enqueue_job_mock.assert_called_once_with(

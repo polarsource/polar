@@ -97,3 +97,46 @@ The action works with both markdown content such as READMEs and other HTML conte
             branch: main
     ```
 
+### Adding ads to _anything_
+
+You can also integrate ads via the [Polar API](../../api), and consume it from anywhere. Like a webserver, or a build step for your website.
+
+```bash
+curl -s -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+    "https://api.polar.sh/api/v1/advertisements/campaigns/search?organization_name=YOUR_GITHUB_USERNAME_HERE&platform=github&subscription_benefit_id=YOUR_BENEFIT_ID_HERE"
+```
+
+_Example response_
+
+```json
+{
+  "items": [
+    {
+      "id": "b13e9e4b-cbad-4c27-b421-e4993a984a5c",
+      "subscription_id": "44df54b2-05e7-4884-8b13-637036c21c41",
+      "subscription_benefit_id": "4da75f02-1507-43dc-9167-10adfa4fb6b2",
+      "views": 30,
+      "clicks": 0,
+      "image_url": "https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Logotype_blue_small-Bo8grIZgHSOMQk3BnwmoT5Sds6tE7N.png",
+      "image_url_dark": null,
+      "text": "Join Polar now!",
+      "link_url": "https://polar.sh/"
+    },
+    {
+      "id": "94c1676c-db08-4489-b4b4-e25beadf2542",
+      "subscription_id": "922bcc1d-b570-42a6-be16-52c868b81576",
+      "subscription_benefit_id": "4da75f02-1507-43dc-9167-10adfa4fb6b2",
+      "views": 12,
+      "clicks": 0,
+      "image_url": "https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Frame%203-lOg2u5gntqF3RuL3cso7Upg9w03dbT.png",
+      "image_url_dark": "https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Frame%202-fcOO2r4HRJSRYthVDEK1Tf4ZTajDN1.png",
+      "text": "Hello world!",
+      "link_url": "https://polar.sh/zegl"
+    }
+  ],
+  "pagination": {
+    "total_count": 2,
+    "max_page": 1
+  }
+}
+```

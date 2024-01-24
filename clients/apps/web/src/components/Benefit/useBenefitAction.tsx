@@ -1,9 +1,10 @@
-import { ArrowForwardOutlined } from '@mui/icons-material'
+import { useDiscordAccount } from '@/hooks'
+import { ArrowForwardOutlined, LinkOutlined } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
 import { useRouter } from 'next/navigation'
 import { useOrganization } from 'polarkit/hooks'
-import { Benefit } from './Benefit'
+import { BenefitSubscriber } from './Benefit'
 
 interface BenefitAction {
   icon: OverridableComponent<SvgIconTypeMap<{}, 'svg'>> & {
@@ -13,9 +14,12 @@ interface BenefitAction {
   key: string
 }
 
-export const useBenefitActions = (benefit: Benefit): BenefitAction[] => {
+export const useBenefitActions = (
+  benefit: BenefitSubscriber,
+): BenefitAction[] => {
   const router = useRouter()
   const { data: organization } = useOrganization(benefit.organization_id ?? '')
+  const discordAccount = useDiscordAccount()
 
   switch (benefit.type) {
     case 'articles':
@@ -27,6 +31,22 @@ export const useBenefitActions = (benefit: Benefit): BenefitAction[] => {
             router.push(`/${organization?.name}`)
           },
         },
+      ]
+    case 'discord':
+      return [
+        ...(discordAccount
+          ? [
+              {
+                key: 'discord_link',
+                icon: LinkOutlined,
+                onClick: () => {
+                  window.open(
+                    `https://www.discord.com/channels/${benefit.properties.guild_id}`,
+                  )
+                },
+              },
+            ]
+          : []),
       ]
     default:
       return []

@@ -36,7 +36,7 @@ class SubscriptionBenefitGrant(RecordModel):
 
     @declared_attr
     def subscription(cls) -> Mapped["Subscription"]:
-        return relationship("Subscription", lazy="raise")
+        return relationship("Subscription", lazy="raise", back_populates="grants")
 
     user_id: Mapped[UUID] = mapped_column(
         PostgresUUID,

@@ -11,6 +11,7 @@ from polar.models import (
     SubscriptionTier,
     User,
 )
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.service.benefits import SubscriptionBenefitRetriableError
 from polar.subscription.service.subscription import SubscriptionService
@@ -26,6 +27,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     subscription_benefit_delete,
     subscription_benefit_grant,
     subscription_benefit_grant_service,
+    subscription_benefit_precondition_fulfilled,
     subscription_benefit_revoke,
     subscription_benefit_update,
     subscription_enqueue_benefits_grants,
@@ -523,3 +525,46 @@ class TestSubscriptionBenefitDelete:
             await subscription_benefit_delete(
                 job_context, grant.id, polar_worker_context
             )
+
+
+@pytest.mark.asyncio
+class TestSubscriptionBenefitPreconditionFulfilled:
+    async def test_not_existing_user(
+        self,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        session: AsyncSession,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        with pytest.raises(UserDoesNotExist):
+            await subscription_benefit_precondition_fulfilled(
+                job_context,
+                uuid.uuid4(),
+                SubscriptionBenefitType.custom,
+                polar_worker_context,
+            )
+
+    async def test_existing_user(
+        self,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        enqueue_grants_after_precondition_fulfilled_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "enqueue_grants_after_precondition_fulfilled",
+            spec=SubscriptionBenefitGrantService.enqueue_grants_after_precondition_fulfilled,
+        )
+
+        # then
+        session.expunge_all()
+
+        await subscription_benefit_precondition_fulfilled(
+            job_context, user.id, SubscriptionBenefitType.custom, polar_worker_context
+        )
+
+        enqueue_grants_after_precondition_fulfilled_mock.assert_called_once()

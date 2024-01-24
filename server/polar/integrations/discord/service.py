@@ -92,12 +92,21 @@ class DiscordBotService:
 
     async def add_member(
         self, session: AsyncSession, guild_id: str, role_id: str, user: User
-    ) -> dict[str, Any] | None:
+    ) -> None:
         oauth_account = await DiscordUserService().get_oauth_account(session, user)
-        return await bot_client.add_member(
+        await bot_client.add_member(
             guild_id=guild_id,
             discord_user_id=oauth_account.account_id,
             discord_user_access_token=oauth_account.access_token,
+            role_id=role_id,
+        )
+
+    async def remove_member_role(
+        self, guild_id: str, role_id: str, account_id: str
+    ) -> None:
+        await bot_client.remove_member_role(
+            guild_id=guild_id,
+            discord_user_id=account_id,
             role_id=role_id,
         )
 

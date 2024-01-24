@@ -13,7 +13,7 @@ See how you can sell ads ("logo in README") to your subscribers.
 
 To offer ads as a benefit to your subscribers. Go to "Subscriptions" > "Benefits" and click the plus icon to create a new benefit.
 
-As the type, select "Ad". You can sustomize the benefit decsription, and the image width and height of your ad space.
+As the type, select "Ad". You can customize the benefit description, and the image width and height of your ad space.
 
 
 

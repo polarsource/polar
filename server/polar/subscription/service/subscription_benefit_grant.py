@@ -13,7 +13,10 @@ from polar.models import (
     SubscriptionTierBenefit,
     User,
 )
-from polar.models.subscription_benefit import SubscriptionBenefitProperties
+from polar.models.subscription_benefit import (
+    SubscriptionBenefitProperties,
+    SubscriptionBenefitType,
+)
 from polar.notifications.notification import (
     NotificationType,
     SubscriptionBenefitPreconditionErrorNotificationPayload,
@@ -270,6 +273,24 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             ),
         )
 
+    async def enqueue_grants_after_precondition_fulfilled(
+        self,
+        session: AsyncSession,
+        user: User,
+        subscription_benefit_type: SubscriptionBenefitType,
+    ) -> None:
+        grants = await self._get_by_user_and_benefit_type(
+            session, user, subscription_benefit_type
+        )
+        for grant in grants:
+            if not grant.is_granted and not grant.is_revoked:
+                await enqueue_job(
+                    "subscription.subscription_benefit.grant",
+                    subscription_id=grant.subscription_id,
+                    user_id=user.id,
+                    subscription_benefit_id=grant.subscription_benefit_id,
+                )
+
     async def get_outdated_grants(
         self,
         session: AsyncSession,
@@ -323,6 +344,24 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             SubscriptionBenefitGrant.subscription_benefit_id == subscription_benefit.id,
             SubscriptionBenefitGrant.is_granted.is_(True),
             SubscriptionBenefitGrant.deleted_at.is_(None),
+        )
+
+        result = await session.execute(statement)
+        return result.scalars().all()
+
+    async def _get_by_user_and_benefit_type(
+        self,
+        session: AsyncSession,
+        user: User,
+        subscription_benefit_type: SubscriptionBenefitType,
+    ) -> Sequence[SubscriptionBenefitGrant]:
+        statement = (
+            select(SubscriptionBenefitGrant)
+            .join(SubscriptionBenefit)
+            .where(
+                SubscriptionBenefitGrant.user_id == user.id,
+                SubscriptionBenefit.type == subscription_benefit_type,
+            )
         )
 
         result = await session.execute(statement)

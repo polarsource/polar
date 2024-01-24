@@ -6,6 +6,7 @@ from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.money import get_cents_in_dollar_string
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.organization.service import organization as organization_service
 from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
@@ -206,6 +207,23 @@ async def subscription_benefit_delete(
             )
         except SubscriptionBenefitRetriableError as e:
             raise Retry(e.defer_seconds) from e
+
+
+@task("subscription.subscription_benefit.precondition_fulfilled")
+async def subscription_benefit_precondition_fulfilled(
+    ctx: JobContext,
+    user_id: uuid.UUID,
+    subscription_benefit_type: SubscriptionBenefitType,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        user = await user_service.get(session, user_id)
+        if user is None:
+            raise UserDoesNotExist(user_id)
+
+        await subscription_benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
+            session, user, subscription_benefit_type
+        )
 
 
 @task("subscription.discord_notification")

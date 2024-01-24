@@ -576,3 +576,65 @@ class TestHandlePreconditionError:
         )
 
         notification_send_to_user_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestEnqueueGrantsAfterPreconditionFulfilled:
+    async def test_required_update(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        user: User,
+        user_second: User,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        pending_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            user=user,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        session.add(pending_grant)
+
+        granted_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            user=user,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        granted_grant.set_granted()
+        session.add(granted_grant)
+
+        revoked_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            user=user,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        revoked_grant.set_revoked()
+        session.add(revoked_grant)
+
+        other_user_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            user=user_second,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        session.add(other_user_grant)
+
+        await session.commit()
+
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription_benefit_grant.enqueue_job"
+        )
+
+        # then
+        session.expunge_all()
+
+        await subscription_benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
+            session, user, subscription_benefit_organization.type
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.subscription_benefit.grant",
+            subscription_id=pending_grant.subscription_id,
+            user_id=user.id,
+            subscription_benefit_id=pending_grant.subscription_benefit_id,
+        )

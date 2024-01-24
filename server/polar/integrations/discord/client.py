@@ -52,7 +52,7 @@ class DiscordClient:
         discord_user_access_token: str,
         role_id: str,
         nick: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> None:
         endpoint = f"/guilds/{guild_id}/members/{discord_user_id}"
 
         data: dict[str, Any] = {}
@@ -70,14 +70,14 @@ class DiscordClient:
                 guild_id=guild_id,
                 discord_user_id=discord_user_id,
             )
-            return response.json()
+            return
 
         log.debug(
             "discord.add_member.already_present",
             guild_id=guild_id,
             discord_user_id=discord_user_id,
         )
-        return await self.add_member_role(
+        await self.add_member_role(
             guild_id=guild_id,
             discord_user_id=discord_user_id,
             role_id=role_id,
@@ -88,20 +88,38 @@ class DiscordClient:
         guild_id: str,
         discord_user_id: str,
         role_id: str,
-    ) -> dict[str, Any]:
+    ) -> None:
         endpoint = f"/guilds/{guild_id}/members/{discord_user_id}/roles/{role_id}"
 
-        # TODO: Need to respect (merge) roles other then what Polar controls?
         response = await self.client.put(endpoint)
         self._handle_response(response)
 
         log.info(
-            "discord.modify_member_roles.success",
+            "discord.add_member_role.success",
             guild_id=guild_id,
             discord_user_id=discord_user_id,
             role_id=role_id,
         )
-        return response.json()
+        return None
+
+    async def remove_member_role(
+        self,
+        guild_id: str,
+        discord_user_id: str,
+        role_id: str,
+    ) -> None:
+        endpoint = f"/guilds/{guild_id}/members/{discord_user_id}/roles/{role_id}"
+
+        response = await self.client.delete(endpoint)
+        self._handle_response(response)
+
+        log.info(
+            "discord.remove_member_role.success",
+            guild_id=guild_id,
+            discord_user_id=discord_user_id,
+            role_id=role_id,
+        )
+        return None
 
     def _handle_response(self, response: httpx.Response) -> httpx.Response:
         response.raise_for_status()

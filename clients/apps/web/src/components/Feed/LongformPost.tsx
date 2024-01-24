@@ -44,7 +44,10 @@ export default function LongformPost({
   const shouldRenderPaywall = article.is_preview
   const showNonSubscriberUpsell = !isSubscriber && !shouldRenderPaywall
   const showSubscriberUpsell =
-    isSubscriber && !hasPaidArticlesBenefit && !showNonSubscriberUpsell
+    isSubscriber &&
+    !hasPaidArticlesBenefit &&
+    !showNonSubscriberUpsell &&
+    !shouldRenderPaywall
 
   staggerTransition = staggerTransition ?? defaultStaggerTransition
   revealTransition = revealTransition ?? defaultRevealTransition

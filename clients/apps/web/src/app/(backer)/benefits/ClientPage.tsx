@@ -14,7 +14,7 @@ import Link from 'next/link'
 import { Avatar, Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useOrganization } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 const ClientPage = ({
   subscriptions,
@@ -23,18 +23,9 @@ const ClientPage = ({
 }) => {
   const [selectedBenefit, setSelectedBenefit] = useState<
     BenefitSubscriber | undefined
-  >()
+  >(subscriptions[0]?.subscription_tier?.benefits[0])
   const [selectedBenefitSubscription, setSelectedBenefitSubscription] =
-    useState<SubscriptionSubscriber | undefined>()
-
-  useEffect(() => {
-    if (subscriptions.length > 0) {
-      const benefit = subscriptions[0]?.subscription_tier?.benefits[0]
-      setSelectedBenefit(benefit)
-
-      setSelectedBenefitSubscription(subscriptions[0])
-    }
-  }, [subscriptions])
+    useState<SubscriptionSubscriber | undefined>(subscriptions[0])
 
   return subscriptions.length === 0 ? (
     <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">

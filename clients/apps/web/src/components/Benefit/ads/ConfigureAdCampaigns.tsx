@@ -89,14 +89,15 @@ const CreateCampaign = ({
           <div className="relative flex w-full flex-col gap-y-12 ">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-lg font-medium">Configure ad</h1>
+                <h1 className="font-medium">Configure Ad</h1>
               </div>
 
               <FormImage
                 height={benefit.properties.image_height ?? 100}
                 width={benefit.properties.image_width ?? 240}
                 name="image_url"
-                title="Image (light)"
+                title="Light Mode"
+                description="Image used for light mode"
                 required={true}
               />
 
@@ -104,7 +105,8 @@ const CreateCampaign = ({
                 height={benefit.properties.image_height ?? 100}
                 width={benefit.properties.image_width ?? 240}
                 name="image_url_dark"
-                title="Image (dark)"
+                title="Dark Mode"
+                description="Image used for dark mode"
                 required={false}
               />
 
@@ -163,14 +165,15 @@ const EditCampaign = ({
           <div className="relative flex w-full flex-col gap-y-12 md:w-2/3">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-lg font-medium">Update ad</h1>
+                <h1 className="text-lg font-medium">Update Ad</h1>
               </div>
 
               <FormImage
                 height={benefit.properties.image_height ?? 100}
                 width={benefit.properties.image_width ?? 240}
                 name="image_url"
-                title="Image (light)"
+                title="Light Mode"
+                description="Image used for light mode"
                 required={true}
               />
 
@@ -178,7 +181,8 @@ const EditCampaign = ({
                 height={benefit.properties.image_height ?? 100}
                 width={benefit.properties.image_width ?? 240}
                 name="image_url_dark"
-                title="Image (dark)"
+                title="Dark Mode"
+                description="Image used for dark mode"
                 required={false}
               />
 
@@ -194,7 +198,7 @@ const EditCampaign = ({
                   onClick={onDelete}
                   loading={deleteAd.isPending}
                 >
-                  Remove ad
+                  Remove Ad
                 </Button>
               </div>
             </form>
@@ -210,12 +214,14 @@ const FormImage = ({
   width,
   name,
   title,
+  description,
   required,
 }: {
   height: number
   width: number
   name: 'image_url' | 'image_url_dark'
   title: string
+  description?: string
   required: boolean
 }) => {
   const { control } = useFormContext<CreateAdvertisementCampaign>()
@@ -237,9 +243,14 @@ const FormImage = ({
       }}
       render={({ field }) => {
         return (
-          <FormItem>
-            <div className="flex flex-row items-center justify-between">
+          <FormItem className="flex flex-col gap-y-2">
+            <div className="flex flex-col gap-y-2">
               <FormLabel>{title}</FormLabel>
+              {description && (
+                <p className="dark:text-polar-400 text-sm text-gray-600">
+                  {description}
+                </p>
+              )}
             </div>
             <FormControl>
               <ImageUpload
@@ -262,7 +273,7 @@ const FormImage = ({
 
                   return `Expected an image with a resolution of ${expectedSizes
                     .map((v) => v.join('x'))
-                    .join(' or ')} got ${size.join('x')}`
+                    .join(' or ')}. Got ${size.join('x')}.`
                 }}
               />
             </FormControl>

@@ -79,7 +79,7 @@ const ImageUpload = ({
         }}
       >
         <input
-          style={{ visibility: 'hidden' }}
+          style={{ display: 'none', height: 0 }}
           name="file"
           ref={inputFileRef}
           type="file"
@@ -111,9 +111,9 @@ const ImageUpload = ({
                 ref={imageRef}
                 src={imagePreviewSrc}
                 className={twMerge(
-                  'flex cursor-pointer items-center justify-center rounded-sm border border-gray-100 bg-gray-50 hover:opacity-80',
+                  'flex cursor-pointer items-center justify-center rounded-xl border border-gray-100 bg-gray-50 hover:opacity-80',
                   isLoading ? 'opacity-50' : '',
-                  errorMessage ? 'border-red-800' : '',
+                  errorMessage ? 'border-red-500' : '',
                   !height && !width ? 'h-32 w-32' : '',
                 )}
                 onClick={(e) => {
@@ -135,7 +135,7 @@ const ImageUpload = ({
                 inputFileRef.current?.click()
               }}
               className={twMerge(
-                'flex cursor-pointer flex-col items-center justify-center rounded-sm border border-gray-100 bg-gray-50  hover:bg-gray-100 ',
+                'dark:bg-polar-700 dark:border-polar-600 flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100',
                 !height && !width ? 'h-32 w-32' : '',
               )}
               style={{
@@ -155,7 +155,7 @@ const ImageUpload = ({
           )}
 
           {errorMessage ? (
-            <div className="text-red-800">{errorMessage}</div>
+            <div className="text-sm text-red-500">{errorMessage}</div>
           ) : null}
         </div>
       </form>

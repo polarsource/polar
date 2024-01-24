@@ -6,8 +6,10 @@ from httpx_oauth.oauth2 import OAuth2Token
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.models import OAuthAccount, User
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from . import oauth
 from .client import DiscordClient, bot_client
@@ -56,6 +58,14 @@ class DiscordUserService:
         )
         session.add(oauth_account)
         await session.commit()
+
+        # Make sure potential Discord benefits are granted
+        await enqueue_job(
+            "subscription.subscription_benefit.precondition_fulfilled",
+            user_id=user.id,
+            subscription_benefit_type=SubscriptionBenefitType.discord,
+        )
+
         return oauth_account
 
     async def get_oauth_account(

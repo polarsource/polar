@@ -53,7 +53,7 @@ export default function ClientPage() {
         <Section>
           <SectionDescription
             title="Discord + Slack Notifications"
-            description={`Send a incoming webook to Discord or Slack when ${org.name} receives a new pledge`}
+            description={`Send a incoming webhook to Discord or Slack when ${org.name} receives a new pledge`}
           />
           <WebhookNotificationSettings org={org} />
         </Section>

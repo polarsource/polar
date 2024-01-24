@@ -5,6 +5,7 @@ import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import ConfigureAdCampaigns from '@/components/Benefit/ads/ConfigureAdCampaigns'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
+import { useAuth } from '@/hooks'
 import { DiamondOutlined } from '@mui/icons-material'
 import {
   SubscriptionSubscriber,
@@ -14,13 +15,20 @@ import Link from 'next/link'
 import { Avatar, Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useOrganization } from 'polarkit/hooks'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const ClientPage = ({
   subscriptions,
 }: {
   subscriptions: SubscriptionSubscriber[]
 }) => {
+  const { reloadUser } = useAuth()
+  // Force to reload the user to make sure we have fresh data after connecting an app
+  useEffect(() => {
+    reloadUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [selectedBenefit, setSelectedBenefit] = useState<
     BenefitSubscriber | undefined
   >(subscriptions[0]?.subscription_tier?.benefits[0])

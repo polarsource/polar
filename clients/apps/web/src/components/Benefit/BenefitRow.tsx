@@ -1,4 +1,7 @@
+import { useDiscordAccount } from '@/hooks'
 import { AutoAwesome } from '@mui/icons-material'
+import { usePathname } from 'next/navigation'
+import { getUserDiscordAuthorizeURL } from 'polarkit/auth'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -18,6 +21,8 @@ export const BenefitRow = ({
   onSelect,
 }: BenefitRowProps) => {
   const benefitActions = useBenefitActions(benefit)
+  const discordAccount = useDiscordAccount()
+  const pathname = usePathname()
 
   const handleClick = useCallback(() => {
     onSelect?.(benefit)
@@ -53,6 +58,15 @@ export const BenefitRow = ({
           </span>
           <span>Private note</span>
         </div>
+      )}
+      {benefit.type === 'discord' && !discordAccount && (
+        <Button asChild>
+          <a
+            href={getUserDiscordAuthorizeURL({ returnTo: pathname || '/feed' })}
+          >
+            Connect Discord
+          </a>
+        </Button>
       )}
       {benefitActions.length > 0 && (
         <div className="flex flex-row items-center gap-x-4">

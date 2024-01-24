@@ -1,4 +1,8 @@
-import { NotificationsOutlined, VerifiedUser } from '@mui/icons-material'
+import {
+  Announcement,
+  NotificationsOutlined,
+  VerifiedUser,
+} from '@mui/icons-material'
 import {
   MaintainerAccountReviewedNotification,
   MaintainerAccountUnderReviewNotification,
@@ -12,6 +16,7 @@ import {
   NotificationsInner,
   PledgerPledgePendingNotification,
   RewardPaidNotification,
+  SubscriptionBenefitPreconditionErrorNotification,
   TeamAdminMemberPledgedNotification,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -644,6 +649,40 @@ const MaintainerNewPaidSubscription = ({
   )
 }
 
+const SubscriptionBenefitPreconditionError = ({
+  n,
+}: {
+  n: SubscriptionBenefitPreconditionErrorNotification
+}) => {
+  const {
+    payload: {
+      subscription_tier_name,
+      subscription_benefit_description,
+      organization_name,
+      extra_context,
+    },
+  } = n
+  return (
+    <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
+      {{
+        text: (
+          <>
+            The benefit {subscription_benefit_description} from{' '}
+            {organization_name}&apos;s {subscription_tier_name} tier could not
+            be granted.{' '}
+            {extra_context && (extra_context as any).url && (
+              <InternalLink href={(extra_context as any).url}>
+                <>Solve it</>
+              </InternalLink>
+            )}
+          </>
+        ),
+        icon: <Announcement />,
+      }}
+    </Item>
+  )
+}
+
 export const Notification = ({
   n,
   setIsInNestedModal,
@@ -696,6 +735,9 @@ export const Notification = ({
 
     case 'MaintainerNewPaidSubscriptionNotification':
       return <MaintainerNewPaidSubscription n={n} />
+
+    case 'SubscriptionBenefitPreconditionErrorNotification':
+      return <SubscriptionBenefitPreconditionError n={n} />
   }
 }
 

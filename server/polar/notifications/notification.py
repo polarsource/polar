@@ -1,10 +1,10 @@
 from abc import abstractmethod
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import UUID4, BaseModel, Discriminator
+from pydantic import UUID4, BaseModel, Discriminator, Field
 
 from polar.email.renderer import get_email_renderer
 from polar.kit.money import get_cents_in_dollar_string
@@ -30,6 +30,9 @@ class NotificationType(StrEnum):
     maintainer_account_under_review = "MaintainerAccountUnderReviewNotification"
     maintainer_account_reviewed = "MaintainerAccountReviewedNotification"
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
+    subscription_benefit_precondition_error = (
+        "SubscriptionBenefitPreconditionErrorNotification"
+    )
 
 
 class NotificationPayloadBase(BaseModel):
@@ -439,6 +442,35 @@ class MaintainerNewPaidSubscriptionNotification(NotificationBase):
     payload: MaintainerNewPaidSubscriptionNotificationPayload
 
 
+class SubscriptionBenefitPreconditionErrorNotificationContextualPayload(BaseModel):
+    extra_context: dict[str, Any] = Field(default_factory=dict)
+    subject_template: str
+    body_template: str
+
+
+class SubscriptionBenefitPreconditionErrorNotificationPayload(
+    NotificationPayloadBase,
+    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+):
+    subscription_id: UUID
+    subscription_tier_name: str
+    subscription_tier_id: UUID
+    subscription_benefit_id: UUID
+    subscription_benefit_description: str
+    organization_name: str
+
+    def subject(self) -> str:
+        return self.subject_template.format(**self.model_dump())
+
+    def body(self) -> str:
+        return self.body_template.format(**self.model_dump())
+
+
+class SubscriptionBenefitPreconditionErrorNotification(NotificationBase):
+    type: Literal[NotificationType.subscription_benefit_precondition_error]
+    payload: SubscriptionBenefitPreconditionErrorNotificationPayload
+
+
 NotificationPayload = (
     MaintainerPledgeCreatedNotificationPayload
     | MaintainerPledgeConfirmationPendingNotificationPayload
@@ -452,6 +484,7 @@ NotificationPayload = (
     | MaintainerAccountUnderReviewNotificationPayload
     | MaintainerAccountReviewedNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
+    | SubscriptionBenefitPreconditionErrorNotificationPayload
 )
 
 Notification = Annotated[
@@ -466,6 +499,7 @@ Notification = Annotated[
     | TeamAdminMemberPledgedNotification
     | MaintainerAccountUnderReviewNotification
     | MaintainerAccountReviewedNotification
-    | MaintainerNewPaidSubscriptionNotification,
+    | MaintainerNewPaidSubscriptionNotification
+    | SubscriptionBenefitPreconditionErrorNotification,
     Discriminator(discriminator="type"),
 ]

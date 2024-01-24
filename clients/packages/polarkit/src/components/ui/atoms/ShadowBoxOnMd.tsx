@@ -8,7 +8,7 @@ const ShadowBoxOnMd = ({
 }: DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>) => (
   <div
     className={twMerge(
-      'md:dark:bg-polar-900 md:dark:ring-polar-800 w-full md:rounded-xl md:bg-white md:p-8 md:shadow-lg md:dark:ring-1 lg:rounded-3xl',
+      'md:dark:bg-polar-900 md:dark:ring-polar-800 w-full md:rounded-xl md:bg-white md:p-8 md:shadow-sm md:dark:ring-1 lg:rounded-3xl',
       className,
     )}
     {...props}

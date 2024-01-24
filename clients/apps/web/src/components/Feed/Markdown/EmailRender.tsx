@@ -1,6 +1,7 @@
 import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
+import EmailAd from './Ad/EmailAd'
 import Embed from './Embed/EmailEmbed'
 import Iframe from './Iframe/EmailIframe'
 import EmailMermaid from './Mermaid/EmailMermaid'
@@ -8,6 +9,7 @@ import Paywall, { EmailPaywall } from './Paywall/Paywall'
 import Poll from './Poll/Poll'
 import EmailSyntaxHighlighter from './SyntaxHighlighter/EmailSyntaxHighlighter'
 import {
+  BenefitAds,
   RenderArticle,
   markdownOpts,
   wrapStrictCreateElement,
@@ -39,10 +41,14 @@ export const opts = {
       }
       return <></>
     },
+    Ad: (args: any) => <EmailAd {...args} />,
   },
 } as const
 
-const EmailRender = (props: { article: RenderArticle }) => {
+const EmailRender = (props: {
+  article: RenderArticle
+  adsContext?: BenefitAds[]
+}) => {
   return (
     <Markdown
       options={{
@@ -50,6 +56,8 @@ const EmailRender = (props: { article: RenderArticle }) => {
 
         createElement: wrapStrictCreateElement({
           article: props.article,
+          extraAllowedCustomComponents: Object.keys(opts.overrides),
+          adsContext: props.adsContext,
         }),
       }}
     >

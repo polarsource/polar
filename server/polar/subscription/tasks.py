@@ -1,8 +1,12 @@
 import uuid
 
 from arq import Retry
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
+from polar.config import settings
 from polar.exceptions import PolarError
+from polar.kit.money import get_cents_in_dollar_string
+from polar.organization.service import organization as organization_service
 from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
@@ -202,3 +206,48 @@ async def subscription_benefit_delete(
             )
         except SubscriptionBenefitRetriableError as e:
             raise Retry(e.defer_seconds) from e
+
+
+@task("subscription.discord_notification")
+async def subscription_discord_notification(
+    ctx: JobContext,
+    subscription_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    if not settings.DISCORD_WEBHOOK_URL:
+        return
+
+    async with AsyncSessionMaker(ctx) as session:
+        subscription = await subscription_service.get(session, subscription_id)
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        tier = await subscription_tier_service.get(
+            session, subscription.subscription_tier_id
+        )
+        if not tier:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        tier_org = await organization_service.get(
+            session, tier.managing_organization_id
+        )
+        if not tier_org:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        webhook = AsyncDiscordWebhook(
+            url=settings.DISCORD_WEBHOOK_URL, content="New subscription"
+        )
+
+        embed = DiscordEmbed(
+            title=tier.name,
+            description=f"${get_cents_in_dollar_string(tier.price_amount)}",
+            color="65280",
+        )
+
+        embed.add_embed_field(
+            name="Org",
+            value=f"[{tier_org.name}](https://polar.sh/{tier_org.name})",
+        )
+
+        webhook.add_embed(embed)
+        await webhook.execute()

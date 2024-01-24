@@ -622,6 +622,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ),
         )
 
+        await enqueue_job(
+            "subscription.discord_notification", subscription_id=subscription.id
+        )
+
         return subscription
 
     async def update_subscription(

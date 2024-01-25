@@ -195,7 +195,9 @@ const SubscriptionTierBenefitsForm = ({
   className,
 }: SubscriptionTierBenefitsFormProps) => {
   const searchParams = useSearchParams()
-  const { isShown, toggle, hide } = useModal(!!searchParams?.get('type'))
+  const { isShown, toggle, hide } = useModal(
+    searchParams?.get('create_benefit') === 'true',
+  )
 
   const handleCheckedChange = useCallback(
     (benefit: Benefit) => (checked: boolean) => {
@@ -644,6 +646,7 @@ export const DiscordBenefitForm = ({
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()
+    searchParams.set('create_benefit', 'true')
     searchParams.set('type', SubscriptionBenefitType.DISCORD)
     searchParams.set('description', description)
     const returnTo = `${pathname}?${searchParams}`

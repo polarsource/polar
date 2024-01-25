@@ -211,6 +211,55 @@ export interface AdvertisementCampaignPublic {
 /**
  * 
  * @export
+ * @interface AdvertisementDisplay
+ */
+export interface AdvertisementDisplay {
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementDisplay
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementDisplay
+     */
+    image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementDisplay
+     */
+    image_url_dark?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementDisplay
+     */
+    text: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementDisplay
+     */
+    link_url: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof AdvertisementDisplay
+     */
+    height?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof AdvertisementDisplay
+     */
+    width?: number;
+}
+/**
+ * 
+ * @export
  * @interface Article
  */
 export interface Article {
@@ -1863,19 +1912,19 @@ export interface ListResourceAdvertisementCampaign {
 /**
  * 
  * @export
- * @interface ListResourceAdvertisementCampaignPublic
+ * @interface ListResourceAdvertisementDisplay
  */
-export interface ListResourceAdvertisementCampaignPublic {
+export interface ListResourceAdvertisementDisplay {
     /**
      * 
-     * @type {Array<AdvertisementCampaignPublic>}
-     * @memberof ListResourceAdvertisementCampaignPublic
+     * @type {Array<AdvertisementDisplay>}
+     * @memberof ListResourceAdvertisementDisplay
      */
-    items?: Array<AdvertisementCampaignPublic>;
+    items?: Array<AdvertisementDisplay>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceAdvertisementCampaignPublic
+     * @memberof ListResourceAdvertisementDisplay
      */
     pagination: Pagination;
 }

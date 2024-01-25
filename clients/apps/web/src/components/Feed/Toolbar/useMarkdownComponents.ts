@@ -11,7 +11,7 @@ export const useMarkdownComponents = () => {
         ? wrapSelectionWithText(['<Paywall>', '</Paywall>'])
         : insertTextAtCursor('<Paywall></Paywall>')
     }
-  }, [wrapSelectionWithText])
+  }, [wrapSelectionWithText, insertTextAtCursor])
 
   const insertSubscribeNow = useCallback(() => {
     if (ref.current) {
@@ -19,8 +19,15 @@ export const useMarkdownComponents = () => {
     }
   }, [wrapSelectionWithText])
 
+  const insertAd = useCallback(() => {
+    if (ref.current) {
+      insertTextAtCursor('<Ad subscriptionBenefitId="ADD_BENEFIT_ID_HERE" />')
+    }
+  }, [insertTextAtCursor])
+
   return {
     insertPaywall,
     insertSubscribeNow,
+    insertAd,
   }
 }

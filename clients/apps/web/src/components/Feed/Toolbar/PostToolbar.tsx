@@ -11,12 +11,14 @@ interface PostToolbarProps {
   article?: Article
   previewAs: string
   onPreviewAsChange: (value: string) => void
+  canCreate?: boolean
 }
 
 export const PostToolbar = ({
   article,
   previewAs,
   onPreviewAsChange,
+  canCreate,
 }: PostToolbarProps) => {
   const isPublished = Boolean(
     article &&
@@ -35,7 +37,11 @@ export const PostToolbar = ({
           <TabsTrigger value="preview" size="small">
             Preview
           </TabsTrigger>
-          <TabsTrigger value="settings" size="small">
+          <TabsTrigger
+            value="settings"
+            size="small"
+            disabled={canCreate === false}
+          >
             {isPublished ? 'Settings' : 'Publish'}
           </TabsTrigger>
         </TabsList>

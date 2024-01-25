@@ -9,12 +9,14 @@ interface MarkdownEditorProps {
   className?: string
   value: string
   autoFocus?: boolean
+  disabled?: boolean
 }
 
 export const MarkdownEditor = ({
   value,
   className,
   autoFocus,
+  disabled,
 }: MarkdownEditorProps) => {
   const {
     ref,
@@ -49,6 +51,7 @@ export const MarkdownEditor = ({
       onPaste={handlePaste}
       onKeyDown={handleKeyDown}
       autoFocus={autoFocus}
+      disabled={disabled}
     />
   )
 }

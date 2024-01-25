@@ -3,8 +3,6 @@ import { useContext, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PostEditorContext } from '../Feed/PostEditor'
 
-const uploadingText = 'Uploading...'
-
 interface MarkdownEditorProps {
   className?: string
   value: string
@@ -19,7 +17,7 @@ export const MarkdownEditor = ({
   disabled,
 }: MarkdownEditorProps) => {
   const {
-    ref,
+    bodyRef,
     handleChange,
     handleDrag,
     handleDragOver,
@@ -29,14 +27,14 @@ export const MarkdownEditor = ({
   } = useContext(PostEditorContext)
 
   useEffect(() => {
-    if (ref?.current) {
-      ref.current.style.height = ref.current.scrollHeight + 'px'
+    if (bodyRef?.current) {
+      bodyRef.current.style.height = bodyRef.current.scrollHeight + 'px'
     }
   }, [value])
 
   return (
     <TextArea
-      ref={ref}
+      ref={bodyRef}
       className={twMerge(
         'h-screen min-h-screen rounded-3xl p-6 text-lg',
         className,

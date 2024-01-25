@@ -11,7 +11,8 @@ import {
 const uploadingText = 'Uploading...'
 
 export interface EditorHelpers {
-  ref: React.RefObject<HTMLTextAreaElement>
+  bodyRef: React.RefObject<HTMLTextAreaElement>
+  titleRef: React.RefObject<HTMLInputElement>
   insertTextAtCursor: (text: string) => void
   wrapSelectionWithText: (text: [string, string]) => void
   handleChange: ChangeEventHandler<HTMLTextAreaElement>
@@ -26,6 +27,7 @@ export const useEditorHelpers = (
   onChange?: (value: string) => void,
 ): EditorHelpers => {
   const ref = useRef<HTMLTextAreaElement>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
 
   const getTextSelection = useCallback((): [string, string, string] | null => {
     if (!ref.current) {
@@ -284,6 +286,24 @@ export const useEditorHelpers = (
         }
         return
       }
+
+      // Arrow up
+      if (e.key === 'ArrowUp') {
+        if (!ref.current) {
+          return
+        }
+
+        // If on top row of document, move focus to title
+        const selectionStart = ref.current.selectionStart
+        const newLine = ref.current.value.indexOf('\n')
+
+        if (selectionStart <= newLine) {
+          e.preventDefault()
+          if (titleRef.current) {
+            titleRef.current.focus()
+          }
+        }
+      }
     },
     [insertTextAtCursor, wrapSelectionWithText, getTextSelection],
   )
@@ -297,7 +317,8 @@ export const useEditorHelpers = (
   )
 
   return {
-    ref,
+    bodyRef: ref,
+    titleRef,
     insertTextAtCursor,
     wrapSelectionWithText,
     handleChange,

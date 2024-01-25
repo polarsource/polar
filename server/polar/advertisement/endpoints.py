@@ -25,6 +25,7 @@ from polar.tags.api import Tags
 from .schemas import (
     AdvertisementCampaign,
     AdvertisementCampaignPublic,
+    AdvertisementDisplay,
     CreateAdvertisementCampaign,
     EditAdvertisementCampaign,
 )
@@ -115,14 +116,14 @@ async def search_campaigns(
 
 @router.get(
     "/advertisements/display/search",
-    response_model=ListResource[AdvertisementCampaignPublic],
+    response_model=ListResource[AdvertisementDisplay],
     tags=[Tags.PUBLIC],
     status_code=200,
 )
 async def search_display(
     subscription_benefit_id: UUID,
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[AdvertisementCampaignPublic]:
+) -> ListResource[AdvertisementDisplay]:
     if subscription_benefit_id is None:
         raise BadRequest("No search criteria specified")
 
@@ -131,8 +132,26 @@ async def search_display(
         subscription_benefit_id=subscription_benefit_id,
     )
 
+    benefit = await subscription_benefit_service.get(session, subscription_benefit_id)
+    if not benefit:
+        raise ResourceNotFound()
+
+    def withDimensions(a: AdvertisementDisplay) -> AdvertisementDisplay:
+        h = benefit.properties.get("image_height", 100)
+        w = benefit.properties.get("image_width", 100)
+        a.height = h if isinstance(h, int) else 100
+        a.width = w if isinstance(w, int) else 100
+        return a
+
     return ListResource(
-        items=[AdvertisementCampaignPublic.model_validate(ad) for ad in ads],
+        items=[
+            withDimensions(
+                AdvertisementDisplay.model_validate(
+                    ad,
+                )
+            )
+            for ad in ads
+        ],
         pagination=Pagination(total_count=len(ads), max_page=1),
     )
 

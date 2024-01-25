@@ -7,7 +7,7 @@ import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import { useCreateArticle } from 'polarkit/hooks'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -37,6 +37,21 @@ const ClientPage = () => {
     )
   }
 
+  useEffect(() => {
+    const savePost = (e: KeyboardEvent) => {
+      if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        handleContinue()
+      }
+    }
+
+    window.addEventListener('keydown', savePost)
+
+    return () => {
+      window.removeEventListener('keydown', savePost)
+    }
+  }, [handleContinue])
+
   if (!org) {
     return null
   }
@@ -44,11 +59,16 @@ const ClientPage = () => {
   return (
     <Tabs className="flex flex-col" defaultValue="edit">
       <DashboardTopbar title="Create Post" isFixed useOrgFromURL>
-        <Button onClick={handleContinue} disabled={article.title.length < 1}>
+        <Button
+          onClick={handleContinue}
+          disabled={article.title.length < 1}
+          loading={create.isPending}
+        >
           Save
         </Button>
       </DashboardTopbar>
       <PostEditor
+        disabled={create.isPending}
         title={article.title}
         body={article.body}
         onTitleChange={(title) => setArticle((a) => ({ ...a, title }))}

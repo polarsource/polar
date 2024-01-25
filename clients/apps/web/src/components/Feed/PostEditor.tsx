@@ -48,6 +48,7 @@ interface PostEditorProps {
   onTitleChange: (title: string) => void
   onBodyChange: (body: string) => void
   previewProps: React.ComponentProps<typeof LongformPost>
+  disabled?: boolean
 }
 
 export const PostEditor = ({
@@ -57,6 +58,7 @@ export const PostEditor = ({
   onTitleChange,
   onBodyChange,
   previewProps,
+  disabled,
 }: PostEditorProps) => {
   const [previewAs, setPreviewAs] = useState<string>('premium')
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -84,10 +86,12 @@ export const PostEditor = ({
                     placeholder="Title"
                     value={title}
                     onChange={(e) => onTitleChange(e.target.value)}
+                    disabled={disabled}
                   />
                   <MarkdownEditor
                     className="focus:ring-none h-full overflow-visible rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
                     value={body}
+                    disabled={disabled}
                   />
                 </div>
               </TabsContent>

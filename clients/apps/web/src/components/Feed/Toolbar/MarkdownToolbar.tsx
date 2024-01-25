@@ -9,7 +9,8 @@ import {
 import { useMarkdownComponents } from './useMarkdownComponents'
 
 export const MarkdownToolbar = () => {
-  const { insertPaywall, insertSubscribeNow } = useMarkdownComponents()
+  const { insertPaywall, insertSubscribeNow, insertAd } =
+    useMarkdownComponents()
 
   return (
     <>
@@ -21,9 +22,17 @@ export const MarkdownToolbar = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={insertPaywall}>Paywall</DropdownMenuItem>
-          <DropdownMenuItem onClick={insertSubscribeNow}>
+          <DropdownMenuItem onClick={insertPaywall} className="cursor-pointer">
+            Paywall
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={insertSubscribeNow}
+            className="cursor-pointer"
+          >
             Subscription Upsell
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={insertAd} className="cursor-pointer">
+            Ad
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -30,6 +30,11 @@ class AdvertisementCampaignPublic(Schema):
     link_url: HttpUrl
 
 
+class AdvertisementDisplay(AdvertisementCampaignPublic):
+    height: int | None = None
+    width: int | None = None
+
+
 class CreateAdvertisementCampaign(Schema):
     subscription_id: UUID
     subscription_benefit_id: UUID

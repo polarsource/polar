@@ -49,6 +49,7 @@ interface PostEditorProps {
   onBodyChange: (body: string) => void
   previewProps: React.ComponentProps<typeof LongformPost>
   disabled?: boolean
+  canCreate?: boolean
 }
 
 export const PostEditor = ({
@@ -59,6 +60,7 @@ export const PostEditor = ({
   onBodyChange,
   previewProps,
   disabled,
+  canCreate,
 }: PostEditorProps) => {
   const [previewAs, setPreviewAs] = useState<string>('premium')
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -73,6 +75,7 @@ export const PostEditor = ({
         article={article}
         previewAs={previewAs}
         onPreviewAsChange={setPreviewAs}
+        canCreate={canCreate}
       />
       <div className="dark:bg-polar-950 h-full bg-white">
         <DashboardBody className="mt-0 h-full">

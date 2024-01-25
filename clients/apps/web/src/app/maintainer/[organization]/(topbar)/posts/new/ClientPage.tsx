@@ -22,8 +22,10 @@ const ClientPage = () => {
   const router = useRouter()
   const create = useCreateArticle()
 
+  const canCreate = org && article.title.length > 0
+
   const handleContinue = async () => {
-    if (!org || article.title.length < 1) {
+    if (!canCreate) {
       return
     }
 
@@ -52,12 +54,33 @@ const ClientPage = () => {
     }
   }, [handleContinue])
 
+  const onTabChange = async (tab: string) => {
+    if (tab === 'settings') {
+      if (!canCreate) {
+        return
+      }
+
+      const created = await create.mutateAsync({
+        ...article,
+        organization_id: org.id,
+      })
+
+      router.replace(
+        `/maintainer/${created.organization.name}/posts/${created.slug}#settings`,
+      )
+    }
+  }
+
   if (!org) {
     return null
   }
 
   return (
-    <Tabs className="flex flex-col" defaultValue="edit">
+    <Tabs
+      className="flex flex-col"
+      defaultValue="edit"
+      onValueChange={onTabChange}
+    >
       <DashboardTopbar title="Create Post" isFixed useOrgFromURL>
         <Button
           onClick={handleContinue}
@@ -69,6 +92,7 @@ const ClientPage = () => {
       </DashboardTopbar>
       <PostEditor
         disabled={create.isPending}
+        canCreate={canCreate}
         title={article.title}
         body={article.body}
         onTitleChange={(title) => setArticle((a) => ({ ...a, title }))}

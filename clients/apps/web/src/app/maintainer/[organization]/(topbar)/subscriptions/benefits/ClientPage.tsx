@@ -38,7 +38,9 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     100,
   )
   const searchParams = useSearchParams()
-  const { isShown, toggle, hide } = useModal(!!searchParams?.get('type'))
+  const { isShown, toggle, hide } = useModal(
+    searchParams?.get('create_benefit') === 'true',
+  )
 
   const benefitSubscriptionTiers = useMemo(
     () =>

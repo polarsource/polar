@@ -49,7 +49,7 @@ const Split = (props: {
     .map((p) => p.amount.amount)
     .reduce((a, b) => a + b, 0)
 
-  const polarShare = pledgeSum * 0.1
+  const polarShare = pledgeSum * 0.05
   const pledgeSumToSplit = pledgeSum - polarShare
 
   const isFixed = (share: number | undefined): boolean => {

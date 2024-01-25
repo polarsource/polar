@@ -36,7 +36,12 @@ const EmailAd = (props: {
                 srcSet={`/embed/ad?id=${ad.id}&dark=1`}
               />
             ) : null}
-            <img src={`/embed/ad?id=${ad.id}`} alt={ad.text} />
+            <img
+              src={`/embed/ad?id=${ad.id}`}
+              alt={ad.text}
+              height={ad.height}
+              width={ad.width}
+            />
           </picture>
         </a>
       </div>

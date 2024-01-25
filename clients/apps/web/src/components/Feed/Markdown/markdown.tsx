@@ -1,4 +1,4 @@
-import { AdvertisementCampaignPublic, Article } from '@polar-sh/sdk'
+import { AdvertisementDisplay, Article } from '@polar-sh/sdk'
 import React, { Fragment } from 'react'
 
 export type RenderArticle = Pick<
@@ -14,7 +14,7 @@ export type RenderArticle = Pick<
 
 export type BenefitAds = {
   benefitId: string
-  ads: Array<AdvertisementCampaignPublic>
+  ads: Array<AdvertisementDisplay>
 }
 
 // strictCreateElement removes unsupported types and attributes

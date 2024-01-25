@@ -21,7 +21,7 @@ import type {
   EditAdvertisementCampaign,
   HTTPValidationError,
   ListResourceAdvertisementCampaign,
-  ListResourceAdvertisementCampaignPublic,
+  ListResourceAdvertisementDisplay,
 } from '../models/index';
 
 export interface AdvertisementsApiCreateCampaignRequest {
@@ -266,7 +266,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
     /**
      * Search Display
      */
-    async searchDisplayRaw(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementCampaignPublic>> {
+    async searchDisplayRaw(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementDisplay>> {
         if (requestParameters.subscriptionBenefitId === null || requestParameters.subscriptionBenefitId === undefined) {
             throw new runtime.RequiredError('subscriptionBenefitId','Required parameter requestParameters.subscriptionBenefitId was null or undefined when calling searchDisplay.');
         }
@@ -300,7 +300,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
     /**
      * Search Display
      */
-    async searchDisplay(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAdvertisementCampaignPublic> {
+    async searchDisplay(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAdvertisementDisplay> {
         const response = await this.searchDisplayRaw(requestParameters, initOverrides);
         return await response.value();
     }

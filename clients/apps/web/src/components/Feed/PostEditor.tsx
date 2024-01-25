@@ -1,7 +1,7 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Article } from '@polar-sh/sdk'
 import { TabsContent } from 'polarkit/components/ui/atoms'
-import React, { PropsWithChildren, useState } from 'react'
+import React, { PropsWithChildren, useContext, useState } from 'react'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
 import { StaggerReveal } from '../Shared/StaggerReveal'
@@ -11,7 +11,8 @@ import { PostToolbar } from './Toolbar/PostToolbar'
 import { EditorHelpers, useEditorHelpers } from './useEditorHelpers'
 
 const defaultPostEditorContext: EditorHelpers = {
-  ref: { current: null },
+  bodyRef: { current: null },
+  titleRef: { current: null },
   insertTextAtCursor: (text: string) => {},
   wrapSelectionWithText: ([before, after]: [string, string]) => {},
   handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {},
@@ -82,21 +83,12 @@ export const PostEditor = ({
           <div className="flex h-full flex-row">
             <div className="flex h-full w-full flex-col">
               <TabsContent className="flex-grow" value="edit" tabIndex={-1}>
-                <div className="flex h-full flex-col gap-y-8 py-8">
-                  <input
-                    className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"
-                    autoFocus
-                    placeholder="Title"
-                    value={title}
-                    onChange={(e) => onTitleChange(e.target.value)}
-                    disabled={disabled}
-                  />
-                  <MarkdownEditor
-                    className="focus:ring-none h-full overflow-visible rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
-                    value={body}
-                    disabled={disabled}
-                  />
-                </div>
+                <Editor
+                  title={title}
+                  body={body}
+                  onTitleChange={onTitleChange}
+                  disabled={disabled}
+                />
               </TabsContent>
               <TabsContent value="preview">
                 <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative my-8 flex h-full min-h-screen w-full flex-col items-center rounded-[3rem] md:bg-white md:p-12 md:shadow-xl dark:md:border">
@@ -123,5 +115,44 @@ export const PostEditor = ({
         </DashboardBody>
       </div>
     </PostEditorContextProvider>
+  )
+}
+
+type EditorProps = Pick<
+  PostEditorProps,
+  'title' | 'body' | 'onTitleChange' | 'disabled'
+>
+
+const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
+  const { titleRef, bodyRef } = useContext(PostEditorContext)
+
+  const onTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Move focus to body
+    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      if (bodyRef.current) {
+        e.preventDefault()
+        bodyRef.current.focus()
+      }
+    }
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-y-8 py-8">
+      <input
+        className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"
+        autoFocus
+        placeholder="Title"
+        value={title}
+        onChange={(e) => onTitleChange(e.target.value)}
+        disabled={disabled}
+        ref={titleRef}
+        onKeyDown={onTitleKeyDown}
+      />
+      <MarkdownEditor
+        className="focus:ring-none h-full overflow-visible rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
+        value={body}
+        disabled={disabled}
+      />
+    </div>
   )
 }

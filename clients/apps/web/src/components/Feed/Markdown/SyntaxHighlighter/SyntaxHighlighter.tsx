@@ -70,7 +70,7 @@ const SyntaxHighlighter = (props: {
   const resolvedLanguage =
     language && Prism.languages[language] ? language : 'plain'
   const languageGrammar = Prism.languages[resolvedLanguage]
-  const lines = code.match(/[^\r\n]+/g) ?? []
+  const lines = code.split(/\r?\n/) ?? []
   const tokensPerLine = lines.map((line) =>
     Prism.tokenize(line, languageGrammar),
   )

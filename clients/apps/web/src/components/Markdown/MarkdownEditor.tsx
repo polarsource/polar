@@ -26,19 +26,30 @@ export const MarkdownEditor = ({
     handlePaste,
   } = useContext(PostEditorContext)
 
-  useEffect(() => {
+  const resizeTextarea = () => {
     if (bodyRef?.current) {
-      bodyRef.current.style.height = bodyRef.current.scrollHeight + 'px'
+      bodyRef.current.style.height = bodyRef.current.scrollHeight + 50 + 'px'
     }
+  }
+
+  useEffect(() => {
+    resizeTextarea()
   }, [value])
+
+  useEffect(() => {
+    window.addEventListener('resize', resizeTextarea)
+    return () => {
+      window.removeEventListener('resize', resizeTextarea)
+    }
+  }, [])
 
   return (
     <TextArea
       ref={bodyRef}
-      className={twMerge(
-        'h-screen min-h-screen rounded-3xl p-6 text-lg',
-        className,
-      )}
+      className={twMerge('rounded-3xl p-6 text-lg', className)}
+      style={{
+        minHeight: '100vw',
+      }}
       placeholder="# Hello World!"
       resizable={false}
       value={value}

@@ -76,7 +76,7 @@ const SyntaxHighlighter = (props: {
   )
 
   return (
-    <pre className="not-prose" style={{ ...theme.base }}>
+    <pre style={{ ...theme.base }}>
       <code>
         {tokensPerLine.map((tokensForLine, lineIndex) => (
           <p key={lineIndex} className="m-0">

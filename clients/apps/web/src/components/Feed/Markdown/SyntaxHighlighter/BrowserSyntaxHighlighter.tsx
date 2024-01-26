@@ -21,11 +21,13 @@ const BrowserSyntaxHighlighter = (props: {
 
   return (
     <div className="relative my-2 w-full">
-      <SyntaxHighlighter
-        language={language}
-        code={code}
-        theme={syntaxHighlighterTheme}
-      />
+      <div className="not-prose">
+        <SyntaxHighlighter
+          language={language}
+          code={code}
+          theme={syntaxHighlighterTheme}
+        />
+      </div>
       <Button
         size="icon"
         variant="secondary"

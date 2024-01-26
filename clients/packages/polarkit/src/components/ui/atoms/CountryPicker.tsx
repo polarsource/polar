@@ -15,7 +15,7 @@ import {
   CommandItem,
 } from '../command'
 import { Popover, PopoverContent, PopoverTrigger } from '../popover'
-import Button from './Button'
+import { RawButton } from './Button'
 
 const countryWhiteList = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
 
@@ -45,11 +45,10 @@ const CountryPicker = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <RawButton
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          raw={true}
           className="w-full"
         >
           <div className="inline-flex w-full items-center justify-between">
@@ -62,7 +61,7 @@ const CountryPicker = ({
             )}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </div>
-        </Button>
+        </RawButton>
       </PopoverTrigger>
       <PopoverContent
         className="-mt-10 w-[400px] p-0 lg:min-w-[600px]"

@@ -36,10 +36,10 @@ const buttonVariants = cva(
 
 const Button = React.forwardRef<
   HTMLButtonElement,
-  ButtonProps & { loading?: boolean; fullWidth?: boolean; raw?: boolean }
+  ButtonProps & { loading?: boolean; fullWidth?: boolean }
 >(
   (
-    { className, variant, size, loading, fullWidth, children, raw, ...props },
+    { className, variant, size, loading, fullWidth, children, ...props },
     ref,
   ) => {
     return (
@@ -61,13 +61,7 @@ const Button = React.forwardRef<
             </span>
           </>
         ) : (
-          <>
-            {raw ? (
-              <>{children}</>
-            ) : (
-              <div className="flex flex-row items-center">{children}</div>
-            )}
-          </>
+          <div className="flex flex-row items-center">{children}</div>
         )}
       </ShadcnButton>
     )
@@ -111,3 +105,17 @@ const LoadingSpinner = (props: {
     </>
   )
 }
+
+export const RawButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, children, ...props }, ref) => {
+    return (
+      <ShadcnButton
+        className={twMerge(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      >
+        {children}
+      </ShadcnButton>
+    )
+  },
+)

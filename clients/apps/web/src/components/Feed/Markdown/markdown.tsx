@@ -34,8 +34,6 @@ export const wrapStrictCreateElement = (args: {
   props: JSX.IntrinsicAttributes | any,
   children: any,
 ) => JSX.Element) => {
-  console.log(args.extraAllowedCustomComponents)
-
   const strictCreateElement = (
     type:
       | string

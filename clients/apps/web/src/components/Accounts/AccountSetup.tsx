@@ -171,7 +171,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                                         ]
                                       }
                                     </div>
-                                    <div className="dark:text-polar-500 text-sm text-gray-700">
+                                    <div className="dark:text-polar-500 text-sm text-gray-500">
                                       <AccountAssociations
                                         account={account}
                                         prefix="Used by"
@@ -188,7 +188,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                     <Button
                       type="submit"
                       variant="secondary"
-                      className="w-full whitespace-nowrap sm:w-1/4"
+                      className="w-full sm:w-1/4"
                       loading={loading}
                       disabled={loading}
                     >
@@ -202,7 +202,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                 </Form>
               )}
               <Button
-                className="w-full whitespace-nowrap sm:w-auto sm:grow"
+                className="w-full sm:w-auto sm:grow"
                 onClick={onAccountSetup}
                 disabled={loading}
               >
@@ -231,7 +231,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
             <>
               <p>You need to continue the setup of your payout account.</p>
               <Button
-                className="self-start whitespace-nowrap sm:w-auto sm:grow"
+                className="self-start sm:w-auto sm:grow"
                 onClick={() => goToOnboarding(currentAccount)}
               >
                 Continue setup
@@ -242,7 +242,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
           <>
             <p>Your payout account is setup and ready to receive transfers!</p>
             <Button
-              className="self-start whitespace-nowrap sm:w-auto sm:grow"
+              className="self-start sm:w-auto sm:grow"
               onClick={() => goToDashboard(currentAccount)}
             >
               Open dashboard

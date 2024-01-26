@@ -157,7 +157,7 @@ const DashboardSidebar = () => {
   )
 }
 
-const DashboardLayout = (props: PropsWithChildren) => {
+const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
   const { hydrated } = useAuth()
 
   if (!hydrated) {
@@ -171,8 +171,16 @@ const DashboardLayout = (props: PropsWithChildren) => {
         <div className="hidden md:flex">
           <DashboardSidebar />
         </div>
-        <div className="dark:bg-polar-950 bg-gray-75 relative flex h-full w-full translate-x-0 flex-row overflow-hidden pt-8 md:pt-0">
-          <main className={twMerge('relative w-full overflow-auto md:mt-20')}>
+        <div
+          className={twMerge(
+            'dark:bg-polar-950 bg-gray-75 relative flex h-full w-full translate-x-0 flex-row overflow-hidden pt-8 md:pt-0',
+            props.className,
+          )}
+        >
+          {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
+          <main
+            className={twMerge('relative w-full md:mt-20 md:overflow-auto')}
+          >
             <Suspense>{props.children}</Suspense>
           </main>
         </div>

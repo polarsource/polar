@@ -97,7 +97,7 @@ const ClientPage = () => {
     window && window.location.hash === '#settings' ? 'settings' : 'edit'
 
   return (
-    <Tabs className="flex h-full flex-col" defaultValue={defaultTab}>
+    <Tabs className="flex flex-col" defaultValue={defaultTab}>
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
           <span className="dark:text-polar-500 px-4 text-sm text-gray-500">

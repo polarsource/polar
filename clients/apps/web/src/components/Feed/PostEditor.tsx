@@ -78,10 +78,10 @@ export const PostEditor = ({
         onPreviewAsChange={setPreviewAs}
         canCreate={canCreate}
       />
-      <div className="dark:bg-polar-950 h-full bg-white">
-        <DashboardBody className="mt-0 h-full">
-          <div className="flex h-full flex-row">
-            <div className="flex h-full w-full flex-col">
+      <div>
+        <DashboardBody className="mt-0 !p-0">
+          <div className="flex flex-row">
+            <div className="flex w-full flex-col px-4 pb-6 sm:px-6 md:px-8">
               <TabsContent className="flex-grow" value="edit" tabIndex={-1}>
                 <Editor
                   title={title}
@@ -91,7 +91,7 @@ export const PostEditor = ({
                 />
               </TabsContent>
               <TabsContent value="preview">
-                <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative my-8 flex h-full min-h-screen w-full flex-col items-center rounded-[3rem] md:bg-white md:p-12 md:shadow-xl dark:md:border">
+                <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] md:bg-white md:p-12 md:shadow-xl dark:md:border">
                   <LongformPost
                     {...previewProps}
                     animation={false}
@@ -137,7 +137,7 @@ const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
   }
 
   return (
-    <div className="flex h-full flex-col gap-y-8 py-8">
+    <div className="flex flex-col gap-y-8 py-8">
       <input
         className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"
         autoFocus
@@ -149,7 +149,7 @@ const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
         onKeyDown={onTitleKeyDown}
       />
       <MarkdownEditor
-        className="focus:ring-none h-full overflow-visible rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
+        className="focus:ring-none rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
         value={body}
         disabled={disabled}
       />

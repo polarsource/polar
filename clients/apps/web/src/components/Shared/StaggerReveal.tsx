@@ -27,13 +27,17 @@ const staggerRevealVariants = {
   },
 }
 
-export interface StaggerRevealProps extends HTMLMotionProps<'div'> {
+type MotionElement = 'div' | 'article'
+
+export interface StaggerRevealProps extends HTMLMotionProps<MotionElement> {
+  as?: MotionElement
   transition?: Partial<Transition>
 }
 
-export const StaggerReveal = ({ transition, ...props }: StaggerRevealProps) => {
+export const StaggerReveal = ({ transition, as, ...props }: StaggerRevealProps) => {
+  const Component = motion[as ?? 'div']
   return (
-    <motion.div
+    <Component
       variants={{
         ...revealVariants,
         visible: {
@@ -51,9 +55,10 @@ export const StaggerReveal = ({ transition, ...props }: StaggerRevealProps) => {
 
 StaggerReveal.displayName = 'StaggerReveal'
 
-StaggerReveal.Child = ({ transition, ...props }: StaggerRevealProps) => {
+StaggerReveal.Child = ({ transition, as, ...props }: StaggerRevealProps) => {
+  const Component = motion[as ?? 'div']
   return (
-    <motion.div
+    <Component
       variants={{
         ...staggerRevealVariants,
         visible: {

@@ -36,10 +36,10 @@ const buttonVariants = cva(
 
 const Button = React.forwardRef<
   HTMLButtonElement,
-  ButtonProps & { loading?: boolean; fullWidth?: boolean }
+  ButtonProps & { loading?: boolean; fullWidth?: boolean; raw?: boolean }
 >(
   (
-    { className, variant, size, loading, fullWidth, children, ...props },
+    { className, variant, size, loading, fullWidth, children, raw, ...props },
     ref,
   ) => {
     return (
@@ -61,12 +61,19 @@ const Button = React.forwardRef<
             </span>
           </>
         ) : (
-          <div className="flex flex-row items-center">{children}</div>
+          <>
+            {raw ? (
+              <>{children}</>
+            ) : (
+              <div className="flex flex-row items-center">{children}</div>
+            )}
+          </>
         )}
       </ShadcnButton>
     )
   },
 )
+
 Button.displayName = ShadcnButton.displayName
 
 export default Button

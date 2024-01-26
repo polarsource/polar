@@ -1,17 +1,18 @@
-'use client'
-
 import { ContentPasteOutlined } from '@mui/icons-material'
-import { useTheme } from 'next-themes'
 import { Button } from 'polarkit/components/ui/atoms'
-import ReactSyntaxHighlighter from 'react-syntax-highlighter'
-import { polarStyleDark, polarStyleLight } from './styles'
+
+import { useTheme } from 'next-themes'
+import SyntaxHighlighter from './SyntaxHighlighter'
+import { polarDark, polarLight } from './themes'
 
 const BrowserSyntaxHighlighter = (props: {
   language: string | undefined
   children: string
 }) => {
+  const { language, children: code } = props
   const { resolvedTheme } = useTheme()
-  const style = resolvedTheme === 'dark' ? polarStyleDark : polarStyleLight
+  const syntaxHighlighterTheme =
+    resolvedTheme === 'dark' ? polarDark : polarLight
 
   // Copy the code contents to the clipboard
   const handleCopy = () => {
@@ -20,18 +21,11 @@ const BrowserSyntaxHighlighter = (props: {
 
   return (
     <div className="relative my-2 w-full">
-      <ReactSyntaxHighlighter
-        language={props.language}
-        style={style}
-        lineNumberStyle={{
-          paddingRight: '1.5rem',
-          opacity: '.2',
-          fontSize: '.7rem',
-        }}
-        showLineNumbers
-      >
-        {props.children}
-      </ReactSyntaxHighlighter>
+      <SyntaxHighlighter
+        language={language}
+        code={code}
+        theme={syntaxHighlighterTheme}
+      />
       <Button
         size="icon"
         variant="secondary"

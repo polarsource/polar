@@ -111,7 +111,7 @@ const ClientPage = () => {
               ) : null}
             </div>
           </div>
-          <div className="sticky top-8 flex flex-shrink-0 flex-col gap-y-8 xl:w-1/3">
+          <div className="top-8 flex flex-shrink-0 flex-col gap-y-8 xl:sticky xl:w-1/3">
             <div className="flex w-full flex-grow flex-row items-center justify-between">
               <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Analytics

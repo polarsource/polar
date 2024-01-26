@@ -35,7 +35,7 @@ exports[`basic 1`] = `
          
         <a
           class="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-          href="/pydantic/subscriptions"
+          href="http://127.0.0.1:3000/pydantic/subscriptions"
         >
           Pydantic
         </a>

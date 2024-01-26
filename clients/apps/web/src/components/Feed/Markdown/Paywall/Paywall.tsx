@@ -1,5 +1,5 @@
 import { Article } from '@polar-sh/sdk'
-import Link from 'next/link'
+import { CONFIG } from 'polarkit'
 import { twMerge } from 'tailwind-merge'
 
 const Paywall = (props: {
@@ -59,12 +59,13 @@ const BasePaywall = (props: {
         {props.isSubscriber ? (
           <p>
             This section is for premium subscribers only. Upgrade{' '}
-            <Link
+            {/* Use real <a> tag and absolute URL so it works properly in email rendering */}
+            <a
               className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-              href={`/${props.article.organization.name}/subscriptions`}
+              href={`${CONFIG.FRONTEND_BASE_URL}/${props.article.organization.name}/subscriptions`}
             >
               your subscription
-            </Link>{' '}
+            </a>{' '}
             to a tier with the &quot;
             {props.paidArticlesBenefitName ?? 'Premium Articles'}&quot; benefit
             to get access to it.
@@ -72,13 +73,14 @@ const BasePaywall = (props: {
         ) : (
           <p>
             This section is for premium subscribers only. Subscribe to{' '}
-            <Link
+            {/* Use real <a> tag and absolute URL so it works properly in email rendering */}
+            <a
               className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-              href={`/${props.article.organization.name}/subscriptions`}
+              href={`${CONFIG.FRONTEND_BASE_URL}/${props.article.organization.name}/subscriptions`}
             >
               {props.article.organization.pretty_name ||
                 props.article.organization.name}
-            </Link>{' '}
+            </a>{' '}
             to get access to it.
           </p>
         )}

@@ -28,7 +28,7 @@ export const MarkdownEditor = ({
 
   const resizeTextarea = () => {
     if (bodyRef?.current) {
-      bodyRef.current.style.height = bodyRef.current.scrollHeight + 50 + 'px'
+      bodyRef.current.style.height = bodyRef.current.scrollHeight + 'px'
     }
   }
 

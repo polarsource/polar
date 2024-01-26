@@ -74,26 +74,27 @@ export default function LongformPost({
       publishedDate
         ? new Date() > publishedDate
           ? publishedDate.toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
           : `Scheduled on ${publishedDate.toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}`
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}`
         : 'Unpublished',
     [publishedDate],
   )
 
   return (
     <StaggerReveal
+      as="article"
       className="w-full max-w-2xl"
       transition={staggerTransition}
       variants={animationVariants}
     >
-      <div className="flex flex-col items-center gap-y-8 pb-16 pt-4">
+      <header className="flex flex-col items-center gap-y-8 pb-16 pt-4">
         <StaggerReveal.Child
           transition={revealTransition}
           variants={animationVariants}
@@ -104,9 +105,9 @@ export default function LongformPost({
           transition={revealTransition}
           variants={animationVariants}
         >
-          <span className="dark:text-polar-500 text-gray-500">
+          <time className="dark:text-polar-500 text-gray-500" dateTime={publishedDate?.toISOString()}>
             {publishedDateText}
-          </span>
+          </time>
         </StaggerReveal.Child>
         <StaggerReveal.Child
           transition={revealTransition}
@@ -131,7 +132,7 @@ export default function LongformPost({
             </h3>
           </div>
         </StaggerReveal.Child>
-      </div>
+      </header>
 
       <StaggerReveal.Child
         transition={revealTransition}
@@ -184,9 +185,8 @@ const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
       <p className="dark:text-polar-300 text-center text-gray-500">
         {article.organization?.bio
           ? article.organization?.bio
-          : `Support ${
-              article.organization.pretty_name || article.organization.name
-            } by subscribing to their work and get access to exclusive content.`}
+          : `Support ${article.organization.pretty_name || article.organization.name
+          } by subscribing to their work and get access to exclusive content.`}
       </p>
       <Link href={`/${article.organization.name}/subscriptions`}>
         <Button className="mt-4">Subscribe</Button>
@@ -214,9 +214,8 @@ const UpsellFreeSubscriberToPaid = ({
       <p className="dark:text-polar-300 text-center text-gray-500">
         {article.organization?.bio
           ? article.organization?.bio
-          : `Support ${
-              article.organization.pretty_name || article.organization.name
-            } by subscribing to their work and get access to exclusive content.`}
+          : `Support ${article.organization.pretty_name || article.organization.name
+          } by subscribing to their work and get access to exclusive content.`}
       </p>
       <Link href={`/${article.organization.name}/subscriptions`}>
         <Button className="mt-4">Upgrade</Button>

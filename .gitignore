@@ -128,3 +128,6 @@ playground.py
 
 .DS_Store
 .pnpm-store
+
+# Secrets
+.secrets/

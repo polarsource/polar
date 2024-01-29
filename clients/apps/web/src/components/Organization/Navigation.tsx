@@ -1,6 +1,5 @@
 'use client'
 
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { Organization, Repository } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import RepoSelection from './RepoSelection'
@@ -30,11 +29,7 @@ const Navigation = ({
           router.push(`/${organization.name}/${repo}`)
         }}
         onSelectAll={() => {
-          if (isFeatureEnabled('feed')) {
-            router.push(`/${organization.name}/issues`)
-          } else {
-            router.push(`/${organization.name}`)
-          }
+          router.push(`/${organization.name}/issues`)
         }}
       />
     </div>

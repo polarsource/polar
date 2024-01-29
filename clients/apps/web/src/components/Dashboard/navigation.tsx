@@ -6,7 +6,6 @@ import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
   Bolt,
-  CardGiftcardOutlined,
   Construction,
   CropFreeOutlined,
   DiamondOutlined,
@@ -36,59 +35,45 @@ export type Route = {
 }
 
 export const maintainerRoutes = (org: Organization): Route[] => [
-  ...(isFeatureEnabled('subscriptions')
-    ? [
-        {
-          id: 'overview',
-          title: 'Overview',
-          icon: (
-            <SpaceDashboardOutlined className="h-5 w-5" fontSize="inherit" />
-          ),
-          postIcon: undefined,
-          link: `/maintainer/${org.name}/overview`,
-          if: true,
-        },
-      ]
-    : []),
-  ...(isFeatureEnabled('feed')
-    ? [
-        {
-          id: 'posts',
-          title: 'Posts',
-          icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          link: `/maintainer/${org.name}/posts`,
-          if: true,
-          subs: undefined,
-        },
-      ]
-    : []),
-  ...(isFeatureEnabled('subscriptions')
-    ? [
-        {
-          id: 'org-subscriptions',
-          title: 'Subscriptions',
-          icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          link: `/maintainer/${org.name}/subscriptions`,
-          if: true,
-          subs: [
-            {
-              title: 'Tiers',
-              link: `/maintainer/${org.name}/subscriptions/tiers`,
-            },
-            {
-              title: 'Benefits',
-              link: `/maintainer/${org.name}/subscriptions/benefits`,
-            },
-            {
-              title: 'Subscribers',
-              link: `/maintainer/${org.name}/subscriptions/subscribers`,
-            },
-          ],
-        },
-      ]
-    : []),
+  {
+    id: 'overview',
+    title: 'Overview',
+    icon: <SpaceDashboardOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/overview`,
+    if: true,
+  },
+  {
+    id: 'posts',
+    title: 'Posts',
+    icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/posts`,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'org-subscriptions',
+    title: 'Subscriptions',
+    icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/subscriptions`,
+    if: true,
+    subs: [
+      {
+        title: 'Tiers',
+        link: `/maintainer/${org.name}/subscriptions/tiers`,
+      },
+      {
+        title: 'Benefits',
+        link: `/maintainer/${org.name}/subscriptions/benefits`,
+      },
+      {
+        title: 'Subscribers',
+        link: `/maintainer/${org.name}/subscriptions/subscribers`,
+      },
+    ],
+  },
   {
     id: 'org-issues',
     title: 'Issues',
@@ -131,68 +116,35 @@ export const backerRoutes = (
 ): Route[] => [
   ...(isPersonal
     ? [
-        ...(isFeatureEnabled('feed')
-          ? [
-              {
-                id: 'posts',
-                title: 'Feed',
-                link: `/feed`,
-                icon: (
-                  <AllInclusiveOutlined
-                    className="h-5 w-5"
-                    fontSize="inherit"
-                  />
-                ),
-                postIcon: undefined,
-                if: isPersonal,
-                subs: undefined,
-              },
-            ]
-          : []),
-        ...(isFeatureEnabled('subscriptions')
-          ? [
-              {
-                id: 'benefits',
-                title: 'Benefits',
-                link: `/benefits`,
-                icon: (
-                  <DiamondOutlined className="h-5 w-5" fontSize="inherit" />
-                ),
-                postIcon: undefined,
-                if: true,
-                subs: undefined,
-              },
-            ]
-          : []),
+        {
+          id: 'posts',
+          title: 'Feed',
+          link: `/feed`,
+          icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: isPersonal,
+          subs: undefined,
+        },
+        {
+          id: 'benefits',
+          title: 'Benefits',
+          link: `/benefits`,
+          icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: true,
+          subs: undefined,
+        },
       ]
     : []),
   {
     id: 'funding',
     title: 'Funding',
-    link:
-      isPersonal && isFeatureEnabled('feed')
-        ? `/funding` // personal and new feed
-        : isPersonal
-          ? '/feed' // personal and old feed
-          : `/maintainer/${org?.name}/funding`, // orgs
+    link: isPersonal ? `/funding` : `/maintainer/${org?.name}/funding`,
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: undefined,
   },
-  ...(isFeatureEnabled('finance')
-    ? []
-    : [
-        {
-          id: 'rewards',
-          title: 'Rewards',
-          link: `/finance/rewards`,
-          icon: <CardGiftcardOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: isPersonal,
-          subs: undefined,
-        },
-      ]),
   {
     id: 'members',
     title: 'Members',
@@ -209,61 +161,47 @@ export const dashboardRoutes = (
   isPersonal?: boolean,
   isOrgAdmin?: boolean,
 ): Route[] => [
-  ...(isFeatureEnabled('finance')
-    ? [
-        {
-          id: 'finance',
-          title: 'Finance',
-          link: isPersonal ? `/finance` : `/maintainer/${org?.name}/finance`,
-          icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: isOrgAdmin,
-          subs: [
+  {
+    id: 'finance',
+    title: 'Finance',
+    link: isPersonal ? `/finance` : `/maintainer/${org?.name}/finance`,
+    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: isOrgAdmin,
+    subs: [
+      {
+        title: 'Incoming',
+        link: isPersonal
+          ? `/finance/incoming`
+          : `/maintainer/${org?.name}/finance/incoming`,
+      },
+      {
+        title: 'Outgoing',
+        link: isPersonal
+          ? `/finance/outgoing`
+          : `/maintainer/${org?.name}/finance/outgoing`,
+      },
+      ...(isPersonal
+        ? [
             {
-              title: 'Incoming',
-              link: isPersonal
-                ? `/finance/incoming`
-                : `/maintainer/${org?.name}/finance/incoming`,
+              title: 'Issue Rewards',
+              link: `/finance/rewards`,
             },
+          ]
+        : [
             {
-              title: 'Outgoing',
-              link: isPersonal
-                ? `/finance/outgoing`
-                : `/maintainer/${org?.name}/finance/outgoing`,
+              title: 'Issue Funding',
+              link: `/maintainer/${org?.name}/finance/issue-funding`,
             },
-            ...(isPersonal
-              ? [
-                  {
-                    title: 'Issue Rewards',
-                    link: `/finance/rewards`,
-                  },
-                ]
-              : [
-                  {
-                    title: 'Issue Funding',
-                    link: `/maintainer/${org?.name}/finance/issue-funding`,
-                  },
-                ]),
-            {
-              title: 'Payout Account',
-              link: isPersonal
-                ? `/finance/account`
-                : `/maintainer/${org?.name}/finance/account`,
-            },
-          ],
-        },
-      ]
-    : [
-        {
-          id: 'finance',
-          title: 'Finance',
-          link: `/maintainer/${org?.name}/finance`,
-          icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: isOrgAdmin && !isPersonal,
-          subs: undefined,
-        },
-      ]),
+          ]),
+      {
+        title: 'Payout Account',
+        link: isPersonal
+          ? `/finance/account`
+          : `/maintainer/${org?.name}/finance/account`,
+      },
+    ],
+  },
   ...(isFeatureEnabled('backoffice')
     ? [
         {

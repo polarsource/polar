@@ -1,7 +1,6 @@
 'use client'
 
 import { useCurrentOrgAndRepoFromURL, useGitHubAccount } from '@/hooks'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
 import { UserRead } from '@polar-sh/sdk'
@@ -92,12 +91,7 @@ const ProfileSelection = ({
               'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute -left-2 -right-2 -top-1 overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
-            <Link
-              // /feed is actually the funding page
-              // /posts is the new feed
-              href={isFeatureEnabled('feed') ? `/posts` : `/feed`}
-              className="w-full"
-            >
+            <Link href={'/feed'} className="w-full">
               <ListItem
                 current={
                   currentOrg === undefined ||
@@ -144,11 +138,7 @@ const ProfileSelection = ({
               <div className="mb-2 flex flex-col">
                 {organizationsExceptSelf.map((org) => (
                   <Link
-                    href={
-                      isFeatureEnabled('feed')
-                        ? `/maintainer/${org.name}/overview`
-                        : `/maintainer/${org.name}/issues`
-                    }
+                    href={`/maintainer/${org.name}/overview`}
                     className="w-full"
                     key={org.id}
                   >
@@ -238,12 +228,7 @@ export const ProfileMenu = ({
               'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
-            <Link
-              // /feed is actually the funding page
-              // /posts is the new feed
-              href={isFeatureEnabled('feed') ? `/posts` : `/feed`}
-              className="w-full"
-            >
+            <Link href={'/feed'} className="w-full">
               <ListItem current={true}>
                 <Profile
                   name={loggedUser.username}

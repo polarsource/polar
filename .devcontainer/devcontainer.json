@@ -5,6 +5,13 @@
 	"workspaceFolder": "/workspace",
 
 	"features": {
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {
+      "version": "1.6.1"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers-contrib/features/pnpm:2": {},
 		"ghcr.io/devcontainers/features/docker-in-docker:1": {
 			"version": "latest",
 			"moby": true
@@ -14,7 +21,7 @@
 	// Configure tool-specific properties.
 	"customizations": {
 
-		// Auto open these files whrn running on GitHub Codespaces
+		// Auto open these files when running on GitHub Codespaces
 		"codespaces": {
 			"openFiles": [
 			  ".devcontainer/README.md",
@@ -35,24 +42,24 @@
 			},
 			// Extensions that are installed when the devcontainer is setup
 			"extensions": [
+        "EditorConfig.EditorConfig",
 				"ms-python.python",
 				"charliermarsh.ruff",
 				"ms-python.mypy-type-checker",
 				"littlefoxteam.vscode-python-test-adapter",
 				"esbenp.prettier-vscode",
 				"bradlc.vscode-tailwindcss",
-				"zoma.vscode-auto-open-workspace"
+				"zoma.vscode-auto-open-workspace",
+        "redhat.vscode-yaml"
 			]
 		}
 	},
 
-
-	"remoteUser": "vscode",
-	"postStartCommand": "bash /workspace/.devcontainer/post_start_command.sh",
+	"postCreateCommand": "bash /workspace/.devcontainer/post_create.sh",
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
-	"forwardPorts": [3000, 3001, 6006, 8000, 8080],
+	"forwardPorts": [3000, 3001, 5432, 6006, 6379, 8000, 8080],
 	"portsAttributes": {
 		"3000": {
 			"label": "web",
@@ -62,10 +69,16 @@
 			"label": "setup-github",
 			"onAutoForward": "notify"
 		},
+    "5432": {
+      "label": "db"
+    },
 		"6006": {
 			"label": "storybook",
 			"onAutoForward": "notify"
 		},
+    "6379": {
+      "label": "redis"
+    },
 		"8000": {
 			"label": "api",
 			"onAutoForward": "ignore"

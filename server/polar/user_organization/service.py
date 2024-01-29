@@ -63,6 +63,7 @@ class UserOrganizationervice:
                 UserOrganization.deleted_at.is_(None),
                 Organization.platform == platform,
                 Organization.is_personal.is_(True),
+                Organization.deleted_at.is_(None),
             )
             .options(
                 joinedload(UserOrganization.user),

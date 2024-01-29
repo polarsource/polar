@@ -22,7 +22,7 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
         width: 1200,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'start',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
         gap: '24px',
         background: 'white',

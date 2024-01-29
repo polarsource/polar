@@ -11,11 +11,7 @@
     "ghcr.io/devcontainers/features/node:1": {
       "version": "18"
     },
-    "ghcr.io/devcontainers-contrib/features/pnpm:2": {},
-		"ghcr.io/devcontainers/features/docker-in-docker:1": {
-			"version": "latest",
-			"moby": true
-		}
+    "ghcr.io/devcontainers-contrib/features/pnpm:2": {}
 	},
 
 	// Configure tool-specific properties.

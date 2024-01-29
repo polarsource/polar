@@ -12,7 +12,7 @@ export default function Page({
 }) {
   const email = searchParams.email
   return (
-    <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-[#FEFDF9]">
+    <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50">
       <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center">
         <LogoType70 className="mb-6 h-10" />

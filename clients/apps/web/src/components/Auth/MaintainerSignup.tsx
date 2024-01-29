@@ -25,7 +25,7 @@ const MaintainerSignup = () => {
   ]
 
   return (
-    <div className="dark:bg-polar-950 flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 md:h-screen">
+    <div className="dark:bg-polar-950 flex w-full grow items-center justify-center bg-gray-50 px-4 md:h-screen">
       <div className="my-16 flex flex-col items-center  md:my-0">
         <LogoType70 className="mb-16 h-10" />
 

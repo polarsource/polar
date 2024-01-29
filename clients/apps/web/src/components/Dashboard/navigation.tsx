@@ -100,47 +100,10 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     ],
   },
   {
-    id: 'public-page',
-    title: 'Public Page',
-    link: `/${org.name}`,
-    postIcon: undefined,
-    icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
-]
-
-export const backerRoutes = (
-  org?: Organization,
-  isPersonal?: boolean,
-): Route[] => [
-  ...(isPersonal
-    ? [
-        {
-          id: 'posts',
-          title: 'Feed',
-          link: `/feed`,
-          icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: isPersonal,
-          subs: undefined,
-        },
-        {
-          id: 'benefits',
-          title: 'Benefits',
-          link: `/benefits`,
-          icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: true,
-          subs: undefined,
-        },
-      ]
-    : []),
-  {
     id: 'funding',
     title: 'Funding',
-    link: isPersonal ? `/funding` : `/maintainer/${org?.name}/funding`,
-    icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
+    link: `/maintainer/${org?.name}/funding`,
+    icon: <FavoriteBorderOutlined className="h-6 w-6" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: undefined,
@@ -151,7 +114,55 @@ export const backerRoutes = (
     link: `/maintainer/${org?.name}/members`,
     icon: <Face fontSize="inherit" />,
     postIcon: undefined,
-    if: !isPersonal && org?.is_teams_enabled,
+    if: org?.is_teams_enabled,
+    subs: undefined,
+  },
+  {
+    id: 'public-page',
+    title: 'Public Page',
+    link: `/${org.name}`,
+    postIcon: undefined,
+    icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'feed',
+    title: 'Feed',
+    link: `/feed`,
+    postIcon: undefined,
+    icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
+    if: true,
+    subs: undefined,
+  },
+]
+
+export const backerRoutes = (): Route[] => [
+  {
+    id: 'posts',
+    title: 'Feed',
+    link: `/feed`,
+    icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'benefits',
+    title: 'Benefits',
+    link: `/benefits`,
+    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'funding',
+    title: 'Funding',
+    link: `/funding`,
+    icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: true,
     subs: undefined,
   },
 ]

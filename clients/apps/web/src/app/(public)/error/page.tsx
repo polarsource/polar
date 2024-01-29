@@ -8,7 +8,7 @@ export default function Page({
   searchParams: { message: string; return_to: string }
 }) {
   return (
-    <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-[#FEFDF9]">
+    <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50">
       <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center gap-6 text-center">
         <LogoType70 className="h-10" />

@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from pydantic import BaseModel
 from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import aliased, contains_eager, joinedload
@@ -30,6 +31,10 @@ from polar.repository.service import repository as repository_service
 from ..schemas import (
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
+)
+from .benefits import (
+    SubscriptionBenefitPropertiesValidationError,
+    get_subscription_benefit_service,
 )
 from .subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
@@ -164,14 +169,28 @@ class SubscriptionBenefitService(
         except AttributeError:
             is_tax_applicable = create_schema.type.is_tax_applicable()
 
+        benefit_service = get_subscription_benefit_service(create_schema.type, session)
+        try:
+            properties = await benefit_service.validate_properties(
+                user, create_schema.properties.model_dump(by_alias=True)
+            )
+        except SubscriptionBenefitPropertiesValidationError as e:
+            raise e.to_request_validation_error(("body", create_schema.type))
+
         return await self.model.create(
             session,
             organization=organization,
             repository=repository,
             is_tax_applicable=is_tax_applicable,
+            properties=properties,
             **create_schema.model_dump(
                 by_alias=True,
-                exclude={"organization_id", "repository_id", "is_tax_applicable"},
+                exclude={
+                    "organization_id",
+                    "repository_id",
+                    "is_tax_applicable",
+                    "properties",
+                },
             ),
         )
 
@@ -190,13 +209,26 @@ class SubscriptionBenefitService(
         if not await authz.can(user, AccessType.write, subscription_benefit):
             raise NotPermitted()
 
+        update_dict = update_schema.model_dump(
+            by_alias=True, exclude_unset=True, exclude={"type", "properties"}
+        )
+
+        properties_update: BaseModel | None = getattr(update_schema, "properties", None)
+        if properties_update is not None:
+            benefit_service = get_subscription_benefit_service(
+                subscription_benefit.type, session
+            )
+            try:
+                update_dict["properties"] = await benefit_service.validate_properties(
+                    user, properties_update.model_dump(by_alias=True)
+                )
+            except SubscriptionBenefitPropertiesValidationError as e:
+                raise e.to_request_validation_error(("body", subscription_benefit.type))
+
         previous_properties = subscription_benefit.properties
 
         updated_subscription_benefit = await subscription_benefit.update(
-            session,
-            **update_schema.model_dump(
-                by_alias=True, exclude_unset=True, exclude={"type"}
-            ),
+            session, **update_dict
         )
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(

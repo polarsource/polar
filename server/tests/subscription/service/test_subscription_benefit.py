@@ -1,6 +1,8 @@
 import uuid
+from unittest.mock import MagicMock
 
 import pytest
+from fastapi.exceptions import RequestValidationError
 from pytest_mock import MockerFixture
 
 from polar.authz.service import Authz
@@ -19,6 +21,10 @@ from polar.subscription.schemas import (
     SubscriptionBenefitCustomCreate,
     SubscriptionBenefitCustomProperties,
     SubscriptionBenefitCustomUpdate,
+)
+from polar.subscription.service.benefits import (
+    SubscriptionBenefitPropertiesValidationError,
+    SubscriptionBenefitServiceProtocol,
 )
 from polar.subscription.service.subscription_benefit import (  # type: ignore[attr-defined]
     OrganizationDoesNotExist,
@@ -360,6 +366,50 @@ class TestUserCreate:
             session, authz, create_schema, user
         )
         assert subscription_benefit.repository_id == repository.id
+
+    async def test_invalid_properties(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        service_mock = MagicMock(spec=SubscriptionBenefitServiceProtocol)
+        service_mock.validate_properties.side_effect = (
+            SubscriptionBenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "property_error",
+                        "message": "The property is invalid",
+                        "loc": ("key",),
+                        "input": "foobar",
+                    }
+                ]
+            )
+        )
+        mock = mocker.patch(
+            "polar.subscription.service.subscription_benefit"
+            ".get_subscription_benefit_service"
+        )
+        mock.return_value = service_mock
+
+        create_schema = SubscriptionBenefitCustomCreate(
+            type=SubscriptionBenefitType.custom,
+            description="Subscription Benefit",
+            is_tax_applicable=True,
+            properties=SubscriptionBenefitCustomProperties(),
+            organization_id=organization.id,
+        )
+
+        # then
+        session.expunge_all()
+
+        with pytest.raises(RequestValidationError):
+            await subscription_benefit_service.user_create(
+                session, authz, create_schema, user
+            )
 
 
 @pytest.mark.asyncio

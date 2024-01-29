@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from polar.models import (
     Subscription,
@@ -48,3 +48,8 @@ class SubscriptionBenefitAdsService(
         previous_properties: SubscriptionBenefitAdsProperties,
     ) -> bool:
         return False
+
+    async def validate_properties(
+        self, user: User, properties: dict[str, Any]
+    ) -> SubscriptionBenefitAdsProperties:
+        return cast(SubscriptionBenefitAdsProperties, properties)

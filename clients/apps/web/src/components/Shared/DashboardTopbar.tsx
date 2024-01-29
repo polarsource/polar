@@ -15,7 +15,6 @@ import { twMerge } from 'tailwind-merge'
 import {
   Route,
   SubRoute,
-  backerRoutes,
   dashboardRoutes,
   maintainerRoutes,
 } from '../Dashboard/navigation'
@@ -74,7 +73,6 @@ const DashboardTopbar = ({
     currentOrg?: Organization,
   ): Route[] => {
     return [
-      ...backerRoutes(currentOrg, currentOrg ? isPersonal : true),
       ...(currentOrg ? maintainerRoutes(currentOrg) : []),
       ...dashboardRoutes(
         currentOrg,
@@ -102,7 +100,7 @@ const DashboardTopbar = ({
   return (
     <>
       <div className={className}>
-        <div className="relative flex w-full max-w-screen-xl flex-col justify-between gap-y-4 px-4 py-4 sm:px-6 md:mx-auto md:flex-row md:items-center md:px-0 md:py-0">
+        <div className="relative flex w-full max-w-screen-xl flex-col justify-between gap-y-4 px-4 py-4 sm:px-6 md:mx-auto md:flex-row md:items-center md:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-24">
             <h4 className="dark:text-polar-100 text-lg font-medium">
               {title ?? currentRoute?.title}

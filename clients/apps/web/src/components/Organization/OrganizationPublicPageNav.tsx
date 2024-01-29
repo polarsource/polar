@@ -50,7 +50,7 @@ export const OrganizationPublicPageNav = ({
   )
 
   const tabsTriggerClassName =
-    'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300'
+    'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none'
 
   return mobileLayout ? (
     <Select value={currentTab} onValueChange={handleSelectChange}>

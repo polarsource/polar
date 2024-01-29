@@ -91,7 +91,7 @@ export const PostEditor = ({
                 />
               </TabsContent>
               <TabsContent value="preview">
-                <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] md:bg-white md:p-12 md:shadow-xl dark:md:border">
+                <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 dark:ring-1 md:bg-white md:p-12 md:shadow-sm dark:md:border">
                   <LongformPost
                     {...previewProps}
                     animation={false}

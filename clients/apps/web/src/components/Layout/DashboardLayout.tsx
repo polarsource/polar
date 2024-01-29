@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  useCurrentOrgAndRepoFromURL,
-  useGitHubAccount,
-  useIsOrganizationAdmin,
-  usePersonalOrganization,
-} from '@/hooks'
+import { useCurrentOrgAndRepoFromURL, useIsOrganizationAdmin } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
@@ -25,17 +20,14 @@ import { twMerge } from 'tailwind-merge'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
-import { GitHubAuthUpsell, MaintainerUpsell } from '../Dashboard/Upsell'
 import Popover from '../Notifications/Popover'
 import ProfileSelection from '../Shared/ProfileSelection'
 
 const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
-  const { org: currentOrg, isLoaded: isCurrentOrgLoaded } =
-    useCurrentOrgAndRepoFromURL()
+  const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()
-  const personalOrg = usePersonalOrganization()
 
   const orgs = listOrganizationQuery?.data?.items
 
@@ -44,15 +36,6 @@ const DashboardSidebar = () => {
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
     : orgs?.some((org) => org.name === currentUser?.username)
-
-  const githubAccount = useGitHubAccount()
-  const shouldShowGitHubAuthUpsell = !githubAccount
-
-  const shouldShowMaintainerUpsell =
-    isCurrentOrgLoaded &&
-    !listOrganizationQuery.isLoading &&
-    !currentOrg &&
-    !personalOrg
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
@@ -96,16 +79,6 @@ const DashboardSidebar = () => {
           onScroll={handleScroll}
         >
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
-
-          {shouldShowGitHubAuthUpsell ? (
-            <div className="flex flex-col pt-4">
-              <GitHubAuthUpsell />
-            </div>
-          ) : shouldShowMaintainerUpsell ? (
-            <div className="flex flex-col pt-4">
-              <MaintainerUpsell />
-            </div>
-          ) : null}
         </div>
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
           <MetaNavigation />

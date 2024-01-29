@@ -1,7 +1,8 @@
+import { useAuth } from '@/hooks'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit'
 import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
@@ -27,10 +28,13 @@ export const GitHubAuthUpsell = () => {
 }
 
 export const MaintainerUpsell = () => {
+  const { currentUser } = useAuth()
+  const router = useRouter()
+
   const upgrade = async () => {
     const response = await api.users.maintainerUpgrade()
     // TODO: Change state instead to update - ideally - without refresh
-    window.location.reload()
+    router.push(`/maintainer/${currentUser?.username}/overview`)
   }
 
   return (

@@ -108,7 +108,7 @@ const ProfileSelection = ({
             <ul className="mt-2 flex w-full flex-col">
               {showBackerLinks && (
                 <>
-                  {backerRoutes(currentOrg, isPersonalOrg).map((n) => {
+                  {backerRoutes().map((n) => {
                     return (
                       <LinkItem href={n.link} icon={n.icon} key={n.link}>
                         <span className="mx-1.5 font-medium">{n.title}</span>

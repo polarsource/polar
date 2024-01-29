@@ -35,7 +35,7 @@ const Avatar = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white bg-white text-xs',
+        'dark:bg-polar-900 dark:border-polar-700 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-100 bg-white text-xs',
         className,
       )}
     >

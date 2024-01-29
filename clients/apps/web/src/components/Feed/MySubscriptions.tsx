@@ -1,26 +1,32 @@
-import { SubscriptionTierSubscriber } from '@polar-sh/sdk'
+import { MoreVertOutlined } from '@mui/icons-material'
+import { SubscriptionSubscriber } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Avatar } from 'polarkit/components/ui/atoms'
+import { api } from 'polarkit'
+import { Avatar, Button } from 'polarkit/components/ui/atoms'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'polarkit/components/ui/dropdown-menu'
 import { useOrganization } from 'polarkit/hooks'
-import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
+import { useCallback, useState } from 'react'
+import { ConfirmModal } from '../Shared/ConfirmModal'
 
 export interface MySubscriptionsProps {
-  subscriptionTiers: SubscriptionTierSubscriber[]
+  subscriptions: SubscriptionSubscriber[]
 }
 
-export const MySubscriptions = ({
-  subscriptionTiers,
-}: MySubscriptionsProps) => {
+export const MySubscriptions = ({ subscriptions }: MySubscriptionsProps) => {
   return (
-    <div className="flex h-full w-full flex-col pb-4">
-      <div className="flex w-full flex-row items-center gap-x-2 px-7 py-2">
-        <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
-          My Subscriptions
-        </div>
-      </div>
-      <div className="flex flex-col px-4 py-3">
-        {subscriptionTiers.map((tier) => (
-          <SubscriptionOrganizationItem key={tier.id} tier={tier} />
+    <div className="flex flex-col gap-y-6">
+      <h3>My Subscriptions</h3>
+      <div className="flex flex-col py-2">
+        {subscriptions.map((subscription) => (
+          <SubscriptionOrganizationItem
+            key={subscription.id}
+            subscription={subscription}
+          />
         ))}
       </div>
     </div>
@@ -28,29 +34,81 @@ export const MySubscriptions = ({
 }
 
 const SubscriptionOrganizationItem = ({
-  tier,
+  subscription,
 }: {
-  tier: SubscriptionTierSubscriber
+  subscription: SubscriptionSubscriber
 }) => {
-  const { data: organization } = useOrganization(tier.organization_id ?? '')
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [canceled, setCanceled] = useState(false)
+  const { data: organization } = useOrganization(
+    subscription.subscription_tier.organization_id ?? '',
+  )
+
+  const canUnsubscribe = !canceled && !subscription.cancel_at_period_end
+  const isFreeTier = subscription.subscription_tier.type === 'free'
+
+  const cancelSubscription = useCallback(async () => {
+    await api.subscriptions.cancelSubscription({ id: subscription.id })
+    setShowCancelModal(false)
+    setCanceled(true)
+  }, [subscription])
 
   return (
-    <Link
-      className="dark:text-polar-500 dark:hover:text-polar-50 group flex items-center justify-between rounded-lg border border-transparent px-4 py-1 text-gray-700 transition-colors hover:text-blue-500"
-      href={`/${organization?.name}`}
-    >
-      <div className="flex flex-row items-center gap-x-3">
+    <div className="group flex flex-row items-center justify-between py-2">
+      <Link
+        className="flex flex-row items-center gap-x-3"
+        href={`/${organization?.name}`}
+      >
         <Avatar
-          className="h-8 w-8 border-transparent transition-colors duration-300 group-hover:border-blue-200 dark:group-hover:border-blue-400"
+          className="h-10 w-10 border-transparent transition-colors duration-300 group-hover:border-blue-200 dark:group-hover:border-blue-400"
           avatar_url={organization?.avatar_url}
           name={organization?.name ?? ''}
         />
-        <span className="w-full truncate text-sm">{organization?.name}</span>
+        <div className="flex flex-col gap-y-1">
+          <span className="w-full truncate text-sm">{organization?.name}</span>
+          <span className="dark:text-polar-500 text-xs text-gray-500">
+            {subscription.subscription_tier.name}
+          </span>
+        </div>
+      </Link>
+      <div className="flex flex-row gap-x-2">
+        {canUnsubscribe && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none">
+              <Button
+                className={
+                  'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                }
+                size="icon"
+                variant="secondary"
+              >
+                <MoreVertOutlined fontSize="inherit" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+            >
+              <DropdownMenuItem onClick={cancelSubscription}>
+                Unsubscribe
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-      <SubscriptionGroupIcon
-        className="opacity-0 group-hover:opacity-100"
-        type={tier.type}
+      <ConfirmModal
+        isShown={showCancelModal}
+        hide={() => setShowCancelModal(false)}
+        title={`Unsubscribe from ${subscription.subscription_tier.name}?`}
+        description={
+          isFreeTier
+            ? `You won't have access to your benefits anymore.`
+            : `At the end of your billing period, you won't have access to your benefits anymore.`
+        }
+        destructiveText="Unsubscribe"
+        onConfirm={() => cancelSubscription()}
+        destructive
       />
-    </Link>
+    </div>
   )
 }

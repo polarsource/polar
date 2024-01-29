@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from os import environ
 from typing import TypedDict
 
 import structlog
@@ -26,7 +27,7 @@ from polar.kit.db.postgres import (
 )
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
-from polar.middlewares import LogCorrelationIdMiddleware
+from polar.middlewares import LogCorrelationIdMiddleware, XForwardedHostMiddleware
 from polar.postgres import create_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
@@ -81,6 +82,10 @@ def create_app() -> FastAPI:
     configure_cors(app)
 
     app.add_middleware(LogCorrelationIdMiddleware)
+    app.add_middleware(
+        XForwardedHostMiddleware,
+        trusted_hosts=environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"),
+    )
 
     app.add_exception_handler(
         PolarRedirectionError,

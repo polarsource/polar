@@ -44,13 +44,11 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'start',
+          justifyContent: 'flex-start',
           whiteSpace: 'pre-wrap',
           fontWeight: 600,
           fontSize: '64px',
-          lineHeight: '1.4em',
-          /** @ts-ignore */
-          textWrap: 'balance',
+          lineHeight: '1.4em'
         }}
       >
         {article.title}

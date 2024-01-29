@@ -36,7 +36,7 @@ const Topbar = ({
   const upgradeToMaintainer = useCallback(async () => {
     const response = await api.users.maintainerUpgrade()
     router.push(`/maintainer/${currentUser?.username}/overview`)
-  }, [])
+  }, [currentUser])
 
   const githubAccount = useGitHubAccount()
   const shouldShowGitHubAuthUpsell = !githubAccount
@@ -53,30 +53,31 @@ const Topbar = ({
           </div>
         </div>
         <div className="flex flex-row items-center justify-between gap-x-4">
-          {shouldShowGitHubAuthUpsell ? (
-            <GithubLoginButton
-              className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
-              text="Connect with GitHub"
-              returnTo={'/feed'}
-              userSignupType={UserSignupType.BACKER}
-            />
-          ) : shouldRenderCreateButton ? (
-            <Link href={creatorPath}>
-              <Button>
+          {authenticated &&
+            (shouldShowGitHubAuthUpsell ? (
+              <GithubLoginButton
+                className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
+                text="Connect with GitHub"
+                returnTo={'/feed'}
+                userSignupType={UserSignupType.BACKER}
+              />
+            ) : shouldRenderCreateButton ? (
+              <Link href={creatorPath}>
+                <Button>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <span className="text-xs">Creator Dashboard</span>
+                    <ArrowForwardOutlined fontSize="inherit" />
+                  </div>
+                </Button>
+              </Link>
+            ) : (
+              <Button onClick={upgradeToMaintainer}>
                 <div className="flex flex-row items-center gap-x-2">
-                  <span className="text-xs">Creator Dashboard</span>
+                  <span className="text-xs">Become a Creator</span>
                   <ArrowForwardOutlined fontSize="inherit" />
                 </div>
               </Button>
-            </Link>
-          ) : (
-            <Button onClick={upgradeToMaintainer}>
-              <div className="flex flex-row items-center gap-x-2">
-                <span className="text-xs">Become a Creator</span>
-                <ArrowForwardOutlined fontSize="inherit" />
-              </div>
-            </Button>
-          )}
+            ))}
           <TopbarRight authenticatedUser={currentUser} />
         </div>
       </div>

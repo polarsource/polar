@@ -13,6 +13,7 @@ import { useEffect } from 'react'
 if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
   posthog.init(CONFIG.POSTHOG_TOKEN, {
     api_host: 'https://app.posthog.com',
+    ui_host: CONFIG.POSTHOG_HOST,
   })
 }
 

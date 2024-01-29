@@ -46,7 +46,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
         className="w-full"
         data-1p-ignore
       />
-      <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+      <div className="absolute inset-y-0 right-0 z-50 flex items-center pr-2">
         <Button type="submit" size="sm" loading={loading} disabled={loading}>
           Sign in
         </Button>

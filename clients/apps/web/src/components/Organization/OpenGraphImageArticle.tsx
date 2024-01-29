@@ -36,7 +36,7 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
         padding: '64px',
       }}
     >
-      <div>
+      <div style={{ display: 'flex' }}>
         <LogoIcon size={82} />
       </div>
       <span

@@ -1,5 +1,9 @@
 # Welcome to the Polar Devcontainer
 
+> [!IMPORTANT]
+> When setting up your Devcontainer for the first time, a `postCreateCommand` will automatically run.
+> Make sure it's finished before starting.
+
 # Setup and running
 
 _This is a work in progress, as we improve on our automation to remove as many of these steps as possible._

@@ -46,12 +46,11 @@ export default function Page() {
         <Feed />
       </div>
       <div className="flex h-full w-full flex-col gap-y-12 self-stretch md:max-w-md md:pl-24">
-        {shouldShowGitHubAuthUpsell && (
+        {shouldShowGitHubAuthUpsell ? (
           <div className="-m-4 flex flex-col pt-4">
             <GitHubAuthUpsell />
           </div>
-        )}
-        {shouldShowMaintainerUpsell ? (
+        ) : shouldShowMaintainerUpsell ? (
           <div className="-m-4 flex flex-col pt-4">
             <MaintainerUpsell />
           </div>

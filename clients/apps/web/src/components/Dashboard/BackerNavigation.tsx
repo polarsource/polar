@@ -38,26 +38,20 @@ const BackerNavigation = () => {
     })
 
   return (
-    <div className="flex flex-row items-center gap-4">
+    <div className="flex flex-row items-center">
       {filteredNavs.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
           <Link
             className={twMerge(
-              'flex items-center gap-x-3 rounded-lg border border-transparent transition-colors',
+              'flex items-center gap-x-2 rounded-full border border-transparent px-4 py-1.5 transition-colors',
               n.isActive
-                ? 'text-blue-500 dark:text-blue-400'
+                ? 'bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-300'
                 : 'dark:text-polar-500 dark:hover:text-polar-300 text-gray-500 hover:text-blue-500',
             )}
             href={n.link}
           >
-            {'icon' in n && n.icon ? (
-              <span
-                className={twMerge(
-                  'flex h-8 w-8 flex-col items-center justify-center rounded-full bg-transparent text-[18px]',
-                )}
-              >
-                {n.icon}
-              </span>
+            {'title' in n && n.title ? (
+              <span className={twMerge('text-sm')}>{n.title}</span>
             ) : undefined}
           </Link>
         </div>

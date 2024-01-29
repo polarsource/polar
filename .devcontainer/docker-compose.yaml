@@ -16,12 +16,12 @@ services:
     network_mode: service:db
 
   redis:
-    image: redis
+    image: redis:alpine
     restart: unless-stopped
     network_mode: service:db
 
   db:
-    image: postgres:15.1-bullseye
+    image: postgres:15-alpine
     restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data

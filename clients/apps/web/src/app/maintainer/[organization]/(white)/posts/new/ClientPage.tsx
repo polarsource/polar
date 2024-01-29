@@ -3,6 +3,7 @@
 import { PostEditor } from '@/components/Feed/PostEditor'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { captureEvent } from '@/utils/posthog'
 import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
@@ -43,6 +44,7 @@ const ClientPage = () => {
     const savePost = (e: KeyboardEvent) => {
       if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
+        captureEvent('posts:create_cmd_s:create')
         handleContinue()
       }
     }
@@ -60,6 +62,8 @@ const ClientPage = () => {
         return
       }
 
+      captureEvent('posts:create_publish_tab:create')
+
       const created = await create.mutateAsync({
         ...article,
         organization_id: org.id,
@@ -68,6 +72,10 @@ const ClientPage = () => {
       router.replace(
         `/maintainer/${created.organization.name}/posts/${created.slug}#settings`,
       )
+    } else if (tab === 'edit') {
+      captureEvent('posts:create_tab_edit:view')
+    } else if (tab === 'preview') {
+      captureEvent('posts:create_tab_preview:view')
     }
   }
 
@@ -83,7 +91,10 @@ const ClientPage = () => {
     >
       <DashboardTopbar title="Create Post" isFixed useOrgFromURL>
         <Button
-          onClick={handleContinue}
+          onClick={() => {
+            captureEvent('posts:create_save_button:create')
+            handleContinue()
+          }}
           disabled={article.title.length < 1}
           loading={create.isPending}
         >

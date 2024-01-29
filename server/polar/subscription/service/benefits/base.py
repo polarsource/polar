@@ -1,4 +1,8 @@
-from typing import Any, Protocol, TypeVar
+from typing import Any, LiteralString, Protocol, TypedDict, TypeVar
+
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
+from pydantic_core import InitErrorDetails, PydanticCustomError
 
 from polar.exceptions import PolarError
 from polar.models import (
@@ -15,6 +19,46 @@ from polar.postgres import AsyncSession
 
 class SubscriptionBenefitServiceError(PolarError):
     ...
+
+
+class SubscriptionBenefitPropertyValidationError(TypedDict):
+    type: LiteralString
+    message: LiteralString
+    loc: tuple[int | str, ...]
+    input: Any
+
+
+class SubscriptionBenefitPropertiesValidationError(SubscriptionBenefitServiceError):
+    """
+    Subscription properties validation error.
+    """
+
+    errors: list[SubscriptionBenefitPropertyValidationError]
+    """List of errors."""
+
+    def __init__(
+        self, errors: list[SubscriptionBenefitPropertyValidationError]
+    ) -> None:
+        self.errors = errors
+        message = "Subscription benefit properties are invalid."
+        super().__init__(message, 422)
+
+    def to_request_validation_error(
+        self, loc_prefix: tuple[str | int, ...]
+    ) -> RequestValidationError:
+        pydantic_errors: list[InitErrorDetails] = []
+        for error in self.errors:
+            pydantic_errors.append(
+                {
+                    "type": PydanticCustomError(error["type"], error["message"]),
+                    "loc": (*loc_prefix, "properties", *error["loc"]),
+                    "input": error["input"],
+                }
+            )
+        pydantic_error = ValidationError.from_exception_data(
+            self.__class__.__name__, pydantic_errors
+        )
+        return RequestValidationError(pydantic_error.errors())
 
 
 class SubscriptionBenefitRetriableError(SubscriptionBenefitServiceError):
@@ -56,7 +100,7 @@ class SubscriptionBenefitPreconditionError(SubscriptionBenefitServiceError):
 
 
 SB = TypeVar("SB", bound=SubscriptionBenefit, contravariant=True)
-SBP = TypeVar("SBP", bound=SubscriptionBenefitProperties, contravariant=True)
+SBP = TypeVar("SBP", bound=SubscriptionBenefitProperties)
 
 
 class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
@@ -155,5 +199,25 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
             benefit: The updated SubscriptionBenefit.
             previous_properties: The SubscriptionBenefit properties before the update.
             Use it to check which fields have been updated.
+        """
+        ...
+
+    async def validate_properties(self, user: User, properties: dict[str, Any]) -> SBP:
+        """
+        Validates the benefit properties before creation.
+
+        Useful if we need to call external logic to make sure this input is valid.
+
+        Args:
+            user: The User creating the benefit.
+            properties: The input properties to validate.
+
+        Returns:
+            The validated SubscriptionBenefit properties.
+            It can be different from the input if needed.
+
+        Raises:
+            SubscriptionBenefitPropertiesValidationError: The subscription benefit
+            properties are invalid.
         """
         ...

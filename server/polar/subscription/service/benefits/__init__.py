@@ -11,6 +11,7 @@ from polar.subscription.service.benefits.ads import SubscriptionBenefitAdsServic
 from .articles import SubscriptionBenefitArticlesService
 from .base import (
     SubscriptionBenefitPreconditionError,
+    SubscriptionBenefitPropertiesValidationError,
     SubscriptionBenefitRetriableError,
     SubscriptionBenefitServiceError,
     SubscriptionBenefitServiceProtocol,
@@ -39,6 +40,7 @@ def get_subscription_benefit_service(
 
 __all__ = [
     "SubscriptionBenefitServiceProtocol",
+    "SubscriptionBenefitPropertiesValidationError",
     "SubscriptionBenefitPreconditionError",
     "SubscriptionBenefitRetriableError",
     "SubscriptionBenefitServiceError",

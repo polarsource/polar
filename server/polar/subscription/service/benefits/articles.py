@@ -1,7 +1,7 @@
 import contextlib
 import uuid
 from collections.abc import AsyncGenerator, Sequence
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 
@@ -91,6 +91,11 @@ class SubscriptionBenefitArticlesService(
         previous_properties: SubscriptionBenefitArticlesProperties,
     ) -> bool:
         return False
+
+    async def validate_properties(
+        self, user: User, properties: dict[str, Any]
+    ) -> SubscriptionBenefitArticlesProperties:
+        return cast(SubscriptionBenefitArticlesProperties, properties)
 
     async def _get_articles_subscription(
         self, user_id: uuid.UUID, organization_id: uuid.UUID

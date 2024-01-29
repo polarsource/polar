@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import structlog
@@ -19,6 +19,7 @@ from polar.notifications.notification import (
 
 from .base import (
     SubscriptionBenefitPreconditionError,
+    SubscriptionBenefitPropertiesValidationError,
     SubscriptionBenefitRetriableError,
     SubscriptionBenefitServiceProtocol,
 )
@@ -178,3 +179,26 @@ class SubscriptionBenefitDiscordService(
             new_properties["guild_id"] != previous_properties["guild_id"]
             or new_properties["role_id"] != previous_properties["role_id"]
         )
+
+    async def validate_properties(
+        self, user: User, properties: dict[str, Any]
+    ) -> SubscriptionBenefitDiscordProperties:
+        guild_id: str = properties["guild_id"]
+        role_id: str = properties["role_id"]
+
+        guild = await discord_bot_service.get_guild(guild_id)
+        guild_roles = [role["id"] for role in guild["roles"]]
+
+        if role_id not in guild_roles:
+            raise SubscriptionBenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "invalid_role",
+                        "message": "This role does not exist on this server.",
+                        "loc": ("role_id",),
+                        "input": role_id,
+                    }
+                ]
+            )
+
+        return cast(SubscriptionBenefitDiscordProperties, properties)

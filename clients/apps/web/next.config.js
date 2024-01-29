@@ -74,6 +74,12 @@ const nextConfig = {
           },
         ],
       },
+
+      // PostHog Rewrite
+      {
+        source: '/ingest/:path*',
+        destination: 'https://app.posthog.com/:path*',
+      },
     ]
   },
   async redirects() {

@@ -17,11 +17,7 @@ export default async function Layout({
   ])
 
   return (
-    <TopbarLayout
-      logoPosition="center"
-      isFixed={false}
-      authenticatedUser={authenticatedUser}
-    >
+    <TopbarLayout authenticatedUser={authenticatedUser}>
       <PublicLayout showUpsellFooter={authenticatedUser === undefined}>
         <>{children}</>
       </PublicLayout>

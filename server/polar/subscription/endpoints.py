@@ -24,6 +24,7 @@ from polar.organization.dependencies import (
 )
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.posthog import posthog
 from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
@@ -160,6 +161,14 @@ async def update_subscription_tier(
     if subscription_tier is None:
         raise ResourceNotFound()
 
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "tier",
+        "update",
+        {"subscription_tier_id": subscription_tier.id},
+    )
+
     return await subscription_tier_service.user_update(
         session, authz, subscription_tier, subscription_tier_update, auth.user
     )
@@ -180,6 +189,14 @@ async def archive_subscription_tier(
 
     if subscription_tier is None:
         raise ResourceNotFound()
+
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "tier",
+        "archive",
+        {"subscription_tier_id": subscription_tier.id},
+    )
 
     return await subscription_tier_service.archive(
         session, authz, subscription_tier, auth.user
@@ -202,6 +219,14 @@ async def update_subscription_tier_benefits(
 
     if subscription_tier is None:
         raise ResourceNotFound()
+
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "tier_benefits",
+        "update",
+        {"subscription_tier_id": subscription_tier.id},
+    )
 
     subscription_tier, _, _ = await subscription_tier_service.update_benefits(
         session, authz, subscription_tier, benefits_update.benefits, auth.user
@@ -292,9 +317,19 @@ async def create_subscription_benefit(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionBenefit:
-    return await subscription_benefit_service.user_create(
+    subscription_benefit = await subscription_benefit_service.user_create(
         session, authz, subscription_benefit_create, auth.user
     )
+
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "benefit",
+        "create",
+        {"subscription_benefit_id": subscription_benefit.id},
+    )
+
+    return subscription_benefit
 
 
 @router.post(
@@ -317,6 +352,14 @@ async def update_subscription_benefit(
     if subscription_benefit_update.type != subscription_benefit.type:
         raise BadRequest("The type of a benefit can't be changed.")
 
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "benefit",
+        "update",
+        {"subscription_benefit_id": subscription_benefit.id},
+    )
+
     return await subscription_benefit_service.user_update(
         session, authz, subscription_benefit, subscription_benefit_update, auth.user
     )
@@ -335,6 +378,14 @@ async def delete_subscription_benefit(
 
     if subscription_benefit is None:
         raise ResourceNotFound()
+
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "benefit",
+        "delete",
+        {"subscription_benefit_id": subscription_benefit.id},
+    )
 
     await subscription_benefit_service.user_delete(
         session, authz, subscription_benefit, auth.user
@@ -359,6 +410,15 @@ async def create_subscribe_session(
 
     if subscription_tier is None:
         raise ResourceNotFound()
+
+    if auth.user:
+        posthog.user_event(
+            auth.user,
+            "subscriptions",
+            "subscribe_session",
+            "create",
+            {"subscription_tier_id": subscription_tier.id},
+        )
 
     return await subscribe_session_service.create_subscribe_session(
         session,
@@ -567,12 +627,26 @@ async def create_free_subscription(
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    return await subscription_service.create_free_subscription(
+    subscription = await subscription_service.create_free_subscription(
         session,
         free_subscription_create=free_subscription_create,
         auth_subject=auth.subject,
         auth_method=auth.auth_method,
     )
+
+    if auth.user:
+        posthog.user_event(
+            auth.user,
+            "subscriptions",
+            "free_subscription",
+            "create",
+            {
+                "subscription_id": subscription.id,
+                "subscription_tier_id": free_subscription_create.tier_id,
+            },
+        )
+
+    return subscription
 
 
 @router.post(
@@ -647,6 +721,17 @@ async def subscriptions_import(
         except Exception as e:
             log.error("subscriptions_import.failed", e=e)
 
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "import",
+        "create",
+        {
+            "subscription_tier_id": tiers[0].id,
+            "email_count": count,
+        },
+    )
+
     return SubscriptionsImported(count=count)
 
 
@@ -712,6 +797,8 @@ async def subscriptions_export(
 
             yield ",".join(fields) + "\n"
 
+    posthog.user_event(auth.user, "subscriptions", "export", "create")
+
     name = f"{organization.name}_subscribers.csv"
     headers = {"Content-Disposition": f'attachment; filename="{name}"'}
     return StreamingResponse(create_csv(), headers=headers, media_type="text/csv")
@@ -730,6 +817,8 @@ async def upgrade_subscription(
     subscription = await subscription_service.get(session, id)
     if subscription is None:
         raise ResourceNotFound()
+
+    posthog.user_event(auth.user, "subscriptions", "upgrade_subscription", "submit")
 
     return await subscription_service.upgrade_subscription(
         session,
@@ -752,6 +841,8 @@ async def cancel_subscription(
     subscription = await subscription_service.get(session, id)
     if subscription is None:
         raise ResourceNotFound()
+
+    posthog.user_event(auth.user, "subscriptions", "subscription", "cancel")
 
     return await subscription_service.cancel_subscription(
         session, subscription=subscription, authz=authz, user=auth.subject

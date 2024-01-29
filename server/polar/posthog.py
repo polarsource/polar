@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from posthog import Posthog
 
@@ -54,6 +54,35 @@ class Service:
         )
 
     def user_event(
+        self,
+        user: User,
+        # strict typing in an attempt to force a common naming convention for events
+        category: Literal["articles", "subscriptions"],
+        noun: str,
+        verb: Literal[
+            "click",
+            "submit",
+            "create",
+            "view",
+            "add",
+            "invite",
+            "update",
+            "delete",
+            "remove",
+            "start",
+            "end",
+            "cancel",
+            "fail",
+            "generate",
+            "send",
+            "archive",
+        ],
+        properties: dict[str, Any] | None = None,
+    ) -> None:
+        event = f"{category}:{noun}:{verb}"
+        self.user_event_raw(user, event, properties)
+
+    def user_event_raw(
         self,
         user: User,
         event: str,

@@ -257,7 +257,7 @@ class GithubUserService(UserService):
             user=user,
             github_user=authenticated,
         )
-        posthog.user_event(
+        posthog.user_event_raw(
             user,
             event_name,
             {

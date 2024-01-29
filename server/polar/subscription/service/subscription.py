@@ -54,6 +54,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
+from polar.posthog import posthog
 from polar.transaction.service.transfer import (
     UnderReviewAccount,
 )
@@ -608,6 +609,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session.add(subscription)
         await session.commit()
 
+        posthog.user_event(
+            user,
+            "subscriptions",
+            "subscription",
+            "create",
+            {"subscription_id": subscription.id},
+        )
+
         # Send notification to managing org
         await notifications_service.send_to_org_admins(
             session,
@@ -652,6 +661,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         session.add(subscription)
         await session.commit()
+
+        if subscription.cancel_at_period_end or subscription.ended_at:
+            user = await user_service.get(session, subscription.user_id)
+            if user:
+                posthog.user_event(
+                    user,
+                    "subscriptions",
+                    "subscription",
+                    "cancel",
+                    {"subscription_id": subscription.id},
+                )
 
         await enqueue_job(
             "subscription.subscription.enqueue_benefits_grants", subscription.id

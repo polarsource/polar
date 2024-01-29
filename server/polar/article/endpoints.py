@@ -13,6 +13,7 @@ from polar.postgres import (
     AsyncSession,
     get_db_session,
 )
+from polar.posthog import posthog
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
@@ -202,6 +203,8 @@ async def create(
     art = await article_service.create(session, auth.subject, create)
     await session.refresh(art, {"created_by_user", "organization"})
 
+    posthog.user_event(auth.user, "articles", "api", "create", {"article_id": art.id})
+
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
@@ -333,6 +336,10 @@ async def send_preview(
     if not send_to_user:
         raise ResourceNotFound()
 
+    posthog.user_event(
+        auth.user, "articles", "email_preview", "send", {"article_id": art.id}
+    )
+
     await enqueue_job(
         "articles.send_to_user",
         article_id=art.id,
@@ -367,6 +374,8 @@ async def send(
     # admin required
     if not await authz.can(auth.subject, AccessType.write, art):
         raise Unauthorized()
+
+    posthog.user_event(auth.user, "articles", "email", "send", {"article_id": art.id})
 
     await article_service.send_to_subscribers(session, art)
     return ArticleSentResponse(ok=True)
@@ -404,6 +413,8 @@ async def update(
     if not art:
         raise ResourceNotFound()
 
+    posthog.user_event(auth.user, "articles", "api", "update", {"article_id": art.id})
+
     return ArticleSchema.from_db(
         art,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
@@ -436,5 +447,7 @@ async def delete(
 
     art.deleted_at = utc_now()
     await art.save(session)
+
+    posthog.user_event(auth.user, "articles", "api", "delete", {"article_id": art.id})
 
     return ArticleDeleteResponse(ok=True)

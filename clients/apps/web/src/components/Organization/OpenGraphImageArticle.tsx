@@ -48,7 +48,7 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
           whiteSpace: 'pre-wrap',
           fontWeight: 600,
           fontSize: '64px',
-          lineHeight: '1.4em'
+          lineHeight: '1.4em',
         }}
       >
         {article.title}
@@ -75,6 +75,7 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
         />
         <div
           style={{
+            display: 'flex',
             fontWeight: 500,
             whiteSpace: 'nowrap',
           }}

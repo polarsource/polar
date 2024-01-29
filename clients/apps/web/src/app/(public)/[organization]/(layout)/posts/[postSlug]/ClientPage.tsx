@@ -77,7 +77,7 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
     tierWithPaidArticlesBenefit?.benefits.find(isPaidBenefit)
 
   return (
-    <div className="dark:md:bg-polar-900 dark:md:border-polar-800 relative flex w-full flex-col items-center rounded-3xl ring-1 ring-gray-100 dark:ring-1 md:bg-white md:p-12 md:shadow-sm dark:md:border">
+    <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative flex w-full flex-col items-center rounded-3xl ring-1 ring-gray-100 dark:ring-1 md:bg-white md:p-12 md:shadow-sm dark:md:border">
       <Link
         className="absolute left-0 top-4 flex flex-shrink md:left-16 md:top-16"
         href={`/${article.organization.name}`}

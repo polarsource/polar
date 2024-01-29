@@ -49,6 +49,9 @@ export const OrganizationPublicPageNav = ({
     [organization, router],
   )
 
+  const tabsTriggerClassName =
+    'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300'
+
   return mobileLayout ? (
     <Select value={currentTab} onValueChange={handleSelectChange}>
       <SelectTrigger>
@@ -64,28 +67,47 @@ export const OrganizationPublicPageNav = ({
   ) : (
     <Tabs value={currentTab}>
       <TabsList
-        className={twMerge('dark:border-polar-700 flex dark:border', className)}
+        className={twMerge(
+          'flex bg-transparent dark:bg-transparent',
+          className,
+        )}
       >
         <Link href={`/${organization.name}`}>
-          <TabsTrigger value="overview" size="small">
+          <TabsTrigger
+            className={tabsTriggerClassName}
+            value="overview"
+            size="small"
+          >
             Overview
           </TabsTrigger>
         </Link>
 
         <Link href={`/${organization.name}/subscriptions`}>
-          <TabsTrigger value="subscriptions" size="small">
+          <TabsTrigger
+            className={tabsTriggerClassName}
+            value="subscriptions"
+            size="small"
+          >
             Subscriptions
           </TabsTrigger>
         </Link>
 
         <Link href={`/${organization.name}/issues`}>
-          <TabsTrigger value="issues" size="small">
+          <TabsTrigger
+            className={tabsTriggerClassName}
+            value="issues"
+            size="small"
+          >
             Issues
           </TabsTrigger>
         </Link>
 
         <Link href={`/${organization.name}/repositories`}>
-          <TabsTrigger value="repositories" size="small">
+          <TabsTrigger
+            className={tabsTriggerClassName}
+            value="repositories"
+            size="small"
+          >
             Repositories
           </TabsTrigger>
         </Link>

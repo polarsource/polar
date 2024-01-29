@@ -12,7 +12,7 @@ import { useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useAuth, usePersonalOrganization } from '../../hooks'
-import { backerRoutes } from '../Dashboard/navigation'
+import { backerRoutes, dashboardRoutes } from '../Dashboard/navigation'
 
 const ProfileSelection = ({
   useOrgFromURL = true,
@@ -238,7 +238,7 @@ export const ProfileMenu = ({
             </Link>
 
             <ul className="mt-2 flex w-full flex-col">
-              {backerRoutes(personalOrg, true)
+              {dashboardRoutes(personalOrg, true, true)
                 .filter((route) => ('if' in route ? route.if : true))
                 .map((n) => {
                   return (

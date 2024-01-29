@@ -96,7 +96,7 @@ const FeaturedCreator = ({
 
   const canSubscribe = useMemo(
     () => adminOrgs.data?.items?.every((org) => org.name !== creator.name),
-    [],
+    [adminOrgs, creator],
   )
 
   const onSubscribeFree: MouseEventHandler<HTMLButtonElement> = useCallback(

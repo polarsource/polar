@@ -17,25 +17,3 @@ export const Default: Story = {
     chromatic: { viewports: [390, 1200] },
   },
 }
-
-export const LogoLeft: Story = {
-  parameters: {
-    chromatic: { viewports: [390, 1200] },
-  },
-  args: {
-    logo: {
-      position: 'left',
-    },
-  },
-}
-
-export const Custom: Story = {
-  parameters: {
-    chromatic: { viewports: [390, 1200] },
-  },
-  args: {
-    logo: {
-      title: 'Custom',
-    },
-  },
-}

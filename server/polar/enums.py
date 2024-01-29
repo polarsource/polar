@@ -8,6 +8,7 @@ class Platforms(StrEnum):
 class UserSignupType(StrEnum):
     maintainer = "maintainer"
     backer = "backer"
+    imported = "imported"
 
 
 class AccountType(StrEnum):

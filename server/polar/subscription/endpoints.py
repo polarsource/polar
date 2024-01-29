@@ -9,6 +9,7 @@ from pydantic import UUID4
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Anonymous, Authz
+from polar.enums import UserSignupType
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
@@ -638,6 +639,7 @@ async def subscriptions_import(
                 ),
                 auth_subject=Anonymous(),  # do not forward auth!
                 auth_method=None,
+                signup_type=UserSignupType.imported,
             )
             count += 1
         except AlreadySubscribed:

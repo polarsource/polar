@@ -16,7 +16,7 @@ echo "🐻‍❄️✅ Clients ready"
 # Environment file
 if [ ! -f "/workspace/clients/apps/web/.env" ]; then
     echo "🐻‍❄️ /workspace/clients/apps/web/.env does not exist, creating it"
-    cp /workspace/clients/apps/web/.env.devcontainer /workspace/clients/apps/web/.env
+    cp /workspace/clients/apps/web/.env.template /workspace/clients/apps/web/.env
 fi
 
 echo "🐻‍❄️✅✅✅ Setup complete"

@@ -452,6 +452,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         free_subscription_create: FreeSubscriptionCreate,
         auth_subject: Subject,
         auth_method: AuthMethod | None,
+        signup_type: UserSignupType = UserSignupType.backer,
     ) -> Subscription:
         subscription_tier = await subscription_tier_service.get(
             session, free_subscription_create.tier_id
@@ -475,7 +476,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             user = await user_service.get_by_email_or_signup(
                 session,
                 email=free_subscription_create.customer_email,
-                signup_type=UserSignupType.backer,
+                signup_type=signup_type,
             )
 
         existing_subscriptions = await self.get_active_user_subscriptions(

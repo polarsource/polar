@@ -18,6 +18,9 @@ class Loops:
         signup_type: UserSignupType | None = None,
         **properties: Unpack[Properties],
     ) -> None:
+        if signup_type == UserSignupType.imported:
+            return
+
         properties = {
             "isMaintainer": False,
             "isBacker": False,

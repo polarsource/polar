@@ -7,6 +7,7 @@ import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
+import { captureEvent } from '@/utils/posthog'
 import { EnvelopeIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
@@ -78,7 +79,10 @@ const ClientPage = () => {
               <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                 Overview
               </h3>
-              <Link href={`/maintainer/${org?.name}/posts/new`}>
+              <Link
+                href={`/maintainer/${org?.name}/posts/new`}
+                onClick={() => captureEvent('posts:overview_create_new:click')}
+              >
                 <Button className="h-8 w-8 rounded-full">
                   <AddOutlined fontSize="inherit" />
                 </Button>

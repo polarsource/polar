@@ -4,6 +4,7 @@ import { PostEditor } from '@/components/Feed/PostEditor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
+import { captureEvent } from '@/utils/posthog'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -67,6 +68,7 @@ const ClientPage = () => {
     const savePost = (e: KeyboardEvent) => {
       if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
+        captureEvent('posts:edit_cmd_s:submit')
         handleSave()
       }
     }
@@ -96,8 +98,22 @@ const ClientPage = () => {
   const defaultTab =
     window && window.location.hash === '#settings' ? 'settings' : 'edit'
 
+  const onTabChange = async (tab: string) => {
+    if (tab === 'settings') {
+      captureEvent('posts:edit_tab_settings:view')
+    } else if (tab === 'edit') {
+      captureEvent('posts:edit_tab_edit:view')
+    } else if (tab === 'preview') {
+      captureEvent('posts:edit_tab_preview:view')
+    }
+  }
+
   return (
-    <Tabs className="flex flex-col" defaultValue={defaultTab}>
+    <Tabs
+      className="flex flex-col"
+      defaultValue={defaultTab}
+      onValueChange={onTabChange}
+    >
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
           <span className="dark:text-polar-500 px-4 text-sm text-gray-500">

@@ -4,13 +4,13 @@ import { Avatar } from 'polarkit/components/ui/atoms'
 import { useOrganization } from 'polarkit/hooks'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 
-export interface MySubscriptionsNavigationProps {
+export interface MySubscriptionsProps {
   subscriptionTiers: SubscriptionTierSubscriber[]
 }
 
-export const MySubscriptionsNavigation = ({
+export const MySubscriptions = ({
   subscriptionTiers,
-}: MySubscriptionsNavigationProps) => {
+}: MySubscriptionsProps) => {
   return (
     <div className="flex h-full w-full flex-col pb-4">
       <div className="flex w-full flex-row items-center gap-x-2 px-7 py-2">

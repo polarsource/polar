@@ -11,11 +11,7 @@ import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { LogoIcon } from 'polarkit/components/brand'
-import {
-  useListAdminOrganizations,
-  useOrganizationSubscriptions,
-  useUserSubscriptions,
-} from 'polarkit/hooks'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 import {
   PropsWithChildren,
   Suspense,
@@ -29,7 +25,6 @@ import { twMerge } from 'tailwind-merge'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
-import { MySubscriptionsNavigation } from '../Dashboard/MySubscriptionsNavigation'
 import { GitHubAuthUpsell, MaintainerUpsell } from '../Dashboard/Upsell'
 import Popover from '../Notifications/Popover'
 import ProfileSelection from '../Shared/ProfileSelection'
@@ -42,18 +37,6 @@ const DashboardSidebar = () => {
   const listOrganizationQuery = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
 
-  const userSubscriptions = useUserSubscriptions(
-    currentUser?.id,
-    undefined,
-    9999,
-  )
-
-  const orgSubscriptions = useOrganizationSubscriptions(
-    currentOrg?.id,
-    undefined,
-    9999,
-  )
-
   const orgs = listOrganizationQuery?.data?.items
 
   const isOrgAdmin = useIsOrganizationAdmin(currentOrg)
@@ -61,8 +44,6 @@ const DashboardSidebar = () => {
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
     : orgs?.some((org) => org.name === currentUser?.username)
-
-  const shouldRenderDashboardNavigation = currentOrg ? isOrgAdmin : true
 
   const githubAccount = useGitHubAccount()
   const shouldShowGitHubAuthUpsell = !githubAccount
@@ -72,13 +53,6 @@ const DashboardSidebar = () => {
     !listOrganizationQuery.isLoading &&
     !currentOrg &&
     !personalOrg
-
-  const subscriptionsToRender =
-    (currentOrg && currentOrg.id !== personalOrg?.id
-      ? orgSubscriptions.data?.items?.flatMap((item) => item.subscription_tier)
-      : userSubscriptions.data?.items?.flatMap(
-          (item) => item.subscription_tier,
-        )) ?? []
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
@@ -132,12 +106,6 @@ const DashboardSidebar = () => {
               <MaintainerUpsell />
             </div>
           ) : null}
-
-          {subscriptionsToRender.length > 0 && (
-            <MySubscriptionsNavigation
-              subscriptionTiers={subscriptionsToRender}
-            />
-          )}
         </div>
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
           <MetaNavigation />

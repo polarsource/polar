@@ -41,11 +41,11 @@ export default function Page() {
   const subscriptionsToRender = userSubscriptions.data?.items ?? []
 
   return (
-    <div className="relative flex h-full flex-col justify-between md:flex-row">
-      <div className="flex w-full flex-col gap-y-8 pb-12 md:max-w-2xl md:pr-24">
+    <div className="relative flex h-full flex-col justify-center pt-6 md:flex-row md:gap-x-24">
+      <div className="flex w-full flex-col gap-y-8 pb-12 md:max-w-xl">
         <Feed />
       </div>
-      <div className="flex h-full w-full flex-col gap-y-12 self-stretch md:max-w-md md:pl-24">
+      <div className="flex h-full flex-col gap-y-12 self-stretch md:max-w-xs">
         {shouldShowGitHubAuthUpsell ? (
           <div className="-m-4 flex flex-col pt-4">
             <GitHubAuthUpsell />

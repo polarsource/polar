@@ -1,7 +1,7 @@
+import { backerRoutes } from '@/components/Dashboard/navigation'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
-import { backerRoutes } from './navigation'
 
 const BackerNavigation = () => {
   const path = usePathname()

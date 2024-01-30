@@ -1,5 +1,6 @@
 'use client'
 
+import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import { useAuth } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import {
@@ -14,8 +15,7 @@ import { api } from 'polarkit'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
-import BackerNavigation from '../Dashboard/BackerNavigation'
-import GithubLoginButton from './GithubLoginButton'
+import BackerNavigation from './BackerNavigation'
 import TopbarRight from './TopbarRight'
 
 const Topbar = ({

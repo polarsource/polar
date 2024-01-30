@@ -1,6 +1,6 @@
+import GithubLoginButton from '@/components/Shared/GithubLoginButton'
+import { ProfileMenu } from '@/components/Shared/ProfileSelection'
 import { UserRead } from '@polar-sh/sdk'
-import GithubLoginButton from './GithubLoginButton'
-import { ProfileMenu } from './ProfileSelection'
 
 const TopbarRight = ({
   authenticatedUser,

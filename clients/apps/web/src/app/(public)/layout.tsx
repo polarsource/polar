@@ -1,5 +1,5 @@
+import Topbar from '@/components/Layout/Public/Topbar'
 import PublicLayout from '@/components/Layout/PublicLayout'
-import Topbar from '@/components/Shared/Topbar'
 import { getServerSideAPI } from '@/utils/api'
 import { ListResourceOrganization, UserRead } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'

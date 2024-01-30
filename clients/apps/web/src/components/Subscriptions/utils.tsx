@@ -1,5 +1,6 @@
 import {
   CheckOutlined,
+  GitHub,
   ShortTextOutlined,
   WebOutlined,
 } from '@mui/icons-material'
@@ -77,6 +78,11 @@ export const resolveBenefitIcon = (
     return <WebOutlined className={className} fontSize={fontSize} />
   } else if (benefit && benefit.type === SubscriptionBenefitType.DISCORD) {
     return <DiscordIcon />
+  } else if (
+    benefit &&
+    benefit.type === SubscriptionBenefitType.GITHUB_REPOSITORY
+  ) {
+    return <GitHub className={className} fontSize={fontSize} />
   } else {
     return <CheckOutlined className={className} fontSize={fontSize} />
   }

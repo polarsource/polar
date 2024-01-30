@@ -1,3 +1,4 @@
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
   AutoAwesome,
   LoyaltyOutlined,
@@ -10,6 +11,8 @@ import {
   SubscriptionBenefitCreate,
   SubscriptionBenefitCustomCreate,
   SubscriptionBenefitDiscordCreate,
+  SubscriptionBenefitGitHubRepositoryCreate,
+  SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum,
   SubscriptionBenefitType,
   SubscriptionBenefitUpdate,
   ValidationError,
@@ -51,6 +54,8 @@ import {
   useCreateSubscriptionBenefit,
   useDeleteSubscriptionBenefit,
   useDiscordGuild,
+  useGetOrganizationBillingPlan,
+  useListRepositories,
   useUpdateSubscriptionBenefit,
 } from 'polarkit/hooks'
 import React, { useCallback, useMemo, useState } from 'react'
@@ -532,6 +537,9 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'ads' && <AdsBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm update={update} />}
+      {type === 'github_repository' && (
+        <GitHubRepositoryBenefitForm update={update} />
+      )}
     </>
   )
 }
@@ -778,6 +786,106 @@ export const DiscordBenefitForm = ({
   )
 }
 
+interface GitHubRepositoryBenefitFormProps {
+  update?: boolean
+}
+
+export const GitHubRepositoryBenefitForm = ({
+  update = false,
+}: GitHubRepositoryBenefitFormProps) => {
+  const { control } =
+    useFormContext<SubscriptionBenefitGitHubRepositoryCreate>()
+  const { org } = useCurrentOrgAndRepoFromURL()
+  const { data: repositories } = useListRepositories()
+  const organizationRepositories = useMemo(() => {
+    if (!org || !repositories || !repositories.items) {
+      return []
+    }
+    return repositories.items.filter(
+      ({ organization: { id } }) => id === org.id,
+    )
+  }, [org, repositories])
+
+  const { data: billingPlan } = useGetOrganizationBillingPlan(org?.id)
+
+  return (
+    <>
+      {billingPlan && !billingPlan.is_free && (
+        <div className="text-sm text-yellow-500">
+          Your GitHub organization is currently on the{' '}
+          <span className="capitalize">{billingPlan.plan_name}</span>&apos;s
+          plan. Each subscriber will take a seat and GitHub will bill you for
+          them. Make sure your pricing is covering those fees!
+        </div>
+      )}
+      <FormField
+        control={control}
+        name="properties.repository_id"
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Repository</FormLabel>
+              </div>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="The repository to grant access to the user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizationRepositories.map((repository) => (
+                      <SelectItem key={repository.id} value={repository.id}>
+                        {repository.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+      <FormField
+        control={control}
+        name="properties.permission"
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Role</FormLabel>
+              </div>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="The role to grant the user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(
+                      SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum,
+                    ).map((permission) => (
+                      <SelectItem key={permission} value={permission}>
+                        {permission}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </>
+  )
+}
+
 const BenefitTypeSelect = ({}) => {
   const { control } = useFormContext<SubscriptionBenefitCustomCreate>()
   return (
@@ -800,6 +908,9 @@ const BenefitTypeSelect = ({}) => {
                   <SelectItem value="custom">Custom</SelectItem>
                   <SelectItem value="ads">Ad</SelectItem>
                   <SelectItem value="discord">Discord invite</SelectItem>
+                  <SelectItem value="github_repository">
+                    GitHub Repository Access
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </FormControl>

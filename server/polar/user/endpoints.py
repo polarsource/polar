@@ -12,6 +12,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
 from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
+from polar.posthog import posthog
 from polar.user.service import user as user_service
 
 from .schemas import (
@@ -80,6 +81,8 @@ async def maintainer_upgrade(
     if not personal_org:
         log.error("user.maintainer.upgrade", error="Org creation failed")
         raise InternalServerError("Unable to create maintainer organization")
+
+    posthog.user_event(auth.user, "user", "maintainer_upgrade", "submit")
 
     log.info(
         "user.maintainer_upgrade",

@@ -35,6 +35,20 @@ class SubscriptionBenefitProperties(Schema):
     ...
 
 
+## Custom
+
+
+class SubscriptionBenefitCustomProperties(Schema):
+    note: str | None = None
+
+
+class SubscriptionBenefitCustomSubscriberProperties(Schema):
+    note: str | None = None
+
+
+## Articles
+
+
 class SubscriptionBenefitArticlesProperties(Schema):
     paid_articles: bool
 
@@ -43,9 +57,15 @@ class SubscriptionBenefitArticlesSubscriberProperties(Schema):
     paid_articles: bool
 
 
+## Ads
+
+
 class SubscriptionBenefitAdsProperties(Schema):
     image_height: int = 400
     image_width: int = 400
+
+
+## Discord
 
 
 class SubscriptionBenefitDiscordProperties(Schema):
@@ -78,12 +98,25 @@ class SubscriptionBenefitDiscordSubscriberProperties(Schema):
     guild_id: str
 
 
-class SubscriptionBenefitCustomProperties(Schema):
-    note: str | None = None
+## GitHub Repository
 
 
-class SubscriptionBenefitCustomSubscriberProperties(Schema):
-    note: str | None = None
+class SubscriptionBenefitGitHubRepositoryCreateProperties(Schema):
+    repository_id: UUID4
+    permission: Literal["pull", "triage", "push", "maintain", "admin"]
+
+
+class SubscriptionBenefitGitHubRepositoryProperties(Schema):
+    repository_id: UUID4
+    repository_owner: str
+    repository_name: str
+    permission: Literal["pull", "triage", "push", "maintain", "admin"]
+
+
+class SubscriptionBenefitGitHubRepositorySubscriberProperties(Schema):
+    repository_id: UUID4
+    repository_owner: str
+    repository_name: str
 
 
 # SubscriptionBenefitCreate
@@ -129,10 +162,16 @@ class SubscriptionBenefitDiscordCreate(SubscriptionBenefitCreateBase):
     properties: SubscriptionBenefitDiscordCreateProperties
 
 
+class SubscriptionBenefitGitHubRepositoryCreate(SubscriptionBenefitCreateBase):
+    type: Literal[SubscriptionBenefitType.github_repository]
+    properties: SubscriptionBenefitGitHubRepositoryCreateProperties
+
+
 SubscriptionBenefitCreate = (
     SubscriptionBenefitCustomCreate
     | SubscriptionBenefitAdsCreate
     | SubscriptionBenefitDiscordCreate
+    | SubscriptionBenefitGitHubRepositoryCreate
 )
 
 
@@ -168,11 +207,17 @@ class SubscriptionBenefitDiscordUpdate(SubscriptionBenefitUpdateBase):
     properties: SubscriptionBenefitDiscordCreateProperties | None = None
 
 
+class SubscriptionBenefitGitHubRepositoryUpdate(SubscriptionBenefitUpdateBase):
+    type: Literal[SubscriptionBenefitType.github_repository]
+    properties: SubscriptionBenefitGitHubRepositoryCreateProperties | None = None
+
+
 SubscriptionBenefitUpdate = (
     SubscriptionBenefitArticlesUpdate
     | SubscriptionBenefitAdsUpdate
     | SubscriptionBenefitCustomUpdate
     | SubscriptionBenefitDiscordUpdate
+    | SubscriptionBenefitGitHubRepositoryUpdate
 )
 
 
@@ -187,6 +232,12 @@ class SubscriptionBenefitBase(TimestampedSchema):
     deletable: bool
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
+
+
+class SubscriptionBenefitCustom(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.custom]
+    properties: SubscriptionBenefitCustomProperties
+    is_tax_applicable: bool
 
 
 class SubscriptionBenefitArticles(SubscriptionBenefitBase):
@@ -204,10 +255,9 @@ class SubscriptionBenefitDiscord(SubscriptionBenefitBase):
     properties: SubscriptionBenefitDiscordProperties
 
 
-class SubscriptionBenefitCustom(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.custom]
-    properties: SubscriptionBenefitCustomProperties
-    is_tax_applicable: bool
+class SubscriptionBenefitGitHubRepository(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.github_repository]
+    properties: SubscriptionBenefitGitHubRepositoryProperties
 
 
 SubscriptionBenefit = (
@@ -215,6 +265,7 @@ SubscriptionBenefit = (
     | SubscriptionBenefitAds
     | SubscriptionBenefitCustom
     | SubscriptionBenefitDiscord
+    | SubscriptionBenefitGitHubRepository
 )
 
 subscription_benefit_schema_map: dict[
@@ -224,9 +275,15 @@ subscription_benefit_schema_map: dict[
     SubscriptionBenefitType.articles: SubscriptionBenefitArticles,
     SubscriptionBenefitType.ads: SubscriptionBenefitAds,
     SubscriptionBenefitType.custom: SubscriptionBenefitCustom,
+    SubscriptionBenefitType.github_repository: SubscriptionBenefitGitHubRepository,
 }
 
 # SubscriptionBenefitSubscriber
+
+
+class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.custom]
+    properties: SubscriptionBenefitCustomSubscriberProperties
 
 
 class SubscriptionBenefitArticlesSubscriber(SubscriptionBenefitBase):
@@ -244,9 +301,9 @@ class SubscriptionBenefitDiscordSubscriber(SubscriptionBenefitBase):
     properties: SubscriptionBenefitDiscordSubscriberProperties
 
 
-class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.custom]
-    properties: SubscriptionBenefitCustomSubscriberProperties
+class SubscriptionBenefitGitHubRepositorySubscriber(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.github_repository]
+    properties: SubscriptionBenefitGitHubRepositorySubscriberProperties
 
 
 # Properties that are available to subscribers only
@@ -255,6 +312,7 @@ SubscriptionBenefitSubscriber = (
     | SubscriptionBenefitAdsSubscriber
     | SubscriptionBenefitDiscordSubscriber
     | SubscriptionBenefitCustomSubscriber
+    | SubscriptionBenefitGitHubRepositorySubscriber
 )
 
 # Properties that are public (included in Subscription Tier endpoints)

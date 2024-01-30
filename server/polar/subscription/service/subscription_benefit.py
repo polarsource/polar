@@ -172,7 +172,7 @@ class SubscriptionBenefitService(
         benefit_service = get_subscription_benefit_service(create_schema.type, session)
         try:
             properties = await benefit_service.validate_properties(
-                user, create_schema.properties.model_dump(by_alias=True)
+                user, create_schema.properties.model_dump(mode="json", by_alias=True)
             )
         except SubscriptionBenefitPropertiesValidationError as e:
             raise e.to_request_validation_error(("body", create_schema.type))
@@ -220,7 +220,7 @@ class SubscriptionBenefitService(
             )
             try:
                 update_dict["properties"] = await benefit_service.validate_properties(
-                    user, properties_update.model_dump(by_alias=True)
+                    user, properties_update.model_dump(mode="json", by_alias=True)
                 )
             except SubscriptionBenefitPropertiesValidationError as e:
                 raise e.to_request_validation_error(("body", subscription_benefit.type))

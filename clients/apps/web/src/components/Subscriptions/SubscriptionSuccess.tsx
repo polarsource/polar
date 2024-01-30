@@ -89,8 +89,8 @@ export const SubscriptionSuccess = (props: {
             </CardContent>
             <CardFooter className="flex justify-center">
               {currentUser && (
-                <Link className="grow" href="/feed">
-                  <Button className="w-full">Back to your dashboard</Button>
+                <Link className="grow" href={`/${organizationName}`}>
+                  <Button className="w-full">Go to {organizationName}</Button>
                 </Link>
               )}
               {!currentUser && (

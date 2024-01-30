@@ -1,4 +1,4 @@
-import { useDiscordAccount } from '@/hooks'
+import { useDiscordAccount, useGitHubAccount } from '@/hooks'
 import { ArrowForwardOutlined, LinkOutlined } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
@@ -20,6 +20,7 @@ export const useBenefitActions = (
   const router = useRouter()
   const { data: organization } = useOrganization(benefit.organization_id ?? '')
   const discordAccount = useDiscordAccount()
+  const gitHubAccount = useGitHubAccount()
 
   switch (benefit.type) {
     case 'articles':
@@ -42,6 +43,22 @@ export const useBenefitActions = (
                 onClick: () => {
                   window.open(
                     `https://www.discord.com/channels/${benefit.properties.guild_id}`,
+                  )
+                },
+              },
+            ]
+          : []),
+      ]
+    case 'github_repository':
+      return [
+        ...(gitHubAccount
+          ? [
+              {
+                key: 'github_link',
+                icon: LinkOutlined,
+                onClick: () => {
+                  window.open(
+                    `https://github.com/${benefit.properties.repository_owner}/${benefit.properties.repository_name}/invitations`,
                   )
                 },
               },

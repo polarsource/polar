@@ -68,6 +68,7 @@ import { ConfirmModal } from '../Shared/ConfirmModal'
 import {
   CreatableSubscriptionBenefit,
   SubscriptionBenefit,
+  benefitsDisplayNames,
   isPremiumArticlesBenefit,
   resolveBenefitIcon,
 } from './utils'
@@ -905,12 +906,15 @@ const BenefitTypeSelect = ({}) => {
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="custom">Custom</SelectItem>
-                  <SelectItem value="ads">Ad</SelectItem>
-                  <SelectItem value="discord">Discord invite</SelectItem>
-                  <SelectItem value="github_repository">
-                    GitHub Repository Access
-                  </SelectItem>
+                  {Object.values(SubscriptionBenefitType)
+                    .filter(
+                      (value) => value !== SubscriptionBenefitType.ARTICLES,
+                    )
+                    .map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {benefitsDisplayNames[value]}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </FormControl>

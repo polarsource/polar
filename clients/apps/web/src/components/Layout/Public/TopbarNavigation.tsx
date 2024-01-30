@@ -1,19 +1,16 @@
-import { backerRoutes } from '@/components/Dashboard/navigation'
+import { Route } from '@/components/Dashboard/navigation'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const BackerNavigation = () => {
+const TopbarNavigation = ({ routes }: { routes: Route[] }) => {
   const path = usePathname()
 
-  // All routes and conditions
-  const navs = backerRoutes()
-
   // Filter routes, set isActive, and if subs should be expanded
-  const filteredNavs = navs
+  const filteredRoutes = routes
     .filter((n) => ('if' in n ? n.if : true))
     .map((n) => {
-      const isActive = path && path.startsWith(n.link)
+      const isActive = path && n.link !== '/' && path.startsWith(n.link)
       return {
         ...n,
         isActive,
@@ -22,7 +19,7 @@ const BackerNavigation = () => {
 
   return (
     <div className="flex flex-row items-center">
-      {filteredNavs.map((n) => (
+      {filteredRoutes.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
           <Link
             className={twMerge(
@@ -45,4 +42,4 @@ const BackerNavigation = () => {
   )
 }
 
-export default BackerNavigation
+export default TopbarNavigation

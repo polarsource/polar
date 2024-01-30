@@ -292,3 +292,42 @@ export const metaRoutes: Route[] = [
     subs: undefined,
   },
 ]
+
+export const unauthenticatedRoutes: Route[] = [
+  {
+    id: 'polar',
+    title: 'Polar',
+    link: `/`,
+    icon: undefined,
+    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'blog',
+    title: 'Blog',
+    link: `https://polar.sh/polarsource`,
+    icon: undefined,
+    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'faq',
+    title: 'FAQ',
+    link: `https://docs.polar.sh/faq/`,
+    icon: undefined,
+    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'docs',
+    title: 'Docs',
+    link: `https://docs.polar.sh`,
+    icon: undefined,
+    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
+    if: true,
+    subs: undefined,
+  },
+]

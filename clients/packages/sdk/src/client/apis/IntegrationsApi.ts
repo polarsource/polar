@@ -21,13 +21,24 @@ import type {
   InstallationCreate,
   LookupUserRequest,
   Organization,
+  OrganizationBillingPlan,
+  OrganizationCheckPermissionsInput,
   SynchronizeMembersResponse,
   UserSignupType,
   WebhookResponse,
 } from '../models/index';
 
+export interface IntegrationsApiCheckOrganizationPermissionsRequest {
+    id: string;
+    organizationCheckPermissionsInput: OrganizationCheckPermissionsInput;
+}
+
 export interface IntegrationsApiDiscordGuildLookupRequest {
     guildToken: string;
+}
+
+export interface IntegrationsApiGetOrganizationBillingPlanRequest {
+    id: string;
 }
 
 export interface IntegrationsApiInstallRequest {
@@ -73,6 +84,11 @@ export interface IntegrationsApiLookupUserOperationRequest {
     lookupUserRequest: LookupUserRequest;
 }
 
+export interface IntegrationsApiRedirectToOrganizationInstallationRequest {
+    id: string;
+    returnTo?: string;
+}
+
 export interface IntegrationsApiStripeConnectRefreshRequest {
     returnPath?: string;
 }
@@ -85,6 +101,50 @@ export interface IntegrationsApiSynchronizeMembersRequest {
  * 
  */
 export class IntegrationsApi extends runtime.BaseAPI {
+
+    /**
+     * Check Organization Permissions
+     */
+    async checkOrganizationPermissionsRaw(requestParameters: IntegrationsApiCheckOrganizationPermissionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling checkOrganizationPermissions.');
+        }
+
+        if (requestParameters.organizationCheckPermissionsInput === null || requestParameters.organizationCheckPermissionsInput === undefined) {
+            throw new runtime.RequiredError('organizationCheckPermissionsInput','Required parameter requestParameters.organizationCheckPermissionsInput was null or undefined when calling checkOrganizationPermissions.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github/organizations/{id}/check_permissions`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.organizationCheckPermissionsInput,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * Check Organization Permissions
+     */
+    async checkOrganizationPermissions(requestParameters: IntegrationsApiCheckOrganizationPermissionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.checkOrganizationPermissionsRaw(requestParameters, initOverrides);
+    }
 
     /**
      * Discord Guild Lookup
@@ -125,6 +185,44 @@ export class IntegrationsApi extends runtime.BaseAPI {
      */
     async discordGuildLookup(requestParameters: IntegrationsApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DiscordGuild> {
         const response = await this.discordGuildLookupRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get Organization Billing Plan
+     */
+    async getOrganizationBillingPlanRaw(requestParameters: IntegrationsApiGetOrganizationBillingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationBillingPlan>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getOrganizationBillingPlan.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github/organizations/{id}/billing`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get Organization Billing Plan
+     */
+    async getOrganizationBillingPlan(requestParameters: IntegrationsApiGetOrganizationBillingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationBillingPlan> {
+        const response = await this.getOrganizationBillingPlanRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -503,6 +601,52 @@ export class IntegrationsApi extends runtime.BaseAPI {
      */
     async lookupUser(requestParameters: IntegrationsApiLookupUserOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GithubUser> {
         const response = await this.lookupUserRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Redirect To Organization Installation
+     */
+    async redirectToOrganizationInstallationRaw(requestParameters: IntegrationsApiRedirectToOrganizationInstallationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling redirectToOrganizationInstallation.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.returnTo !== undefined) {
+            queryParameters['return_to'] = requestParameters.returnTo;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github/organizations/{id}/installation`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Redirect To Organization Installation
+     */
+    async redirectToOrganizationInstallation(requestParameters: IntegrationsApiRedirectToOrganizationInstallationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.redirectToOrganizationInstallationRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

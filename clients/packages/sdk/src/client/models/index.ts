@@ -258,6 +258,739 @@ export interface AdvertisementDisplay {
     width?: number;
 }
 /**
+ * App Permissions
+ * 
+ * The permissions granted to the user access token.
+ * 
+ * Examples:
+ *     {'contents': 'read', 'issues': 'read', 'deployments': 'write', 'single_file':
+ * 'read'}
+ * @export
+ * @interface AppPermissionsType
+ */
+export interface AppPermissionsType {
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    actions?: AppPermissionsTypeActionsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    administration?: AppPermissionsTypeAdministrationEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    checks?: AppPermissionsTypeChecksEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    codespaces?: AppPermissionsTypeCodespacesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    contents?: AppPermissionsTypeContentsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    dependabot_secrets?: AppPermissionsTypeDependabotSecretsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    deployments?: AppPermissionsTypeDeploymentsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    environments?: AppPermissionsTypeEnvironmentsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    issues?: AppPermissionsTypeIssuesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    metadata?: AppPermissionsTypeMetadataEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    packages?: AppPermissionsTypePackagesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    pages?: AppPermissionsTypePagesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    pull_requests?: AppPermissionsTypePullRequestsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    repository_custom_properties?: AppPermissionsTypeRepositoryCustomPropertiesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    repository_hooks?: AppPermissionsTypeRepositoryHooksEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    repository_projects?: AppPermissionsTypeRepositoryProjectsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    secret_scanning_alerts?: AppPermissionsTypeSecretScanningAlertsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    secrets?: AppPermissionsTypeSecretsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    security_events?: AppPermissionsTypeSecurityEventsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    single_file?: AppPermissionsTypeSingleFileEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    statuses?: AppPermissionsTypeStatusesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    vulnerability_alerts?: AppPermissionsTypeVulnerabilityAlertsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    workflows?: AppPermissionsTypeWorkflowsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    members?: AppPermissionsTypeMembersEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_administration?: AppPermissionsTypeOrganizationAdministrationEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_custom_roles?: AppPermissionsTypeOrganizationCustomRolesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_custom_org_roles?: AppPermissionsTypeOrganizationCustomOrgRolesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_custom_properties?: AppPermissionsTypeOrganizationCustomPropertiesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_copilot_seat_management?: AppPermissionsTypeOrganizationCopilotSeatManagementEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_announcement_banners?: AppPermissionsTypeOrganizationAnnouncementBannersEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_events?: AppPermissionsTypeOrganizationEventsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_hooks?: AppPermissionsTypeOrganizationHooksEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_personal_access_tokens?: AppPermissionsTypeOrganizationPersonalAccessTokensEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_personal_access_token_requests?: AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_plan?: AppPermissionsTypeOrganizationPlanEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_projects?: AppPermissionsTypeOrganizationProjectsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_packages?: AppPermissionsTypeOrganizationPackagesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_secrets?: AppPermissionsTypeOrganizationSecretsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_self_hosted_runners?: AppPermissionsTypeOrganizationSelfHostedRunnersEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    organization_user_blocking?: AppPermissionsTypeOrganizationUserBlockingEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    team_discussions?: AppPermissionsTypeTeamDiscussionsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    email_addresses?: AppPermissionsTypeEmailAddressesEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    followers?: AppPermissionsTypeFollowersEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    git_ssh_keys?: AppPermissionsTypeGitSshKeysEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    gpg_keys?: AppPermissionsTypeGpgKeysEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    interaction_limits?: AppPermissionsTypeInteractionLimitsEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    profile?: AppPermissionsTypeProfileEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AppPermissionsType
+     */
+    starring?: AppPermissionsTypeStarringEnum;
+}
+
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeActionsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeActionsEnum = typeof AppPermissionsTypeActionsEnum[keyof typeof AppPermissionsTypeActionsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeAdministrationEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeAdministrationEnum = typeof AppPermissionsTypeAdministrationEnum[keyof typeof AppPermissionsTypeAdministrationEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeChecksEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeChecksEnum = typeof AppPermissionsTypeChecksEnum[keyof typeof AppPermissionsTypeChecksEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeCodespacesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeCodespacesEnum = typeof AppPermissionsTypeCodespacesEnum[keyof typeof AppPermissionsTypeCodespacesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeContentsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeContentsEnum = typeof AppPermissionsTypeContentsEnum[keyof typeof AppPermissionsTypeContentsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeDependabotSecretsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeDependabotSecretsEnum = typeof AppPermissionsTypeDependabotSecretsEnum[keyof typeof AppPermissionsTypeDependabotSecretsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeDeploymentsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeDeploymentsEnum = typeof AppPermissionsTypeDeploymentsEnum[keyof typeof AppPermissionsTypeDeploymentsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeEnvironmentsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeEnvironmentsEnum = typeof AppPermissionsTypeEnvironmentsEnum[keyof typeof AppPermissionsTypeEnvironmentsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeIssuesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeIssuesEnum = typeof AppPermissionsTypeIssuesEnum[keyof typeof AppPermissionsTypeIssuesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeMetadataEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeMetadataEnum = typeof AppPermissionsTypeMetadataEnum[keyof typeof AppPermissionsTypeMetadataEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypePackagesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypePackagesEnum = typeof AppPermissionsTypePackagesEnum[keyof typeof AppPermissionsTypePackagesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypePagesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypePagesEnum = typeof AppPermissionsTypePagesEnum[keyof typeof AppPermissionsTypePagesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypePullRequestsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypePullRequestsEnum = typeof AppPermissionsTypePullRequestsEnum[keyof typeof AppPermissionsTypePullRequestsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeRepositoryCustomPropertiesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeRepositoryCustomPropertiesEnum = typeof AppPermissionsTypeRepositoryCustomPropertiesEnum[keyof typeof AppPermissionsTypeRepositoryCustomPropertiesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeRepositoryHooksEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeRepositoryHooksEnum = typeof AppPermissionsTypeRepositoryHooksEnum[keyof typeof AppPermissionsTypeRepositoryHooksEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeRepositoryProjectsEnum = {
+    READ: 'read',
+    WRITE: 'write',
+    ADMIN: 'admin'
+} as const;
+export type AppPermissionsTypeRepositoryProjectsEnum = typeof AppPermissionsTypeRepositoryProjectsEnum[keyof typeof AppPermissionsTypeRepositoryProjectsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeSecretScanningAlertsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeSecretScanningAlertsEnum = typeof AppPermissionsTypeSecretScanningAlertsEnum[keyof typeof AppPermissionsTypeSecretScanningAlertsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeSecretsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeSecretsEnum = typeof AppPermissionsTypeSecretsEnum[keyof typeof AppPermissionsTypeSecretsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeSecurityEventsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeSecurityEventsEnum = typeof AppPermissionsTypeSecurityEventsEnum[keyof typeof AppPermissionsTypeSecurityEventsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeSingleFileEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeSingleFileEnum = typeof AppPermissionsTypeSingleFileEnum[keyof typeof AppPermissionsTypeSingleFileEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeStatusesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeStatusesEnum = typeof AppPermissionsTypeStatusesEnum[keyof typeof AppPermissionsTypeStatusesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeVulnerabilityAlertsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeVulnerabilityAlertsEnum = typeof AppPermissionsTypeVulnerabilityAlertsEnum[keyof typeof AppPermissionsTypeVulnerabilityAlertsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeWorkflowsEnum = {
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeWorkflowsEnum = typeof AppPermissionsTypeWorkflowsEnum[keyof typeof AppPermissionsTypeWorkflowsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeMembersEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeMembersEnum = typeof AppPermissionsTypeMembersEnum[keyof typeof AppPermissionsTypeMembersEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationAdministrationEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationAdministrationEnum = typeof AppPermissionsTypeOrganizationAdministrationEnum[keyof typeof AppPermissionsTypeOrganizationAdministrationEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationCustomRolesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationCustomRolesEnum = typeof AppPermissionsTypeOrganizationCustomRolesEnum[keyof typeof AppPermissionsTypeOrganizationCustomRolesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationCustomOrgRolesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationCustomOrgRolesEnum = typeof AppPermissionsTypeOrganizationCustomOrgRolesEnum[keyof typeof AppPermissionsTypeOrganizationCustomOrgRolesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationCustomPropertiesEnum = {
+    READ: 'read',
+    WRITE: 'write',
+    ADMIN: 'admin'
+} as const;
+export type AppPermissionsTypeOrganizationCustomPropertiesEnum = typeof AppPermissionsTypeOrganizationCustomPropertiesEnum[keyof typeof AppPermissionsTypeOrganizationCustomPropertiesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationCopilotSeatManagementEnum = {
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationCopilotSeatManagementEnum = typeof AppPermissionsTypeOrganizationCopilotSeatManagementEnum[keyof typeof AppPermissionsTypeOrganizationCopilotSeatManagementEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationAnnouncementBannersEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationAnnouncementBannersEnum = typeof AppPermissionsTypeOrganizationAnnouncementBannersEnum[keyof typeof AppPermissionsTypeOrganizationAnnouncementBannersEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationEventsEnum = {
+    READ: 'read'
+} as const;
+export type AppPermissionsTypeOrganizationEventsEnum = typeof AppPermissionsTypeOrganizationEventsEnum[keyof typeof AppPermissionsTypeOrganizationEventsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationHooksEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationHooksEnum = typeof AppPermissionsTypeOrganizationHooksEnum[keyof typeof AppPermissionsTypeOrganizationHooksEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationPersonalAccessTokensEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationPersonalAccessTokensEnum = typeof AppPermissionsTypeOrganizationPersonalAccessTokensEnum[keyof typeof AppPermissionsTypeOrganizationPersonalAccessTokensEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum = typeof AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum[keyof typeof AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationPlanEnum = {
+    READ: 'read'
+} as const;
+export type AppPermissionsTypeOrganizationPlanEnum = typeof AppPermissionsTypeOrganizationPlanEnum[keyof typeof AppPermissionsTypeOrganizationPlanEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationProjectsEnum = {
+    READ: 'read',
+    WRITE: 'write',
+    ADMIN: 'admin'
+} as const;
+export type AppPermissionsTypeOrganizationProjectsEnum = typeof AppPermissionsTypeOrganizationProjectsEnum[keyof typeof AppPermissionsTypeOrganizationProjectsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationPackagesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationPackagesEnum = typeof AppPermissionsTypeOrganizationPackagesEnum[keyof typeof AppPermissionsTypeOrganizationPackagesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationSecretsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationSecretsEnum = typeof AppPermissionsTypeOrganizationSecretsEnum[keyof typeof AppPermissionsTypeOrganizationSecretsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationSelfHostedRunnersEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationSelfHostedRunnersEnum = typeof AppPermissionsTypeOrganizationSelfHostedRunnersEnum[keyof typeof AppPermissionsTypeOrganizationSelfHostedRunnersEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeOrganizationUserBlockingEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeOrganizationUserBlockingEnum = typeof AppPermissionsTypeOrganizationUserBlockingEnum[keyof typeof AppPermissionsTypeOrganizationUserBlockingEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeTeamDiscussionsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeTeamDiscussionsEnum = typeof AppPermissionsTypeTeamDiscussionsEnum[keyof typeof AppPermissionsTypeTeamDiscussionsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeEmailAddressesEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeEmailAddressesEnum = typeof AppPermissionsTypeEmailAddressesEnum[keyof typeof AppPermissionsTypeEmailAddressesEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeFollowersEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeFollowersEnum = typeof AppPermissionsTypeFollowersEnum[keyof typeof AppPermissionsTypeFollowersEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeGitSshKeysEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeGitSshKeysEnum = typeof AppPermissionsTypeGitSshKeysEnum[keyof typeof AppPermissionsTypeGitSshKeysEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeGpgKeysEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeGpgKeysEnum = typeof AppPermissionsTypeGpgKeysEnum[keyof typeof AppPermissionsTypeGpgKeysEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeInteractionLimitsEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeInteractionLimitsEnum = typeof AppPermissionsTypeInteractionLimitsEnum[keyof typeof AppPermissionsTypeInteractionLimitsEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeProfileEnum = {
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeProfileEnum = typeof AppPermissionsTypeProfileEnum[keyof typeof AppPermissionsTypeProfileEnum];
+
+/**
+ * @export
+ */
+export const AppPermissionsTypeStarringEnum = {
+    READ: 'read',
+    WRITE: 'write'
+} as const;
+export type AppPermissionsTypeStarringEnum = typeof AppPermissionsTypeStarringEnum[keyof typeof AppPermissionsTypeStarringEnum];
+
+/**
  * 
  * @export
  * @interface Article
@@ -965,7 +1698,7 @@ export type BenefitsInner = SubscriptionBenefitArticles | SubscriptionBenefitBas
  * @type BenefitsInner1
  * @export
  */
-export type BenefitsInner1 = SubscriptionBenefitAdsSubscriber | SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber | SubscriptionBenefitDiscordSubscriber;
+export type BenefitsInner1 = SubscriptionBenefitAdsSubscriber | SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber | SubscriptionBenefitDiscordSubscriber | SubscriptionBenefitGitHubRepositorySubscriber;
 
 /**
  * 
@@ -1892,7 +2625,7 @@ export interface IssueUpdateBadgeMessage {
  * @type ItemsInner
  * @export
  */
-export type ItemsInner = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord;
+export type ItemsInner = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
 
 /**
  * 
@@ -2310,19 +3043,19 @@ export interface ListResourceTransaction {
 /**
  * 
  * @export
- * @interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscord
+ * @interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository
  */
-export interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscord {
+export interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository {
     /**
      * 
      * @type {Array<ItemsInner>}
-     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscord
+     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository
      */
     items?: Array<ItemsInner>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscord
+     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository
      */
     pagination: Pagination;
 }
@@ -3485,6 +4218,44 @@ export interface OrganizationBadgeSettingsUpdate {
 /**
  * 
  * @export
+ * @interface OrganizationBillingPlan
+ */
+export interface OrganizationBillingPlan {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationBillingPlan
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationBillingPlan
+     */
+    is_free: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationBillingPlan
+     */
+    plan_name: string;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationCheckPermissionsInput
+ */
+export interface OrganizationCheckPermissionsInput {
+    /**
+     * 
+     * @type {AppPermissionsType}
+     * @memberof OrganizationCheckPermissionsInput
+     */
+    permissions: AppPermissionsType;
+}
+/**
+ * 
+ * @export
  * @interface OrganizationMember
  */
 export interface OrganizationMember {
@@ -4611,19 +5382,19 @@ export interface RepositoryBadgeSettingsUpdate {
  * @type ResponseSubscriptionsCreateSubscriptionBenefit
  * @export
  */
-export type ResponseSubscriptionsCreateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord;
+export type ResponseSubscriptionsCreateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
 
 /**
  * @type ResponseSubscriptionsLookupSubscriptionBenefit
  * @export
  */
-export type ResponseSubscriptionsLookupSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord;
+export type ResponseSubscriptionsLookupSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
 
 /**
  * @type ResponseSubscriptionsUpdateSubscriptionBenefit
  * @export
  */
-export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord;
+export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
 
 /**
  * 
@@ -5546,7 +6317,7 @@ export interface SubscriptionBenefitBase {
  * 
  * @export
  */
-export type SubscriptionBenefitCreate = { type: 'ads' } & SubscriptionBenefitAdsCreate | { type: 'custom' } & SubscriptionBenefitCustomCreate | { type: 'discord' } & SubscriptionBenefitDiscordCreate;
+export type SubscriptionBenefitCreate = { type: 'ads' } & SubscriptionBenefitAdsCreate | { type: 'custom' } & SubscriptionBenefitCustomCreate | { type: 'discord' } & SubscriptionBenefitDiscordCreate | { type: 'github_repository' } & SubscriptionBenefitGitHubRepositoryCreate;
 /**
  * 
  * @export
@@ -6117,6 +6888,345 @@ export type SubscriptionBenefitDiscordUpdateTypeEnum = typeof SubscriptionBenefi
 /**
  * 
  * @export
+ * @interface SubscriptionBenefitGitHubRepository
+ */
+export interface SubscriptionBenefitGitHubRepository {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    type: SubscriptionBenefitGitHubRepositoryTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {SubscriptionBenefitGitHubRepositoryProperties}
+     * @memberof SubscriptionBenefitGitHubRepository
+     */
+    properties: SubscriptionBenefitGitHubRepositoryProperties;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitGitHubRepositoryTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type SubscriptionBenefitGitHubRepositoryTypeEnum = typeof SubscriptionBenefitGitHubRepositoryTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositoryTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitGitHubRepositoryCreate
+ */
+export interface SubscriptionBenefitGitHubRepositoryCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreate
+     */
+    type: SubscriptionBenefitGitHubRepositoryCreateTypeEnum;
+    /**
+     * 
+     * @type {SubscriptionBenefitGitHubRepositoryCreateProperties}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreate
+     */
+    properties: SubscriptionBenefitGitHubRepositoryCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitGitHubRepositoryCreateTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type SubscriptionBenefitGitHubRepositoryCreateTypeEnum = typeof SubscriptionBenefitGitHubRepositoryCreateTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositoryCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitGitHubRepositoryCreateProperties
+ */
+export interface SubscriptionBenefitGitHubRepositoryCreateProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
+     */
+    repository_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
+     */
+    permission: SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum = {
+    PULL: 'pull',
+    TRIAGE: 'triage',
+    PUSH: 'push',
+    MAINTAIN: 'maintain',
+    ADMIN: 'admin'
+} as const;
+export type SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum = typeof SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum[keyof typeof SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitGitHubRepositoryProperties
+ */
+export interface SubscriptionBenefitGitHubRepositoryProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryProperties
+     */
+    repository_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryProperties
+     */
+    repository_owner: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryProperties
+     */
+    repository_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryProperties
+     */
+    permission: SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum = {
+    PULL: 'pull',
+    TRIAGE: 'triage',
+    PUSH: 'push',
+    MAINTAIN: 'maintain',
+    ADMIN: 'admin'
+} as const;
+export type SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum = typeof SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum[keyof typeof SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitGitHubRepositorySubscriber
+ */
+export interface SubscriptionBenefitGitHubRepositorySubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    type: SubscriptionBenefitGitHubRepositorySubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {SubscriptionBenefitGitHubRepositorySubscriberProperties}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
+     */
+    properties: SubscriptionBenefitGitHubRepositorySubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitGitHubRepositorySubscriberTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type SubscriptionBenefitGitHubRepositorySubscriberTypeEnum = typeof SubscriptionBenefitGitHubRepositorySubscriberTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositorySubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitGitHubRepositorySubscriberProperties
+ */
+export interface SubscriptionBenefitGitHubRepositorySubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriberProperties
+     */
+    repository_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriberProperties
+     */
+    repository_owner: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositorySubscriberProperties
+     */
+    repository_name: string;
+}
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitGitHubRepositoryUpdate
+ */
+export interface SubscriptionBenefitGitHubRepositoryUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryUpdate
+     */
+    type: SubscriptionBenefitGitHubRepositoryUpdateTypeEnum;
+    /**
+     * 
+     * @type {SubscriptionBenefitGitHubRepositoryCreateProperties}
+     * @memberof SubscriptionBenefitGitHubRepositoryUpdate
+     */
+    properties?: SubscriptionBenefitGitHubRepositoryCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitGitHubRepositoryUpdateTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type SubscriptionBenefitGitHubRepositoryUpdateTypeEnum = typeof SubscriptionBenefitGitHubRepositoryUpdateTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositoryUpdateTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface SubscriptionBenefitPreconditionErrorNotification
  */
 export interface SubscriptionBenefitPreconditionErrorNotification {
@@ -6225,7 +7335,8 @@ export const SubscriptionBenefitType = {
     CUSTOM: 'custom',
     ARTICLES: 'articles',
     ADS: 'ads',
-    DISCORD: 'discord'
+    DISCORD: 'discord',
+    GITHUB_REPOSITORY: 'github_repository'
 } as const;
 export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeof SubscriptionBenefitType];
 
@@ -6233,7 +7344,7 @@ export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeo
  * @type SubscriptionBenefitUpdate
  * @export
  */
-export type SubscriptionBenefitUpdate = SubscriptionBenefitAdsUpdate | SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate | SubscriptionBenefitDiscordUpdate;
+export type SubscriptionBenefitUpdate = SubscriptionBenefitAdsUpdate | SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate | SubscriptionBenefitDiscordUpdate | SubscriptionBenefitGitHubRepositoryUpdate;
 
 /**
  * 

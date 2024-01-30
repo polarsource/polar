@@ -7,16 +7,11 @@ import {
 import { FeaturedCreators } from '@/components/Feed/FeaturedCreators'
 import { Feed } from '@/components/Feed/Feed'
 import { MySubscriptions } from '@/components/Feed/MySubscriptions'
-import {
-  useAuth,
-  useCurrentOrgAndRepoFromURL,
-  useGitHubAccount,
-  usePersonalOrganization,
-} from '@/hooks'
+import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
 import { useListAdminOrganizations, useUserSubscriptions } from 'polarkit/hooks'
 
 export default function Page() {
-  const { currentUser } = useAuth()
+  const { currentUser, authenticated } = useAuth()
 
   const userSubscriptions = useUserSubscriptions(
     currentUser?.id,
@@ -25,23 +20,18 @@ export default function Page() {
   )
 
   const githubAccount = useGitHubAccount()
-  const shouldShowGitHubAuthUpsell = !githubAccount
+  const shouldShowGitHubAuthUpsell = authenticated && !githubAccount
 
   const personalOrg = usePersonalOrganization()
-  const { org: currentOrg, isLoaded: isCurrentOrgLoaded } =
-    useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()
 
   const shouldShowMaintainerUpsell =
-    isCurrentOrgLoaded &&
-    !listOrganizationQuery.isLoading &&
-    !currentOrg &&
-    !personalOrg
+    authenticated && !listOrganizationQuery.isLoading && !personalOrg
 
   const subscriptionsToRender = userSubscriptions.data?.items ?? []
 
   return (
-    <div className="relative flex h-full flex-col justify-center pt-6 md:flex-row md:gap-x-24">
+    <div className="relative flex h-full flex-col justify-center md:flex-row md:gap-x-24 md:pt-6">
       <div className="flex w-full flex-col gap-y-8 pb-12 md:max-w-xl">
         <Feed />
       </div>

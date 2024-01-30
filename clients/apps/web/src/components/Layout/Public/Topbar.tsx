@@ -70,7 +70,7 @@ const Topbar = ({
         <GithubLoginButton
           className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
           text="Connect with GitHub"
-          returnTo={'/feed'}
+          returnTo={window?.location?.href ?? '/feed'}
           userSignupType={UserSignupType.BACKER}
         />
       )

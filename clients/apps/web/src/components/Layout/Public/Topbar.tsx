@@ -11,7 +11,6 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
@@ -20,6 +19,7 @@ import {
   backerRoutes,
   unauthenticatedRoutes,
 } from '@/components/Dashboard/navigation'
+import { useMaintainerUpgrade } from 'polarkit/hooks'
 import TopbarNavigation from './TopbarNavigation'
 import TopbarRight from './TopbarRight'
 
@@ -48,8 +48,10 @@ const Topbar = ({
     ? `/maintainer/${currentUser?.username}/overview`
     : `/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
 
+  const maintainerUpgrade = useMaintainerUpgrade()
+
   const upgradeToMaintainer = useCallback(async () => {
-    const response = await api.users.maintainerUpgrade()
+    await maintainerUpgrade.mutateAsync()
     router.push(`/maintainer/${currentUser?.username}/overview`)
   }, [currentUser])
 
@@ -88,7 +90,10 @@ const Topbar = ({
     }
 
     return (
-      <Button onClick={upgradeToMaintainer}>
+      <Button
+        onClick={upgradeToMaintainer}
+        loading={maintainerUpgrade.isPending}
+      >
         <div className="flex flex-row items-center gap-x-2">
           <span className="text-xs">Become a Creator</span>
           <ArrowForwardOutlined fontSize="inherit" />

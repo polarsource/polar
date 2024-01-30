@@ -10,7 +10,7 @@ import {
   UserSignupType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
@@ -60,6 +60,9 @@ const Topbar = ({
   )
   const shouldShowGitHubAuthUpsell = !githubAccount
 
+  const pathname = usePathname()
+  const returnTo = pathname ?? '/feed'
+
   const upsellOrDashboard = () => {
     if (!currentUser) {
       return null
@@ -70,7 +73,7 @@ const Topbar = ({
         <GithubLoginButton
           className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
           text="Connect with GitHub"
-          returnTo={window?.location?.href ?? '/feed'}
+          returnTo={returnTo}
           userSignupType={UserSignupType.BACKER}
         />
       )

@@ -66,3 +66,13 @@ export const useDeletePersonalAccessToken = () =>
       queryClient.invalidateQueries({ queryKey: ['personalAccessTokens'] })
     },
   })
+
+export const useMaintainerUpgrade = () =>
+  useMutation({
+    mutationFn: () => {
+      return api.users.maintainerUpgrade()
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries()
+    },
+  })

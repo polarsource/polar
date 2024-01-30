@@ -4,9 +4,9 @@ import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit'
-import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
+import { useMaintainerUpgrade } from 'polarkit/hooks'
 import { PropsWithChildren } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 
@@ -31,9 +31,10 @@ export const MaintainerUpsell = () => {
   const { currentUser } = useAuth()
   const router = useRouter()
 
+  const maintainerUpgrade = useMaintainerUpgrade()
+
   const upgrade = async () => {
-    const response = await api.users.maintainerUpgrade()
-    // TODO: Change state instead to update - ideally - without refresh
+    await maintainerUpgrade.mutateAsync()
     router.push(`/maintainer/${currentUser?.username}/overview`)
   }
 
@@ -42,7 +43,12 @@ export const MaintainerUpsell = () => {
       title="Become a creator"
       description="Build, engage & convert your own community of free- and paid subscribers."
     >
-      <Button className="-z-1" fullWidth onClick={upgrade}>
+      <Button
+        className="-z-1"
+        fullWidth
+        onClick={upgrade}
+        loading={maintainerUpgrade.isPending}
+      >
         Get Started
       </Button>
     </Upsell>

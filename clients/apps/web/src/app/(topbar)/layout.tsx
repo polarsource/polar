@@ -26,10 +26,13 @@ export default async function Layout({
           // Handle unauthenticated
           return undefined
         }),
-        api.organizations.list({ isAdminOnly: true }, cacheConfig).catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
+        // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
+        api.organizations
+          .list({ isAdminOnly: true }, { cache: 'no-store' })
+          .catch(() => {
+            // Handle unauthenticated
+            return undefined
+          }),
       ])
     authenticatedUser = loadAuthenticatedUser
     userAdminOrganizations = loadUserAdminOrganizations

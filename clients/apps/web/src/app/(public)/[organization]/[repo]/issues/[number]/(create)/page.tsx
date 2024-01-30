@@ -113,15 +113,13 @@ export default async function Page({
   }
 
   return (
-    <>
-      <Pledge
-        issue={issue}
-        htmlBody={issueHTMLBody}
-        pledgers={pledgers}
-        rewards={rewards}
-        gotoURL={undefined}
-        pullRequests={pulls}
-      />
-    </>
+    <Pledge
+      issue={issue}
+      htmlBody={issueHTMLBody}
+      pledgers={pledgers}
+      rewards={rewards}
+      gotoURL={undefined}
+      pullRequests={pulls}
+    />
   )
 }

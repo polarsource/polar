@@ -32,6 +32,8 @@ export type Route = {
   readonly link: string
   readonly if: boolean | undefined
   readonly subs?: SubRoute[]
+  readonly selectedExactMatchOnly?: boolean
+  readonly selectedMatchFallback?: boolean
 }
 
 export const maintainerRoutes = (org: Organization): Route[] => [

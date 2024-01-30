@@ -1,4 +1,3 @@
-import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import {
   FilterSearchParams,
   buildFundingFilters,
@@ -14,6 +13,7 @@ import {
 } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
+import ClientPage from './ClientPage'
 
 const cacheConfig = {
   next: {
@@ -150,9 +150,8 @@ export default async function Page({
   }
 
   return (
-    <RepositoryPublicPage
+    <ClientPage
       organization={repo.organization}
-      repositories={repositories.items || []}
       repository={repo}
       issuesFunding={issuesFunding}
       totalIssueCount={noFilterSearch.pagination.total_count}

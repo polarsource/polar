@@ -1,12 +1,13 @@
-import { PolarQueryClientProvider } from '@/app/providers'
 import PublicLayout from '@/components/Layout/PublicLayout'
-import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
+
+import { PolarQueryClientProvider } from '@/app/providers'
 import type { Meta, StoryObj } from '@storybook/react'
 import { issueFunding, org, repo } from 'polarkit/testdata'
+import ClientPage from './ClientPage'
 
-const meta: Meta<typeof RepositoryPublicPage> = {
+const meta: Meta<typeof ClientPage> = {
   title: 'Pages/RepositoryPublicPage',
-  component: RepositoryPublicPage,
+  component: ClientPage,
   parameters: {
     nextjs: {
       appDirectory: true,
@@ -16,7 +17,7 @@ const meta: Meta<typeof RepositoryPublicPage> = {
 
 export default meta
 
-type Story = StoryObj<typeof RepositoryPublicPage>
+type Story = StoryObj<typeof ClientPage>
 
 const orgWithBio = {
   ...org,
@@ -43,7 +44,6 @@ export const Default: Story = {
   args: {
     organization: orgWithBio,
     repository: repoWithData,
-    repositories: [repo],
     totalIssueCount: 4,
     issuesFunding: {
       items: [issueFunding, issueFunding, issueFunding, issueFunding],
@@ -54,7 +54,7 @@ export const Default: Story = {
     return (
       <PolarQueryClientProvider>
         <PublicLayout showUpsellFooter={true}>
-          <RepositoryPublicPage {...args} />
+          <ClientPage {...args} />
         </PublicLayout>
       </PolarQueryClientProvider>
     )

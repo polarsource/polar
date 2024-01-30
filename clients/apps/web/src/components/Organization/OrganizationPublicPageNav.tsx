@@ -30,15 +30,31 @@ export const OrganizationPublicPageNav = ({
   const router = useRouter()
   const pathname = usePathname()
   const currentTab = useMemo(() => {
-    const tabs = ['overview', 'subscriptions', 'issues', 'repositories']
-
     const pathParts = pathname.split('/')
 
-    if (pathParts.includes('posts')) {
+    // Example: "/zegl/subscriptions"
+    // 0: ""
+    // 1: "zegl"
+    // 2: "subscriptions"
+
+    if (pathParts.length <= 2) {
       return 'overview'
-    } else {
-      return tabs.find((tab) => pathParts.includes(tab)) ?? 'overview'
     }
+    if (pathParts.length >= 3 && pathParts[2] === 'posts') {
+      return 'overview'
+    }
+    if (pathParts.length >= 3 && pathParts[2] === 'subscriptions') {
+      return 'subscriptions'
+    }
+    if (pathParts.length >= 3 && pathParts[2] === 'issues') {
+      return 'issues'
+    }
+    if (pathParts.length >= 3 && pathParts[2] === 'repositories') {
+      return 'repositories'
+    }
+
+    // Fallback to repositories ("/zegl/reponame")
+    return 'repositories'
   }, [pathname])
 
   const handleSelectChange = useCallback(
@@ -55,7 +71,7 @@ export const OrganizationPublicPageNav = ({
   return mobileLayout ? (
     <Select value={currentTab} onValueChange={handleSelectChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a tier" />
+        <SelectValue placeholder="Go to page" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="overview">Overview</SelectItem>

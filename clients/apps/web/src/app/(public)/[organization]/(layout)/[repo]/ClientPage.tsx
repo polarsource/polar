@@ -1,35 +1,26 @@
+import { externalURL, prettyURL } from '@/components/Organization'
+import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
+import HowItWorks from '@/components/Pledge/HowItWorks'
 import {
   ListResourceIssueFunding,
   Organization,
   Repository,
 } from '@polar-sh/sdk'
 import { formatStarsNumber } from 'polarkit/utils'
-import { externalURL, prettyURL } from '.'
-import HowItWorks from '../Pledge/HowItWorks'
-import Header from './Header'
-import IssuesLookingForFunding from './IssuesLookingForFunding'
 
-const RepositoryPublicPage = ({
+const ClientPage = ({
   organization,
   repository,
-  repositories,
   issuesFunding,
   totalIssueCount,
 }: {
   organization: Organization
   repository: Repository
-  repositories: Repository[]
   issuesFunding: ListResourceIssueFunding
   totalIssueCount: number
 }) => {
   return (
     <>
-      <Header
-        organization={organization}
-        repositories={repositories}
-        repository={repository}
-      />
-
       <h1 className="dark:text-polar-100 text-center text-3xl font-normal text-gray-800 md:text-3xl">
         {organization.name}/{repository.name} has{' '}
         {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}
@@ -70,4 +61,4 @@ const RepositoryPublicPage = ({
   )
 }
 
-export default RepositoryPublicPage
+export default ClientPage

@@ -1,4 +1,3 @@
-import PublicLayout from '@/components/Layout/PublicLayout'
 import { getServerSideAPI } from '@/utils/api'
 import { twMerge } from 'tailwind-merge'
 
@@ -25,11 +24,5 @@ export default async function Layout({
     >
       {children}
     </div>
-  )
-
-  return (
-    <PublicLayout showUpsellFooter={authenticatedUser === undefined}>
-      <>{children}</>
-    </PublicLayout>
   )
 }

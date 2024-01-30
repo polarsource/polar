@@ -1,11 +1,17 @@
-import { useDiscordAccount } from '@/hooks'
+import { useDiscordAccount, useGitHubAccount } from '@/hooks'
 import { AutoAwesome } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
-import { getUserDiscordAuthorizeURL } from 'polarkit/auth'
+import {
+  getGitHubAuthorizeURL,
+  getUserDiscordAuthorizeURL,
+} from 'polarkit/auth'
 import { Button } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { resolveBenefitIcon } from '../Subscriptions/utils'
+import {
+  benefitsDisplayNames,
+  resolveBenefitIcon,
+} from '../Subscriptions/utils'
 import { BenefitSubscriber } from './Benefit'
 import { useBenefitActions } from './useBenefitAction'
 
@@ -22,6 +28,7 @@ export const BenefitRow = ({
 }: BenefitRowProps) => {
   const benefitActions = useBenefitActions(benefit)
   const discordAccount = useDiscordAccount()
+  const gitHubAccount = useGitHubAccount()
   const pathname = usePathname()
 
   const handleClick = useCallback(() => {
@@ -45,7 +52,9 @@ export const BenefitRow = ({
           </span>
         </div>
         <div className="flex flex-col">
-          <h3 className="text-sm font-medium capitalize">{benefit.type}</h3>
+          <h3 className="text-sm font-medium capitalize">
+            {benefitsDisplayNames[benefit.type]}
+          </h3>
           <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
             {benefit.description}
           </p>
@@ -64,7 +73,14 @@ export const BenefitRow = ({
           <a
             href={getUserDiscordAuthorizeURL({ returnTo: pathname || '/feed' })}
           >
-            Connect Discord
+            Connect with Discord
+          </a>
+        </Button>
+      )}
+      {benefit.type === 'github_repository' && !gitHubAccount && (
+        <Button asChild>
+          <a href={getGitHubAuthorizeURL({ returnTo: pathname || '/feed' })}>
+            Connect with GitHub
           </a>
         </Button>
       )}

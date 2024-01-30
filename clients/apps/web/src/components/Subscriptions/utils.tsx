@@ -105,6 +105,16 @@ export const DiscordIcon = () => (
   </svg>
 )
 
+export const benefitsDisplayNames: {
+  [key in SubscriptionBenefitType]: string
+} = {
+  [SubscriptionBenefitType.ADS]: 'Ad',
+  [SubscriptionBenefitType.ARTICLES]: 'Posts',
+  [SubscriptionBenefitType.CUSTOM]: 'Custom',
+  [SubscriptionBenefitType.DISCORD]: 'Discord invite',
+  [SubscriptionBenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
+}
+
 export const subscriptionStatusDisplayNames: {
   [key in SubscriptionStatus]: string
 } = {

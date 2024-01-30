@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
@@ -26,12 +26,14 @@ class SubscriptionBenefitType(StrEnum):
     articles = "articles"
     ads = "ads"
     discord = "discord"
+    github_repository = "github_repository"
 
     def is_tax_applicable(self) -> bool:
         try:
             _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {
                 SubscriptionBenefitType.ads: True,
                 SubscriptionBenefitType.discord: True,
+                SubscriptionBenefitType.github_repository: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:
@@ -57,6 +59,13 @@ class SubscriptionBenefitArticlesProperties(SubscriptionBenefitProperties):
 
 class SubscriptionBenefitAdsProperties(SubscriptionBenefitProperties):
     pass
+
+
+class SubscriptionBenefitGitHubRepositoryProperties(SubscriptionBenefitProperties):
+    repository_id: UUID
+    repository_owner: str
+    repository_name: str
+    permission: Literal["pull", "triage", "push", "maintain", "admin"]
 
 
 class SubscriptionBenefit(RecordModel):
@@ -136,5 +145,16 @@ class SubscriptionBenefitDiscord(SubscriptionBenefit):
 
     __mapper_args__ = {
         "polymorphic_identity": SubscriptionBenefitType.discord,
+        "polymorphic_load": "inline",
+    }
+
+
+class SubscriptionBenefitGitHubRepository(SubscriptionBenefit):
+    properties: Mapped[SubscriptionBenefitGitHubRepositoryProperties] = mapped_column(
+        use_existing_column=True
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": SubscriptionBenefitType.github_repository,
         "polymorphic_load": "inline",
     }

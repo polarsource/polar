@@ -8,6 +8,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo
 from polar.models.user import User
 from polar.postgres import get_db_session
+from polar.posthog import posthog
 from polar.tags.api import Tags
 
 from .schemas import MagicLinkRequest
@@ -59,6 +60,8 @@ async def authenticate_magic_link(
         raise PolarRedirectionError(
             e.message, e.status_code, return_to=return_to
         ) from e
+
+    posthog.user_event(user, "user", "magic_link_verified", "submit")
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

@@ -137,6 +137,7 @@ async def github_callback(
             user = await github_user.login_or_signup(
                 session, tokens=tokens, signup_type=state_user_type
             )
+
     except GithubUserServiceError as e:
         raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
 
@@ -150,6 +151,8 @@ async def github_callback(
     await reward_service.connect_by_username(session, user)
 
     posthog.identify(user)
+    posthog.user_event(user, "user", "github_oauth_login", "done")
+
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to
     )
@@ -229,6 +232,14 @@ async def install(
         )
         if not organization:
             raise ResourceNotFound()
+
+        posthog.user_event(
+            auth.user,
+            "organizations",
+            "github_install",
+            "submit",
+            {"organization_id": organization.id},
+        )
 
         return OrganizationSchema.from_db(organization)
 

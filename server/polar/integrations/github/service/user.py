@@ -210,6 +210,7 @@ class GithubUserService(UserService):
                 tokens=tokens,
             )
             event_name = "User Logged In"
+            posthog.user_event(user, "user", "github_oauth_logged_in", "done")
         else:
             # Check if existing user with this email
             email, email_verified = github_email
@@ -225,6 +226,7 @@ class GithubUserService(UserService):
                         tokens=tokens,
                     )
                     event_name = "User Logged In"
+                    posthog.user_event(user, "user", "github_oauth_logged_in", "done")
                 # For security reasons, don't link if the email is not verified
                 else:
                     raise CannotLinkUnverifiedEmailError(email)
@@ -238,6 +240,7 @@ class GithubUserService(UserService):
                 )
                 event_name = "User Signed Up"
                 signup = True
+                posthog.user_event(user, "user", "github_oauth_signed_up", "done")
 
         if signup and signup_type == UserSignupType.maintainer:
             try:
@@ -313,6 +316,8 @@ class GithubUserService(UserService):
         user.avatar_url = github_user.avatar_url
         user.profile = profile
         await user.save(session)
+
+        posthog.user_event(user, "user", "github_oauth_link_existing_user", "done")
 
         return user
 

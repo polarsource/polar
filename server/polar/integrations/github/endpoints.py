@@ -13,7 +13,7 @@ from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
-from pydantic import BaseModel, ValidationError
+from pydantic import UUID4, BaseModel, ValidationError
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.auth.service import AuthService
@@ -21,7 +21,12 @@ from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.context import ExecutionContext
 from polar.enums import UserSignupType
-from polar.exceptions import PolarRedirectionError, ResourceNotFound, Unauthorized
+from polar.exceptions import (
+    NotPermitted,
+    PolarRedirectionError,
+    ResourceNotFound,
+    Unauthorized,
+)
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
@@ -33,7 +38,7 @@ from polar.reward.service import reward_service
 from polar.tags.api import Tags
 from polar.worker import enqueue_job
 
-from .schemas import GithubUser, OAuthAccessToken
+from .schemas import GithubUser, OAuthAccessToken, OrganizationBillingPlan
 from .service.organization import github_organization
 from .service.user import GithubUserServiceError, github_user
 
@@ -207,6 +212,50 @@ async def lookup_user(
     return GithubUser(
         username=github_user.parsed_data.login,
         avatar_url=github_user.parsed_data.avatar_url,
+    )
+
+
+###############################################################################
+# Organization pricing plan
+###############################################################################
+
+
+@router.get("/organizations/{id}/billing")
+async def get_organization_billing_plan(
+    id: UUID4,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationBillingPlan:
+    organization = await github_organization.get(session, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.user, AccessType.write, organization):
+        raise NotPermitted()
+
+    if organization.is_personal:
+        user_client = await github.get_user_client(session, auth.user)
+        user_response = await user_client.rest.users.async_get_authenticated()
+        plan = user_response.parsed_data.plan
+    else:
+        if organization.installation_id is None:
+            raise ResourceNotFound()
+
+        org_client = github.get_app_installation_client(organization.installation_id)
+        org_response = await org_client.rest.orgs.async_get(organization.name)
+        plan = org_response.parsed_data.plan
+
+    if not plan:
+        raise ResourceNotFound()
+
+    plan_name = plan.name
+
+    return OrganizationBillingPlan(
+        organization_id=organization.id,
+        plan_name=plan_name,
+        is_free=plan_name.lower() == "free",
     )
 
 

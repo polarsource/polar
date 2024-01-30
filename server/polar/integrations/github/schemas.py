@@ -1,3 +1,5 @@
+from pydantic import UUID4
+
 from polar.kit.schemas import Schema
 
 
@@ -26,3 +28,9 @@ class GitHubIssue(Schema):
 class GithubUser(Schema):
     username: str
     avatar_url: str
+
+
+class OrganizationBillingPlan(Schema):
+    organization_id: UUID4
+    is_free: bool
+    plan_name: str

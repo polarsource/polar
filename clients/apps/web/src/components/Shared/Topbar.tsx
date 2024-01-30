@@ -1,8 +1,8 @@
 'use client'
 
-import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
+import { useAuth, usePersonalOrganization } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { UserRead, UserSignupType } from '@polar-sh/sdk'
+import { Platforms, UserRead, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
@@ -21,7 +21,10 @@ const Topbar = ({
   hideProfile?: boolean
   authenticatedUser?: UserRead
 }) => {
-  const { currentUser, authenticated } = useAuth()
+  // Fallback to client side user loading
+  const { currentUser: clientCurrentUser } = useAuth()
+  const currentUser = authenticatedUser ?? clientCurrentUser
+
   const adminOrgs = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
   const router = useRouter()
@@ -29,7 +32,7 @@ const Topbar = ({
   const hasAdminOrgs = (adminOrgs.data?.items?.length ?? 0) > 0
   const adminOrgsLoaded = !adminOrgs.isPending
   const hasPersonalOrg = !!personalOrg
-  const shouldRenderCreateButton = authenticated && hasAdminOrgs
+  const shouldRenderCreateButton = currentUser && hasAdminOrgs
   const creatorPath = hasPersonalOrg
     ? `/maintainer/${currentUser?.username}/overview`
     : `/maintainer/${adminOrgs.data?.items?.[0]?.name}/overview`
@@ -39,7 +42,9 @@ const Topbar = ({
     router.push(`/maintainer/${currentUser?.username}/overview`)
   }, [currentUser])
 
-  const githubAccount = useGitHubAccount()
+  const githubAccount = currentUser?.oauth_accounts.find(
+    (o) => o.platform === Platforms.GITHUB,
+  )
   const shouldShowGitHubAuthUpsell = !githubAccount
 
   const creatorCTA = adminOrgsLoaded ? (
@@ -74,7 +79,7 @@ const Topbar = ({
           </div>
         </div>
         <div className="flex flex-row items-center justify-between gap-x-4">
-          {authenticated &&
+          {authenticatedUser &&
             (shouldShowGitHubAuthUpsell ? (
               <GithubLoginButton
                 className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
@@ -85,7 +90,7 @@ const Topbar = ({
             ) : (
               creatorCTA
             ))}
-          <TopbarRight authenticatedUser={currentUser} />
+          <TopbarRight authenticatedUser={authenticatedUser} />
         </div>
       </div>
     </div>

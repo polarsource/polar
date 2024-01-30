@@ -12,7 +12,10 @@ const TopbarRight = ({
       {authenticatedUser ? (
         <ProfileMenu authenticatedUser={authenticatedUser} />
       ) : (
-        <GithubLoginButton text="Continue with GitHub" />
+        <GithubLoginButton
+          text="Continue with GitHub"
+          returnTo={window?.location?.href ?? '/feed'}
+        />
       )}
     </>
   )

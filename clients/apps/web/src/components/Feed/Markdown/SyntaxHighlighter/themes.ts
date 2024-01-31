@@ -19,7 +19,8 @@ export const polarLight: Theme = {
     tabSize: '4',
     WebkitHyphens: 'none',
     MozHyphens: 'none',
-    fontSize: '.7em',
+    fontSize: '.8em',
+    borderRadius: '2em',
 
     hyphens: 'none',
     overflow: 'auto',
@@ -156,7 +157,8 @@ export const polarDark: Theme = {
     tabSize: '4',
     WebkitHyphens: 'none',
     MozHyphens: 'none',
-    fontSize: '.7em',
+    fontSize: '.8em',
+    borderRadius: '2em',
 
     hyphens: 'none',
     overflow: 'auto',

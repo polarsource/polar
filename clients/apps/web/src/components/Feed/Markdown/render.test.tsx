@@ -219,3 +219,20 @@ test('polar', () => {
   )
   expect(container).toMatchSnapshot()
 })
+
+test('ads-embed', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+        
+<a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"><picture><img src="https://polar.sh/embed/ad?id=63f3a3cc-54ae-45e9-987a-7174364d234e" alt="Click me!!!!!" height="100" width="100" /></picture></a>
+<a href="https://polar.sh/zegl"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/ad?id=94c1676c-db08-4489-b4b4-e25beadf2542&dark=1"><img src="https://polar.sh/embed/ad?id=94c1676c-db08-4489-b4b4-e25beadf2542" alt="Hello world!" height="100" width="100" /></picture></a>
+
+        `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

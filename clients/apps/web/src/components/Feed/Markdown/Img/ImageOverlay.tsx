@@ -4,12 +4,28 @@ import Image from 'next/image'
 import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+const numOrDefault = (
+  n: number | string | undefined,
+  _default: number,
+): number => {
+  if (typeof n === 'number') {
+    return n
+  }
+  if (typeof n === 'string' && parseInt(n) > 0) {
+    return parseInt(n)
+  }
+  return _default
+}
+
 export const ImageOverlay = (props: ComponentProps<'img'>) => {
   const { isShown, hide, show } = useModal()
 
   if (!props.src) {
     return <></>
   }
+
+  const width = numOrDefault(props.width, 672)
+  const height = numOrDefault(props.height, 100)
 
   // Optimize images if they are served from the Polar Vercel Blob Bucket
   if (
@@ -24,8 +40,8 @@ export const ImageOverlay = (props: ComponentProps<'img'>) => {
           alt={props.alt ?? ''}
           className={twMerge(props.className, 'cursor-pointer')}
           onClick={show}
-          width={672}
-          height={100}
+          width={width}
+          height={height}
           quality={90}
         />
         <Modal
@@ -51,7 +67,8 @@ export const ImageOverlay = (props: ComponentProps<'img'>) => {
         alt={props.alt ?? ''}
         className={twMerge(props.className, 'cursor-pointer')}
         onClick={show}
-        width={672}
+        width={width}
+        height={height}
       />
       <Modal
         modalContent={
@@ -59,7 +76,6 @@ export const ImageOverlay = (props: ComponentProps<'img'>) => {
             src={props.src}
             alt={props.alt ?? ''}
             className={twMerge(props.className, 'w-full max-w-screen-xl')}
-            width={672}
           />
         }
         isShown={isShown}

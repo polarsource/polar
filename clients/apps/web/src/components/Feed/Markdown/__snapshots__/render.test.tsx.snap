@@ -1,5 +1,42 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`ads-embed 1`] = `
+<div>
+  <div>
+    <a
+      href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    >
+      <picture>
+        <img
+          alt="Click me!!!!!"
+          height="100"
+          src="https://polar.sh/embed/ad?id=63f3a3cc-54ae-45e9-987a-7174364d234e"
+          style="max-width: 100%;"
+          width="100"
+        />
+      </picture>
+    </a>
+    <a
+      href="https://polar.sh/zegl"
+    >
+      <picture>
+        <source
+          media="(prefers-color-scheme: dark)"
+          srcset="https://polar.sh/embed/ad?id=94c1676c-db08-4489-b4b4-e25beadf2542&dark=1"
+        />
+        <img
+          alt="Hello world!"
+          height="100"
+          src="https://polar.sh/embed/ad?id=94c1676c-db08-4489-b4b4-e25beadf2542"
+          style="max-width: 100%;"
+          width="100"
+        />
+      </picture>
+    </a>
+  </div>
+</div>
+`;
+
 exports[`basic 1`] = `
 <div>
   <div>
@@ -99,6 +136,7 @@ exports[`polar 1`] = `
   <div>
     <p>
       <img
+        alt="image.png"
         src="https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-fCQqIZt3zubCpaMQzy6ZONZAOG6QDq.png"
         style="max-width: 100%;"
       />
@@ -140,6 +178,7 @@ exports[`polar 1`] = `
     </h3>
     <p>
       <img
+        alt="Screenshot 2024-01-09 at 10.44.55.png"
         src="https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Screenshot%202024-01-09%20at%2010.44.55-uy562dyst8J1Hk4QScE5i6DE3Aa2jA.png"
         style="max-width: 100%;"
       />
@@ -211,6 +250,7 @@ exports[`polar 1`] = `
     </h3>
     <p>
       <img
+        alt="image.png"
         src="https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-QKge9Wh9vpdhZRIPLnsMWFesg8SPEY.png"
         style="max-width: 100%;"
       />

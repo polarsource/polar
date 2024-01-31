@@ -74,6 +74,8 @@ export const wrapStrictCreateElement = (args: {
       'hr',
       'span',
       'input',
+      'picture',
+      'source',
     ]
 
     // clean up props, only pass down a limited set of safe props
@@ -109,6 +111,7 @@ export const wrapStrictCreateElement = (args: {
         trimProps.src = props?.src
         trimProps.height = props?.height
         trimProps.width = props?.width
+        trimProps.alt = props?.alt
         children = undefined // can never have children
       }
 
@@ -185,6 +188,11 @@ export const wrapStrictCreateElement = (args: {
       trimProps.checked = props?.checked
       trimProps.disabled = 'disabled'
       children = undefined // can never have children
+    }
+
+    if (type === 'source') {
+      trimProps.media = props?.media
+      trimProps.srcSet = props?.srcSet
     }
 
     if (type === 'p' && Array.isArray(children)) {

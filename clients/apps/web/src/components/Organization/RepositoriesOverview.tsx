@@ -1,6 +1,6 @@
 import { StarIcon } from '@heroicons/react/24/solid'
 import { HiveOutlined } from '@mui/icons-material'
-import { Organization, Repository } from '@polar-sh/sdk'
+import { Organization, Repository, Visibility } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
   Card,
@@ -61,6 +61,11 @@ export const RepositoriesOverivew = ({
                         Unlicensed
                       </Pill>
                     )}
+                    {repository.visibility === Visibility.PRIVATE ? (
+                      <Pill className="grow-0 px-3" color="gray">
+                        Private
+                      </Pill>
+                    ) : null}
                     <span className="flex flex-row items-center gap-x-1 text-sm">
                       <StarIcon className="h-4 w-4" />
                       <span className="pt-.5">{repository.stars}</span>
@@ -90,6 +95,11 @@ export const RepositoriesOverivew = ({
                           Unlicensed
                         </Pill>
                       )}
+                      {repository.visibility === Visibility.PRIVATE ? (
+                        <Pill className="grow-0 px-3" color="gray">
+                          Private
+                        </Pill>
+                      ) : null}
                     </span>
                     {repository.description && (
                       <p className="dark:text-polar-500 text-sm text-gray-400">

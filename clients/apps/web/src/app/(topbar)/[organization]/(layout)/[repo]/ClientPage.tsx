@@ -5,7 +5,9 @@ import {
   ListResourceIssueFunding,
   Organization,
   Repository,
+  Visibility,
 } from '@polar-sh/sdk'
+import { Banner } from 'polarkit/components/ui/molecules'
 import { formatStarsNumber } from 'polarkit/utils'
 
 const ClientPage = ({
@@ -21,6 +23,13 @@ const ClientPage = ({
 }) => {
   return (
     <>
+      {repository.visibility === Visibility.PRIVATE && (
+        <Banner color="muted">
+          This is a private repository. Only logged in users that are members of{' '}
+          {repository.organization.name} can see it.
+        </Banner>
+      )}
+
       <h1 className="dark:text-polar-100 text-center text-3xl font-normal text-gray-800 md:text-3xl">
         {organization.name}/{repository.name} has{' '}
         {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}

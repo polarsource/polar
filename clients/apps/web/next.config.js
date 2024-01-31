@@ -123,7 +123,7 @@ const nextConfig = {
       // Logged-out user redirection
       {
         source:
-          '/:rootPath(feed|for-you|posts|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
+          '/:rootPath(feed|for-you|posts|subscriptions|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
         destination: '/login?return_to=/:rootPath:subPath',
         missing: [
           {
@@ -211,6 +211,11 @@ const nextConfig = {
       {
         source: '/dependencies(.*)',
         destination: '/feed',
+        permanent: false,
+      },
+      {
+        source: '/benefits(.*)',
+        destination: '/subscriptions',
         permanent: false,
       },
       {

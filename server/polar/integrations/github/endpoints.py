@@ -30,6 +30,7 @@ from polar.exceptions import (
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
@@ -154,6 +155,13 @@ async def github_callback(
 
     # connect dangling rewards
     await reward_service.connect_by_username(session, user)
+
+    # Make sure potential GitHub benefits are granted
+    await enqueue_job(
+        "subscription.subscription_benefit.precondition_fulfilled",
+        user_id=user.id,
+        subscription_benefit_type=SubscriptionBenefitType.github_repository,
+    )
 
     posthog.identify(user)
     posthog.user_event(user, "user", "github_oauth_login", "done")

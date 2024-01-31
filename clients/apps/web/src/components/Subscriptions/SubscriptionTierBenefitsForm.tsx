@@ -972,12 +972,37 @@ export const GitHubRepositoryBenefitForm = ({
                       SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum,
                     ).map((permission) => (
                       <SelectItem key={permission} value={permission}>
-                        {permission}
+                        {
+                          {
+                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.PULL]:
+                              'Read',
+                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.TRIAGE]:
+                              'Triage',
+                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.PUSH]:
+                              'Write',
+                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.MAINTAIN]:
+                              'Maintain',
+                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.ADMIN]:
+                              'Admin',
+                          }[permission]
+                        }
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </FormControl>
+              <FormDescription>
+                Read more about roles and their permissions on{' '}
+                <a
+                  href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role"
+                  target="_blank"
+                  rel="noopener noreferer"
+                  className="text-blue-500 underline"
+                >
+                  GitHub documentation
+                </a>
+                .
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )

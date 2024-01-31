@@ -55,45 +55,48 @@ const FundingPage = () => {
     account === undefined
 
   return (
-    <div className="mb-24 mt-2 space-y-10">
-      <div className="space-y-10">
-        {showPendingRewardsBanner && (
-          <Banner color="blue">
-            <div className="flex w-full items-center justify-between">
-              <span>
-                Great news! You have pending rewards and payouts. Setup a Stripe
-                account to get paid.
-              </span>
-              <Link href="/rewards" className="whitespace-nowrap font-medium">
-                Go to Rewards
-              </Link>
+    <div className="flex flex-col-reverse gap-8 px-4 md:flex-row md:gap-16 md:px-0">
+      <div className="mb-24 mt-2 w-full space-y-10">
+        <div className="space-y-10">
+          {showPendingRewardsBanner && (
+            <Banner color="blue">
+              <div className="flex w-full items-center justify-between">
+                <span>
+                  Great news! You have pending rewards and payouts. Setup a
+                  Stripe account to get paid.
+                </span>
+                <Link href="/rewards" className="whitespace-nowrap font-medium">
+                  Go to Rewards
+                </Link>
+              </div>
+            </Banner>
+          )}
+
+          {totalCount !== undefined && totalCount > 0 && (
+            <div className="flex flex-col gap-y-4">
+              <h1 className="dark:text-polar-50 text-lg text-gray-950">
+                Funded issues
+              </h1>
+              <IssueList
+                totalCount={totalCount}
+                loading={dashboardQuery.isLoading}
+                dashboard={dashboard}
+                filters={filters}
+                onSetFilters={() => {}}
+                isInitialLoading={dashboardQuery.isInitialLoading}
+                isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+                hasNextPage={dashboardQuery.hasNextPage || false}
+                fetchNextPage={dashboardQuery.fetchNextPage}
+              />
             </div>
-          </Banner>
-        )}
+          )}
+        </div>
 
-        <FundAGithubIssue />
-
-        {totalCount !== undefined && totalCount > 0 && (
-          <div>
-            <h1 className="dark:text-polar-300 text-lg text-gray-900">
-              Funded issues
-            </h1>
-            <IssueList
-              totalCount={totalCount}
-              loading={dashboardQuery.isLoading}
-              dashboard={dashboard}
-              filters={filters}
-              onSetFilters={() => {}}
-              isInitialLoading={dashboardQuery.isInitialLoading}
-              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-              hasNextPage={dashboardQuery.hasNextPage || false}
-              fetchNextPage={dashboardQuery.fetchNextPage}
-            />
-          </div>
-        )}
+        {githubAccount && <Recommended />}
       </div>
-
-      {githubAccount && <Recommended />}
+      <div className="top-26 sticky flex w-full flex-col md:max-w-sm">
+        <FundAGithubIssue />
+      </div>
     </div>
   )
 }

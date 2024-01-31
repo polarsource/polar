@@ -123,6 +123,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                   <a
                     href="https://docs.polar.sh/maintainers/ads/"
                     target="_blank"
+                    rel="noopener"
                     className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
                   >
                     integrating

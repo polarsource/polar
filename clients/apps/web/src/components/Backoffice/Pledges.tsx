@@ -63,6 +63,7 @@ const Pledges = () => {
             <a
               href={`https://github.com/${i[0].issue.repository.organization.name}/${i[0].issue.repository.name}/issues/${i[0].issue.number}`}
               target="_blank"
+              rel="noopener noreferrer"
             >
               <Button size="sm">
                 <span>GitHub</span>
@@ -112,6 +113,7 @@ const Pledges = () => {
                   <a
                     href={`https://dashboard.stripe.com/payments/${p.payment_id}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                   >
                     <Button size="sm">
                       <span>Payment</span>

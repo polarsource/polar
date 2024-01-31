@@ -103,7 +103,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     id: 'funding',
     title: 'Funding',
     link: `/maintainer/${org?.name}/funding`,
-    icon: <FavoriteBorderOutlined className="h-6 w-6" fontSize="inherit" />,
+    icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: undefined,

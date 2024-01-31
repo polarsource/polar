@@ -12,6 +12,7 @@ from githubkit import (
     webhooks,
 )
 from githubkit.typing import Missing
+from githubkit.utils import UNSET, Unset
 from pydantic import BaseModel, Field
 
 from polar.config import settings
@@ -19,6 +20,8 @@ from polar.integrations.github.cache import RedisCache
 from polar.models.user import OAuthAccount, OAuthPlatform, User
 from polar.postgres import AsyncSession
 from polar.user.oauth_service import oauth_account_service
+
+from .types import AppPermissionsType
 
 log = structlog.get_logger()
 
@@ -161,7 +164,7 @@ def get_app_client() -> GitHub[AppAuthStrategy]:
 
 
 def get_app_installation_client(
-    installation_id: int,
+    installation_id: int, *, permissions: AppPermissionsType | Unset = UNSET
 ) -> GitHub[AppInstallationAuthStrategy]:
     if not installation_id:
         raise Exception("unable to create github client: no installation_id provided")
@@ -176,6 +179,7 @@ def get_app_installation_client(
             installation_id=installation_id,
             client_id=settings.GITHUB_CLIENT_ID,
             client_secret=settings.GITHUB_CLIENT_SECRET,
+            permissions=permissions,
             cache=RedisCache(),
         )
     )

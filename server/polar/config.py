@@ -67,6 +67,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
 
     # Github App
+    GITHUB_APP_NAMESPACE: str = ""
     GITHUB_APP_IDENTIFIER: str = ""
     GITHUB_APP_WEBHOOK_SECRET: str = ""
     GITHUB_APP_PRIVATE_KEY: str = ""

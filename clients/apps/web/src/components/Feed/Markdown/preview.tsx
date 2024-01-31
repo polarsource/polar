@@ -1,4 +1,5 @@
 import { Article } from '@polar-sh/sdk'
+import { decode } from 'html-entities'
 import Markdown from 'markdown-to-jsx'
 import { markdownOpts, wrapStrictCreateElement } from './markdown'
 
@@ -15,6 +16,7 @@ export const previewOpts = {
   },
 } as const
 
+// Text only renderer. Used to generate contents for og:description and similar
 export default function PreviewText(props: { article: Article }) {
   return (
     <Markdown
@@ -38,12 +40,11 @@ export default function PreviewText(props: { article: Article }) {
         wrapper: (args: any) => <>{args.children}</>,
       }}
     >
-      {props.article.body
-        .substring(0, 500)
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .trim()}
+      {props.article.body.substring(0, 500)}
     </Markdown>
   )
+}
+
+export function UnescapeText(str: string): string {
+  return decode(str, { scope: 'strict' }).trim()
 }

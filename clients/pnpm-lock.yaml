@@ -247,6 +247,9 @@ importers:
       framer-motion:
         specifier: ^10.17.8
         version: 10.17.8(react-dom@18.2.0)(react@18.2.0)
+      html-entities:
+        specifier: ^2.4.0
+        version: 2.4.0
       markdown-to-jsx:
         specifier: ^7.3.2
         version: 7.3.2(react@18.2.0)
@@ -3889,7 +3892,7 @@ packages:
       core-js-pure: 3.30.1
       error-stack-parser: 2.1.4
       find-up: 5.0.0
-      html-entities: 2.3.3
+      html-entities: 2.4.0
       loader-utils: 2.0.4
       react-refresh: 0.14.0
       schema-utils: 3.3.0
@@ -13504,9 +13507,8 @@ packages:
     dependencies:
       whatwg-encoding: 2.0.0
 
-  /html-entities@2.3.3:
-    resolution: {integrity: sha512-DV5Ln36z34NNTDgnz0EWGBLZENelNAtkiFA4kyNOG2tDI6Mz1uSWiq1wAKdyjnJwyDiDO7Fa2SO1CTxPXL8VxA==}
-    dev: true
+  /html-entities@2.4.0:
+    resolution: {integrity: sha512-igBTJcNNNhvZFRtm8uA6xMY6xYleeDwn3PeBCkDz7tHttv4F2hsDI2aPgNERWzvRcNYHNT3ymRaQzllmXj4YsQ==}
 
   /html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
@@ -20392,7 +20394,7 @@ packages:
     resolution: {integrity: sha512-IK/0WAHs7MTu1tzLTjio73LjS3Ov+VvBKQmE8WPlJutgG5zT6Urgq/BbAdRrHTRpyzK0dvAvFh1Qg98akxgZpA==}
     dependencies:
       ansi-html-community: 0.0.8
-      html-entities: 2.3.3
+      html-entities: 2.4.0
       strip-ansi: 6.0.1
     dev: true
 

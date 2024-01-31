@@ -201,4 +201,16 @@ class SubscriptionBenefitDiscordService(
                 ]
             )
 
+        if not await discord_bot_service.is_bot_role_above_role(guild_id, role_id):
+            raise SubscriptionBenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "invalid_role_position",
+                        "message": "This role is above the Polar bot role, so Discord won't let our bot grants it. Please reorder them so the Polar bot is above.",
+                        "loc": ("role_id",),
+                        "input": role_id,
+                    }
+                ]
+            )
+
         return cast(SubscriptionBenefitDiscordProperties, properties)

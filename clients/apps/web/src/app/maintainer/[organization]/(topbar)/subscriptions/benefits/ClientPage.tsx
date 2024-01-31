@@ -88,7 +88,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             <div className="flex flex-row items-center gap-x-3">
               <div
                 className={twMerge(
-                  'flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
+                  'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
                 )}
               >
                 {resolveBenefitIcon(selectedBenefit, 'inherit')}
@@ -202,7 +202,7 @@ const BenefitRow = ({
       <div className="flex flex-row items-center gap-x-3">
         <div
           className={twMerge(
-            'flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
+            'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
           )}
         >
           {resolveBenefitIcon(benefit, 'inherit')}

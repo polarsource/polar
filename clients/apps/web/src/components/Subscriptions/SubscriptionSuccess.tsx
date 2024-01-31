@@ -78,7 +78,7 @@ export const SubscriptionSuccess = (props: {
                   key={benefit.id}
                   className="flex flex-row items-start text-blue-500 dark:text-blue-400"
                 >
-                  <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
+                  <span className="flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
                     {resolveBenefitIcon(benefit, 'inherit')}
                   </span>
                   <span className="ml-2 text-sm leading-relaxed">

@@ -250,7 +250,7 @@ const ClientPage = ({
                               className="dark:text-polar-200 flex flex-row items-start text-gray-950"
                             >
                               <div className="flex flex-row items-center gap-x-2 text-blue-500 dark:text-blue-400">
-                                <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
+                                <span className="flex h-6 w-6 shrink-0  flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
                                   {resolveBenefitIcon(benefit, 'inherit')}
                                 </span>
                                 <span className="text-xs">

@@ -147,6 +147,7 @@ const ClientPage = ({
                       key={organization.name}
                       href={`https://github.com/${organization.name}`}
                       target="_blank"
+                      rel="noopener noreferrer"
                     >
                       <Avatar
                         className="h-10 w-10"
@@ -162,6 +163,7 @@ const ClientPage = ({
                           key={user.github_username}
                           href={`https://github.com/${user.github_username}`}
                           target="_blank"
+                          rel="noopener noreferrer"
                         >
                           <Avatar
                             className="h-10 w-10"

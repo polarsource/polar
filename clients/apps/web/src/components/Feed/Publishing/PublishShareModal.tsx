@@ -51,6 +51,7 @@ export const PublishShareModal = ({
             <Link
               className="w-full"
               target="_blank"
+              rel="noopener noreferrer"
               href={`https://news.ycombinator.com/submitlink?u=${url}&t=${encodeURIComponent(
                 article.title,
               )}`}
@@ -61,6 +62,7 @@ export const PublishShareModal = ({
             <Link
               className="w-full"
               target="_blank"
+              rel="noopener noreferrer"
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
                 article.title,
               )}&url=${encodeURIComponent(url)}`}
@@ -72,6 +74,7 @@ export const PublishShareModal = ({
             <Link
               className="w-full"
               target="_blank"
+              rel="noopener noreferrer"
               href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(
                 article.title,
               )} ${url}`}

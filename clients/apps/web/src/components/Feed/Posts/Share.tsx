@@ -111,7 +111,7 @@ const LinkItem = (props: {
   children: React.ReactElement
 }) => {
   return (
-    <a href={props.href} target="_blank">
+    <a href={props.href} target="_blank" rel="noopener noreferrer">
       <ListItem current={false} className="rounded-lg px-6">
         <div className="flex flex-row items-center gap-x-3 text-sm">
           <span className="text-lg">{props.icon}</span>

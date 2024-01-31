@@ -1,4 +1,4 @@
-import PreviewText from '@/components/Feed/Markdown/preview'
+import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import {
@@ -59,9 +59,10 @@ export async function generateMetadata(
   // This is pretty fast so it's nothing that I'm worried about.
   const ReactDOMServer = (await import('react-dom/server')).default
 
-  const preview = ReactDOMServer.renderToStaticMarkup(
-    <PreviewText article={article} />,
+  const preview = UnescapeText(
+    ReactDOMServer.renderToStaticMarkup(<PreviewText article={article} />),
   )
+
   const image = firstImageUrlFromMarkdown(article.body)
 
   return {

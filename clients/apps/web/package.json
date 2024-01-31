@@ -47,6 +47,7 @@
     "class-variance-authority": "^0.6.0",
     "cmdk": "^0.2.0",
     "framer-motion": "^10.17.8",
+    "html-entities": "^2.4.0",
     "markdown-to-jsx": "^7.3.2",
     "mermaid": "^10.6.1",
     "next": "^14.0.4",

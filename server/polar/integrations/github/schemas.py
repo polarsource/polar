@@ -2,6 +2,8 @@ from pydantic import UUID4
 
 from polar.kit.schemas import Schema
 
+from .types import AppPermissionsType
+
 
 class OAuthAccessToken(Schema):
     access_token: str
@@ -28,6 +30,10 @@ class GitHubIssue(Schema):
 class GithubUser(Schema):
     username: str
     avatar_url: str
+
+
+class OrganizationCheckPermissionsInput(Schema):
+    permissions: AppPermissionsType
 
 
 class OrganizationBillingPlan(Schema):

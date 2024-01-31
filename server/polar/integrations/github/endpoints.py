@@ -10,6 +10,7 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import RedirectResponse
+from githubkit.exception import RequestFailed
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
@@ -22,6 +23,7 @@ from polar.config import settings
 from polar.context import ExecutionContext
 from polar.enums import UserSignupType
 from polar.exceptions import (
+    InternalServerError,
     NotPermitted,
     PolarRedirectionError,
     ResourceNotFound,
@@ -39,7 +41,12 @@ from polar.reward.service import reward_service
 from polar.tags.api import Tags
 from polar.worker import enqueue_job
 
-from .schemas import GithubUser, OAuthAccessToken, OrganizationBillingPlan
+from .schemas import (
+    GithubUser,
+    OAuthAccessToken,
+    OrganizationBillingPlan,
+    OrganizationCheckPermissionsInput,
+)
 from .service.organization import github_organization
 from .service.user import GithubUserServiceError, github_user
 
@@ -62,6 +69,12 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 
 class OAuthCallbackError(PolarRedirectionError):
     ...
+
+
+class NotPermittedOrganizationBillingPlan(NotPermitted):
+    def __init__(self) -> None:
+        message = "Organization billing plan not accessible."
+        super().__init__(message)
 
 
 @router.get("/authorize", name="integrations.github.authorize", tags=[Tags.INTERNAL])
@@ -224,11 +237,79 @@ async def lookup_user(
 
 
 ###############################################################################
-# Organization pricing plan
+# Organization
 ###############################################################################
 
 
-@router.get("/organizations/{id}/billing")
+@router.get("/organizations/{id}/installation", tags=[Tags.INTERNAL])
+async def redirect_to_organization_installation(
+    id: UUID4,
+    return_to: ReturnTo,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> RedirectResponse:
+    organization = await github_organization.get(session, id)
+
+    if organization is None:
+        raise PolarRedirectionError("Organization not found", return_to=return_to)
+
+    if not await authz.can(auth.user, AccessType.write, organization):
+        raise PolarRedirectionError(
+            "You don't have access to this organization", return_to=return_to
+        )
+
+    if organization.installation_id is None:
+        return RedirectResponse(
+            f"https://github.com/apps/{settings.GITHUB_APP_NAMESPACE}"
+            f"/installations/new/permissions?target_id={organization.external_id}"
+        )
+
+    if organization.is_personal:
+        return RedirectResponse(
+            "https://github.com/settings/installations"
+            f"/{organization.installation_id}/permissions/update"
+        )
+
+    return RedirectResponse(
+        f"https://github.com/organizations/{organization.name}"
+        f"/settings/installations/{organization.installation_id}/permissions/update"
+    )
+
+
+@router.post(
+    "/organizations/{id}/check_permissions", status_code=204, tags=[Tags.INTERNAL]
+)
+async def check_organization_permissions(
+    id: UUID4,
+    input: OrganizationCheckPermissionsInput,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    organization = await github_organization.get(session, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.user, AccessType.write, organization):
+        raise NotPermitted()
+
+    if organization.installation_id is None:
+        raise NotPermitted()
+
+    app_client = github.get_app_client()
+    try:
+        await app_client.rest.apps.async_create_installation_access_token(
+            organization.installation_id, data={"permissions": input.permissions}
+        )
+    except RequestFailed as e:
+        if e.response.status_code == 422:
+            raise NotPermitted() from e
+        raise InternalServerError() from e
+
+
+@router.get("/organizations/{id}/billing", tags=[Tags.INTERNAL])
 async def get_organization_billing_plan(
     id: UUID4,
     auth: UserRequiredAuth,
@@ -256,7 +337,7 @@ async def get_organization_billing_plan(
         plan = org_response.parsed_data.plan
 
     if not plan:
-        raise ResourceNotFound()
+        raise NotPermittedOrganizationBillingPlan()
 
     plan_name = plan.name
 

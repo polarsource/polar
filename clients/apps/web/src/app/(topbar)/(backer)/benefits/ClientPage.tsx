@@ -147,7 +147,7 @@ const BenefitContextWidget = ({
   const { data: org } = useOrganization(benefit?.organization_id ?? '')
 
   return (
-    <ShadowBoxOnMd className="sticky top-8 flex w-1/3 flex-col gap-y-6">
+    <ShadowBoxOnMd className="sticky top-28 flex w-1/3 flex-col gap-y-6">
       <div className="flex flex-row items-center gap-x-2">
         <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-blue-400">
           <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-sm dark:bg-blue-950">

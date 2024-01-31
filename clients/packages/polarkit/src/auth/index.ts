@@ -1,6 +1,7 @@
 import {
   IntegrationsApiIntegrationsDiscordBotAuthorizeRequest,
   IntegrationsApiIntegrationsGithubAuthorizeRequest,
+  IntegrationsApiRedirectToOrganizationInstallationRequest,
   MagicLinkApiMagicLinkAuthenticateRequest,
 } from '@polar-sh/sdk'
 import { getServerURL } from '../api'
@@ -19,6 +20,18 @@ export const getGitHubAuthorizeURL = (
     searchParams.set('user_signup_type', params.userSignupType)
   }
   return `${getServerURL()}/api/v1/integrations/github/authorize?${searchParams}`
+}
+
+export const getGitHubOrganizationInstallationURL = (
+  params: IntegrationsApiRedirectToOrganizationInstallationRequest,
+): string => {
+  const searchParams = new URLSearchParams()
+  if (params.returnTo !== undefined) {
+    searchParams.set('return_to', params.returnTo)
+  }
+  return `${getServerURL()}/api/v1/integrations/github/organizations/${
+    params.id
+  }/installation?${searchParams}`
 }
 
 export const getMagicLinkAuthenticateURL = (

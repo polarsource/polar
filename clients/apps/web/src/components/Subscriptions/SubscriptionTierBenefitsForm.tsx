@@ -19,7 +19,10 @@ import {
 } from '@polar-sh/sdk'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { setValidationErrors } from 'polarkit/api/errors'
-import { getBotDiscordAuthorizeURL } from 'polarkit/auth'
+import {
+  getBotDiscordAuthorizeURL,
+  getGitHubOrganizationInstallationURL,
+} from 'polarkit/auth'
 import {
   Button,
   Input,
@@ -51,6 +54,7 @@ import {
 } from 'polarkit/components/ui/form'
 import { SelectValue } from 'polarkit/components/ui/select'
 import {
+  useCheckOrganizationPermissions,
   useCreateSubscriptionBenefit,
   useDeleteSubscriptionBenefit,
   useDiscordGuild,
@@ -58,7 +62,7 @@ import {
   useListRepositories,
   useUpdateSubscriptionBenefit,
 } from 'polarkit/hooks'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Benefit } from '../Benefit/Benefit'
@@ -794,8 +798,12 @@ interface GitHubRepositoryBenefitFormProps {
 export const GitHubRepositoryBenefitForm = ({
   update = false,
 }: GitHubRepositoryBenefitFormProps) => {
-  const { control } =
+  const pathname = usePathname()
+
+  const { control, watch } =
     useFormContext<SubscriptionBenefitGitHubRepositoryCreate>()
+  const description = watch('description')
+
   const { org } = useCurrentOrgAndRepoFromURL()
   const { data: repositories } = useListRepositories()
   const organizationRepositories = useMemo(() => {
@@ -807,16 +815,108 @@ export const GitHubRepositoryBenefitForm = ({
     )
   }, [org, repositories])
 
-  const { data: billingPlan } = useGetOrganizationBillingPlan(org?.id)
+  const {
+    data: hasAdminWritePermission,
+    isLoading,
+    refetch,
+  } = useCheckOrganizationPermissions(
+    {
+      administration: 'write',
+    },
+    org?.id,
+  )
+
+  const { data: billingPlan, error: billingPlanError } =
+    useGetOrganizationBillingPlan(org?.id)
+
+  const returnTo = useMemo(() => {
+    const searchParams = new URLSearchParams()
+    searchParams.set('create_benefit', 'true')
+    searchParams.set('type', SubscriptionBenefitType.GITHUB_REPOSITORY)
+    searchParams.set('description', description)
+    return `${pathname}?${searchParams}`
+  }, [description, pathname])
+
+  const [installationWindow, setInstallationWindow] = useState<Window | null>(
+    null,
+  )
+  const openInstallationURL = useCallback(() => {
+    if (!org) {
+      return
+    }
+    const url = getGitHubOrganizationInstallationURL({ id: org?.id, returnTo })
+    const installationWindow = window.open(url, '_blank')
+    setInstallationWindow(installationWindow)
+  }, [org, returnTo])
+
+  useEffect(() => {
+    let intervalId: number | null = null
+    if (installationWindow) {
+      intervalId = window.setInterval(async () => {
+        const { data: hasAdminWritePermission } = await refetch()
+        if (hasAdminWritePermission) {
+          installationWindow.close()
+          intervalId && window.clearInterval(intervalId)
+        }
+      }, 1000)
+    }
+
+    return () => {
+      if (intervalId) {
+        window.clearInterval(intervalId)
+      }
+    }
+  }, [refetch, installationWindow])
+
+  if (isLoading) {
+    return <></>
+  }
+
+  if (!hasAdminWritePermission) {
+    return (
+      <div className="flex items-center justify-between gap-4 rounded-2xl bg-red-50 px-4 py-3 text-sm dark:bg-red-950">
+        <div className="text-sm text-red-500">
+          Your GitHub app installation doesn&apos;t have the required
+          permissions so we can automatically invite users. You should
+          re-authenticate your app and accept new permissions.
+        </div>
+        <div className="flex gap-2">
+          {installationWindow && (
+            <Button
+              size="sm"
+              className="whitespace-nowrap"
+              onClick={() => refetch()}
+            >
+              Refresh
+            </Button>
+          )}
+          <Button
+            size="sm"
+            className="whitespace-nowrap"
+            onClick={openInstallationURL}
+          >
+            Re-authorize GitHub
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
       {billingPlan && !billingPlan.is_free && (
-        <div className="text-sm text-yellow-500">
+        <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
           Your GitHub organization is currently on the{' '}
           <span className="capitalize">{billingPlan.plan_name}</span>&apos;s
           plan. Each subscriber will take a seat and GitHub will bill you for
           them. Make sure your pricing is covering those fees!
+        </div>
+      )}
+      {!billingPlan && (
+        <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+          We can&apos;t check your GitHub billing plan. If you&apos;re on a paid
+          plan, each subscriber will take a seat and GitHub will bill you for
+          them.
         </div>
       )}
       <FormField

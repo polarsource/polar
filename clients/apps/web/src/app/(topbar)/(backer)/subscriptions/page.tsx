@@ -1,10 +1,17 @@
 import { getServerSideAPI } from '@/utils/api'
-import { Platforms } from '@polar-sh/sdk'
+import { Platforms, UserRead } from '@polar-sh/sdk'
 import ClientPage from './ClientPage'
 
 export default async function Page() {
   const api = getServerSideAPI()
+  let authenticatedUser: UserRead
+
+  try {
+    authenticatedUser = await api.users.getAuthenticated({ cache: 'no-store' })
+  } catch (e) {}
+
   const subscriptions = await api.subscriptions.searchSubscribedSubscriptions({
+    subscriberUserId: authenticatedUser!.id ?? '',
     limit: 100,
     platform: Platforms.GITHUB,
   })

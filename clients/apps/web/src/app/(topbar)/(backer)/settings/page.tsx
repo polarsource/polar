@@ -7,7 +7,6 @@ import GeneralSettings from '@/components/Settings/GeneralSettings'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import SubscriptionSettings from '@/components/Settings/SubscriptionSettings'
 import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
 import { useListAdminOrganizations } from 'polarkit/hooks'
 
@@ -22,14 +21,6 @@ export default function Page() {
         <Section>
           <SectionDescription title="General" description="" />
           <GeneralSettings />
-        </Section>
-
-        <Section>
-          <SectionDescription
-            title="Subscriptions"
-            description="Manage your active subscriptions"
-          />
-          <SubscriptionSettings />
         </Section>
 
         <Section>

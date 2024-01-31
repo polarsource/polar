@@ -52,7 +52,7 @@ export const AuthenticatedFreeTierSubscribe = ({
         </Button>
       )}
       {isSubscribed && (
-        <Link href="/settings" className="w-full">
+        <Link href="/subscriptions" className="w-full">
           <Button
             loading={createFreeSubscription.isPending}
             fullWidth

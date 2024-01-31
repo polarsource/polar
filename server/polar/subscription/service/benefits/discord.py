@@ -115,7 +115,13 @@ class SubscriptionBenefitDiscordService(
         try:
             await discord_bot_service.add_member(self.session, guild_id, role_id, user)
         except httpx.HTTPError as e:
-            raise SubscriptionBenefitRetriableError(2**attempt)
+            error_bound_logger = bound_logger.bind(error=str(e))
+            if isinstance(e, httpx.HTTPStatusError):
+                error_bound_logger = error_bound_logger.bind(
+                    status_code=e.response.status_code, body=e.response.text
+                )
+            error_bound_logger.warning("HTTP error while adding member")
+            raise SubscriptionBenefitRetriableError(5 * 2**attempt) from e
 
         bound_logger.debug("Benefit granted")
 
@@ -150,7 +156,13 @@ class SubscriptionBenefitDiscordService(
         try:
             await discord_bot_service.remove_member_role(guild_id, role_id, account_id)
         except httpx.HTTPError as e:
-            raise SubscriptionBenefitRetriableError(2**attempt)
+            error_bound_logger = bound_logger.bind(error=str(e))
+            if isinstance(e, httpx.HTTPStatusError):
+                error_bound_logger = error_bound_logger.bind(
+                    status_code=e.response.status_code, body=e.response.text
+                )
+            error_bound_logger.warning("HTTP error while adding member")
+            raise SubscriptionBenefitRetriableError(5 * 2**attempt) from e
 
         bound_logger.debug("Benefit revoked")
 

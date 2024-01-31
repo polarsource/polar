@@ -1,6 +1,6 @@
 import Link, { LinkProps } from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
-import { ComponentProps, PropsWithChildren } from 'react'
+import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { UpsellFooter } from './UpsellFooter'
 
@@ -40,50 +40,53 @@ const Footer = ({
           )}
         >
           <div className="flex flex-col gap-y-6">
-            <h3 className="dark:text-polar-50 text-base">Funding</h3>
+            <h3 className="dark:text-polar-50 text-base">Creators</h3>
             <div className="flex flex-col gap-y-2">
-              <InternalLink href="/new">Fund an issue</InternalLink>
-              <InternalLink href="/feed">Dashboard</InternalLink>
-              <InternalLink href="/rewards">Rewards</InternalLink>
-              <OutgoingLink href="https://docs.polar.sh">
-                Documentation
-              </OutgoingLink>
+              <FooterLink href="https://api.polar.sh/api/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
+                Create an Account
+              </FooterLink>
+              <FooterLink href="https://docs.polar.sh/payment">
+                Pricing
+              </FooterLink>
+              <FooterLink href="https://docs.polar.sh/maintainers/posts">
+                Posts & Newsletter
+              </FooterLink>
+              <FooterLink href="https://docs.polar.sh/maintainers/issue-funding">
+                Issue Funding
+              </FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-6">
             <h3 className="dark:text-polar-50 text-base">Company</h3>
             <div className="flex flex-col gap-y-2">
-              <OutgoingLink href="/careers">Careers</OutgoingLink>
-              <OutgoingLink href="https://blog.polar.sh">Blog</OutgoingLink>
-              <OutgoingLink href="https://polarsource.github.io/legal/terms.pdf">
+              <FooterLink href="/careers">Careers</FooterLink>
+              <FooterLink href="https://blog.polar.sh">Blog</FooterLink>
+              <FooterLink href="https://polarsource.github.io/legal/terms.pdf">
                 Terms of Service
-              </OutgoingLink>
-              <OutgoingLink href="https://polarsource.github.io/legal/privacy-policy.pdf">
+              </FooterLink>
+              <FooterLink href="https://polarsource.github.io/legal/privacy-policy.pdf">
                 Privacy Policy
-              </OutgoingLink>
+              </FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-6">
             <h3 className="dark:text-polar-50 text-lg">Community</h3>
             <div className="flex flex-col gap-y-2">
-              <OutgoingLink href="https://discord.gg/STfRufb32V">
+              <FooterLink href="https://discord.gg/STfRufb32V">
                 Join our Discord
-              </OutgoingLink>
-              <OutgoingLink href="https://github.com/polarsource">
-                Github
-              </OutgoingLink>
-              <OutgoingLink href="https://x.com/polar_sh">
-                X / Twitter
-              </OutgoingLink>
+              </FooterLink>
+              <FooterLink href="https://github.com/polarsource">
+                GitHub
+              </FooterLink>
+              <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-6">
             <h3 className="dark:text-polar-50 text-base">Support</h3>
             <div className="flex flex-col gap-y-2">
-              <OutgoingLink href="https://docs.polar.sh/faq/">FAQ</OutgoingLink>
-              <OutgoingLink href="mailto:support@polar.sh">
-                Contact
-              </OutgoingLink>
+              <FooterLink href="https://docs.polar.sh/">Docs</FooterLink>
+              <FooterLink href="https://docs.polar.sh/faq/">FAQ</FooterLink>
+              <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>
         </div>
@@ -94,7 +97,7 @@ const Footer = ({
 
 export default Footer
 
-const InternalLink = (props: PropsWithChildren<LinkProps>) => {
+const FooterLink = (props: PropsWithChildren<LinkProps>) => {
   return (
     <Link
       className="flex flex-row items-center gap-x-1 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
@@ -102,14 +105,5 @@ const InternalLink = (props: PropsWithChildren<LinkProps>) => {
     >
       {props.children}
     </Link>
-  )
-}
-
-const OutgoingLink = (props: ComponentProps<'a'>) => {
-  return (
-    <a
-      className="flex flex-row items-center gap-x-1 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-      {...props}
-    />
   )
 }

@@ -3,6 +3,7 @@ from typing import Any
 import structlog
 from httpx_oauth.oauth2 import OAuth2Token
 
+from polar.config import settings
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.models import OAuthAccount, User
@@ -119,6 +120,23 @@ class DiscordBotService:
             discord_user_id=account_id,
             role_id=role_id,
         )
+
+    async def is_bot_role_above_role(self, guild_id: str, role_id: str) -> bool:
+        """
+        Checks if our bot's role has a higher position than the one we want to grant.
+
+        There is a hierarchy in Discord roles. For our bot to grant a specific role,
+        it has to be *above* this role.
+        """
+        guild = await bot_client.get_guild(guild_id, exclude_bot_roles=False)
+        for role in sorted(guild["roles"], key=lambda r: r["position"]):
+            if tags := role.get("tags"):
+                if tags.get("bot_id") == settings.DISCORD_CLIENT_ID:
+                    return False
+            if role["id"] == role_id:
+                return True
+
+        raise DiscordError("Roles not found")
 
 
 discord_user = DiscordUserService()

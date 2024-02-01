@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import redis.asyncio as _async_redis
 
@@ -22,7 +22,7 @@ async_pool = create_async_connection_pool()
 
 
 def get_redis() -> Redis:
-    return _async_redis.Redis(connection_pool=async_pool)
+    return cast(Redis, _async_redis.Redis(connection_pool=async_pool))
 
 
 redis = get_redis()

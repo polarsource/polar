@@ -1,6 +1,10 @@
 'use client'
 
-import { useCurrentOrgAndRepoFromURL, useIsOrganizationAdmin } from '@/hooks'
+import {
+  useCurrentOrgAndRepoFromURL,
+  useIsOrganizationAdmin,
+  usePersonalOrganization,
+} from '@/hooks'
 import { useAuth } from '@/hooks/auth'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
@@ -29,14 +33,21 @@ const DashboardSidebar = () => {
   const { currentUser } = useAuth()
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const listOrganizationQuery = useListAdminOrganizations()
+  const personalOrg = usePersonalOrganization()
 
   const orgs = listOrganizationQuery?.data?.items
 
   const isOrgAdmin = useIsOrganizationAdmin(currentOrg)
+  const isPersonalOrg = useMemo(
+    () => currentOrg?.id === personalOrg?.id,
+    [currentOrg, personalOrg],
+  )
 
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
     : orgs?.some((org) => org.name === currentUser?.username)
+
+  const shouldRenderAccountNavigation = !isPersonalOrg
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
@@ -80,7 +91,7 @@ const DashboardSidebar = () => {
           onScroll={handleScroll}
         >
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
-          <DashboardNavigation />
+          {shouldRenderAccountNavigation && <DashboardNavigation />}
         </div>
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
           <MetaNavigation />

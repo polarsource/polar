@@ -91,7 +91,10 @@ const ProfileSelection = ({
               'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute -left-2 -right-2 -top-1 overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
-            <Link href={'/feed'} className="w-full">
+            <Link
+              href={`/maintainer/${personalOrg?.name}/overview`}
+              className="w-full"
+            >
               <ListItem
                 current={
                   currentOrg === undefined ||

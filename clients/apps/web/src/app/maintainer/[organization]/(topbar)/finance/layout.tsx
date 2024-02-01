@@ -2,7 +2,7 @@
 
 import { Route, dashboardRoutes } from '@/components/Dashboard/navigation'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import DashboardTopbar, { SubNav } from '@/components/Shared/DashboardTopbar'
+import { SubNav } from '@/components/Shared/DashboardTopbar'
 import {
   useCurrentOrgAndRepoFromURL,
   useIsOrganizationAdmin,
@@ -40,7 +40,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <DashboardTopbar isFixed useOrgFromURL />
       <DashboardBody>
         {isPersonal &&
           currentRoute &&

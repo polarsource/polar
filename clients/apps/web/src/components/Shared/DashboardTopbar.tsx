@@ -37,7 +37,7 @@ export const SubNav = (props: {
     <Tabs defaultValue={current?.title}>
       <TabsList
         className="
-          flex bg-transparent ring-0 dark:bg-transparent dark:ring-0"
+          flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0"
       >
         {props.items.map((item) => {
           return (
@@ -129,7 +129,7 @@ const DashboardTopbar = ({
                 />
               )}
           </div>
-          <div className="relative flex flex-row items-center gap-x-6">
+          <div className="relative flex flex-row items-center justify-between gap-x-6 md:justify-end">
             {children}
             <Link href="/feed">
               <Button>

@@ -9,12 +9,12 @@ import {
   Select,
   SelectTrigger,
   SelectValue,
+  ShadowBoxOnMd,
 } from 'polarkit/components/ui/atoms'
 import { Form, FormField } from 'polarkit/components/ui/form'
 import { SelectContent, SelectItem } from 'polarkit/components/ui/select'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useForm } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
 
 interface AccoutSetupProps {
   organization: Organization | undefined
@@ -67,11 +67,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
   }
 
   return (
-    <div
-      className={twMerge(
-        'dark:bg-polar-900 min-h-[150px] rounded-3xl bg-white p-12',
-      )}
-    >
+    <ShadowBoxOnMd>
       <div className="flex flex-row items-center justify-between">
         <div className="flex flex-col gap-y-2">
           <h2 className="text-lg font-medium">Payout account</h2>
@@ -250,7 +246,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
           </>
         )}
       </div>
-    </div>
+    </ShadowBoxOnMd>
   )
 }
 

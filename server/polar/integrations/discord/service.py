@@ -1,5 +1,3 @@
-from typing import Any
-
 import structlog
 from httpx_oauth.oauth2 import OAuth2Token
 
@@ -14,6 +12,7 @@ from polar.worker import enqueue_job
 
 from . import oauth
 from .client import DiscordClient, bot_client
+from .schemas import DiscordGuild, DiscordGuildRole
 
 log: Logger = structlog.get_logger()
 
@@ -98,8 +97,26 @@ class DiscordUserService:
 
 
 class DiscordBotService:
-    async def get_guild(self, id: str) -> dict[str, Any]:
-        return await bot_client.get_guild(id=id, exclude_bot_roles=True)
+    async def get_guild(self, id: str) -> DiscordGuild:
+        guild = await bot_client.get_guild(id)
+
+        roles: list[DiscordGuildRole] = []
+        for role in sorted(guild["roles"], key=lambda r: r["position"], reverse=True):
+            # Keep standard roles
+            if not role["managed"]:
+                roles.append(
+                    DiscordGuildRole.model_validate({**role, "is_polar_bot": False})
+                )
+                continue
+
+            # Keep only our bot role
+            if tags := role.get("tags"):
+                if tags.get("bot_id") == settings.DISCORD_CLIENT_ID:
+                    roles.append(
+                        DiscordGuildRole.model_validate({**role, "is_polar_bot": True})
+                    )
+
+        return DiscordGuild(name=guild["name"], roles=roles)
 
     async def add_member(
         self, session: AsyncSession, guild_id: str, role_id: str, user: User
@@ -128,7 +145,7 @@ class DiscordBotService:
         There is a hierarchy in Discord roles. For our bot to grant a specific role,
         it has to be *above* this role.
         """
-        guild = await bot_client.get_guild(guild_id, exclude_bot_roles=False)
+        guild = await bot_client.get_guild(guild_id)
         for role in sorted(guild["roles"], key=lambda r: r["position"]):
             if tags := role.get("tags"):
                 if tags.get("bot_id") == settings.DISCORD_CLIENT_ID:

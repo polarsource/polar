@@ -22,28 +22,11 @@ class DiscordClient:
         self._handle_response(response)
         return response.json()
 
-    async def get_guild(
-        self,
-        id: str,
-        exclude_bot_roles: bool = True,
-    ) -> dict[str, Any]:
+    async def get_guild(self, id: str) -> dict[str, Any]:
         response = await self.client.get(f"/guilds/{id}")
         self._handle_response(response)
 
-        data = response.json()
-        if not exclude_bot_roles:
-            return data
-
-        roles = []
-        given_roles = data["roles"]
-        for role in given_roles:
-            # Bots/integrations are considered managed.
-            # https://discord.com/developers/docs/topics/permissions#role-object-role-tags-structure
-            if not role["managed"]:
-                roles.append(role)
-
-        data["roles"] = roles
-        return data
+        return response.json()
 
     async def add_member(
         self,

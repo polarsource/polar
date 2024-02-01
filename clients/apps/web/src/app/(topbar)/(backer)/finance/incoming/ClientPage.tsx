@@ -73,7 +73,7 @@ export default function ClientPage() {
               </p>
             </div>
 
-            <TabsList className="dark:border-polar-700 flex-row dark:border">
+            <TabsList className="flex-row dark:border">
               <TabsTrigger value="transactions">Transactions</TabsTrigger>
               <TabsTrigger value="payouts">Payouts</TabsTrigger>
             </TabsList>

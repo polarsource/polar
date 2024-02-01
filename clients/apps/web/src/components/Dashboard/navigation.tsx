@@ -126,15 +126,6 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     if: true,
     subs: undefined,
   },
-  {
-    id: 'feed',
-    title: 'Feed',
-    link: `/feed`,
-    postIcon: undefined,
-    icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
 ]
 
 export const backerRoutes = (): Route[] => [

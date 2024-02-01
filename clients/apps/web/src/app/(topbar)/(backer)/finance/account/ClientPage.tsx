@@ -8,6 +8,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useAuth, usePersonalOrganization } from '@/hooks'
 import { api } from 'polarkit'
 import { ALL_ACCOUNT_TYPES } from 'polarkit/account'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useAccount, useListAccounts } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
@@ -69,7 +70,7 @@ export default function ClientPage() {
         />
       )}
       {accounts?.items && accounts.items.length > 0 && (
-        <div className="dark:bg-polar-900 dark:border-polar-800 min-h-[480px] rounded-3xl border border-gray-100 bg-white p-12">
+        <ShadowBoxOnMd>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-y-2">
               <h2 className="text-lg font-medium">All payout accounts</h2>
@@ -85,7 +86,7 @@ export default function ClientPage() {
               returnPath="/finance/account"
             />
           )}
-        </div>
+        </ShadowBoxOnMd>
       )}
       <Modal
         isShown={isShownSetupModal}

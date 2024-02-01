@@ -30,9 +30,9 @@ export const Post = (props: FeedPost) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full cursor-pointer flex-col justify-start gap-4 rounded-3xl border border-gray-100 bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 md:flex-row',
+        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full cursor-pointer flex-col justify-start gap-4 rounded-3xl bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 dark:border md:flex-row',
         props.article.paid_subscribers_only &&
-          'border-blue-50 bg-gradient-to-b from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
+          'border border-blue-50 bg-gradient-to-b from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
       )}
       ref={ref}
       onClick={onClick}

@@ -237,7 +237,7 @@ export const useEditorHelpers = (
         return
       }
 
-      const isCtrlPressed = e.ctrlKey || e.metaKey
+      const isMetaPressed = e.metaKey
       const key = e.key
 
       // Insert tab
@@ -248,28 +248,28 @@ export const useEditorHelpers = (
       }
 
       // Bold
-      if (isCtrlPressed && e.key === 'b') {
+      if (isMetaPressed && e.key === 'b') {
         e.preventDefault()
         wrapSelectionWithText(['**', '**'])
         return
       }
 
       // Italic
-      if (isCtrlPressed && e.key === 'i') {
+      if (isMetaPressed && e.key === 'i') {
         e.preventDefault()
         wrapSelectionWithText(['_', '_'])
         return
       }
 
       // Inline code
-      if (isCtrlPressed && e.key === 'e') {
+      if (isMetaPressed && e.key === 'e') {
         e.preventDefault()
         wrapSelectionWithText(['`', '`'])
         return
       }
 
       // Link
-      if (isCtrlPressed && e.key === 'k') {
+      if (isMetaPressed && e.key === 'k') {
         e.preventDefault()
         const textSelection = getTextSelection()
 

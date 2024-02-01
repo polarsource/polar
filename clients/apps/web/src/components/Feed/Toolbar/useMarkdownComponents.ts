@@ -19,11 +19,14 @@ export const useMarkdownComponents = () => {
     }
   }, [wrapSelectionWithText])
 
-  const insertAd = useCallback(() => {
-    if (bodyRef.current) {
-      insertTextAtCursor('<Ad subscriptionBenefitId="ADD_BENEFIT_ID_HERE" />')
-    }
-  }, [insertTextAtCursor])
+  const insertAd = useCallback(
+    (id: string) => {
+      if (bodyRef.current) {
+        insertTextAtCursor(`<Ad subscriptionBenefitId="${id}" />`)
+      }
+    },
+    [insertTextAtCursor],
+  )
 
   return {
     insertPaywall,

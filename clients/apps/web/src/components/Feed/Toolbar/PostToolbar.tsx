@@ -4,7 +4,6 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
-import { MarkdownToolbar } from './MarkdownToolbar'
 import { PreviewToolbar } from './PreviewToolbar'
 
 interface PostToolbarProps {
@@ -45,12 +44,6 @@ export const PostToolbar = ({
             {isPublished ? 'Settings' : 'Publish'}
           </TabsTrigger>
         </TabsList>
-        <TabsContent
-          value="edit"
-          className="absolute right-4 mt-0 flex flex-row items-center gap-x-2 sm:right-6 md:right-8"
-        >
-          <MarkdownToolbar />
-        </TabsContent>
         <TabsContent
           value="preview"
           className="absolute right-4 mt-0 flex flex-row items-center gap-x-2 sm:right-6 md:right-8"

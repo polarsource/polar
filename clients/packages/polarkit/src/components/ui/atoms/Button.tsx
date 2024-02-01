@@ -36,10 +36,23 @@ const buttonVariants = cva(
 
 const Button = React.forwardRef<
   HTMLButtonElement,
-  ButtonProps & { loading?: boolean; fullWidth?: boolean }
+  ButtonProps & {
+    loading?: boolean
+    fullWidth?: boolean
+    wrapperClassNames?: string
+  }
 >(
   (
-    { className, variant, size, loading, fullWidth, children, ...props },
+    {
+      className,
+      wrapperClassNames,
+      variant,
+      size,
+      loading,
+      fullWidth,
+      children,
+      ...props
+    },
     ref,
   ) => {
     return (
@@ -61,7 +74,11 @@ const Button = React.forwardRef<
             </span>
           </>
         ) : (
-          <div className="flex flex-row items-center">{children}</div>
+          <div
+            className={twMerge('flex flex-row items-center', wrapperClassNames)}
+          >
+            {children}
+          </div>
         )}
       </ShadcnButton>
     )

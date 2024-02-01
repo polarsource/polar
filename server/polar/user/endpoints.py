@@ -78,10 +78,6 @@ async def maintainer_upgrade(
     personal_org = await github_organization_service.create_for_user(
         session, user=auth.user
     )
-    if not personal_org:
-        log.error("user.maintainer.upgrade", error="Org creation failed")
-        raise InternalServerError("Unable to create maintainer organization")
-
     posthog.user_event(auth.user, "user", "maintainer_upgrade", "submit")
 
     log.info(

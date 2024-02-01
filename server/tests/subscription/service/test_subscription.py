@@ -868,10 +868,7 @@ class TestEnqueueBenefitsGrants:
         benefits_count = len(subscription_benefits) + 1  # Benefits + articles
         assert enqueue_job_mock.call_count == members_count * benefits_count
 
-        for user_id in [
-            organization_subscriber_admin.id,
-            *[member.id for member in organization_subscriber_members],
-        ]:
+        for benefit in subscription_benefits:
             enqueue_job_mock.assert_has_awaits(
                 [
                     call(
@@ -880,7 +877,10 @@ class TestEnqueueBenefitsGrants:
                         user_id=user_id,
                         subscription_benefit_id=benefit.id,
                     )
-                    for benefit in subscription_benefits
+                    for user_id in [
+                        organization_subscriber_admin.id,
+                        *[member.id for member in organization_subscriber_members],
+                    ]
                 ]
             )
 

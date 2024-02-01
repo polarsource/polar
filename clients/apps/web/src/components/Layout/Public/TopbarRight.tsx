@@ -17,10 +17,10 @@ const TopbarRight = ({
   return (
     <>
       {authenticatedUser ? (
-        <>
+        <div className="flex flex-row items-center justify-between gap-x-6">
           <Popover type="topbar" />
           <ProfileMenu authenticatedUser={authenticatedUser} />
-        </>
+        </div>
       ) : (
         <GithubLoginButton text="Continue with GitHub" returnTo={returnTo} />
       )}

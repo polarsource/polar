@@ -1219,6 +1219,62 @@ export interface CurrencyAmount {
 /**
  * 
  * @export
+ * @interface DiscordGuild
+ */
+export interface DiscordGuild {
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscordGuild
+     */
+    name: string;
+    /**
+     * 
+     * @type {Array<DiscordGuildRole>}
+     * @memberof DiscordGuild
+     */
+    roles: Array<DiscordGuildRole>;
+}
+/**
+ * 
+ * @export
+ * @interface DiscordGuildRole
+ */
+export interface DiscordGuildRole {
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscordGuildRole
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscordGuildRole
+     */
+    name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscordGuildRole
+     */
+    position: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof DiscordGuildRole
+     */
+    is_polar_bot: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscordGuildRole
+     */
+    color: string;
+}
+/**
+ * 
+ * @export
  * @interface EditAdvertisementCampaign
  */
 export interface EditAdvertisementCampaign {
@@ -7718,7 +7774,8 @@ export interface UserSetAccount {
  */
 export const UserSignupType = {
     MAINTAINER: 'maintainer',
-    BACKER: 'backer'
+    BACKER: 'backer',
+    IMPORTED: 'imported'
 } as const;
 export type UserSignupType = typeof UserSignupType[keyof typeof UserSignupType];
 

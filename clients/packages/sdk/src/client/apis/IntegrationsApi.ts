@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  DiscordGuild,
   GithubUser,
   HTTPValidationError,
   InstallationCreate,
@@ -88,7 +89,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Discord Guild Lookup
      */
-    async discordGuildLookupRaw(requestParameters: IntegrationsApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
+    async discordGuildLookupRaw(requestParameters: IntegrationsApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DiscordGuild>> {
         if (requestParameters.guildToken === null || requestParameters.guildToken === undefined) {
             throw new runtime.RequiredError('guildToken','Required parameter requestParameters.guildToken was null or undefined when calling discordGuildLookup.');
         }
@@ -116,13 +117,13 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse<any>(response);
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
      * Discord Guild Lookup
      */
-    async discordGuildLookup(requestParameters: IntegrationsApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+    async discordGuildLookup(requestParameters: IntegrationsApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DiscordGuild> {
         const response = await this.discordGuildLookupRaw(requestParameters, initOverrides);
         return await response.value();
     }

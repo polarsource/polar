@@ -113,9 +113,9 @@ const Topbar = ({
     <div className="dark:border-b-polar-800 dark:bg-polar-950 sticky top-0 z-50 flex w-full flex-col items-center justify-start border-b border-b-gray-100 bg-white py-4">
       <div className="flex w-full max-w-7xl flex-col items-stretch justify-between gap-y-4 px-2 md:flex-row md:items-center">
         <div className="flex flex-row items-center gap-x-4 md:gap-x-12">
-          <Link href="/">
+          <a href="https://polar.sh">
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={42} />
-          </Link>
+          </a>
           <div className="flex flex-row items-center gap-4">
             <TopbarNavigation
               routes={routes}

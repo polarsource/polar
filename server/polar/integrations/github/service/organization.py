@@ -134,7 +134,7 @@ class GithubOrganizationService(OrganizationService):
         self,
         session: AsyncSession,
         user: User,
-    ) -> Organization | None:
+    ) -> Organization:
         current_user_org = await user_organization_service.get_personal_org(
             session,
             platform=Platforms.github,

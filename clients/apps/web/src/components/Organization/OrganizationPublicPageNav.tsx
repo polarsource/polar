@@ -84,7 +84,7 @@ export const OrganizationPublicPageNav = ({
     <Tabs value={currentTab}>
       <TabsList
         className={twMerge(
-          'flex bg-transparent dark:bg-transparent',
+          'flex bg-transparent ring-0 dark:bg-transparent dark:ring-0',
           className,
         )}
       >

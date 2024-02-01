@@ -6,10 +6,16 @@ import {
   useIsOrganizationAdmin,
   usePersonalOrganization,
 } from '@/hooks'
+import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
+import {
+  Button,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/atoms'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -18,6 +24,7 @@ import {
   dashboardRoutes,
   maintainerRoutes,
 } from '../Dashboard/navigation'
+import TopbarRight from '../Layout/Public/TopbarRight'
 
 export type LogoPosition = 'center' | 'left'
 
@@ -28,12 +35,15 @@ export const SubNav = (props: {
 
   return (
     <Tabs defaultValue={current?.title}>
-      <TabsList className="dark:border-polar-700 flex-row dark:border">
+      <TabsList
+        className="
+          flex bg-transparent ring-0 dark:bg-transparent dark:ring-0"
+      >
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>
               <TabsTrigger
-                className="items-baseline"
+                className="hover:text-blue-500 data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 data-[state=active]:shadow-none dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300"
                 value={item.title}
                 size="small"
               >
@@ -59,6 +69,7 @@ const DashboardTopbar = ({
   hideProfile?: boolean
   isFixed?: boolean
 }>) => {
+  const { currentUser } = useAuth()
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
   const personalOrg = usePersonalOrganization()
 
@@ -118,9 +129,18 @@ const DashboardTopbar = ({
                 />
               )}
           </div>
-          {children && (
-            <div className="flex flex-row items-center gap-x-6">{children}</div>
-          )}
+          <div className="relative flex flex-row items-center gap-x-6">
+            {children}
+            <Link href="/feed">
+              <Button>
+                <div className="flex flex-row items-center gap-x-2">
+                  <span className="text-xs">Back to Feed</span>
+                  <ArrowForwardOutlined fontSize="inherit" />
+                </div>
+              </Button>
+            </Link>
+            <TopbarRight authenticatedUser={currentUser} />
+          </div>
         </div>
       </div>
     </>

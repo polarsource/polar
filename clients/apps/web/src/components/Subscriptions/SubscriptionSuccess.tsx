@@ -100,7 +100,7 @@ export const SubscriptionSuccess = (props: {
                     your subscriptions and benefits.
                   </p>
                   <Button className="w-full" size="lg" onClick={onEmailSignin}>
-                    Sign in with email
+                    Verify Email
                   </Button>
                 </div>
               )}

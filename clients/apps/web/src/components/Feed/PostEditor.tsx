@@ -187,12 +187,12 @@ const Sidebar = () => {
 
   return (
     <div>
-      <div className="sticky top-24  hidden w-full min-w-[200px] max-w-[250px] flex-col gap-y-4 lg:flex">
-        <ShadowBoxOnMd className="md:p-4">
+      <div className="sticky top-24 hidden w-full min-w-[250px] max-w-xs flex-col gap-y-4 lg:flex">
+        <ShadowBoxOnMd className="dark:border-polar-800 w-full !shadow-2xl dark:border md:p-8">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">
               <div className="flex flex-col gap-y-2">
-                <h3 className="text font-medium">Components</h3>
+                <h3 className="font-medium">Components</h3>
                 <Button
                   variant={'outline'}
                   size={'sm'}
@@ -218,7 +218,7 @@ const Sidebar = () => {
             {benefits.isFetched ? (
               <>
                 <div className="flex flex-col gap-y-2">
-                  <h3>Ad</h3>
+                  <h3 className="font-medium">Ad</h3>
 
                   {adBenefits.length > 0 ? (
                     <>

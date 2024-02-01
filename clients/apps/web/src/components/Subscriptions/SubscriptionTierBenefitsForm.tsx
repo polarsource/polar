@@ -22,7 +22,10 @@ import {
   Input,
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   Switch,
   TextArea,
@@ -50,7 +53,7 @@ import {
   useDiscordGuild,
   useUpdateSubscriptionBenefit,
 } from 'polarkit/hooks'
-import { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Benefit } from '../Benefit/Benefit'
@@ -654,6 +657,12 @@ export const DiscordBenefitForm = ({
   }, [pathname, description])
 
   const { data: discordGuild } = useDiscordGuild(guildToken)
+  const polarBotRolePosition = useMemo(() => {
+    if (!discordGuild) {
+      return undefined
+    }
+    return discordGuild.roles.find(({ is_polar_bot }) => is_polar_bot)?.position
+  }, [discordGuild])
 
   return (
     <>
@@ -699,14 +708,56 @@ export const DiscordBenefitForm = ({
                         <SelectValue placeholder="Role to grant to your subscribers" />
                       </SelectTrigger>
                       <SelectContent>
-                        {discordGuild.roles.map((role: Record<string, any>) => (
-                          <SelectItem key={role.id} value={role.id}>
-                            {role.name}
-                          </SelectItem>
-                        ))}
+                        <SelectGroup>
+                          {polarBotRolePosition &&
+                            discordGuild.roles.map((role, index) =>
+                              role.is_polar_bot ? (
+                                <React.Fragment key={role.id}>
+                                  {index > 0 && ( // Don't show it if it's already first
+                                    <>
+                                      <SelectSeparator />
+                                      <SelectLabel
+                                        key={role.id}
+                                        className="font-normal"
+                                      >
+                                        {role.name} —{' '}
+                                        <span className="text-muted-foreground">
+                                          ↑ Roles set above can&apos;t be
+                                          granted by the bot.
+                                        </span>
+                                      </SelectLabel>
+                                      <SelectSeparator />
+                                    </>
+                                  )}
+                                </React.Fragment>
+                              ) : (
+                                <SelectItem
+                                  key={role.id}
+                                  value={role.id}
+                                  disabled={
+                                    role.position > polarBotRolePosition
+                                  }
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="h-2 w-2 rounded-full"
+                                      style={{ backgroundColor: role.color }}
+                                    ></div>
+                                    <div>{role.name}</div>
+                                  </div>
+                                </SelectItem>
+                              ),
+                            )}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </FormControl>
+                  <FormDescription>
+                    To grant a specific role, our Polar bot role should be above
+                    it in the hierarchy list. You can do so from{' '}
+                    <span className="font-medium">Server Settings</span> →{' '}
+                    <span className="font-medium">Roles</span> in Discord.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )

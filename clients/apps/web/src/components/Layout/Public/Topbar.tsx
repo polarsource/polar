@@ -117,7 +117,10 @@ const Topbar = ({
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={42} />
           </Link>
           <div className="flex flex-row items-center gap-4">
-            <TopbarNavigation routes={routes} />
+            <TopbarNavigation
+              routes={routes}
+              unauthenticated={!authenticatedUser}
+            />
           </div>
         </div>
         {!hideProfile ? (

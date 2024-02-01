@@ -3,7 +3,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const TopbarNavigation = ({ routes }: { routes: Route[] }) => {
+const TopbarNavigation = ({
+  routes,
+  unauthenticated,
+}: {
+  routes: Route[]
+  unauthenticated?: boolean
+}) => {
   const path = usePathname()
 
   // Filter routes, set isActive, and if subs should be expanded
@@ -17,11 +23,13 @@ const TopbarNavigation = ({ routes }: { routes: Route[] }) => {
       }
     })
 
+  const LinkElement = unauthenticated ? 'a' : Link
+
   return (
     <div className="flex flex-row items-center">
       {filteredRoutes.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
-          <Link
+          <LinkElement
             className={twMerge(
               'flex items-center gap-x-2 rounded-full border border-transparent px-4 py-2 transition-colors',
               n.isActive
@@ -35,7 +43,7 @@ const TopbarNavigation = ({ routes }: { routes: Route[] }) => {
                 {n.title}
               </span>
             ) : undefined}
-          </Link>
+          </LinkElement>
         </div>
       ))}
     </div>

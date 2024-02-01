@@ -45,6 +45,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
 from polar.notifications.notification import (
@@ -776,16 +777,28 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         else:
             users_ids = [subscription.user_id]
 
-        for user_id in users_ids:
-            task = "grant" if subscription.active else "revoke"
-            for benefit in subscription_tier.benefits:
+        task = "grant" if subscription.active else "revoke"
+        for benefit in subscription_tier.benefits:
+            # FIXME: Hack to prevent GitHub Repository benefit abuse
+            # Only enqueue it for the subscriber user.
+            # Remove this when we have proper per-seat support
+            if benefit.type == SubscriptionBenefitType.github_repository:
                 await enqueue_job(
                     f"subscription.subscription_benefit.{task}",
                     subscription_id=subscription.id,
-                    user_id=user_id,
+                    user_id=subscription.user_id,
                     subscription_benefit_id=benefit.id,
                 )
+            else:
+                for user_id in users_ids:
+                    await enqueue_job(
+                        f"subscription.subscription_benefit.{task}",
+                        subscription_id=subscription.id,
+                        user_id=user_id,
+                        subscription_benefit_id=benefit.id,
+                    )
 
+        for user_id in users_ids:
             for outdated_grant in outdated_grants:
                 await enqueue_job(
                     "subscription.subscription_benefit.revoke",

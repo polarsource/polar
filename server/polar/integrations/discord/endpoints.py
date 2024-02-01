@@ -16,6 +16,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
 from . import oauth
+from .schemas import DiscordGuild
 from .service import discord_bot as discord_bot_service
 from .service import discord_user as discord_user_service
 
@@ -164,11 +165,11 @@ async def discord_user_callback(
 
 @router.get(
     "/guild/lookup",
-    response_model=dict[str, Any],
+    response_model=DiscordGuild,
     tags=[Tags.INTERNAL],
     dependencies=[Depends(Auth.current_user)],
 )
-async def discord_guild_lookup(guild_token: str) -> dict[str, Any]:
+async def discord_guild_lookup(guild_token: str) -> DiscordGuild:
     try:
         guild_token_data = jwt.decode(token=guild_token, secret=settings.SECRET)
         guild_id = guild_token_data["guild_id"]

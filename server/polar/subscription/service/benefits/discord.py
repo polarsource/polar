@@ -187,7 +187,7 @@ class SubscriptionBenefitDiscordService(
         role_id: str = properties["role_id"]
 
         guild = await discord_bot_service.get_guild(guild_id)
-        guild_roles = [role["id"] for role in guild["roles"]]
+        guild_roles = [role.id for role in guild.roles]
 
         if role_id not in guild_roles:
             raise SubscriptionBenefitPropertiesValidationError(

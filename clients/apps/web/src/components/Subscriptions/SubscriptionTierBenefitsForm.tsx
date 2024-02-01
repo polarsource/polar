@@ -3,6 +3,7 @@ import {
   AutoAwesome,
   LoyaltyOutlined,
   MoreVertOutlined,
+  RefreshOutlined,
 } from '@mui/icons-material'
 import {
   Organization,
@@ -805,7 +806,11 @@ export const GitHubRepositoryBenefitForm = ({
   const description = watch('description')
 
   const { org } = useCurrentOrgAndRepoFromURL()
-  const { data: repositories } = useListRepositories()
+  const {
+    data: repositories,
+    refetch: refetchRepositories,
+    isFetching: isFetchingRepositories,
+  } = useListRepositories()
   const organizationRepositories = useMemo(() => {
     if (!org || !repositories || !repositories.items) {
       return []
@@ -817,7 +822,7 @@ export const GitHubRepositoryBenefitForm = ({
 
   const {
     data: hasAdminWritePermission,
-    isLoading,
+    isFetching,
     refetch,
   } = useCheckOrganizationPermissions(
     {
@@ -826,8 +831,7 @@ export const GitHubRepositoryBenefitForm = ({
     org?.id,
   )
 
-  const { data: billingPlan, error: billingPlanError } =
-    useGetOrganizationBillingPlan(org?.id)
+  const { data: billingPlan } = useGetOrganizationBillingPlan(org?.id)
 
   const returnTo = useMemo(() => {
     const searchParams = new URLSearchParams()
@@ -855,6 +859,7 @@ export const GitHubRepositoryBenefitForm = ({
       intervalId = window.setInterval(async () => {
         const { data: hasAdminWritePermission } = await refetch()
         if (hasAdminWritePermission) {
+          refetchRepositories()
           installationWindow.close()
           intervalId && window.clearInterval(intervalId)
         }
@@ -866,13 +871,13 @@ export const GitHubRepositoryBenefitForm = ({
         window.clearInterval(intervalId)
       }
     }
-  }, [refetch, installationWindow])
+  }, [refetch, refetchRepositories, installationWindow])
 
-  if (isLoading) {
+  if (isFetching && hasAdminWritePermission === undefined) {
     return <></>
   }
 
-  if (!hasAdminWritePermission) {
+  if (hasAdminWritePermission === false) {
     return (
       <div className="flex items-center justify-between gap-4 rounded-2xl bg-red-50 px-4 py-3 text-sm dark:bg-red-950">
         <div className="text-sm text-red-500">
@@ -880,9 +885,10 @@ export const GitHubRepositoryBenefitForm = ({
           permissions so we can automatically invite users. You should
           re-authenticate your app and accept new permissions.
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {installationWindow && (
             <Button
+              type="button"
               size="sm"
               className="whitespace-nowrap"
               onClick={() => refetch()}
@@ -891,6 +897,7 @@ export const GitHubRepositoryBenefitForm = ({
             </Button>
           )}
           <Button
+            type="button"
             size="sm"
             className="whitespace-nowrap"
             onClick={openInstallationURL}
@@ -928,23 +935,34 @@ export const GitHubRepositoryBenefitForm = ({
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Repository</FormLabel>
               </div>
-              <FormControl>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+              <div className="flex items-center gap-2">
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="The repository to grant access to the user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizationRepositories.map((repository) => (
+                        <SelectItem key={repository.id} value={repository.id}>
+                          {repository.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <Button
+                  variant="link"
+                  type="button"
+                  className="px-0 disabled:animate-spin"
+                  onClick={() => refetchRepositories()}
+                  disabled={isFetchingRepositories}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="The repository to grant access to the user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {organizationRepositories.map((repository) => (
-                      <SelectItem key={repository.id} value={repository.id}>
-                        {repository.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
+                  <RefreshOutlined />
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )

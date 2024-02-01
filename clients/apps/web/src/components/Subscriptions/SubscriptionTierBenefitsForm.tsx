@@ -275,29 +275,38 @@ const SubscriptionTierBenefitsForm = ({
 
 export default SubscriptionTierBenefitsForm
 
+export type NewSubscriptionsModalParams = {
+  type?: CreatableSubscriptionBenefit
+  description?: string
+  guild_token?: string
+}
+
 interface NewSubscriptionTierBenefitModalContentProps {
   organization: Organization
   onSelectBenefit: (benefit: Benefit) => void
   hideModal: () => void
+  defaultValues?: NewSubscriptionsModalParams
 }
 
 export const NewSubscriptionTierBenefitModalContent = ({
   organization,
   onSelectBenefit,
   hideModal,
+  defaultValues,
 }: NewSubscriptionTierBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
-  const { type, description, ...properties } = useMemo<{
-    type?: CreatableSubscriptionBenefit
-    description?: string
-    guild_token?: string
-  }>(() => {
-    if (!searchParams) {
-      return {}
-    }
-    return Object.fromEntries(searchParams.entries())
-  }, [searchParams])
+  const { type, description, ...properties } =
+    useMemo<NewSubscriptionsModalParams>(() => {
+      if (defaultValues) {
+        return defaultValues
+      }
+
+      if (!searchParams) {
+        return {}
+      }
+      return Object.fromEntries(searchParams.entries())
+    }, [searchParams])
 
   const createSubscriptionBenefit = useCreateSubscriptionBenefit(
     organization.name,

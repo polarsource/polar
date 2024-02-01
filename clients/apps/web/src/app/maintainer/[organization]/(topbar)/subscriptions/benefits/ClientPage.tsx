@@ -8,14 +8,22 @@ import { ConfirmModal } from '@/components/Shared/ConfirmModal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import {
   NewSubscriptionTierBenefitModalContent,
+  NewSubscriptionsModalParams,
   UpdateSubscriptionTierBenefitModalContent,
 } from '@/components/Subscriptions/SubscriptionTierBenefitsForm'
-import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
-import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { BenefitsInner, Organization } from '@polar-sh/sdk'
+import {
+  DiscordIcon,
+  resolveBenefitIcon,
+} from '@/components/Subscriptions/utils'
+import { AddOutlined, MoreVertOutlined, WebOutlined } from '@mui/icons-material'
+import {
+  BenefitsInner,
+  Organization,
+  SubscriptionBenefitType,
+} from '@polar-sh/sdk'
 import { encode } from 'html-entities'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
@@ -35,15 +43,23 @@ import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>()
-  const { data: benefits } = useSubscriptionBenefits(organization.name, 100)
+  const { data: benefits, isFetched: benefitsIsFetched } =
+    useSubscriptionBenefits(organization.name, 100)
   const { data: subscriptionTiers } = useSubscriptionTiers(
     organization.name,
     100,
   )
   const searchParams = useSearchParams()
-  const { isShown, toggle, hide } = useModal(
-    searchParams?.get('create_benefit') === 'true',
-  )
+
+  const {
+    isShown,
+    toggle,
+    hide,
+    show: openCreateBenefitModal,
+  } = useModal(searchParams?.get('create_benefit') === 'true')
+
+  const [createModalDefaultValues, setCreateModalDefaultValues] =
+    useState<NewSubscriptionsModalParams>()
 
   const benefitSubscriptionTiers = useMemo(
     () =>
@@ -73,19 +89,29 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
         </Button>
       </div>
       <div className="flex flex-row items-start gap-x-8">
-        <ShadowBoxOnMd className="flex w-2/3 flex-col gap-y-6">
-          <div className="flex flex-col gap-y-2">
-            {benefits?.items?.map((benefit) => (
-              <BenefitRow
-                organization={organization}
-                benefit={benefit}
-                selected={selectedBenefit?.id === benefit.id}
-                handleSelectBenefit={handleSelectBenefit}
-                key={benefit.id}
-              />
-            ))}
-          </div>
-        </ShadowBoxOnMd>
+        <div className="flex w-2/3 flex-col gap-y-8">
+          <ShadowBoxOnMd className="flex  flex-col gap-y-6">
+            <div className="flex flex-col gap-y-2">
+              {benefits?.items?.map((benefit) => (
+                <BenefitRow
+                  organization={organization}
+                  benefit={benefit}
+                  selected={selectedBenefit?.id === benefit.id}
+                  handleSelectBenefit={handleSelectBenefit}
+                  key={benefit.id}
+                />
+              ))}
+            </div>
+          </ShadowBoxOnMd>
+
+          {benefitsIsFetched ? (
+            <RecommendedBenefits
+              existingBenefits={benefits?.items ?? []}
+              openCreateBenefitModal={openCreateBenefitModal}
+              setCreateModalDefaultValues={setCreateModalDefaultValues}
+            />
+          ) : null}
+        </div>
         {selectedBenefit && (
           <ShadowBoxOnMd className="sticky top-8 flex w-1/3 flex-col gap-y-8">
             <div className="flex flex-row items-center gap-x-3">
@@ -137,6 +163,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
           modalContent={
             <NewSubscriptionTierBenefitModalContent
               organization={organization}
+              defaultValues={createModalDefaultValues}
               hideModal={hide}
               onSelectBenefit={hide}
             />
@@ -340,5 +367,95 @@ ${formattedDisplays}
         />
       </div>
     </>
+  )
+}
+
+const RecommendedBenefits = ({
+  existingBenefits,
+  openCreateBenefitModal,
+  setCreateModalDefaultValues,
+}: {
+  existingBenefits: BenefitsInner[]
+  openCreateBenefitModal: () => void
+  setCreateModalDefaultValues: (v: NewSubscriptionsModalParams) => void
+}) => {
+  const hasDiscord = existingBenefits.find((b) => b.type === 'discord')
+  const hasAds = existingBenefits.find((b) => b.type === 'ads')
+
+  // No remaining recommendations
+  if (hasDiscord && hasAds) {
+    return <></>
+  }
+
+  return (
+    <div className="flex flex-col gap-y-2">
+      <h2 className="text-md font-medium">Recommended benefits</h2>
+      {!hasDiscord && (
+        <BenefitSuggestionRow
+          icon={<DiscordIcon />}
+          onClick={() => {
+            setCreateModalDefaultValues({
+              description: 'Invite to community Discord server',
+              type: SubscriptionBenefitType.DISCORD,
+            })
+            openCreateBenefitModal()
+          }}
+        >
+          Invite to community Discord server
+        </BenefitSuggestionRow>
+      )}
+
+      {!hasAds && (
+        <BenefitSuggestionRow
+          icon={<WebOutlined className="h-4 w-4" fontSize="inherit" />}
+          onClick={() => {
+            setCreateModalDefaultValues({
+              description: 'Logo in README',
+              type: SubscriptionBenefitType.ADS,
+            })
+            openCreateBenefitModal()
+          }}
+        >
+          Logo in README
+        </BenefitSuggestionRow>
+      )}
+    </div>
+  )
+}
+
+const BenefitSuggestionRow = ({
+  selected,
+  icon,
+  children,
+  onClick,
+}: {
+  selected?: boolean
+  children: React.ReactNode
+  icon: React.ReactNode
+  onClick: () => void
+}) => {
+  const router = useRouter()
+
+  return (
+    <div
+      className={twMerge(
+        'dark:hover:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 px-4 py-3 transition-colors hover:border-blue-100 hover:bg-blue-50 dark:border-transparent',
+        selected
+          ? 'dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 border-blue-100 bg-blue-50 hover:bg-blue-100'
+          : 'bg-white',
+      )}
+      onClick={onClick}
+    >
+      <div className="flex flex-row items-center gap-x-3">
+        <div
+          className={twMerge(
+            'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
+          )}
+        >
+          {icon}
+        </div>
+        <span className="text-sm">{children}</span>
+      </div>
+    </div>
   )
 }

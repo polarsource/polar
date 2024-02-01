@@ -75,7 +75,7 @@ const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
   const notificationsContainerClassnames = twMerge(
     'pointer-events-none fixed z-40 flex items-end',
     type === 'topbar'
-      ? 'right-0 -left-20 top-12 absolute'
+      ? 'right-4 left-4 md:right-0 md:-left-20 top-12 absolute'
       : 'right-4 top-12 left-2',
   )
 

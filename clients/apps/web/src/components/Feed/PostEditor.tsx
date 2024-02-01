@@ -1,6 +1,17 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Article } from '@polar-sh/sdk'
-import { TabsContent } from 'polarkit/components/ui/atoms'
+import Link from 'next/link'
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  ShadowBoxOnMd,
+  TabsContent,
+} from 'polarkit/components/ui/atoms'
+import { useSubscriptionBenefits } from 'polarkit/hooks'
 import React, { PropsWithChildren, useContext, useState } from 'react'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
@@ -8,6 +19,7 @@ import { StaggerReveal } from '../Shared/StaggerReveal'
 import LongformPost from './LongformPost'
 import { PublishSettings } from './Publishing/PublishSettings'
 import { PostToolbar } from './Toolbar/PostToolbar'
+import { useMarkdownComponents } from './Toolbar/useMarkdownComponents'
 import { EditorHelpers, useEditorHelpers } from './useEditorHelpers'
 
 const defaultPostEditorContext: EditorHelpers = {
@@ -124,7 +136,8 @@ type EditorProps = Pick<
 >
 
 const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
-  const { titleRef, bodyRef } = useContext(PostEditorContext)
+  const { titleRef, bodyRef, insertTextAtCursor } =
+    useContext(PostEditorContext)
 
   const onTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Move focus to body
@@ -137,22 +150,137 @@ const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-y-8 py-8">
-      <input
-        className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"
-        autoFocus
-        placeholder="Title"
-        value={title}
-        onChange={(e) => onTitleChange(e.target.value)}
-        disabled={disabled}
-        ref={titleRef}
-        onKeyDown={onTitleKeyDown}
-      />
-      <MarkdownEditor
-        className="focus:ring-none rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
-        value={body}
-        disabled={disabled}
-      />
+    <div className="relative flex flex-row md:gap-x-4 lg:gap-x-8">
+      <div className="flex flex-1 flex-col gap-y-8 py-8">
+        <input
+          className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"
+          autoFocus
+          placeholder="Title"
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          disabled={disabled}
+          ref={titleRef}
+          onKeyDown={onTitleKeyDown}
+        />
+        <MarkdownEditor
+          className="focus:ring-none rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
+          value={body}
+          disabled={disabled}
+        />
+      </div>
+      <Sidebar />
+    </div>
+  )
+}
+
+const Sidebar = () => {
+  const { insertPaywall, insertSubscribeNow, insertAd } =
+    useMarkdownComponents()
+
+  const { org } = useCurrentOrgAndRepoFromURL()
+
+  const benefits = useSubscriptionBenefits(org?.name)
+  const benefitItems = benefits.data?.items ?? []
+  const adBenefits = benefitItems.filter((b) => b.type === 'ads')
+
+  const [selectedAdBenefit, setSelectedAdBenefit] = useState<string>()
+
+  return (
+    <div>
+      <div className="sticky top-24  hidden w-full min-w-[200px] max-w-[250px] flex-col gap-y-4 lg:flex">
+        <ShadowBoxOnMd className="md:p-4">
+          <div className="flex flex-col gap-y-6">
+            <div className="flex flex-col gap-y-2">
+              <div className="flex flex-col gap-y-2">
+                <h3 className="text font-medium">Components</h3>
+                <Button
+                  variant={'outline'}
+                  size={'sm'}
+                  fullWidth={true}
+                  onClick={insertPaywall}
+                >
+                  <span className="whitespace-nowrap text-center">Paywall</span>
+                </Button>
+
+                <Button
+                  variant={'outline'}
+                  size={'sm'}
+                  fullWidth={true}
+                  onClick={insertSubscribeNow}
+                >
+                  <span className="flex-1 whitespace-nowrap text-center">
+                    Subscribe Now
+                  </span>
+                </Button>
+              </div>
+            </div>
+
+            {benefits.isFetched ? (
+              <>
+                <div className="flex flex-col gap-y-2">
+                  <h3>Ad</h3>
+
+                  {adBenefits.length > 0 ? (
+                    <>
+                      <Select onValueChange={setSelectedAdBenefit}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select benefit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {adBenefits.map((b) => (
+                            <SelectItem value={b.id} key={b.id}>
+                              {b.description}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant={'outline'}
+                        size={'sm'}
+                        disabled={!selectedAdBenefit}
+                        onClick={() => {
+                          insertAd(
+                            selectedAdBenefit ?? 'INSERT_BENEFIT_ID_HERE',
+                          )
+                        }}
+                      >
+                        Add
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="dark:text-polar-400 text-sm text-gray-600">
+                      Setup your first ad{' '}
+                      <Link
+                        href={`/maintainer/${org?.name}/subscriptions/tiers`}
+                        className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        subscription benefit
+                      </Link>{' '}
+                      to enable ads.
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : null}
+
+            {/*
+            <div className="flex flex-col gap-y-2">
+              <h3>YouTube</h3>
+
+              <Input placeholder="Video URL" />
+              <Button
+                variant={'outline'}
+                size={'sm'}
+                onClick={() => {
+                  insertAd()
+                }}
+              >
+                Add
+              </Button>
+            </div>*/}
+          </div>
+        </ShadowBoxOnMd>
+      </div>
     </div>
   )
 }

@@ -114,7 +114,7 @@ export const useArchiveSubscriptionTier = (orgName?: string) =>
   })
 
 export const useSubscriptionBenefits = (
-  orgName: string,
+  orgName?: string,
   limit = 30,
   platform: Platforms = Platforms.GITHUB,
 ) =>
@@ -122,11 +122,12 @@ export const useSubscriptionBenefits = (
     queryKey: ['subscriptionBenefits', 'organization', orgName],
     queryFn: () =>
       api.subscriptions.searchSubscriptionBenefits({
-        organizationName: orgName,
+        organizationName: orgName ?? '',
         platform,
         limit,
       }),
     retry: defaultRetry,
+    enabled: !!orgName,
   })
 
 export const useSubscriptionBenefit = (id?: string) =>

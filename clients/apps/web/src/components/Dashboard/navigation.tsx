@@ -140,7 +140,7 @@ export const backerRoutes = (): Route[] => [
   },
   {
     id: 'subscriptions',
-    title: 'Subscriptions',
+    title: 'My Subscriptions',
     link: `/subscriptions`,
     icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,

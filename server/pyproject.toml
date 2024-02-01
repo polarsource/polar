@@ -36,6 +36,7 @@ slack-sdk = "^3.26.1"
 pydantic-settings = "^2.1.0"
 email-validator = "^2.1.0.post1"
 python-dateutil = {  git = "https://github.com/dateutil/dateutil.git", rev = "0586f4afa26fc6799128d98d4f97a49c7d6ab314" }
+pydantic-extra-types = "^2.5.0"
 
 [tool.poetry.group.backoffice]
 optional = true

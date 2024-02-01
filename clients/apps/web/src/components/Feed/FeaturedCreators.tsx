@@ -30,6 +30,11 @@ const featuredCreators = [
     bio: 'An innovative open-source organization dedicated to extending the Web',
   },
   {
+    name: 'eval',
+    avatarUrl: 'https://avatars.githubusercontent.com/u/290596?v=4',
+    bio: 'Ruby and Clojure consultant and OSS enthusiast',
+  },
+  {
     name: 'fief-dev',
     avatarUrl: 'https://avatars.githubusercontent.com/u/97037414?v=4',
     bio: 'Users and authentication management SaaS',

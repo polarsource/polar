@@ -1,6 +1,7 @@
 'use client'
 
 import { useCurrentOrgAndRepoFromURL, useGitHubAccount } from '@/hooks'
+import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
 import { UserRead } from '@polar-sh/sdk'
@@ -241,6 +242,14 @@ export const ProfileMenu = ({
             </Link>
 
             <ul className="mt-2 flex w-full flex-col">
+              {personalOrg && (
+                <LinkItem
+                  href={`/${personalOrg.name}`}
+                  icon={<ArrowUpRightIcon className="h-5 w-5" />}
+                >
+                  <span className="mx-2 text-sm">Public Page</span>
+                </LinkItem>
+              )}
               {dashboardRoutes(personalOrg, true, true)
                 .filter((route) => ('if' in route ? route.if : true))
                 .map((n) => {

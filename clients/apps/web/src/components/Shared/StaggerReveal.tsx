@@ -34,7 +34,11 @@ export interface StaggerRevealProps extends HTMLMotionProps<MotionElement> {
   transition?: Partial<Transition>
 }
 
-export const StaggerReveal = ({ transition, as, ...props }: StaggerRevealProps) => {
+export const StaggerReveal = ({
+  transition,
+  as,
+  ...props
+}: StaggerRevealProps) => {
   const Component = motion[as ?? 'div']
   return (
     <Component

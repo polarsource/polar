@@ -21,9 +21,9 @@ export const PostToolbar = ({
 }: PostToolbarProps) => {
   const isPublished = Boolean(
     article &&
-    article.published_at &&
-    new Date(article.published_at) <= new Date() &&
-    article.visibility === ArticleVisibilityEnum.PUBLIC,
+      article.published_at &&
+      new Date(article.published_at) <= new Date() &&
+      article.visibility === ArticleVisibilityEnum.PUBLIC,
   )
 
   return (

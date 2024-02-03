@@ -3,7 +3,6 @@
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Issue, IssueStateEnum, Label } from '@polar-sh/sdk'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import { githubIssueUrl } from 'polarkit/github'
 import { twMerge } from 'tailwind-merge'
 import IconCounter from './IconCounter'
 import IssueLabel from './IssueLabel'

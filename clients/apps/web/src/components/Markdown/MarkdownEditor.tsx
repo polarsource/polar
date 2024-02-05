@@ -1,5 +1,5 @@
 import { TextArea } from 'polarkit/components/ui/atoms'
-import { useContext, useEffect } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PostEditorContext } from '../Feed/PostEditor'
 
@@ -26,16 +26,35 @@ export const MarkdownEditor = ({
     handlePaste,
   } = useContext(PostEditorContext)
 
-  const resizeTextarea = () => {
+  const editorScrollWidth = useRef(0)
+
+  const resizeTextarea = async () => {
     if (bodyRef?.current) {
+      const currentWidth = bodyRef.current.scrollWidth
+
+      // If textarea is wider than before. Reset element height before using scrollHeight.
+      // This allows the textarea height to shrink
+      if (currentWidth > editorScrollWidth.current) {
+        bodyRef.current.style.height = ''
+      }
+
       bodyRef.current.style.height = bodyRef.current.scrollHeight + 'px'
+
+      editorScrollWidth.current = currentWidth
     }
   }
 
+  // Run on value change
   useEffect(() => {
     resizeTextarea()
   }, [value])
 
+  // Run once
+  useEffect(() => {
+    resizeTextarea()
+  }, [])
+
+  // Run on window resized
   useEffect(() => {
     window.addEventListener('resize', resizeTextarea)
     return () => {

@@ -67,7 +67,7 @@ export const MarkdownEditor = ({
       ref={bodyRef}
       className={twMerge('rounded-3xl p-6 text-lg', className)}
       style={{
-        minHeight: '100%',
+        minHeight: '100vh',
       }}
       placeholder="# Hello World!"
       resizable={false}

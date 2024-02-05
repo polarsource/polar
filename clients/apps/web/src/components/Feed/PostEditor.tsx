@@ -3,6 +3,7 @@ import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
   Button,
+  Input,
   Select,
   SelectContent,
   SelectItem,
@@ -19,7 +20,10 @@ import { StaggerReveal } from '../Shared/StaggerReveal'
 import LongformPost from './LongformPost'
 import { PublishSettings } from './Publishing/PublishSettings'
 import { PostToolbar } from './Toolbar/PostToolbar'
-import { useMarkdownComponents } from './Toolbar/useMarkdownComponents'
+import {
+  useMarkdownComponents,
+  youtubeIdFromURL,
+} from './Toolbar/useMarkdownComponents'
 import { EditorHelpers, useEditorHelpers } from './useEditorHelpers'
 
 const defaultPostEditorContext: EditorHelpers = {
@@ -263,24 +267,39 @@ const Sidebar = () => {
               </>
             ) : null}
 
-            {/*
-            <div className="flex flex-col gap-y-2">
-              <h3>YouTube</h3>
-
-              <Input placeholder="Video URL" />
-              <Button
-                variant={'outline'}
-                size={'sm'}
-                onClick={() => {
-                  insertAd()
-                }}
-              >
-                Add
-              </Button>
-            </div>*/}
+            <SidebarYouTube />
           </div>
         </ShadowBoxOnMd>
       </div>
+    </div>
+  )
+}
+
+const SidebarYouTube = () => {
+  const [url, setURL] = useState('')
+  const { insertYouTube } = useMarkdownComponents()
+
+  const validURL = Boolean(youtubeIdFromURL(url))
+
+  return (
+    <div className="flex flex-col gap-y-2">
+      <h3 className="font-medium">YouTube</h3>
+
+      <Input
+        placeholder="Video URL"
+        value={url}
+        onChange={(e) => setURL(e.target.value)}
+      />
+      <Button
+        variant={'outline'}
+        size={'sm'}
+        onClick={() => {
+          insertYouTube(url)
+        }}
+        disabled={!validURL}
+      >
+        Add
+      </Button>
     </div>
   )
 }

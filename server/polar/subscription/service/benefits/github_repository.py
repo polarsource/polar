@@ -17,6 +17,7 @@ from polar.models.user import OAuthPlatform
 from polar.notifications.notification import (
     SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
 )
+from polar.posthog import posthog
 from polar.repository.service import repository as repository_service
 
 from .base import (
@@ -252,6 +253,21 @@ class SubscriptionBenefitGitHubRepositoryService(
                     {
                         "type": "no_repository_acccess",
                         "message": "You don't have access to this repository.",
+                        "loc": ("repository_id",),
+                        "input": repository_id,
+                    }
+                ]
+            )
+
+        if posthog.client and not posthog.client.feature_enabled(
+            "github-benefit-personal-org", user.posthog_distinct_id
+        ):
+            raise SubscriptionBenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "personal_organization_repository",
+                        "message": "For security reasons, "
+                        "repositories on personal organizations are not supported.",
                         "loc": ("repository_id",),
                         "input": repository_id,
                     }

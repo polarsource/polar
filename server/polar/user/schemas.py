@@ -35,6 +35,7 @@ class OAuthAccountRead(TimestampedSchema):
     platform: OAuthPlatform
     account_id: str
     account_email: str
+    account_username: str | None
 
 
 class UserRead(UserBase, TimestampedSchema):

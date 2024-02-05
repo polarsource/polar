@@ -11,8 +11,8 @@ import { useEffect } from 'react'
 
 interface ConnectedAppProps {
   icon: React.ReactNode
-  title: string
-  subtitle: string
+  title: React.ReactNode
+  subtitle: React.ReactNode
   action: React.ReactNode
 }
 
@@ -63,7 +63,21 @@ const DiscordConnectedApp: React.FC<DiscordConnectedAppProps> = ({
           </g>
         </svg>
       }
-      title={oauthAccount ? oauthAccount.account_email : 'Connect Discord'}
+      title={
+        oauthAccount ? (
+          <>
+            {oauthAccount.account_username ? (
+              <>
+                {oauthAccount.account_username} ({oauthAccount.account_email})
+              </>
+            ) : (
+              oauthAccount.account_email
+            )}
+          </>
+        ) : (
+          'Connect Discord'
+        )
+      }
       subtitle={
         oauthAccount
           ? 'Your Discord account is connected.'

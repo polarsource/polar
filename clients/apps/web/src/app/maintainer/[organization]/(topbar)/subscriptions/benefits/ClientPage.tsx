@@ -98,11 +98,12 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               </div>
               <span className="text-sm">{selectedBenefit.description}</span>
             </div>
-            {(benefitSubscriptionTiers?.length ?? 0) > 0 && (
-              <div className="flex flex-col gap-y-4">
-                <h3 className="font-medium">Subscription Tiers</h3>
-                <div className="flex flex-col gap-y-2">
-                  {benefitSubscriptionTiers?.map((tier) => (
+
+            <div className="flex flex-col gap-y-4">
+              <h3 className="font-medium">Subscription Tiers</h3>
+              <div className="flex flex-col gap-y-2">
+                {(benefitSubscriptionTiers?.length ?? 0) > 0 ? (
+                  benefitSubscriptionTiers?.map((tier) => (
                     <Link
                       key={tier.id}
                       href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
@@ -114,10 +115,15 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                       />
                       <span>{tier.name}</span>
                     </Link>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">
+                    Benefit not tied to any subscription tier
+                  </span>
+                )}
               </div>
-            )}
+            </div>
+
             {selectedBenefit.type === 'ads' ? (
               <AdsBenefitContent benefit={selectedBenefit} />
             ) : null}

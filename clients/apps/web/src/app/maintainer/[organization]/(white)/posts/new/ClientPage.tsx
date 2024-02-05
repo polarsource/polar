@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
+  const [tab, setTab] = useState('edit')
 
   const [article, setArticle] = useState<
     Omit<ArticleCreate, 'organization_id'>
@@ -41,22 +42,31 @@ const ClientPage = () => {
   }
 
   useEffect(() => {
-    const savePost = (e: KeyboardEvent) => {
-      if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        captureEvent('posts:create_cmd_s:create')
-        handleContinue()
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 's') {
+          e.preventDefault()
+          captureEvent('posts:create_cmd_s:create')
+          handleContinue()
+        }
+        if (e.key === 'p') {
+          e.preventDefault()
+          captureEvent('posts:create_cmd_p:view')
+          setTab('preview')
+        }
       }
     }
 
-    window.addEventListener('keydown', savePost)
+    window.addEventListener('keydown', keyHandler)
 
     return () => {
-      window.removeEventListener('keydown', savePost)
+      window.removeEventListener('keydown', keyHandler)
     }
   }, [handleContinue])
 
   const onTabChange = async (tab: string) => {
+    setTab(tab)
+
     if (tab === 'settings') {
       if (!canCreate) {
         return
@@ -84,11 +94,7 @@ const ClientPage = () => {
   }
 
   return (
-    <Tabs
-      className="flex flex-col"
-      defaultValue="edit"
-      onValueChange={onTabChange}
-    >
+    <Tabs className="flex flex-col" value={tab} onValueChange={onTabChange}>
       <DashboardTopbar title="Create Post" isFixed useOrgFromURL>
         <Button
           onClick={() => {

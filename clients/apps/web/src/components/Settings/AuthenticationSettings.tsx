@@ -11,8 +11,8 @@ import {
 
 interface AuthenticationMethodProps {
   icon: React.ReactNode
-  title: string
-  subtitle: string
+  title: React.ReactNode
+  subtitle: React.ReactNode
   action: React.ReactNode
 }
 
@@ -65,7 +65,21 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
           />
         </svg>
       }
-      title={oauthAccount ? oauthAccount.account_email : 'Connect GitHub'}
+      title={
+        oauthAccount ? (
+          <>
+            {oauthAccount.account_username ? (
+              <>
+                {oauthAccount.account_username} ({oauthAccount.account_email})
+              </>
+            ) : (
+              oauthAccount.account_email
+            )}
+          </>
+        ) : (
+          'Connect GitHub'
+        )
+      }
       subtitle={
         oauthAccount
           ? 'You can sign in with your GitHub account.'

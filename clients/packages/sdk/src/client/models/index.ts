@@ -3269,6 +3269,12 @@ export interface OAuthAccountRead {
      * @memberof OAuthAccountRead
      */
     account_email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuthAccountRead
+     */
+    account_username: string;
 }
 
 /**

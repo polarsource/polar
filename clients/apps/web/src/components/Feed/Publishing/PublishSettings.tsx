@@ -6,7 +6,7 @@ import { Article, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
-import { useDeleteArticle } from 'polarkit/hooks'
+import { useDeleteArticle, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { AudiencePicker } from './AudiencePicker'
 import { PublishSummary } from './PublishSummary'
@@ -24,7 +24,10 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
   const [publishAt, setPublishAt] = useState<Date | undefined>(
     article.published_at ? new Date(article.published_at) : undefined,
   )
+
   const [slug, setSlug] = useState<string>(article.slug)
+  const [slugChanged, setSlugChanged] = useState(false)
+
   const router = useRouter()
   const { hide: hideModal, isShown: isModalShown, show: showModal } = useModal()
 
@@ -54,6 +57,29 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
     },
     [setSlug],
   )
+
+  const updateArticle = useUpdateArticle()
+  const [slugIsSaving, setSlugIsSaving] = useState(false)
+
+  const onSaveSlug = async () => {
+    setSlugIsSaving(true)
+    const art = await updateArticle.mutateAsync({
+      id: article.id,
+      articleUpdate: {
+        slug: slug,
+      },
+    })
+
+    // Redirect
+    router.push(
+      `/maintainer/${art.organization.name}/posts/${art.slug}#settings`,
+    )
+
+    // Wait for redirect
+    await new Promise((r) => setTimeout(r, 2000))
+
+    setSlugIsSaving(false)
+  }
 
   const isPublished = Boolean(
     article.published_at &&
@@ -133,13 +159,25 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                 </p>
               </div>
 
-              <Input
-                type="text"
-                value={slug}
-                onChange={(e) => formatAndSetSlug(e.target.value)}
-                className="font-mono"
-                maxLength={64}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => {
+                    setSlugChanged(true)
+                    formatAndSetSlug(e.target.value)
+                  }}
+                  className="font-mono"
+                  maxLength={64}
+                />
+                <Button
+                  disabled={!slug || !slugChanged}
+                  loading={updateArticle.isPending || slugIsSaving}
+                  onClick={onSaveSlug}
+                >
+                  Save
+                </Button>
+              </div>
             </div>
           </>
         </ShadowBoxOnMd>

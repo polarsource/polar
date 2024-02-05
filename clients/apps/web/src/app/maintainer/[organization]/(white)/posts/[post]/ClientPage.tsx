@@ -9,7 +9,7 @@ import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Button, Tabs } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
@@ -17,9 +17,14 @@ import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { post: postSlug, organization: organizationName } = useParams()
+  const params = useParams()
   const post = useArticleLookup(organizationName as string, postSlug as string)
   const [animateSaveBanner, setAnimateSaveBanner] = useState(false)
   const [isInSavedState, setIsInSavedState] = useState(false)
+  const [tab, setTab] = useState(
+    window && window.location.hash === '#settings' ? 'settings' : 'edit',
+  )
+  const router = useRouter()
 
   const [updateArticle, setUpdateArticle] = useState<
     ArticleUpdate & { title: string; body: string }
@@ -34,6 +39,12 @@ const ClientPage = () => {
         updateArticle.body === post.data?.body,
     )
   }, [post.data, updateArticle])
+
+  useEffect(() => {
+    if (window && window.location.hash === '#settings') {
+      setTab('settings')
+    }
+  }, [params])
 
   useEffect(() => {
     setUpdateArticle((a) => ({
@@ -65,20 +76,28 @@ const ClientPage = () => {
   }, [post, update, updateArticle])
 
   useEffect(() => {
-    const savePost = (e: KeyboardEvent) => {
-      if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        captureEvent('posts:edit_cmd_s:submit')
-        handleSave()
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 's') {
+          e.preventDefault()
+          captureEvent('posts:edit_cmd_s:submit')
+          handleSave()
+        }
+
+        if (e.key === 'p') {
+          e.preventDefault()
+          captureEvent('posts:edit_cmd_p:view')
+          setTab('preview')
+        }
       }
     }
 
-    window.addEventListener('keydown', savePost)
+    window.addEventListener('keydown', keyHandler)
 
     return () => {
-      window.removeEventListener('keydown', savePost)
+      window.removeEventListener('keydown', keyHandler)
     }
-  }, [handleSave])
+  }, [handleSave, router, organizationName, postSlug])
 
   if (!post.data) {
     return (
@@ -95,10 +114,9 @@ const ClientPage = () => {
       post.data.visibility === ArticleVisibilityEnum.PUBLIC,
   )
 
-  const defaultTab =
-    window && window.location.hash === '#settings' ? 'settings' : 'edit'
-
   const onTabChange = async (tab: string) => {
+    setTab(tab)
+
     if (tab === 'settings') {
       captureEvent('posts:edit_tab_settings:view')
     } else if (tab === 'edit') {
@@ -109,11 +127,7 @@ const ClientPage = () => {
   }
 
   return (
-    <Tabs
-      className="flex flex-col"
-      defaultValue={defaultTab}
-      onValueChange={onTabChange}
-    >
+    <Tabs className="flex flex-col" value={tab} onValueChange={onTabChange}>
       <DashboardTopbar title="Edit Post" isFixed useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
           <span className="dark:text-polar-500 px-4 text-sm text-gray-500">
@@ -164,7 +178,7 @@ const ClientPage = () => {
             initial={{ opacity: 0 }}
             exit={{ opacity: 0 }}
           >
-            <Banner color="muted">Post was saved ✨</Banner>
+            <Banner color="default">Post was saved ✨</Banner>
           </motion.div>
         )}
       </AnimatePresence>

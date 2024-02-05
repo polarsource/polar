@@ -34,6 +34,7 @@ import React, { useMemo } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import ImportSubscribersModal from './ImportSubscribersModal'
+import SubscriptionStatusSelect from './SubscriptionStatusSelect'
 import SubscriptionTiersSelect from './SubscriptionTiersSelect'
 import {
   getSubscriptionTiersByType,
@@ -47,6 +48,7 @@ interface SubscribersPageProps {
   sorting: DataTableSortingState
   subscriptionTierId?: string
   subscriptionTierType?: SubscriptionTierType
+  subscriptionStatus?: Extract<SubscriptionStatus, 'active' | 'canceled'>
 }
 
 const SubscribersPage: React.FC<SubscribersPageProps> = ({
@@ -55,6 +57,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   sorting,
   subscriptionTierId,
   subscriptionTierType,
+  subscriptionStatus,
 }) => {
   const subscriptionTiers = useSubscriptionTiers(organization.name)
   const subscriptionTiersByType = useMemo(
@@ -63,10 +66,12 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   )
 
   const filter = subscriptionTierType || subscriptionTierId || 'all'
+  const status = subscriptionStatus || 'active'
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
     filter: string,
+    status: string,
   ) => {
     const params = serializeSearchParams(pagination, sorting)
     if (filter !== 'all') {
@@ -76,6 +81,9 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         params.append('subscription_tier_id', filter)
       }
     }
+
+    params.append('status', status)
+
     return params
   }
 
@@ -102,6 +110,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         updatedPagination,
         sorting,
         filter,
+        status,
       )}`,
     )
   }
@@ -123,6 +132,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         pagination,
         updatedSorting,
         filter,
+        status,
       )}`,
     )
   }
@@ -135,6 +145,20 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         pagination,
         sorting,
         filter,
+        status,
+      )}`,
+    )
+  }
+
+  const setStatus = (status: string) => {
+    router.push(
+      `/maintainer/${
+        organization.name
+      }/subscriptions/subscribers?${getSearchParams(
+        pagination,
+        sorting,
+        filter,
+        status,
       )}`,
     )
   }
@@ -145,6 +169,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
     ...getAPIParams(pagination, sorting),
     ...(subscriptionTierId ? { subscriptionTierId } : {}),
     ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
+    ...{ active: status === 'active' },
   })
 
   const subscriptions = subscriptionsHook.data?.items || []
@@ -282,6 +307,13 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
           <h2 className="text-xl">Subscribers</h2>
 
           <div className="flex items-center gap-2">
+            <div className="w-full min-w-[180px]">
+              <SubscriptionStatusSelect
+                statuses={['active', 'canceled']}
+                value={subscriptionStatus || 'active'}
+                onChange={setStatus}
+              />
+            </div>
             <div className="w-full min-w-[180px]">
               <SubscriptionTiersSelect
                 tiersByType={subscriptionTiersByType}

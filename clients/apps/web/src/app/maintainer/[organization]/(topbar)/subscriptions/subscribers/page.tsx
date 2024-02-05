@@ -25,6 +25,7 @@ export default async function Page({
   searchParams: DataTableSearchParams & {
     type?: SubscriptionTierType
     subscription_tier_id?: string
+    status?: Extract<SubscriptionTierType, 'active' | 'inactive'> | 'all'
   }
 }) {
   const api = getServerSideAPI()
@@ -44,6 +45,7 @@ export default async function Page({
       sorting={sorting}
       subscriptionTierType={searchParams.type}
       subscriptionTierId={searchParams.subscription_tier_id}
+      subscriptionStatus={searchParams.status}
     />
   )
 }

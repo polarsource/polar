@@ -313,6 +313,7 @@ export const useSearchSubscriptions = (variables: {
   page: number
   subscriptionTierId?: string
   subscriptionTierType?: string
+  active?: boolean
 }) =>
   useQuery({
     queryKey: ['subscriptions', 'search', JSON.stringify(variables)],

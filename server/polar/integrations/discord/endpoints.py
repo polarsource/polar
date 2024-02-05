@@ -152,7 +152,8 @@ async def discord_user_callback(
     try:
         await discord_user_service.create_oauth_account(session, auth.user, data)
     except ResourceAlreadyExists:
-        pass
+        existing = await discord_user_service.get_oauth_account(session, auth.user)
+        await discord_user_service.update_user_info(session, existing)
 
     redirect_to = get_safe_return_url(state["return_to"])
     return RedirectResponse(redirect_to, 303)

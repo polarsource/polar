@@ -37,6 +37,11 @@ class OAuthAccount(RecordModel):
     )
     account_id: Mapped[str] = mapped_column(String(320), nullable=False)
     account_email: Mapped[str] = mapped_column(String(320), nullable=False)
+
+    # Usernames are not always unique across a platform. Usernames on GitHub are unique.
+    # Discords usernames are not.
+    account_username: Mapped[str] = mapped_column(String(320), nullable=True)
+
     user_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("users.id", ondelete="cascade"),

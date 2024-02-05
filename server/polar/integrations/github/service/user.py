@@ -135,6 +135,7 @@ class GithubUserService(UserService):
                     refresh_token=tokens.refresh_token,
                     account_id=str(github_user.id),
                     account_email=email,
+                    account_username=github_user.login,
                 )
             ],
         )
@@ -169,6 +170,7 @@ class GithubUserService(UserService):
                 platform=OAuthPlatform.github,
                 account_id=str(github_user.id),
                 account_email=email,
+                account_username=github_user.login,
                 user=user,
             )
 
@@ -176,6 +178,7 @@ class GithubUserService(UserService):
         oauth_account.expires_at = tokens.expires_at
         oauth_account.refresh_token = tokens.refresh_token
         oauth_account.account_email = email
+        oauth_account.account_username = github_user.login
         await oauth_account.save(session)
 
         log.info(
@@ -308,6 +311,7 @@ class GithubUserService(UserService):
         oauth_account.expires_at = tokens.expires_at
         oauth_account.refresh_token = tokens.refresh_token
         oauth_account.account_email = email
+        oauth_account.account_username = github_user.login
         await oauth_account.save(session)
 
         # Update User profile

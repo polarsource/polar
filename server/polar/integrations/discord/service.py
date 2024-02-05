@@ -46,6 +46,7 @@ class DiscordUserService:
 
         account_id = data["id"]
         account_email = data["email"]
+        account_username = data["username"]
 
         oauth_account = OAuthAccount(
             platform=OAuthPlatform.discord,
@@ -54,6 +55,7 @@ class DiscordUserService:
             refresh_token=oauth2_token_data["refresh_token"],
             account_id=account_id,
             account_email=account_email,
+            account_username=account_username,
             user=user,
         )
         session.add(oauth_account)
@@ -65,6 +67,25 @@ class DiscordUserService:
             user_id=user.id,
             subscription_benefit_type=SubscriptionBenefitType.discord,
         )
+
+        return oauth_account
+
+    async def update_user_info(
+        self,
+        session: AsyncSession,
+        oauth_account: OAuthAccount,
+    ) -> OAuthAccount:
+        client = DiscordClient("Bearer", oauth_account.access_token)
+        data = await client.get_me()
+
+        account_email = data["email"]
+        account_username = data["username"]
+
+        oauth_account.account_email = account_email
+        oauth_account.account_username = account_username
+
+        await oauth_account.save(session)
+        await session.commit()
 
         return oauth_account
 

@@ -121,50 +121,52 @@ const ClientPage = () => {
                 Analytics
               </h3>
             </div>
-            {subscriptionStatistics.data && (
-              <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-                <div className="flex w-full flex-grow flex-row items-center justify-between">
-                  <h3 className="p-2 text-sm font-medium">Subscribers</h3>
-                  <h3 className="p-2 text-sm">
-                    {summary.data?.pagination.total_count}
-                  </h3>
-                </div>
-                <SubscriptionsChart
-                  y="subscribers"
-                  axisYOptions={{
-                    ticks: 'month',
-                    label: null,
-                  }}
-                  data={subscriptionStatistics.data.periods.map((d) => ({
-                    ...d,
-                    parsedStartDate: new Date(d.start_date),
-                  }))}
-                />
-              </Card>
-            )}
-            {paidSubscriptionStatistics.data && (
-              <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-                <div className="flex w-full flex-grow flex-row items-center justify-between">
-                  <h3 className="p-2 text-sm font-medium">
-                    Paying Subscribers
-                  </h3>
-                  <h3 className="p-2 text-sm">
-                    {currentPeriodPaidSubscriptions?.subscribers}
-                  </h3>
-                </div>
-                <SubscriptionsChart
-                  y="subscribers"
-                  axisYOptions={{
-                    ticks: 'month',
-                    label: null,
-                  }}
-                  data={paidSubscriptionStatistics.data.periods.map((d) => ({
-                    ...d,
-                    parsedStartDate: new Date(d.start_date),
-                  }))}
-                />
-              </Card>
-            )}
+            <div className="flex flex-shrink-0 gap-2 lg:gap-8 xl:flex-col">
+              {subscriptionStatistics.data && (
+                <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
+                  <div className="flex w-full flex-grow flex-row items-center justify-between">
+                    <h3 className="p-2 text-sm font-medium">Subscribers</h3>
+                    <h3 className="p-2 text-sm">
+                      {summary.data?.pagination.total_count}
+                    </h3>
+                  </div>
+                  <SubscriptionsChart
+                    y="subscribers"
+                    axisYOptions={{
+                      ticks: 'month',
+                      label: null,
+                    }}
+                    data={subscriptionStatistics.data.periods.map((d) => ({
+                      ...d,
+                      parsedStartDate: new Date(d.start_date),
+                    }))}
+                  />
+                </Card>
+              )}
+              {paidSubscriptionStatistics.data && (
+                <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
+                  <div className="flex w-full flex-grow flex-row items-center justify-between">
+                    <h3 className="p-2 text-sm font-medium">
+                      Paying Subscribers
+                    </h3>
+                    <h3 className="p-2 text-sm">
+                      {currentPeriodPaidSubscriptions?.subscribers}
+                    </h3>
+                  </div>
+                  <SubscriptionsChart
+                    y="subscribers"
+                    axisYOptions={{
+                      ticks: 'month',
+                      label: null,
+                    }}
+                    data={paidSubscriptionStatistics.data.periods.map((d) => ({
+                      ...d,
+                      parsedStartDate: new Date(d.start_date),
+                    }))}
+                  />
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </DashboardBody>

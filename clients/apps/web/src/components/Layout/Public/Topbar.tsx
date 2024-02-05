@@ -111,7 +111,7 @@ const Topbar = ({
 
   return (
     <div className="dark:border-b-polar-800 dark:bg-polar-950 sticky top-0 z-50 flex w-full flex-col items-center justify-start border-b border-b-gray-100 bg-white py-4">
-      <div className="flex w-full max-w-7xl flex-col items-stretch justify-between gap-y-4 px-2 md:flex-row md:items-center">
+      <div className="flex w-full max-w-7xl flex-row items-stretch justify-between gap-y-4 px-2 ">
         <div className="flex flex-row items-center gap-x-4 md:gap-x-12">
           {/* Do not make this a Link, it breaks the Framer site proxy */}
           <a href="/">
@@ -125,7 +125,7 @@ const Topbar = ({
           </div>
         </div>
         {!hideProfile ? (
-          <div className="relative flex flex-row items-center justify-between gap-x-6">
+          <div className="relative flex flex-row items-center justify-end gap-x-6">
             {upsell}
             <TopbarRight authenticatedUser={authenticatedUser} />
           </div>

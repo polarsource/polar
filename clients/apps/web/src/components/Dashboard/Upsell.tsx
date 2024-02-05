@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { CONFIG } from 'polarkit'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -29,13 +29,12 @@ export const GitHubAuthUpsell = () => {
 
 export const MaintainerUpsell = () => {
   const { currentUser } = useAuth()
-  const router = useRouter()
-
   const maintainerUpgrade = useMaintainerUpgrade()
 
   const upgrade = async () => {
     await maintainerUpgrade.mutateAsync()
-    router.push(`/maintainer/${currentUser?.username}/overview`)
+    // TODO: Find a way to refresh the page using router.refresh() without keeping stale data
+    window.location.reload()
   }
 
   return (

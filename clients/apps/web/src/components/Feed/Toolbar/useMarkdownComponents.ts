@@ -28,9 +28,39 @@ export const useMarkdownComponents = () => {
     [insertTextAtCursor],
   )
 
+  const insertYouTube = useCallback(
+    (url: string) => {
+      const id = youtubeIdFromURL(url)
+      if (!id) {
+        return
+      }
+
+      if (!bodyRef.current) {
+        return
+      }
+
+      insertTextAtCursor(
+        `<iframe src="https://www.youtube.com/embed/${id}"></iframe>`,
+      )
+    },
+    [insertTextAtCursor],
+  )
+
   return {
     insertPaywall,
     insertSubscribeNow,
     insertAd,
+    insertYouTube,
   }
+}
+
+const youtubeUrlRe =
+  /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(-nocookie)?\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|live\/|v\/)?)([\w\-]+)(\S+)?$/
+
+export const youtubeIdFromURL = (url: string): string | null => {
+  const res = url.match(youtubeUrlRe)
+  if (res && res.length >= 7) {
+    return res[6]
+  }
+  return null
 }

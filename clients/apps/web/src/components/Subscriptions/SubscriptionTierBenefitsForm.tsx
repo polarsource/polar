@@ -1,3 +1,4 @@
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   AutoAwesome,
   LoyaltyOutlined,
@@ -800,6 +801,9 @@ interface GitHubRepositoryBenefitFormProps {
 export const GitHubRepositoryBenefitForm = ({
   update = false,
 }: GitHubRepositoryBenefitFormProps) => {
+  const canConfigurePersonalOrg = isFeatureEnabled(
+    'github-benefit-personal-org',
+  )
   const pathname = usePathname()
 
   const {
@@ -816,10 +820,19 @@ export const GitHubRepositoryBenefitForm = ({
   } = useListRepositories()
 
   const {
-    data: organizations,
+    data: allOrganizations,
     refetch: refetchOrganizations,
     isFetching: isFetchingOrganizations,
   } = useListAdminOrganizations()
+  const organizations: Organization[] | undefined = useMemo(
+    () =>
+      canConfigurePersonalOrg
+        ? allOrganizations?.items
+        : allOrganizations?.items?.filter(
+            ({ is_personal }) => is_personal === false,
+          ),
+    [canConfigurePersonalOrg, allOrganizations],
+  )
   const [selectedOrganization, setSelectedOrganization] = useState<
     Organization | undefined
   >(
@@ -832,7 +845,7 @@ export const GitHubRepositoryBenefitForm = ({
   )
   const onOrganizationChange = useCallback(
     (id: string) => {
-      const selected = organizations?.items?.find(
+      const selected = organizations?.find(
         (organization) => organization.id === id,
       )
       setSelectedOrganization(selected)
@@ -884,7 +897,7 @@ export const GitHubRepositoryBenefitForm = ({
 
   useEffect(() => {
     let intervalId: number | null = null
-    const organizationsCount = organizations?.pagination.total_count
+    const organizationsCount = allOrganizations?.pagination.total_count
     if (installationWindow) {
       intervalId = window.setInterval(async () => {
         const { data: organizations } = await refetchOrganizations()
@@ -901,7 +914,7 @@ export const GitHubRepositoryBenefitForm = ({
         window.clearInterval(intervalId)
       }
     }
-  }, [refetchOrganizations, organizations, installationWindow])
+  }, [refetchOrganizations, allOrganizations, installationWindow])
 
   const openOrganizationInstallationURL = useCallback(() => {
     const url = selectedOrganization
@@ -950,7 +963,7 @@ export const GitHubRepositoryBenefitForm = ({
                 <SelectValue placeholder="Select a GitHub organization" />
               </SelectTrigger>
               <SelectContent>
-                {organizations?.items?.map((organization) => (
+                {organizations?.map((organization) => (
                   <SelectItem key={organization.id} value={organization.id}>
                     {organization.name}
                   </SelectItem>
@@ -968,18 +981,26 @@ export const GitHubRepositoryBenefitForm = ({
             <RefreshOutlined />
           </Button>
         </div>
-        <FormDescription>
-          Not seeing your organization?{' '}
-          <Button
-            variant="link"
-            type="button"
-            onClick={openInstallationURL}
-            className="h-fit p-0"
-          >
-            Click here
-          </Button>{' '}
-          to install it on Polar.
-        </FormDescription>
+        {!selectedOrganization && (
+          <FormDescription>
+            Not seeing your organization?{' '}
+            <Button
+              variant="link"
+              type="button"
+              onClick={openInstallationURL}
+              className="h-fit p-0"
+            >
+              Click here
+            </Button>{' '}
+            to install it on Polar.
+          </FormDescription>
+        )}
+        {!selectedOrganization && !canConfigurePersonalOrg && (
+          <FormDescription>
+            For security reasons, we do not support configuring a repository on
+            a personal organization.
+          </FormDescription>
+        )}
         <FormMessage />
       </FormItem>
       {selectedOrganization && (

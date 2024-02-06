@@ -36,7 +36,7 @@ export default async function Page({
   const startOfMonthThreeMonthsAgo = new Date()
   startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
   startOfMonthThreeMonthsAgo.setUTCDate(1)
-  startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
+  startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 5)
 
   return (
     <ClientPage

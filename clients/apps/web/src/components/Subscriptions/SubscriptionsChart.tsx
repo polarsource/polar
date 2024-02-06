@@ -1,7 +1,7 @@
 import * as Plot from '@observablehq/plot'
 import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 const createAreaGradient = (id: string) => {
   // Create an SVG element
@@ -64,8 +64,6 @@ export class Callback extends Plot.Dot {
   ): SVGElement | null {
     if (index.length) {
       this.callbackFunction(index[0])
-    } else {
-      this.callbackFunction(undefined)
     }
     return null
   }
@@ -95,6 +93,12 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const gradientId = 'subscriptions-chart-gradient'
+
+  const onMouseLeave = useCallback(() => {
+    if (onDataIndexHover) {
+      onDataIndexHover(undefined)
+    }
+  }, [onDataIndexHover])
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -164,7 +168,11 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
   }, [data, y, axisYOptions, onDataIndexHover, hoveredIndex])
 
   return (
-    <div className="dark:text-polar-500 text-gray-300" ref={containerRef} />
+    <div
+      className="dark:text-polar-500 text-gray-300"
+      ref={containerRef}
+      onMouseLeave={onMouseLeave}
+    />
   )
 }
 

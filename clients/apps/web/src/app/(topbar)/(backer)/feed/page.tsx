@@ -14,10 +14,12 @@ import {
   useSearchArticles,
   useUserSubscriptions,
 } from 'polarkit/hooks'
+import { useEffect } from 'react'
 
 export default function Page() {
-  const { currentUser, authenticated } = useAuth()
+  const { currentUser, authenticated, reloadUser } = useAuth()
   const { data: hasAdminData } = useListAdminOrganizations()
+
   const personalOrg = usePersonalOrganization()
 
   const userSubscriptions = useUserSubscriptions(
@@ -25,6 +27,11 @@ export default function Page() {
     undefined,
     9999,
   )
+
+  // Reload user on page load to make sure that the github oauth data is up to date
+  useEffect(() => {
+    reloadUser()
+  }, [])
 
   const posts = useSearchArticles(personalOrg?.name ?? '')
   const shouldShowPostUpsell =

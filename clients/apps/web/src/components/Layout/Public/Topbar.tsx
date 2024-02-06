@@ -112,7 +112,7 @@ const Topbar = ({
   const routes = authenticatedUser ? backerRoutes() : unauthenticatedRoutes
 
   return (
-    <div className="dark:border-b-polar-800 dark:bg-polar-950 sticky top-0 z-50  w-full border-b border-b-gray-100 bg-white py-4">
+    <div className="dark:border-b-polar-800 dark:bg-polar-950 sticky top-0 z-50 flex w-full  flex-col items-center border-b border-b-gray-100 bg-white py-4">
       <div className="flex w-full max-w-7xl flex-row flex-wrap justify-between gap-y-4 px-2">
         <div className="flex flex-shrink-0 flex-row items-center gap-x-4 md:gap-x-12">
           {/* Do not make this a Link, it breaks the Framer site proxy */}

@@ -16,7 +16,13 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
-import { PropsWithChildren, useContext, useEffect, useRef } from 'react'
+import {
+  PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   Route,
@@ -107,23 +113,32 @@ const DashboardTopbar = ({
 
   // Detect height changes of the topbar and propagate it to the context
   const { setTopbarHeight, setIsMD } = useContext(DashboardLayoutContext)
-  const ref = useRef<HTMLDivElement>(null)
-  const propagateHeight = () => {
-    if (!ref.current) {
+  const [domNode, setDomNode] = useState<HTMLDivElement | null>(null)
+
+  const propagateHeight = (toolbar: HTMLDivElement) => {
+    if (!toolbar) {
       return
     }
-
     setIsMD(window.innerWidth >= 768)
-    setTopbarHeight(ref.current.clientHeight)
+    setTopbarHeight(toolbar.clientHeight)
   }
 
-  useEffect(propagateHeight, [])
-  useEffect(propagateHeight, [ref.current])
   useEffect(() => {
-    window.addEventListener('resize', propagateHeight)
-    return () => {
-      window.removeEventListener('resize', propagateHeight)
+    const update = () => {
+      if (domNode) {
+        propagateHeight(domNode)
+      }
     }
+
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('resize', update)
+    }
+  }, [domNode])
+
+  const onRefChange = useCallback((target: HTMLDivElement) => {
+    setDomNode(target)
+    propagateHeight(target)
   }, [])
 
   if (!hydrated) {
@@ -132,7 +147,7 @@ const DashboardTopbar = ({
 
   return (
     <>
-      <div className={className} ref={ref}>
+      <div className={className} ref={onRefChange}>
         <div className="relative flex w-full max-w-screen-xl flex-col flex-wrap justify-between gap-y-4 px-4 py-4 sm:px-6 md:mx-auto md:flex-row md:items-center md:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-24">
             <h4 className="dark:text-polar-100 whitespace-nowrap text-lg font-medium">

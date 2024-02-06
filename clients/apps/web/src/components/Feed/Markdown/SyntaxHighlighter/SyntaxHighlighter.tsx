@@ -85,6 +85,7 @@ const SyntaxHighlighter = (props: {
                 paddingRight: '1.5rem',
                 opacity: '.2',
                 fontSize: '.7rem',
+                userSelect: 'none',
               }}
             >
               {lineIndex + 1}

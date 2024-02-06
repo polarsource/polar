@@ -46,26 +46,28 @@ export const OrganizationPublicSidebar = ({
   const isPostView = useMemo(() => pathname.includes('posts'), [pathname])
 
   return (
-    <div className="flex h-fit w-full shrink-0 flex-col gap-y-10  md:sticky md:top-32 md:w-64">
+    <div className="flex h-fit w-full shrink-0 flex-col gap-y-10 md:sticky md:top-32 md:w-64">
       <>
         <div className="flex flex-col items-start gap-y-6">
-          <div className="flex flex-col items-start gap-y-2">
+          <div className="flex w-full flex-row items-start gap-x-2 gap-y-2 md:flex-col md:gap-x-0">
             <Avatar
-              className="mb-6 h-32 w-32 md:h-60 md:w-60"
+              className="h-12 w-12 md:mb-6 md:h-60 md:w-60"
               name={organization.name}
               avatar_url={organization.avatar_url}
               height={240}
               width={240}
             />
-            <h1 className="dark:text-polar-50 text-2xl font-normal capitalize text-gray-800">
-              {organization.pretty_name ?? organization.name}
-            </h1>
-            <Link
-              href={`/${organization.name}`}
-              className="text-md font-normal text-blue-500 dark:text-blue-400"
-            >
-              @{organization.name}
-            </Link>
+            <div className="flex flex-col items-start md:gap-y-2">
+              <h1 className="dark:text-polar-50 text-xl font-normal capitalize text-gray-800 md:text-2xl">
+                {organization.pretty_name ?? organization.name}
+              </h1>
+              <Link
+                href={`/${organization.name}`}
+                className="text-md font-normal text-blue-500 dark:text-blue-400"
+              >
+                @{organization.name}
+              </Link>
+            </div>
           </div>
           {organization.bio && (
             <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">

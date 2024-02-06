@@ -53,7 +53,7 @@ export default async function Layout({
     <EmptyLayout>
       <div className="flex min-h-screen flex-col justify-between">
         <div className="flex shrink-0 flex-col">
-          <div className="mx-auto mt-4 flex w-full max-w-7xl shrink-0 flex-col space-y-8 px-4">
+          <div className="mx-auto mt-4 flex w-full max-w-7xl shrink-0 flex-col px-4 md:space-y-8">
             <div className="flex w-full shrink-0 flex-col gap-8 md:min-h-screen md:flex-row md:gap-24">
               <OrganizationPublicSidebar organization={organization} />
               <div className="flex w-full flex-row pb-4 md:hidden">

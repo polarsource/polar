@@ -1,4 +1,4 @@
-import { DashboardFilters } from '@/components/Dashboard/filters'
+import { DashboardFilters } from '@/components/Issues/filters'
 import {
   ArrowsUpDownIcon,
   FunnelIcon,

@@ -1,5 +1,5 @@
-import BadgeMessageForm from '@/components/Dashboard/BadgeMessageForm'
-import PublicRewardsSetting from '@/components/Dashboard/UpfrontRewards'
+import BadgeMessageForm from '@/components/Issues/BadgeMessageForm'
+import PublicRewardsSetting from '@/components/Issues/UpfrontRewards'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { InfoOutlined } from '@mui/icons-material'
 import {

@@ -1,6 +1,6 @@
 'use client'
 
-import IssueListItem from '@/components/Dashboard/IssueListItem'
+import IssueListItem from '@/components/Issues/IssueListItem'
 import ThankYouUpsell from '@/components/Pledge/ThankYouUpsell'
 import { useAuth } from '@/hooks'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'

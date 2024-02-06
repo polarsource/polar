@@ -17,7 +17,7 @@ import { CONFIG } from 'polarkit/config'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, MouseEvent, useState } from 'react'
-import IssueListItem from '../Dashboard/IssueListItem'
+import IssueListItem from '../Issues/IssueListItem'
 
 const OnboardingAddDependency = () => {
   const demoOrg: Organization = {

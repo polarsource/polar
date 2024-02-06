@@ -1,6 +1,6 @@
 'use client'
 
-import IssueListItem from '@/components/Dashboard/IssueListItem'
+import IssueListItem from '@/components/Issues/IssueListItem'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'

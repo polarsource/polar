@@ -1,11 +1,8 @@
 'use client'
 
-import IssueList from '@/components/Dashboard/IssueList'
-import {
-  DashboardFilters,
-  DefaultFilters,
-} from '@/components/Dashboard/filters'
 import Recommended from '@/components/Feed/Recommended'
+import IssueList from '@/components/Issues/IssueList'
+import { DashboardFilters, DefaultFilters } from '@/components/Issues/filters'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import { useAuth, useGitHubAccount } from '@/hooks'
 import { IssueListType, IssueStatus } from '@polar-sh/sdk'

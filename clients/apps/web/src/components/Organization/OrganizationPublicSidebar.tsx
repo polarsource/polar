@@ -49,9 +49,9 @@ export const OrganizationPublicSidebar = ({
     <div className="flex h-fit w-full shrink-0 flex-col gap-y-10 md:sticky md:top-32 md:w-64">
       <>
         <div className="flex flex-col items-start gap-y-6">
-          <div className="flex w-full flex-row items-start gap-x-2 gap-y-2 md:flex-col md:gap-x-0">
+          <div className="flex w-full flex-row items-center gap-x-2 gap-y-2 md:flex-col md:items-start md:gap-x-0">
             <Avatar
-              className="h-12 w-12 md:mb-6 md:h-60 md:w-60"
+              className="h-16 w-16 md:mb-6 md:h-60 md:w-60"
               name={organization.name}
               avatar_url={organization.avatar_url}
               height={240}

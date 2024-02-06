@@ -23,7 +23,7 @@ import {
 } from '@polar-sh/sdk'
 import { encode } from 'html-entities'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
@@ -424,34 +424,21 @@ const RecommendedBenefits = ({
 }
 
 const BenefitSuggestionRow = ({
-  selected,
   icon,
   children,
   onClick,
 }: {
-  selected?: boolean
   children: React.ReactNode
   icon: React.ReactNode
   onClick: () => void
 }) => {
-  const router = useRouter()
-
   return (
     <div
-      className={twMerge(
-        'dark:hover:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 px-4 py-3 transition-colors hover:border-blue-100 hover:bg-blue-50 dark:border-transparent',
-        selected
-          ? 'dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 border-blue-100 bg-blue-50 hover:bg-blue-100'
-          : 'bg-white',
-      )}
+      className="dark:hover:bg-polar-800 dark:bg-polar-900 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-4 py-3 transition-colors hover:border-blue-100 hover:bg-blue-50 dark:border-transparent"
       onClick={onClick}
     >
       <div className="flex flex-row items-center gap-x-3">
-        <div
-          className={twMerge(
-            'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
-          )}
-        >
+        <div className="flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400">
           {icon}
         </div>
         <span className="text-sm">{children}</span>

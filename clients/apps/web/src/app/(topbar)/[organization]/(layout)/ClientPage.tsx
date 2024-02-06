@@ -6,7 +6,7 @@ import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
-import { useAuth } from '@/hooks'
+import { useAuth, useIsOrganizationAdmin } from '@/hooks'
 import { RssIcon } from '@heroicons/react/24/outline'
 import { ViewDayOutlined } from '@mui/icons-material'
 import {
@@ -53,6 +53,7 @@ const ClientPage = ({
     show: showRssModal,
   } = useModal()
 
+  const isAdmin = useIsOrganizationAdmin(organization)
   const posts = useSearchArticles(organization.name)
   const infinitePosts =
     posts.data?.pages
@@ -113,14 +114,34 @@ const ClientPage = ({
                 {posts.isFetched && infinitePosts.length === 0 ? (
                   <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-gray-600">
                     <ViewDayOutlined fontSize="large" />
-                    <div className="flex w-full flex-col items-center gap-y-2 text-center">
-                      <h3 className="p-2 text-lg font-medium">
-                        {organization.name} is typing...
-                      </h3>
-                      <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
-                        Subscribe to {organization.name} to get future posts
-                        fresh out of the press.
-                      </p>
+                    <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
+                      {isAdmin ? (
+                        <>
+                          <h3 className="p-2 text-lg font-medium">
+                            {organization.name} is typing...
+                          </h3>
+                          <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
+                            Start building a community & newsletter by writing
+                            your first post – your hello world on Polar
+                          </p>
+                          <Link
+                            className="mt-6"
+                            href={`/maintainer/${organization.name}/posts/new`}
+                          >
+                            <Button>Write a Post</Button>
+                          </Link>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="p-2 text-lg font-medium">
+                            {organization.name} is typing...
+                          </h3>
+                          <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
+                            Subscribe to {organization.name} to get future posts
+                            fresh out of the press.
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : null}

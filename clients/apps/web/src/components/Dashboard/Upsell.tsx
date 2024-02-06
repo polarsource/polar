@@ -1,5 +1,6 @@
-import { useAuth } from '@/hooks'
+import { usePersonalOrganization } from '@/hooks'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
+import { ArrowForwardOutlined } from '@mui/icons-material'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -28,7 +29,6 @@ export const GitHubAuthUpsell = () => {
 }
 
 export const MaintainerUpsell = () => {
-  const { currentUser } = useAuth()
   const maintainerUpgrade = useMaintainerUpgrade()
 
   const upgrade = async () => {
@@ -43,13 +43,36 @@ export const MaintainerUpsell = () => {
       description="Build, engage & convert your own community of free- and paid subscribers."
     >
       <Button
-        className="-z-1"
-        fullWidth
+        size="sm"
+        className="-z-1 self-start"
         onClick={upgrade}
         loading={maintainerUpgrade.isPending}
       >
-        Get Started
+        <span>Get Started</span>
+        <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
       </Button>
+    </Upsell>
+  )
+}
+
+export const CreatePostUpsell = () => {
+  const personalOrg = usePersonalOrganization()
+
+  if (!personalOrg) {
+    return null
+  }
+
+  return (
+    <Upsell
+      title="Create your first post"
+      description="Start building a community & newsletter by writing your first post. You can find inspiration from highlighted creators below."
+    >
+      <Link href={`/maintainer/${personalOrg.name}/posts/new`}>
+        <Button size="sm" className="-z-1">
+          <span>Write a Post</span>
+          <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+        </Button>
+      </Link>
     </Upsell>
   )
 }
@@ -60,9 +83,11 @@ export const Upsell = ({
   children,
 }: PropsWithChildren<{ title: string; description: string }>) => {
   return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 flex flex-col gap-y-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
-      <h3 className="dark:text-polar-50 font-medium text-blue-500">{title}</h3>
-      <p className="dark:text-polar-300 -mt-2 text-blue-400">{description}</p>
+    <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 flex flex-col gap-y-6 rounded-3xl bg-white p-6 shadow-2xl dark:border">
+      <h3 className="dark:text-polar-50 font-medium text-gray-950">{title}</h3>
+      <p className="dark:text-polar-300 -mt-2 text-sm text-gray-500">
+        {description}
+      </p>
       {children}
     </div>
   )

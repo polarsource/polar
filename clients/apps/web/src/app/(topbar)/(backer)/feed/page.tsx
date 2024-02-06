@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  CreatePostUpsell,
   GitHubAuthUpsell,
   MaintainerUpsell,
 } from '@/components/Dashboard/Upsell'
@@ -8,10 +9,15 @@ import { FeaturedCreators } from '@/components/Feed/FeaturedCreators'
 import { Feed } from '@/components/Feed/Feed'
 import { MySubscriptions } from '@/components/Feed/MySubscriptions'
 import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
-import { useListAdminOrganizations, useUserSubscriptions } from 'polarkit/hooks'
+import {
+  useListAdminOrganizations,
+  useSearchArticles,
+  useUserSubscriptions,
+} from 'polarkit/hooks'
 
 export default function Page() {
   const { currentUser, authenticated } = useAuth()
+  const personalOrg = usePersonalOrganization()
 
   const userSubscriptions = useUserSubscriptions(
     currentUser?.id,
@@ -19,10 +25,14 @@ export default function Page() {
     9999,
   )
 
+  const posts = useSearchArticles(personalOrg?.name ?? '')
+  const shouldShowPostUpsell =
+    !!personalOrg &&
+    (posts.data?.pages.flatMap((page) => page.items).length ?? 0) < 1
+
   const githubAccount = useGitHubAccount()
   const shouldShowGitHubAuthUpsell = authenticated && !githubAccount
 
-  const personalOrg = usePersonalOrganization()
   const listOrganizationQuery = useListAdminOrganizations()
 
   const shouldShowMaintainerUpsell =
@@ -37,13 +47,11 @@ export default function Page() {
       </div>
       <div className="flex h-full flex-col gap-y-12 self-stretch md:max-w-xs">
         {shouldShowGitHubAuthUpsell ? (
-          <div className="-m-4 flex flex-col pt-4">
-            <GitHubAuthUpsell />
-          </div>
+          <GitHubAuthUpsell />
         ) : shouldShowMaintainerUpsell ? (
-          <div className="-m-4 flex flex-col pt-4">
-            <MaintainerUpsell />
-          </div>
+          <MaintainerUpsell />
+        ) : shouldShowPostUpsell ? (
+          <CreatePostUpsell />
         ) : null}
         <FeaturedCreators />
         {subscriptionsToRender.length > 0 && (

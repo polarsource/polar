@@ -16,7 +16,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useContext, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   Route,
@@ -24,6 +24,7 @@ import {
   dashboardRoutes,
   maintainerRoutes,
 } from '../Dashboard/navigation'
+import DashboardLayoutContext from '../Layout/DashboardLayoutContext'
 import TopbarRight from '../Layout/Public/TopbarRight'
 
 export type LogoPosition = 'center' | 'left'
@@ -101,8 +102,29 @@ const DashboardTopbar = ({
 
   const className = twMerge(
     props.isFixed !== false ? 'md:fixed z-20 left-0 top-0 right-0' : '',
-    'flex h-fit md:h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 border-b border-gray-100 dark:border-polar-800',
+    'flex h-fit md:min-h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 border-b border-gray-100 dark:border-polar-800',
   )
+
+  // Detect height changes of the topbar and propagate it to the context
+  const { setTopbarHeight, setIsMD } = useContext(DashboardLayoutContext)
+  const ref = useRef<HTMLDivElement>(null)
+  const propagateHeight = () => {
+    if (!ref.current) {
+      return
+    }
+
+    setIsMD(window.innerWidth >= 768)
+    setTopbarHeight(ref.current.clientHeight)
+  }
+
+  useEffect(propagateHeight, [])
+  useEffect(propagateHeight, [ref.current])
+  useEffect(() => {
+    window.addEventListener('resize', propagateHeight)
+    return () => {
+      window.removeEventListener('resize', propagateHeight)
+    }
+  }, [])
 
   if (!hydrated) {
     return <></>
@@ -110,10 +132,10 @@ const DashboardTopbar = ({
 
   return (
     <>
-      <div className={className}>
-        <div className="relative flex w-full max-w-screen-xl flex-col justify-between gap-y-4 px-4 py-4 sm:px-6 md:mx-auto md:flex-row md:items-center md:px-8">
+      <div className={className} ref={ref}>
+        <div className="relative flex w-full max-w-screen-xl flex-col flex-wrap justify-between gap-y-4 px-4 py-4 sm:px-6 md:mx-auto md:flex-row md:items-center md:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-24">
-            <h4 className="dark:text-polar-100 text-lg font-medium">
+            <h4 className="dark:text-polar-100 whitespace-nowrap text-lg font-medium">
               {title ?? currentRoute?.title}
             </h4>
             {currentRoute &&
@@ -129,12 +151,17 @@ const DashboardTopbar = ({
                 />
               )}
           </div>
-          <div className="relative flex flex-row items-center justify-between gap-x-6 md:justify-end">
+          <div className="relative flex flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}
             <Link href="/feed">
               <Button>
                 <div className="flex flex-row items-center gap-x-2">
-                  <span className="text-xs">Back to Feed</span>
+                  <span className="hidden whitespace-nowrap text-xs lg:inline-block">
+                    Back to Feed
+                  </span>
+                  <span className="whitespace-nowrap text-xs lg:hidden">
+                    Feed
+                  </span>
                   <ArrowForwardOutlined fontSize="inherit" />
                 </div>
               </Button>

@@ -1,4 +1,4 @@
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+import Gatekeeper from '@/components/Gatekeeper/Gatekeeper'
 import { PropsWithChildren } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {

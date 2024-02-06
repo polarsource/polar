@@ -18,8 +18,7 @@ import { useEffect } from 'react'
 
 export default function Page() {
   const { currentUser, authenticated, reloadUser } = useAuth()
-  const { data: hasAdminData } = useListAdminOrganizations()
-
+  const { isLoading: adminOrgsAreLoading } = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
 
   const userSubscriptions = useUserSubscriptions(
@@ -34,8 +33,10 @@ export default function Page() {
   }, [])
 
   const posts = useSearchArticles(personalOrg?.name ?? '')
+  const postsAreLoading = posts.isLoading
   const shouldShowPostUpsell =
-    !!hasAdminData &&
+    !adminOrgsAreLoading &&
+    !postsAreLoading &&
     !!personalOrg &&
     (posts.data?.pages.flatMap((page) => page.items).length ?? 0) < 1
 

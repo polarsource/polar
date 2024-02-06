@@ -1,4 +1,5 @@
 import { Metadata, ResolvingMetadata } from 'next'
+import { DataTableSearchParams, parseSearchParams } from 'polarkit/datatable'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata(
@@ -14,6 +15,14 @@ export async function generateMetadata(
   }
 }
 
-export default async function Page() {
-  return <ClientPage />
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: DataTableSearchParams
+}) {
+  const { pagination, sorting } = parseSearchParams(searchParams, [
+    { id: 'created_at', desc: true },
+  ])
+
+  return <ClientPage pagination={pagination} sorting={sorting} />
 }

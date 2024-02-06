@@ -38,7 +38,6 @@ const ProfileSelection = ({
 
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
   const personalOrg = usePersonalOrganization()
-  const isPersonalOrg = currentOrgFromURL?.id === personalOrg?.id
 
   const ref = useRef(null)
 
@@ -92,22 +91,26 @@ const ProfileSelection = ({
               'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute -left-2 -right-2 -top-1 overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
-            <Link
-              href={`/maintainer/${personalOrg?.name}/overview`}
-              className="w-full"
-            >
-              <ListItem
-                current={
-                  currentOrg === undefined ||
-                  currentOrg.name === loggedUser.username
-                }
-              >
-                <Profile
-                  name={loggedUser.username}
-                  avatar_url={loggedUser.avatar_url}
-                />
-              </ListItem>
-            </Link>
+            <>
+              {personalOrg ? (
+                <Link
+                  href={`/maintainer/${personalOrg.name}/overview`}
+                  className="w-full"
+                >
+                  <ListItem
+                    current={
+                      currentOrg === undefined ||
+                      currentOrg.name === loggedUser.username
+                    }
+                  >
+                    <Profile
+                      name={loggedUser.username}
+                      avatar_url={loggedUser.avatar_url}
+                    />
+                  </ListItem>
+                </Link>
+              ) : null}
+            </>
 
             <ul className="mt-2 flex w-full flex-col">
               {showBackerLinks && (

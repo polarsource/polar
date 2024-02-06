@@ -39,7 +39,12 @@ const TopbarNavigation = ({
             href={n.link}
           >
             {'title' in n && n.title ? (
-              <span className={twMerge('text-xs', n.isActive && 'font-medium')}>
+              <span
+                className={twMerge(
+                  'whitespace-nowrap text-xs',
+                  n.isActive && 'font-medium',
+                )}
+              >
                 {n.title}
               </span>
             ) : undefined}

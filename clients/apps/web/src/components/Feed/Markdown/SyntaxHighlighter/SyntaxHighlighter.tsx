@@ -79,7 +79,7 @@ const SyntaxHighlighter = (props: {
     <pre style={{ ...theme.base }}>
       <code>
         {tokensPerLine.map((tokensForLine, lineIndex) => (
-          <p key={lineIndex} className="m-0">
+          <div key={lineIndex} className="m-0">
             <span
               style={{
                 paddingRight: '1.5rem',
@@ -93,7 +93,7 @@ const SyntaxHighlighter = (props: {
             {tokensForLine.map((token, i) => (
               <CodeBlockLine key={i} theme={theme} token={token} />
             ))}
-          </p>
+          </div>
         ))}
       </code>
     </pre>

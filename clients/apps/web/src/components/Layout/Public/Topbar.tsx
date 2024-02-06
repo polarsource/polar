@@ -84,7 +84,9 @@ const Topbar = ({
         <Link href={creatorPath}>
           <Button>
             <div className="flex flex-row items-center gap-x-2">
-              <span className="text-xs">Creator Dashboard</span>
+              <span className="whitespace-nowrap text-xs">
+                Creator Dashboard
+              </span>
               <ArrowForwardOutlined fontSize="inherit" />
             </div>
           </Button>
@@ -98,7 +100,7 @@ const Topbar = ({
         loading={maintainerUpgrade.isPending}
       >
         <div className="flex flex-row items-center gap-x-2">
-          <span className="text-xs">Become a Creator</span>
+          <span className="whitespace-nowrap text-xs">Become a Creator</span>
           <ArrowForwardOutlined fontSize="inherit" />
         </div>
       </Button>
@@ -111,8 +113,8 @@ const Topbar = ({
 
   return (
     <div className="dark:border-b-polar-800 dark:bg-polar-950 sticky top-0 z-50 flex w-full flex-col items-center justify-start border-b border-b-gray-100 bg-white py-4">
-      <div className="flex w-full max-w-7xl flex-row items-stretch justify-between gap-y-4 px-2 ">
-        <div className="flex flex-row items-center gap-x-4 md:gap-x-12">
+      <div className="flex w-full max-w-7xl flex-col flex-wrap items-stretch justify-between gap-y-4  px-2 md:flex-row">
+        <div className="flex flex-shrink-0 flex-row items-center gap-x-4 md:gap-x-12">
           {/* Do not make this a Link, it breaks the Framer site proxy */}
           <a href="/">
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={42} />
@@ -125,7 +127,7 @@ const Topbar = ({
           </div>
         </div>
         {!hideProfile ? (
-          <div className="relative flex flex-row items-center justify-end gap-x-6">
+          <div className="relative flex flex-1 flex-shrink-0 flex-row items-center justify-end gap-x-6">
             {upsell}
             <TopbarRight authenticatedUser={authenticatedUser} />
           </div>

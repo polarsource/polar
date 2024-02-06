@@ -154,7 +154,7 @@ const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
   }
 
   return (
-    <div className="relative flex flex-row md:gap-x-4 lg:gap-x-8">
+    <div className="relative z-[1] flex flex-row md:gap-x-4 lg:gap-x-8">
       <div className="flex flex-1 flex-col gap-y-8 py-8">
         <input
           className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"

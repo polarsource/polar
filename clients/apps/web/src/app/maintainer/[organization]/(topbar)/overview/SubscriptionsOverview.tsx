@@ -26,6 +26,37 @@ import {
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+
+const generateDemoStats = (
+  periods: { start_date: string; end_date: string; parsedStartDate: Date }[],
+  growthRate: number = 0.8,
+  noiseFactor: number = 0.2,
+  initialSubscribers: number = 100,
+  initialMRR: number = 150000,
+  initialCumulative: number = 150000,
+): ParsedSubscriptionsStatisticsPeriod[] => {
+  const data: ParsedSubscriptionsStatisticsPeriod[] = []
+  let cumulative = initialCumulative
+
+  for (let i = 0; i < periods.length; i++) {
+    const sigmoidValue =
+      1 / (1 + Math.exp(-growthRate * (i - periods.length / 2)))
+    const randomFactor = 1 + (Math.random() - 0.5) * noiseFactor
+    const mrr = Math.floor(initialMRR * sigmoidValue * randomFactor)
+    data.push({
+      start_date: periods[i].start_date,
+      parsedStartDate: periods[i].parsedStartDate,
+      end_date: periods[i].end_date,
+      subscribers: Math.floor(initialSubscribers * sigmoidValue * randomFactor),
+      mrr,
+      cumulative,
+    })
+    cumulative += mrr
+  }
+
+  return data
+}
 
 interface SubscriptionsOverviewProps {
   organization: Organization
@@ -77,6 +108,8 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
   const [statisticsPeriods, setStatisticsPeriods] = useState<
     ParsedSubscriptionsStatisticsPeriod[]
   >([])
+  const [isDemoData, setIsDemoData] = useState(false)
+
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
     number | undefined
   >()
@@ -114,12 +147,26 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
         ...apiQueryParams,
       })
       .then((summary) => {
-        setStatisticsPeriods(
-          summary.periods.map((period) => ({
-            ...period,
-            parsedStartDate: new Date(period.start_date),
-          })),
-        )
+        const statisticsPeriods = summary.periods.map((period) => ({
+          ...period,
+          parsedStartDate: new Date(period.start_date),
+        }))
+
+        // Empty stats, generate demo data
+        if (
+          statisticsPeriods.every(
+            (period) =>
+              period.subscribers === 0 &&
+              period.mrr === 0 &&
+              period.cumulative === 0,
+          )
+        ) {
+          setStatisticsPeriods(generateDemoStats(statisticsPeriods))
+          setIsDemoData(true)
+        } else {
+          setStatisticsPeriods(statisticsPeriods)
+          setIsDemoData(false)
+        }
       })
   }, [startDate, endDate, organization, apiQueryParams])
 
@@ -147,7 +194,12 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div
+        className={twMerge(
+          'grid grid-cols-1 gap-6 md:grid-cols-3',
+          isDemoData ? 'opacity-50' : '',
+        )}
+      >
         {displayedPeriod && (
           <>
             <SubscribersMetric
@@ -192,7 +244,12 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
             </Card>
           ))}
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div
+        className={twMerge(
+          'grid grid-cols-1 gap-6 md:grid-cols-2',
+          isDemoData ? 'opacity-50' : '',
+        )}
+      >
         {statisticsPeriods.length > 0 && (
           <>
             <Card>
@@ -311,6 +368,12 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
             </CardContent>
           </Card>
         </div>
+      )}
+      {isDemoData && (
+        <p className="text-muted-foreground text-center text-sm">
+          Demonstration data. Get your first subscribers to unlock your
+          statistics!
+        </p>
       )}
     </div>
   )

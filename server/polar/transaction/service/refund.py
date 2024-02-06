@@ -58,6 +58,15 @@ class RefundTransactionService(BaseTransactionService):
                 )
                 processor_fee_amount = balance_transaction.fee
 
+            refund_amount = refund.amount
+            total_amount = payment_transaction.amount + payment_transaction.tax_amount
+            tax_refund_amount = abs(
+                int(
+                    math.floor(payment_transaction.tax_amount * refund_amount)
+                    / total_amount
+                )
+            )
+
             refund_transaction = Transaction(
                 type=TransactionType.refund,
                 processor=PaymentProcessor.stripe,
@@ -65,7 +74,7 @@ class RefundTransactionService(BaseTransactionService):
                 amount=-refund.amount,
                 account_currency=refund.currency,
                 account_amount=-refund.amount,
-                tax_amount=0,  # TODO?: I don't know how VAT works when refunding
+                tax_amount=-tax_refund_amount,
                 processor_fee_amount=processor_fee_amount,
                 customer_id=payment_transaction.customer_id,
                 charge_id=charge.id,
@@ -85,8 +94,6 @@ class RefundTransactionService(BaseTransactionService):
                     session, payment_transaction=payment_transaction
                 )
             )
-            refund_amount = refund.amount
-            total_amount = payment_transaction.amount
             for transfer_transactions_couple in transfer_transactions_couples:
                 outgoing, _ = transfer_transactions_couple
                 # Refund each transfer proportionally

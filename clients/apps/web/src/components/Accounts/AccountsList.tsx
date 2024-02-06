@@ -69,6 +69,10 @@ const AccountListItem = ({ account, returnPath }: AccountListItemProps) => {
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-polar-50',
   )
 
+  const isActive =
+    account?.status === Status.UNREVIEWED || account?.status === Status.ACTIVE
+  const isUnderReview = account?.status === Status.UNDER_REVIEW
+
   const goToOnboarding = async () => {
     const link = await api.accounts.onboardingLink({
       id: account.id,
@@ -96,12 +100,12 @@ const AccountListItem = ({ account, returnPath }: AccountListItemProps) => {
         <AccountAssociations account={account} />
       </td>
       <td className={twMerge(childClass, 'rounded-r-xl uppercase')}>
-        {account.status !== Status.ACTIVE && (
+        {!isActive && !isUnderReview && (
           <Button size="sm" onClick={goToOnboarding}>
             Continue setup
           </Button>
         )}
-        {account.status === Status.ACTIVE && (
+        {isActive && (
           <Button size="sm" onClick={goToDashboard}>
             Open dashboard
           </Button>

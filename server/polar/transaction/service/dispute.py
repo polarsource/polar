@@ -63,6 +63,8 @@ class DisputeTransactionService(BaseTransactionService):
             account_currency=dispute.currency,
             account_amount=-dispute.amount + tax_refund_amount,
             tax_amount=-tax_refund_amount,
+            tax_country=payment_transaction.tax_country,
+            tax_state=payment_transaction.tax_state,
             processor_fee_amount=balance_transaction.fee,  # Damn expensive dispute fees
             customer_id=payment_transaction.customer_id,
             charge_id=charge_id,
@@ -135,6 +137,8 @@ class DisputeTransactionService(BaseTransactionService):
             account_currency=dispute.currency,
             account_amount=dispute.amount - tax_amount,
             tax_amount=tax_amount,
+            tax_country=payment_transaction.tax_country,
+            tax_state=payment_transaction.tax_state,
             processor_fee_amount=balance_transaction.fee,  # Normally zero (hopefully!)
             customer_id=payment_transaction.customer_id,
             charge_id=charge_id,

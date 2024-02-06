@@ -75,6 +75,8 @@ class RefundTransactionService(BaseTransactionService):
                 account_currency=refund.currency,
                 account_amount=-refund.amount + tax_refund_amount,
                 tax_amount=-tax_refund_amount,
+                tax_country=payment_transaction.tax_country,
+                tax_state=payment_transaction.tax_state,
                 processor_fee_amount=processor_fee_amount,
                 customer_id=payment_transaction.customer_id,
                 charge_id=charge.id,

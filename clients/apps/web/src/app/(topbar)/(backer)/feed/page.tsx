@@ -17,6 +17,7 @@ import {
 
 export default function Page() {
   const { currentUser, authenticated } = useAuth()
+  const { data: hasAdminData } = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
 
   const userSubscriptions = useUserSubscriptions(
@@ -27,6 +28,7 @@ export default function Page() {
 
   const posts = useSearchArticles(personalOrg?.name ?? '')
   const shouldShowPostUpsell =
+    !!hasAdminData &&
     !!personalOrg &&
     (posts.data?.pages.flatMap((page) => page.items).length ?? 0) < 1
 

@@ -91,6 +91,7 @@ class TransactionService(BaseTransactionService):
                 order_by_clauses.append(clause_function(Transaction.created_at))
             elif criterion == SearchSortProperty.amount:
                 order_by_clauses.append(clause_function(Transaction.amount))
+        statement = statement.order_by(*order_by_clauses)
 
         results, count = await paginate(session, statement, pagination=pagination)
 

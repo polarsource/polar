@@ -18,7 +18,7 @@ const TopbarRight = ({
   return (
     <>
       {authenticatedUser ? (
-        <div className="flex flex-row items-center justify-between gap-x-6">
+        <div className="flex flex-shrink-0 flex-row items-center justify-between gap-x-6">
           <Popover type="topbar" />
           <ProfileMenu authenticatedUser={authenticatedUser} />
         </div>

@@ -46,6 +46,15 @@ class DisputeTransactionService(BaseTransactionService):
             if bt.reporting_category == "dispute"
         )
 
+        dispute_amount = dispute.amount
+        total_amount = payment_transaction.amount + payment_transaction.tax_amount
+        tax_refund_amount = abs(
+            int(
+                math.floor(payment_transaction.tax_amount * dispute_amount)
+                / total_amount
+            )
+        )
+
         dispute_transaction = Transaction(
             type=TransactionType.dispute,
             processor=PaymentProcessor.stripe,
@@ -53,7 +62,7 @@ class DisputeTransactionService(BaseTransactionService):
             amount=-dispute.amount,
             account_currency=dispute.currency,
             account_amount=-dispute.amount,
-            tax_amount=0,  # TODO?: I don't know how VAT works when disputing
+            tax_amount=-tax_refund_amount,
             processor_fee_amount=balance_transaction.fee,  # Damn expensive dispute fees
             customer_id=payment_transaction.customer_id,
             charge_id=charge_id,
@@ -72,8 +81,6 @@ class DisputeTransactionService(BaseTransactionService):
                 session, payment_transaction=payment_transaction
             )
         )
-        dispute_amount = dispute.amount
-        total_amount = payment_transaction.amount
         for transfer_transactions_couple in transfer_transactions_couples:
             outgoing, _ = transfer_transactions_couple
             # Refund each transfer proportionally
@@ -111,6 +118,15 @@ class DisputeTransactionService(BaseTransactionService):
             if bt.reporting_category == "dispute_reversal"
         )
 
+        dispute_amount = dispute.amount
+        total_amount = payment_transaction.amount + payment_transaction.tax_amount
+        tax_amount = abs(
+            int(
+                math.floor(payment_transaction.tax_amount * dispute_amount)
+                / total_amount
+            )
+        )
+
         dispute_transaction = Transaction(
             type=TransactionType.dispute,
             processor=PaymentProcessor.stripe,
@@ -118,7 +134,7 @@ class DisputeTransactionService(BaseTransactionService):
             amount=dispute.amount,
             account_currency=dispute.currency,
             account_amount=dispute.amount,
-            tax_amount=0,  # TODO?: I don't know how VAT works when disputing
+            tax_amount=tax_amount,
             processor_fee_amount=balance_transaction.fee,  # Normally zero (hopefully!)
             customer_id=payment_transaction.customer_id,
             charge_id=charge_id,

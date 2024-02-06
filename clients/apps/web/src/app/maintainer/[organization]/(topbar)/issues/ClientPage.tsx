@@ -1,11 +1,8 @@
 'use client'
 
-import IssueList, { Header } from '@/components/Dashboard/IssueList'
 import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
-import {
-  DashboardFilters,
-  DefaultFilters,
-} from '@/components/Dashboard/filters'
+import IssueList, { Header } from '@/components/Issues/IssueList'
+import { DashboardFilters, DefaultFilters } from '@/components/Issues/filters'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'

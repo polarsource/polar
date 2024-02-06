@@ -2,7 +2,7 @@
 
 import { UserSignupType } from '@polar-sh/sdk'
 import { LogoType70 } from 'polarkit/components/brand'
-import { Progress50 } from '../Dashboard/IssueProgress'
+import { Progress50 } from '../Issues/IssueProgress'
 import FakePullRequest from '../Settings/FakePullRequest'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 

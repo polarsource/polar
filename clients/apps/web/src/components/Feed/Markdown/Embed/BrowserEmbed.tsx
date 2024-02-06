@@ -1,4 +1,4 @@
-import IssueListItem from '@/components/Dashboard/IssueListItem'
+import IssueListItem from '@/components/Issues/IssueListItem'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { Issue } from '@polar-sh/sdk'
 import Link from 'next/link'

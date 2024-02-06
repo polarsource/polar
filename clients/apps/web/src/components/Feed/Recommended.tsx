@@ -4,7 +4,7 @@ import { FavoriteBorderOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { useListForYouIssues } from 'polarkit/hooks'
-import IssueListItem from '../Dashboard/IssueListItem'
+import IssueListItem from '../Issues/IssueListItem'
 
 const Recommended = () => {
   const issues = useListForYouIssues()

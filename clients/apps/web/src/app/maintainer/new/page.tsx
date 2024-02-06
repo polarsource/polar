@@ -1,7 +1,7 @@
 'use client'
 
-import { Progress50 } from '@/components/Dashboard/IssueProgress'
 import Gatekeeper from '@/components/Gatekeeper/Gatekeeper'
+import { Progress50 } from '@/components/Issues/IssueProgress'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import FakePullRequest from '@/components/Settings/FakePullRequest'
 import { useAuth } from '@/hooks'

@@ -30,12 +30,19 @@ export const Post = (props: FeedPost) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full cursor-pointer flex-col justify-start gap-4 rounded-3xl bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 dark:border md:flex-row',
+        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full flex-col justify-start gap-4 rounded-3xl bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 dark:border md:flex-row',
         props.article.paid_subscribers_only &&
           'border border-blue-50 bg-gradient-to-b from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
       )}
       ref={ref}
       onClick={onClick}
+      onMouseOver={(e) => {
+        // As we're relying on JS to make the whole div clickable. Require JS to use the pointer cursor.
+        ;(e.target as HTMLDivElement).classList.add('cursor-pointer')
+      }}
+      onMouseOut={(e) => {
+        ;(e.target as HTMLDivElement).classList.remove('cursor-pointer')
+      }}
     >
       <Avatar
         className="hidden h-10 w-10 md:block"
@@ -65,7 +72,7 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
             href={`/${props.article.organization.name}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-blue-500 dark:text-blue-400">
+            <h3 className="text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:dark:text-blue-500">
               {props.article.organization.pretty_name ||
                 props.article.organization.name}
             </h3>
@@ -120,7 +127,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
       )}
     >
       <Link
-        className="dark:text-polar-50 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950"
+        className="dark:text-polar-50 hover:dark:text-polar-100 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950 hover:text-gray-900"
         href={articleHref(props.article)}
       >
         {props.article.title}

@@ -62,7 +62,7 @@ const ClientPage = ({
     articles.items ??
     []
 
-  const [ref, inView] = useInView()
+  const [inViewRef, inView] = useInView()
 
   useEffect(() => {
     if (inView && posts.hasNextPage) {
@@ -106,7 +106,7 @@ const ClientPage = ({
                 {infinitePosts.map((post) => (
                   <PostComponent article={post} key={post.id} />
                 ))}
-                <div ref={ref} />
+                <div ref={inViewRef} />
               </>
             ) : (
               <>

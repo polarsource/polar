@@ -41,7 +41,7 @@ export default async function Layout({
   }
 
   return (
-    <div className="flex flex-col gap-y-8">
+    <div className="flex flex-col md:gap-y-8">
       <Topbar
         authenticatedUser={authenticatedUser}
         userAdminOrganizations={userAdminOrganizations?.items ?? []}

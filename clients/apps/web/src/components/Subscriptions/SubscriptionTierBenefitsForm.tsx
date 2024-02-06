@@ -1009,15 +1009,21 @@ export const GitHubRepositoryBenefitForm = ({
             <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
               This organization is currently on the{' '}
               <span className="capitalize">{billingPlan.plan_name}</span>&apos;s
-              plan. Each subscriber will take a seat and GitHub will bill you
-              for them. Make sure your pricing is covering those fees!
+              plan.
+              <strong>
+                Each subscriber will take a seat and GitHub will bill you for
+                them. Make sure your pricing is covering those fees!
+              </strong>
             </div>
           )}
           {!isFetchingBillingPlan && !billingPlan && (
             <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
               We can&apos;t check the GitHub billing plan for this organization.
-              If you&apos;re on a paid plan, each subscriber will take a seat
-              and GitHub will bill you for them.
+              If you&apos;re on a paid plan{' '}
+              <strong>
+                each subscriber will take a seat and GitHub will bill you for
+                them.
+              </strong>
             </div>
           )}
           {(installationWindow || !isFetchingAdminWritePermission) && (
@@ -1025,9 +1031,8 @@ export const GitHubRepositoryBenefitForm = ({
               {!hasAdminWritePermission ? (
                 <div className="flex items-center justify-between gap-4 rounded-2xl bg-red-50 px-4 py-3 text-sm dark:bg-red-950">
                   <div className="text-sm text-red-500">
-                    Your GitHub app installation doesn&apos;t have the required
-                    permissions so we can automatically invite users. You should
-                    re-authenticate your app and accept new permissions.
+                    You neeed to re-authenticate your GitHub app installation to
+                    accept the new permissions required for this benefit.
                   </div>
                   <div className="flex gap-1">
                     {installationWindow && (

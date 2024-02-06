@@ -1,51 +1,92 @@
 'use client'
 
-import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { TransactionType } from '@polar-sh/sdk'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   ShadowBoxOnMd,
   Tabs,
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
-import { Separator } from 'polarkit/components/ui/separator'
 import { TabsContent } from 'polarkit/components/ui/tabs'
 import {
-  useAccount,
-  usePayoutTransactions,
-  useTransferTransactions,
-} from 'polarkit/hooks'
+  DataTablePaginationState,
+  DataTableSortingState,
+  getAPIParams,
+  serializeSearchParams,
+} from 'polarkit/datatable'
+import { useAccount, useSearchTransactions } from 'polarkit/hooks'
 import { useCallback } from 'react'
 
-export default function ClientPage() {
+export default function ClientPage({
+  pagination,
+  sorting,
+}: {
+  pagination: DataTablePaginationState
+  sorting: DataTableSortingState
+}) {
   const router = useRouter()
+  const pathname = usePathname()
   const params = useSearchParams()
-  const { currentPage, setCurrentPage } = usePagination()
   const { org } = useCurrentOrgAndRepoFromURL()
 
   const setActiveTab = useCallback(
     (value: string) => {
       router.replace(`/maintainer/${org?.name}/finance/incoming?type=${value}`)
     },
-    [org],
+    [org, router],
   )
+
+  const setPagination = (
+    updaterOrValue:
+      | DataTablePaginationState
+      | ((old: DataTablePaginationState) => DataTablePaginationState),
+  ) => {
+    const updatedPagination =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(pagination)
+        : updaterOrValue
+
+    router.push(
+      `${pathname}?${serializeSearchParams(updatedPagination, sorting)}`,
+    )
+  }
+
+  const setSorting = (
+    updaterOrValue:
+      | DataTableSortingState
+      | ((old: DataTableSortingState) => DataTableSortingState),
+  ) => {
+    const updatedSorting =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(sorting)
+        : updaterOrValue
+
+    router.push(
+      `${pathname}?${serializeSearchParams(pagination, updatedSorting)}`,
+    )
+  }
 
   const { data: organizationAccount } = useAccount(org?.account_id)
 
-  const transfers = useTransferTransactions({
+  const transfersHook = useSearchTransactions({
     accountId: organizationAccount?.id,
-    page: currentPage,
-    limit: 20,
+    type: TransactionType.TRANSFER,
+    ...getAPIParams(pagination, sorting),
   })
+  const transfers = transfersHook.data?.items || []
+  const transfersCount = transfersHook.data?.pagination.max_page ?? 1
 
-  const payouts = usePayoutTransactions({
+  const payoutsHooks = useSearchTransactions({
     accountId: organizationAccount?.id,
-    page: currentPage,
-    limit: 20,
+    type: TransactionType.PAYOUT,
+    ...getAPIParams(pagination, sorting),
   })
+  const payouts = payoutsHooks.data?.items || []
+  const payoutsCount = payoutsHooks.data?.pagination.max_page ?? 1
 
   return (
     <div className="flex flex-col gap-y-6">
@@ -55,7 +96,7 @@ export default function ClientPage() {
           defaultValue={params?.get('type') ?? 'transactions'}
           onValueChange={setActiveTab}
         >
-          <div className="flex flex-col gap-y-6 md:flex-row md:items-center md:justify-between">
+          <div className="mb-8 flex flex-col gap-y-6 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col gap-y-2">
               <h2 className="text-lg font-medium capitalize">
                 {params?.get('type') ?? 'Transactions'}
@@ -72,28 +113,25 @@ export default function ClientPage() {
               <TabsTrigger value="payouts">Payouts</TabsTrigger>
             </TabsList>
           </div>
-          <Separator className="my-8" />
           <TabsContent value="transactions">
-            <Pagination
-              currentPage={currentPage}
-              totalCount={transfers.data?.pagination.total_count ?? 0}
-              pageSize={20}
-              onPageChange={setCurrentPage}
-              currentURL={params}
-            >
-              <TransactionsList transactions={transfers.data?.items ?? []} />
-            </Pagination>
+            <TransactionsList
+              transactions={transfers}
+              pageCount={transfersCount}
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              sorting={sorting}
+              onSortingChange={setSorting}
+            />
           </TabsContent>
           <TabsContent value="payouts">
-            <Pagination
-              currentPage={currentPage}
-              totalCount={transfers.data?.pagination.total_count ?? 0}
-              pageSize={20}
-              onPageChange={setCurrentPage}
-              currentURL={params}
-            >
-              <TransactionsList transactions={payouts.data?.items ?? []} />
-            </Pagination>
+            <TransactionsList
+              transactions={payouts}
+              pageCount={payoutsCount}
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              sorting={sorting}
+              onSortingChange={setSorting}
+            />
           </TabsContent>
         </Tabs>
       </ShadowBoxOnMd>

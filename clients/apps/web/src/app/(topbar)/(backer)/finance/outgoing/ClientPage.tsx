@@ -1,24 +1,66 @@
 'use client'
 
-import Pagination, { usePagination } from '@/components/Shared/Pagination'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
-import { Separator } from 'polarkit/components/ui/separator'
-import { useUserPaymentTransactions } from 'polarkit/hooks'
+import {
+  DataTablePaginationState,
+  DataTableSortingState,
+  getAPIParams,
+  serializeSearchParams,
+} from 'polarkit/datatable'
+import { useSearchTransactions } from 'polarkit/hooks'
 
-export default function ClientPage() {
+export default function ClientPage({
+  pagination,
+  sorting,
+}: {
+  pagination: DataTablePaginationState
+  sorting: DataTableSortingState
+}) {
+  const router = useRouter()
+  const pathname = usePathname()
   const { currentUser } = useAuth()
-  const { currentPage, setCurrentPage } = usePagination()
   const personalOrganization = usePersonalOrganization()
-  const params = useSearchParams()
 
-  const transactions = useUserPaymentTransactions({
-    userId: currentUser?.id,
-    page: currentPage,
+  const setPagination = (
+    updaterOrValue:
+      | DataTablePaginationState
+      | ((old: DataTablePaginationState) => DataTablePaginationState),
+  ) => {
+    const updatedPagination =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(pagination)
+        : updaterOrValue
+
+    router.push(
+      `${pathname}?${serializeSearchParams(updatedPagination, sorting)}`,
+    )
+  }
+
+  const setSorting = (
+    updaterOrValue:
+      | DataTableSortingState
+      | ((old: DataTableSortingState) => DataTableSortingState),
+  ) => {
+    const updatedSorting =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(sorting)
+        : updaterOrValue
+
+    router.push(
+      `${pathname}?${serializeSearchParams(pagination, updatedSorting)}`,
+    )
+  }
+
+  const transactionsHook = useSearchTransactions({
+    paymentUserId: currentUser?.id,
+    ...getAPIParams(pagination, sorting),
   })
+  const transactions = transactionsHook.data?.items || []
+  const transactionsCount = transactionsHook.data?.pagination.max_page ?? 1
 
   return (
     <div className="flex flex-col gap-y-6">
@@ -30,7 +72,7 @@ export default function ClientPage() {
         />
       )}
       <ShadowBoxOnMd>
-        <div className="flex flex-row items-center justify-between">
+        <div className="mb-8 flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium capitalize">Transactions</h2>
             <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -38,16 +80,14 @@ export default function ClientPage() {
             </p>
           </div>
         </div>
-        <Separator className="my-8" />
-        <Pagination
-          currentPage={currentPage}
-          totalCount={transactions.data?.pagination.total_count ?? 0}
-          pageSize={20}
-          onPageChange={setCurrentPage}
-          currentURL={params}
-        >
-          <TransactionsList transactions={transactions.data?.items ?? []} />
-        </Pagination>
+        <TransactionsList
+          transactions={transactions}
+          pageCount={transactionsCount}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          sorting={sorting}
+          onSortingChange={setSorting}
+        />
       </ShadowBoxOnMd>
     </div>
   )

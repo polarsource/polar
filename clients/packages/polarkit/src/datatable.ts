@@ -1,7 +1,12 @@
-import { PaginationState, SortingState } from '@tanstack/react-table'
+import {
+  OnChangeFn,
+  PaginationState,
+  SortingState,
+} from '@tanstack/react-table'
 
 export type DataTablePaginationState = PaginationState
 export type DataTableSortingState = SortingState
+export type DataTableOnChangeFn<T> = OnChangeFn<T>
 export type DataTableSearchParams = {
   page?: string
   limit?: string

@@ -13,7 +13,7 @@ import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useCallback, useEffect } from 'react'
 
 export default function Page() {
-  const { authenticated, hasChecked } = useAuth()
+  const { authenticated, hasChecked, currentUser, reloadUser } = useAuth()
   const listOrganizationsQuery = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
 
@@ -24,9 +24,24 @@ export default function Page() {
     router.push(CONFIG.GITHUB_INSTALLATION_URL)
   }, [router])
 
+  // Reload user on first page load. To make sure that the oauth data is up to date
+  useEffect(() => {
+    reloadUser()
+  }, [])
+
   useEffect(() => {
     if (!authenticated && hasChecked) {
       router.push(`/signup/maintainer`)
+      return
+    }
+
+    const gitHubAccount = (currentUser?.oauth_accounts ?? []).find(
+      (o) => o.platform === 'github',
+    )
+
+    // If user does not have github account connected
+    if (hasChecked && authenticated && !gitHubAccount) {
+      router.push('/feed')
       return
     }
 
@@ -37,7 +52,14 @@ export default function Page() {
       router.push(`/maintainer/${personalOrg.name}/overview`)
       return
     }
-  }, [listOrganizationsQuery, orgs, router, authenticated, hasChecked])
+  }, [
+    listOrganizationsQuery,
+    orgs,
+    router,
+    authenticated,
+    hasChecked,
+    currentUser,
+  ])
 
   const steps = [
     {

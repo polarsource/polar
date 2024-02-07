@@ -3,12 +3,20 @@ import { useEffect } from 'react'
 import { getServerURL } from '../../api'
 import { onIssueUpdated } from './issues'
 import { onOrganizationUpdated } from './organizations'
+import {
+  onSubscriptionBenefitGrantGranted,
+  onSubscriptionBenefitGrantRevoked,
+} from './subscriptions'
 
 const ACTIONS: {
   [key: string]: (payload: any) => Promise<void>
 } = {
   'issue.updated': onIssueUpdated,
   'organization.updated': onOrganizationUpdated,
+  'subscription.subscription_benefit_grant.granted':
+    onSubscriptionBenefitGrantGranted,
+  'subscription.subscription_benefit_grant.revoked':
+    onSubscriptionBenefitGrantRevoked,
 }
 
 const emitter = new EventEmitter()

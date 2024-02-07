@@ -2,7 +2,7 @@
 
 import { ViewDayOutlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
-import { useListArticles } from 'polarkit/hooks'
+import { useListArticles, useSSE } from 'polarkit/hooks'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { StaggerReveal } from '../Shared/StaggerReveal'
@@ -11,6 +11,9 @@ import { Post as PostComponent } from './Posts/Post'
 export const Feed = () => {
   const [ref, inView] = useInView()
   const articles = useListArticles()
+
+  // Connect to eventstream and listen for events that may update the feed
+  useSSE()
 
   const infiniteArticles =
     articles.data?.pages

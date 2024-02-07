@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.authz.service import AccessType, Anonymous, Authz
+from polar.authz.service import AccessType, Authz
 from polar.enums import UserSignupType
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
@@ -28,6 +28,7 @@ from polar.posthog import posthog
 from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
+from polar.user.service import user as user_service
 
 from .schemas import (
     FreeSubscriptionCreate,
@@ -706,14 +707,11 @@ async def subscriptions_import(
 
     for email in emails:
         try:
-            await subscription_service.create_free_subscription(
-                session,
-                free_subscription_create=FreeSubscriptionCreate(
-                    tier_id=tiers[0].id, customer_email=email
-                ),
-                auth_subject=Anonymous(),  # do not forward auth!
-                auth_method=None,
-                signup_type=UserSignupType.imported,
+            user = await user_service.get_by_email_or_signup(
+                session, email, signup_type=UserSignupType.imported
+            )
+            await subscription_service.create_arbitrary_subscription(
+                session, user=user, subscription_tier=tiers[0]
             )
             count += 1
         except AlreadySubscribed:

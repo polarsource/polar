@@ -213,7 +213,7 @@ async def customer_subscription_created(
             subscription = stripe.Subscription.construct_from(
                 event["data"]["object"], None
             )
-            await subscription_service.create_subscription(
+            await subscription_service.create_subscription_from_stripe(
                 session, stripe_subscription=subscription
             )
 
@@ -228,7 +228,7 @@ async def customer_subscription_updated(
                 event["data"]["object"], None
             )
             try:
-                await subscription_service.update_subscription(
+                await subscription_service.update_subscription_from_stripe(
                     session, stripe_subscription=subscription
                 )
             except SubscriptionDoesNotExist as e:
@@ -251,7 +251,7 @@ async def customer_subscription_deleted(
                 event["data"]["object"], None
             )
             try:
-                await subscription_service.update_subscription(
+                await subscription_service.update_subscription_from_stripe(
                     session, stripe_subscription=subscription
                 )
             except SubscriptionDoesNotExist as e:

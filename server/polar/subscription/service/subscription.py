@@ -480,6 +480,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 signup_type=signup_type,
             )
 
+        return await self.create_arbitrary_subscription(
+            session, user=user, subscription_tier=subscription_tier
+        )
+
+    async def create_arbitrary_subscription(
+        self, session: AsyncSession, *, user: User, subscription_tier: SubscriptionTier
+    ) -> Subscription:
         existing_subscriptions = await self.get_active_user_subscriptions(
             session,
             user,
@@ -513,7 +520,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         return subscription
 
-    async def create_subscription(
+    async def create_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
         price = stripe_subscription["items"].data[0].price
@@ -638,7 +645,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         return subscription
 
-    async def update_subscription(
+    async def update_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
         subscription = await self.get_by_stripe_subscription_id(

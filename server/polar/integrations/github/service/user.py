@@ -389,51 +389,52 @@ class GithubUserService(UserService):
                 org_count += 1
                 continue
 
-            # If installed on github org, check access
-            try:
-                client = github.get_app_installation_client(i.id)
-                membership = await client.rest.orgs.async_get_membership_for_user(
-                    i.account.login,
-                    github_user.login,
-                )
+            if i.target_type == "Organization":
+                # If installed on github org, check access
+                try:
+                    client = github.get_app_installation_client(i.id)
+                    membership = await client.rest.orgs.async_get_membership_for_user(
+                        i.account.login,
+                        github_user.login,
+                    )
 
-                data = membership.parsed_data
+                    data = membership.parsed_data
 
-                if data.role == "admin" and data.state == "active":
-                    log.info(
-                        "sync_github_orgs.add_admin",
+                    if data.role == "admin" and data.state == "active":
+                        log.info(
+                            "sync_github_orgs.add_admin",
+                            org_id=org.id,
+                            user_id=user.id,
+                        )
+
+                        # Add as admin in Polar (or upgrade existing member to admin)
+                        await organization.add_user(session, org, user, is_admin=True)
+                        org_count += 1
+
+                    elif data.state == "active":
+                        log.info(
+                            "sync_github_orgs.add_non_admin",
+                            org_id=org.id,
+                            user_id=user.id,
+                        )
+
+                        # Add as admin in Polar
+                        await organization.add_user(session, org, user, is_admin=False)
+                        org_count += 1
+                    else:
+                        log.info(
+                            "sync_github_orgs.skip_install",
+                            org_id=org.id,
+                            user_id=user.id,
+                        )
+
+                except Exception as e:
+                    log.error(
+                        "sync_github_orgs.failed",
+                        err=e,
                         org_id=org.id,
                         user_id=user.id,
                     )
-
-                    # Add as admin in Polar (or upgrade existing member to admin)
-                    await organization.add_user(session, org, user, is_admin=True)
-                    org_count += 1
-
-                elif data.state == "active":
-                    log.info(
-                        "sync_github_orgs.add_non_admin",
-                        org_id=org.id,
-                        user_id=user.id,
-                    )
-
-                    # Add as admin in Polar
-                    await organization.add_user(session, org, user, is_admin=False)
-                    org_count += 1
-                else:
-                    log.info(
-                        "sync_github_orgs.skip_install",
-                        org_id=org.id,
-                        user_id=user.id,
-                    )
-
-            except Exception as e:
-                log.error(
-                    "sync_github_orgs.failed",
-                    err=e,
-                    org_id=org.id,
-                    user_id=user.id,
-                )
 
         return org_count
 

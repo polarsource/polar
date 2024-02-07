@@ -3,6 +3,7 @@ from collections.abc import Sequence
 import structlog
 from sqlalchemy import select
 
+from polar.eventstream.service import publish as eventstream_publish
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import (
@@ -82,6 +83,15 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         session.add(grant)
         await session.commit()
 
+        await eventstream_publish(
+            "subscription.subscription_benefit_grant.granted",
+            {
+                "subscription_benefit_id": subscription_benefit.id,
+                "subscription_benefit_type": subscription_benefit.type,
+            },
+            user_id=user.id,
+        )
+
         return grant
 
     async def revoke_benefit(
@@ -118,6 +128,15 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
 
         session.add(grant)
         await session.commit()
+
+        await eventstream_publish(
+            "subscription.subscription_benefit_grant.revoked",
+            {
+                "subscription_benefit_id": subscription_benefit.id,
+                "subscription_benefit_type": subscription_benefit.type,
+            },
+            user_id=user.id,
+        )
 
         return grant
 

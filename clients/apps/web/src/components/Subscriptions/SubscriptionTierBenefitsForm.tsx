@@ -63,6 +63,7 @@ import {
   useGetOrganizationBillingPlan,
   useListAdminOrganizations,
   useListRepositories,
+  useSSE,
   useUpdateSubscriptionBenefit,
 } from 'polarkit/hooks'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
@@ -895,27 +896,6 @@ export const GitHubRepositoryBenefitForm = ({
     setInstallationWindow(installationWindow)
   }, [])
 
-  useEffect(() => {
-    let intervalId: number | null = null
-    const organizationsCount = allOrganizations?.pagination.total_count
-    if (installationWindow) {
-      intervalId = window.setInterval(async () => {
-        const { data: organizations } = await refetchOrganizations()
-        if (organizations?.pagination.total_count !== organizationsCount) {
-          refetchOrganizations()
-          installationWindow.close()
-          intervalId && window.clearInterval(intervalId)
-        }
-      }, 1000)
-    }
-
-    return () => {
-      if (intervalId) {
-        window.clearInterval(intervalId)
-      }
-    }
-  }, [refetchOrganizations, allOrganizations, installationWindow])
-
   const openOrganizationInstallationURL = useCallback(() => {
     const url = selectedOrganization
       ? getGitHubOrganizationInstallationURL({
@@ -927,25 +907,50 @@ export const GitHubRepositoryBenefitForm = ({
     setInstallationWindow(installationWindow)
   }, [selectedOrganization, returnTo])
 
+  const emitter = useSSE()
+
   useEffect(() => {
-    let intervalId: number | null = null
+    const onOrganizationUpdated = async () => {
+      const organizationsCount = allOrganizations?.pagination.total_count
+      const { data: organizations } = await refetchOrganizations()
+      if (organizations?.pagination.total_count !== organizationsCount) {
+        installationWindow && installationWindow.close()
+        setInstallationWindow(null)
+      }
+    }
+
     if (installationWindow) {
-      intervalId = window.setInterval(async () => {
+      emitter.on('organization.updated', onOrganizationUpdated)
+    }
+    return () => {
+      emitter.off('organization.updated', onOrganizationUpdated)
+    }
+  }, [emitter, installationWindow, allOrganizations, refetchOrganizations])
+
+  useEffect(() => {
+    const onOrganizationUpdated = async (data: { organization_id: string }) => {
+      if (data.organization_id === selectedOrganization?.id) {
         const { data: hasAdminWritePermission } = await refetch()
         if (hasAdminWritePermission) {
           refetchRepositories()
-          installationWindow.close()
-          intervalId && window.clearInterval(intervalId)
+          installationWindow && installationWindow.close()
         }
-      }, 1000)
-    }
-
-    return () => {
-      if (intervalId) {
-        window.clearInterval(intervalId)
       }
     }
-  }, [refetch, refetchRepositories, installationWindow])
+
+    if (installationWindow && selectedOrganization) {
+      emitter.on('organization.updated', onOrganizationUpdated)
+    }
+    return () => {
+      emitter.off('organization.updated', onOrganizationUpdated)
+    }
+  }, [
+    emitter,
+    selectedOrganization,
+    installationWindow,
+    refetchRepositories,
+    refetch,
+  ])
 
   const hasAppInstalled = selectedOrganization?.has_app_installed
 

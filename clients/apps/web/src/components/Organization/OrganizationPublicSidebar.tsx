@@ -71,15 +71,15 @@ export const OrganizationPublicSidebar = ({
           </div>
           <div
             className={twMerge(
-              'flex-col items-start gap-y-6',
+              'w-full flex-col items-start gap-y-6',
               isPostView ? 'hidden  md:flex' : 'flex',
             )}
           >
-            {organization.bio && (
+            {organization.bio ? (
               <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
                 {organization.bio}
               </p>
-            )}
+            ) : null}
             {shouldRenderDashboardButton ? (
               <Link
                 className="w-full"

@@ -947,6 +947,8 @@ export const GitHubRepositoryBenefitForm = ({
     }
   }, [refetch, refetchRepositories, installationWindow])
 
+  const hasAppInstalled = selectedOrganization?.has_app_installed
+
   return (
     <>
       <FormItem>
@@ -1031,8 +1033,17 @@ export const GitHubRepositoryBenefitForm = ({
               {!hasAdminWritePermission ? (
                 <div className="flex items-center justify-between gap-4 rounded-2xl bg-red-50 px-4 py-3 text-sm dark:bg-red-950">
                   <div className="text-sm text-red-500">
-                    You need to re-authenticate your GitHub app installation to
-                    accept the new permissions required for this benefit.
+                    {hasAppInstalled ? (
+                      <>
+                        You need to re-authenticate your GitHub app installation
+                        to accept the new permissions required for this benefit.
+                      </>
+                    ) : (
+                      <>
+                        You need to install the Polar GitHub app to use this
+                        benefit.
+                      </>
+                    )}
                   </div>
                   <div className="flex gap-1">
                     {installationWindow && (
@@ -1051,7 +1062,7 @@ export const GitHubRepositoryBenefitForm = ({
                       className="whitespace-nowrap"
                       onClick={openOrganizationInstallationURL}
                     >
-                      Re-authorize GitHub
+                      {hasAppInstalled ? 'Re-authorize' : 'Install'}
                     </Button>
                   </div>
                 </div>

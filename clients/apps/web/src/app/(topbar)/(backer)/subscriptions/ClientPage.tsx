@@ -3,6 +3,7 @@
 import { BenefitSubscriber } from '@/components/Benefit/Benefit'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import ConfigureAdCampaigns from '@/components/Benefit/ads/ConfigureAdCampaigns'
+import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { ConfirmModal } from '@/components/Shared/ConfirmModal'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
@@ -231,6 +232,30 @@ interface BenefitContextWidgetProps {
   subscription: SubscriptionSubscriber
 }
 
+const GitHubRepoWidget = ({
+  benefit,
+  subscription,
+}: BenefitContextWidgetProps) => {
+  if (benefit.type !== 'github_repository') {
+    return <></>
+  }
+
+  const orgName = benefit.properties.repository_owner
+  const repoName = benefit.properties.repository_name
+  const githubURL = `https://github.com/${orgName}/${repoName}`
+
+  return (
+    <>
+      <Link href={`${githubURL}/invitations`}>
+        <Button variant="outline" asChild>
+          <GitHubIcon width={16} height={16} className="mr-2" />
+          Goto {orgName}/{repoName}
+        </Button>
+      </Link>
+    </>
+  )
+}
+
 const BenefitContextWidget = ({
   benefit,
   subscription,
@@ -245,7 +270,11 @@ const BenefitContextWidget = ({
             {resolveBenefitIcon(benefit, 'inherit')}
           </span>
         </div>
-        <h2 className="font-medium capitalize">{benefit.type}</h2>
+        <h2 className="font-medium capitalize">
+          {benefit.type === 'github_repository'
+            ? 'GitHub Repository Access'
+            : benefit.type}
+        </h2>
       </div>
       <p className="dark:text-polar-500 text-sm text-gray-500">
         {benefit.description}
@@ -255,6 +284,10 @@ const BenefitContextWidget = ({
           <p className="mb-4 font-medium">Note from {org?.name}</p>
           <p className="whitespace-pre-line">{benefit.properties.note}</p>
         </div>
+      )}
+
+      {benefit.type === 'github_repository' && (
+        <GitHubRepoWidget benefit={benefit} subscription={subscription} />
       )}
 
       {benefit.type === 'ads' ? (

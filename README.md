@@ -1,7 +1,8 @@
 <p align="center">
 
   <a href="https://polar.sh">
-      <img src="https://github.com/polarsource/polar/assets/281715/98fa24e4-7289-46a3-8afb-db818bf17f74" />
+      <img src="https://github.com/polarsource/polar/assets/281715/89b86e2d-9a2c-45bf-886b-4e95808529cf" />
+
 
   </a>
 
@@ -36,19 +37,25 @@
 </div>
 <hr />
 
-## Polar.sh: A Patreon for Open Source Developers
+## Polar.sh: A Creator Platform for Developers
 A creator platform for developers and the open source ecosystem – built open source (Apache 2.0).
 
 Offering you – as a developer –  a platform on top of your GitHub repositories to:
 
-- Build, own & reach your audience through free- and premium posts and newsletters.
-- Offer subscriptions of value-add benefits designed for our ecosystem & built-in to Polar. We'll handle value-add taxes.
+- Build, own & reach your audience through free- and premium posts and newsletters. 
+- Offer subscriptions of value-add benefits designed for our ecosystem & built-in to Polar.
+    - Access to Private GitHub Repositories (Unlimited)
+    - Discord Invites (Multiple roles)
+    - Premium Posts & Newsletter
+    - Automated Ads for Commercial Partners & Sponsors (README, Site, Docs & Posts)
+    - Custom: Provide secret notes for subscribers to unlock, e.g Cal.com links (Consultancy), Email address (Support) etc.
+- Polar handles value-add tax (VAT) 
 - Get funding behind your GitHub issues & split it with contributors (Rewards)
 - Integrate it all on your own docs, sites or services using our API & SDK.
 
 Start building, engaging & converting your own community into free- and paid subscribers.
 
-_Subscribe to us on Polar (eh... meta) [here](https://polar.sh/polarsource/posts/polar-creator-platform-for-open-source-developers). We ship features & improvements fast._
+_Subscribe to us on Polar [here](https://polar.sh/polarsource). We ship features & improvements fast._
 
 ### Polar API & SDK
 You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api) and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)

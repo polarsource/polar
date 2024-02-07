@@ -47,17 +47,17 @@ export const Modal: FunctionComponent<ModalProps> = ({
           role="dialog"
         >
           <div
-            className="flex h-full w-full flex-col items-center bg-black/50 p-2"
+            className="flex h-full flex-col items-center bg-black/50 p-2 md:w-full"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               hide()
             }}
           >
-            <div className="block h-[20%] w-2 lg:h-full lg:max-h-[10%] lg:grow-[2]"></div>
+            <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-[2]"></div>
             <div
               className={twMerge(
-                'dark:bg-polar-800 z-10 flex max-h-full flex-col overflow-hidden rounded-2xl bg-white shadow md:max-w-full lg:w-[800px]',
+                'dark:bg-polar-800 z-10 flex max-h-full w-full flex-col overflow-hidden rounded-2xl bg-white shadow   lg:w-[800px] lg:max-w-full',
                 className,
               )}
               onClick={onInnerClick}

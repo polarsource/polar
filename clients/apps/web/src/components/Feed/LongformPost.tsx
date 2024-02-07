@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
+import SubscribeNowWithModal from '../Subscriptions/SubscribeNowWithModal'
 import BrowserRender from './Markdown/BrowserRender'
 import { RenderArticle } from './Markdown/markdown'
 import PostPaywall from './PostPaywall'
@@ -203,9 +204,13 @@ const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
               article.organization.pretty_name || article.organization.name
             } by subscribing to their work and get access to exclusive content.`}
       </p>
-      <Link href={`/${article.organization.name}/subscriptions`}>
-        <Button className="mt-4">Subscribe</Button>
-      </Link>
+
+      <SubscribeNowWithModal
+        organization={article.organization}
+        isSubscriber={false}
+      >
+        Subscribe
+      </SubscribeNowWithModal>
     </div>
   </div>
 )

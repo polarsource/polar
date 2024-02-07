@@ -14,6 +14,7 @@ from polar.postgres import AsyncSession
 from polar.posthog import posthog
 from polar.user.oauth_service import oauth_account_service
 from polar.user.service import UserService
+from polar.worker import enqueue_job
 
 from .. import client as github
 from .. import types
@@ -141,7 +142,11 @@ class GithubUserService(UserService):
         )
         session.add(new_user)
         await session.commit()
+
         log.info("github.user.signup", user_id=new_user.id, username=github_user.login)
+
+        await enqueue_job("user.on_after_signup", user_id=new_user.id)
+
         return new_user
 
     async def login(

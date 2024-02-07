@@ -7,6 +7,7 @@ from polar.magic_link import tasks as magic_link
 from polar.notifications import tasks as notifications
 from polar.organization import tasks as organization
 from polar.subscription import tasks as subscription
+from polar.user import tasks as user
 
 __all__ = [
     "account",
@@ -18,4 +19,5 @@ __all__ = [
     "notifications",
     "organization",
     "subscription",
+    "user",
 ]

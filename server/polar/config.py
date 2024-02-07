@@ -1,4 +1,5 @@
 import os
+import uuid
 from enum import Enum
 from functools import cached_property
 
@@ -104,6 +105,8 @@ class Settings(BaseSettings):
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
+
+    AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID: uuid.UUID | None = None
 
     GITHUB_BADGE_EMBED: bool = False
     GITHUB_BADGE_EMBED_DEFAULT_LABEL: str = "Fund"

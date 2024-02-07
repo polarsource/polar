@@ -132,6 +132,56 @@ async def test_send(
 
 
 @pytest.mark.asyncio
+async def test_send_return_to(
+    generate_magic_link_token: GenerateMagicLinkToken,
+    mocker: MockerFixture,
+    session: AsyncSession,
+) -> None:
+    email_sender_mock = MagicMock()
+    mocker.patch(
+        "polar.magic_link.service.get_email_sender", return_value=email_sender_mock
+    )
+
+    # then
+    session.expunge_all()
+
+    magic_link, _ = await generate_magic_link_token("user@example.com", None, None)
+
+    await magic_link_service.send(
+        magic_link,
+        "TOKEN",
+        "BASE_URL",
+        extra_url_params={"return_to": "https://polar.sh/foobar"},
+    )
+
+    send_to_user_mock: MagicMock = email_sender_mock.send_to_user
+    assert send_to_user_mock.called
+
+    send_to_user_mock.assert_called_once_with(
+        to_email_addr="user@example.com",
+        html_content=ANY,
+        subject="Sign in to Polar",
+        from_email_addr="noreply@notifications.polar.sh",
+    )
+
+    sent_subject = send_to_user_mock.call_args_list[0].kwargs["subject"]
+    sent_body = send_to_user_mock.call_args_list[0].kwargs["html_content"]
+    sent_content = f"{sent_subject}\n<hr>\n{sent_body}"
+
+    # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
+    record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
+    record_file_name = "./tests/magic_link/testdata/magic_link_return_to.html"
+
+    if record:
+        with open(record_file_name, "w+") as f:
+            f.write(sent_content)
+
+    with open(record_file_name) as f:
+        content = f.read()
+        assert content == sent_content
+
+
+@pytest.mark.asyncio
 async def test_authenticate_existing_user(
     session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
 ) -> None:

@@ -37,7 +37,7 @@ async def request_magic_link(
         magic_link,
         token,
         base_url,
-        **{"return_to": magic_link_request.return_to}
+        extra_url_params={"return_to": magic_link_request.return_to}
         if magic_link_request.return_to
         else {},
     )

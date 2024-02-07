@@ -43,7 +43,7 @@ export const OrganizationPublicSidebar = ({
     [adminOrgs, organization],
   )
 
-  const isPostView = useMemo(() => pathname.includes('posts'), [pathname])
+  const isPostView = pathname.includes('/posts/')
 
   return (
     <div className="flex h-fit w-full shrink-0 flex-col gap-y-10 md:sticky md:top-32 md:w-64">
@@ -69,28 +69,35 @@ export const OrganizationPublicSidebar = ({
               </Link>
             </div>
           </div>
-          {organization.bio && (
-            <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
-              {organization.bio}
-            </p>
-          )}
-          {shouldRenderDashboardButton ? (
-            <Link
-              className="w-full"
-              href={`/maintainer/${organization.name}/overview`}
-            >
-              <Button fullWidth>View Dashboard</Button>
-            </Link>
-          ) : freeSubscriptionTier ? (
-            <FreeTierSubscribe
-              subscriptionTier={freeSubscriptionTier}
-              organization={organization}
-            />
-          ) : null}
+          <div
+            className={twMerge(
+              'flex-col items-start gap-y-6',
+              isPostView ? 'hidden  md:flex' : 'flex',
+            )}
+          >
+            {organization.bio && (
+              <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
+                {organization.bio}
+              </p>
+            )}
+            {shouldRenderDashboardButton ? (
+              <Link
+                className="w-full"
+                href={`/maintainer/${organization.name}/overview`}
+              >
+                <Button fullWidth>View Dashboard</Button>
+              </Link>
+            ) : freeSubscriptionTier ? (
+              <FreeTierSubscribe
+                subscriptionTier={freeSubscriptionTier}
+                organization={organization}
+              />
+            ) : null}
+          </div>
           <div
             className={twMerge(
               'dark:text-polar-500 flex flex-col gap-y-2 text-sm',
-              isPostView && 'hidden md:flex',
+              isPostView ? 'hidden md:flex' : '',
             )}
           >
             {organization.company && (

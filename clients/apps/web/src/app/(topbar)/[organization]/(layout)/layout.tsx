@@ -56,14 +56,14 @@ export default async function Layout({
           <div className="mx-auto mt-4 flex w-full max-w-7xl shrink-0 flex-col px-4 md:space-y-8">
             <div className="flex w-full shrink-0 flex-col gap-8 md:min-h-screen md:flex-row md:gap-24">
               <OrganizationPublicSidebar organization={organization} />
-              <div className="flex w-full flex-row pb-4 md:hidden">
+              <div className="flex w-full flex-row items-center gap-2 pb-4 md:hidden">
                 <OrganizationPublicPageNav
                   className="w-full flex-row"
                   organization={organization}
                   mobileLayout
                 />
               </div>
-              <div className="flex h-full w-full flex-col gap-y-8 overflow-hidden">
+              <div className="flex h-full w-full flex-col overflow-hidden md:gap-y-8">
                 <OrganizationPublicPageNav
                   className="hidden md:flex"
                   organization={organization}

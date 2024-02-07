@@ -79,7 +79,7 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
   return (
     <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative flex w-full flex-col items-center rounded-3xl ring-gray-100 md:bg-white md:p-12 md:shadow-sm md:ring-1 dark:md:border dark:md:ring-1">
       <Link
-        className="absolute left-0 top-4 flex flex-shrink md:left-16 md:top-16"
+        className="absolute hidden flex-shrink-0 md:left-16 md:top-16 md:flex"
         href={`/${article.organization.name}`}
       >
         <Button

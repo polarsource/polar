@@ -94,16 +94,18 @@ export default function LongformPost({
       transition={staggerTransition}
       variants={animationVariants}
     >
-      <header className="flex flex-col items-center gap-y-8 pb-16 pt-4">
+      <header className="flex flex-col items-center gap-y-4 pb-4 md:gap-y-8 md:pb-16 md:pt-4">
         <StaggerReveal.Child
           transition={revealTransition}
           variants={animationVariants}
+          className="hidden md:flex"
         >
           <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
         </StaggerReveal.Child>
         <StaggerReveal.Child
           transition={revealTransition}
           variants={animationVariants}
+          className="hidden md:flex"
         >
           <time
             className="dark:text-polar-500 text-gray-500"
@@ -116,13 +118,14 @@ export default function LongformPost({
           transition={revealTransition}
           variants={animationVariants}
         >
-          <h1 className="text-center text-4xl !font-semibold leading-normal [text-wrap:balance] md:leading-relaxed">
+          <h1 className="text-center text-2xl !font-semibold leading-normal [text-wrap:balance] md:text-3xl md:leading-relaxed lg:text-4xl">
             {article.title}
           </h1>
         </StaggerReveal.Child>
         <StaggerReveal.Child
           transition={revealTransition}
           variants={animationVariants}
+          className="flex flex-col items-center gap-1"
         >
           <div className="flex flex-row items-center gap-x-3">
             <Avatar
@@ -134,6 +137,12 @@ export default function LongformPost({
               {article.byline.name}
             </h3>
           </div>
+          <time
+            className="dark:text-polar-500 text-gray-500 md:hidden"
+            dateTime={publishedDate?.toISOString()}
+          >
+            {publishedDateText}
+          </time>
         </StaggerReveal.Child>
       </header>
 

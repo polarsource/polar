@@ -111,7 +111,9 @@ export const AnonymousFreeTierSubscribe = ({
   const onEmailSignin = useCallback(async () => {
     setEmailSignInClicked(true) // set to true, never resets to false
 
-    await api.magicLink.magicLinkRequest({ magicLinkRequest: { email } })
+    await api.magicLink.magicLinkRequest({
+      magicLinkRequest: { email, return_to: window.location.href },
+    })
     const searchParams = new URLSearchParams({ email: email })
     router.push(`/login/magic-link/request?${searchParams}`)
   }, [email, router])

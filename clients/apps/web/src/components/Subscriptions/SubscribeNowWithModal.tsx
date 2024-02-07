@@ -19,7 +19,7 @@ import {
 } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { Modal, ModalHeader } from '../Modal'
+import { CloseButton, Modal, ModalHeader } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import Spinner from '../Shared/Spinner'
 import SubscriptionTierCelebration from './SubscriptionTierCelebration'
@@ -125,15 +125,23 @@ const SubscribeNowWithModal = ({
         modalContent={
           <>
             {freeSubscriptionTier ? (
-              <SubscribeNowModal
-                hide={hide}
-                organization={organization}
-                isSubscribed={isSubscribed}
-                isLoading={isLoading}
-                showAnonymousSubscribe={showAnonymousSubscribe}
-                subscription={subscription}
-                freeSubscriptionTier={freeSubscriptionTier}
-              />
+              <>
+                {showAnonymousSubscribe ? (
+                  <AnonymousSubscribeModalContent
+                    hide={hide}
+                    organization={organization}
+                    freeSubscriptionTier={freeSubscriptionTier}
+                  />
+                ) : (
+                  <LoggedInSubscribeModalContent
+                    hide={hide}
+                    organization={organization}
+                    isSubscribed={isSubscribed}
+                    isLoading={isLoading}
+                    subscription={subscription}
+                  />
+                )}
+              </>
             ) : (
               <Spinner />
             )}
@@ -146,83 +154,67 @@ const SubscribeNowWithModal = ({
 
 export default SubscribeNowWithModal
 
-const SubscribeNowModal = ({
+const LoggedInSubscribeModalContent = ({
   hide,
   organization,
   isSubscribed,
   isLoading,
-  showAnonymousSubscribe,
   subscription,
-  freeSubscriptionTier,
 }: {
   hide: () => void
   organization: Organization
   isSubscribed: boolean
   isLoading: boolean
-  showAnonymousSubscribe: boolean
   subscription?: SubscriptionSubscriber
-  freeSubscriptionTier: SubscriptionTier
 }) => {
   return (
     <>
-      <ModalHeader hide={hide}>
-        <h3 className="dark:text-polar-50 text-center text-lg font-medium text-gray-950 ">
-          Subscribe to {organization.pretty_name || organization.name}
-        </h3>
-      </ModalHeader>
-      <div className="p-8">
-        <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col gap-y-2">
-            {isLoading ? <Spinner /> : null}
+      <CloseButton hide={hide} className="absolute right-5 top-3" />
 
-            {isSubscribed ? (
-              <div className="flex flex-col items-center gap-y-4">
-                {subscription ? (
-                  <SubscriptionTierCelebration
-                    type={subscription?.subscription_tier.type}
-                  />
-                ) : null}
+      <div className="flex flex-col gap-y-2 p-8">
+        {isLoading ? <Spinner /> : null}
 
-                <p className="text-muted-foreground text-center">Thank you!</p>
-                <p>
-                  You&apos;re subscribing to the{' '}
-                  <span className="font-medium">
-                    {subscription?.subscription_tier.name}
-                  </span>{' '}
-                  tier.
-                </p>
-                <Link
-                  href={`/${organization.name}/subscriptions`}
-                  className="text-center text-blue-500"
-                  onClick={() => {
-                    captureEvent(
-                      'posts:subscribe_to_modal_select_different_tier:click',
-                    )
-                  }}
-                >
-                  Select a different tier
-                </Link>
-              </div>
-            ) : null}
-
-            {showAnonymousSubscribe ? (
-              <AnonymousSubscribeForm
-                subscriptionTier={freeSubscriptionTier}
-                organization={organization}
+        {isSubscribed ? (
+          <div className="flex flex-col items-center gap-y-4">
+            {subscription ? (
+              <SubscriptionTierCelebration
+                type={subscription?.subscription_tier.type}
               />
             ) : null}
+
+            <p className="text-muted-foreground text-center">Thank you!</p>
+            <p>
+              You&apos;re subscribing to the{' '}
+              <span className="font-medium">
+                {subscription?.subscription_tier.name}
+              </span>{' '}
+              tier.
+            </p>
+            <Link
+              href={`/${organization.name}/subscriptions`}
+              className="text-center text-blue-500"
+              onClick={() => {
+                captureEvent(
+                  'posts:subscribe_to_modal_select_different_tier:click',
+                )
+              }}
+            >
+              Select a different tier
+            </Link>
           </div>
-        </div>
+        ) : null}
       </div>
     </>
   )
 }
 
-const AnonymousSubscribeForm = ({
-  subscriptionTier,
+const AnonymousSubscribeModalContent = ({
+  hide,
+  freeSubscriptionTier,
   organization,
 }: {
-  subscriptionTier: SubscriptionTier
+  hide: () => void
+  freeSubscriptionTier: SubscriptionTier
   organization: Organization
 }) => {
   const router = useRouter()
@@ -245,14 +237,14 @@ const AnonymousSubscribeForm = ({
         setSuccess(false)
 
         await createFreeSubscription.mutateAsync({
-          tier_id: subscriptionTier.id,
+          tier_id: freeSubscriptionTier.id,
           customer_email: data.customer_email,
         })
 
         setEmail(data.customer_email)
         setSuccess(true)
       },
-      [subscriptionTier, createFreeSubscription],
+      [freeSubscriptionTier, createFreeSubscription],
     )
 
   const [emailSignInClicked, setEmailSignInClicked] = useState(false)
@@ -272,79 +264,92 @@ const AnonymousSubscribeForm = ({
 
   if (success) {
     return (
-      <div className="flex  w-full flex-col items-center justify-center gap-y-6">
-        <SubscriptionTierCelebration type={subscriptionTier.type} />
-        <p className="text-muted-foreground text-center">Thank you!</p>
-        <h2 className="text-center text-lg">
-          You&apos;re now subscribed to {organization.name}
-        </h2>
-        <Button
-          type="button"
-          size="lg"
-          disabled={emailSignInClicked}
-          loading={emailSignInClicked}
-          onClick={onEmailSignin}
-        >
-          Sign in with email
-        </Button>
-        <Link
-          href={`/${organization.name}/subscriptions`}
-          className="text-center text-blue-400"
-          onClick={() => {
-            captureEvent('posts:subscribe_to_modal_select_different_tier:click')
-          }}
-        >
-          Show all subscription tiers
-        </Link>
+      <div className="flex flex-col gap-y-2 p-8">
+        <div className="flex w-full flex-col items-center justify-center gap-y-6">
+          <CloseButton hide={hide} className="absolute right-5 top-3" />
+
+          <SubscriptionTierCelebration type={freeSubscriptionTier.type} />
+          <p className="text-muted-foreground text-center">Thank you!</p>
+          <h2 className="text-center text-lg">
+            You&apos;re now subscribed to {organization.name}
+          </h2>
+          <Button
+            type="button"
+            size="lg"
+            disabled={emailSignInClicked}
+            loading={emailSignInClicked}
+            onClick={onEmailSignin}
+          >
+            Sign in with email
+          </Button>
+          <Link
+            href={`/${organization.name}/subscriptions`}
+            className="text-center text-blue-400"
+            onClick={() => {
+              captureEvent(
+                'posts:subscribe_to_modal_select_different_tier:click',
+              )
+            }}
+          >
+            Show all subscription tiers
+          </Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex w-full">
-      <Form {...form}>
-        <form onSubmit={handleSubmit(onSubscribeFree)} className="w-full">
-          <FormField
-            control={control}
-            name="customer_email"
-            rules={{ required: 'Your email is required' }}
-            render={({ field }) => {
-              return (
-                <div className="flex w-full flex-col gap-2">
-                  <div className="flex w-full flex-col items-center gap-y-2 md:flex-row md:gap-x-2 md:gap-y-0">
-                    <div className="w-full">
-                      <Input
-                        {...field}
-                        className="h-fit w-full rounded-md px-2.5 py-[5px] text-2xl md:text-base"
-                        type="email"
-                        placeholder="Email"
-                        autoFocus
-                      />
+    <>
+      <ModalHeader hide={hide}>
+        <h3 className="dark:text-polar-50 text-center text-lg font-medium text-gray-950 ">
+          Subscribe to {organization.pretty_name || organization.name}
+        </h3>
+      </ModalHeader>
+      <div className="flex flex-col gap-y-2 p-8">
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubscribeFree)} className="w-full">
+            <FormField
+              control={control}
+              name="customer_email"
+              rules={{ required: 'Your email is required' }}
+              render={({ field }) => {
+                return (
+                  <div className="flex w-full flex-col gap-2">
+                    <div className="flex w-full flex-col items-center gap-y-4 md:flex-row md:gap-x-2 md:gap-y-0">
+                      <div className="w-full">
+                        <Input
+                          {...field}
+                          className="h-fit w-full rounded-md px-2.5 py-[5px] text-2xl md:text-base"
+                          type="email"
+                          placeholder="Email"
+                          autoFocus
+                        />
+                      </div>
+                      <Button
+                        className="flex h-full md:hidden"
+                        size="lg"
+                        type="submit"
+                        loading={createFreeSubscription.isPending}
+                      >
+                        Subscribe
+                      </Button>
+                      <Button
+                        className="hidden h-full md:flex"
+                        size="sm"
+                        type="submit"
+                        loading={createFreeSubscription.isPending}
+                      >
+                        Subscribe
+                      </Button>
                     </div>
-                    <Button
-                      className="flex h-full md:hidden"
-                      size="lg"
-                      type="submit"
-                      loading={createFreeSubscription.isPending}
-                    >
-                      Subscribe
-                    </Button>
-                    <Button
-                      className="hidden h-full md:flex"
-                      size="sm"
-                      type="submit"
-                      loading={createFreeSubscription.isPending}
-                    >
-                      Subscribe
-                    </Button>
+                    <FormMessage />
                   </div>
-                  <FormMessage />
-                </div>
-              )
-            }}
-          />
-        </form>
-      </Form>
-    </div>
+                )
+              }}
+            />
+          </form>
+        </Form>
+      </div>
+    </>
   )
 }

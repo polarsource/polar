@@ -57,7 +57,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
             <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-[2]"></div>
             <div
               className={twMerge(
-                'dark:bg-polar-800 z-10 flex max-h-full w-full flex-col overflow-hidden rounded-2xl bg-white shadow   lg:w-[800px] lg:max-w-full',
+                'dark:bg-polar-800 relative z-10 flex max-h-full w-full flex-col overflow-hidden rounded-2xl bg-white shadow lg:w-[800px] lg:max-w-full',
                 className,
               )}
               onClick={onInnerClick}
@@ -86,13 +86,25 @@ export const ModalHeader = (props: {
       )}
     >
       <div>{props.children}</div>
-      <button
-        className="dark:text-polar-100 dark:hover:text-polar-300 text-black hover:text-gray-800"
-        onClick={() => props.hide()}
-      >
-        <XIcon />
-      </button>
+      <CloseButton hide={props.hide} />
     </div>
+  )
+}
+
+export const CloseButton = (props: {
+  className?: string
+  hide: () => void
+}) => {
+  return (
+    <button
+      className={twMerge(
+        'dark:text-polar-100 dark:hover:text-polar-300 text-black hover:text-gray-800',
+        props.className,
+      )}
+      onClick={() => props.hide()}
+    >
+      <XIcon />
+    </button>
   )
 }
 

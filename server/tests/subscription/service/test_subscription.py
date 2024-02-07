@@ -325,7 +325,62 @@ class TestCreateFreeSubscription:
 
 
 @pytest.mark.asyncio
-class TestCreateSubscription:
+class TestCreateArbitrarySubscription:
+    async def test_already_subscribed(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+        user: User,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization_free,
+            user=user,
+            stripe_subscription_id=None,
+        )
+
+        # then
+        session.expunge_all()
+
+        with pytest.raises(AlreadySubscribed):
+            await subscription_service.create_arbitrary_subscription(
+                session,
+                user=user,
+                subscription_tier=subscription_tier_organization_free,
+            )
+
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization_free: SubscriptionTier,
+        user: User,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        # then
+        session.expunge_all()
+
+        subscription = await subscription_service.create_arbitrary_subscription(
+            session,
+            user=user,
+            subscription_tier=subscription_tier_organization_free,
+        )
+
+        assert (
+            subscription.subscription_tier_id == subscription_tier_organization_free.id
+        )
+        assert subscription.user_id == user.id
+
+        enqueue_job_mock.assert_any_await(
+            "subscription.subscription.enqueue_benefits_grants", subscription.id
+        )
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionFromStripe:
     async def test_not_existing_subscription_tier(self, session: AsyncSession) -> None:
         stripe_subscription = construct_stripe_subscription()
 
@@ -333,7 +388,7 @@ class TestCreateSubscription:
         session.expunge_all()
 
         with pytest.raises(AssociatedSubscriptionTierDoesNotExist):
-            await subscription_service.create_subscription(
+            await subscription_service.create_subscription_from_stripe(
                 session, stripe_subscription=stripe_subscription
             )
 
@@ -355,7 +410,7 @@ class TestCreateSubscription:
         # then
         session.expunge_all()
 
-        subscription = await subscription_service.create_subscription(
+        subscription = await subscription_service.create_subscription_from_stripe(
             session, stripe_subscription=stripe_subscription
         )
 
@@ -386,7 +441,7 @@ class TestCreateSubscription:
         # then
         session.expunge_all()
 
-        subscription = await subscription_service.create_subscription(
+        subscription = await subscription_service.create_subscription_from_stripe(
             session, stripe_subscription=stripe_subscription
         )
 
@@ -422,7 +477,7 @@ class TestCreateSubscription:
         # then
         session.expunge_all()
 
-        subscription = await subscription_service.create_subscription(
+        subscription = await subscription_service.create_subscription_from_stripe(
             session, stripe_subscription=stripe_subscription
         )
 
@@ -462,7 +517,7 @@ class TestCreateSubscription:
         # then
         session.expunge_all()
 
-        subscription = await subscription_service.create_subscription(
+        subscription = await subscription_service.create_subscription_from_stripe(
             session, stripe_subscription=stripe_subscription
         )
 
@@ -499,7 +554,7 @@ class TestCreateSubscription:
         # then
         session.expunge_all()
 
-        subscription = await subscription_service.create_subscription(
+        subscription = await subscription_service.create_subscription_from_stripe(
             session, stripe_subscription=stripe_subscription
         )
 
@@ -523,7 +578,7 @@ class TestCreateSubscription:
 
 
 @pytest.mark.asyncio
-class TestUpdateSubscription:
+class TestUpdateSubscriptionFromStripe:
     async def test_not_existing_subscription(self, session: AsyncSession) -> None:
         stripe_subscription = construct_stripe_subscription()
 
@@ -531,7 +586,7 @@ class TestUpdateSubscription:
         session.expunge_all()
 
         with pytest.raises(SubscriptionDoesNotExist):
-            await subscription_service.update_subscription(
+            await subscription_service.update_subscription_from_stripe(
                 session, stripe_subscription=stripe_subscription
             )
 
@@ -560,8 +615,10 @@ class TestUpdateSubscription:
         # then
         session.expunge_all()
 
-        updated_subscription = await subscription_service.update_subscription(
-            session, stripe_subscription=stripe_subscription
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
         )
 
         assert updated_subscription.status == SubscriptionStatus.active

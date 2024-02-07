@@ -16,7 +16,7 @@ const PostPaywall = (props: {
         avatar_url={organization.avatar_url}
         name={organization.pretty_name || organization.name}
       />
-      <h2 className="text-xl font-medium">
+      <h2 className="text-center text-xl font-medium">
         This post is for premium subscribers only.
       </h2>
       <p className="dark:text-polar-300 text-center text-gray-500">

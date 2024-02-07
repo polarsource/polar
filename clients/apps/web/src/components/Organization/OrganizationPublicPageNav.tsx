@@ -1,9 +1,11 @@
 'use client'
 
+import { ArrowBackOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
+  Button,
   Select,
   SelectContent,
   SelectItem,
@@ -65,21 +67,36 @@ export const OrganizationPublicPageNav = ({
     [organization, router],
   )
 
+  const isPageView = pathname.includes('/posts/')
+
   const tabsTriggerClassName =
     'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none'
 
   return mobileLayout ? (
-    <Select value={currentTab} onValueChange={handleSelectChange}>
-      <SelectTrigger>
-        <SelectValue placeholder="Go to page" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="overview">Overview</SelectItem>
-        <SelectItem value="subscriptions">Subscriptions</SelectItem>
-        <SelectItem value="issues">Issues</SelectItem>
-        <SelectItem value="repositories">Repositories</SelectItem>
-      </SelectContent>
-    </Select>
+    <>
+      {isPageView ? (
+        <Link className="flex flex-shrink-0" href={`/${organization.name}`}>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="group flex h-8 w-8 flex-col items-center justify-center rounded-full border"
+          >
+            <ArrowBackOutlined fontSize="inherit" />
+          </Button>
+        </Link>
+      ) : null}
+      <Select value={currentTab} onValueChange={handleSelectChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Go to page" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="overview">Overview</SelectItem>
+          <SelectItem value="subscriptions">Subscriptions</SelectItem>
+          <SelectItem value="issues">Issues</SelectItem>
+          <SelectItem value="repositories">Repositories</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
   ) : (
     <Tabs value={currentTab}>
       <TabsList

@@ -38,7 +38,10 @@ const GithubLoginButton = (props: {
       )}
     >
       <svg
-        className={`${props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4'}`}
+        className={twMerge(
+          'flex-shrink-0',
+          props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4',
+        )}
         aria-hidden="true"
         fill="currentColor"
         viewBox="0 0 20 20"
@@ -49,7 +52,7 @@ const GithubLoginButton = (props: {
           clipRule="evenodd"
         />
       </svg>
-      <span>{props.text}</span>
+      <span className="whitespace-nowrap">{props.text}</span>
     </a>
   )
 }

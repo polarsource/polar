@@ -66,7 +66,12 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         return magic_link, token
 
     async def send(
-        self, magic_link: MagicLink, token: str, base_url: str, **extra_url_params: str
+        self,
+        magic_link: MagicLink,
+        token: str,
+        base_url: str,
+        *,
+        extra_url_params: dict[str, str] = {},
     ) -> None:
         email_renderer = get_email_renderer({"magic_link": "polar.magic_link"})
         email_sender = get_email_sender()

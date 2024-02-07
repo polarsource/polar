@@ -192,7 +192,7 @@ const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
         avatar_url={article.organization.avatar_url}
         name={article.organization.pretty_name || article.organization.name}
       />
-      <h2 className="text-xl font-medium">
+      <h2 className="text-center text-xl font-medium">
         Subscribe to{' '}
         {article.organization.pretty_name || article.organization.name}
       </h2>

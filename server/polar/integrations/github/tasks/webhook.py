@@ -5,6 +5,7 @@ from uuid import UUID
 import structlog
 
 from polar.context import ExecutionContext
+from polar.eventstream.service import publish_members
 from polar.exceptions import PolarError
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
@@ -1049,6 +1050,41 @@ async def installation_created(
 
         async with AsyncSessionMaker(ctx) as session:
             await repositories_changed(session, event)
+
+
+@task("github.webhook.installation.new_permissions_accepted")
+async def installation_new_permissions_accepted(
+    ctx: JobContext,
+    scope: Literal["installation"],
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with ExecutionContext(is_during_installation=True):
+        event = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(event, types.WebhookInstallationNewPermissionsAccepted):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+
+        installation_account = event.installation.account
+        if installation_account is None:
+            return
+
+        async with AsyncSessionMaker(ctx) as session:
+            org = await service.github_organization.get_by_external_id(
+                session, installation_account.id
+            )
+            if not org:
+                return
+
+            await publish_members(
+                session=session,
+                key="organization.updated",
+                payload={
+                    "organization_id": org.id,
+                },
+                organization_id=org.id,
+            )
 
 
 @task("github.webhook.installation.deleted")

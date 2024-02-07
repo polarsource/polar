@@ -395,6 +395,7 @@ class WebhookResponse(BaseModel):
 
 IMPLEMENTED_WEBHOOKS = {
     "installation.created",
+    "installation.new_permissions_accepted",
     "installation.deleted",
     "installation.suspend",
     "installation.unsuspend",

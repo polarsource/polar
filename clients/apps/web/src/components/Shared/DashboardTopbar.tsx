@@ -119,20 +119,26 @@ const DashboardTopbar = ({
     if (!toolbar) {
       return
     }
+
     setIsMD(window.innerWidth >= 768)
     setTopbarHeight(toolbar.clientHeight)
   }
 
   useEffect(() => {
-    const update = () => {
+    const resizeObserver = new ResizeObserver((entries) => {
       if (domNode) {
         propagateHeight(domNode)
       }
+    })
+
+    if (domNode) {
+      resizeObserver.observe(domNode)
     }
 
-    window.addEventListener('resize', update)
     return () => {
-      window.removeEventListener('resize', update)
+      if (domNode) {
+        resizeObserver.unobserve(domNode)
+      }
     }
   }, [domNode])
 

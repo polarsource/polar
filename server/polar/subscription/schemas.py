@@ -6,7 +6,6 @@ import stripe as stripe_lib
 from pydantic import (
     UUID4,
     AnyHttpUrl,
-    EmailStr,
     Field,
     computed_field,
     field_validator,
@@ -16,7 +15,7 @@ from pydantic import (
 from polar.config import settings
 from polar.enums import Platforms
 from polar.kit import jwt
-from polar.kit.schemas import EmptyStrToNone, Schema, TimestampedSchema
+from polar.kit.schemas import EmailStrDNS, EmptyStrToNone, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
@@ -420,7 +419,7 @@ class SubscribeSessionCreate(Schema):
             "You need to be an administrator of the Organization to do this."
         ),
     )
-    customer_email: EmailStr | None = Field(
+    customer_email: EmailStrDNS | None = Field(
         None,
         description=(
             "If you already know the email of your backer, you can set it. "
@@ -535,7 +534,7 @@ class FreeSubscriptionCreate(Schema):
         ...,
         description="ID of the free Subscription Tier to subscribe to.",
     )
-    customer_email: EmailStr | None = Field(
+    customer_email: EmailStrDNS | None = Field(
         None,
         description=(
             "Email of your backer. "
@@ -549,7 +548,7 @@ class SubscriptionUpgrade(Schema):
 
 
 class SubscriptionCreateEmail(Schema):
-    email: EmailStr
+    email: EmailStrDNS
 
 
 class SubscriptionsImported(Schema):

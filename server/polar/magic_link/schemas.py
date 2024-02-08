@@ -4,13 +4,13 @@ from typing import Literal
 from pydantic import UUID4, EmailStr, field_validator
 
 from polar.kit.http import get_safe_return_url
-from polar.kit.schemas import Schema
+from polar.kit.schemas import EmailStrDNS, Schema
 
 MagicLinkSource = Literal["user_login", "article_links"]
 
 
 class MagicLinkRequest(Schema):
-    email: EmailStr
+    email: EmailStrDNS
     return_to: str | None = None
 
     @field_validator("return_to")

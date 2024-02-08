@@ -150,6 +150,20 @@ class SubscriptionTierService(
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_free(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+    ) -> SubscriptionTier | None:
+        return await self.get_by(
+            session,
+            type=SubscriptionTierType.free,
+            organization_id=organization.id if organization else None,
+            repository_id=repository.id if repository else None,
+        )
+
     async def get_by_stripe_product_id(
         self, session: AsyncSession, stripe_product_id: str
     ) -> SubscriptionTier | None:
@@ -310,11 +324,8 @@ class SubscriptionTierService(
         organization: Organization | None = None,
         repository: Repository | None = None,
     ) -> SubscriptionTier:
-        free_subscription_tier = await self.get_by(
-            session,
-            type=SubscriptionTierType.free,
-            organization_id=organization.id if organization else None,
-            repository_id=repository.id if repository else None,
+        free_subscription_tier = await self.get_free(
+            session, organization=organization, repository=repository
         )
 
         # create if does not exist

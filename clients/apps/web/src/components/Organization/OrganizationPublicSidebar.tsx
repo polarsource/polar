@@ -58,7 +58,7 @@ export const OrganizationPublicSidebar = ({
               width={240}
             />
             <div className="flex flex-col items-start md:gap-y-2">
-              <h1 className="dark:text-polar-50 text-xl font-normal capitalize text-gray-800 md:text-2xl">
+              <h1 className="dark:text-polar-50 text-xl font-normal text-gray-800 md:text-2xl">
                 {organization.pretty_name ?? organization.name}
               </h1>
               <Link

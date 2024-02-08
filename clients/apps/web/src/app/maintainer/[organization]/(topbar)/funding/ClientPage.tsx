@@ -3,6 +3,7 @@
 import IssueListItem from '@/components/Issues/IssueListItem'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Spinner from '@/components/Shared/Spinner'
+import { useAuth } from '@/hooks/auth'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { Pledge } from '@polar-sh/sdk'
@@ -11,10 +12,15 @@ import { useSearchPledges } from 'polarkit/hooks'
 
 export default function ClientPage() {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { currentUser } = useAuth()
 
-  const pledges = useSearchPledges({
-    byOrganizationId: org?.id,
-  })
+  const pledges = useSearchPledges(
+    org && org.is_personal && currentUser
+      ? { byUserId: currentUser.id }
+      : {
+          byOrganizationId: org?.id,
+        },
+  )
 
   const groupByIssue = (pledges: Pledge[]): Record<string, Pledge[]> => {
     let ret: Record<string, Pledge[]> = {}

@@ -16,11 +16,12 @@ import { Form } from 'polarkit/components/ui/form'
 import {
   useArchiveSubscriptionTier,
   useSubscriptionBenefits,
+  useSubscriptionStatistics,
   useSubscriptionTier,
   useUpdateSubscriptionTier,
   useUpdateSubscriptionTierBenefits,
 } from 'polarkit/hooks'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Benefit } from '../Benefit/Benefit'
 import { useModal } from '../Modal/useModal'
@@ -73,6 +74,19 @@ const SubscriptionTierEdit = ({
     subscriptionTier.benefits.map((benefit) => benefit.id) ?? [],
   )
   const isFreeTier = subscriptionTier.type === SubscriptionTierType.FREE
+
+  const now = useMemo(() => new Date(), [])
+  const { data: subscriptionStatistics } = useSubscriptionStatistics(
+    organization.name,
+    now,
+    now,
+    undefined,
+    subscriptionTier.id,
+  )
+  const nbSubscribers = useMemo(
+    () => subscriptionStatistics?.periods[0].subscribers || 0,
+    [subscriptionStatistics],
+  )
 
   const form = useForm<SubscriptionTierUpdate>({
     defaultValues: subscriptionTier,
@@ -162,6 +176,22 @@ const SubscriptionTierEdit = ({
     [organizationBenefits, enabledBenefitIds],
   )
 
+  const benefitsAdded = useMemo(
+    () =>
+      enabledBenefits.filter(
+        (benefit) =>
+          !subscriptionTier.benefits.some(({ id }) => id === benefit.id),
+      ),
+    [enabledBenefits, subscriptionTier],
+  )
+  const benefitsRemoved = useMemo(
+    () =>
+      subscriptionTier.benefits.filter(
+        (benefit) => !enabledBenefits.some(({ id }) => id === benefit.id),
+      ),
+    [enabledBenefits, subscriptionTier],
+  )
+
   return (
     <DashboardBody>
       <Form {...form}>
@@ -221,6 +251,30 @@ const SubscriptionTierEdit = ({
                 />
               </>
             )}
+
+            {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) &&
+              nbSubscribers > 0 && (
+                <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+                  Existing {nbSubscribers} subscribers will immediately{' '}
+                  {benefitsAdded.length > 0 && (
+                    <>
+                      get access to{' '}
+                      {benefitsAdded
+                        .map((benefit) => benefit.description)
+                        .join(', ')}
+                    </>
+                  )}
+                  {benefitsRemoved.length > 0 && (
+                    <>
+                      {benefitsAdded.length > 0 && ' and '}lose access to{' '}
+                      {benefitsRemoved
+                        .map((benefit) => benefit.description)
+                        .join(', ')}
+                    </>
+                  )}
+                  .
+                </div>
+              )}
 
             <div className="flex flex-row gap-2">
               <Button onClick={handleSubmit(onSubmit)}>Save Tier</Button>

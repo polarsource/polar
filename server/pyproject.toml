@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.109.0"
+fastapi = "^0.109.2"
 uvicorn = {version = "^0.27.0", extras = ["standard"]}
 asyncpg = "^0.29.0"
 alembic = "^1.9.2"
@@ -20,11 +20,11 @@ sse-starlette = "^2.0.0"
 arq = "^0.25.0"
 stripe = "=7.4.0" # strictly pinned stripe version as different versions of stripe can be incompatible with each other
 pyjwt = "^2.6.0"
-pydantic = "=2.5.3"  # FIXME: pin until https://github.com/pydantic/pydantic/pull/8666 is released
+pydantic = "^2.6.1"
 jinja2 = "^3.1.2"
 sentry-sdk = { extras = ["fastapi"], version = "^1.20.0" }
 discord-webhook = { extras = ["async"], version = "^1.3.0" }
-posthog = "^3.0.1"
+posthog = "^3.4.0"
 sqlalchemy-citext = { git = "https://github.com/akolov/sqlalchemy-citext.git", rev = "15b3de84730bb4645c83d890a73f5c9b6b289531" }
 python-slugify = "^8.0.1"
 resend = "^0.7.2"
@@ -43,7 +43,7 @@ sqlalchemy-utils = "^0.41.1"
 optional = true
 
 [tool.poetry.group.backoffice.dependencies]
-textual = "^0.48.1"
+textual = "^0.49.0"
 babel = "^2.14.0"
 halo = "^0.0.31"
 
@@ -55,7 +55,7 @@ typer = "^0.9.0"
 psycopg2-binary = "^2.9.5"
 coverage = "^7.1.0"
 pytest-mock = "^3.10.0"
-ruff = "^0.1.0"
+ruff = "^0.2.1"
 pytest-asyncio = "^0.21"
 taskipy = "^1.10.3"
 types-redis = "^4.6.0.20240106"
@@ -91,18 +91,20 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]  # See: https://github
 
 [tool.ruff]
 target-version = "py311"
-extend-select = ["I", "UP", "T20"]
-ignore = [
-    "F841", # remove unused variables
-]
+
+[tool.ruff.lint]
+  extend-select = ["I", "UP", "T20"]
+  ignore = [
+      "F841", # remove unused variables
+  ]
 
 [tool.ruff.lint.per-file-ignores]
-"migrations/*" = [
-    "F401", # remove unused import
-]
-"scripts/*" = [
-    "T20"
-]
+  "migrations/*" = [
+      "F401", # remove unused import
+  ]
+  "scripts/*" = [
+      "T20"
+  ]
 
 [tool.mypy]
 ignore_missing_imports = true

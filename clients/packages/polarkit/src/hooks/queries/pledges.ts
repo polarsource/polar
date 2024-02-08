@@ -60,7 +60,9 @@ export const useSearchPledges = (search: PledgesApiSearchRequest) =>
     queryFn: () => api.pledges.search(search),
     retry: defaultRetry,
     enabled:
-      Boolean(search.byOrganizationId) || Boolean(search.organizationName),
+      Boolean(search.byOrganizationId) ||
+      Boolean(search.organizationName) ||
+      Boolean(search.byUserId),
   })
 
 export const useListPaymentMethods = () =>

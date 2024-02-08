@@ -7,7 +7,7 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz, Subject
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
 from polar.models.pledge import Pledge
@@ -165,6 +165,9 @@ async def search(
     by_organization_id: UUID | None = Query(
         default=None, description="Search pledges made by this organization."
     ),
+    by_user_id: UUID | None = Query(
+        default=None, description="Search pledges made by this user."
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
@@ -226,6 +229,13 @@ async def search(
 
         list_by_repos = [repo.id]
 
+    # must be currently authenticated user
+    if by_user_id:
+        if not auth.user:
+            raise BadRequest("by_user_id must be the current authenticated users id")
+        if auth.user.id != by_user_id:
+            raise BadRequest("by_user_id must be the current authenticated users id")
+
     if issue_id:
         list_by_issues = [issue_id]
 
@@ -234,6 +244,7 @@ async def search(
         and len(list_by_repos) == 0
         and len(list_by_issues) == 0
         and not by_organization_id
+        and not by_user_id
     ):
         raise HTTPException(
             status_code=400,
@@ -246,6 +257,7 @@ async def search(
         repository_ids=list_by_repos,
         issue_ids=list_by_issues,
         pledging_organization=by_organization_id,
+        pledging_user=by_user_id,
         load_issue=True,
         load_pledger=True,
     )

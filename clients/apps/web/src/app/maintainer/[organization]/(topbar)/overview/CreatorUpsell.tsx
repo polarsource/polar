@@ -8,7 +8,7 @@ import {
 import { Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBox } from 'polarkit/components/ui/atoms'
 import { useOrganizationArticles, useSubscriptionTiers } from 'polarkit/hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -178,7 +178,7 @@ const UpsellStep = ({
 
   return (
     <Link ref={ref} href={href} className="relative">
-      <ShadowBoxOnMd className="dark:hover:bg-polar-800 relative flex h-full flex-row items-end justify-between transition-colors hover:bg-blue-50">
+      <ShadowBox className="dark:hover:bg-polar-800 relative flex h-full flex-row items-end justify-between transition-colors hover:bg-blue-50">
         <div className="flex w-3/4 flex-row gap-x-6">
           <div>{icon}</div>
           <div className="flex flex-col gap-y-2">
@@ -190,7 +190,7 @@ const UpsellStep = ({
             </p>
           </div>
         </div>
-      </ShadowBoxOnMd>
+      </ShadowBox>
 
       <div
         className="dark:text-polar-500 dark:hover:text-polar-300 absolute right-4 top-4 cursor-pointer p-2 text-gray-300 hover:text-gray-500"

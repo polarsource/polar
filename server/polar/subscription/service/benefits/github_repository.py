@@ -262,17 +262,18 @@ class SubscriptionBenefitGitHubRepositoryService(
         if posthog.client and not posthog.client.feature_enabled(
             "github-benefit-personal-org", user.posthog_distinct_id
         ):
-            raise SubscriptionBenefitPropertiesValidationError(
-                [
-                    {
-                        "type": "personal_organization_repository",
-                        "message": "For security reasons, "
-                        "repositories on personal organizations are not supported.",
-                        "loc": ("repository_id",),
-                        "input": repository_id,
-                    }
-                ]
-            )
+            if repository.organization.is_personal:
+                raise SubscriptionBenefitPropertiesValidationError(
+                    [
+                        {
+                            "type": "personal_organization_repository",
+                            "message": "For security reasons, "
+                            "repositories on personal organizations are not supported.",
+                            "loc": ("repository_id",),
+                            "input": repository_id,
+                        }
+                    ]
+                )
 
         return cast(
             SubscriptionBenefitGitHubRepositoryProperties,

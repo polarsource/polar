@@ -134,7 +134,7 @@ class AlreadySubscribed(SubscriptionError):
         self.organization_id = organization_id
         self.repository_id = repository_id
         message = (
-            "You're already subscribed to one of the tier "
+            "This user is already subscribed to one of the tier "
             "of this organization or repository."
         )
         super().__init__(message, 400)

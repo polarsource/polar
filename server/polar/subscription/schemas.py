@@ -548,6 +548,14 @@ class SubscriptionUpgrade(Schema):
     subscription_tier_id: UUID4
 
 
+class SubscriptionCreateEmail(Schema):
+    email: EmailStr
+
+
+class SubscriptionsImported(Schema):
+    count: int
+
+
 class SubscriptionSummary(Schema):
     user: SubscriptionPublicUser
     organization: SubscriptionOrganization | None = None
@@ -564,7 +572,3 @@ class SubscriptionsStatisticsPeriod(Schema):
 
 class SubscriptionsStatistics(Schema):
     periods: list[SubscriptionsStatisticsPeriod]
-
-
-class SubscriptionsImported(Schema):
-    count: int

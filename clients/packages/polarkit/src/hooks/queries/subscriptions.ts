@@ -346,6 +346,7 @@ export const useSubscriptionStatistics = (
   startDate: Date,
   endDate: Date,
   tierTypes: SubscriptionTierType[] | undefined = undefined,
+  subscriptionTierId: string | undefined = undefined,
   platform: Platforms = Platforms.GITHUB,
 ) =>
   useQuery({
@@ -353,6 +354,7 @@ export const useSubscriptionStatistics = (
       'subscriptionStatistics',
       orgName,
       tierTypes,
+      subscriptionTierId,
       JSON.stringify({ startDate, endDate }),
     ],
     queryFn: () =>
@@ -361,6 +363,7 @@ export const useSubscriptionStatistics = (
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
         types: tierTypes,
+        subscriptionTierId,
         platform,
       }),
     retry: defaultRetry,

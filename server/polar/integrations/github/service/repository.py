@@ -94,6 +94,27 @@ class GithubRepositoryService(RepositoryService):
                 external_id=data.id,
             )
 
+            # Check if an existing deleted repository with the same name (but different external_id)
+            # exists in our database.
+            #
+            # If it does, rename the existing repository to allow for the name to be re-used.
+            same_name_repo = await self.get_by_org_and_name(
+                session,
+                organization_id=organization.id,
+                name=data.name,
+                allow_deleted=True,
+            )
+
+            if (
+                same_name_repo
+                and same_name_repo.deleted_at is not None
+                and same_name_repo.external_id != data.id
+            ):
+                same_name_repo.name = (
+                    f"{same_name_repo.name}-renamed-{same_name_repo.external_id}"
+                )
+                await same_name_repo.save(session, autocommit=False)
+
             repository = await self.create(
                 session, RepositoryCreate.from_github(data, organization.id)
             )

@@ -108,12 +108,15 @@ class RepositoryService(
         organization_id: UUID,
         name: str,
         load_organization: bool = False,
+        allow_deleted: bool = False,
     ) -> Repository | None:
         statement = sql.select(Repository).where(
             Repository.organization_id == organization_id,
-            Repository.deleted_at.is_(None),
             Repository.name == name,
         )
+
+        if not allow_deleted:
+            statement = statement.where(Repository.deleted_at.is_(None))
 
         if load_organization:
             statement = statement.options(joinedload(Repository.organization))

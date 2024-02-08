@@ -127,7 +127,7 @@ const Topbar = ({
           </div>
         </div>
         {!hideProfile ? (
-          <div className="relative ml-6 flex flex-1 flex-shrink-0 flex-row items-center justify-end gap-x-6 md:ml-0 ">
+          <div className="relative flex flex-1 flex-shrink-0 flex-row items-center justify-end gap-x-6 md:ml-0 ">
             {upsell}
             <TopbarRight authenticatedUser={authenticatedUser} />
           </div>

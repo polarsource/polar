@@ -154,11 +154,11 @@ const DashboardTopbar = ({
   return (
     <>
       <div className={className} ref={onRefChange}>
-        <div className="relative flex w-full max-w-screen-xl flex-col flex-wrap justify-between gap-y-4 px-4 py-4 sm:px-6 md:mx-auto md:flex-row md:items-center md:px-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-24">
-            <h4 className="dark:text-polar-100 whitespace-nowrap text-lg font-medium">
-              {title ?? currentRoute?.title}
-            </h4>
+        <div className="mx-auto flex w-full max-w-screen-xl flex-row flex-wrap items-center justify-start gap-x-4 gap-y-2 px-4 py-4 sm:px-6 md:gap-x-12 md:px-8 xl:gap-x-24">
+          <h4 className="dark:text-polar-100 whitespace-nowrap  text-lg font-medium ">
+            {title ?? currentRoute?.title}
+          </h4>
+          <div className="flex flex-col gap-4  md:flex-row md:items-center md:gap-y-24">
             {currentRoute &&
               'subs' in currentRoute &&
               (currentRoute.subs?.length ?? 0) > 0 && (
@@ -172,7 +172,7 @@ const DashboardTopbar = ({
                 />
               )}
           </div>
-          <div className="relative flex flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
+          <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}
             <Link href="/feed">
               <Button>

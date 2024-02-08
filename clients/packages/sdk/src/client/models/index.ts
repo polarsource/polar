@@ -7349,6 +7349,19 @@ export type SubscriptionBenefitUpdate = SubscriptionBenefitAdsUpdate | Subscript
 /**
  * 
  * @export
+ * @interface SubscriptionCreateEmail
+ */
+export interface SubscriptionCreateEmail {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCreateEmail
+     */
+    email: string;
+}
+/**
+ * 
+ * @export
  * @interface SubscriptionOrganization
  */
 export interface SubscriptionOrganization {

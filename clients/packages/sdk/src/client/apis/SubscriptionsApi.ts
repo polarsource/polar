@@ -32,6 +32,7 @@ import type {
   SubscriptionBenefitCreate,
   SubscriptionBenefitType,
   SubscriptionBenefitUpdate,
+  SubscriptionCreateEmail,
   SubscriptionTier,
   SubscriptionTierBenefitsUpdate,
   SubscriptionTierCreate,
@@ -48,6 +49,13 @@ export interface SubscriptionsApiArchiveSubscriptionTierRequest {
 
 export interface SubscriptionsApiCancelSubscriptionRequest {
     id: string;
+}
+
+export interface SubscriptionsApiCreateEmailSubscriptionRequest {
+    organizationName: string;
+    platform: Platforms;
+    subscriptionCreateEmail: SubscriptionCreateEmail;
+    repositoryName?: string;
 }
 
 export interface SubscriptionsApiCreateFreeSubscriptionRequest {
@@ -262,6 +270,67 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async cancelSubscription(requestParameters: SubscriptionsApiCancelSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
         const response = await this.cancelSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Create Email Subscription
+     */
+    async createEmailSubscriptionRaw(requestParameters: SubscriptionsApiCreateEmailSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling createEmailSubscription.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling createEmailSubscription.');
+        }
+
+        if (requestParameters.subscriptionCreateEmail === null || requestParameters.subscriptionCreateEmail === undefined) {
+            throw new runtime.RequiredError('subscriptionCreateEmail','Required parameter requestParameters.subscriptionCreateEmail was null or undefined when calling createEmailSubscription.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.repositoryName !== undefined) {
+            queryParameters['repository_name'] = requestParameters.repositoryName;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscriptions/email`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.subscriptionCreateEmail,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create Email Subscription
+     */
+    async createEmailSubscription(requestParameters: SubscriptionsApiCreateEmailSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
+        const response = await this.createEmailSubscriptionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

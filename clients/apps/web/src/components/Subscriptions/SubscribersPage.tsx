@@ -2,9 +2,10 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
-  ArrowDownOnSquareIcon,
-  ArrowUpOnSquareIcon,
-} from '@heroicons/react/24/outline'
+  Add,
+  FileDownloadOutlined,
+  FileUploadOutlined,
+} from '@mui/icons-material'
 import {
   Organization,
   Subscription,
@@ -30,9 +31,10 @@ import {
 } from 'polarkit/datatable'
 import { useSearchSubscriptions, useSubscriptionTiers } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import AddSubscriberModal from './AddSubscriberModal'
 import ImportSubscribersModal from './ImportSubscribersModal'
 import SubscriptionStatusSelect from './SubscriptionStatusSelect'
 import SubscriptionTiersSelect from './SubscriptionTiersSelect'
@@ -290,6 +292,21 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
     show: showImportSubscribers,
   } = useModal()
 
+  const {
+    isShown: addSubscriberIsShown,
+    hide: hideAddSubscriber,
+    show: showAddSubscriber,
+  } = useModal()
+  const onHideAddSubscriber = useCallback(
+    (added: boolean) => {
+      if (added) {
+        subscriptionsHook.refetch()
+      }
+      hideAddSubscriber()
+    },
+    [subscriptionsHook, hideAddSubscriber],
+  )
+
   const onExport = () => {
     const url = new URL(
       `${getServerURL()}/api/v1/subscriptions/subscriptions/export?organization_name=${
@@ -336,11 +353,19 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         )}
         <div className="flex items-center justify-end gap-2">
           <Button
+            onClick={showAddSubscriber}
+            className="flex items-center"
+            variant={'secondary'}
+          >
+            <Add className="mr-2" fontSize="small" />
+            <span>Add</span>
+          </Button>
+          <Button
             onClick={showImportSubscribers}
             className="flex items-center"
             variant={'secondary'}
           >
-            <ArrowDownOnSquareIcon className="-ml-1 mr-2 h-5 w-5" />
+            <FileUploadOutlined className="mr-2" fontSize="small" />
             <span>Import</span>
           </Button>
 
@@ -349,11 +374,22 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
             className="flex flex-row items-center "
             variant={'secondary'}
           >
-            <ArrowUpOnSquareIcon className="-ml-1 mr-2 h-5 w-5" />
+            <FileDownloadOutlined className="mr-2" fontSize="small" />
             <span>Export</span>
           </Button>
         </div>
       </div>
+
+      <Modal
+        isShown={addSubscriberIsShown}
+        hide={hideAddSubscriber}
+        modalContent={
+          <AddSubscriberModal
+            hide={onHideAddSubscriber}
+            organization={organization}
+          />
+        }
+      />
 
       <Modal
         isShown={importSubscribersIsShow}

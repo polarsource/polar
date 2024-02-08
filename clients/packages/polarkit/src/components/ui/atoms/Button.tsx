@@ -62,6 +62,7 @@ const Button = React.forwardRef<
           fullWidth ? 'w-full' : '',
         )}
         ref={ref}
+        disabled={loading}
         {...props}
       >
         {loading ? (

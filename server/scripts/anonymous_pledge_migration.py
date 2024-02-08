@@ -5,10 +5,10 @@ from typing import Any
 
 import structlog
 import typer
-from email_validator import EmailNotValidError, validate_email
 from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.email import EmailNotValidError, validate_email
 from polar.models import Pledge
 from polar.models.pledge import PledgeState
 from polar.postgres import create_engine
@@ -74,7 +74,7 @@ async def anonymous_pledge_migration(
                 typer.echo(f"🔄 Handling Pledge {pledge.id} created by {user_email}")
 
                 try:
-                    validate_email(user_email, check_deliverability=False)
+                    validate_email(user_email)
                 except EmailNotValidError:
                     typer.echo(
                         typer.style("\tInvalid email address. Skipping.", fg="red")

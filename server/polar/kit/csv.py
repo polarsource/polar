@@ -2,7 +2,7 @@ import csv
 from collections.abc import Iterable
 from typing import BinaryIO
 
-from email_validator import EmailNotValidError, validate_email
+from .email import EmailNotValidError, validate_email
 
 
 def get_iterable_from_binary_io(file: BinaryIO) -> Iterable[str]:
@@ -28,7 +28,7 @@ def get_emails_from_csv(lines: Iterable[str]) -> set[str]:
         email = row.get(email_field)
         if email is not None:
             try:
-                validate_email(email, check_deliverability=False)
+                validate_email(email)
             except EmailNotValidError:
                 continue
             else:

@@ -36,6 +36,7 @@ from .schemas import (
     SubscribeSessionCreate,
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
+    SubscriptionCreateEmail,
     SubscriptionsImported,
     SubscriptionsStatistics,
     SubscriptionSubscriber,
@@ -646,6 +647,70 @@ async def create_free_subscription(
                 "subscription_tier_id": free_subscription_create.tier_id,
             },
         )
+
+    return subscription
+
+
+@router.post(
+    "/subscriptions/email",
+    response_model=SubscriptionSchema,
+    status_code=201,
+    tags=[Tags.PUBLIC],
+)
+async def create_email_subscription(
+    subscription_create: SubscriptionCreateEmail,
+    auth: UserRequiredAuth,
+    organization_name_platform: OrganizationNamePlatform,
+    repository_name: OptionalRepositoryNameQuery = None,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    organization: Organization | None = None
+    if organization_name_platform is not None:
+        organization_name, platform = organization_name_platform
+        organization = await organization_service.get_by_name(
+            session, platform, organization_name
+        )
+        if organization is None:
+            raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        if organization is None:
+            raise BadRequest(
+                "organization_name and platform are required when repository_name is set"
+            )
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    # authz
+    if not await authz.can(auth.subject, AccessType.write, organization):
+        raise Unauthorized()
+
+    # find free tier
+    free_tier = await subscription_tier_service.get_free(
+        session, organization=organization, repository=repository
+    )
+    if free_tier is None:
+        raise ResourceNotFound("No free tier found")
+
+    user = await user_service.get_by_email_or_signup(
+        session, subscription_create.email, signup_type=UserSignupType.imported
+    )
+    subscription = await subscription_service.create_arbitrary_subscription(
+        session, user=user, subscription_tier=free_tier
+    )
+
+    posthog.user_event(
+        auth.user,
+        "subscriptions",
+        "email_import",
+        "create",
+        {"subscription_tier_id": free_tier.id},
+    )
 
     return subscription
 

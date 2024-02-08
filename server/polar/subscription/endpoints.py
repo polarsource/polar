@@ -685,16 +685,10 @@ async def subscriptions_import(
             raise ResourceNotFound("Repository not found")
 
     # find free tier
-    (tiers, _) = await subscription_tier_service.search(
-        session,
-        auth.subject,
-        type=SubscriptionTierType.free,
-        organization=organization,
-        repository=repository,
-        pagination=PaginationParamsQuery(page=1, limit=1),
+    free_tier = await subscription_tier_service.get_free(
+        session, organization=organization, repository=repository
     )
-
-    if not tiers or len(tiers) != 1:
+    if free_tier is None:
         raise ResourceNotFound("No free tier found")
 
     # authz
@@ -711,7 +705,7 @@ async def subscriptions_import(
                 session, email, signup_type=UserSignupType.imported
             )
             await subscription_service.create_arbitrary_subscription(
-                session, user=user, subscription_tier=tiers[0]
+                session, user=user, subscription_tier=free_tier
             )
             count += 1
         except AlreadySubscribed:
@@ -725,7 +719,7 @@ async def subscriptions_import(
         "import",
         "create",
         {
-            "subscription_tier_id": tiers[0].id,
+            "subscription_tier_id": free_tier.id,
             "email_count": count,
         },
     )

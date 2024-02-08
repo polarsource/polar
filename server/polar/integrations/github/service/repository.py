@@ -113,6 +113,10 @@ class GithubRepositoryService(RepositoryService):
                 same_name_repo.name = (
                     f"{same_name_repo.name}-renamed-{same_name_repo.external_id}"
                 )
+                log.debug(
+                    "renaming previously deleted repository with the same name",
+                    repository_id=same_name_repo.id,
+                )
                 await same_name_repo.save(session, autocommit=False)
 
             repository = await self.create(

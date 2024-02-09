@@ -41,6 +41,66 @@ async def test_create(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+async def test_create_with_slug(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "slug": "this-is-the-slug",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["title"] == "Hello World!"
+    assert res["slug"] == "this-is-the-slug"
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_create_with_slug_slugify(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "slug": "this SLUG will be formatted",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["title"] == "Hello World!"
+    assert res["slug"] == "this-slug-will-be-formatted"
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
 async def test_create_non_member(
     user: User,
     organization: Organization,

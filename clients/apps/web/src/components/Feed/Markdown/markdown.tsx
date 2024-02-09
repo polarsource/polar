@@ -61,6 +61,7 @@ export const wrapStrictCreateElement = (args: {
       'pre',
       'strong',
       'sup',
+      'sub',
       'table',
       'tbody',
       'th',

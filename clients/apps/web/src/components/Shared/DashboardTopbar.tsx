@@ -175,7 +175,7 @@ const DashboardTopbar = ({
           <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}
             <Link href="/feed">
-              <Button>
+              <Button variant="ghost" className="pr-0">
                 <div className="flex flex-row items-center gap-x-2">
                   <span className="hidden whitespace-nowrap text-xs lg:inline-block">
                     Back to Feed

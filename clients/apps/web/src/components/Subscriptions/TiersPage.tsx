@@ -53,19 +53,19 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
               Manage your subscription tiers & benefits
             </p>
           </div>
-          <div>
+          {account && (
             <Link
               href={{
                 pathname: `/maintainer/${organization.name}/subscriptions/tiers/new`,
               }}
               className={twMerge(...(!account ? ['pointer-events-none'] : []))}
             >
-              <Button disabled={!account}>
+              <Button>
                 <Add className="mr-2" fontSize="small" />
                 New Tier
               </Button>
             </Link>
-          </div>
+          )}
         </div>
         <div className="flex flex-row flex-wrap gap-6">
           {subscriptionTiers.items.map((tier) => (

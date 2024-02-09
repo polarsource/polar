@@ -41,7 +41,7 @@ import { useModal } from '../Modal/useModal'
 
 type NotificationSchema = NotificationsInner
 
-const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
+const Popover = () => {
   const [show, setShow] = useState(false)
   const [showBadge, setShowBadge] = useState(false)
 
@@ -73,10 +73,7 @@ const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
   }
 
   const notificationsContainerClassnames = twMerge(
-    'pointer-events-none fixed z-40 flex items-end',
-    type === 'topbar'
-      ? 'right-4 left-4 md:right-0 md:-left-20 top-12 absolute'
-      : 'right-4 top-12 left-2',
+    'pointer-events-none z-40 flex items-end right-4 md:right-0 w-72 md:w-96 top-12 absolute',
   )
 
   const [inNestedModal, setIsInNestedModal] = useState(false)

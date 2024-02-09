@@ -50,6 +50,7 @@ const Button = React.forwardRef<
       size,
       loading,
       fullWidth,
+      disabled,
       children,
       ...props
     },
@@ -68,7 +69,7 @@ const Button = React.forwardRef<
         {loading ? (
           <>
             <div className="absolute inset-0 flex h-full w-full items-center justify-center">
-              <LoadingSpinner disabled={props.disabled} size={size} />
+              <LoadingSpinner disabled={disabled} size={size} />
             </div>
             <span className="flex flex-row items-center opacity-0">
               {children}

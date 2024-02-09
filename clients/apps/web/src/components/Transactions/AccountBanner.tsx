@@ -43,25 +43,19 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
   if (!currentAccount) {
     if (isSubscriptionsPage) {
       return (
-        <ShadowBox className="relative flex flex-row items-end justify-between bg-blue-100/40 dark:bg-blue-800/20">
-          <div className="flex w-full flex-row gap-4">
-            <div className="flex flex-1 flex-col gap-2">
-              <h3 className="mt-0 text-lg font-medium [text-wrap:balance]">
-                Setup paid subscriptions
-              </h3>
-
-              <p className="dark:text-polar-500 text-gray-500 [text-wrap:pretty]">
-                Connect Polar with Stripe to enable creation of paid
-                subscription tiers.
-              </p>
-            </div>
-
-            <Link href={setupLink}>
-              <Button size="lg" className="whitespace-nowrap">
-                Setup Stripe
-              </Button>
-            </Link>
+        <ShadowBox className="relative flex flex-row justify-between gap-6">
+          <div className="flex flex-1 flex-col gap-2">
+            <h3 className="mt-0 text-lg font-medium [text-wrap:balance]">
+              Setup paid subscriptions
+            </h3>
+            <p className="dark:text-polar-500 text-gray-500 [text-wrap:pretty]">
+              Connect Polar with Stripe to enable creation of paid subscription
+              tiers.
+            </p>
           </div>
+          <Link href={setupLink}>
+            <Button className="whitespace-nowrap">Setup Stripe</Button>
+          </Link>
         </ShadowBox>
       )
     }

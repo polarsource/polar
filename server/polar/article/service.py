@@ -50,7 +50,9 @@ class ArticleService:
         create_schema: ArticleCreate,
         autocommit: bool = True,
     ) -> Article:
-        slug = polar_slugify(create_schema.title)
+        slug = polar_slugify(
+            create_schema.slug if create_schema.slug else create_schema.title
+        )
 
         orig_slug = slug
 

@@ -116,8 +116,12 @@ class Article(Schema):
 
 class ArticleCreate(Schema):
     title: str = Field(
-        description="Title of the article. A slug will be created automatically from the title.",
+        description="Title of the article.",
         min_length=1,
+    )
+    slug: str | None = Field(
+        None,
+        description="Slug of the article to be used in URLs. If no slug is provided one will be generated from the title.",
     )
     body: str
     organization_id: UUID
@@ -147,6 +151,8 @@ class ArticleUpdate(Schema):
     byline: Literal["user", "organization"] | None = Field(
         default=None,
         description="If the user or organization should be credited in the byline.",
+        min_length=1,
+        max_length=64,
     )
     visibility: Visibility | None = Field(default=None)
     paid_subscribers_only: bool | None = Field(

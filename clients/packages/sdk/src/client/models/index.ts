@@ -1100,11 +1100,17 @@ export type ArticleVisibilityEnum = typeof ArticleVisibilityEnum[keyof typeof Ar
  */
 export interface ArticleCreate {
     /**
-     * Title of the article. A slug will be created automatically from the title.
+     * Title of the article.
      * @type {string}
      * @memberof ArticleCreate
      */
     title: string;
+    /**
+     * Slug of the article to be used in URLs. If no slug is provided one will be generated from the title.
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    slug?: string;
     /**
      * 
      * @type {string}

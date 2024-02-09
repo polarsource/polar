@@ -75,6 +75,8 @@ const SyntaxHighlighter = (props: {
     Prism.tokenize(line, languageGrammar),
   )
 
+  const width = Math.log10(tokensPerLine.length) * 10
+
   return (
     <pre style={{ ...theme.base }}>
       <code>
@@ -82,10 +84,13 @@ const SyntaxHighlighter = (props: {
           <div key={lineIndex} className="m-0">
             <span
               style={{
-                paddingRight: '1.5rem',
+                marginRight: '1.5rem',
                 opacity: '.2',
                 fontSize: '.7rem',
                 userSelect: 'none',
+                textAlign: 'right',
+                display: 'inline-block',
+                width: `${width}px`,
               }}
             >
               {lineIndex + 1}

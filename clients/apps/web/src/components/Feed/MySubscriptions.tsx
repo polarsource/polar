@@ -89,7 +89,7 @@ const SubscriptionOrganizationItem = ({
               align="end"
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
-              <DropdownMenuItem onClick={() => setShowCancelModal(true)}>
+              <DropdownMenuItem onClick={() => setShowCancelModal(true)} className="cursor-pointer">
                 Unsubscribe
               </DropdownMenuItem>
             </DropdownMenuContent>

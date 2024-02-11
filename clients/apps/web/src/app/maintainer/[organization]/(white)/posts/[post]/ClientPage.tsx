@@ -168,6 +168,7 @@ const ClientPage = () => {
           hasPaidArticlesBenefit: true,
           animation: false,
           showShare: false,
+          isAuthor: true,
         }}
       />
       <AnimatePresence>

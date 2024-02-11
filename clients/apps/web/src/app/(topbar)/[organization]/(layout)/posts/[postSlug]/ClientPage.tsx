@@ -8,7 +8,7 @@ import { Article, BenefitsInner, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
 import { Button } from 'polarkit/components/ui/atoms'
-import { useUserSubscriptions } from 'polarkit/hooks'
+import { useListAllOrganizations, useUserSubscriptions } from 'polarkit/hooks'
 import { useEffect } from 'react'
 
 const postViewKey = 'posts_viewed'
@@ -40,6 +40,13 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
   }, [article])
 
   const { currentUser } = useAuth()
+
+  // Check if the user is the author of the article
+  const allOrganizations = useListAllOrganizations()
+  const orgIds = (allOrganizations.data?.items ?? []).map((o) => o.id)
+
+  const isAuthor =
+    article.organization.is_personal && orgIds.includes(article.organization.id)
 
   const userSubs = useUserSubscriptions(
     currentUser?.id,
@@ -98,6 +105,7 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
         animation={false}
         showShare={true}
         paidArticlesBenefitName={paidArticlesBenefit?.description}
+        isAuthor={isAuthor}
       />
     </div>
   )

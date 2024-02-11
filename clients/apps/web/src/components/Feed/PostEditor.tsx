@@ -117,6 +117,7 @@ export const PostEditor = ({
                     isSubscriber={previewAs === 'premium'}
                     hasPaidArticlesBenefit={previewAs === 'premium'}
                     showShare={false}
+                    isAuthor={true}
                   />
                 </StaggerReveal>
               </TabsContent>

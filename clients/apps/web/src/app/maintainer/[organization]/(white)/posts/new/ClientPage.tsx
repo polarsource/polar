@@ -127,6 +127,7 @@ const ClientPage = () => {
           animation: false,
           showShare: false,
           hasPaidArticlesBenefit: true,
+          isAuthor: true,
         }}
       />
     </Tabs>

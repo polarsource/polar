@@ -29,6 +29,7 @@ interface LongformPostProps {
   paidArticlesBenefitName?: string
   animation: boolean
   showShare: boolean
+  isAuthor: boolean
 }
 
 export default function LongformPost({
@@ -41,10 +42,15 @@ export default function LongformPost({
   paidArticlesBenefitName,
   animation,
   showShare,
+  isAuthor,
 }: LongformPostProps) {
   const shouldRenderPaywall = article.is_preview
-  const showNonSubscriberUpsell = !isSubscriber && !shouldRenderPaywall
+
+  const showNonSubscriberUpsell =
+    !isAuthor && !isSubscriber && !shouldRenderPaywall
+
   const showSubscriberUpsell =
+    !isAuthor &&
     isSubscriber &&
     !hasPaidArticlesBenefit &&
     !showNonSubscriberUpsell &&

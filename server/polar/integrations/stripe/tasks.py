@@ -39,6 +39,9 @@ from .service import stripe as stripe_service
 
 log = structlog.get_logger()
 
+MAX_RETRIES = 5
+DELAY = 10
+
 
 class StripeTaskError(PolarError):
     ...
@@ -120,9 +123,8 @@ async def charge_succeeded(
             ) as e:
                 # Retry because we might not have been able to handle other events
                 # triggering the creation of Pledge and Subscription
-                MAX_RETRIES = 2
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(DELAY ** ctx["job_try"]) from e
                 else:
                     raise
 
@@ -161,9 +163,8 @@ async def charge_dispute_created(
             except DisputeUnknownPaymentTransaction as e:
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle charge.succeeded yet!
-                MAX_RETRIES = 2
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(DELAY ** ctx["job_try"]) from e
                 else:
                     raise
 
@@ -234,9 +235,8 @@ async def customer_subscription_updated(
             except SubscriptionDoesNotExist as e:
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
-                MAX_RETRIES = 2
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(DELAY ** ctx["job_try"]) from e
                 else:
                     raise
 
@@ -257,9 +257,8 @@ async def customer_subscription_deleted(
             except SubscriptionDoesNotExist as e:
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
-                MAX_RETRIES = 2
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(DELAY ** ctx["job_try"]) from e
                 else:
                     raise
 
@@ -282,8 +281,7 @@ async def invoice_paid(
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created
                 # or charge.succeeded yet!
-                MAX_RETRIES = 2
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(DELAY ** ctx["job_try"]) from e
                 else:
                     raise

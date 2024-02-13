@@ -6,6 +6,7 @@ import Markdown from 'markdown-to-jsx'
 import { opts } from './EmailRender'
 import { RenderArticle, wrapStrictCreateElement } from './markdown'
 import { polarPost } from './render.test'
+import { polarPostUpsellAccess } from './testdata/polarPostUpsellAccess'
 
 const TestRenderer = (props: { article: RenderArticle }) => {
   return (
@@ -44,14 +45,16 @@ func main() {
   expect(container).toMatchSnapshot()
 })
 
-test('polar', () => {
-  const { container } = render(
-    <TestRenderer
-      article={{
-        ...article,
-        body: polarPost,
-      }}
-    />,
-  )
-  expect(container).toMatchSnapshot()
+test('posts', () => {
+  for (const post of [polarPost, polarPostUpsellAccess]) {
+    const { container } = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: post,
+        }}
+      />,
+    )
+    expect(container).toMatchSnapshot()
+  }
 })

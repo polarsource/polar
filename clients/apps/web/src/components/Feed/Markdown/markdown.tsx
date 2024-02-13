@@ -78,9 +78,9 @@ export const wrapStrictCreateElement = (args: {
           type,
           props,
           <Fragment key={globalIdx++}>
-            {children.map((ch, idx) => {
-              return retNode(ch)
-            })}
+            {children.map((ch, idx) => (
+              <Fragment key={globalIdx++}>{retNode(ch)}</Fragment>
+            ))}
           </Fragment>,
         )
       }

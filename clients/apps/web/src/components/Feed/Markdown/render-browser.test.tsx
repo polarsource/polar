@@ -6,6 +6,7 @@ import { act, render } from '@testing-library/react'
 import Markdown from 'markdown-to-jsx'
 import { opts } from './BrowserRender'
 import { RenderArticle, wrapStrictCreateElement } from './markdown'
+import { polarPostUpsellAccess } from './testdata/polarPostUpsellAccess'
 
 const TestRenderer = (props: { article: RenderArticle }) => {
   return (
@@ -92,35 +93,62 @@ what
   expect(asFragment()).toMatchSnapshot()
 })
 
-test('basic', () => {
-  const { container } = render(
-    <TestRenderer
-      article={{
-        ...article,
-        body: `
-  # h1
+test('basic', async () => {
+  let asFragment
 
-  ## h2
-  
-  ### h3
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+ 
+# h1
 
-  Hello **world**!
+## h2
 
-  [Polar](https://polar.sh/)
+### h3
 
-  <Paywall></Paywall>
+Hello **world**!
 
-  This is a normal **block** of text [Polar](https://polar.sh/) with _various_ formatting.
-  And here it continues in the same block.
+[Polar](https://polar.sh/)
 
-  This is a different block.  
-  With a linebreak! (double whitespace)
+<Paywall></Paywall>
 
-  > This is a quoute!
-  
-  `,
-      }}
-    />,
-  )
-  expect(container).toMatchSnapshot()
+This is a normal **block** of text [Polar](https://polar.sh/) with _various_ formatting.
+And here it continues in the same block.
+
+This is a different block.  
+With a linebreak! (double whitespace)
+
+> This is a quoute!
+
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})
+
+test('posts', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: polarPostUpsellAccess,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
 })

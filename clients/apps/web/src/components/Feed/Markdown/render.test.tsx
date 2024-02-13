@@ -260,3 +260,54 @@ Here we go!
   )
   expect(container).toMatchSnapshot()
 })
+
+test('XSS', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+
+        <p>
+        hello
+    </p>
+    
+    <p onload="alert(1)">
+        what
+    </p>
+    
+    <table>
+        <thead>
+            <tr><th>TH</th></tr>
+        </thead>
+        <tbody onload="alert(2)">
+            <tr onload="alert(3)"><td onload="alert(4)">TD</td></tr>
+            <tr><td>TD</td></tr>
+        </tbody>
+    </table>
+  
+  `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})
+
+test('table', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+
+| hhhh  | hhhh |
+| ----- | ------ |
+| bbbb | bbbbb |
+| bbbbb | bbbbbbb |
+        
+  `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

@@ -1,9 +1,16 @@
+import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import {
+  ArrowForward,
   BiotechOutlined,
   CalendarViewDay,
   EmojiPeople,
 } from '@mui/icons-material'
-import { Card, CardContent, CardHeader } from 'polarkit/components/ui/atoms'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from 'polarkit/components/ui/atoms'
 
 export const PostWizard = () => {
   return (
@@ -21,8 +28,11 @@ export const PostWizard = () => {
       </div>
       <div className="col-span-2 grid grid-cols-2 gap-x-8">
         <Card>
-          <CardHeader className="gap-y-4">
-            <EmojiPeople fontSize="large" />
+          <CardHeader className="gap-y-4 pb-4">
+            <EmojiPeople
+              fontSize="large"
+              className="text-blue-500 dark:text-blue-400"
+            />
             <h3 className="text-2xl font-bold">Hello World</h3>
           </CardHeader>
           <CardContent>
@@ -31,10 +41,18 @@ export const PostWizard = () => {
               & what you&apos;re working on.
             </p>
           </CardContent>
+          <CardFooter>
+            <AnimatedIconButton href="/" variant="default">
+              <ArrowForward fontSize="inherit" />
+            </AnimatedIconButton>
+          </CardFooter>
         </Card>
         <Card>
-          <CardHeader className="gap-y-4">
-            <BiotechOutlined fontSize="large" />
+          <CardHeader className="gap-y-4 pb-4">
+            <BiotechOutlined
+              className="text-blue-500 dark:text-blue-400"
+              fontSize="large"
+            />
             <h3 className="text-2xl font-bold">Technical Deep-dive</h3>
           </CardHeader>
           <CardContent>
@@ -43,6 +61,11 @@ export const PostWizard = () => {
               & the secrets under the hood.
             </p>
           </CardContent>
+          <CardFooter>
+            <AnimatedIconButton href="/" variant="default">
+              <ArrowForward fontSize="inherit" />
+            </AnimatedIconButton>
+          </CardFooter>
         </Card>
       </div>
     </div>

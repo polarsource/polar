@@ -331,6 +331,7 @@ export const firstChild = (
         return c
       }
     }
+    return undefined
   }
 
   if (ReactIs.isFragment(node)) {

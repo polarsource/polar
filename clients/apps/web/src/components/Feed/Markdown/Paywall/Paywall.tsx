@@ -1,7 +1,7 @@
 import { Article } from '@polar-sh/sdk'
 import { CONFIG } from 'polarkit'
 import { twMerge } from 'tailwind-merge'
-import { hasContent } from '../markdown'
+import { firstChild } from '../markdown'
 
 const Paywall = (props: {
   children?: React.ReactNode
@@ -51,11 +51,9 @@ const BasePaywall = (props: {
 }) => {
   const LinkRenderer = props.linkRenderer
 
-  if (
-    props.showPaywalledContent === false ||
-    !props.children ||
-    !hasContent(props.children)
-  ) {
+  const content = firstChild(props.children)
+
+  if (props.showPaywalledContent === false || content === undefined) {
     return (
       <div
         className={twMerge(

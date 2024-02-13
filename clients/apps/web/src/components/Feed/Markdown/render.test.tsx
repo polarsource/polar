@@ -300,10 +300,11 @@ test('table', () => {
         ...article,
         body: `
 
-| hhhh  | hhhh |
-| ----- | ------ |
-| bbbb | bbbbb |
-| bbbbb | bbbbbbb |
+| left  | center | right |
+| ----- |:------:|----:|
+| a | b | c |
+| a | b | c |
+| a | b | c |
 
 
 <table>

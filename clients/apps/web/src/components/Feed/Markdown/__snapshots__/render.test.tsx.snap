@@ -545,28 +545,64 @@ exports[`table 1`] = `
       <thead>
         <tr>
           <th>
-            hhhh
+            left
           </th>
-          <th>
-            hhhh
+          <th
+            style="text-align: center;"
+          >
+            center
+          </th>
+          <th
+            style="text-align: right;"
+          >
+            right
           </th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>
-            bbbb
+            a
           </td>
-          <td>
-            bbbbb
+          <td
+            style="text-align: center;"
+          >
+            b
+          </td>
+          <td
+            style="text-align: right;"
+          >
+            c
           </td>
         </tr>
         <tr>
           <td>
-            bbbbb
+            a
           </td>
+          <td
+            style="text-align: center;"
+          >
+            b
+          </td>
+          <td
+            style="text-align: right;"
+          >
+            c
+          </td>
+        </tr>
+        <tr>
           <td>
-            bbbbbbb
+            a
+          </td>
+          <td
+            style="text-align: center;"
+          >
+            b
+          </td>
+          <td
+            style="text-align: right;"
+          >
+            c
           </td>
         </tr>
       </tbody>

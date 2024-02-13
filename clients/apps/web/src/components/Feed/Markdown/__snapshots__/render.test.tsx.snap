@@ -191,6 +191,8 @@ exports[`basic 1`] = `
 </div>
 `;
 
+exports[`code 1`] = `<div />`;
+
 exports[`double-whitespace 1`] = `
 <div>
   <div>

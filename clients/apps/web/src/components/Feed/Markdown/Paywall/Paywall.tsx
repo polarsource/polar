@@ -1,6 +1,7 @@
 import { Article } from '@polar-sh/sdk'
 import { CONFIG } from 'polarkit'
 import { twMerge } from 'tailwind-merge'
+import { hasContent } from '../markdown'
 
 const Paywall = (props: {
   children?: React.ReactNode
@@ -34,30 +35,6 @@ const Paywall = (props: {
       {props.children}
     </BrowserPaywall>
   )
-}
-
-// hasContent detects if node has any content recursively
-// It walks through multiple layers of Fragments to see if there is any non-empty Fragment
-const hasContent = (node: React.ReactNode): boolean => {
-  if (!node) {
-    return false
-  }
-
-  if (node && typeof node === 'object' && 'key' in node) {
-    if ('children' in node.props && Array.isArray(node.props.children)) {
-      for (const ch of node.props.children) {
-        if (hasContent(ch)) {
-          return true
-        }
-      }
-    } else {
-      if ('children' in node.props) {
-        return true
-      }
-    }
-  }
-
-  return false
 }
 
 const BasePaywall = (props: {

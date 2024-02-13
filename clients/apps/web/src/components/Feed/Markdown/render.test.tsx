@@ -351,3 +351,21 @@ postpaywall
   )
   expect(container).toMatchSnapshot()
 })
+
+test('code', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+
+\`\`\`go
+func main() {
+}
+\`\`\`
+  `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

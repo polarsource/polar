@@ -27,20 +27,14 @@ export const wrapStrictCreateElement = (args: {
   extraAllowedCustomComponents?: string[]
   adsContext?: BenefitAds[]
 }): ((
-  type:
-    | string
-    | import('react').FunctionComponent<{}>
-    | import('react').ComponentClass<{}, any>,
+  type: string | React.FunctionComponent<{}> | React.ComponentClass<{}, any>,
   props: JSX.IntrinsicAttributes | any,
-  children: any,
+  ...children: React.ReactNode[]
 ) => JSX.Element) => {
   const strictCreateElement = (
-    type:
-      | string
-      | import('react').FunctionComponent<{}>
-      | import('react').ComponentClass<{}, any>,
+    type: string | React.FunctionComponent<{}> | React.ComponentClass<{}, any>,
     props: JSX.IntrinsicAttributes | any,
-    children: any,
+    ...children: React.ReactNode[]
   ): JSX.Element => {
     const allowedTypes = [
       'a',
@@ -77,6 +71,7 @@ export const wrapStrictCreateElement = (args: {
       'thead',
       'tr',
       'ul',
+      'br',
     ]
 
     // clean up props, only pass down a limited set of safe props
@@ -87,6 +82,8 @@ export const wrapStrictCreateElement = (args: {
       className: props?.className,
       id: props?.id,
     }
+
+    let trimChildren: typeof children | undefined = children
 
     const allowedCustomComponents = [
       // custom completely overridden components
@@ -114,19 +111,19 @@ export const wrapStrictCreateElement = (args: {
         trimProps.height = props?.height
         trimProps.width = props?.width
         trimProps.alt = props?.alt
-        children = undefined // can never have children
+        trimChildren = undefined // can never have children
       }
 
       if (customComponentName === 'embed') {
         trimProps.src = props?.src
-        children = undefined // can never have children
+        trimChildren = undefined // can never have children
       }
 
       if (customComponentName === 'iframe') {
         trimProps.src = props?.src
         trimProps.title = props?.title
         trimProps.allow = props?.allow
-        children = undefined // can never have children
+        trimChildren = undefined // can never have children
       }
 
       if (['subscribenow', 'paywall'].includes(customComponentName)) {
@@ -142,13 +139,19 @@ export const wrapStrictCreateElement = (args: {
         trimProps.adsContext = args.adsContext
       }
 
-      return React.createElement(
-        type,
-        {
+      if (trimChildren) {
+        return React.createElement(
+          type,
+          {
+            ...trimProps,
+          } as JSX.IntrinsicAttributes,
+          trimChildren,
+        )
+      } else {
+        return React.createElement(type, {
           ...trimProps,
-        } as JSX.IntrinsicAttributes,
-        children,
-      )
+        } as JSX.IntrinsicAttributes)
+      }
     }
 
     if (typeof type !== 'string') {
@@ -162,7 +165,7 @@ export const wrapStrictCreateElement = (args: {
     }
 
     if (args.defaultOverride) {
-      return React.createElement(args.defaultOverride, {}, props.children)
+      return React.createElement(args.defaultOverride, {}, trimChildren)
     }
 
     if (type === 'a') {
@@ -190,7 +193,7 @@ export const wrapStrictCreateElement = (args: {
       trimProps.type = 'checkbox'
       trimProps.checked = props?.checked
       trimProps.disabled = 'disabled'
-      children = undefined // can never have children
+      trimChildren = undefined // can never have children
     }
 
     if (type === 'source') {
@@ -198,45 +201,27 @@ export const wrapStrictCreateElement = (args: {
       trimProps.srcSet = props?.srcSet
     }
 
-    if (type === 'p' && Array.isArray(children)) {
-      return React.createElement(
-        type,
-        trimProps,
-        <Fragment>
-          {children.map((ch, idx) => {
-            // Double whitespace as newline.
-            if (typeof ch === 'object' && ch.key === null) {
-              return (
-                <Fragment key={idx}>
-                  <br />
-                </Fragment>
-              )
-            }
-
-            return <Fragment key={idx}>{ch}</Fragment>
-          })}
-        </Fragment>,
-      )
+    if (Array.isArray(trimChildren) && trimChildren.length === 0) {
+      trimChildren = undefined
     }
 
-    if (Array.isArray(children)) {
+    if (Array.isArray(trimChildren)) {
       return React.createElement(
         type,
         trimProps,
         <Fragment>
-          {children.map((ch, idx) => (
+          {trimChildren.map((ch, idx) => (
             <Fragment key={idx}>{ch}</Fragment>
           ))}
         </Fragment>,
       )
     }
 
-    return React.createElement(
-      type,
-
-      trimProps,
-      children,
-    )
+    if (trimChildren) {
+      return React.createElement(type, trimProps, trimChildren)
+    } else {
+      return React.createElement(type, trimProps)
+    }
   }
 
   return strictCreateElement

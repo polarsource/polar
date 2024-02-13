@@ -236,3 +236,27 @@ test('ads-embed', () => {
   )
   expect(container).toMatchSnapshot()
 })
+
+test('anchors', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+
+<p id="top">
+[Go to end](#end)
+Here we go!
+</p>
+
+
+## End
+
+<a href="#top">Go to top</a>
+  
+  `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

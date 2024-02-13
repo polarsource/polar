@@ -47,13 +47,11 @@ exports[`XSS 1`] = `
 `;
 
 exports[`basic 1`] = `
-<div>
+<DocumentFragment>
   <div>
-    <h1
-      id="h1"
-    >
-      h1
-    </h1>
+     
+# h1
+
     <h2
       id="h2"
     >
@@ -65,38 +63,22 @@ exports[`basic 1`] = `
       h3
     </h3>
     <p>
-        Hello 
+      Hello 
       <strong>
         world
       </strong>
       !
     </p>
     <p>
-        
       <a
         href="https://polar.sh/"
       >
         Polar
       </a>
     </p>
-    <div
-      class="my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4 text-center dark:bg-polar-700"
-    >
-      <p>
-        This section is for premium subscribers only. Subscribe to
-         
-        <a
-          class="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-          href="/pydantic/subscriptions"
-        >
-          Pydantic
-        </a>
-         
-        to get access to it.
-      </p>
-    </div>
+    <p />
     <p>
-        This is a normal 
+      This is a normal 
       <strong>
         block
       </strong>
@@ -111,12 +93,12 @@ exports[`basic 1`] = `
         various
       </em>
        formatting.
-  And here it continues in the same block.
+And here it continues in the same block.
     </p>
     <p>
-        This is a different block.
+      This is a different block.
       <br />
-        With a linebreak! (double whitespace)
+      With a linebreak! (double whitespace)
     </p>
     <blockquote>
       <p>
@@ -124,7 +106,7 @@ exports[`basic 1`] = `
       </p>
     </blockquote>
   </div>
-</div>
+</DocumentFragment>
 `;
 
 exports[`code 1`] = `
@@ -222,6 +204,455 @@ exports[`code 1`] = `
         </div>
       </button>
     </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`posts 1`] = `
+<DocumentFragment>
+  <div>
+    <p>
+      <img
+        alt="Hero image"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2FGitHub%2520Repo-N4Yx3M434zkSTK3qQHubUyVNwXDohp.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2FGitHub%2520Repo-N4Yx3M434zkSTK3qQHubUyVNwXDohp.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2FGitHub%2520Repo-N4Yx3M434zkSTK3qQHubUyVNwXDohp.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      You can now seamlessly offer subscribers on Polar access to one, two, three... or countless private GitHub repositories 🎉 This opens up and streamlines unlimited possibilities, monetization- and funding models.
+    </p>
+    <p>
+      Open source developers can use it to offer:
+    </p>
+    <ul>
+      <li>
+        Access to private GitHub discussions & issues for sponsors
+      </li>
+      <li>
+        Early access to new feature development before upstream push
+      </li>
+      <li>
+        Sponsorware
+      </li>
+      <li>
+        Premium educational materials & code
+      </li>
+    </ul>
+    <p>
+      Indie developers can use it to sell:
+    </p>
+    <ul>
+      <li>
+        Self-hosting products
+      </li>
+      <li>
+        Courses
+      </li>
+      <li>
+        Starter kits
+      </li>
+      <li>
+        Open core software
+      </li>
+    </ul>
+    <p>
+      We're also the merchant of record and take care of VAT.
+    </p>
+    <p>
+      Paired with premium 
+      <a
+        href="https://polar.sh/polarsource/posts/polar-creator-platform-for-open-source-developers"
+      >
+        Posts & Newsletters
+      </a>
+      , 
+      <a
+        href="https://polar.sh/polarsource/posts/upsell-discord-invites"
+      >
+        Discord invites
+      </a>
+       and 
+      <a
+        href="https://polar.sh/polarsource/posts/automate-sponsor-logos-ads"
+      >
+        Ads
+      </a>
+       open source developers can easily offer an unparalleled sponsorship & membership offering. To building an independent commercial open source initiative. You can even build a developer-first SaaS offering.
+    </p>
+    <p>
+      Of course, using our API & SDK all of these capabilities can easily be integrated & upsold on your own site or service too.
+    </p>
+    <p>
+      Polar is built by developers, for developers, and 
+      <a
+        href="https://github.com/polarsource/polar"
+      >
+        open source
+      </a>
+      . We want to empower a new generation of independent developers pursuing their passions full-time. So subscribe to get future product updates & posts as we'll write a series diving deep into all of the opportunities Polar can help facilitate for developers.
+    </p>
+    <p>
+      Or better yet: Start building with Polar today - 
+      <a
+        href="https://polar.sh"
+      >
+        signup now
+      </a>
+      .
+    </p>
+    <iframe
+      allowfullscreen=""
+      class="my-2"
+      frameborder="0"
+      height="365.625"
+      src="https://www.youtube.com/embed/QKx4o0z-SVY"
+      width="650"
+    />
+    <h2
+      id="lets-create-a-polar-subscription-benefit-for-a-github-repository"
+    >
+      Let's create a Polar subscription benefit for a GitHub repository
+    </h2>
+    <p>
+      Let's rig it up and see how it works.
+    </p>
+    <ol>
+      <li>
+        Goto 
+        <code>
+          Subscriptions
+        </code>
+         in your dashboard and then click 
+        <code>
+          Edit tier
+        </code>
+         on your default 
+        <strong>
+          Free
+        </strong>
+         tier (for newsletters) to try it out
+      </li>
+      <li>
+        Click 
+        <code>
+          New Benefit
+        </code>
+         (See below)
+      </li>
+    </ol>
+    <p>
+      <img
+        alt="Create new benefit"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-ILn7PLAZL2eck6O9rKHCJIO4Nlgd4U.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-ILn7PLAZL2eck6O9rKHCJIO4Nlgd4U.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-ILn7PLAZL2eck6O9rKHCJIO4Nlgd4U.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <ul>
+      <li>
+        Select 
+        <code>
+          GitHub Repository Access
+        </code>
+         as the benefit type
+      </li>
+      <li>
+        Select the 
+        <code>
+          Organization
+        </code>
+         the private repository belongs to or connect an organization (See notes below)
+      </li>
+    </ul>
+    <p>
+      <strong>
+        Why organization vs. personal account?
+      </strong>
+       GitHub limits personal accounts to only invite collaborators without controlling their permissions, e.g committing to 
+      <code>
+        main
+      </code>
+      , pushing new releases etc. Organizations can set more restrictive permissions, e.g read-only. Therefore, due to the security risks, we've put support for personal accounts with this benefit behind a feature flag - reach out if you want it enabled anyway.
+    </p>
+    <p>
+      <strong>
+        Important pricing note:
+      </strong>
+       Collaborators are considered a seat on paid plans and you'll be billed accordingly. We therefore request read-only access to your organizations billing plan to warn about this in our UI so that you can price your Polar subscription to cover it.
+    </p>
+    <ul>
+      <li>
+        Click 
+        <code>
+          Install
+        </code>
+         to install the required Polar GitHub App
+      </li>
+    </ul>
+    <p>
+      <img
+        alt="Create benefit - Install GitHub App"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-h5l5CsSZ3SI7LBg4Mx5fzokNzjpE6S.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-h5l5CsSZ3SI7LBg4Mx5fzokNzjpE6S.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-h5l5CsSZ3SI7LBg4Mx5fzokNzjpE6S.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      You'll be redirected to the GitHub App installation flow to grant access to select repositories. You can choose one of them, a select few or all of them.
+    </p>
+    <p>
+      <strong>
+        Important note:
+      </strong>
+       Selected repositories here are not automatically granted to subscribers on Polar. You'll explicitly select the one (1) desired repository to grant access to for the given subscription benefit you create on Polar. You're in complete control. Of course, you can create multiple benefits to grant access to numerous repositories, but they're all added explicitly.
+    </p>
+    <p>
+      <img
+        alt="GitHub installation flow"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-0GzjfOkdRqj0QyA07DqFIRstDbsouo.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-0GzjfOkdRqj0QyA07DqFIRstDbsouo.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-0GzjfOkdRqj0QyA07DqFIRstDbsouo.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      <em>
+        Bonus: The Polar GitHub App will also enable you to use the issue crowdfunding & contributor rewards features with Polar too 🔥. They require read/write to issues & pull requests while administration is required for managing invites to desired GitHub repositories. Unfortunately, GitHub does not offer progressive permissions for Apps.
+      </em>
+    </p>
+    <p>
+      Once the Polar GitHub App has been installed you'll be taken back to Polar to continue the setup of the subscription benefit.
+    </p>
+    <ol>
+      <li>
+        Select the private 
+        <code>
+          Repository
+        </code>
+         you want to grant subscribers access to
+      </li>
+      <li>
+        Select the desired GitHub 
+        <code>
+          Role
+        </code>
+        , e.g 
+        <code>
+          Read
+        </code>
+         for read access only.
+      </li>
+      <li>
+        Click 
+        <code>
+          Create
+        </code>
+      </li>
+    </ol>
+    <p>
+      <img
+        alt="Select repository & role"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-MenUSRBNEXfw5ZmFkt5uP6Ffsh0I3q.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-MenUSRBNEXfw5ZmFkt5uP6Ffsh0I3q.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-MenUSRBNEXfw5ZmFkt5uP6Ffsh0I3q.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      We can now review our updates to the 
+      <em>
+        Free
+      </em>
+       tier and see our added GitHub Repository Access benefit we call 
+      <code>
+        Cutting edge
+      </code>
+      . We can also update our tier description to celebrate the new benefit.
+    </p>
+    <p>
+      <img
+        alt="Review tier"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-Z1UfL9ilQFHM64fMqIM3G6vI51bNSv.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-Z1UfL9ilQFHM64fMqIM3G6vI51bNSv.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-Z1UfL9ilQFHM64fMqIM3G6vI51bNSv.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      Looks great. Let's click 
+      <code>
+        Save Tier
+      </code>
+       and try it out as a subscriber.
+    </p>
+    <h2
+      id="subscribers-accessing-github-repository"
+    >
+      Subscribers accessing GitHub repository
+    </h2>
+    <p>
+      <img
+        alt="Subscribe"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-sGIzRl0if9LmJd9lWhaGDpd6bLnsn3.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-sGIzRl0if9LmJd9lWhaGDpd6bLnsn3.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-sGIzRl0if9LmJd9lWhaGDpd6bLnsn3.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      Your audience can now see the benefit and easily subscribe to gain access to it. In case of email subscriptions, we'll prompt them to connect a GitHub account and immediately create the repository invitation once they have.
+    </p>
+    <p>
+      Subscribers can see & manage their subscription benefits under 
+      <code>
+        My Subscriptions
+      </code>
+      .
+    </p>
+    <p>
+      Look at that, they now see the 
+      <code>
+        Cutting edge
+      </code>
+       repository with a convenient activation link to it.
+    </p>
+    <p>
+      <em>
+        Note: They also receive an email invitation from GitHub.
+      </em>
+    </p>
+    <p>
+      <img
+        alt="Gain access to repo via subscriptions"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-RxC5k4B9QPNxTGwYZUXhsjpjzKxgEw.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-RxC5k4B9QPNxTGwYZUXhsjpjzKxgEw.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-RxC5k4B9QPNxTGwYZUXhsjpjzKxgEw.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      So let's click the 
+      <code>
+        Goto polardemo/cutting-edge
+      </code>
+       link. Since it's our first time, we're prompted to accept the invitation first.
+    </p>
+    <p>
+      <img
+        alt="Accept invitation"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-qyWQF7WGTkld5JzcbZmvAYjibjspE7.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-qyWQF7WGTkld5JzcbZmvAYjibjspE7.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-qyWQF7WGTkld5JzcbZmvAYjibjspE7.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      ... and that's it. We're in!
+    </p>
+    <p>
+      <img
+        alt="Subscriber seeing the repository on GitHub"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-RMwsZSbqgWak7MfKjLjLPD8f25U3jq.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-RMwsZSbqgWak7MfKjLjLPD8f25U3jq.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-RMwsZSbqgWak7MfKjLjLPD8f25U3jq.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    
+
+    <h2
+      id="manage-collaborators"
+    >
+      Manage collaborators
+    </h2>
+    <p>
+      <img
+        alt="image.png"
+        class="cursor-pointer"
+        data-nimg="1"
+        decoding="async"
+        height="100"
+        loading="lazy"
+        src="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-Ihx3RL0EIobi7KlULBBvfeDYleStKA.png&w=1920&q=90"
+        srcset="/_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-Ihx3RL0EIobi7KlULBBvfeDYleStKA.png&w=750&q=90 1x, /_next/image?url=https%3A%2F%2F7vk6rcnylug0u6hg.public.blob.vercel-storage.com%2Fimage-Ihx3RL0EIobi7KlULBBvfeDYleStKA.png&w=1920&q=90 2x"
+        style="color: transparent;"
+        width="672"
+      />
+    </p>
+    <p>
+      You can of course review and manage your collaborators on GitHub. As seen above, our subscriber is now a collaborator with 
+      <code>
+        Read
+      </code>
+       permissions. Just like we wanted.
+    </p>
+    <p>
+      Oh, and of course, Polar will automatically remove collaborators once their subscription is no longer valid, i.e cancelled.
+    </p>
+    <hr />
+    <p>
+      In this example, we've setup seamless invitations to one (1) GitHub repository. However, it's the same process to add additional benefits for more repositories. So there's no limit to how creative you can get with your offerings - we can't wait to see some of your examples!
+    </p>
+    <p>
+      Finally, make sure to subscribe below to stay up-to-date as we ship more product updates & write a series going deeper into different models Polar can help facilitate.
+    </p>
+    <p>
+      Until next time, keep building!
+    </p>
   </div>
 </DocumentFragment>
 `;

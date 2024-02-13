@@ -36,6 +36,30 @@ const Paywall = (props: {
   )
 }
 
+// hasContent detects if node has any content recursively
+// It walks through multiple layers of Fragments to see if there is any non-empty Fragment
+const hasContent = (node: React.ReactNode): boolean => {
+  if (!node) {
+    return false
+  }
+
+  if (node && typeof node === 'object' && 'key' in node) {
+    if ('children' in node.props && Array.isArray(node.props.children)) {
+      for (const ch of node.props.children) {
+        if (hasContent(ch)) {
+          return true
+        }
+      }
+    } else {
+      if ('children' in node.props) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
 const BasePaywall = (props: {
   linkRenderer: (props: {
     href: string
@@ -49,10 +73,11 @@ const BasePaywall = (props: {
   classNames?: string
 }) => {
   const LinkRenderer = props.linkRenderer
+
   if (
     props.showPaywalledContent === false ||
     !props.children ||
-    (Array.isArray(props.children) && props.children.length === 0)
+    !hasContent(props.children)
   ) {
     return (
       <div
@@ -88,6 +113,7 @@ const BasePaywall = (props: {
       </div>
     )
   }
+
   return <p>{props.children}</p>
 }
 

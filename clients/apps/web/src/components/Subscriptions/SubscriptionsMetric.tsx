@@ -28,7 +28,7 @@ interface SubscriptionsMetricProps {
   title: string
   IconComponent: OverridableComponent<SvgIconTypeMap<{}, 'svg'>>
   data: number
-  dataDate: Date
+  dataDate?: Date
   previousData?: number
   dataFormatter: (data: number) => string
 }
@@ -50,28 +50,30 @@ const SubscriptionsMetric: React.FC<SubscriptionsMetricProps> = ({
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div className="font-medium">{title}</div>
         <span className="text-blue-500">
-          <IconComponent className="h-4 w-4" />
+          <IconComponent className="h-6 w-6" />
         </span>
       </CardHeader>
       <CardContent>
         <div className="text-5xl !font-light">{formattedData}</div>
       </CardContent>
-      <CardFooter>
-        <div className="dark:text-polar-500 text-gray-400">
-          {previousData !== undefined &&
-            getEvolutionPercentage(data, previousData)}
-          {previousData === undefined && (
-            <FormattedDateTime datetime={dataDate} />
-          )}
-        </div>
-      </CardFooter>
+      {(dataDate || previousData) && (
+        <CardFooter>
+          <div className="dark:text-polar-500 text-gray-400">
+            {previousData !== undefined &&
+              getEvolutionPercentage(data, previousData)}
+            {previousData === undefined && dataDate && (
+              <FormattedDateTime datetime={dataDate} />
+            )}
+          </div>
+        </CardFooter>
+      )}
     </Card>
   )
 }
 
 interface SubscribersMetricProps {
   data: number
-  dataDate: Date
+  dataDate?: Date
   previousData?: number
 }
 
@@ -94,7 +96,7 @@ export const SubscribersMetric: React.FC<SubscribersMetricProps> = ({
 
 interface MRRMetricProps {
   data: number
-  dataDate: Date
+  dataDate?: Date
   previousData?: number
 }
 

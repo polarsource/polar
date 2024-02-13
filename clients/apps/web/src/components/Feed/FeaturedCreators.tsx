@@ -15,6 +15,11 @@ type ArrayElement<A> = A extends readonly (infer T)[] ? T : never
 
 const featuredCreators = [
   {
+    name: 'davidhewitt',
+    avatarUrl: 'https://avatars.githubusercontent.com/u/1939362?v=4',
+    bio: `Uniting Python & Rust. Core maintainer of PyO3. Full-stack developer; other than Rust you'll find me using Python and Typescript.`,
+  },
+  {
     name: 'Kludex',
     avatarUrl: 'https://avatars.githubusercontent.com/u/7353520?v=4',
     bio: 'Software Engineer @ Pydantic, Uvicorn & Starlette maintainer & FastAPI Expert',
@@ -44,11 +49,6 @@ const featuredCreators = [
     avatarUrl: 'https://avatars.githubusercontent.com/u/47423046?v=4',
     bio: 'Technology journalist and content creator. Avid Pythonista and hopefully future billionaire.',
   },
-  {
-    name: 'polarsource',
-    avatarUrl: 'https://avatars.githubusercontent.com/u/105373340?s=200&v=4',
-    bio: `The creator platform for developers`,
-  },
 ]
 
 export const FeaturedCreators = () => {
@@ -60,7 +60,7 @@ export const FeaturedCreators = () => {
           Handpicked creators from the Polar community
         </p>
       </div>
-      <div className="divide-y-gray-75 flex flex-col divide-y">
+      <div className="divide-y-gray-75 flex flex-col">
         {featuredCreators.map((creator) => (
           <FeaturedCreator key={creator.name} creator={creator} />
         ))}

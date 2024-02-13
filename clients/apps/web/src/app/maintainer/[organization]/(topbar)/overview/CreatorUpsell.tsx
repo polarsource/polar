@@ -2,12 +2,12 @@ import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupI
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
   CloseOutlined,
+  DonutLargeOutlined,
   ViewDayOutlined,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { LogoIcon } from 'polarkit/components/brand'
 import { ShadowBox } from 'polarkit/components/ui/atoms'
 import { useOrganizationArticles, useSubscriptionTiers } from 'polarkit/hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -113,15 +113,15 @@ export const CreatorUpsell = () => {
   return (
     <div className="flex flex-col gap-y-8">
       <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">
-        <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-8 md:py-6 lg:col-span-1">
-          <LogoIcon
+        <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-6 md:py-6 lg:col-span-1">
+          <DonutLargeOutlined
             className="hidden text-blue-500 dark:text-blue-400 md:block"
-            size={48}
+            fontSize="large"
           />
           <h2 className="text-2xl font-bold">Next Up</h2>
           <p className="dark:text-polar-400 text-gray-600 [text-wrap:balance]">
             Here are a few things you can do to kickstart your community on
-            Polar.
+            Polar
           </p>
         </div>
         <div className="col-span-2 flex flex-col gap-y-4">

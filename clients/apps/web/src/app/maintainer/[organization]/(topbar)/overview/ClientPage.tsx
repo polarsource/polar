@@ -1,11 +1,14 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { Goal } from '@/components/Onboarding/Creator/Goal'
+import { PostWizard } from '@/components/Onboarding/Creator/PostWizard'
+import { SetupSubscriptions } from '@/components/Onboarding/Creator/SetupSubscriptions'
 import {
   MRRMetric,
   SubscribersMetric,
 } from '@/components/Subscriptions/SubscriptionsMetric'
-import { DiamondOutlined } from '@mui/icons-material'
+import { FlagOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import { Card, CardContent, CardHeader } from 'polarkit/components/ui/atoms'
@@ -54,26 +57,25 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
   if (!statisticsPeriods) return null
 
   return (
-    <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-16">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <SubscribersMetric
-          data={statisticsPeriods.subscribers}
-          dataDate={new Date()}
-        />
-        <MRRMetric data={statisticsPeriods.mrr} dataDate={new Date()} />
+    <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
+      <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
+        <SubscribersMetric data={statisticsPeriods.subscribers} />
+        <MRRMetric data={statisticsPeriods.mrr} />
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div className="font-medium">Goal</div>
             <span className="text-blue-500">
-              <DiamondOutlined className="h-4 w-4" />
+              <FlagOutlined className="h-6 w-6" />
             </span>
           </CardHeader>
           <CardContent>
-            <div className="text-5xl !font-light">Hello</div>
+            <Goal title="Subscribers" value={3} max={5} />
           </CardContent>
         </Card>
       </div>
       <CreatorUpsell />
+      <PostWizard />
+      <SetupSubscriptions />
     </DashboardBody>
   )
 }

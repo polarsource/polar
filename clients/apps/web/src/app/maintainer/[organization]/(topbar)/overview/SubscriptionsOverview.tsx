@@ -176,6 +176,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
       .searchSubscriptions({
         platform: organization.platform,
         organizationName: organization.name,
+        active: true,
         limit: 5,
         ...apiQueryParams,
       })

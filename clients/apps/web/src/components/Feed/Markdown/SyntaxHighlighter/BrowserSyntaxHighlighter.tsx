@@ -2,21 +2,32 @@ import { ContentPasteOutlined } from '@mui/icons-material'
 import { Button } from 'polarkit/components/ui/atoms'
 
 import { useTheme } from 'next-themes'
+import { firstChild } from '../markdown'
 import SyntaxHighlighter from './SyntaxHighlighter'
 import { polarDark, polarLight } from './themes'
 
 const BrowserSyntaxHighlighter = (props: {
   language: string | undefined
-  children: string
+  children: React.ReactNode
 }) => {
-  const { language, children: code } = props
+  const { language } = props
   const { resolvedTheme } = useTheme()
   const syntaxHighlighterTheme =
     resolvedTheme === 'dark' ? polarDark : polarLight
 
+  const code = firstChild(props.children)
+
+  if (!code) {
+    return <></>
+  }
+
+  if (typeof code !== 'string') {
+    return <></>
+  }
+
   // Copy the code contents to the clipboard
   const handleCopy = () => {
-    navigator.clipboard.writeText(props.children)
+    navigator.clipboard.writeText(code)
   }
 
   return (

@@ -1,5 +1,6 @@
 import { AdvertisementDisplay, Article } from '@polar-sh/sdk'
 import React, { Fragment } from 'react'
+import * as ReactIs from 'react-is'
 
 export type RenderArticle = Pick<
   Article,
@@ -39,6 +40,7 @@ export const wrapStrictCreateElement = (args: {
     ...children: React.ReactNode[]
   ): JSX.Element => {
     const retNode = (node: React.ReactNode): JSX.Element => {
+      // return node
       if (!node) {
         return <></>
       }
@@ -72,6 +74,7 @@ export const wrapStrictCreateElement = (args: {
       props: JSX.IntrinsicAttributes | any,
       children: React.ReactNode[] | React.ReactNode | undefined,
     ): JSX.Element => {
+      // return React.createElement(type, props, children)
       if (Array.isArray(children)) {
         return React.createElement(
           type,
@@ -212,7 +215,7 @@ export const wrapStrictCreateElement = (args: {
       }
 
       if (Array.isArray(trimChildren) && trimChildren.length === 0) {
-        trimChildren = undefined
+        // trimChildren = undefined
       }
 
       return ret(type, trimProps, trimChildren)
@@ -291,3 +294,57 @@ export const markdownOpts = {
     img: (args: any) => <img {...args} style={{ maxWidth: '100%' }} />,
   },
 } as const
+
+// hasContent detects if node has any content recursively
+// It walks through multiple layers of Fragments to see if there is any non-empty Fragment
+export const hasContent = (node: React.ReactNode): boolean => {
+  if (!node) {
+    return false
+  }
+
+  if (node && typeof node === 'object' && 'key' in node) {
+    if ('children' in node.props && Array.isArray(node.props.children)) {
+      for (const ch of node.props.children) {
+        if (hasContent(ch)) {
+          return true
+        }
+      }
+    } else {
+      if ('children' in node.props) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+export const firstChild = (
+  node: React.ReactNode,
+): React.ReactNode | undefined => {
+  if (!node) {
+    return undefined
+  }
+
+  if (node && Array.isArray(node)) {
+    for (const ch of node) {
+      const c = firstChild(ch)
+      if (c !== undefined) {
+        return c
+      }
+    }
+  }
+
+  console.log('firstchild', typeof node, node)
+  console.log(typeof node === 'object' && node)
+
+  if (ReactIs.isFragment(node)) {
+    return firstChild(node.props.children)
+  }
+
+  if (node) {
+    return node
+  }
+
+  return undefined
+}

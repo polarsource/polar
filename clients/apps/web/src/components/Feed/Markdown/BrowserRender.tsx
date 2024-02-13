@@ -12,6 +12,7 @@ import Poll from './Poll/Poll'
 import SubscribeNow from './SubscribeNow/SubscribeNow'
 import {
   RenderArticle,
+  firstChild,
   markdownOpts,
   wrapStrictCreateElement,
 } from './markdown'
@@ -60,21 +61,23 @@ export const opts = {
     iframe: (args: any) => <Iframe {...args} />,
     img: (args: any) => <ImageOverlay {...args} />,
     pre: (args: any) => {
-      if (args.children.type === 'code') {
-        const language = args.children.props.className?.replace('lang-', '')
+      const child = firstChild(args.children)
+      if (!child) {
+        return <></>
+      }
+
+      if (
+        typeof child === 'object' &&
+        'type' in child &&
+        child.type === 'code'
+      ) {
+        const language = child.props.className?.replace('lang-', '')
         if (language === 'mermaid') {
-          return (
-            <BrowserMermaid graphDefinition={args.children.props.children} />
-          )
+          return <BrowserMermaid graphDefinition={child.props.children} />
         }
         return (
-          <SyntaxHighlighterContext.Provider
-            value={args.children.props.children}
-          >
-            <BrowserSyntaxHighlighter
-              language={language}
-              {...args.children.props}
-            />
+          <SyntaxHighlighterContext.Provider value={child.props.children}>
+            <BrowserSyntaxHighlighter language={language} {...child.props} />
           </SyntaxHighlighterContext.Provider>
         )
       }

@@ -11,6 +11,7 @@ import EmailSyntaxHighlighter from './SyntaxHighlighter/EmailSyntaxHighlighter'
 import {
   BenefitAds,
   RenderArticle,
+  firstChild,
   markdownOpts,
   wrapStrictCreateElement,
 } from './markdown'
@@ -27,17 +28,21 @@ export const opts = {
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
     pre: (args: any) => {
-      if (args.children.type === 'code') {
-        const language = args.children.props.className?.replace('lang-', '')
+      const child = firstChild(args.children)
+      if (!child) {
+        return <></>
+      }
+
+      if (
+        typeof child === 'object' &&
+        'type' in child &&
+        child.type === 'code'
+      ) {
+        const language = child.props.className?.replace('lang-', '')
         if (language === 'mermaid') {
-          return <EmailMermaid graphDefinition={args.children.props.children} />
+          return <EmailMermaid graphDefinition={child.props.children} />
         }
-        return (
-          <EmailSyntaxHighlighter
-            language={language}
-            {...args.children.props}
-          />
-        )
+        return <EmailSyntaxHighlighter language={language} {...child.props} />
       }
       return <></>
     },

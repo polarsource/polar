@@ -31,11 +31,73 @@ export const wrapStrictCreateElement = (args: {
   props: JSX.IntrinsicAttributes | any,
   ...children: React.ReactNode[]
 ) => JSX.Element) => {
+  let globalIdx = 0
+
   const strictCreateElement = (
     type: string | React.FunctionComponent<{}> | React.ComponentClass<{}, any>,
     props: JSX.IntrinsicAttributes | any,
     ...children: React.ReactNode[]
   ): JSX.Element => {
+    const retNode = (node: React.ReactNode): JSX.Element => {
+      if (!node) {
+        return <></>
+      }
+
+      if (Array.isArray(node) && node.length === 0) {
+        return <></>
+      }
+
+      if (Array.isArray(node) && node.length === 1) {
+        return <Fragment key={globalIdx++}>{node[0]}</Fragment>
+      }
+
+      if (Array.isArray(node)) {
+        return (
+          <Fragment key={globalIdx++}>
+            {node.map((ch, idx) => {
+              return retNode(ch)
+            })}
+          </Fragment>
+        )
+      }
+
+      return <Fragment key={globalIdx++}>{node}</Fragment>
+    }
+
+    const ret = (
+      type:
+        | string
+        | React.FunctionComponent<{}>
+        | React.ComponentClass<{}, any>,
+      props: JSX.IntrinsicAttributes | any,
+      children: React.ReactNode[] | undefined,
+    ): JSX.Element => {
+      if (Array.isArray(children)) {
+        return React.createElement(
+          type,
+          props,
+          <Fragment key={globalIdx++}>
+            {children.map((ch, idx) => {
+              return retNode(ch)
+            })}
+          </Fragment>,
+        )
+      }
+      if (children) {
+        return React.createElement(
+          type,
+          {
+            ...props,
+          } as JSX.IntrinsicAttributes,
+          children,
+        )
+      } else {
+        return React.createElement(type, {
+          ...props,
+        } as JSX.IntrinsicAttributes)
+      }
+    }
+
     const allowedTypes = [
       'a',
       'b',
@@ -107,6 +169,16 @@ export const wrapStrictCreateElement = (args: {
       const customComponentName = type?.name.toLowerCase()
 
       if (customComponentName === 'img') {
+        if (typeof props.src !== 'string') {
+          return <></>
+        }
+        if (
+          !props.src.startsWith('https://') &&
+          !props.src.startsWith('http://')
+        ) {
+          return <></>
+        }
+
         trimProps.src = props?.src
         trimProps.height = props?.height
         trimProps.width = props?.width
@@ -139,19 +211,11 @@ export const wrapStrictCreateElement = (args: {
         trimProps.adsContext = args.adsContext
       }
 
-      if (trimChildren) {
-        return React.createElement(
-          type,
-          {
-            ...trimProps,
-          } as JSX.IntrinsicAttributes,
-          trimChildren,
-        )
-      } else {
-        return React.createElement(type, {
-          ...trimProps,
-        } as JSX.IntrinsicAttributes)
+      if (Array.isArray(trimChildren) && trimChildren.length === 0) {
+        trimChildren = undefined
       }
+
+      return ret(type, trimProps, trimChildren)
     }
 
     if (typeof type !== 'string') {
@@ -205,23 +269,7 @@ export const wrapStrictCreateElement = (args: {
       trimChildren = undefined
     }
 
-    if (Array.isArray(trimChildren)) {
-      return React.createElement(
-        type,
-        trimProps,
-        <Fragment>
-          {trimChildren.map((ch, idx) => (
-            <Fragment key={idx}>{ch}</Fragment>
-          ))}
-        </Fragment>,
-      )
-    }
-
-    if (trimChildren) {
-      return React.createElement(type, trimProps, trimChildren)
-    } else {
-      return React.createElement(type, trimProps)
-    }
+    return ret(type, trimProps, trimChildren)
   }
 
   return strictCreateElement

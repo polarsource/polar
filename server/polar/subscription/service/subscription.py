@@ -14,6 +14,7 @@ from sqlalchemy import (
     desc,
     distinct,
     func,
+    not_,
     or_,
     select,
     text,
@@ -1052,6 +1053,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                         Subscription.ended_at.is_(None),
                     ),
                 ),
+            ),
+            # Exclude subscriptions that were active less than a month
+            # This way, people who subscribe and unsubscribe right away are not counted
+            # Mainly useful for the Free tier,
+            # since paid tiers are canceled at the end of the period
+            not_(
+                and_(
+                    Subscription.ended_at.is_not(None),
+                    Subscription.started_at >= start_date_column,
+                    Subscription.ended_at <= end_date_column,
+                )
             ),
         )
 

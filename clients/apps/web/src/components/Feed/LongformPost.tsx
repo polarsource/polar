@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import SubscribeNowWithModal from '../Subscriptions/SubscribeNowWithModal'
 import BrowserRender from './Markdown/BrowserRender'
 import { RenderArticle } from './Markdown/markdown'
@@ -157,7 +158,17 @@ export default function LongformPost({
         transition={revealTransition}
         variants={animationVariants}
       >
-        <div className="prose dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl prose-img:drop-shadow-2xl dark:prose-p:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1 mb-8 w-full max-w-none space-y-16">
+        <div
+          className={twMerge(
+            'prose dark:prose-invert',
+            'dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 prose-pre:rounded-2xl',
+            'dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-polar-200',
+            'prose-img:rounded-2xl prose-img:drop-shadow-none lg:prose-img:drop-shadow-2xl',
+            ' prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline',
+            'prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1',
+            'mb-8 w-full max-w-none space-y-16',
+          )}
+        >
           <BrowserRender
             article={article}
             showPaywalledContent={showPaywalledContent}

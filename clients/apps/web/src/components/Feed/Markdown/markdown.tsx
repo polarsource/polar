@@ -85,6 +85,7 @@ export const wrapStrictCreateElement = (args: {
       style: props?.style,
       align: props?.align,
       className: props?.className,
+      id: props?.id,
     }
 
     const allowedCustomComponents = [
@@ -172,7 +173,8 @@ export const wrapStrictCreateElement = (args: {
         // Do not allow relative URLs.
         (href.startsWith('https://') ||
           href.startsWith('http://') ||
-          href.startsWith('mailto://'))
+          href.startsWith('mailto://') ||
+          href.startsWith('#'))
       ) {
         trimProps.href = props?.href
       } else {

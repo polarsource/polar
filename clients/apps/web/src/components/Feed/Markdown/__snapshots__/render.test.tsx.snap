@@ -37,16 +37,51 @@ exports[`ads-embed 1`] = `
 </div>
 `;
 
+exports[`anchors 1`] = `
+<div>
+  <div>
+    <p
+      id="top"
+    >
+      <a
+        href="#end"
+      >
+        Go to end
+      </a>
+      
+Here we go!
+
+    </p>
+    <h2
+      id="end"
+    >
+      End
+    </h2>
+    <a
+      href="#top"
+    >
+      Go to top
+    </a>
+  </div>
+</div>
+`;
+
 exports[`basic 1`] = `
 <div>
   <div>
-    <h1>
+    <h1
+      id="h1"
+    >
       h1
     </h1>
-    <h2>
+    <h2
+      id="h2"
+    >
       h2
     </h2>
-    <h3>
+    <h3
+      id="h3"
+    >
       h3
     </h3>
     <p>
@@ -173,7 +208,9 @@ exports[`polar 1`] = `
     <p>
       Let's dive in.
     </p>
-    <h3>
+    <h3
+      id="subscriptions--benefits"
+    >
       Subscriptions & Benefits
     </h3>
     <p>
@@ -245,7 +282,9 @@ exports[`polar 1`] = `
     <p>
       Our first built-in benefit is Posts & Newsletters. Enabling a vital communication channel to an audience you own & can reach fully - regardless of which benefits you offer today or tomorrow.
     </p>
-    <h3>
+    <h3
+      id="posts--newsletters"
+    >
       Posts & Newsletters
     </h3>
     <p>
@@ -279,7 +318,9 @@ exports[`polar 1`] = `
     <p>
       We're working on polls and other embeddables too. We can't wait to hear what you think & how we can improve posts for your initiatives!
     </p>
-    <h3>
+    <h3
+      id="api--sdk"
+    >
       API & SDK
     </h3>
     <p>
@@ -329,7 +370,9 @@ exports[`polar 1`] = `
         It's in early development and we'd love your feedback. We are mindful to maintain backward compatibility, but cannot guarantee it at this stage.
       </em>
     </p>
-    <h3>
+    <h3
+      id="pricing"
+    >
       Pricing
     </h3>
     <p>
@@ -355,7 +398,9 @@ exports[`polar 1`] = `
     <p>
       Let's go 🚀
     </p>
-    <h3>
+    <h3
+      id="30k-in-2024-from-team-polar"
+    >
       $30K in 2024 from Team Polar
     </h3>
     <p>

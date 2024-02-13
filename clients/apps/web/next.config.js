@@ -255,7 +255,7 @@ const nextConfig = {
       },
       {
         source: '/maintainer/:organization/subscriptions',
-        destination: '/maintainer/:organization/subscriptions/tiers',
+        destination: '/maintainer/:organization/subscriptions/overview',
         permanent: false,
       },
 

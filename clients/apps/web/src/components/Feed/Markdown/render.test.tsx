@@ -324,3 +324,29 @@ test('table', () => {
   )
   expect(container).toMatchSnapshot()
 })
+
+test('paywall', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+
+prepaywall
+
+<Paywall>here is the content! <strong>wow!</strong></Paywall>
+
+<Paywall>plain content</Paywall>
+
+<Paywall><img src="https://polar.sh/logo.png" /></Paywall>
+
+<!-- Empty paywall contents! Should trigger upsell block! -->
+<Paywall></Paywall>
+
+postpaywall
+  `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

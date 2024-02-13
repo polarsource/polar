@@ -70,7 +70,7 @@ export const wrapStrictCreateElement = (args: {
         | React.FunctionComponent<{}>
         | React.ComponentClass<{}, any>,
       props: JSX.IntrinsicAttributes | any,
-      children: React.ReactNode[] | undefined,
+      children: React.ReactNode[] | React.ReactNode | undefined,
     ): JSX.Element => {
       if (Array.isArray(children)) {
         return React.createElement(

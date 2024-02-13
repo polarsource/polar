@@ -1,7 +1,8 @@
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { getServerSideAPI } from '@/utils/api'
-import { Platforms } from '@polar-sh/sdk'
+import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
-import ClientPage from './ClientPage'
+import SubscriptionsOverview from './SubscriptionsOverview'
 
 export async function generateMetadata(
   {
@@ -18,8 +19,10 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: { organization: string }
+  searchParams: { type?: SubscriptionTierType; subscription_tier_id?: string }
 }) {
   const api = getServerSideAPI()
   const organization = await api.organizations.lookup({
@@ -37,10 +40,14 @@ export default async function Page({
   startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 5)
 
   return (
-    <ClientPage
-      organization={organization}
-      startDate={startOfMonthThreeMonthsAgo}
-      endDate={startOfMonth}
-    />
+    <DashboardBody>
+      <SubscriptionsOverview
+        organization={organization}
+        startDate={startOfMonthThreeMonthsAgo}
+        endDate={startOfMonth}
+        subscriptionTierType={searchParams.type}
+        subscriptionTierId={searchParams.subscription_tier_id}
+      />
+    </DashboardBody>
   )
 }

@@ -61,6 +61,10 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     if: true,
     subs: [
       {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/subscriptions/overview`,
+      },
+      {
         title: 'Tiers',
         link: `/maintainer/${org.name}/subscriptions/tiers`,
       },

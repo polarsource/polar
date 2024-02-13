@@ -92,7 +92,9 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
       }
 
       router.push(
-        `/maintainer/${organization.name}/overview?${params.toString()}`,
+        `/maintainer/${
+          organization.name
+        }/subscriptions/overview?${params.toString()}`,
       )
     },
     [router, organization],
@@ -186,7 +188,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl">Subscriptions</h2>
+        <h2 className="text-xl">Overview</h2>
         <div className="w-1/3 md:w-1/5">
           <SubscriptionTiersSelect
             tiersByType={subscriptionTiersByType}

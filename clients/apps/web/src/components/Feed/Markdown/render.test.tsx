@@ -84,7 +84,7 @@ test('double-whitespace', () => {
   expect(container).toMatchSnapshot()
 })
 
-const polarPost = `![image.png](https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-fCQqIZt3zubCpaMQzy6ZONZAOG6QDq.png)
+export const polarPost = `![image.png](https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-fCQqIZt3zubCpaMQzy6ZONZAOG6QDq.png)
 
 Today, we're thrilled to announce & launch the next chapter of Polar.
 
@@ -358,12 +358,15 @@ test('code', () => {
       article={{
         ...article,
         body: `
+ 
+code:::
 
 \`\`\`go
 func main() {
 }
 \`\`\`
-  `,
+
+`,
       }}
     />,
   )

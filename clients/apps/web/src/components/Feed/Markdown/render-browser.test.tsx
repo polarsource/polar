@@ -1,0 +1,126 @@
+import { article } from 'polarkit/testdata'
+
+import { PolarQueryClientProvider } from '@/app/providers'
+import '@testing-library/jest-dom'
+import { act, render } from '@testing-library/react'
+import Markdown from 'markdown-to-jsx'
+import { opts } from './BrowserRender'
+import { RenderArticle, wrapStrictCreateElement } from './markdown'
+
+const TestRenderer = (props: { article: RenderArticle }) => {
+  return (
+    <PolarQueryClientProvider>
+      <Markdown
+        options={{
+          ...opts,
+          createElement: wrapStrictCreateElement({
+            article: props.article,
+            extraAllowedCustomComponents: Object.keys(opts.overrides),
+          }),
+        }}
+      >
+        {props.article.body}
+      </Markdown>
+    </PolarQueryClientProvider>
+  )
+}
+
+test('code', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+ 
+code:::
+
+\`\`\`go
+func main() {
+}
+\`\`\`
+
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})
+
+test('XSS', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+ 
+<p>
+hello
+</p>
+
+<p onload="alert(1)">
+what
+</p>
+    
+<table>
+    <thead>
+        <tr><th>TH</th></tr>
+    </thead>
+    <tbody onload="alert(2)">
+        <tr onload="alert(3)"><td onload="alert(4)">TD</td></tr>
+        <tr><td><p onload="alert(1)"><img src="not-sanitized" onclick="xxx" /> <a href="javascript:alert(1)">clickme</a> <span onclick="xxx">clickmep</span></p></td><td onclick="x">TD</td></tr>
+    </tbody>
+</table>
+
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})
+
+test('basic', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+  # h1
+
+  ## h2
+  
+  ### h3
+
+  Hello **world**!
+
+  [Polar](https://polar.sh/)
+
+  <Paywall></Paywall>
+
+  This is a normal **block** of text [Polar](https://polar.sh/) with _various_ formatting.
+  And here it continues in the same block.
+
+  This is a different block.  
+  With a linebreak! (double whitespace)
+
+  > This is a quoute!
+  
+  `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

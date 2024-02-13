@@ -40,7 +40,6 @@ export const wrapStrictCreateElement = (args: {
     ...children: React.ReactNode[]
   ): JSX.Element => {
     const retNode = (node: React.ReactNode): JSX.Element => {
-      // return node
       if (!node) {
         return <></>
       }
@@ -74,7 +73,6 @@ export const wrapStrictCreateElement = (args: {
       props: JSX.IntrinsicAttributes | any,
       children: React.ReactNode[] | React.ReactNode | undefined,
     ): JSX.Element => {
-      // return React.createElement(type, props, children)
       if (Array.isArray(children)) {
         return React.createElement(
           type,
@@ -215,7 +213,7 @@ export const wrapStrictCreateElement = (args: {
       }
 
       if (Array.isArray(trimChildren) && trimChildren.length === 0) {
-        // trimChildren = undefined
+        trimChildren = undefined
       }
 
       return ret(type, trimProps, trimChildren)
@@ -334,9 +332,6 @@ export const firstChild = (
       }
     }
   }
-
-  console.log('firstchild', typeof node, node)
-  console.log(typeof node === 'object' && node)
 
   if (ReactIs.isFragment(node)) {
     return firstChild(node.props.children)

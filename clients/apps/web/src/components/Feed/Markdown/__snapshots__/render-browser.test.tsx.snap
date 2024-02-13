@@ -1,0 +1,227 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`XSS 1`] = `
+<DocumentFragment>
+  <div>
+     
+
+    <p>
+      hello
+
+    </p>
+    <p>
+      what
+
+    </p>
+    <br />
+    <table>
+      <thead>
+        <tr>
+          <th>
+            TH
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            TD
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <p>
+              <span>
+                clickmep
+              </span>
+            </p>
+          </td>
+          <td>
+            TD
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`basic 1`] = `
+<div>
+  <div>
+    <h1
+      id="h1"
+    >
+      h1
+    </h1>
+    <h2
+      id="h2"
+    >
+      h2
+    </h2>
+    <h3
+      id="h3"
+    >
+      h3
+    </h3>
+    <p>
+        Hello 
+      <strong>
+        world
+      </strong>
+      !
+    </p>
+    <p>
+        
+      <a
+        href="https://polar.sh/"
+      >
+        Polar
+      </a>
+    </p>
+    <div
+      class="my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4 text-center dark:bg-polar-700"
+    >
+      <p>
+        This section is for premium subscribers only. Subscribe to
+         
+        <a
+          class="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+          href="/pydantic/subscriptions"
+        >
+          Pydantic
+        </a>
+         
+        to get access to it.
+      </p>
+    </div>
+    <p>
+        This is a normal 
+      <strong>
+        block
+      </strong>
+       of text 
+      <a
+        href="https://polar.sh/"
+      >
+        Polar
+      </a>
+       with 
+      <em>
+        various
+      </em>
+       formatting.
+  And here it continues in the same block.
+    </p>
+    <p>
+        This is a different block.
+      <br />
+        With a linebreak! (double whitespace)
+    </p>
+    <blockquote>
+      <p>
+        This is a quoute!
+      </p>
+    </blockquote>
+  </div>
+</div>
+`;
+
+exports[`code 1`] = `
+<DocumentFragment>
+  <div>
+     
+
+    <p>
+      code:::
+    </p>
+    <div
+      class="relative my-2 w-full"
+    >
+      <div
+        class="not-prose"
+      >
+        <pre
+          style="text-align: left; white-space: pre; word-spacing: normal; word-break: normal; word-wrap: normal; color: rgb(0, 25, 58); background: rgb(243, 244, 247); tab-size: 4; font-size: .8em; border-radius: 2em; hyphens: none; overflow: auto; position: relative; margin: 0.5em 0px; padding: 2em;"
+        >
+          <code>
+            <div
+              class="m-0"
+            >
+              <span
+                style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 3.010299956639812px;"
+              >
+                1
+              </span>
+              <span
+                style="color: rgb(0, 0, 255); font-style: italic;"
+              >
+                func
+              </span>
+              <span>
+                 
+              </span>
+              <span
+                style="color: rgb(124, 77, 255);"
+              >
+                main
+              </span>
+              <span
+                style="color: rgb(57, 173, 181);"
+              >
+                (
+              </span>
+              <span
+                style="color: rgb(57, 173, 181);"
+              >
+                )
+              </span>
+              <span>
+                 
+              </span>
+              <span
+                style="color: rgb(57, 173, 181);"
+              >
+                {
+              </span>
+            </div>
+            <div
+              class="m-0"
+            >
+              <span
+                style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 3.010299956639812px;"
+              >
+                2
+              </span>
+              <span
+                style="color: rgb(57, 173, 181);"
+              >
+                }
+              </span>
+            </div>
+          </code>
+        </pre>
+      </div>
+      <button
+        class="font-normal ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap text-blue-500 dark:text-polar-200 hover:bg-blue-50 dark:hover:bg-polar-600 hover:border-blue-100 border dark:border-polar-600 border-blue-100 flex items-center justify-center p-2 absolute right-6 top-6 h-8 w-8 rounded-full bg-gray-50 text-sm dark:bg-gray-900"
+      >
+        <div
+          class="flex flex-row items-center"
+        >
+          <svg
+            aria-hidden="true"
+            class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit css-1vooibu-MuiSvgIcon-root"
+            data-testid="ContentPasteOutlinedIcon"
+            focusable="false"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1m7 18H5V4h2v3h10V4h2z"
+            />
+          </svg>
+        </div>
+      </button>
+    </div>
+  </div>
+</DocumentFragment>
+`;

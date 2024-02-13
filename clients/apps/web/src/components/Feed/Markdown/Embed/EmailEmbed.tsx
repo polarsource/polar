@@ -30,16 +30,18 @@ const EmbedIssue = (props: { src: string }) => {
 
   return (
     <table>
-      <tr>
-        <td className="m-auto">
-          <GitHubIcon className="h-4 w-4" />
-        </td>
-        <td className="m-auto pl-2">
-          <a href={props.src}>
-            {m[1]}/{m[2]}#{m[3]}
-          </a>
-        </td>
-      </tr>
+      <tbody>
+        <tr>
+          <td className="m-auto">
+            <GitHubIcon className="h-4 w-4" />
+          </td>
+          <td className="m-auto pl-2">
+            <a href={props.src}>
+              {m[1]}/{m[2]}#{m[3]}
+            </a>
+          </td>
+        </tr>
+      </tbody>
     </table>
   )
 }

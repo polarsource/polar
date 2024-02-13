@@ -4,10 +4,42 @@ exports[`XSS 1`] = `
 <div>
   <div>
     <p>
+      hello
+
+    </p>
+    <p>
       what
-    
+
     </p>
     <br />
+    <table>
+      <thead>
+        <tr>
+          <th>
+            TH
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            TD
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <p>
+              <span>
+                clickmep
+              </span>
+            </p>
+          </td>
+          <td>
+            TD
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 `;
@@ -447,35 +479,70 @@ exports[`polar 1`] = `
 
 exports[`table 1`] = `
 <div>
-  <table>
-    <thead>
-      <tr>
-        <th>
-          hhhh
-        </th>
-        <th>
-          hhhh
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>
-          bbbb
-        </td>
-        <td>
-          bbbbb
-        </td>
-      </tr>
-      <tr>
-        <td>
-          bbbbb
-        </td>
-        <td>
-          bbbbbbb
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div>
+    <table>
+      <thead>
+        <tr>
+          <th>
+            hhhh
+          </th>
+          <th>
+            hhhh
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            bbbb
+          </td>
+          <td>
+            bbbbb
+          </td>
+        </tr>
+        <tr>
+          <td>
+            bbbbb
+          </td>
+          <td>
+            bbbbbbb
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+
+    <table>
+      <thead>
+        <tr>
+          <th>
+            TH
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            TD
+          </td>
+        </tr>
+        <tr>
+          <td>
+            TD
+          </td>
+        </tr>
+        <tr>
+          <td>
+            TD
+          </td>
+        </tr>
+        <tr>
+          <td>
+            TD
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 `;

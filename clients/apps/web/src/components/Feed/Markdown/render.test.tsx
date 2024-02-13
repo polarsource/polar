@@ -268,23 +268,23 @@ test('XSS', () => {
         ...article,
         body: `
 
-        <p>
-        hello
-    </p>
+<p>
+hello
+</p>
+
+<p onload="alert(1)">
+what
+</p>
     
-    <p onload="alert(1)">
-        what
-    </p>
-    
-    <table>
-        <thead>
-            <tr><th>TH</th></tr>
-        </thead>
-        <tbody onload="alert(2)">
-            <tr onload="alert(3)"><td onload="alert(4)">TD</td></tr>
-            <tr><td>TD</td></tr>
-        </tbody>
-    </table>
+<table>
+    <thead>
+        <tr><th>TH</th></tr>
+    </thead>
+    <tbody onload="alert(2)">
+        <tr onload="alert(3)"><td onload="alert(4)">TD</td></tr>
+        <tr><td><p onload="alert(1)"><img src="not-sanitized" onclick="xxx" /> <a href="javascript:alert(1)">clickme</a> <span onclick="xxx">clickmep</span></p></td><td onclick="x">TD</td></tr>
+    </tbody>
+</table>
   
   `,
       }}
@@ -304,6 +304,19 @@ test('table', () => {
 | ----- | ------ |
 | bbbb | bbbbb |
 | bbbbb | bbbbbbb |
+
+
+<table>
+    <thead>
+        <tr><th>TH</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>TD</td></tr>
+      <tr><td>TD</td></tr>
+      <tr><td>TD</td></tr>
+      <tr><td>TD</td></tr>
+    </tbody>
+</table>
         
   `,
       }}

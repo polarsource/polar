@@ -643,14 +643,56 @@ class TestTransferSubscriptionPaidInvoice:
                 session, invoice=stripe_invoice
             )
 
-    async def test_account_under_review(
+    async def test_no_account(
         self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        stripe_invoice = construct_stripe_invoice(
+            subscription_id=subscription.stripe_subscription_id
+        )
+
+        stripe_service_mock = mocker.patch(
+            "polar.subscription.service.subscription.stripe_service", spec=StripeService
+        )
+
+        payment_transaction = await create_transaction(
+            session, type=TransactionType.payment, subscription=subscription
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        session.add(payment_transaction)
+
+        await session.commit()
+
+        # then
+        session.expunge_all()
+
+        await subscription_service.transfer_subscription_paid_invoice(
+            session, invoice=stripe_invoice
+        )
+
+        stripe_service_mock.update_invoice.assert_not_called()
+
+        held_transfer = await held_transfer_service.get_by(
+            session,
+            organization_id=subscription_tier_organization.managing_organization_id,
+        )
+        assert held_transfer is not None
+
+    @pytest.mark.parametrize(
+        "status", [Account.Status.ONBOARDING_STARTED, Account.Status.UNDER_REVIEW]
+    )
+    async def test_account_under_review_or_not_ready(
+        self,
+        status: Account.Status,
         mocker: MockerFixture,
         session: AsyncSession,
         subscription: Subscription,
         organization_account: Account,
     ) -> None:
-        organization_account.status = Account.Status.UNDER_REVIEW
+        organization_account.status = status
         session.add(organization_account)
 
         stripe_invoice = construct_stripe_invoice(

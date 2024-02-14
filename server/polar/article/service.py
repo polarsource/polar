@@ -92,6 +92,7 @@ class ArticleService:
             visibility=self._visibility_to_model_visibility(create_schema.visibility),
             paid_subscribers_only=create_schema.paid_subscribers_only,
             published_at=published_at,
+            is_pinned=True if create_schema.is_pinned is True else False,
         ).save(session, autocommit=autocommit)
 
     async def get_loaded(
@@ -152,6 +153,7 @@ class ArticleService:
         *,
         show_unpublished: bool = False,
         organization_id: UUID | None = None,
+        is_pinned: bool | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[tuple[Article, bool]], int]:
         statement = self._get_readable_articles_statement(auth_subject)
@@ -173,6 +175,9 @@ class ArticleService:
 
         if organization_id is not None:
             statement = statement.where(Article.organization_id == organization_id)
+
+        if is_pinned is not None:
+            statement = statement.where(Article.is_pinned == is_pinned)
 
         results, count = await paginate(
             session,
@@ -245,6 +250,9 @@ class ArticleService:
 
         if update.paid_subscribers_only is not None:
             article.paid_subscribers_only = update.paid_subscribers_only
+
+        if update.is_pinned is not None:
+            article.is_pinned = update.is_pinned
 
         # explicitly set published_at
         if update.set_published_at:

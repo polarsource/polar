@@ -7,7 +7,7 @@ import {
   EmojiPeople,
   ShortTextOutlined,
 } from '@mui/icons-material'
-import { Organization, Platforms } from '@polar-sh/sdk'
+import { Article, Organization, Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
   Card,
@@ -104,16 +104,7 @@ export const PostWizard = () => {
               </h3>
               <div className="flex flex-col gap-y-2">
                 {drafts.map((draft) => (
-                  <Link
-                    key={draft.id}
-                    href={`/maintainer/${org.name}/posts/${draft.slug}`}
-                    className="dark:text-polar-50 dark:border-polar-800 dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-row items-center justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-6 py-4 text-gray-950 shadow-sm transition-colors hover:bg-gray-50"
-                  >
-                    <h3 className="w-full truncate text-lg font-medium">
-                      {draft.title}
-                    </h3>
-                    <ArrowForward fontSize="inherit" />
-                  </Link>
+                  <DraftPost key={draft.id} organization={org} draft={draft} />
                 ))}
               </div>
             </div>
@@ -155,6 +146,39 @@ const PostCard = ({ icon, title, description, link }: PostCardProps) => {
           </AnimatedIconButton>
         </CardFooter>
       </Card>
+    </Link>
+  )
+}
+
+const DraftPost = ({
+  organization,
+  draft,
+}: {
+  organization: Organization
+  draft: Article
+}) => {
+  const ref = useRef<HTMLAnchorElement>(null)
+  const isHovered = useHoverDirty(ref)
+
+  return (
+    <Link
+      ref={ref}
+      href={`/maintainer/${organization.name}/posts/${draft.slug}`}
+      className="dark:text-polar-50 dark:border-polar-800 dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-row items-center justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-6 py-4 text-gray-950 shadow-sm transition-colors hover:bg-gray-50"
+    >
+      <div className="flex flex-col">
+        <h3 className="w-full truncate text-lg font-medium">{draft.title}</h3>
+        <span className="dark:text-polar-500 text-sm capitalize text-gray-500">
+          {draft.visibility}
+        </span>
+      </div>
+      <AnimatedIconButton
+        active={isHovered}
+        variant={isHovered ? 'default' : 'secondary'}
+        href={`/maintainer/${organization.name}/posts/${draft.slug}`}
+      >
+        <ArrowForward fontSize="inherit" />
+      </AnimatedIconButton>
     </Link>
   )
 }

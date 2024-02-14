@@ -57,8 +57,10 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
   }, [endDate, organization, startDate])
 
   const nextSubscriberCountGoal = useMemo(() => {
-    return subscriberGoals.find(
-      (goal) => goal > (statisticsPeriods?.subscribers ?? 0),
+    return (
+      subscriberGoals.find(
+        (goal) => goal > (statisticsPeriods?.subscribers ?? 0),
+      ) ?? 10000
     )
   }, [statisticsPeriods])
 

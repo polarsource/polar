@@ -4,7 +4,7 @@ from operator import attrgetter
 from typing import TYPE_CHECKING
 
 from arq.constants import result_key_prefix
-from arq.jobs import JobResult, deserialize_result
+from arq.jobs import DeserializationError, JobResult, deserialize_result
 from babel.dates import format_datetime
 from babel.numbers import format_decimal
 from textual import work
@@ -105,11 +105,15 @@ class TasksListScreen(Screen[None]):
                 )
                 for value in await self.app.arq_pool.mget(keys):
                     if value is not None:
-                        tasks.append(
-                            deserialize_result(
-                                value, deserializer=self.app.arq_pool.job_deserializer
+                        try:
+                            tasks.append(
+                                deserialize_result(
+                                    value,
+                                    deserializer=self.app.arq_pool.job_deserializer,
+                                )
                             )
-                        )
+                        except DeserializationError:
+                            pass
 
                 yield sorted(tasks, key=attrgetter("enqueue_time"), reverse=True)
 

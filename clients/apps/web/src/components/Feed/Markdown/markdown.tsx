@@ -49,15 +49,15 @@ export const wrapStrictCreateElement = (args: {
       }
 
       if (Array.isArray(node) && node.length === 1) {
-        return <Fragment key={globalIdx++}>{node[0]}</Fragment>
+        return node[0]
       }
 
       if (Array.isArray(node)) {
         return (
-          <Fragment key={globalIdx++}>
-            {node.map((ch, idx) => {
-              return retNode(ch)
-            })}
+          <Fragment>
+            {node.map((ch) => (
+              <Fragment key={globalIdx++}>{retNode(ch)}</Fragment>
+            ))}
           </Fragment>
         )
       }
@@ -77,8 +77,8 @@ export const wrapStrictCreateElement = (args: {
         return React.createElement(
           type,
           props,
-          <Fragment key={globalIdx++}>
-            {children.map((ch, idx) => (
+          <Fragment>
+            {children.map((ch) => (
               <Fragment key={globalIdx++}>{retNode(ch)}</Fragment>
             ))}
           </Fragment>,

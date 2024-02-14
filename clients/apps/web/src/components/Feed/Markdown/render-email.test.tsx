@@ -5,7 +5,7 @@ import { render } from '@testing-library/react'
 import Markdown from 'markdown-to-jsx'
 import { opts } from './EmailRender'
 import { RenderArticle, wrapStrictCreateElement } from './markdown'
-import { polarPost } from './render.test'
+import { polarPost } from './testdata/polarPost'
 import { polarPostUpsellAccess } from './testdata/polarPostUpsellAccess'
 
 const TestRenderer = (props: { article: RenderArticle }) => {

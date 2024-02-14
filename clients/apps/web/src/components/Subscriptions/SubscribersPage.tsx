@@ -34,6 +34,7 @@ import { getCentsInDollarString } from 'polarkit/money'
 import React, { useCallback, useMemo } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import AccountBanner from '../Transactions/AccountBanner'
 import AddSubscriberModal from './AddSubscriberModal'
 import ImportSubscribersModal from './ImportSubscribersModal'
 import SubscriptionStatusSelect from './SubscriptionStatusSelect'
@@ -320,6 +321,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
+        {organization && <AccountBanner organization={organization} />}
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">Subscribers</h2>
 

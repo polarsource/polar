@@ -1,18 +1,14 @@
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import AccountBanner from '@/components/Transactions/AccountBanner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArrowForwardOutlined, Bolt } from '@mui/icons-material'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
-import { useAccount, useSubscriptionTiers } from 'polarkit/hooks'
-import { twMerge } from 'tailwind-merge'
+import { useSubscriptionTiers } from 'polarkit/hooks'
 
 export const SetupSubscriptions = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
   const { data: subscriptionTiers } = useSubscriptionTiers(org?.name ?? '')
-  const { data: account } = useAccount(org?.account_id)
 
-  const hasNoPayoutAccount = !account
   const hasPaidSubscriptionTiers = subscriptionTiers?.items?.some(
     (tier) => tier.type === 'individual' || tier.type === 'business',
   )
@@ -21,15 +17,7 @@ export const SetupSubscriptions = () => {
 
   return (
     <div className="flex flex-col gap-y-8">
-      {hasNoPayoutAccount && (
-        <AccountBanner organization={org} isSubscriptionsPage />
-      )}
-      <div
-        className={twMerge(
-          'flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3',
-          hasNoPayoutAccount && 'opacity-50',
-        )}
-      >
+      <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">
         <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-6 md:py-6 lg:col-span-1">
           <Bolt
             className="hidden text-blue-500 dark:text-blue-400 md:block"
@@ -40,14 +28,12 @@ export const SetupSubscriptions = () => {
             Create a few subscription tiers to offer your followers and
             supporters
           </p>
-          {!hasNoPayoutAccount && (
-            <Link href={`/maintainer/${org?.name}/subscriptions/tiers/new`}>
-              <Button>
-                <span>Create Tier</span>
-                <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
-              </Button>
-            </Link>
-          )}
+          <Link href={`/maintainer/${org?.name}/subscriptions/tiers/new`}>
+            <Button>
+              <span>Create Tier</span>
+              <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+            </Button>
+          </Link>
         </div>
         <div className="col-span-2 flex grid-cols-1 flex-col gap-8 md:grid lg:grid-cols-3">
           <SubscriptionTierCard

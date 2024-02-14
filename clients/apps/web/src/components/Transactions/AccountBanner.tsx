@@ -2,7 +2,7 @@ import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { AccountType, Organization, Status, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
-import { Button, ShadowBox } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useAccount } from 'polarkit/hooks'
 import Icon from '../Icons/Icon'
@@ -11,14 +11,12 @@ interface AccountBannerProps {
   organization: Organization
   user?: UserRead
   isPersonal?: boolean
-  isSubscriptionsPage?: boolean
 }
 
 const AccountBanner: React.FC<AccountBannerProps> = ({
   organization,
   user,
   isPersonal,
-  isSubscriptionsPage,
 }) => {
   const { data: organizationAccount } = useAccount(organization.account_id)
   const { data: personalAccount } = useAccount(user?.account_id)
@@ -41,25 +39,6 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
   const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
 
   if (!currentAccount) {
-    if (isSubscriptionsPage) {
-      return (
-        <ShadowBox className="relative flex flex-row justify-between gap-6">
-          <div className="flex flex-1 flex-col gap-2">
-            <h3 className="mt-0 text-lg font-medium [text-wrap:balance]">
-              Setup paid subscriptions
-            </h3>
-            <p className="dark:text-polar-500 text-gray-500 [text-wrap:pretty]">
-              Connect Polar with Stripe to enable creation of paid subscription
-              tiers.
-            </p>
-          </div>
-          <Link href={setupLink}>
-            <Button className="whitespace-nowrap">Setup Stripe</Button>
-          </Link>
-        </ShadowBox>
-      )
-    }
-
     return (
       <>
         <Banner

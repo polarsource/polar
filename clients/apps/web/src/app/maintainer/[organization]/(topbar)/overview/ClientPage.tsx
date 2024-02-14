@@ -79,7 +79,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
           <CardContent>
             <Goal
               title="Subscribers"
-              value={statisticsPeriods?.subscribers}
+              value={statisticsPeriods?.subscribers ?? 0}
               max={nextSubscriberCountGoal}
             />
           </CardContent>

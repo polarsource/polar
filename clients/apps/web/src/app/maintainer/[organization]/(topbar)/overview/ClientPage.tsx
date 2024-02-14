@@ -64,13 +64,11 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
     )
   }, [statisticsPeriods])
 
-  if (!statisticsPeriods) return null
-
   return (
     <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
       <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-3">
-        <SubscribersMetric data={statisticsPeriods.subscribers} />
-        <MRRMetric data={statisticsPeriods.mrr} />
+        <SubscribersMetric data={statisticsPeriods?.subscribers ?? 0} />
+        <MRRMetric data={statisticsPeriods?.mrr ?? 0} />
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div className="font-medium">Goal</div>

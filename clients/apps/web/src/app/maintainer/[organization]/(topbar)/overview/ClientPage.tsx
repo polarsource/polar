@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Goal } from '@/components/Onboarding/Creator/Goal'
+import { NewsFromPolar } from '@/components/Onboarding/Creator/NewsFromPolar'
 import { PostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { SetupSubscriptions } from '@/components/Onboarding/Creator/SetupSubscriptions'
 import {
@@ -88,6 +89,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
       <CreatorUpsell />
       <PostWizard />
       <SetupSubscriptions />
+      <NewsFromPolar />
     </DashboardBody>
   )
 }

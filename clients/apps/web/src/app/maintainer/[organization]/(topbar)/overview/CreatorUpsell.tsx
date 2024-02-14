@@ -120,8 +120,7 @@ export const CreatorUpsell = () => {
           />
           <h2 className="text-2xl font-bold">Next Up</h2>
           <p className="dark:text-polar-400 text-gray-600 [text-wrap:balance]">
-            Here are a few things you can do to kickstart your community on
-            Polar
+            Here are a few things you can do to reach your next goal on Polar
           </p>
         </div>
         <div className="col-span-2 flex flex-col gap-y-4">

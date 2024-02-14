@@ -19,7 +19,9 @@ export const Goal = ({ title, value, max }: GoalProps) => {
         <div className="relative flex h-2 w-full flex-row items-center overflow-hidden rounded-md bg-blue-50 dark:bg-blue-950">
           <motion.div
             className="h-full rounded-md bg-blue-500 dark:bg-blue-400"
-            style={{ width: `${(value / max) * 100}%` }}
+            initial={{ width: 0 }}
+            animate={{ width: `${(value / max) * 100}%` }}
+            transition={{ duration: 1, ease: [0.65, 0, 0.35, 1] }}
           />
         </div>
       </div>

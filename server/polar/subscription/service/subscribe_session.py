@@ -47,16 +47,6 @@ class NotAddedToStripeSubscriptionTier(SubscribeSessionError):
         super().__init__(message, 500)
 
 
-class NoAssociatedPayoutAccount(SubscribeSessionError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = (
-            "A payout account should be configured for this organization "
-            "before being able to accept subscriptions."
-        )
-        super().__init__(message, 400)
-
-
 class AlreadySubscribed(SubscribeSessionError):
     def __init__(
         self,
@@ -102,12 +92,6 @@ class SubscribeSessionService:
 
         if subscription_tier.stripe_price_id is None:
             raise NotAddedToStripeSubscriptionTier(subscription_tier.id)
-
-        account = await subscription_tier_service.get_managing_organization_account(
-            session, subscription_tier
-        )
-        if account is None:
-            raise NoAssociatedPayoutAccount(subscription_tier.managing_organization_id)
 
         metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
 

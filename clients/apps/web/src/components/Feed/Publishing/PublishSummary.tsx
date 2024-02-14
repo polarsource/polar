@@ -21,11 +21,10 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
     router.push(`/${article.organization.name}/posts/${article.slug}`)
   }, [article, router, hideModal])
 
-  const { data: articleReceivers, refetch: refetchArticleReceivers } =
-    useArticleReceivers(
-      article.organization.name,
-      article.paid_subscribers_only ?? false,
-    )
+  const { data: articleReceivers } = useArticleReceivers(
+    article.organization.name,
+    article.paid_subscribers_only ?? false,
+  )
 
   const publishedAtDate = useMemo(
     () => (article.published_at ? new Date(article.published_at) : undefined),

@@ -28,6 +28,8 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
   const [slug, setSlug] = useState<string>(article.slug)
   const [slugChanged, setSlugChanged] = useState(false)
 
+  const [isPinned, setIsPinned] = useState(article.is_pinned)
+
   const router = useRouter()
   const { hide: hideModal, isShown: isModalShown, show: showModal } = useModal()
 
@@ -115,13 +117,14 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                     <div className="flex flex-row items-center gap-x-2">
                       <Checkbox
                         checked={sendEmail}
+                        id="send-email"
                         onCheckedChange={(checked) =>
                           onChangeSendEmail(Boolean(checked))
                         }
                       />
-                      <span className="text-sm">
+                      <label htmlFor="send-email" className="text-sm">
                         Send post as email to subscribers
-                      </span>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -179,6 +182,24 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                 </Button>
               </div>
             </div>
+
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col gap-y-2">
+                <span className="font-medium">Pin</span>
+              </div>
+              <div className="flex flex-col gap-y-4">
+                <div className="flex flex-row items-center gap-x-2">
+                  <Checkbox
+                    checked={isPinned}
+                    id="is-pinned"
+                    onCheckedChange={(checked) => setIsPinned(Boolean(checked))}
+                  />
+                  <label htmlFor="is-pinned" className="text-sm">
+                    Pin this post to the top of your profile
+                  </label>
+                </div>
+              </div>
+            </div>
           </>
         </ShadowBoxOnMd>
         <ShadowBoxOnMd className="flex flex-col gap-y-8">
@@ -215,6 +236,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
           published_at: publishAt ? publishAt.toISOString() : undefined,
           notify_subscribers: sendEmail,
           slug,
+          is_pinned: isPinned,
         }}
       />
     </>

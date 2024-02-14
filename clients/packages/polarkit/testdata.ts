@@ -344,4 +344,5 @@ export const article: Article = {
     name: 'birkjernstrom',
     avatar_url: 'https://avatars.githubusercontent.com/u/281715?v=4',
   },
+  is_pinned: false,
 }

@@ -12,7 +12,6 @@ from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.models import (
     Account,
-    HeldTransfer,
     IssueReward,
     Pledge,
     Subscription,
@@ -41,40 +40,13 @@ class UnsupportedAccountType(TransferTransactionError):
 
 
 class UnderReviewAccount(TransferTransactionError):
-    def __init__(
-        self,
-        *,
-        destination_account: Account,
-        payment_transaction: Transaction,
-        amount: int,
-        pledge: Pledge | None = None,
-        subscription: Subscription | None = None,
-        issue_reward: IssueReward | None = None,
-        transfer_metadata: dict[str, str] | None = None,
-    ) -> None:
-        self.destination_account = destination_account
-        self.amount = amount
-        self.pledge = pledge
-        self.issue_reward = issue_reward
-        self.subscription = subscription
-        self.payment_transaction = payment_transaction
-        self.transfer_metadata = transfer_metadata
+    def __init__(self, account: Account) -> None:
+        self.account = account
         message = (
-            f"The destination account {destination_account.id} is under review "
+            f"The destination account {account.id} is under review "
             "and can't receive transfers."
         )
         super().__init__(message)
-
-    def build_held_transfer(self) -> HeldTransfer:
-        return HeldTransfer(
-            account=self.destination_account,
-            amount=self.amount,
-            pledge=self.pledge,
-            issue_reward=self.issue_reward,
-            subscription=self.subscription,
-            payment_transaction=self.payment_transaction,
-            transfer_metadata=self.transfer_metadata,
-        )
 
 
 class NotReadyAccount(TransferTransactionError):
@@ -119,15 +91,7 @@ class TransferTransactionService(BaseTransactionService):
         )
 
         if destination_account.is_under_review():
-            raise UnderReviewAccount(
-                destination_account=destination_account,
-                payment_transaction=payment_transaction,
-                amount=amount,
-                pledge=pledge,
-                subscription=subscription,
-                issue_reward=issue_reward,
-                transfer_metadata=transfer_metadata,
-            )
+            raise UnderReviewAccount(destination_account)
 
         if not destination_account.is_ready():
             raise NotReadyAccount(destination_account)

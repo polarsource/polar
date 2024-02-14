@@ -37,6 +37,7 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
+    HeldTransfer,
     Organization,
     Repository,
     Subscription,
@@ -58,6 +59,8 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.posthog import posthog
 from polar.transaction.service.transfer import (
+    NotReadyAccount,
+    PaymentTransactionForChargeDoesNotExist,
     UnderReviewAccount,
 )
 from polar.transaction.service.transfer import (
@@ -710,7 +713,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         account = await subscription_tier_service.get_managing_organization_account(
             session, subscription.subscription_tier
         )
-        assert account is not None
 
         tax = invoice.tax or 0
         transfer_amount = math.floor(
@@ -725,11 +727,37 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             "stripe_product_id": cast(
                 str, subscription.subscription_tier.stripe_product_id
             ),
+            "stripe_invoice_id": cast(str, invoice.id),
         }
         invoice_metadata: dict[str, str] = {
             "transferred_at": str(int(utc_now().timestamp())),
         }
 
+        charge_id = get_expandable_id(invoice.charge)
+
+        # Prepare an held transfer
+        # It'll be used if the account is none, or if the account is not ready
+        payment_transaction = await transfer_transaction_service.get_by(
+            session, type=TransactionType.payment, charge_id=charge_id
+        )
+        if payment_transaction is None:
+            raise PaymentTransactionForChargeDoesNotExist(charge_id)
+        held_transfer = HeldTransfer(
+            amount=transfer_amount,
+            subscription=subscription,
+            payment_transaction=payment_transaction,
+            transfer_metadata=transfer_metadata,
+        )
+
+        # No account, create the held transfer
+        if account is None:
+            held_transfer.organization_id = (
+                subscription.subscription_tier.managing_organization_id
+            )
+            await held_transfer_service.create(session, held_transfer=held_transfer)
+            return
+
+        # Account created, create the transfer immediately
         try:
             (
                 incoming,
@@ -737,15 +765,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ) = await transfer_transaction_service.create_transfer_from_charge(
                 session,
                 destination_account=account,
-                charge_id=get_expandable_id(invoice.charge),
+                charge_id=charge_id,
                 amount=transfer_amount,
                 subscription=subscription,
                 transfer_metadata=transfer_metadata,
             )
-        except UnderReviewAccount as e:
-            await held_transfer_service.create(
-                session, held_transfer=e.build_held_transfer()
-            )
+        except (UnderReviewAccount, NotReadyAccount):
+            held_transfer.account = account
+            await held_transfer_service.create(session, held_transfer=held_transfer)
         else:
             invoice_metadata["transfer_id"] = cast(str, incoming.transfer_id)
             assert invoice.id is not None

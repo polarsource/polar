@@ -7,18 +7,12 @@ import pytest
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Anonymous, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
-from polar.models import (
-    Account,
-    Organization,
-    SubscriptionTier,
-    User,
-)
+from polar.models import Organization, SubscriptionTier, User
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscribe_session import (
     AlreadySubscribed,
     ArchivedSubscriptionTier,
     FreeSubscriptionTier,
-    NoAssociatedPayoutAccount,
     NotAddedToStripeSubscriptionTier,
 )
 from polar.subscription.service.subscribe_session import (
@@ -126,37 +120,11 @@ class TestCreateSubscribeSession:
                 authz,
             )
 
-    async def test_no_associated_payout_account_subscription_tier(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
-        )
-        assert subscription_tier_organization_loaded
-
-        with pytest.raises(NoAssociatedPayoutAccount):
-            await subscribe_session_service.create_subscribe_session(
-                session,
-                subscription_tier_organization_loaded,
-                "SUCCESS_URL",
-                Anonymous(),
-                None,
-                authz,
-            )
-
     async def test_already_subscribed(
         self,
         session: AsyncSession,
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
-        organization_account: Account,
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
@@ -188,7 +156,6 @@ class TestCreateSubscribeSession:
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
-        organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: (
             MagicMock
@@ -244,7 +211,6 @@ class TestCreateSubscribeSession:
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
-        organization_account: Account,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
 
@@ -307,7 +273,6 @@ class TestCreateSubscribeSession:
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
-        organization_account: Account,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
 
@@ -365,7 +330,6 @@ class TestCreateSubscribeSession:
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
-        organization_account: Account,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
 
@@ -426,7 +390,6 @@ class TestCreateSubscribeSession:
         stripe_service_mock: MagicMock,
         organization: Organization,
         user: User,
-        organization_account: Account,
     ) -> None:
         applicable_tax_benefit = await create_subscription_benefit(
             session, is_tax_applicable=True, organization=organization
@@ -492,7 +455,6 @@ class TestCreateSubscribeSession:
         subscription_tier_organization_free: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
-        organization_account: Account,
     ) -> None:
         free_subscription = await create_active_subscription(
             session, subscription_tier=subscription_tier_organization_free, user=user
@@ -553,7 +515,6 @@ class TestCreateSubscribeSession:
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
         organization_subscriber: Organization,
-        organization_account: Account,
     ) -> None:
         # then
         session.expunge_all()
@@ -583,7 +544,6 @@ class TestCreateSubscribeSession:
         stripe_service_mock: MagicMock,
         organization_subscriber: Organization,
         user: User,
-        organization_account: Account,
     ) -> None:
         # then
         session.expunge_all()
@@ -613,7 +573,6 @@ class TestCreateSubscribeSession:
         stripe_service_mock: MagicMock,
         organization_subscriber: Organization,
         organization_subscriber_admin: User,
-        organization_account: Account,
     ) -> None:
         organization_subscriber.stripe_customer_id = "ORGANIZATION_STRIPE_CUSTOMER_ID"
         organization_subscriber_admin.stripe_customer_id = "STRIPE_CUSTOMER_ID"

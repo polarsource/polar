@@ -9,7 +9,6 @@ from httpx import AsyncClient
 
 from polar.config import settings
 from polar.models import (
-    Account,
     Organization,
     Repository,
     Subscription,
@@ -387,7 +386,6 @@ class TestCreateSubscriptionTier:
         client: AsyncClient,
         organization: Organization,
         user_organization_admin: UserOrganization,
-        organization_account: Account,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
     ) -> None:
@@ -1097,25 +1095,11 @@ class TestCreateSubscribeSession:
 
         assert response.status_code == 422
 
-    async def test_no_payout_account(
-        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
-    ) -> None:
-        response = await client.post(
-            "/api/v1/subscriptions/subscribe-sessions/",
-            json={
-                "tier_id": str(subscription_tier_organization.id),
-                "success_url": "https://polar.sh",
-            },
-        )
-
-        assert response.status_code == 400
-
     async def test_anonymous_subscription_tier_organization(
         self,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
-        organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: (
             MagicMock
@@ -1148,7 +1132,6 @@ class TestCreateSubscribeSession:
         client: AsyncClient,
         subscription_tier_repository: SubscriptionTier,
         stripe_service_mock: MagicMock,
-        organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: (
             MagicMock

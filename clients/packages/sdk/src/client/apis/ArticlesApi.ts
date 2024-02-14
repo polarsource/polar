@@ -67,6 +67,7 @@ export interface ArticlesApiSearchRequest {
     organizationName: string;
     platform: Platforms;
     showUnpublished?: boolean;
+    isPinned?: boolean;
     page?: number;
     limit?: number;
 }
@@ -442,6 +443,10 @@ export class ArticlesApi extends runtime.BaseAPI {
 
         if (requestParameters.showUnpublished !== undefined) {
             queryParameters['show_unpublished'] = requestParameters.showUnpublished;
+        }
+
+        if (requestParameters.isPinned !== undefined) {
+            queryParameters['is_pinned'] = requestParameters.isPinned;
         }
 
         if (requestParameters.organizationName !== undefined) {

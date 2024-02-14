@@ -38,11 +38,13 @@ import { useInView } from 'react-intersection-observer'
 
 const ClientPage = ({
   organization,
+  pinnedArticles,
   articles,
   subscriptionTiers,
   subscriptionSummary,
 }: {
   organization: Organization
+  pinnedArticles: ListResourceArticle
   articles: ListResourceArticle
   subscriptionTiers: ListResourceSubscriptionTier
   subscriptionSummary: ListResourceSubscriptionSummary
@@ -54,7 +56,7 @@ const ClientPage = ({
   } = useModal()
 
   const isAdmin = useIsOrganizationAdmin(organization)
-  const posts = useSearchArticles(organization.name)
+  const posts = useSearchArticles(organization.name, false)
   const infinitePosts =
     posts.data?.pages
       .flatMap((page) => page.items)
@@ -102,6 +104,14 @@ const ClientPage = ({
       <div className="flex w-full flex-grow flex-col gap-y-6 md:max-w-xl">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-6">
+            {pinnedArticles.items ? (
+              <>
+                {pinnedArticles.items.map((post) => (
+                  <PostComponent article={post} key={post.id} />
+                ))}
+              </>
+            ) : null}
+
             {infinitePosts.length > 0 ? (
               <>
                 {infinitePosts.map((post) => (

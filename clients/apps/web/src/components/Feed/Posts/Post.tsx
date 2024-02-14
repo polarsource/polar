@@ -33,6 +33,8 @@ export const Post = (props: FeedPost) => {
         'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full flex-col justify-start gap-4 rounded-3xl bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 dark:border md:flex-row',
         props.article.paid_subscribers_only &&
           'border border-blue-50 bg-gradient-to-b from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
+        props.article.is_pinned &&
+          'border border-green-100 bg-gradient-to-b from-green-100/80 to-transparent hover:from-green-200 dark:from-green-700/20 dark:hover:from-green-600/30',
       )}
       ref={ref}
       onClick={onClick}
@@ -101,6 +103,17 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
               <div className="flex flex-row items-center rounded-full bg-blue-50 bg-gradient-to-l px-2 dark:bg-blue-950">
                 <span className="text-[.6rem] text-blue-300 dark:text-blue-300">
                   Premium
+                </span>
+              </div>
+            </>
+          ) : null}
+
+          {props.article.is_pinned ? (
+            <>
+              &middot;
+              <div className="flex flex-row items-center rounded-full bg-green-100 bg-gradient-to-l px-2 dark:bg-green-950">
+                <span className="text-[.6rem] text-green-500 dark:text-green-300">
+                  Pinned
                 </span>
               </div>
             </>

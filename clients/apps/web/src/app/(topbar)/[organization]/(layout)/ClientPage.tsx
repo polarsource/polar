@@ -109,6 +109,7 @@ const ClientPage = ({
                 {pinnedArticles.items.map((post) => (
                   <PostComponent article={post} key={post.id} highlightPinned />
                 ))}
+                <Separator />
               </>
             ) : null}
 

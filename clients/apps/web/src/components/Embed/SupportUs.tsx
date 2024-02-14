@@ -1,21 +1,27 @@
-import { Organization } from '@polar-sh/sdk'
+import { Organization, SubscriptionSummary } from '@polar-sh/sdk'
+import React from 'react'
 
 export const SupportUs = ({
   organization,
+  subscriptions,
+  totalSubscriptions,
   darkmode,
   text,
 }: {
   organization: Organization
+  subscriptions: SubscriptionSummary[]
+  totalSubscriptions: number
   darkmode: boolean
   text: string
 }) => {
+  const extraSubscribersCount = totalSubscriptions - subscriptions.length
+
   return (
     <>
       <div
         style={{
           display: 'flex',
           marginBottom: 2,
-          maxWidth: '400px',
           flexDirection: 'column',
           borderRadius: 11,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
@@ -45,13 +51,17 @@ export const SupportUs = ({
           >
             <div
               style={{
-                color: darkmode ? 'white' : '#0062FF',
+                backgroundColor: '#0062FF',
+                color: 'white',
                 padding: 4,
+                marginLeft: 6,
+                marginRight: 6,
                 borderRadius: 6,
-                fontWeight: 800,
-                fontSize: 16,
+                fontWeight: 500,
+                fontSize: 13,
                 lineHeight: '20px',
                 paddingLeft: 11,
+                paddingRight: 11,
                 flexShrink: '0',
               }}
             >
@@ -62,24 +72,127 @@ export const SupportUs = ({
           <div
             style={{
               display: 'flex',
+              marginLeft: 6,
               alignItems: 'center',
               gap: '8px',
               justifyItems: 'end',
             }}
           >
+            {subscriptions.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyItems: 'end',
+                  height: '22px',
+                }}
+              >
+                {subscriptions.map((subscription, idx) => (
+                  <React.Fragment key={idx}>
+                    {subscription.organization && (
+                      <img
+                        src={subscription.organization.avatar_url}
+                        style={{
+                          height: 22,
+                          width: 22,
+                          borderRadius: 22,
+                          border: darkmode
+                            ? '1px solid #1B1D29'
+                            : '1px solid white',
+                          marginLeft: idx > 0 ? '-6px' : '',
+                          flexShrink: '0',
+                        }}
+                      />
+                    )}
+                    {subscription.user && (
+                      <>
+                        {subscription.user.avatar_url && (
+                          <img
+                            src={subscription.user.avatar_url}
+                            style={{
+                              height: 22,
+                              width: 22,
+                              borderRadius: 22,
+                              border: darkmode
+                                ? '1px solid #1B1D29'
+                                : '1px solid white',
+                              marginLeft: idx > 0 ? '-6px' : '',
+                              flexShrink: '0',
+                            }}
+                          />
+                        )}
+                        {!subscription.user.avatar_url && (
+                          <div
+                            style={{
+                              backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
+                              color: darkmode ? '#a6c7ea' : '#0062FF',
+                              height: 22,
+                              width: 22,
+                              borderRadius: 22,
+                              marginLeft: '-6px',
+                              textAlign: 'center',
+                              fontSize: '8px',
+                              lineHeight: '20px',
+                              border: darkmode
+                                ? '1px solid #13151D'
+                                : '1px solid white',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-around',
+                              flexShrink: '0',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            <span>{subscription.user.public_name}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </React.Fragment>
+                ))}
+
+                {extraSubscribersCount > 0 && (
+                  <div
+                    style={{
+                      backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
+                      color: darkmode ? '#a6c7ea' : '#0062FF',
+                      height: 22,
+                      width: 22,
+                      borderRadius: 22,
+                      marginLeft: '-6px',
+                      textAlign: 'center',
+                      fontSize: '8px',
+                      lineHeight: '20px',
+                      border: darkmode
+                        ? '1px solid #13151D'
+                        : '1px solid white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-around',
+                      flexShrink: '0',
+                    }}
+                  >
+                    <span>+{extraSubscribersCount}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div
               style={{
                 display: 'flex',
+                backgroundColor: darkmode ? '#343748' /*polar-600*/ : '#FDFDFC', // gray-50
                 height: 40,
                 flexDirection: 'row',
                 alignItems: 'center',
+                paddingLeft: 12,
                 paddingRight: 12,
+                borderLeft: darkmode ? 'none' : '1px solid rgba(0, 0, 0, 0.05)',
                 flexShrink: '0',
               }}
             >
               <svg
-                width="68"
-                height="20"
+                width="58"
+                height="17"
                 viewBox="0 0 58 17"
                 xmlns="http://www.w3.org/2000/svg"
               >

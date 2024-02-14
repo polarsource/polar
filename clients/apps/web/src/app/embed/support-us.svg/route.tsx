@@ -1,11 +1,29 @@
 import { SupportUs } from '@/components/Embed/SupportUs'
-import { Organization } from '@polar-sh/sdk'
+import {
+  ListResourceSubscriptionSummary,
+  Organization,
+  SubscriptionSummary,
+} from '@polar-sh/sdk'
 import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getData = async (org: string): Promise<Organization> => {
+const getSubscriptions = async (
+  org: string,
+  limit: number = 3,
+): Promise<[SubscriptionSummary[], number]> => {
+  let url = `${getServerURL()}/api/v1/subscriptions/subscriptions/summary?platform=github&organization_name=${org}&limit=${limit}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+  })
+  const data = (await response.json()) as ListResourceSubscriptionSummary
+  console.log(data)
+  return [data.items || [], data.pagination.total_count]
+}
+
+const getOrganization = async (org: string): Promise<Organization> => {
   let url = `${getServerURL()}/api/v1/organizations/lookup?platform=github&organization_name=${org}`
 
   return await fetch(url, {
@@ -20,6 +38,8 @@ const getData = async (org: string): Promise<Organization> => {
 
 const renderBadge = async (
   organization: Organization,
+  subscriptions: SubscriptionSummary[],
+  totalSubscriptions: number,
   text: string,
   darkmode: boolean,
 ) => {
@@ -32,7 +52,13 @@ const renderBadge = async (
   ).then((res) => res.arrayBuffer())
 
   return await satori(
-    <SupportUs organization={organization} darkmode={darkmode} text={text} />,
+    <SupportUs
+      organization={organization}
+      subscriptions={subscriptions}
+      totalSubscriptions={totalSubscriptions}
+      darkmode={darkmode}
+      text={text}
+    />,
     {
       fonts: [
         {
@@ -56,7 +82,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
 
   const org = searchParams.get('org')
-  const text = searchParams.get('text') || 'Support us on'
+  const text = searchParams.get('text') || 'Support us'
   const darkmode = searchParams.has('darkmode')
 
   if (!org) {
@@ -64,8 +90,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    const data = await getData(org)
-    const svg = await renderBadge(data, text, darkmode)
+    const organization = await getOrganization(org)
+    const [subscriptions, total] = await getSubscriptions(org)
+    const svg = await renderBadge(
+      organization,
+      subscriptions,
+      total,
+      text,
+      darkmode,
+    )
 
     return new Response(svg, {
       headers: {

@@ -68,7 +68,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
 
   return (
     <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-3">
         <SubscribersMetric data={statisticsPeriods.subscribers} />
         <MRRMetric data={statisticsPeriods.mrr} />
         <Card className="shadow-sm">

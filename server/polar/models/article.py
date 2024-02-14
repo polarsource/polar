@@ -84,3 +84,5 @@ class Article(RecordModel):
     email_open_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     web_view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    is_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

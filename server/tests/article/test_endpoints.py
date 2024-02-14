@@ -711,3 +711,100 @@ async def test_view_counter(
     get_json = get.json()
 
     assert get_json["web_view_count"] == 3
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_pinned(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response_pinned = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Is Pinned",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "is_pinned": True,
+            "published_at": "2023-11-26 00:00:00",  # a date in the past
+            "visibility": "public",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response_pinned.status_code == 200
+    res = response_pinned.json()
+    assert res["slug"] == "is-pinned"
+    assert res["is_pinned"] is True
+
+    response_not_pinned = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Not Pinned",
+            "slug": "not-pinned",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "is_pinned": False,
+            "published_at": "2023-11-26 00:00:00",  # a date in the past
+            "visibility": "public",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response_not_pinned.status_code == 200
+    res = response_not_pinned.json()
+    assert res["slug"] == "not-pinned"
+    assert res["is_pinned"] is False
+
+    # search pinned
+    search_pinned = await client.get(
+        "/api/v1/articles/search",
+        params={
+            "platform": "github",
+            "organization_name": organization.name,
+            "is_pinned": True,
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert search_pinned.status_code == 200
+    search_pinned_res = search_pinned.json()
+
+    assert len(search_pinned_res["items"]) == 1
+    assert search_pinned_res["items"][0]["slug"] == "is-pinned"
+
+    # search not pinned
+    search_not_pinned = await client.get(
+        "/api/v1/articles/search",
+        params={
+            "platform": "github",
+            "organization_name": organization.name,
+            "is_pinned": False,
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert search_not_pinned.status_code == 200
+    search_not_pinned_res = search_not_pinned.json()
+
+    assert len(search_not_pinned_res["items"]) == 1
+    assert search_not_pinned_res["items"][0]["slug"] == "not-pinned"
+
+    # search no pinned filter
+    search = await client.get(
+        "/api/v1/articles/search",
+        params={
+            "platform": "github",
+            "organization_name": organization.name,
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert search.status_code == 200
+    search_res = search.json()
+
+    assert len(search_res["items"]) == 2

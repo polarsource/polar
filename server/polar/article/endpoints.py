@@ -109,6 +109,10 @@ async def search(
         default=False,
         description="Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization.",
     ),
+    is_pinned: bool | None = Query(
+        default=None,
+        description="Set to true or false to include or exclude pinned articles",
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(OptionalUserArticleRead),
     authz: Authz = Depends(Authz.authz),
@@ -124,6 +128,7 @@ async def search(
         pagination=pagination,
         show_unpublished=show_unpublished,
         organization_id=org.id,
+        is_pinned=is_pinned,
     )
 
     return ListResource.from_paginated_results(

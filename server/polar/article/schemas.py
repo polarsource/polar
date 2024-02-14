@@ -32,6 +32,7 @@ class Article(Schema):
     published_at: datetime.datetime | None = None
     paid_subscribers_only: bool | None = None
     is_preview: bool
+    is_pinned: bool
 
     notify_subscribers: bool | None = None
     notifications_sent_at: datetime.datetime | None = None
@@ -111,6 +112,7 @@ class Article(Schema):
             else None,
             email_sent_to_count=i.email_sent_to_count if include_admin_fields else None,
             web_view_count=i.web_view_count if include_admin_fields else None,
+            is_pinned=i.is_pinned,
         )
 
 
@@ -142,6 +144,9 @@ class ArticleCreate(Schema):
         default=None,
         description="Set to true to deliver this article via email and/or notifications to subscribers.",
     )
+    is_pinned: bool | None = Field(
+        default=None, description="If the article should be pinned"
+    )
 
 
 class ArticleUpdate(Schema):
@@ -170,6 +175,9 @@ class ArticleUpdate(Schema):
     notify_subscribers: bool | None = Field(
         default=None,
         description="Set to true to deliver this article via email and/or notifications to subscribers.",
+    )
+    is_pinned: bool | None = Field(
+        default=None, description="If the article should be pinned"
     )
 
 

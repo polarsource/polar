@@ -12,8 +12,10 @@ import { FlagOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import { Card, CardContent, CardHeader } from 'polarkit/components/ui/atoms'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { CreatorUpsell } from './CreatorUpsell'
+
+const subscriberGoals = [5, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]
 
 interface OverviewPageProps {
   organization: Organization
@@ -54,6 +56,12 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
       })
   }, [endDate, organization, startDate])
 
+  const nextSubscriberCountGoal = useMemo(() => {
+    return subscriberGoals.find(
+      (goal) => goal > (statisticsPeriods?.subscribers ?? 0),
+    )
+  }, [statisticsPeriods])
+
   if (!statisticsPeriods) return null
 
   return (
@@ -69,7 +77,11 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
             </span>
           </CardHeader>
           <CardContent>
-            <Goal title="Subscribers" value={3} max={5} />
+            <Goal
+              title="Subscribers"
+              value={statisticsPeriods?.subscribers}
+              max={nextSubscriberCountGoal}
+            />
           </CardContent>
         </Card>
       </div>

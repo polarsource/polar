@@ -40,7 +40,10 @@ export const opts = {
       ) {
         const language = child.props.className?.replace('lang-', '')
         if (language === 'mermaid') {
-          return <EmailMermaid graphDefinition={child.props.children} />
+          const contents = firstChild(child.props.children)
+          if (contents && typeof contents === 'string') {
+            return <EmailMermaid graphDefinition={contents} />
+          }
         }
         return <EmailSyntaxHighlighter language={language} {...child.props} />
       }

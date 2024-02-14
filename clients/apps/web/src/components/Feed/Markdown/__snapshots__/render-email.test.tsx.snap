@@ -298,6 +298,22 @@ exports[`double-whitespace 1`] = `
 </div>
 `;
 
+exports[`mermaid 1`] = `
+<div>
+  <div>
+    <p>
+      we love charts
+    </p>
+    <center>
+      <img
+        alt="Mermaid"
+        src="http://127.0.0.1:3000/email/kroki/mermaid/eJwryExVKMksyUlVCEgtKVZITMkvKElNUUiqVCjLzynNK0lNLSrmUgACJZf89GIlBSsFYwsziIBzYglYwMIUwg-C8g1NAYd2F64"
+      />
+    </center>
+  </div>
+</div>
+`;
+
 exports[`paywall 1`] = `
 <div>
   <div>

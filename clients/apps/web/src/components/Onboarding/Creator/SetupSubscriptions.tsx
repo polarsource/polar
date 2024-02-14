@@ -49,7 +49,7 @@ export const SetupSubscriptions = () => {
             </Link>
           )}
         </div>
-        <div className="col-span-2 grid grid-cols-3 gap-x-8">
+        <div className="col-span-2 flex grid-cols-1 flex-col gap-8 md:grid lg:grid-cols-3">
           <SubscriptionTierCard
             className="w-full"
             subscriptionTier={{

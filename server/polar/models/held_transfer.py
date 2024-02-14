@@ -14,31 +14,57 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
+    from polar.models import (
+        Account,
+        IssueReward,
+        Organization,
+        Pledge,
+        Subscription,
+        Transaction,
+    )
 
 
 class HeldTransfer(RecordModel):
     """
-    Represent an on hold transfer because the destination account is under review.
+    Represent an on hold transfer. It may happen because
 
-    When the account is successfully reviewed,
+    * The destination account is not yet created
+    * The destination account is under review
+
+    When the account is successfully created or reviewed,
     those transfers should be actually executed.
     """
 
     __tablename__ = "held_transfers"
 
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+    """
+    ID of the `Organization` concerned by this transfer.
+    Set only if the account is not yet created.
+    """
+
     account_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("accounts.id", ondelete="cascade"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     """
     ID of the `Account` concerned by this transfer.
+    Will be `None` if the account is not yet created.
     """
 
     @declared_attr
-    def account(cls) -> Mapped["Account"]:
+    def organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def account(cls) -> Mapped["Account | None"]:
         return relationship("Account", lazy="raise")
 
     payment_transaction_id: Mapped[UUID] = mapped_column(

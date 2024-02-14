@@ -3289,6 +3289,66 @@ export interface MaintainerAccountUnderReviewNotificationPayload {
 /**
  * 
  * @export
+ * @interface MaintainerCreateAccountNotification
+ */
+export interface MaintainerCreateAccountNotification {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerCreateAccountNotification
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerCreateAccountNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerCreateAccountNotification
+     */
+    type: MaintainerCreateAccountNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerCreateAccountNotificationPayload}
+     * @memberof MaintainerCreateAccountNotification
+     */
+    payload: MaintainerCreateAccountNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerCreateAccountNotificationTypeEnum = {
+    MAINTAINER_CREATE_ACCOUNT_NOTIFICATION: 'MaintainerCreateAccountNotification'
+} as const;
+export type MaintainerCreateAccountNotificationTypeEnum = typeof MaintainerCreateAccountNotificationTypeEnum[keyof typeof MaintainerCreateAccountNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerCreateAccountNotificationPayload
+ */
+export interface MaintainerCreateAccountNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerCreateAccountNotificationPayload
+     */
+    organization_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerCreateAccountNotificationPayload
+     */
+    url: string;
+}
+/**
+ * 
+ * @export
  * @interface MaintainerNewPaidSubscriptionNotification
  */
 export interface MaintainerNewPaidSubscriptionNotification {
@@ -3957,7 +4017,7 @@ export interface MaintainerPledgedIssuePendingNotificationPayload {
  * 
  * @export
  */
-export type NotificationsInner = { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'SubscriptionBenefitPreconditionErrorNotification' } & SubscriptionBenefitPreconditionErrorNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
+export type NotificationsInner = { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'SubscriptionBenefitPreconditionErrorNotification' } & SubscriptionBenefitPreconditionErrorNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
 /**
  * 
  * @export

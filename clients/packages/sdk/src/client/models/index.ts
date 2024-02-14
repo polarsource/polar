@@ -1061,6 +1061,12 @@ export interface Article {
      * @type {boolean}
      * @memberof Article
      */
+    is_pinned: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Article
+     */
     notify_subscribers?: boolean;
     /**
      * 
@@ -1153,6 +1159,12 @@ export interface ArticleCreate {
      * @memberof ArticleCreate
      */
     notify_subscribers?: boolean;
+    /**
+     * If the article should be pinned
+     * @type {boolean}
+     * @memberof ArticleCreate
+     */
+    is_pinned?: boolean;
 }
 
 
@@ -1325,6 +1337,12 @@ export interface ArticleUpdate {
      * @memberof ArticleUpdate
      */
     notify_subscribers?: boolean;
+    /**
+     * If the article should be pinned
+     * @type {boolean}
+     * @memberof ArticleUpdate
+     */
+    is_pinned?: boolean;
 }
 
 

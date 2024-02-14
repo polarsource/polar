@@ -267,6 +267,18 @@ const PostItem = (post: Article) => {
                   )}
                 </div>
               )}
+              {post.is_pinned ? (
+                <>
+                  &middot;
+                  <div className="flex flex-row items-center gap-x-2 text-sm">
+                    <div className="flex flex-row items-center rounded-full bg-green-100 bg-gradient-to-l px-2 py-0.5 dark:bg-green-950">
+                      <span className="text-xs text-green-400 dark:text-green-300">
+                        Pinned
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : null}
               {post.web_view_count !== undefined ? (
                 <>
                   &middot;

@@ -70,15 +70,22 @@ export const useListArticles = (): UseInfiniteQueryResult<
 
 export const useSearchArticles = (
   organizationName: string,
+  isPinned?: boolean,
 ): UseInfiniteQueryResult<InfiniteData<ListResourceArticle>> =>
   useInfiniteQuery({
-    queryKey: ['article', 'organization', organizationName],
+    queryKey: [
+      'article',
+      'organization',
+      organizationName,
+      JSON.stringify({ isPinned }),
+    ],
     queryFn: ({ signal, pageParam = 1 }) => {
       const promise = api.articles.search({
         organizationName,
         platform: Platforms.GITHUB,
         page: pageParam,
         limit: 20,
+        isPinned,
       })
 
       signal?.addEventListener('abort', () => {

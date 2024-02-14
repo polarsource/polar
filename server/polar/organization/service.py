@@ -16,6 +16,7 @@ from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
 
 from .schemas import (
     OrganizationCreate,
@@ -236,9 +237,15 @@ class OrganizationService(
         if not await authz.can(user, AccessType.write, account):
             raise InvalidAccount(account_id)
 
+        first_account_set = organization.account_id is None
+
         organization.account = account
         session.add(organization)
         await session.commit()
+
+        if first_account_set:
+            await enqueue_job("organization.account_set", organization.id)
+
         return organization
 
     async def set_personal_account(

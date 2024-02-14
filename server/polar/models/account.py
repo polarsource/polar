@@ -74,6 +74,9 @@ class Account(RecordModel):
     def organizations(cls) -> Mapped[list["Organization"]]:
         return relationship("Organization", lazy="raise", back_populates="account")
 
+    def can_receive_transfers(self) -> bool:
+        return self.status in {Account.Status.UNREVIEWED, Account.Status.ACTIVE}
+
     def is_ready(self) -> bool:
         return self.status in {
             Account.Status.UNREVIEWED,

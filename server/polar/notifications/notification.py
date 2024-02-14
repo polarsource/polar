@@ -33,6 +33,7 @@ class NotificationType(StrEnum):
     subscription_benefit_precondition_error = (
         "SubscriptionBenefitPreconditionErrorNotification"
     )
+    maintainer_create_account = "MaintainerCreateAccountNotification"
 
 
 class NotificationPayloadBase(BaseModel):
@@ -471,6 +472,55 @@ class SubscriptionBenefitPreconditionErrorNotification(NotificationBase):
     payload: SubscriptionBenefitPreconditionErrorNotificationPayload
 
 
+class MaintainerCreateAccountNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+    url: str
+
+    def subject(self) -> str:
+        return (
+            f"Create a payout account for {self.organization_name} now to receive funds"
+        )
+
+    def body(self) -> str:
+        return f"""<h1>Hi,</h1>
+
+<p>Now that you got your first paid subscribers on {self.organization_name}, you should create a payout account in order to receive your funds.</p>
+
+<p>We support Stripe and Open Collective. This operation only takes a few minutes and allows you to receive your money immediately.</p>
+
+<table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+        <td align="center">
+            <!-- Border based button
+https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                <tr>
+                    <td align="center">
+                        <a href="{self.url}" class="f-fallback button">Create my payout account</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<!-- Sub copy -->
+<table class="body-sub" role="presentation">
+    <tr>
+        <td>
+            <p class="f-fallback sub">If you're having trouble with the button above, copy and paste the URL below into
+                your web browser.</p>
+            <p class="f-fallback sub"><a href="{self.url}">{self.url}</a></p>
+        </td>
+    </tr>
+</table>
+"""  # noqa: E501
+
+
+class MaintainerCreateAccountNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_create_account]
+    payload: MaintainerCreateAccountNotificationPayload
+
+
 NotificationPayload = (
     MaintainerPledgeCreatedNotificationPayload
     | MaintainerPledgeConfirmationPendingNotificationPayload
@@ -485,6 +535,7 @@ NotificationPayload = (
     | MaintainerAccountReviewedNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
     | SubscriptionBenefitPreconditionErrorNotificationPayload
+    | MaintainerCreateAccountNotificationPayload
 )
 
 Notification = Annotated[
@@ -500,6 +551,7 @@ Notification = Annotated[
     | MaintainerAccountUnderReviewNotification
     | MaintainerAccountReviewedNotification
     | MaintainerNewPaidSubscriptionNotification
-    | SubscriptionBenefitPreconditionErrorNotification,
+    | SubscriptionBenefitPreconditionErrorNotification
+    | MaintainerCreateAccountNotification,
     Discriminator(discriminator="type"),
 ]

@@ -157,6 +157,12 @@ class Organization(RecordModel):
         return f"{settings.FRONTEND_BASE_URL}/{self.name}"
 
     @property
+    def account_url(self) -> str:
+        if self.is_personal:
+            return f"{settings.FRONTEND_BASE_URL}/finance/account"
+        return f"{settings.FRONTEND_BASE_URL}/maintainer/{self.name}/finance/account"
+
+    @property
     def safe_installation_id(self) -> int:
         if self.installation_id is None:
             raise NotInstalledOrganization()

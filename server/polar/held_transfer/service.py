@@ -1,5 +1,5 @@
 import structlog
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarError
@@ -10,6 +10,7 @@ from polar.models import (
     HeldTransfer,
     Transaction,
 )
+from polar.models.organization import Organization
 from polar.postgres import AsyncSession
 from polar.transaction.service.transfer import (
     transfer_transaction as transfer_transaction_service,
@@ -36,8 +37,17 @@ class HeldTransferService(ResourceServiceReader[HeldTransfer]):
     ) -> list[tuple[Transaction, Transaction]]:
         statement = (
             select(HeldTransfer)
+            .join(
+                Organization,
+                onclause=HeldTransfer.organization_id == Organization.id,
+                isouter=True,
+            )
             .where(
-                HeldTransfer.account_id == account.id, HeldTransfer.deleted_at.is_(None)
+                or_(
+                    HeldTransfer.account_id == account.id,
+                    Organization.account_id == account.id,
+                ),
+                HeldTransfer.deleted_at.is_(None),
             )
             .options(
                 joinedload(HeldTransfer.payment_transaction),

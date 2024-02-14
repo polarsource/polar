@@ -51,10 +51,12 @@ from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
 from polar.notifications.notification import (
+    MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
+from polar.notifications.service import notifications as notification_service
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.posthog import posthog
@@ -751,10 +753,25 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # No account, create the held transfer
         if account is None:
-            held_transfer.organization_id = (
-                subscription.subscription_tier.managing_organization_id
+            managing_organization = await organization_service.get(
+                session, subscription.subscription_tier.managing_organization_id
             )
+            assert managing_organization is not None
+            held_transfer.organization_id = managing_organization.id
             await held_transfer_service.create(session, held_transfer=held_transfer)
+
+            await notification_service.send_to_org_admins(
+                session=session,
+                org_id=managing_organization.id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_create_account,
+                    payload=MaintainerCreateAccountNotificationPayload(
+                        organization_name=managing_organization.name,
+                        url=managing_organization.account_url,
+                    ),
+                ),
+            )
+
             return
 
         # Account created, create the transfer immediately

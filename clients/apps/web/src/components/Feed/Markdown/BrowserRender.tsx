@@ -73,7 +73,10 @@ export const opts = {
       ) {
         const language = child.props.className?.replace('lang-', '')
         if (language === 'mermaid') {
-          return <BrowserMermaid graphDefinition={child.props.children} />
+          const contents = firstChild(child.props.children)
+          if (contents && typeof contents === 'string') {
+            return <BrowserMermaid graphDefinition={contents} />
+          }
         }
         return (
           <SyntaxHighlighterContext.Provider value={child.props.children}>

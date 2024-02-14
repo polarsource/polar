@@ -58,3 +58,27 @@ test('posts', () => {
     expect(container).toMatchSnapshot()
   }
 })
+
+test('mermaid', async () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+
+we love charts
+
+\`\`\`mermaid
+pie title Pets adopted by volunteers
+    "Dogs" : 386
+    "Cats" : 85
+    "Rats" : 15
+\`\`\`
+
+`,
+      }}
+    />,
+  )
+
+  expect(container).toMatchSnapshot()
+})

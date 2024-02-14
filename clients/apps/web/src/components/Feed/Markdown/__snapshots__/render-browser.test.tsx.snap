@@ -221,6 +221,21 @@ exports[`code 1`] = `
 </DocumentFragment>
 `;
 
+exports[`mermaid 1`] = `
+<DocumentFragment>
+  <div>
+    <p>
+      we love charts
+    </p>
+    <div
+      class="animate-pulse rounded-md bg-muted w-full p-8 font-mono text-sm"
+    >
+      Initializing Mermaid Renderer...
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
 exports[`posts 1`] = `
 <DocumentFragment>
   <div>

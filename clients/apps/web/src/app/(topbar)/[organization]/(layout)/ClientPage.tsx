@@ -104,9 +104,9 @@ const ClientPage = ({
       <div className="flex w-full flex-grow flex-col gap-y-6 md:max-w-xl">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex w-full flex-col gap-y-6">
-            {pinnedArticles.items ? (
+            {(pinnedArticles.items?.length ?? 0) > 0 ? (
               <>
-                {pinnedArticles.items.map((post) => (
+                {pinnedArticles.items?.map((post) => (
                   <PostComponent article={post} key={post.id} highlightPinned />
                 ))}
                 <Separator />

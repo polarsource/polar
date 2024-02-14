@@ -6,6 +6,7 @@ import {
 import {
   MaintainerAccountReviewedNotification,
   MaintainerAccountUnderReviewNotification,
+  MaintainerCreateAccountNotification,
   MaintainerNewPaidSubscriptionNotification,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
@@ -682,6 +683,30 @@ const SubscriptionBenefitPreconditionError = ({
   )
 }
 
+const MaintainerCreateAccount = ({
+  n,
+}: {
+  n: MaintainerCreateAccountNotification
+}) => {
+  const { payload } = n
+  return (
+    <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
+      {{
+        text: (
+          <>
+            Create a{' '}
+            <InternalLink href={payload.url}>
+              <>payout account</>
+            </InternalLink>{' '}
+            now for {payload.organization_name} to receive funds.
+          </>
+        ),
+        icon: <Announcement />,
+      }}
+    </Item>
+  )
+}
+
 export const Notification = ({
   n,
   setIsInNestedModal,
@@ -737,6 +762,9 @@ export const Notification = ({
 
     case 'SubscriptionBenefitPreconditionErrorNotification':
       return <SubscriptionBenefitPreconditionError n={n} />
+
+    case 'MaintainerCreateAccountNotification':
+      return <MaintainerCreateAccount n={n} />
   }
 }
 

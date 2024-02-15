@@ -5,6 +5,7 @@ from datetime import datetime
 from operator import and_, or_
 from uuid import UUID
 
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 import structlog
 from slugify import slugify
 from sqlalchemy import (
@@ -18,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.service import Subject
+from polar.config import settings
 from polar.exceptions import BadRequest
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -220,6 +222,8 @@ class ArticleService:
         article: Article,
         update: ArticleUpdate,
     ) -> Article:
+        shouldNotifyOnDiscord = False
+
         if update.title is not None:
             article.title = update.title
 
@@ -245,6 +249,7 @@ class ArticleService:
                 and article.published_at is None
             ):
                 article.published_at = utc_now()
+                shouldNotifyOnDiscord = True
 
             article.visibility = self._visibility_to_model_visibility(update.visibility)
 
@@ -262,6 +267,9 @@ class ArticleService:
             article.notify_subscribers = update.notify_subscribers
 
         await article.save(session)
+
+        if shouldNotifyOnDiscord:
+            await self.article_published_discord_notification(article)
 
         return article
 
@@ -501,6 +509,28 @@ class ArticleService:
         )
         await session.execute(stmt)
         await session.commit()
+
+    async def article_published_discord_notification(self, article: Article) -> None:
+        if not settings.DISCORD_WEBHOOK_URL:
+            return
+
+        webhook = AsyncDiscordWebhook(
+            url=settings.DISCORD_WEBHOOK_URL, content="Published Article"
+        )
+
+        embed = DiscordEmbed(
+            title="Published Article",
+            description=f'[{article.title}](https://polar.sh/{article.organization.name}/posts/{article.slug})',  # noqa: E501
+            color="65280",
+        )
+
+        embed.add_embed_field(
+            name="Org",
+            value=f"[Open](https://polar.sh/{article.organization.name})",
+        )
+
+        webhook.add_embed(embed)
+        await webhook.execute()
 
 
 article_service = ArticleService()

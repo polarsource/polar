@@ -4,7 +4,6 @@ import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Button } from 'polarkit/components/ui/atoms'
-import { useMemo } from 'react'
 
 export interface PublishShareModalProps {
   article: Article
@@ -17,12 +16,7 @@ export const PublishShareModal = ({
   isShown,
   hide,
 }: PublishShareModalProps) => {
-  console.log(article)
-
-  const url = useMemo(
-    () => `https://polar.sh/${article.organization.name}/posts/${article.slug}`,
-    [article],
-  )
+  const url = `https://polar.sh/${article.organization.name}/posts/${article.slug}`
 
   return (
     <Modal

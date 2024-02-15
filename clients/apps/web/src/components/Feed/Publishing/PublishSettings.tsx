@@ -112,7 +112,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
                 <FormNotifySubscribers article={article} />
 
-                <FormSlug articleId={article.id} />
+                <FormSlug article={article} />
 
                 <FormIsPinned />
               </>
@@ -163,7 +163,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
   )
 }
 
-const FormSlug = (props: { articleId: string }) => {
+const FormSlug = (props: { article: Article }) => {
   const { control } = useFormContext<ArticleUpdate>()
 
   return (
@@ -174,7 +174,7 @@ const FormSlug = (props: { articleId: string }) => {
         required: 'This field is required',
         minLength: 1,
       }}
-      render={({ field }) => {
+      render={({ field, fieldState }) => {
         const router = useRouter()
 
         const updateArticle = useUpdateArticle()
@@ -183,11 +183,13 @@ const FormSlug = (props: { articleId: string }) => {
         const onSaveSlug = async () => {
           setSlugIsSaving(true)
           const art = await updateArticle.mutateAsync({
-            id: props.articleId,
+            id: props.article.id,
             articleUpdate: {
               slug: field.value,
             },
           })
+
+          setChanged(false)
 
           // Redirect
           router.push(
@@ -199,6 +201,10 @@ const FormSlug = (props: { articleId: string }) => {
 
           setSlugIsSaving(false)
         }
+
+        const [changed, setChanged] = useState(false)
+
+        // const canSave = fieldState.isDirty && fieldState.isTouched
 
         return (
           <FormItem>
@@ -213,13 +219,16 @@ const FormSlug = (props: { articleId: string }) => {
               <FormControl>
                 <Input
                   type="text"
-                  onChange={field.onChange}
+                  onChange={(v) => {
+                    field.onChange(v)
+                    setChanged(true)
+                  }}
                   defaultValue={field.value}
                 />
               </FormControl>
 
               <Button
-                disabled={!field.value}
+                disabled={!changed}
                 loading={updateArticle.isPending || slugIsSaving}
                 onClick={onSaveSlug}
               >

@@ -38,6 +38,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
     HeldTransfer,
+    OAuthAccount,
     Organization,
     Repository,
     Subscription,
@@ -50,6 +51,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
+from polar.models.user import OAuthPlatform
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -400,14 +402,31 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         pagination: PaginationParams,
     ) -> tuple[Sequence[Subscription], int]:
         statement = (
-            select(Subscription)
-            .join(Subscription.subscription_tier)
-            .options(
-                joinedload(Subscription.user),
-                joinedload(Subscription.organization),
-                contains_eager(Subscription.subscription_tier),
+            (
+                select(Subscription)
+                .join(Subscription.subscription_tier)
+                .join(User, onclause=User.id == Subscription.user_id, isouter=True)
+                .join(
+                    OAuthAccount,
+                    onclause=and_(
+                        User.id == OAuthAccount.user_id,
+                        OAuthAccount.platform == OAuthPlatform.github,
+                    ),
+                    isouter=True,
+                )
+                .options(
+                    contains_eager(Subscription.user),
+                    joinedload(Subscription.organization),
+                    contains_eager(Subscription.subscription_tier),
+                )
             )
-        ).where(Subscription.active.is_(True))
+            .where(Subscription.active.is_(True))
+            .order_by(
+                # Put users with a GitHub account first, so we can display their avatar
+                OAuthAccount.created_at.nulls_last(),
+                Subscription.started_at.desc(),
+            )
+        )
 
         if organization is not None:
             statement = statement.where(

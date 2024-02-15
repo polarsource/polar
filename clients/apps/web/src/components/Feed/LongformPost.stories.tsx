@@ -1,3 +1,4 @@
+import { PolarQueryClientProvider } from '@/app/providers'
 import type { Meta, StoryObj } from '@storybook/react'
 import { article } from 'polarkit/testdata'
 import LongformPost from './LongformPost'
@@ -31,9 +32,15 @@ export const Default: Story = {
     showShare: false,
     paidArticlesBenefitName: 'ProTier200',
   },
+  render: (args) => (
+    <PolarQueryClientProvider>
+      <LongformPost {...args} />
+    </PolarQueryClientProvider>
+  ),
 }
 
 export const IsFreeSubscriber: Story = {
+  ...Default,
   args: {
     ...Default.args,
     isSubscriber: true,

@@ -204,8 +204,6 @@ const FormSlug = (props: { article: Article }) => {
 
         const [changed, setChanged] = useState(false)
 
-        // const canSave = fieldState.isDirty && fieldState.isTouched
-
         return (
           <FormItem>
             <div className="flex flex-col gap-2">

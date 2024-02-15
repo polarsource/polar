@@ -423,7 +423,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             .where(Subscription.active.is_(True))
             .order_by(
                 # Put users with a GitHub account first, so we can display their avatar
-                OAuthAccount.created_at.nulls_last(),
+                OAuthAccount.created_at.desc().nulls_last(),
                 Subscription.started_at.desc(),
             )
         )

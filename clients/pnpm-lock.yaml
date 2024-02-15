@@ -251,8 +251,8 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       markdown-to-jsx:
-        specifier: ^7.4.1
-        version: 7.4.1(react@18.2.0)
+        specifier: 7.3.2
+        version: 7.3.2(react@18.2.0)
       mermaid:
         specifier: ^10.6.1
         version: 10.6.1
@@ -7206,7 +7206,7 @@ packages:
       color-convert: 2.0.1
       dequal: 2.0.3
       lodash: 4.17.21
-      markdown-to-jsx: 7.4.1(react@18.2.0)
+      markdown-to-jsx: 7.3.2(react@18.2.0)
       memoizerific: 1.11.3
       polished: 4.2.2
       react: 18.2.0
@@ -15329,8 +15329,8 @@ packages:
     resolution: {integrity: sha512-0aF7ZmVon1igznGI4VS30yugpduQW3y3GkcgGJOp7d8x8QrizhigUxjI/m2UojsXXto+jLAH3KSz+xOJTiORjg==}
     dev: true
 
-  /markdown-to-jsx@7.4.1(react@18.2.0):
-    resolution: {integrity: sha512-GbrbkTnHp9u6+HqbPRFJbObi369AgJNXi/sGqq5HRsoZW063xR1XDCaConqq+whfEIAlzB1YPnOgsPc7B7bc/A==}
+  /markdown-to-jsx@7.3.2(react@18.2.0):
+    resolution: {integrity: sha512-B+28F5ucp83aQm+OxNrPkS8z0tMKaeHiy0lHJs3LqCyDQFtWuenaIrkaVTgAm1pf1AU85LXltva86hlaT17i8Q==}
     engines: {node: '>= 10'}
     peerDependencies:
       react: '>= 0.14.0'

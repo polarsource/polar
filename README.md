@@ -13,8 +13,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=fief-dev&label=Subscribe&darkmode">
-  <img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=fief-dev&label=Subscribe">
+  <source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=polarsource&label=Subscribe&darkmode">
+  <img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=polarsource&label=Subscribe">
 </picture>
 
 

@@ -337,11 +337,9 @@ exports[`posts 1`] = `
     </p>
     <iframe
       allowfullscreen=""
-      class="my-2"
+      class="my-2 aspect-[560/315] w-full max-w-full"
       frameborder="0"
-      height="365.625"
       src="https://www.youtube.com/embed/QKx4o0z-SVY"
-      width="650"
     />
     <h2
       id="lets-create-a-polar-subscription-benefit-for-a-github-repository"

@@ -103,23 +103,29 @@ const ClientPage = ({
     <div className="flex flex-col-reverse gap-x-16 md:flex-row">
       <div className="flex w-full flex-grow flex-col gap-y-6 md:max-w-xl">
         <div className="flex w-full flex-col gap-y-6">
-          <div className="flex w-full flex-col gap-y-6">
+          <div className="flex w-full flex-col gap-y-12">
             {(pinnedArticles.items?.length ?? 0) > 0 ? (
               <>
-                {pinnedArticles.items?.map((post) => (
-                  <PostComponent article={post} key={post.id} highlightPinned />
-                ))}
-                <Separator />
+                <div className="flex w-full flex-col gap-y-6">
+                  {pinnedArticles.items?.map((post) => (
+                    <PostComponent
+                      article={post}
+                      key={post.id}
+                      highlightPinned
+                    />
+                  ))}
+                </div>
+                <Separator className="dark:bg-polar-800 bg-gray-100" />
               </>
             ) : null}
 
             {infinitePosts.length > 0 ? (
-              <>
+              <div className="flex w-full flex-col gap-y-6">
                 {infinitePosts.map((post) => (
                   <PostComponent article={post} key={post.id} />
                 ))}
                 <div ref={inViewRef} />
-              </>
+              </div>
             ) : (
               <>
                 {posts.isFetched && infinitePosts.length === 0 ? (

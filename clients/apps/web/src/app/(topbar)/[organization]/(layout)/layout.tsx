@@ -63,7 +63,7 @@ export default async function Layout({
                   mobileLayout
                 />
               </div>
-              <div className="flex h-full w-full flex-col overflow-hidden md:gap-y-8">
+              <div className="flex h-full w-full flex-col md:gap-y-8">
                 <OrganizationPublicPageNav
                   className="hidden md:flex"
                   organization={organization}

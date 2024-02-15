@@ -112,8 +112,8 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
           {props.highlightPinned && props.article.is_pinned ? (
             <>
               &middot;
-              <div className="flex flex-row items-center rounded-full bg-green-100 bg-gradient-to-l px-2 dark:bg-green-950">
-                <span className="text-[.6rem] text-green-500 dark:text-green-300">
+              <div className="flex flex-row items-center rounded-full bg-gradient-to-l from-teal-50 to-teal-100 px-2 dark:from-teal-950 dark:to-teal-900">
+                <span className="text-[.6rem] text-teal-500 dark:text-teal-400">
                   Pinned
                 </span>
               </div>

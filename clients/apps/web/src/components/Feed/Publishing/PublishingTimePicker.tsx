@@ -29,7 +29,8 @@ export const PublishingTimePicker = () => {
             <RadioGroup
               value={publish}
               onValueChange={(value) => {
-                field.onChange(value === 'publish-now' ? undefined : new Date())
+                const v = value === 'publish-now' ? null : new Date()
+                field.onChange(v)
               }}
             >
               <div className="flex items-center space-x-2">
@@ -46,7 +47,7 @@ export const PublishingTimePicker = () => {
               </div>
             </RadioGroup>
 
-            {publish === 'schedule' && (
+            {publish === 'schedule' ? (
               <div className="flex flex-col gap-y-4">
                 <div className="flex flex-row justify-between">
                   <DateTimePicker
@@ -57,7 +58,7 @@ export const PublishingTimePicker = () => {
                   />
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         )
       }}

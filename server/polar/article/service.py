@@ -5,8 +5,8 @@ from datetime import datetime
 from operator import and_, or_
 from uuid import UUID
 
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 import structlog
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from slugify import slugify
 from sqlalchemy import (
     Select,
@@ -520,7 +520,7 @@ class ArticleService:
 
         embed = DiscordEmbed(
             title="Published Article",
-            description=f'[{article.title}](https://polar.sh/{article.organization.name}/posts/{article.slug})',  # noqa: E501
+            description=f"[{article.title}](https://polar.sh/{article.organization.name}/posts/{article.slug})",  # noqa: E501
             color="65280",
         )
 

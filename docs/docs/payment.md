@@ -72,7 +72,7 @@ Stripe transaction- and payout fees apply before transfers. _We're covering this
 
 ### Payouts
 
-See [Recive Funding](/maintainers/issue-funding/workflow/#receive-funding) as
+See [Receive Funding](/maintainers/issue-funding/workflow/#receive-funding) as
 part of our maintainer guides.
 
 ### Taxes

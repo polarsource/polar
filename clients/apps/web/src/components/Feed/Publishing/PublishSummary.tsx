@@ -1,9 +1,10 @@
 import { useModal } from '@/components/Modal/useModal'
-import { Article, ArticleVisibilityEnum } from '@polar-sh/sdk'
+import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { useArticleReceivers } from 'polarkit/hooks'
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
+import { useFormContext } from 'react-hook-form'
 import { PublishShareModal } from './PublishShareModal'
 import { useArticleActions } from './useArticleActions'
 
@@ -21,17 +22,20 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
     router.push(`/${article.organization.name}/posts/${article.slug}`)
   }, [article, router, hideModal])
 
+  const { watch } = useFormContext<ArticleUpdate>()
+
+  const formValues = watch()
+
   const { data: articleReceivers } = useArticleReceivers(
     article.organization.name,
-    article.paid_subscribers_only ?? false,
+    formValues.paid_subscribers_only ?? false,
   )
 
-  const publishedAtDate = useMemo(
-    () => (article.published_at ? new Date(article.published_at) : undefined),
-    [article],
-  )
+  const publishedAtDate = formValues.published_at
+    ? new Date(formValues.published_at)
+    : undefined
 
-  const isPublished = Boolean(
+  const isAlreadyPublished = Boolean(
     article.published_at &&
       new Date(article.published_at) <= new Date() &&
       article.visibility === ArticleVisibilityEnum.PUBLIC,
@@ -43,7 +47,7 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
       ...article,
       byline: undefined,
     },
-    isPublished,
+    isAlreadyPublished,
     showModal,
   )
 
@@ -54,11 +58,14 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
     return 's'
   }
 
+  const willNotifySubscribers =
+    formValues.notify_subscribers && !article.notifications_sent_at
+
   return (
     <ShadowBoxOnMd className="sticky top-0 flex w-full flex-col gap-y-8">
       <div className="flex flex-col gap-y-2">
         <h2 className="font-medium leading-relaxed">
-          {isPublished ? 'Published' : 'Publish'}
+          {isAlreadyPublished ? 'Published' : 'Publish'}
         </h2>
         {publishedAtDate ? (
           <div className="flex flex-col gap-y-2">
@@ -130,7 +137,7 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
         </ul>
       </div>
 
-      {article.notify_subscribers && !article.notifications_sent_at && (
+      {willNotifySubscribers ? (
         <div className="flex flex-col gap-y-2">
           <h3 className="font-medium">Email</h3>
           <p className="dark:text-polar-400 text-sm text-gray-600">
@@ -141,7 +148,8 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
             .
           </p>
         </div>
-      )}
+      ) : null}
+
       <div className="flex flex-col gap-y-2">
         {articleActions.map((action) => (
           <Button key={action.text} {...action.button} onClick={action.onClick}>

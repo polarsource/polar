@@ -26,7 +26,7 @@ export default function ClientPage() {
     ? `org=${org?.name}&repo=${currentRepo.name}`
     : `org=${org?.name}`
 
-  const fundingYAML = `custom: ["https://polar.sh/${orgSlashRepo}"]`
+  const fundingYAML = `polar: ${org?.name}`
 
   const issues = useSearchIssues({
     organizationName: org?.name,

@@ -111,9 +111,9 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
       <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="flex w-full flex-row"
+          className="flex w-full flex-col gap-8 md:flex-row"
         >
-          <div className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
+          <div className="flex flex-shrink-0 flex-col gap-8 md:w-2/3">
             <ShadowBoxOnMd className="flex flex-col gap-y-8">
               <>
                 {!isAlreadyPublished && <PublishingTimePicker />}
@@ -175,6 +175,10 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
 const FormSlug = (props: { article: Article }) => {
   const { control } = useFormContext<ArticleUpdate>()
+  const router = useRouter()
+  const updateArticle = useUpdateArticle()
+  const [slugIsSaving, setSlugIsSaving] = useState(false)
+  const [changed, setChanged] = useState(false)
 
   return (
     <FormField
@@ -185,11 +189,6 @@ const FormSlug = (props: { article: Article }) => {
         minLength: 1,
       }}
       render={({ field, fieldState }) => {
-        const router = useRouter()
-
-        const updateArticle = useUpdateArticle()
-        const [slugIsSaving, setSlugIsSaving] = useState(false)
-
         const onSaveSlug = async () => {
           setSlugIsSaving(true)
           const art = await updateArticle.mutateAsync({
@@ -211,8 +210,6 @@ const FormSlug = (props: { article: Article }) => {
 
           setSlugIsSaving(false)
         }
-
-        const [changed, setChanged] = useState(false)
 
         return (
           <FormItem>

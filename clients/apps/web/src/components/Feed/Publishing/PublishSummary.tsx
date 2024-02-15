@@ -70,7 +70,7 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
   }
 
   return (
-    <ShadowBoxOnMd className="sticky top-0 flex w-full flex-col gap-y-8">
+    <ShadowBoxOnMd className="sticky top-0 flex h-fit w-full flex-col gap-y-8">
       <div className="flex flex-col gap-y-2">
         <h2 className="font-medium leading-relaxed">
           {isAlreadyPublished ? 'Published' : 'Publish'}

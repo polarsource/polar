@@ -159,7 +159,13 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
       ) : null}
 
       <div className="flex flex-col gap-y-2">
-        <Button type="submit" loading={isSaving} variant={'default'} fullWidth>
+        <Button
+          type="submit"
+          loading={isSaving}
+          variant={'default'}
+          fullWidth
+          // onClick={() => alert('hey')}
+        >
           {publishVerb()}
         </Button>
       </div>

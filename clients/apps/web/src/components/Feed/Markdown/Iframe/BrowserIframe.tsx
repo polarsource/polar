@@ -3,7 +3,7 @@ const Iframe = (props: {
   width: number
   height: number
   title: string
-  allow: String
+  allow: string
 }) => {
   if (typeof props.src !== 'string') {
     return (
@@ -26,23 +26,15 @@ const Iframe = (props: {
 
 const IframeYouTube = (props: {
   src: string
-  width: number
-  height: number
   title: string
-  allow: String
+  allow: string
 }) => {
-  const r = 560 / 315 // youtube default ratios
-  const w = 650 // width of the article container on our site
-  const h = w / r // calculate appropriate height
-
   return (
     <iframe
       src={props.src}
-      width={props.width || w}
-      height={props.height || h}
       title={props.title}
-      allow={props.title}
-      className="my-2"
+      allow={props.allow}
+      className="my-2 aspect-[560/315] w-full max-w-full"
       frameBorder={0}
       allowFullScreen
     />

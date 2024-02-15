@@ -1,4 +1,4 @@
-import { SupportUs } from '@/components/Embed/SupportUs'
+import { Subscribe } from '@/components/Embed/Subscribe'
 import {
   ListResourceSubscriptionSummary,
   Organization,
@@ -19,7 +19,6 @@ const getSubscriptions = async (
     method: 'GET',
   })
   const data = (await response.json()) as ListResourceSubscriptionSummary
-  console.log(data)
   return [data.items || [], data.pagination.total_count]
 }
 
@@ -40,7 +39,7 @@ const renderBadge = async (
   organization: Organization,
   subscriptions: SubscriptionSummary[],
   totalSubscriptions: number,
-  text: string,
+  label: string,
   darkmode: boolean,
 ) => {
   const inter500 = await fetch(
@@ -52,12 +51,12 @@ const renderBadge = async (
   ).then((res) => res.arrayBuffer())
 
   return await satori(
-    <SupportUs
+    <Subscribe
       organization={organization}
       subscriptions={subscriptions}
       totalSubscriptions={totalSubscriptions}
       darkmode={darkmode}
-      text={text}
+      label={label}
     />,
     {
       fonts: [
@@ -82,7 +81,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
 
   const org = searchParams.get('org')
-  const text = searchParams.get('text') || 'Support us'
+  const label = searchParams.get('label') || 'Subscribe'
   const darkmode = searchParams.has('darkmode')
 
   if (!org) {
@@ -96,14 +95,15 @@ export async function GET(request: Request) {
       organization,
       subscriptions,
       total,
-      text,
+      label,
       darkmode,
     )
 
     return new Response(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'no-cache',
+        // Cache for one hour in user's browser and Vercel cache
+        'Cache-Control': 'max-age=3600, s-maxage=3600',
       },
       status: 200,
     })

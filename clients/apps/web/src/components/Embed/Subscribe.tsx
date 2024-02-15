@@ -1,18 +1,18 @@
 import { Organization, SubscriptionSummary } from '@polar-sh/sdk'
 import React from 'react'
 
-export const SupportUs = ({
+export const Subscribe = ({
   organization,
   subscriptions,
   totalSubscriptions,
   darkmode,
-  text,
+  label,
 }: {
   organization: Organization
   subscriptions: SubscriptionSummary[]
   totalSubscriptions: number
   darkmode: boolean
-  text: string
+  label: string
 }) => {
   const extraSubscribersCount = totalSubscriptions - subscriptions.length
 
@@ -65,7 +65,7 @@ export const SupportUs = ({
                 flexShrink: '0',
               }}
             >
-              {text}
+              {label}
             </div>
           </div>
 

@@ -3,6 +3,7 @@
 import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
+import { Subscribe } from '@/components/Embed/Subscribe'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
@@ -12,7 +13,11 @@ import {
   LabeledRadioButton,
   ShadowBox,
 } from 'polarkit/components/ui/atoms'
-import { useListRepositories, useSearchIssues } from 'polarkit/hooks'
+import {
+  useListRepositories,
+  useSearchIssues,
+  useSubscriptionSummary,
+} from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 
 export default function ClientPage() {
@@ -34,8 +39,6 @@ export default function ClientPage() {
     repositoryName: currentRepo?.name,
   })
 
-  const [currentEmbedTab, setCurrentEmbedTab] = useState('Issues')
-
   // Get all repositories
   const listRepositoriesQuery = useListRepositories()
   const allRepositories = listRepositoriesQuery?.data?.items
@@ -43,6 +46,10 @@ export default function ClientPage() {
   // Filter repos by current org & normalize for our select
   const allOrgRepositories =
     allRepositories?.filter((r) => r?.organization?.id === org?.id) || []
+
+  const subscriptionsSummary = useSubscriptionSummary(org?.name ?? '', 3)
+
+  const [currentEmbedTab, setCurrentEmbedTab] = useState('Subscribe')
 
   if (!org && isLoaded) {
     return (
@@ -56,6 +63,16 @@ export default function ClientPage() {
   }
 
   const previews: Record<string, ReactElement> = {
+    Subscribe: (
+      <Subscribe
+        subscriptions={subscriptionsSummary.data?.items || []}
+        totalSubscriptions={
+          subscriptionsSummary.data?.pagination.total_count ?? 0
+        }
+        label="Subscribe"
+        darkmode={false}
+      />
+    ),
     Issues: (
       <FundOurBacklog
         issues={issues.data?.items || []}
@@ -70,6 +87,7 @@ export default function ClientPage() {
   }
 
   const embedCodes: Record<string, string> = {
+    Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
   }
@@ -124,7 +142,7 @@ export default function ClientPage() {
                   </h3>
 
                   <LabeledRadioButton
-                    values={['Issues', 'Shield']}
+                    values={['Subscribe', 'Issues', 'Shield']}
                     value={currentEmbedTab}
                     onSelected={setCurrentEmbedTab}
                   />

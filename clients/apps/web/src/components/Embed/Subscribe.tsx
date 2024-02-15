@@ -1,14 +1,12 @@
-import { Organization, SubscriptionSummary } from '@polar-sh/sdk'
+import { SubscriptionSummary } from '@polar-sh/sdk'
 import React from 'react'
 
 export const Subscribe = ({
-  organization,
   subscriptions,
   totalSubscriptions,
   darkmode,
   label,
 }: {
-  organization: Organization
   subscriptions: SubscriptionSummary[]
   totalSubscriptions: number
   darkmode: boolean

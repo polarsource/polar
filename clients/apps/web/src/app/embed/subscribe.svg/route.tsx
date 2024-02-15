@@ -36,7 +36,6 @@ const getOrganization = async (org: string): Promise<Organization> => {
 }
 
 const renderBadge = async (
-  organization: Organization,
   subscriptions: SubscriptionSummary[],
   totalSubscriptions: number,
   label: string,
@@ -52,7 +51,6 @@ const renderBadge = async (
 
   return await satori(
     <Subscribe
-      organization={organization}
       subscriptions={subscriptions}
       totalSubscriptions={totalSubscriptions}
       darkmode={darkmode}
@@ -89,15 +87,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const organization = await getOrganization(org)
     const [subscriptions, total] = await getSubscriptions(org)
-    const svg = await renderBadge(
-      organization,
-      subscriptions,
-      total,
-      label,
-      darkmode,
-    )
+    const svg = await renderBadge(subscriptions, total, label, darkmode)
 
     return new Response(svg, {
       headers: {

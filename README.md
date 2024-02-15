@@ -12,6 +12,12 @@
 <hr />
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=fief-dev&label=Subscribe&darkmode">
+  <img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=fief-dev&label=Subscribe">
+</picture>
+
+
 <a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/polarsource">Blog</a>

@@ -74,6 +74,8 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
     const wasAlreadyPublished = isPublished(article)
 
+    const slugChanged = article.slug !== form.getValues('slug')
+
     const updatedArticle = await update.mutateAsync({
       id: article.id,
       articleUpdate: {
@@ -93,6 +95,14 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
     if (didPublish) {
       showPublishedShareModal()
+      return
+    }
+
+    // Redirect if slug changed
+    if (slugChanged) {
+      router.push(
+        `/maintainer/${article.organization.name}/posts/${updatedArticle.slug}#settings`,
+      )
     }
   }
 

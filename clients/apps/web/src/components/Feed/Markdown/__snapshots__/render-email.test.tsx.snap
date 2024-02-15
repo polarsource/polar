@@ -646,11 +646,15 @@ exports[`posts 2`] = `
       </a>
       .
     </p>
-    <div
-      class="bg-gray-200 p-2 text-red-800"
+    <a
+      href="https://www.youtube.com/watch?v=QKx4o0z-SVY"
     >
-      Invalid &lt;iframe&gt;
-    </div>
+      <img
+        alt="YouTube Thumbnail"
+        class="my-2 max-w-full"
+        src="https://i.ytimg.com/vi/QKx4o0z-SVY/hq720.jpg"
+      />
+    </a>
     <h2
       id="lets-create-a-polar-subscription-benefit-for-a-github-repository"
     >

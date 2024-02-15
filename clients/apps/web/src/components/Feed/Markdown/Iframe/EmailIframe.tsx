@@ -19,7 +19,7 @@ const Iframe = (props: { src: string }) => {
 }
 
 const IframeYouTube = (props: { src: string }) => {
-  const m = props.src.match(/\/embed\/(.*)\?/)
+  const m = props.src.match(/\/embed\/(.*)\/?/)
 
   if (!m) {
     return (

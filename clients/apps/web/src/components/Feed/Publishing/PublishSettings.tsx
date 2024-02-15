@@ -18,7 +18,8 @@ import { useDeleteArticle, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { AudiencePicker } from './AudiencePicker'
-import { PublishSummary } from './PublishSummary'
+import { PublishShareModal } from './PublishShareModal'
+import { PublishSummary, isPublished } from './PublishSummary'
 import { PublishingTimePicker } from './PublishingTimePicker'
 
 interface PublishModalContentProps {
@@ -33,34 +34,17 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
       published_at: article.published_at,
       slug: article.slug,
       is_pinned: article.is_pinned,
-
-      // subscription_id: subscription.id,
-      // subscription_benefit_id: benefit.id,
     },
   })
   const { handleSubmit } = form
 
-  const [paidSubscribersOnly, setPaidSubscribersOnly] = useState(
-    article.paid_subscribers_only ?? false,
-  )
-  // const [sendEmail, setSendEmail] = useState(article.notify_subscribers)
-  const [publishAt, setPublishAt] = useState<Date | undefined>(
-    article.published_at ? new Date(article.published_at) : undefined,
-  )
-  // const [slug, setSlug] = useState<string>(article.slug)
-  // const [slugChanged, setSlugChanged] = useState(false)
-  // const [isPinned, setIsPinned] = useState(article.is_pinned)
-
   const router = useRouter()
-  const { hide: hideModal, isShown: isModalShown, show: showModal } = useModal()
 
-  // const onChangeSendEmail = (checked: boolean) => {
-  //   setSendEmail(checked)
-  // }
-
-  const onChangePublishAt = (v: Date | undefined) => {
-    setPublishAt(v)
-  }
+  const {
+    hide: hideArchiveModal,
+    isShown: isArchiveModalShown,
+    show: showArchiveModal,
+  } = useModal()
 
   const archiveArticle = useDeleteArticle()
 
@@ -70,17 +54,47 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
     if (response.ok) {
       router.push(`/maintainer/${article.organization.name}/posts`)
     } else {
-      hideModal()
+      hideArchiveModal()
     }
-  }, [archiveArticle, article, hideModal, router])
+  }, [archiveArticle, article, hideArchiveModal, router])
 
-  const isPublished = Boolean(
-    article.published_at &&
-      new Date(article.published_at) < new Date() &&
-      article.visibility === ArticleVisibilityEnum.PUBLIC,
-  )
+  const update = useUpdateArticle()
 
-  const onSubmit = () => {}
+  const {
+    hide: hidePublishedShareModal,
+    isShown: isPublishedShareModalShown,
+    show: showPublishedShareModal,
+  } = useModal()
+
+  const isAlreadyPublished = isPublished(article)
+
+  const onSubmit = async () => {
+    const publishedAt =
+      form.getValues('published_at') ?? new Date().toISOString()
+
+    const wasAlreadyPublished = isPublished(article)
+
+    const updatedArticle = await update.mutateAsync({
+      id: article.id,
+      articleUpdate: {
+        ...form.getValues(),
+
+        // Always set published at, even if unset.
+        set_published_at: true,
+        published_at: publishedAt ?? new Date().toISOString(),
+
+        visibility: ArticleVisibilityEnum.PUBLIC,
+      },
+    })
+
+    const isPublishedAfterSave = isPublished(updatedArticle)
+
+    const didPublish = !wasAlreadyPublished && isPublishedAfterSave
+
+    if (didPublish) {
+      showPublishedShareModal()
+    }
+  }
 
   return (
     <>
@@ -92,7 +106,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
           <div className="flex w-2/3 flex-shrink-0 flex-col gap-y-8">
             <ShadowBoxOnMd className="flex flex-col gap-y-8">
               <>
-                {!isPublished && <PublishingTimePicker />}
+                {!isAlreadyPublished && <PublishingTimePicker />}
 
                 <AudiencePicker />
 
@@ -114,7 +128,11 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                     This action will unpublish the post & permanently remove it
                   </p>
                 </div>
-                <Button variant="destructive" size="sm" onClick={showModal}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={showArchiveModal}
+                >
                   Archive
                 </Button>
               </div>
@@ -125,27 +143,22 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                 }
                 destructiveText="Archive"
                 onConfirm={handleArchiveArticle}
-                isShown={isModalShown}
-                hide={hideModal}
+                isShown={isArchiveModalShown}
+                hide={hideArchiveModal}
                 destructive
               />
             </ShadowBoxOnMd>
           </div>
 
-          <PublishSummary
-            article={article}
-            // article={{
-            //   ...article,
-            //   ...form.getValues(),
-            //   // paid_subscribers_only: paidSubscribersOnly,
-            //   // published_at: publishAt ? publishAt.toISOString() : undefined,
-            //   // notify_subscribers: sendEmail,
-            //   // slug,
-            //   // is_pinned: isPinned,
-            // }}
-          />
+          <PublishSummary article={article} isSaving={update.isPending} />
         </form>
       </Form>
+
+      <PublishShareModal
+        isShown={isPublishedShareModalShown}
+        hide={hidePublishedShareModal}
+        article={article}
+      />
     </>
   )
 }
@@ -230,8 +243,6 @@ const FormNotifySubscribers = (props: { article: Article }) => {
       control={control}
       name="notify_subscribers"
       render={({ field }) => {
-        // const { formItemId } = useFormField()
-
         if (props.article.notifications_sent_at) {
           return (
             <FormItem>

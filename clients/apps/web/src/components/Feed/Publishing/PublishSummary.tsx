@@ -1,27 +1,30 @@
-import { useModal } from '@/components/Modal/useModal'
 import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { useArticleReceivers } from 'polarkit/hooks'
-import { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { PublishShareModal } from './PublishShareModal'
-import { useArticleActions } from './useArticleActions'
 
 interface ArticleSummaryProps {
   article: Article
+  isSaving: boolean
 }
 
-export const PublishSummary = ({ article }: ArticleSummaryProps) => {
-  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const router = useRouter()
+export const isPublished = (article: Article): boolean => {
+  return Boolean(
+    article.published_at &&
+      new Date(article.published_at) <= new Date() &&
+      article.visibility === ArticleVisibilityEnum.PUBLIC,
+  )
+}
 
-  const onHideModal = useCallback(() => {
-    hideModal()
+export const isScheduled = (article: Article): boolean => {
+  return Boolean(
+    article.published_at &&
+      new Date(article.published_at) > new Date() &&
+      article.visibility === ArticleVisibilityEnum.PUBLIC,
+  )
+}
 
-    router.push(`/${article.organization.name}/posts/${article.slug}`)
-  }, [article, router, hideModal])
-
+export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
   const { watch } = useFormContext<ArticleUpdate>()
 
   const formValues = watch()
@@ -35,21 +38,9 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
     ? new Date(formValues.published_at)
     : undefined
 
-  const isAlreadyPublished = Boolean(
-    article.published_at &&
-      new Date(article.published_at) <= new Date() &&
-      article.visibility === ArticleVisibilityEnum.PUBLIC,
-  )
+  const isAlreadyPublished = isPublished(article)
 
-  const articleActions = useArticleActions(
-    article.id,
-    {
-      ...article,
-      byline: undefined,
-    },
-    isAlreadyPublished,
-    showModal,
-  )
+  const isAlreadyScheduled = isScheduled(article)
 
   const plural = (count: number) => {
     if (count == 1) {
@@ -60,6 +51,23 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
 
   const willNotifySubscribers =
     formValues.notify_subscribers && !article.notifications_sent_at
+
+  const publishVerb = () => {
+    // Already published
+    if (isAlreadyPublished) {
+      return 'Save'
+    }
+
+    if (publishedAtDate && new Date(publishedAtDate) > new Date()) {
+      if (isAlreadyScheduled) {
+        return 'Update schedule'
+      }
+
+      return 'Schedule'
+    }
+
+    return 'Publish now'
+  }
 
   return (
     <ShadowBoxOnMd className="sticky top-0 flex w-full flex-col gap-y-8">
@@ -151,17 +159,10 @@ export const PublishSummary = ({ article }: ArticleSummaryProps) => {
       ) : null}
 
       <div className="flex flex-col gap-y-2">
-        {articleActions.map((action) => (
-          <Button key={action.text} {...action.button} onClick={action.onClick}>
-            {action.text}
-          </Button>
-        ))}
+        <Button type="submit" loading={isSaving} variant={'default'} fullWidth>
+          {publishVerb()}
+        </Button>
       </div>
-      <PublishShareModal
-        isShown={isModalShown}
-        hide={onHideModal}
-        article={article}
-      />
     </ShadowBoxOnMd>
   )
 }

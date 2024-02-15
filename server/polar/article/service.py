@@ -222,7 +222,7 @@ class ArticleService:
         article: Article,
         update: ArticleUpdate,
     ) -> Article:
-        shouldNotifyOnDiscord = False
+        should_notify_on_discord = False
 
         if update.title is not None:
             article.title = update.title
@@ -268,7 +268,7 @@ class ArticleService:
 
         await article.save(session)
 
-        if shouldNotifyOnDiscord:
+        if should_notify_on_discord:
             await self.article_published_discord_notification(article)
 
         return article

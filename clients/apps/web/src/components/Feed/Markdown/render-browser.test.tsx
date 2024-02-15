@@ -182,3 +182,38 @@ pie title Pets adopted by volunteers
   // @ts-ignore
   expect(asFragment()).toMatchSnapshot()
 })
+
+test('blockquote', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+
+And code blocks:
+
+<blockquote>
+i am a block
+</blockquote>
+
+<blockquote>
+multi
+
+line
+
+block
+</blockquote>
+
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})

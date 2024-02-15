@@ -50,8 +50,12 @@ exports[`basic 1`] = `
 <DocumentFragment>
   <div>
      
-# h1
 
+    <h1
+      id="h1"
+    >
+      h1
+    </h1>
     <h2
       id="h2"
     >
@@ -117,6 +121,33 @@ And here it continues in the same block.
       <p>
         This is a quoute!
       </p>
+    </blockquote>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`blockquote 1`] = `
+<DocumentFragment>
+  <div>
+    <p>
+      And code blocks:
+    </p>
+    <blockquote>
+      i am a block
+
+    </blockquote>
+    <blockquote>
+      <p>
+        multi
+      </p>
+      <p>
+        line
+      </p>
+      <p>
+        block
+      </p>
+      
+
     </blockquote>
   </div>
 </DocumentFragment>

@@ -191,6 +191,35 @@ exports[`basic 1`] = `
 </div>
 `;
 
+exports[`blockquote 1`] = `
+<div>
+  <div>
+     
+
+    <p>
+      And code blocks:
+    </p>
+    <blockquote>
+      i am a block
+
+    </blockquote>
+    <blockquote>
+      <p>
+        multi
+      </p>
+      <p>
+        line
+      </p>
+      <p>
+        block
+      </p>
+      
+
+    </blockquote>
+  </div>
+</div>
+`;
+
 exports[`code 1`] = `
 <div>
   <div>

@@ -249,3 +249,32 @@ func main() {
   )
   expect(container).toMatchSnapshot()
 })
+
+test('blockquote', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+ 
+
+And code blocks:
+
+<blockquote>
+i am a block
+</blockquote>
+
+<blockquote>
+multi
+
+line
+
+block
+</blockquote>
+
+`,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

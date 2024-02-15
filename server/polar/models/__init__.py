@@ -23,6 +23,7 @@ from .subscription_benefit import SubscriptionBenefit
 from .subscription_benefit_grant import SubscriptionBenefitGrant
 from .subscription_tier import SubscriptionTier
 from .subscription_tier_benefit import SubscriptionTierBenefit
+from .traffic import Traffic
 from .transaction import Transaction
 from .user import OAuthAccount, User
 from .user_notification import UserNotification
@@ -58,6 +59,7 @@ __all__ = [
     "SubscriptionTierBenefit",
     "TimestampedModel",
     "Transaction",
+    "Traffic",
     "User",
     "UserNotification",
     "UserOrganization",

@@ -235,7 +235,7 @@ const ClientPage = ({
                 </Link>
               </div>
               <p className="dark:text-polar-500 text-sm leading-normal text-gray-500">
-                Support {organization.name} with a paid subsciption & receive
+                Support {organization.name} with a paid subscription & receive
                 unique benefits as a bonus
               </p>
             </div>

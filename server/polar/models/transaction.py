@@ -10,7 +10,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from polar.kit.db.models import RecordModel
+from polar.kit.db.models import Model, RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
@@ -31,6 +31,8 @@ class TransactionType(StrEnum):
 
     payment = "payment"
     """Polar received a payment."""
+    fee = "fee"
+    """A fee was charged to Polar."""
     refund = "refund"
     """Polar refunded a payment (totally or partially)."""
     dispute = "dispute"
@@ -48,6 +50,87 @@ class PaymentProcessor(StrEnum):
 
     stripe = "stripe"
     open_collective = "open_collective"
+
+
+class FeeType(StrEnum):
+    """
+    Type of fees applied by payment processors, and billed to the users.
+
+    For Stripe, all fees are rounded to the nearest unit.
+    Ref: https://support.stripe.com/questions/rounding-rules-for-stripe-fees
+    """
+
+    payment = "payment"
+    """
+    Fee applied to a payment, like a credit card fee.
+    """
+
+    dispute = "dispute"
+    """
+    Fee applied when a dispute is opened. Usually crazy high.
+    """
+
+    account = "account"
+    """
+    Fee applied recurrently to an active account.
+
+    For Stripe, it's **2$ per month**.
+    It considers an account active if a payout has been made in the month.
+    """
+
+    tax = "tax"
+    """
+    Fee applied for automatic tax calculation and collection.
+
+    For Stripe, it corresponds to **0.5% of the amount**.
+    """
+
+    subscription = "subscription"
+    """
+    Fee applied to a recurring subscription.
+
+    For Stripe, it corresponds to **0.5% of the subscription amount**.
+    """
+
+    cross_border_transfer = "cross_border_transfer"
+    """
+    Fee applied when money is transferred to a different country than Polar's.
+
+    For Stripe, it varies per country. Usually around **0.25% and 1% of the amount**.
+    """
+
+    payout = "payout"
+    """
+    Fee applied when money is paid out to the user's bank account.
+
+    For Stripe, it's **0.25% of the amount + 0.25$ per payout**.
+    """
+
+
+class TransactionFeeSettlement(Model):
+    """
+    Represent a relationship between a fee transaction
+    and a transaction that settles it, fully or partially.
+    """
+
+    __tablename__ = "transaction_fee_settlements"
+
+    fee_transaction_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("transactions.id", ondelete="cascade"),
+        nullable=False,
+        primary_key=True,
+    )
+
+    settlement_transaction_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("transactions.id", ondelete="cascade"),
+        nullable=False,
+        primary_key=True,
+    )
+
+    settlement_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    """Amount in cents settled by the settlement transaction."""
 
 
 class Transaction(RecordModel):
@@ -78,8 +161,18 @@ class Transaction(RecordModel):
     """Country for which Polar collected the tax."""
     tax_state: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
     """State for which Polar collected the tax."""
-    processor_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    """Fee collected by the payment processor for this transaction."""
+
+    fee_type: Mapped[FeeType | None] = mapped_column(String, nullable=True, index=True)
+    """
+    Type of fee. Only applies to transactions of type `TransactionType.fee`.
+    """
+    to_settle_amount: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, index=True
+    )
+    """
+    Remaining amount to settle for this fee transaction.
+    Only applies to transactions of type `TransactionType.fee`.
+    """
 
     transfer_correlation_key: Mapped[str] = mapped_column(
         String, nullable=True, index=True
@@ -265,4 +358,60 @@ class Transaction(RecordModel):
             lazy="raise",
             back_populates="payout_transaction",
             foreign_keys="[Transaction.payout_transaction_id]",
+        )
+
+    incurred_by_transaction_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("transactions.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """
+    ID of the transaction that incurred this fee transaction.
+    Only applies to transactions of type `TransactionType.fee`.
+    """
+
+    @declared_attr
+    def incurred_by_transaction(cls) -> Mapped["Transaction | None"]:
+        """
+        Transaction that incurred this fee transaction.
+        Only applies to transactions of type `TransactionType.fee`.
+        """
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
+            remote_side=[
+                cls.id,  # type: ignore
+            ],
+            back_populates="incurred_transaction_fees",
+            foreign_keys="[Transaction.incurred_by_transaction_id]",
+        )
+
+    @declared_attr
+    def incurred_transaction_fees(cls) -> Mapped[list["Transaction"]]:
+        """Transaction fees that were incurred by this transaction."""
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            back_populates="incurred_by_transaction",
+            foreign_keys="[Transaction.incurred_by_transaction_id]",
+        )
+
+    @declared_attr
+    def settlements(cls) -> Mapped[list[TransactionFeeSettlement]]:
+        """Settlements of this fee transaction."""
+        return relationship(
+            "TransactionFeeSettlement",
+            lazy="raise",
+            foreign_keys="[TransactionFeeSettlement.fee_transaction_id]",
+        )
+
+    @declared_attr
+    def settled_fees(cls) -> Mapped[list[TransactionFeeSettlement]]:
+        """Fees settled by this transaction."""
+        return relationship(
+            "TransactionFeeSettlement",
+            lazy="raise",
+            foreign_keys="[TransactionFeeSettlement.settlement_transaction_id]",
         )

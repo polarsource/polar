@@ -104,6 +104,9 @@ class Settings(BaseSettings):
     # Loops
     LOOPS_API_KEY: str | None = None
 
+    # Prometheus
+    PROMETHEUS_EXPORTER_HTTP_PASSWORD: str = ""
+
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 

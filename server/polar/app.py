@@ -25,8 +25,10 @@ from polar.kit.db.postgres import (
     async_sessionmaker,
     create_sessionmaker,
 )
+from polar.kit.prometheus.http import PrometheusHttpMiddleware
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
+from polar.metrics.endpoints import router as metrics_router
 from polar.middlewares import LogCorrelationIdMiddleware, XForwardedHostMiddleware
 from polar.postgres import create_engine
 from polar.posthog import configure_posthog
@@ -87,6 +89,8 @@ def create_app() -> FastAPI:
         trusted_hosts=environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"),
     )
 
+    app.add_middleware(PrometheusHttpMiddleware)
+
     app.add_exception_handler(
         PolarRedirectionError,
         polar_redirection_exception_handler,  # type: ignore
@@ -96,8 +100,10 @@ def create_app() -> FastAPI:
     # /healthz and /readyz
     app.include_router(health_router)
 
-    app.include_router(router)
+    # /metrics
+    app.include_router(metrics_router)
 
+    app.include_router(router)
     return app
 
 

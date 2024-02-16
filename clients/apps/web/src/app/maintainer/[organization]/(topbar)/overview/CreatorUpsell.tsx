@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material'
 import { Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { LogoIcon } from 'polarkit/components/brand'
 import { ShadowBox } from 'polarkit/components/ui/atoms'
 import { useOrganizationArticles, useSubscriptionTiers } from 'polarkit/hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -18,6 +19,7 @@ interface OnboardingMap {
   postCreated: boolean
   subscriptionTierCreated: boolean
   polarPageShared: boolean
+  fundingInYaml: boolean
 }
 
 const useUpsellSteps = () => {
@@ -89,6 +91,19 @@ const useUpsellSteps = () => {
           'Promote it on social media & GitHub to build free- and paid subscribers',
         href: `/${currentOrg?.name}`,
         onboardingKey: 'polarPageShared',
+        onDismiss: handleDismiss,
+      })
+    }
+
+    if (!onboardingCompletedMap.fundingInYaml) {
+      steps.push({
+        icon: (
+          <LogoIcon className="-mr-2 h-8 w-8 text-blue-500 dark:text-blue-400" />
+        ),
+        title: 'Add Polar to your FUNDING.yaml',
+        description: `Add 'polar: ${currentOrg?.name}' to your .github/FUNDING.yaml to link your Polar page with your GitHub repository`,
+        href: `https://github.com/${currentOrg?.name}`,
+        onboardingKey: 'fundingInYaml',
         onDismiss: handleDismiss,
       })
     }

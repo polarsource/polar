@@ -155,7 +155,7 @@ export default function LongformPost({
           className={twMerge(
             'prose dark:prose-invert',
             'dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 prose-pre:rounded-2xl',
-            'dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-polar-200',
+            'dark:prose-headings:text-white prose-p:text-gray-800 dark:prose-p:text-polar-100',
             'prose-img:rounded-2xl prose-img:drop-shadow-none lg:prose-img:drop-shadow-2xl',
             ' prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline',
             'prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1',

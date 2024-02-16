@@ -100,8 +100,8 @@ const useUpsellSteps = () => {
         icon: (
           <LogoIcon className="-mr-2 h-8 w-8 text-blue-500 dark:text-blue-400" />
         ),
-        title: 'Add Polar to your FUNDING.yaml',
-        description: `Add 'polar: ${currentOrg?.name}' to your .github/FUNDING.yaml to link your Polar page with your GitHub repository`,
+        title: 'Add Polar to your FUNDING.yml',
+        description: `Add 'polar: ${currentOrg?.name}' to your .github/FUNDING.yml to link your Polar page with your GitHub repository`,
         href: `https://github.com/${currentOrg?.name}`,
         onboardingKey: 'fundingInYaml',
         onDismiss: handleDismiss,

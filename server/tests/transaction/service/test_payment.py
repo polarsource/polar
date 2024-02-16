@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
@@ -9,9 +9,11 @@ from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, Pledge, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
+from polar.transaction.service.fee import FeeTransactionService
 from polar.transaction.service.payment import (
     PledgeDoesNotExist,
     SubscriptionDoesNotExist,
+    fee_transaction_service,
 )
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
@@ -70,6 +72,16 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.transaction.service.payment.stripe_service", new=mock)
     return mock
+
+
+@pytest.fixture(autouse=True)
+def create_payment_fees_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch.object(
+        fee_transaction_service,
+        "create_payment_fees",
+        spec=FeeTransactionService.create_payment_fees,
+        return_value=[],
+    )
 
 
 @pytest.mark.asyncio
@@ -169,6 +181,7 @@ class TestCreatePayment:
         organization: Organization,
         user: User,
         stripe_service_mock: MagicMock,
+        create_payment_fees_mock: AsyncMock,
     ) -> None:
         subscription_tier = await create_subscription_tier(
             session, organization=organization
@@ -203,10 +216,11 @@ class TestCreatePayment:
         assert transaction.tax_amount == stripe_invoice.tax
         assert transaction.tax_country == "US"
         assert transaction.tax_state == "NY"
-        assert transaction.processor_fee_amount == stripe_balance_transaction.fee
         assert transaction.charge_id == stripe_charge.id
         assert transaction.subscription_id == subscription.id
         assert transaction.pledge_id is None
+
+        create_payment_fees_mock.assert_awaited_once()
 
     async def test_not_existing_pledge(
         self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
@@ -231,7 +245,11 @@ class TestCreatePayment:
             )
 
     async def test_pledge(
-        self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
+        self,
+        session: AsyncSession,
+        pledge: Pledge,
+        stripe_service_mock: MagicMock,
+        create_payment_fees_mock: AsyncMock,
     ) -> None:
         pledge.payment_id = "STRIPE_PAYMENT_ID"
         session.add(pledge)
@@ -259,10 +277,11 @@ class TestCreatePayment:
         assert transaction.processor == PaymentProcessor.stripe
         assert transaction.currency == stripe_charge.currency
         assert transaction.amount == stripe_charge.amount
-        assert transaction.processor_fee_amount == stripe_balance_transaction.fee
         assert transaction.charge_id == stripe_charge.id
         assert transaction.pledge_id == pledge.id
         assert transaction.subscription_id is None
+
+        create_payment_fees_mock.assert_awaited_once()
 
     async def test_anonymous_pledge(
         self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock

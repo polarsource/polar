@@ -14,6 +14,7 @@ from polar.subscription.service.subscription import subscription as subscription
 from polar.user.service import user as user_service
 
 from .base import BaseTransactionService, BaseTransactionServiceError
+from .fee import fee_transaction as fee_transaction_service
 
 
 class PaymentTransactionError(BaseTransactionServiceError):
@@ -103,14 +104,6 @@ class PaymentTransactionService(BaseTransactionService):
                 payment_user = pledge.user
                 payment_organization = pledge.by_organization
 
-        # Retrieve Stripe fee
-        processor_fee_amount = 0
-        if charge.balance_transaction:
-            stripe_balance_transaction = stripe_service.get_balance_transaction(
-                get_expandable_id(charge.balance_transaction)
-            )
-            processor_fee_amount = stripe_balance_transaction.fee
-
         transaction = Transaction(
             type=TransactionType.payment,
             processor=PaymentProcessor.stripe,
@@ -121,7 +114,6 @@ class PaymentTransactionService(BaseTransactionService):
             tax_amount=tax_amount,
             tax_country=tax_country,
             tax_state=tax_state,
-            processor_fee_amount=processor_fee_amount,
             customer_id=customer_id,
             payment_user=payment_user,
             payment_organization=payment_organization,
@@ -129,6 +121,12 @@ class PaymentTransactionService(BaseTransactionService):
             pledge=pledge,
             subscription=subscription,
         )
+
+        # Compute and link fees
+        transaction_fees = await fee_transaction_service.create_payment_fees(
+            session, payment_transaction=transaction
+        )
+        transaction.incurred_transaction_fees = transaction_fees
 
         session.add(transaction)
         await session.commit()

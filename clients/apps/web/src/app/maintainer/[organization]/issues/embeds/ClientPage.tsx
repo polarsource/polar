@@ -124,7 +124,7 @@ export default function ClientPage() {
                 >
                   here
                 </a>{' '}
-                and paste the above in your FUNDING.yaml
+                and paste the above in your FUNDING.yml
               </div>
             </div>
           </ShadowBox>

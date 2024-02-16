@@ -36,13 +36,19 @@ class PrometheusHttpMiddleware:
 
         duration = time.process_time() - t0
 
+        method = scope.get("method", None)
+        route = scope.get("route", None)
+        if not route:
+            return
+        path = route.path
+
         self.request_latency_seconds.labels(
-            method=scope["method"],
-            path=scope["route"].path,
+            method=method,
+            path=path,
         ).observe(duration)
 
         self.request_response_code.labels(
-            method=scope["method"],
-            path=scope["route"].path,
+            method=method,
+            path=path,
             code=status_code,
         ).inc()

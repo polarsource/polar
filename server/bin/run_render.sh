@@ -18,7 +18,7 @@ metrics:
             service_name: "${RENDER_SERVICE_NAME}"
         basic_auth:
             username: "metrics"
-            password: "${PROMETHEUS_EXPORTER_HTTP_PASSWORD}"
+            password: "${POLAR_PROMETHEUS_EXPORTER_HTTP_PASSWORD}"
 
     remote_write:
       - url: https://prometheus-prod-13-prod-us-east-0.grafana.net/api/prom/push

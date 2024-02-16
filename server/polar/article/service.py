@@ -249,7 +249,7 @@ class ArticleService:
                 and article.published_at is None
             ):
                 article.published_at = utc_now()
-                shouldNotifyOnDiscord = True
+                should_notify_on_discord = True
 
             article.visibility = self._visibility_to_model_visibility(update.visibility)
 

@@ -28,6 +28,6 @@ metrics:
 EOF
 
 # Run grafana agent in the background
-/usr/bin/grafana-agent-linux-amd64 --config.file=agent-config.yaml &
+/usr/bin/grafana-agent --config.file=agent-config.yaml &
 
 poetry run uvicorn polar.app:app --host 0.0.0.0 --port 10000

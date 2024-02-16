@@ -12,7 +12,7 @@ metrics:
     scrape_configs:
       - job_name: node
         static_configs:
-        - targets: ['127.0.0.1:8000']
+        - targets: ['127.0.0.1:10000']
           labels:
             instance_id: "${RENDER_INSTANCE_ID}"
             service_name: "${RENDER_SERVICE_NAME}"

@@ -1,5 +1,5 @@
-import type { ConfigurationParameters } from "@polar-sh/sdk";
-import { PolarAPI, Configuration } from "@polar-sh/sdk";
+import type { ConfigurationParameters } from '@polar-sh/sdk'
+import { Configuration, PolarAPI } from '@polar-sh/sdk'
 import { PolarUploadBuilder } from './upload'
 
 export class Polar {
@@ -13,4 +13,3 @@ export class Polar {
     return new PolarUploadBuilder(this.client, entries)
   }
 }
-

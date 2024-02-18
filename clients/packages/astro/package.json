@@ -1,0 +1,31 @@
+{
+  "name": "@polar-sh/astro",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "files": [
+    "src",
+    "index.ts"
+  ],
+  "keywords": [
+    "astro-component",
+    "withastro"
+  ],
+  "scripts": {},
+  "devDependencies": {
+    "@polar-sh/sdk": "workspace:*",
+    "astro": "^4.4.0"
+  },
+  "peerDependencies": {
+    "@polar-sh/sdk": "^0.3.0",
+    "astro": "^4.0.0"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.5.4",
+    "tsconfig": "workspace:*",
+    "tsup": "^7.2.0",
+    "typescript": "^5.3.3"
+  }
+}

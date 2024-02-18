@@ -79,14 +79,14 @@ type UploadTransformFunction<
  */
 type UploadBuilderFunctionDefinition<TEntry extends AstroCollectionEntry> =
   | {
-      type: 'filter'
-      function: UploadFilterFunction<TEntry, PolarArticle>
-    }
+    type: 'filter'
+    function: UploadFilterFunction<TEntry, PolarArticle>
+  }
   | {
-      type: 'transform'
-      // Use any here as we don't need to know the return type of the transform function
-      function: UploadTransformFunction<TEntry, PolarArticle, any>
-    }
+    type: 'transform'
+    // Use any here as we don't need to know the return type of the transform function
+    function: UploadTransformFunction<TEntry, PolarArticle, any>
+  }
 
 /**
  * The result from uploading articles to Polar.
@@ -125,7 +125,7 @@ export class PolarUploadBuilder<
     private entries: TEntry[],
     private options: UploadOptions,
     private pipeline: UploadBuilderFunctionDefinition<TEntry>[] = [],
-  ) {}
+  ) { }
 
   /**
    * Create a new PolarUploadBuilder with a new function added to the pipeline.
@@ -156,7 +156,7 @@ export class PolarUploadBuilder<
    * This function is called for each article in the list, and allows you to
    * modify the article before it is uploaded to Polar.
    */
-  public transform<NewTArticle extends PolarArticle>(
+  public transform<const NewTArticle extends PolarArticle>(
     func: UploadTransformFunction<TEntry, TArticle, NewTArticle>,
   ) {
     return this.withFunction<NewTArticle>({

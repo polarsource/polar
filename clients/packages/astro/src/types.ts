@@ -3,13 +3,13 @@
  */
 export type PolarResult<T, E extends Error = Error> =
   | {
-    data: T
-    error: null
-  }
+      data: T
+      error: null
+    }
   | {
-    data: null
-    error: E
-  }
+      data: null
+      error: E
+    }
 
 /**
  * An ErrorGroup is a collection of errors that are related to a single

@@ -505,7 +505,7 @@ importers:
         specifier: ^7.2.0
         version: 7.2.0(typescript@5.3.3)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
     devDependencies:
       '@polar-sh/sdk':

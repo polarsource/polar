@@ -26,6 +26,6 @@
     "@astrojs/check": "^0.5.4",
     "tsconfig": "workspace:*",
     "tsup": "^7.2.0",
-    "typescript": "^5.3.3"
+    "typescript": "5.3.3"
   }
 }

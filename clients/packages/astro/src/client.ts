@@ -22,6 +22,8 @@ export class Polar {
    * You can use the `filter` and `transform` methods to modify the articles
    * before they are uploaded.
    *
+   * Existing articles in Polar with the same slug will be updated.
+   *
    * @example
    * ```typescript
    * import { getCollection } from 'astro:content'

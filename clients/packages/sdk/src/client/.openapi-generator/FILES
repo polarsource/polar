@@ -19,6 +19,7 @@ apis/RepositoriesApi.ts
 apis/RewardsApi.ts
 apis/StreamApi.ts
 apis/SubscriptionsApi.ts
+apis/TrafficApi.ts
 apis/TransactionsApi.ts
 apis/UsersApi.ts
 apis/WebhookNotificationsApi.ts

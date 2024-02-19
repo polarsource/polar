@@ -32,8 +32,17 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
       views[article.id] = '1'
       localStorage.setItem(postViewKey, JSON.stringify(views))
 
-      // record page view
+      // record page view on article
       api.articles.viewed({ id: article.id })
+
+      // record page view in traffic api
+      api.traffic.trackPageView({
+        trackPageView: {
+          article_id: article.id,
+          location_href: window.location.href,
+          referrer: document.referrer,
+        },
+      })
     } catch (e) {
       console.error(e)
     }

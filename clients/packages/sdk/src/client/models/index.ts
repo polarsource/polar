@@ -8187,6 +8187,12 @@ export interface TrackPageView {
      * @type {string}
      * @memberof TrackPageView
      */
+    location_href: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TrackPageView
+     */
     article_id?: string;
     /**
      * 

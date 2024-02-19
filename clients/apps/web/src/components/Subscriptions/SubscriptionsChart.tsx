@@ -143,7 +143,7 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
               ),
             ]
           : []),
-        ...(hoveredIndex
+        ...(hoveredIndex !== undefined
           ? [
               Plot.dot([data[hoveredIndex]], {
                 x: 'parsedStartDate',

@@ -110,11 +110,13 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
   const [statisticsPeriods, setStatisticsPeriods] = useState<
     ParsedSubscriptionsStatisticsPeriod[]
   >([])
+
   const [isDemoData, setIsDemoData] = useState(false)
 
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
     number | undefined
   >()
+
   const displayedPeriod = useMemo(() => {
     if (statisticsPeriods.length === 0) {
       return undefined
@@ -126,6 +128,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
 
     return statisticsPeriods[statisticsPeriods.length - 1]
   }, [statisticsPeriods, hoveredPeriodIndex])
+
   const previousPeriod = useMemo(() => {
     if (statisticsPeriods.length === 0) {
       return undefined
@@ -209,7 +212,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
               data={displayedPeriod.subscribers}
               dataDate={displayedPeriod.parsedStartDate}
               previousData={
-                !hoveredPeriodIndex && previousPeriod
+                hoveredPeriodIndex === undefined && previousPeriod
                   ? previousPeriod.subscribers
                   : undefined
               }
@@ -218,7 +221,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
               data={displayedPeriod.mrr}
               dataDate={displayedPeriod.parsedStartDate}
               previousData={
-                !hoveredPeriodIndex && previousPeriod
+                hoveredPeriodIndex === undefined && previousPeriod
                   ? previousPeriod.mrr
                   : undefined
               }
@@ -227,7 +230,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
               data={displayedPeriod.cumulative}
               dataDate={displayedPeriod.parsedStartDate}
               previousData={
-                !hoveredPeriodIndex && previousPeriod
+                hoveredPeriodIndex === undefined && previousPeriod
                   ? previousPeriod.cumulative
                   : undefined
               }

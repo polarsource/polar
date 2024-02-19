@@ -21,6 +21,7 @@ from polar.repository.schemas import RepositoryCreate
 from polar.user.service import user as user_service
 from polar.user_organization.service import user_organization
 from polar.worker import enqueue_job
+from polar.worker import lifespan as worker_lifespan
 
 cli = typer.Typer()
 
@@ -135,12 +136,15 @@ def noop() -> None:
 @cli.command()
 @typer_async
 async def resync_issues(org_name: str) -> None:
-    async with AsyncSessionLocal() as session:
-        org = await github_organization.get_by_name(session, Platforms.github, org_name)
-        if not org:
-            raise RuntimeError(f"Organization {org_name} not found")
+    async with worker_lifespan():
+        async with AsyncSessionLocal() as session:
+            org = await github_organization.get_by_name(
+                session, Platforms.github, org_name
+            )
+            if not org:
+                raise RuntimeError(f"Organization {org_name} not found")
 
-        await trigger_issues_sync(session, org)
+            await trigger_issues_sync(session, org)
 
 
 @cli.command()

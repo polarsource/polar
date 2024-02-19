@@ -1,8 +1,8 @@
 """Add fees support to Transaction model
 
-Revision ID: 0fdba225fb3d
+Revision ID: 983162e3a21e
 Revises: 3c0a03756217
-Create Date: 2024-02-16 10:56:12.142302
+Create Date: 2024-02-19 16:41:30.680712
 
 """
 import sqlalchemy as sa
@@ -12,7 +12,7 @@ from alembic import op
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
-revision = "0fdba225fb3d"
+revision = "983162e3a21e"
 down_revision = "3c0a03756217"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
@@ -49,7 +49,17 @@ def upgrade() -> None:
     )
     op.add_column(
         "transactions",
+        sa.Column("fee_balance_transaction_id", sa.String(), nullable=True),
+    )
+    op.add_column(
+        "transactions",
         sa.Column("incurred_by_transaction_id", sa.UUID(), nullable=True),
+    )
+    op.create_index(
+        op.f("ix_transactions_fee_balance_transaction_id"),
+        "transactions",
+        ["fee_balance_transaction_id"],
+        unique=False,
     )
     op.create_index(
         op.f("ix_transactions_fee_type"), "transactions", ["fee_type"], unique=False
@@ -172,7 +182,11 @@ def downgrade() -> None:
         op.f("ix_transactions_incurred_by_transaction_id"), table_name="transactions"
     )
     op.drop_index(op.f("ix_transactions_fee_type"), table_name="transactions")
+    op.drop_index(
+        op.f("ix_transactions_fee_balance_transaction_id"), table_name="transactions"
+    )
     op.drop_column("transactions", "incurred_by_transaction_id")
+    op.drop_column("transactions", "fee_balance_transaction_id")
     op.drop_column("transactions", "to_settle_amount")
     op.drop_column("transactions", "fee_type")
     op.drop_table("transaction_fee_settlements")

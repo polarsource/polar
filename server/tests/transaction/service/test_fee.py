@@ -346,3 +346,128 @@ class TestCreateDisputeFees:
         assert (
             dispute_fee_transaction.incurred_by_transaction_id == dispute_transaction.id
         )
+
+
+@pytest.mark.asyncio
+class TestSyncStripeFees:
+    async def test_sync_stripe_fees(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        balance_transactions = [
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_1",
+                    "net": 100,
+                    "currency": "usd",
+                    "description": "Connect (2024-01-01 - 2024-01-31): Payout Fee",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_2",
+                    "net": 200,
+                    "currency": "usd",
+                    "description": "Connect (2024-01-01 - 2024-01-31): Account Volume Billing",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_3",
+                    "net": 300,
+                    "currency": "usd",
+                    "description": "Connect (2024-01-01 - 2024-01-31): Active Account Billing",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_4",
+                    "net": 400,
+                    "currency": "usd",
+                    "description": "Connect (2024-01-01 - 2024-01-31): Cross-Border Transfers",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_5",
+                    "net": 100,
+                    "currency": "usd",
+                    "description": "Connect (2024-01-01 - 2024-01-31): Payout Fee",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_6",
+                    "net": 200,
+                    "currency": "usd",
+                    "description": "Connect (2024-01-01 - 2024-01-31): Account Volume Billing",
+                },
+                None,
+            ),
+        ]
+
+        stripe_service_mock.list_balance_transactions.return_value = (
+            balance_transactions
+        )
+
+        fee_transaction_6 = Transaction(
+            type=TransactionType.fee,
+            processor=PaymentProcessor.stripe,
+            fee_type=FeeType.payout,
+            currency="usd",
+            amount=-200,
+            account_currency="usd",
+            account_amount=-200,
+            tax_amount=0,
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_6",
+        )
+        fee_transaction_5 = Transaction(
+            type=TransactionType.fee,
+            processor=PaymentProcessor.stripe,
+            fee_type=FeeType.payout,
+            currency="usd",
+            amount=-100,
+            account_currency="usd",
+            account_amount=-100,
+            tax_amount=0,
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_5",
+        )
+        session.add(fee_transaction_6)
+        session.add(fee_transaction_5)
+        await session.commit()
+
+        # then
+        session.expunge_all()
+
+        fee_transactions = await fee_transaction_service.sync_stripe_fees(session)
+
+        assert len(fee_transactions) == 4
+
+        (
+            fee_transaction_1,
+            fee_transaction_2,
+            fee_transaction_3,
+            fee_transaction_4,
+        ) = fee_transactions
+
+        assert fee_transaction_1.type == TransactionType.fee
+        assert fee_transaction_1.fee_type == FeeType.payout
+        assert fee_transaction_1.amount == -100
+
+        assert fee_transaction_2.type == TransactionType.fee
+        assert fee_transaction_2.fee_type == FeeType.payout
+        assert fee_transaction_2.amount == -200
+
+        assert fee_transaction_3.type == TransactionType.fee
+        assert fee_transaction_3.fee_type == FeeType.account
+        assert fee_transaction_3.amount == -300
+
+        assert fee_transaction_4.type == TransactionType.fee
+        assert fee_transaction_4.fee_type == FeeType.cross_border_transfer
+        assert fee_transaction_4.amount == -400

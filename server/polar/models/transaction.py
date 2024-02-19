@@ -203,6 +203,10 @@ class Transaction(RecordModel):
     """ID of the transfer reversal in the payment processor system."""
     payout_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the payout in the payment processor system."""
+    fee_balance_transaction_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
+    """ID of the fee's balance transaction in the payment processor system."""
 
     account_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

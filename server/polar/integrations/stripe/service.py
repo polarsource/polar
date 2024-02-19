@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from typing import TYPE_CHECKING, Literal, TypedDict, Unpack, cast
 from uuid import UUID
 
@@ -608,7 +608,7 @@ Thank you for your support!
         account_id: str | None = None,
         payout: str | None = None,
         type: str | None = None,
-    ) -> list[stripe_lib.BalanceTransaction]:
+    ) -> Generator[stripe_lib.BalanceTransaction, None, None]:
         params: stripe_lib.BalanceTransaction.ListParams = {
             "limit": 100,
             "stripe_account": account_id,
@@ -619,7 +619,13 @@ Thank you for your support!
         if type is not None:
             params["type"] = type
 
-        return self._list_all(stripe_lib.BalanceTransaction.list, params)
+        has_more = True
+
+        while has_more:
+            response = stripe_lib.BalanceTransaction.list(**params)
+            yield from response.data
+            has_more = response.has_more
+            params["starting_after"] = response.data[-1].id
 
     def list_refunds(
         self,

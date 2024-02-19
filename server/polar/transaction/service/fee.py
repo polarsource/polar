@@ -10,6 +10,17 @@ from polar.postgres import AsyncSession
 from .base import BaseTransactionService, BaseTransactionServiceError
 
 
+class FeeTransactionError(BaseTransactionServiceError):
+    ...
+
+
+class UnsupportedStripeFeeType(FeeTransactionError):
+    def __init__(self, description: str) -> None:
+        self.description = description
+        message = f"Unsupported Stripe fee type: {description}"
+        super().__init__(message)
+
+
 def _round_stripe(amount: float) -> int:
     return math.ceil(amount) if amount - int(amount) >= 0.5 else math.floor(amount)
 
@@ -22,8 +33,15 @@ def _get_stripe_tax_fee(amount: int) -> int:
     return _round_stripe(amount * 0.005)
 
 
-class FeeTransactionError(BaseTransactionServiceError):
-    ...
+def _get_stripe_fee_type(description: str) -> FeeType:
+    description = description.lower()
+    if "payout fee" in description or "account volume" in description:
+        return FeeType.payout
+    if "cross-border transfers" in description:
+        return FeeType.cross_border_transfer
+    if "active account" in description:
+        return FeeType.account
+    raise UnsupportedStripeFeeType(description)
 
 
 class FeeTransactionService(BaseTransactionService):
@@ -185,6 +203,46 @@ class FeeTransactionService(BaseTransactionService):
         await session.commit()
 
         return fee_transactions
+
+    async def sync_stripe_fees(self, session: AsyncSession) -> list[Transaction]:
+        transactions: list[Transaction] = []
+
+        for balance_transaction in stripe_service.list_balance_transactions(
+            type="stripe_fee"
+        ):
+            transaction = await self.get_by(
+                session, fee_balance_transaction_id=balance_transaction.id
+            )
+
+            # We reached the point where we have already synced all the fees
+            if transaction is not None:
+                break
+
+            if balance_transaction.description is None:
+                continue
+
+            try:
+                fee_type = _get_stripe_fee_type(balance_transaction.description)
+            except UnsupportedStripeFeeType:
+                continue
+            else:
+                transaction = Transaction(
+                    type=TransactionType.fee,
+                    processor=PaymentProcessor.stripe,
+                    fee_type=fee_type,
+                    currency=balance_transaction.currency,
+                    amount=-balance_transaction.net,
+                    account_currency=balance_transaction.currency,
+                    account_amount=-balance_transaction.net,
+                    tax_amount=0,
+                    fee_balance_transaction_id=balance_transaction.id,
+                )
+                session.add(transaction)
+                transactions.append(transaction)
+
+        await session.commit()
+
+        return transactions
 
 
 fee_transaction = FeeTransactionService(Transaction)

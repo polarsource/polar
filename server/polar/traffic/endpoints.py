@@ -29,6 +29,8 @@ async def track_page_view(
     if track.article_id:
         await traffic_service.add(
             session,
+            location_href=track.location_href,
+            referrer=track.referrer,
             article_id=track.article_id,
             date=datetime.date.today(),
         )

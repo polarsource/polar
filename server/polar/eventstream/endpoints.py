@@ -41,6 +41,8 @@ async def subscribe(
             try:
                 message = await pubsub.get_message(
                     ignore_subscribe_messages=True,
+                    # Waits for up to 10s for a new message
+                    timeout=10.0,
                 )
 
                 if message is not None:

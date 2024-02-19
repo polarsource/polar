@@ -65,6 +65,11 @@ class FeeType(StrEnum):
     Fee applied to a payment, like a credit card fee.
     """
 
+    refund = "refund"
+    """
+    Fee applied when a refund is issued.
+    """
+
     dispute = "dispute"
     """
     Fee applied when a dispute is opened. Usually crazy high.

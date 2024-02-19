@@ -1,4 +1,5 @@
 import math
+from typing import Literal
 
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -97,6 +98,89 @@ class FeeTransactionService(BaseTransactionService):
                     )
                     session.add(tax_fee_transaction)
                     fee_transactions.append(tax_fee_transaction)
+
+        await session.commit()
+
+        return fee_transactions
+
+    async def create_refund_fees(
+        self,
+        session: AsyncSession,
+        *,
+        refund_transaction: Transaction,
+    ) -> list[Transaction]:
+        fee_transactions: list[Transaction] = []
+
+        if refund_transaction.processor != PaymentProcessor.stripe:
+            return fee_transactions
+
+        if refund_transaction.refund_id is None:
+            return fee_transactions
+
+        refund = stripe_service.get_refund(refund_transaction.refund_id)
+
+        if refund.balance_transaction is None:
+            return fee_transactions
+
+        balance_transaction = stripe_service.get_balance_transaction(
+            get_expandable_id(refund.balance_transaction)
+        )
+
+        refund_fee_transaction = Transaction(
+            type=TransactionType.fee,
+            processor=PaymentProcessor.stripe,
+            fee_type=FeeType.refund,
+            currency=refund_transaction.currency,
+            amount=-balance_transaction.fee,
+            account_currency=refund_transaction.currency,
+            account_amount=-balance_transaction.fee,
+            tax_amount=0,
+            incurred_by_transaction_id=refund_transaction.id,
+        )
+
+        session.add(refund_fee_transaction)
+        fee_transactions.append(refund_fee_transaction)
+
+        await session.commit()
+
+        return fee_transactions
+
+    async def create_dispute_fees(
+        self,
+        session: AsyncSession,
+        *,
+        dispute_transaction: Transaction,
+        category: Literal["dispute", "dispute_reversal"],
+    ) -> list[Transaction]:
+        fee_transactions: list[Transaction] = []
+
+        if dispute_transaction.processor != PaymentProcessor.stripe:
+            return fee_transactions
+
+        if dispute_transaction.dispute_id is None:
+            return fee_transactions
+
+        dispute = stripe_service.get_dispute(dispute_transaction.dispute_id)
+        balance_transaction = next(
+            bt
+            for bt in dispute.balance_transactions
+            if bt.reporting_category == category
+        )
+
+        dispute_fee_transaction = Transaction(
+            type=TransactionType.fee,
+            processor=PaymentProcessor.stripe,
+            fee_type=FeeType.dispute,
+            currency=dispute_transaction.currency,
+            amount=-balance_transaction.fee,
+            account_currency=dispute_transaction.currency,
+            account_amount=-balance_transaction.fee,
+            tax_amount=0,
+            incurred_by_transaction_id=dispute_transaction.id,
+        )
+
+        session.add(dispute_fee_transaction)
+        fee_transactions.append(dispute_fee_transaction)
 
         await session.commit()
 

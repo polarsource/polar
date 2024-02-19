@@ -1,3 +1,4 @@
+from typing import Literal
 from unittest.mock import MagicMock
 
 import pytest
@@ -40,6 +41,68 @@ async def create_payment_transaction(
         account_amount=amount,
         tax_amount=0,
         charge_id=charge_id,
+        pledge=pledge,
+        subscription=subscription,
+        issue_reward=issue_reward,
+    )
+    session.add(transaction)
+    await session.commit()
+    return transaction
+
+
+async def create_refund_transaction(
+    session: AsyncSession,
+    *,
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    currency: str = "usd",
+    amount: int = 1000,
+    charge_id: str | None = "STRIPE_CHARGE_ID",
+    refund_id: str | None = "STRIPE_REFUND_ID",
+    pledge: Pledge | None = None,
+    subscription: Subscription | None = None,
+    issue_reward: IssueReward | None = None,
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.dispute,
+        processor=processor,
+        currency=currency,
+        amount=amount,
+        account_currency=currency,
+        account_amount=amount,
+        tax_amount=0,
+        charge_id=charge_id,
+        refund_id=refund_id,
+        pledge=pledge,
+        subscription=subscription,
+        issue_reward=issue_reward,
+    )
+    session.add(transaction)
+    await session.commit()
+    return transaction
+
+
+async def create_dispute_transaction(
+    session: AsyncSession,
+    *,
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    currency: str = "usd",
+    amount: int = 1000,
+    charge_id: str | None = "STRIPE_CHARGE_ID",
+    dispute_id: str | None = "STRIPE_DISPUTE_ID",
+    pledge: Pledge | None = None,
+    subscription: Subscription | None = None,
+    issue_reward: IssueReward | None = None,
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.dispute,
+        processor=processor,
+        currency=currency,
+        amount=amount,
+        account_currency=currency,
+        account_amount=amount,
+        tax_amount=0,
+        charge_id=charge_id,
+        dispute_id=dispute_id,
         pledge=pledge,
         subscription=subscription,
         issue_reward=issue_reward,
@@ -142,3 +205,144 @@ class TestCreatePaymentFees:
         assert tax_fee_transaction.fee_type == FeeType.tax
         assert tax_fee_transaction.amount == -5
         assert tax_fee_transaction.incurred_by_transaction_id == payment_transaction.id
+
+
+@pytest.mark.asyncio
+class TestCreateRefundFees:
+    async def test_not_stripe(self, session: AsyncSession) -> None:
+        refund_transaction = await create_refund_transaction(
+            session, processor=PaymentProcessor.open_collective
+        )
+
+        # then
+        session.expunge_all()
+
+        fee_transactions = await fee_transaction_service.create_refund_fees(
+            session, refund_transaction=refund_transaction
+        )
+        assert len(fee_transactions) == 0
+
+    async def test_stripe_no_refund_id(self, session: AsyncSession) -> None:
+        refund_transaction = await create_refund_transaction(session, refund_id=None)
+
+        # then
+        session.expunge_all()
+
+        fee_transactions = await fee_transaction_service.create_refund_fees(
+            session, refund_transaction=refund_transaction
+        )
+        assert len(fee_transactions) == 0
+
+    async def test_stripe_refund(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        refund_transaction = await create_refund_transaction(session)
+
+        stripe_service_mock.get_refund.return_value = stripe_lib.Refund.construct_from(
+            {
+                "id": "STRIPE_REFUND_ID",
+                "charge": "STRIPE_CHARGE_ID",
+                "currency": "usd",
+                "amount": 100,
+                "balance_transaction": "STRIPE_BALANCE_TRANSACTION_ID",
+            },
+            None,
+        )
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_lib.BalanceTransaction.construct_from(
+                {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": 100}, None
+            )
+        )
+
+        # then
+        session.expunge_all()
+
+        fee_transactions = await fee_transaction_service.create_refund_fees(
+            session, refund_transaction=refund_transaction
+        )
+        assert len(fee_transactions) == 1
+
+        refund_fee_transaction = fee_transactions[0]
+
+        assert refund_fee_transaction.type == TransactionType.fee
+        assert refund_fee_transaction.processor == PaymentProcessor.stripe
+        assert refund_fee_transaction.fee_type == FeeType.refund
+        assert refund_fee_transaction.amount == -100
+        assert (
+            refund_fee_transaction.incurred_by_transaction_id == refund_transaction.id
+        )
+
+
+@pytest.mark.asyncio
+class TestCreateDisputeFees:
+    async def test_not_stripe(self, session: AsyncSession) -> None:
+        dispute_transaction = await create_dispute_transaction(
+            session, processor=PaymentProcessor.open_collective
+        )
+
+        # then
+        session.expunge_all()
+
+        fee_transactions = await fee_transaction_service.create_dispute_fees(
+            session, dispute_transaction=dispute_transaction, category="dispute"
+        )
+        assert len(fee_transactions) == 0
+
+    async def test_stripe_no_dispute_id(self, session: AsyncSession) -> None:
+        dispute_transaction = await create_dispute_transaction(session, dispute_id=None)
+
+        # then
+        session.expunge_all()
+
+        fee_transactions = await fee_transaction_service.create_dispute_fees(
+            session, dispute_transaction=dispute_transaction, category="dispute"
+        )
+        assert len(fee_transactions) == 0
+
+    @pytest.mark.parametrize("category", ["dispute", "dispute_reversal"])
+    async def test_stripe_dispute(
+        self,
+        category: Literal["dispute", "dispute_reversal"],
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        dispute_transaction = await create_dispute_transaction(session)
+
+        stripe_service_mock.get_dispute.return_value = (
+            stripe_lib.Dispute.construct_from(
+                {
+                    "id": "STRIPE_DISPUTE_ID",
+                    "charge": "STRIPE_CHARGE_ID",
+                    "currency": "usd",
+                    "amount": 100,
+                    "balance_transactions": [
+                        {
+                            "id": "STRIPE_BALANCE_TRANSACTION_ID",
+                            "fee": 100,
+                            "reporting_category": category,
+                        }
+                    ],
+                },
+                None,
+            )
+        )
+
+        # then
+        session.expunge_all()
+
+        fee_transactions = await fee_transaction_service.create_dispute_fees(
+            session, dispute_transaction=dispute_transaction, category=category
+        )
+        assert len(fee_transactions) == 1
+
+        dispute_fee_transaction = fee_transactions[0]
+
+        assert dispute_fee_transaction.type == TransactionType.fee
+        assert dispute_fee_transaction.processor == PaymentProcessor.stripe
+        assert dispute_fee_transaction.fee_type == FeeType.dispute
+        assert dispute_fee_transaction.amount == -100
+        assert (
+            dispute_fee_transaction.incurred_by_transaction_id == dispute_transaction.id
+        )

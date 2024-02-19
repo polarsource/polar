@@ -3,12 +3,12 @@ import math
 import stripe as stripe_lib
 
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
 from .base import BaseTransactionService, BaseTransactionServiceError
+from .fee import fee_transaction as fee_transaction_service
 from .transfer import transfer_transaction as transfer_transaction_service
 
 
@@ -50,14 +50,6 @@ class RefundTransactionService(BaseTransactionService):
             if refund_transaction is not None:
                 continue
 
-            # Retrieve Stripe fee
-            processor_fee_amount = 0
-            if refund.balance_transaction is not None:
-                balance_transaction = stripe_service.get_balance_transaction(
-                    get_expandable_id(refund.balance_transaction)
-                )
-                processor_fee_amount = balance_transaction.fee
-
             refund_amount = refund.amount
             total_amount = payment_transaction.amount + payment_transaction.tax_amount
             tax_refund_amount = abs(
@@ -77,7 +69,6 @@ class RefundTransactionService(BaseTransactionService):
                 tax_amount=-tax_refund_amount,
                 tax_country=payment_transaction.tax_country,
                 tax_state=payment_transaction.tax_state,
-                processor_fee_amount=processor_fee_amount,
                 customer_id=payment_transaction.customer_id,
                 charge_id=charge.id,
                 refund_id=refund.id,
@@ -87,6 +78,13 @@ class RefundTransactionService(BaseTransactionService):
                 issue_reward_id=payment_transaction.issue_reward_id,
                 subscription_id=payment_transaction.subscription_id,
             )
+
+            # Compute and link fees
+            transaction_fees = await fee_transaction_service.create_refund_fees(
+                session, refund_transaction=refund_transaction
+            )
+            refund_transaction.incurred_transaction_fees = transaction_fees
+
             session.add(refund_transaction)
             refund_transactions.append(refund_transaction)
 

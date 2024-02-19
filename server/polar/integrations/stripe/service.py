@@ -654,6 +654,17 @@ Thank you for your support!
             id, stripe_account=stripe_account, expand=expand or []
         )
 
+    def get_dispute(
+        self,
+        id: str,
+        *,
+        stripe_account: str | None = None,
+        expand: list[str] | None = None,
+    ) -> stripe_lib.Dispute:
+        return stripe_lib.Dispute.retrieve(
+            id, stripe_account=stripe_account, expand=expand or []
+        )
+
     def _list_all(
         self, method: Callable[..., "ListObject[T]"], params: "RequestOptions"
     ) -> list["T"]:

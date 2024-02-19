@@ -10,7 +10,7 @@ from polar.models import Organization, Pledge, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.fee import FeeTransactionService
-from polar.transaction.service.payment import (
+from polar.transaction.service.payment import (  # type: ignore[attr-defined]
     PledgeDoesNotExist,
     SubscriptionDoesNotExist,
     fee_transaction_service,

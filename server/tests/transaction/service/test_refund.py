@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
@@ -9,7 +9,11 @@ from polar.integrations.stripe.service import StripeService
 from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.refund import RefundUnknownPaymentTransaction
+from polar.transaction.service.fee import FeeTransactionService
+from polar.transaction.service.refund import (  # type: ignore[attr-defined]
+    RefundUnknownPaymentTransaction,
+    fee_transaction_service,
+)
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
@@ -82,6 +86,16 @@ def transfer_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
+@pytest.fixture(autouse=True)
+def create_refund_fees_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch.object(
+        fee_transaction_service,
+        "create_refund_fees",
+        spec=FeeTransactionService.create_refund_fees,
+        return_value=[],
+    )
+
+
 @pytest.mark.asyncio
 class TestCreateRefunds:
     async def test_refund_unknown_payment_transaction(
@@ -102,6 +116,7 @@ class TestCreateRefunds:
         pledge: Pledge,
         stripe_service_mock: MagicMock,
         transfer_transaction_service_mock: MagicMock,
+        create_refund_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
         balance_transaction = build_stripe_balance_transaction()
@@ -144,7 +159,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=charge.amount,
             tax_amount=0,
-            processor_fee_amount=0,
             charge_id=charge.id,
             pledge=pledge,
         )
@@ -158,7 +172,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.75,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -173,7 +186,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.75,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -190,7 +202,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.25,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -205,7 +216,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.25,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -222,7 +232,6 @@ class TestCreateRefunds:
             account_currency=handled_refund.currency,
             account_amount=-handled_refund.amount,
             tax_amount=0,
-            processor_fee_amount=0,
             refund_id=handled_refund.id,
         )
         session.add(handled_refund_transaction)
@@ -264,3 +273,5 @@ class TestCreateRefunds:
             incoming_transfer_2.id,
         ]
         assert second_call[1]["amount"] == new_refund.amount * 0.25
+
+        create_refund_fees_mock.assert_awaited_once()

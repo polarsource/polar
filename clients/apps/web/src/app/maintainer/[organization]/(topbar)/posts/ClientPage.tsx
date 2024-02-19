@@ -21,9 +21,8 @@ import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import {
   useOrganizationArticles,
   useSubscriptionStatistics,
-  useSubscriptionSummary,
 } from 'polarkit/hooks'
-import { useMemo, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
 
@@ -36,6 +35,16 @@ startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
 startOfMonthThreeMonthsAgo.setUTCDate(1)
 startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
 
+function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
+  if (idx !== undefined) {
+    return arr[idx]
+  }
+  if (arr.length === 0) {
+    return undefined
+  }
+  return arr[arr.length - 1]
+}
+
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
 
@@ -45,12 +54,12 @@ const ClientPage = () => {
     showUnpublished: true,
   })
 
-  const summary = useSubscriptionSummary(org?.name ?? '')
   const subscriptionStatistics = useSubscriptionStatistics(
     org?.name ?? '',
     startOfMonthThreeMonthsAgo,
     startOfMonth,
   )
+
   const paidSubscriptionStatistics = useSubscriptionStatistics(
     org?.name ?? '',
     startOfMonthThreeMonthsAgo,
@@ -58,13 +67,19 @@ const ClientPage = () => {
     [SubscriptionTierType.INDIVIDUAL, SubscriptionTierType.BUSINESS],
   )
 
-  const currentPeriodPaidSubscriptions = useMemo(
-    () =>
-      paidSubscriptionStatistics.data?.periods[
-        paidSubscriptionStatistics.data.periods.length - 1
-      ],
-    [paidSubscriptionStatistics],
-  )
+  const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
+    number | undefined
+  >()
+
+  const currentSubscribers =
+    idxOrLast(subscriptionStatistics.data?.periods || [], hoveredPeriodIndex)
+      ?.subscribers ?? 0
+
+  const currentPaidSubscribers =
+    idxOrLast(
+      paidSubscriptionStatistics.data?.periods || [],
+      hoveredPeriodIndex,
+    )?.subscribers ?? 0
 
   const showPosts = (posts.data?.items?.length ?? 0) > 0
   const showNoPostsYet =
@@ -126,9 +141,7 @@ const ClientPage = () => {
                 <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
                   <div className="flex w-full flex-grow flex-row items-center justify-between">
                     <h3 className="p-2 text-sm font-medium">Subscribers</h3>
-                    <h3 className="p-2 text-sm">
-                      {summary.data?.pagination.total_count}
-                    </h3>
+                    <h3 className="p-2 text-sm">{currentSubscribers}</h3>
                   </div>
                   <SubscriptionsChart
                     y="subscribers"
@@ -140,6 +153,8 @@ const ClientPage = () => {
                       ...d,
                       parsedStartDate: new Date(d.start_date),
                     }))}
+                    onDataIndexHover={setHoveredPeriodIndex}
+                    hoveredIndex={hoveredPeriodIndex}
                   />
                 </Card>
               )}
@@ -149,9 +164,7 @@ const ClientPage = () => {
                     <h3 className="p-2 text-sm font-medium">
                       Paying Subscribers
                     </h3>
-                    <h3 className="p-2 text-sm">
-                      {currentPeriodPaidSubscriptions?.subscribers}
-                    </h3>
+                    <h3 className="p-2 text-sm">{currentPaidSubscribers}</h3>
                   </div>
                   <SubscriptionsChart
                     y="subscribers"
@@ -163,6 +176,8 @@ const ClientPage = () => {
                       ...d,
                       parsedStartDate: new Date(d.start_date),
                     }))}
+                    onDataIndexHover={setHoveredPeriodIndex}
+                    hoveredIndex={hoveredPeriodIndex}
                   />
                 </Card>
               )}

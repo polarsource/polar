@@ -8179,6 +8179,38 @@ export interface TeamAdminMemberPledgedNotificationPayload {
 /**
  * 
  * @export
+ * @interface TrackPageView
+ */
+export interface TrackPageView {
+    /**
+     * 
+     * @type {string}
+     * @memberof TrackPageView
+     */
+    article_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TrackPageView
+     */
+    referrer?: string;
+}
+/**
+ * 
+ * @export
+ * @interface TrackPageViewResponse
+ */
+export interface TrackPageViewResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof TrackPageViewResponse
+     */
+    ok: boolean;
+}
+/**
+ * 
+ * @export
  * @interface Transaction
  */
 export interface Transaction {

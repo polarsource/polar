@@ -75,14 +75,6 @@ class FeeType(StrEnum):
     Fee applied when a dispute is opened. Usually crazy high.
     """
 
-    account = "account"
-    """
-    Fee applied recurrently to an active account.
-
-    For Stripe, it's **2$ per month**.
-    It considers an account active if a payout has been made in the month.
-    """
-
     tax = "tax"
     """
     Fee applied for automatic tax calculation and collection.
@@ -109,6 +101,14 @@ class FeeType(StrEnum):
     Fee applied when money is paid out to the user's bank account.
 
     For Stripe, it's **0.25% of the amount + 0.25$ per payout**.
+    """
+
+    account = "account"
+    """
+    Fee applied recurrently to an active account.
+
+    For Stripe, it's **2$ per month**.
+    It considers an account active if a payout has been made in the month.
     """
 
 

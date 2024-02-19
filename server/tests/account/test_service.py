@@ -19,7 +19,6 @@ async def create_transaction(
         account_currency="eur",
         account_amount=int(amount * 0.9),
         tax_amount=0,
-        processor_fee_amount=0,
         account=account,
     )
     session.add(transaction)

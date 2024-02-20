@@ -18,7 +18,6 @@ export default function RootLayout({
   children: React.ReactNode
   params: { slug: string }
 }>) {
-  console.log(slug)
   return (
     <html lang="en">
       <body className={`${inter.className} m-4 bg-slate-50`}>

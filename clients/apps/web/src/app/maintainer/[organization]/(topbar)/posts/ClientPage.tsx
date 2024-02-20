@@ -4,7 +4,7 @@ import { AbbreviatedBrowserRender } from '@/components/Feed/Markdown/BrowserRend
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'
+import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { captureEvent } from '@/utils/posthog'
@@ -143,7 +143,7 @@ const ClientPage = () => {
                     <h3 className="p-2 text-sm font-medium">Subscribers</h3>
                     <h3 className="p-2 text-sm">{currentSubscribers}</h3>
                   </div>
-                  <SubscriptionsChart
+                  <Chart
                     y="subscribers"
                     axisYOptions={{
                       ticks: 'month',
@@ -166,7 +166,7 @@ const ClientPage = () => {
                     </h3>
                     <h3 className="p-2 text-sm">{currentPaidSubscribers}</h3>
                   </div>
-                  <SubscriptionsChart
+                  <Chart
                     y="subscribers"
                     axisYOptions={{
                       ticks: 'month',

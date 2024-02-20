@@ -74,9 +74,13 @@ export interface ParsedSubscriptionsStatisticsPeriod
   parsedStartDate: Date
 }
 
-interface SubscriptionsChartProps {
-  data: ParsedSubscriptionsStatisticsPeriod[]
-  y: 'mrr' | 'subscribers'
+export interface ChartData {
+  parsedStartDate: Date
+}
+
+interface SubscriptionsChartProps<T extends ChartData, K extends keyof T> {
+  data: T[]
+  y: K
   axisYOptions: Plot.AxisYOptions
   onDataIndexHover?: (index: number | undefined) => void
   hoveredIndex?: number | undefined
@@ -84,13 +88,13 @@ interface SubscriptionsChartProps {
 
 const primaryColor = 'rgb(0 98 255)'
 
-export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
+export function Chart<T extends ChartData, K extends keyof T>({
   data,
   y,
   axisYOptions,
   onDataIndexHover,
   hoveredIndex,
-}) => {
+}: SubscriptionsChartProps<T, K>) {
   const containerRef = useRef<HTMLDivElement>(null)
   const gradientId = 'subscriptions-chart-gradient'
 
@@ -117,13 +121,13 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
         Plot.axisY(axisYOptions),
         Plot.areaY(data, {
           x: 'parsedStartDate',
-          y,
+          y: y.toString(),
           curve: 'bump-x',
           fill: `url(#${gradientId})`,
         }),
         Plot.lineY(data, {
           x: 'parsedStartDate',
-          y,
+          y: y.toString(),
           curve: 'bump-x',
           stroke: primaryColor,
           strokeWidth: 2,
@@ -134,7 +138,7 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
                 data,
                 Plot.pointerX({
                   x: 'parsedStartDate',
-                  y,
+                  y: y.toString(),
                   fill: primaryColor,
                   fillOpacity: 0.5,
                   r: 5,
@@ -147,7 +151,7 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
           ? [
               Plot.dot([data[hoveredIndex]], {
                 x: 'parsedStartDate',
-                y,
+                y: y.toString(),
                 fill: primaryColor,
                 fillOpacity: 0.5,
                 r: 5,
@@ -188,7 +192,7 @@ export const SubscribersChart: React.FC<SubscribersChartProps> = ({
   hoveredIndex,
 }) => {
   return (
-    <SubscriptionsChart
+    <Chart
       data={data}
       y="subscribers"
       axisYOptions={{
@@ -213,7 +217,7 @@ export const MRRChart: React.FC<MRRChartProps> = ({
   hoveredIndex,
 }) => {
   return (
-    <SubscriptionsChart
+    <Chart
       data={data}
       y="mrr"
       axisYOptions={{

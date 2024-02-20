@@ -71,7 +71,6 @@ class PayoutTransactionService(BaseTransactionService):
             account_currency=payout.currency,
             account_amount=-payout.amount,  # Subtract the amount from the balance
             tax_amount=0,
-            processor_fee_amount=0,  # No way to know the fee on a per payout basis
             payout_id=payout.id,
             account=account,
         )
@@ -129,7 +128,6 @@ class PayoutTransactionService(BaseTransactionService):
             account_currency=account.currency,
             account_amount=0,
             tax_amount=0,
-            processor_fee_amount=0,
             account=account,
         )
 

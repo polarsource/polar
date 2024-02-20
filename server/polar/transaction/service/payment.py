@@ -121,7 +121,6 @@ class PaymentTransactionService(BaseTransactionService):
             tax_amount=tax_amount,
             tax_country=tax_country,
             tax_state=tax_state,
-            processor_fee_amount=processor_fee_amount,
             customer_id=customer_id,
             payment_user=payment_user,
             payment_organization=payment_organization,

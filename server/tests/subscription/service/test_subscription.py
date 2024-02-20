@@ -1535,7 +1535,6 @@ async def create_subscription_transfers(
             account_currency="eur",
             account_amount=int(net_amount * 0.9),
             tax_amount=0,
-            processor_fee_amount=0,
             account=organization_account,
             subscription=subscription,
         )

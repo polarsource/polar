@@ -203,7 +203,6 @@ class TestCreatePayment:
         assert transaction.tax_amount == stripe_invoice.tax
         assert transaction.tax_country == "US"
         assert transaction.tax_state == "NY"
-        assert transaction.processor_fee_amount == stripe_balance_transaction.fee
         assert transaction.charge_id == stripe_charge.id
         assert transaction.subscription_id == subscription.id
         assert transaction.pledge_id is None
@@ -259,7 +258,6 @@ class TestCreatePayment:
         assert transaction.processor == PaymentProcessor.stripe
         assert transaction.currency == stripe_charge.currency
         assert transaction.amount == stripe_charge.amount
-        assert transaction.processor_fee_amount == stripe_balance_transaction.fee
         assert transaction.charge_id == stripe_charge.id
         assert transaction.pledge_id == pledge.id
         assert transaction.subscription_id is None

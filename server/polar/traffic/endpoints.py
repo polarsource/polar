@@ -9,7 +9,10 @@ from polar.article.service import article_service
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
-from polar.organization.dependencies import OptionalOrganizationNamePlatform
+from polar.organization.dependencies import (
+    OptionalOrganizationNamePlatform,
+    OrganizationNamePlatform,
+)
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
@@ -17,6 +20,7 @@ from polar.tags.api import Tags
 from .schemas import (
     TrackPageView,
     TrackPageViewResponse,
+    TrafficReferrers,
     TrafficStatistics,
 )
 from .service import traffic_service
@@ -108,3 +112,46 @@ async def statistics(
     )
 
     return TrafficStatistics(periods=res)
+
+
+@router.get(
+    "/traffic/top_referrers",
+    response_model=TrafficReferrers,
+    tags=[Tags.PUBLIC],
+)
+async def top_referrers(
+    auth: UserRequiredAuth,
+    organization_name_platform: OrganizationNamePlatform,
+    start_date: datetime.date = Query(...),
+    end_date: datetime.date = Query(...),
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> TrafficReferrers:
+    article_ids = []
+
+    (org_name, org_platform) = organization_name_platform
+    org = await organization_service.get_by_name(
+        session, name=org_name, platform=org_platform
+    )
+    if not org:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    # all articles by org
+    article_ids = [
+        a.id
+        for a in await article_service.list_by_organization_id(
+            session, organization_id=org.id
+        )
+    ]
+
+    res = await traffic_service.top_referrers(
+        session,
+        article_ids=article_ids,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    return TrafficReferrers(referrers=res)

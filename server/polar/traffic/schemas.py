@@ -20,8 +20,16 @@ class TrafficStatisticsPeriod(Schema):
     end_date: date
     views: int
     article_id: UUID | None = None
-    # cumulative: int
 
 
 class TrafficStatistics(Schema):
     periods: Sequence[TrafficStatisticsPeriod]
+
+
+class TrafficReferrer(Schema):
+    referrer: str
+    views: int
+
+
+class TrafficReferrers(Schema):
+    referrers: Sequence[TrafficReferrer]

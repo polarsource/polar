@@ -8,7 +8,7 @@ from sqlalchemy import and_, func, null, text
 from polar.kit.utils import utc_now
 from polar.models.traffic import Traffic
 from polar.postgres import AsyncSession, sql
-from polar.traffic.schemas import TrafficStatisticsPeriod
+from polar.traffic.schemas import TrafficReferrer, TrafficStatisticsPeriod
 
 
 class TrafficService:
@@ -98,6 +98,35 @@ class TrafficService:
                 views=views,
             )
             for (row_start_date, row_end_date, article_id, views) in res.tuples().all()
+        ]
+
+    async def top_referrers(
+        self,
+        session: AsyncSession,
+        article_ids: list[UUID],
+        start_date: datetime.date,
+        end_date: datetime.date,
+    ) -> Sequence[TrafficReferrer]:
+        stmt = (
+            sql.select(Traffic.referrer, func.sum(Traffic.views))
+            .where(
+                Traffic.article_id.in_(article_ids),
+                Traffic.date >= start_date,
+                Traffic.date <= end_date,
+                Traffic.referrer.is_not(None),
+                Traffic.referrer != "",
+            )
+            .group_by(Traffic.referrer)
+        )
+
+        res = await session.execute(stmt)
+
+        return [
+            TrafficReferrer(
+                referrer=referrer,
+                views=views,
+            )
+            for (referrer, views) in res.tuples().all()
         ]
 
 

@@ -38,10 +38,10 @@ export default async function Home() {
         <div className="flex flex-col gap-y-6 rounded-3xl bg-slate-100 p-8">
           <span className="font-mono text-xs text-slate-400">README.md</span>
           <p className="text-pretty text-sm leading-normal text-slate-500">
-            I'm Emil, a Creative Technologist who loves to play around with
+            {`I'm Emil, a Creative Technologist who loves to play around with
             WebGL and reactive frameworks like RxJS. If you like what I'm up to,
             please consider subscribing to my Newsletter, or the paid
-            subscriptions down below.
+            subscriptions down below.`}
           </p>
           <div className="flex flex-row gap-x-4">
             <input

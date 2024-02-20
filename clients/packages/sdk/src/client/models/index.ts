@@ -8217,6 +8217,38 @@ export interface TrackPageViewResponse {
 /**
  * 
  * @export
+ * @interface TrafficReferrer
+ */
+export interface TrafficReferrer {
+    /**
+     * 
+     * @type {string}
+     * @memberof TrafficReferrer
+     */
+    referrer: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TrafficReferrer
+     */
+    views: number;
+}
+/**
+ * 
+ * @export
+ * @interface TrafficReferrers
+ */
+export interface TrafficReferrers {
+    /**
+     * 
+     * @type {Array<TrafficReferrer>}
+     * @memberof TrafficReferrers
+     */
+    referrers: Array<TrafficReferrer>;
+}
+/**
+ * 
+ * @export
  * @interface TrafficStatistics
  */
 export interface TrafficStatistics {

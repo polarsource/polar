@@ -10,6 +10,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
+import { twMerge } from 'tailwind-merge'
 import {
   Table,
   TableBody,
@@ -23,11 +24,12 @@ import { DataTablePagination } from './DataTablePagination'
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  pageCount: number
-  pagination: PaginationState
+  pageCount?: number
+  pagination?: PaginationState
   onPaginationChange?: OnChangeFn<PaginationState>
-  sorting: SortingState
+  sorting?: SortingState
   onSortingChange?: OnChangeFn<SortingState>
+  className?: string
 }
 
 export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
@@ -46,6 +48,7 @@ export function DataTable<TData, TValue>({
   onPaginationChange,
   sorting,
   onSortingChange,
+  className,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -63,7 +66,7 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={twMerge('flex flex-col gap-6', className)}>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -114,7 +117,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      {pagination ? <DataTablePagination table={table} /> : null}
     </div>
   )
 }

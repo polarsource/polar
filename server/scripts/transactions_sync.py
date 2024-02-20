@@ -81,12 +81,12 @@ async def sync_transactions(
             )
 
             typer.secho("HANDLING CHARGES", bg="green")
-            charges_params: stripe_lib.Charge.ListParams = {"limit": 100}
-            charges = stripe._list_all(stripe_lib.Charge.list, charges_params)
-            for charge in charges:
-                if charge.status != "succeeded":
-                    continue
-
+            charges_params: stripe_lib.Charge.SearchParams = {
+                "query": 'status:"succeeded"',
+                "limit": 100,
+            }
+            charge_result = stripe_lib.Charge.search(**charges_params)
+            for charge in charge_result.auto_paging_iter():
                 typer.echo("\n---\n")
                 typer.echo(f"Charge {charge.id}")
 
@@ -166,7 +166,6 @@ async def sync_transactions(
                     account_currency=stripe_transfer.currency,
                     account_amount=-stripe_transfer.amount,
                     tax_amount=0,
-                    processor_fee_amount=0,
                     transfer_correlation_key=transfer_correlation_key,
                     payment_transaction=transfer_payment_transaction,
                     transfer_id=stripe_transfer.id,
@@ -184,7 +183,6 @@ async def sync_transactions(
                     account_currency=stripe_transfer.currency,
                     account_amount=stripe_transfer.amount,
                     tax_amount=0,
-                    processor_fee_amount=0,
                     transfer_correlation_key=transfer_correlation_key,
                     payment_transaction=transfer_payment_transaction,
                     transfer_id=stripe_transfer.id,
@@ -255,8 +253,8 @@ async def sync_transactions(
                     "limit": 100,
                     "stripe_account": account.stripe_id,
                 }
-                payouts = stripe._list_all(stripe_lib.Payout.list, payouts_params)
-                for payout in payouts:
+                payout_result = stripe_lib.Payout.list(**payouts_params)
+                for payout in payout_result.auto_paging_iter():
                     payout_transaction = (
                         await payout_transaction_service.create_payout_from_stripe(
                             session,

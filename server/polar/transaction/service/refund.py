@@ -30,12 +30,12 @@ class RefundTransactionService(BaseTransactionService):
     async def create_refunds(
         self, session: AsyncSession, *, charge: stripe_lib.Charge
     ) -> list[Transaction]:
-        # Get all the refunds for this charge
-        refunds = stripe_service.list_refunds(charge=charge.id)
-
         payment_transaction = await self.get_by(session, charge_id=charge.id)
         if payment_transaction is None:
             raise RefundUnknownPaymentTransaction(charge.id)
+
+        # Get all the refunds for this charge
+        refunds = stripe_service.list_refunds(charge=charge.id)
 
         refund_transactions: list[Transaction] = []
         # Handle each individual refund

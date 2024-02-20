@@ -1,6 +1,5 @@
 import datetime
-from collections.abc import Sequence
-from importlib.resources import Resource
+from typing import Literal
 from uuid import UUID
 
 import structlog
@@ -59,6 +58,8 @@ async def statistics(
     article_id: UUID | None = Query(None),
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
+    interval: Literal["month", "week", "day"] = Query(...),
+    group_by_article: bool = Query(False),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> TrafficStatistics:
@@ -101,6 +102,8 @@ async def statistics(
         article_ids=article_ids,
         start_date=start_date,
         end_date=end_date,
+        interval=interval,
+        group_by_article=group_by_article,
     )
 
     return TrafficStatistics(periods=res)

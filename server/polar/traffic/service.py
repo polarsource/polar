@@ -37,7 +37,7 @@ class TrafficService:
     async def views_statistics(
         self,
         session: AsyncSession,
-        article_id: UUID,
+        article_ids: list[UUID],
         start_date: datetime.date,
         end_date: datetime.date,
     ) -> Sequence[TrafficStatisticsPeriod]:
@@ -46,7 +46,7 @@ class TrafficService:
                 Traffic.article_id, func.sum(Traffic.views).label("period_views")
             )
             .where(
-                Traffic.article_id == article_id,
+                Traffic.article_id.in_(article_ids),
                 Traffic.date >= start_date,
                 Traffic.date <= end_date,
             )

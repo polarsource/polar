@@ -19,6 +19,7 @@ import type {
   Platforms,
   TrackPageView,
   TrackPageViewResponse,
+  TrafficReferrers,
   TrafficStatistics,
 } from '../models/index';
 
@@ -30,6 +31,13 @@ export interface TrafficApiStatisticsRequest {
     groupByArticle?: boolean;
     organizationName?: string;
     platform?: Platforms;
+}
+
+export interface TrafficApiTopReferrersRequest {
+    startDate: string;
+    endDate: string;
+    organizationName: string;
+    platform: Platforms;
 }
 
 export interface TrafficApiTrackPageViewRequest {
@@ -112,6 +120,72 @@ export class TrafficApi extends runtime.BaseAPI {
      */
     async statistics(requestParameters: TrafficApiStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TrafficStatistics> {
         const response = await this.statisticsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Top Referrers
+     */
+    async topReferrersRaw(requestParameters: TrafficApiTopReferrersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrafficReferrers>> {
+        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
+            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling topReferrers.');
+        }
+
+        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
+            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling topReferrers.');
+        }
+
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling topReferrers.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling topReferrers.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.startDate !== undefined) {
+            queryParameters['start_date'] = requestParameters.startDate;
+        }
+
+        if (requestParameters.endDate !== undefined) {
+            queryParameters['end_date'] = requestParameters.endDate;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/traffic/top_referrers`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Top Referrers
+     */
+    async topReferrers(requestParameters: TrafficApiTopReferrersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TrafficReferrers> {
+        const response = await this.topReferrersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

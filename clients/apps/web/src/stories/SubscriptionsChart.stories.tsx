@@ -1,21 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { SubscriptionsChart } from '@/components/Subscriptions/SubscriptionsChart'
+import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { getCentsInDollarString } from 'polarkit/money'
 
-const meta: Meta<typeof SubscriptionsChart> = {
-  title: 'Organisms/SubscriptionsChart',
-  component: SubscriptionsChart,
+const meta: Meta<typeof Chart> = {
+  title: 'Organisms/Chart',
+  component: Chart,
 }
 
 export default meta
 
-type Story = StoryObj<typeof SubscriptionsChart>
+type Story = StoryObj<typeof Chart>
 
 export const Default: Story = {
   render: () => {
     return (
-      <SubscriptionsChart
+      <Chart
         y="mrr"
         axisYOptions={{
           ticks: 'month',

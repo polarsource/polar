@@ -102,6 +102,7 @@ async def statistics(
         article_ids=article_ids,
         start_date=start_date,
         end_date=end_date,
+        start_of_last_period=end_date,
         interval=interval,
         group_by_article=group_by_article,
     )

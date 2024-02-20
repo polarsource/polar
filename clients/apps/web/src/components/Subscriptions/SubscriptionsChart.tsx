@@ -1,7 +1,7 @@
 import * as Plot from '@observablehq/plot'
 import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const createAreaGradient = (id: string) => {
   // Create an SVG element
@@ -78,12 +78,13 @@ export interface ChartData {
   parsedStartDate: Date
 }
 
-interface SubscriptionsChartProps<T extends ChartData, K extends keyof T> {
+interface ChartProps<T extends ChartData, K extends keyof T> {
   data: T[]
   y: K
   axisYOptions: Plot.AxisYOptions
   onDataIndexHover?: (index: number | undefined) => void
   hoveredIndex?: number | undefined
+  maxHeight?: number
 }
 
 const primaryColor = 'rgb(0 98 255)'
@@ -94,8 +95,10 @@ export function Chart<T extends ChartData, K extends keyof T>({
   axisYOptions,
   onDataIndexHover,
   hoveredIndex,
-}: SubscriptionsChartProps<T, K>) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  maxHeight,
+}: ChartProps<T, K>) {
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+
   const gradientId = 'subscriptions-chart-gradient'
 
   const onMouseLeave = useCallback(() => {
@@ -104,8 +107,29 @@ export function Chart<T extends ChartData, K extends keyof T>({
     }
   }, [onDataIndexHover])
 
+  const ratio = 300 / 480
+  const [width, setWidth] = useState(0)
+
   useEffect(() => {
-    if (!containerRef.current) {
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (containerRef) {
+        setWidth(containerRef.clientWidth ?? 0)
+      }
+    })
+
+    if (containerRef) {
+      resizeObserver.observe(containerRef)
+    }
+
+    return () => {
+      if (containerRef) {
+        resizeObserver.unobserve(containerRef)
+      }
+    }
+  }, [containerRef])
+
+  useEffect(() => {
+    if (!containerRef) {
       return
     }
 
@@ -113,7 +137,8 @@ export function Chart<T extends ChartData, K extends keyof T>({
       style: {
         background: 'none',
       },
-      height: 300,
+      height: maxHeight ?? width * ratio,
+      width: width || undefined,
       marks: [
         () => createAreaGradient(gradientId),
         Plot.gridY(axisYOptions),
@@ -166,15 +191,15 @@ export function Chart<T extends ChartData, K extends keyof T>({
           : []),
       ],
     })
-    containerRef.current.append(plot)
+    containerRef.append(plot)
 
     return () => plot.remove()
-  }, [data, y, axisYOptions, onDataIndexHover, hoveredIndex])
+  }, [data, y, axisYOptions, onDataIndexHover, hoveredIndex, width])
 
   return (
     <div
-      className="dark:text-polar-500 text-gray-300"
-      ref={containerRef}
+      className="dark:text-polar-500  text-gray-300"
+      ref={setContainerRef}
       onMouseLeave={onMouseLeave}
     />
   )

@@ -16,7 +16,7 @@ export const useTrafficStatistics = (variables: {
   groupByArticle?: boolean
 }): UseQueryResult<TrafficStatistics> =>
   useQuery({
-    queryKey: ['traffic', 'organization', variables.orgName],
+    queryKey: ['traffic', JSON.stringify(variables)],
     queryFn: () =>
       api.traffic.statistics({
         organizationName: variables.orgName ?? '',

@@ -11,6 +11,7 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
 from .base import BaseTransactionService, BaseTransactionServiceError
+from .fee import fee_transaction as fee_transaction_service
 from .transfer import transfer_transaction as transfer_transaction_service
 
 
@@ -40,12 +41,6 @@ class DisputeTransactionService(BaseTransactionService):
         if payment_transaction is None:
             raise DisputeUnknownPaymentTransaction(dispute.id, charge_id)
 
-        balance_transaction = next(
-            bt
-            for bt in dispute.balance_transactions
-            if bt.reporting_category == "dispute"
-        )
-
         dispute_amount = dispute.amount
         total_amount = payment_transaction.amount + payment_transaction.tax_amount
         tax_refund_amount = abs(
@@ -74,6 +69,13 @@ class DisputeTransactionService(BaseTransactionService):
             issue_reward_id=payment_transaction.issue_reward_id,
             subscription_id=payment_transaction.subscription_id,
         )
+
+        # Compute and link fees
+        transaction_fees = await fee_transaction_service.create_dispute_fees(
+            session, dispute_transaction=dispute_transaction, category="dispute"
+        )
+        dispute_transaction.incurred_transaction_fees = transaction_fees
+
         session.add(dispute_transaction)
 
         # Create reversal transfers if it was already transferred
@@ -113,12 +115,6 @@ class DisputeTransactionService(BaseTransactionService):
         if payment_transaction is None:
             raise DisputeUnknownPaymentTransaction(dispute.id, charge_id)
 
-        balance_transaction = next(
-            bt
-            for bt in dispute.balance_transactions
-            if bt.reporting_category == "dispute_reversal"
-        )
-
         dispute_amount = dispute.amount
         total_amount = payment_transaction.amount + payment_transaction.tax_amount
         tax_amount = abs(
@@ -147,6 +143,15 @@ class DisputeTransactionService(BaseTransactionService):
             issue_reward_id=payment_transaction.issue_reward_id,
             subscription_id=payment_transaction.subscription_id,
         )
+
+        # Compute and link fees
+        transaction_fees = await fee_transaction_service.create_dispute_fees(
+            session,
+            dispute_transaction=dispute_transaction,
+            category="dispute_reversal",
+        )
+        dispute_transaction.incurred_transaction_fees = transaction_fees
+
         session.add(dispute_transaction)
 
         # Re-transfer if it was reversed

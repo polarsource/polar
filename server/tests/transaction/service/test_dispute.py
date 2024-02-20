@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
@@ -8,12 +8,14 @@ from polar.enums import AccountType
 from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.dispute import (
+from polar.transaction.service.dispute import (  # type: ignore[attr-defined]
     DisputeUnknownPaymentTransaction,
+    fee_transaction_service,
 )
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
+from polar.transaction.service.fee import FeeTransactionService
 from polar.transaction.service.transfer import TransferTransactionService
 
 
@@ -80,6 +82,16 @@ def transfer_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
+@pytest.fixture(autouse=True)
+def create_dispute_fees_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch.object(
+        fee_transaction_service,
+        "create_dispute_fees",
+        spec=FeeTransactionService.create_dispute_fees,
+        return_value=[],
+    )
+
+
 @pytest.mark.asyncio
 class TestCreateDispute:
     async def test_refund_unknown_payment_transaction(
@@ -99,6 +111,7 @@ class TestCreateDispute:
         user: User,
         pledge: Pledge,
         transfer_transaction_service_mock: MagicMock,
+        create_dispute_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
         dispute = build_stripe_dispute(
@@ -228,6 +241,8 @@ class TestCreateDispute:
         ]
         assert second_call[1]["amount"] == dispute.amount * 0.25
 
+        create_dispute_fees_mock.assert_awaited_once()
+
 
 @pytest.mark.asyncio
 class TestCreateDisputeReversal:
@@ -250,6 +265,7 @@ class TestCreateDisputeReversal:
         user: User,
         pledge: Pledge,
         transfer_transaction_service_mock: MagicMock,
+        create_dispute_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
         dispute = build_stripe_dispute(
@@ -452,3 +468,5 @@ class TestCreateDisputeReversal:
         ]
         assert second_call[1]["destination_account"].id == account.id
         assert second_call[1]["amount"] == incoming_transfer_2.amount
+
+        create_dispute_fees_mock.assert_awaited_once()

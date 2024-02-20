@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import and_, func, null, text
+from sqlalchemy import and_, desc, func, null, text
 
 from polar.kit.utils import utc_now
 from polar.models.traffic import Traffic
@@ -117,6 +117,8 @@ class TrafficService:
                 Traffic.referrer != "",
             )
             .group_by(Traffic.referrer)
+            .order_by(desc(func.sum(Traffic.views)))
+            .limit(20)
         )
 
         res = await session.execute(stmt)

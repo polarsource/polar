@@ -144,7 +144,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=charge.amount,
             tax_amount=0,
-            processor_fee_amount=0,
             charge_id=charge.id,
             pledge=pledge,
         )
@@ -158,7 +157,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.75,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -173,7 +171,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.75,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -190,7 +187,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.25,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -205,7 +201,6 @@ class TestCreateRefunds:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.25,
             tax_amount=0,
-            processor_fee_amount=0,
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
@@ -222,7 +217,6 @@ class TestCreateRefunds:
             account_currency=handled_refund.currency,
             account_amount=-handled_refund.amount,
             tax_amount=0,
-            processor_fee_amount=0,
             refund_id=handled_refund.id,
         )
         session.add(handled_refund_transaction)

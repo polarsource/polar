@@ -129,7 +129,6 @@ class TestCreatePayoutFromStripe:
             "account_currency": "usd",
             "account_amount": 1000,
             "tax_amount": 0,
-            "processor_fee_amount": 0,
             "account": account_usd,
         }
         transactions: list[Transaction] = []
@@ -190,7 +189,6 @@ class TestCreatePayoutFromStripe:
             "account_currency": "eur",
             "account_amount": 900,
             "tax_amount": 0,
-            "processor_fee_amount": 0,
             "account": account_eur,
         }
         transactions: list[Transaction] = []
@@ -268,7 +266,6 @@ class TestCreateManualPayout:
             "account_currency": "usd",
             "account_amount": 1000,
             "tax_amount": 0,
-            "processor_fee_amount": 0,
             "account": account_usd,
         }
         transactions: list[Transaction] = []
@@ -295,7 +292,6 @@ class TestCreateManualPayout:
             transaction.amount for transaction in transactions
         )
         assert transaction.tax_amount == 0
-        assert transaction.processor_fee_amount == 0
         assert transaction.account_id == account_usd.id
 
         paid_transactions_statement = select(Transaction).where(
@@ -316,7 +312,6 @@ class TestCreateManualPayout:
             "account_currency": "eur",
             "account_amount": 900,
             "tax_amount": 0,
-            "processor_fee_amount": 0,
             "account": account_eur,
         }
         transactions: list[Transaction] = []
@@ -347,7 +342,6 @@ class TestCreateManualPayout:
             transaction.account_amount for transaction in transactions
         )
         assert transaction.tax_amount == 0
-        assert transaction.processor_fee_amount == 0
         assert transaction.account_id == account_eur.id
 
         paid_transactions_statement = select(Transaction).where(

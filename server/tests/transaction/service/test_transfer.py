@@ -48,7 +48,6 @@ async def create_payment_transaction(
         account_currency=currency,
         account_amount=amount,
         tax_amount=0,
-        processor_fee_amount=0,
         charge_id=charge_id,
         pledge=pledge,
         subscription=subscription,
@@ -483,7 +482,6 @@ async def create_transfer_transactions(
         account_currency=currency,
         account_amount=-amount,  # Subtract the amount
         tax_amount=0,
-        processor_fee_amount=0,
     )
     incoming_transaction = Transaction(
         account=destination_account,  # User account
@@ -494,7 +492,6 @@ async def create_transfer_transactions(
         account_currency=currency,
         account_amount=amount,  # Add the amount
         tax_amount=0,
-        processor_fee_amount=0,
     )
 
     session.add(outgoing_transaction)
@@ -577,7 +574,6 @@ class TestCreateReversalTransfer:
         assert outgoing.type == TransactionType.transfer
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.amount == -1000
-        assert outgoing.processor_fee_amount == 0
         assert outgoing.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
         assert outgoing.transfer_reversal_transaction_id == transfer_incoming.id
 
@@ -585,7 +581,6 @@ class TestCreateReversalTransfer:
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
-        assert incoming.processor_fee_amount == 0
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
         assert incoming.transfer_reversal_transaction_id == transfer_outgoing.id
 
@@ -655,7 +650,6 @@ class TestCreateReversalTransfer:
         assert outgoing.currency == "usd"
         assert outgoing.account_currency == "eur"
         assert outgoing.account_amount == -900
-        assert outgoing.processor_fee_amount == 0
         assert outgoing.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
         assert outgoing.transfer_reversal_transaction_id == transfer_incoming.id
 
@@ -663,7 +657,6 @@ class TestCreateReversalTransfer:
         assert incoming.type == TransactionType.transfer
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
-        assert incoming.processor_fee_amount == 0
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
         assert incoming.transfer_reversal_transaction_id == transfer_outgoing.id
 

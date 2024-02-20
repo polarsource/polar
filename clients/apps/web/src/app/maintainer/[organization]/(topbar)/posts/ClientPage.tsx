@@ -21,6 +21,7 @@ import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import {
   useOrganizationArticles,
   useSubscriptionStatistics,
+  useTrafficStatistics,
 } from 'polarkit/hooks'
 import { useRef, useState } from 'react'
 import { useHoverDirty } from 'react-use'
@@ -67,6 +68,14 @@ const ClientPage = () => {
     [SubscriptionTierType.INDIVIDUAL, SubscriptionTierType.BUSINESS],
   )
 
+  const trafficStatistics = useTrafficStatistics({
+    orgName: org?.name ?? '',
+    platform: org?.platform,
+    startDate: startOfMonthThreeMonthsAgo,
+    endDate: startOfMonth,
+    interval: 'month',
+  })
+
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
     number | undefined
   >()
@@ -80,6 +89,10 @@ const ClientPage = () => {
       paidSubscriptionStatistics.data?.periods || [],
       hoveredPeriodIndex,
     )?.subscribers ?? 0
+
+  const currentTraffic =
+    idxOrLast(trafficStatistics.data?.periods || [], hoveredPeriodIndex)
+      ?.views ?? 0
 
   const showPosts = (posts.data?.items?.length ?? 0) > 0
   const showNoPostsYet =
@@ -173,6 +186,27 @@ const ClientPage = () => {
                       label: null,
                     }}
                     data={paidSubscriptionStatistics.data.periods.map((d) => ({
+                      ...d,
+                      parsedStartDate: new Date(d.start_date),
+                    }))}
+                    onDataIndexHover={setHoveredPeriodIndex}
+                    hoveredIndex={hoveredPeriodIndex}
+                  />
+                </Card>
+              )}
+              {trafficStatistics.data && (
+                <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
+                  <div className="flex w-full flex-grow flex-row items-center justify-between">
+                    <h3 className="p-2 text-sm font-medium">Views</h3>
+                    <h3 className="p-2 text-sm">{currentTraffic}</h3>
+                  </div>
+                  <Chart
+                    y="views"
+                    axisYOptions={{
+                      ticks: 'month',
+                      label: null,
+                    }}
+                    data={trafficStatistics.data.periods.map((d) => ({
                       ...d,
                       parsedStartDate: new Date(d.start_date),
                     }))}

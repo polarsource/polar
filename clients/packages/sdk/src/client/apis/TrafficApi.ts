@@ -16,9 +16,19 @@
 import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
+  Platforms,
   TrackPageView,
   TrackPageViewResponse,
+  TrafficStatistics,
 } from '../models/index';
+
+export interface TrafficApiStatisticsRequest {
+    startDate: string;
+    endDate: string;
+    articleId?: string;
+    organizationName?: string;
+    platform?: Platforms;
+}
 
 export interface TrafficApiTrackPageViewRequest {
     trackPageView: TrackPageView;
@@ -28,6 +38,68 @@ export interface TrafficApiTrackPageViewRequest {
  * 
  */
 export class TrafficApi extends runtime.BaseAPI {
+
+    /**
+     * Statistics
+     */
+    async statisticsRaw(requestParameters: TrafficApiStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrafficStatistics>> {
+        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
+            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling statistics.');
+        }
+
+        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
+            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling statistics.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.articleId !== undefined) {
+            queryParameters['article_id'] = requestParameters.articleId;
+        }
+
+        if (requestParameters.startDate !== undefined) {
+            queryParameters['start_date'] = requestParameters.startDate;
+        }
+
+        if (requestParameters.endDate !== undefined) {
+            queryParameters['end_date'] = requestParameters.endDate;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/traffic/statistics`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Statistics
+     */
+    async statistics(requestParameters: TrafficApiStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TrafficStatistics> {
+        const response = await this.statisticsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Track Page View

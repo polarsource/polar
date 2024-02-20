@@ -8217,6 +8217,50 @@ export interface TrackPageViewResponse {
 /**
  * 
  * @export
+ * @interface TrafficStatistics
+ */
+export interface TrafficStatistics {
+    /**
+     * 
+     * @type {Array<TrafficStatisticsPeriod>}
+     * @memberof TrafficStatistics
+     */
+    periods: Array<TrafficStatisticsPeriod>;
+}
+/**
+ * 
+ * @export
+ * @interface TrafficStatisticsPeriod
+ */
+export interface TrafficStatisticsPeriod {
+    /**
+     * 
+     * @type {string}
+     * @memberof TrafficStatisticsPeriod
+     */
+    start_date: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TrafficStatisticsPeriod
+     */
+    end_date: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TrafficStatisticsPeriod
+     */
+    views: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TrafficStatisticsPeriod
+     */
+    article_id?: string;
+}
+/**
+ * 
+ * @export
  * @interface Transaction
  */
 export interface Transaction {

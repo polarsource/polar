@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import date
 from uuid import UUID
 
@@ -23,4 +24,4 @@ class TrafficStatisticsPeriod(Schema):
 
 
 class TrafficStatistics(Schema):
-    periods: list[TrafficStatisticsPeriod]
+    periods: Sequence[TrafficStatisticsPeriod]

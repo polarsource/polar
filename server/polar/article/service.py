@@ -148,6 +148,19 @@ class ArticleService:
 
         return results, count
 
+    async def list_by_organization_id(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+    ) -> Sequence[Article]:
+        statement = (
+            sql.select(Article)
+            .where(Article.organization_id == organization_id)
+            .where(Article.deleted_at.is_(None))
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().all()
+
     async def search(
         self,
         session: AsyncSession,

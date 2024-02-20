@@ -152,9 +152,9 @@ const ClientPage = () => {
             <div className="flex flex-shrink-0 gap-2 lg:gap-8 xl:flex-col">
               {subscriptionStatistics.data && (
                 <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-                  <div className="flex w-full flex-grow flex-row items-center justify-between">
-                    <h3 className="p-2 text-sm font-medium">Subscribers</h3>
-                    <h3 className="p-2 text-sm">{currentSubscribers}</h3>
+                  <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
+                    <h3 className="text-sm font-medium">Subscribers</h3>
+                    <span className="text-sm">{currentSubscribers}</span>
                   </div>
                   <Chart
                     y="subscribers"
@@ -173,11 +173,9 @@ const ClientPage = () => {
               )}
               {paidSubscriptionStatistics.data && (
                 <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-                  <div className="flex w-full flex-grow flex-row items-center justify-between">
-                    <h3 className="p-2 text-sm font-medium">
-                      Paying Subscribers
-                    </h3>
-                    <h3 className="p-2 text-sm">{currentPaidSubscribers}</h3>
+                  <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
+                    <h3 className="text-sm font-medium">Paying Subscribers</h3>
+                    <span className="text-sm">{currentPaidSubscribers}</span>
                   </div>
                   <Chart
                     y="subscribers"
@@ -196,9 +194,19 @@ const ClientPage = () => {
               )}
               {trafficStatistics.data && (
                 <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-                  <div className="flex w-full flex-grow flex-row items-center justify-between">
-                    <h3 className="p-2 text-sm font-medium">Views</h3>
-                    <h3 className="p-2 text-sm">{currentTraffic}</h3>
+                  <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
+                    <h3 className=" text-sm font-medium">Views</h3>
+                    <div className="flex flex-col">
+                      <span className=" text-right text-sm">
+                        {currentTraffic}
+                      </span>
+                      <Link
+                        className="text-xs text-blue-500"
+                        href={`/maintainer/${org?.name}/posts/traffic`}
+                      >
+                        View more
+                      </Link>
+                    </div>
                   </div>
                   <Chart
                     y="views"

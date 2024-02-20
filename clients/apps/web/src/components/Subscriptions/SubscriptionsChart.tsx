@@ -107,7 +107,7 @@ export function Chart<T extends ChartData, K extends keyof T>({
     }
   }, [onDataIndexHover])
 
-  const ratio = 300 / 480
+  const ratio = 200 / 480
   const [width, setWidth] = useState(0)
 
   useEffect(() => {

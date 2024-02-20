@@ -25,7 +25,9 @@ import type {
 export interface TrafficApiStatisticsRequest {
     startDate: string;
     endDate: string;
+    interval: StatisticsIntervalEnum;
     articleId?: string;
+    groupByArticle?: boolean;
     organizationName?: string;
     platform?: Platforms;
 }
@@ -51,6 +53,10 @@ export class TrafficApi extends runtime.BaseAPI {
             throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling statistics.');
         }
 
+        if (requestParameters.interval === null || requestParameters.interval === undefined) {
+            throw new runtime.RequiredError('interval','Required parameter requestParameters.interval was null or undefined when calling statistics.');
+        }
+
         const queryParameters: any = {};
 
         if (requestParameters.articleId !== undefined) {
@@ -63,6 +69,14 @@ export class TrafficApi extends runtime.BaseAPI {
 
         if (requestParameters.endDate !== undefined) {
             queryParameters['end_date'] = requestParameters.endDate;
+        }
+
+        if (requestParameters.interval !== undefined) {
+            queryParameters['interval'] = requestParameters.interval;
+        }
+
+        if (requestParameters.groupByArticle !== undefined) {
+            queryParameters['group_by_article'] = requestParameters.groupByArticle;
         }
 
         if (requestParameters.organizationName !== undefined) {
@@ -143,3 +157,13 @@ export class TrafficApi extends runtime.BaseAPI {
     }
 
 }
+
+/**
+ * @export
+ */
+export const StatisticsIntervalEnum = {
+    MONTH: 'month',
+    WEEK: 'week',
+    DAY: 'day'
+} as const;
+export type StatisticsIntervalEnum = typeof StatisticsIntervalEnum[keyof typeof StatisticsIntervalEnum];

@@ -34,16 +34,16 @@ export default async function Page({
   startOfMonth.setUTCHours(0, 0, 0, 0)
   startOfMonth.setUTCDate(1)
 
-  const startOfMonthThreeMonthsAgo = new Date()
-  startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
-  startOfMonthThreeMonthsAgo.setUTCDate(1)
-  startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 5)
+  const startOfMonthSixMonthsAgo = new Date()
+  startOfMonthSixMonthsAgo.setUTCHours(0, 0, 0, 0)
+  startOfMonthSixMonthsAgo.setUTCDate(1)
+  startOfMonthSixMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 5)
 
   return (
     <DashboardBody>
       <SubscriptionsOverview
         organization={organization}
-        startDate={startOfMonthThreeMonthsAgo}
+        startDate={startOfMonthSixMonthsAgo}
         endDate={startOfMonth}
         subscriptionTierType={searchParams.type}
         subscriptionTierId={searchParams.subscription_tier_id}

@@ -5,15 +5,17 @@ from pydantic import UUID4
 
 from polar.account.service import account as account_service
 from polar.auth.dependencies import UserRequiredAuth
-from polar.authz.service import Authz
-from polar.exceptions import ResourceNotFound
+from polar.authz.service import AccessType, Authz
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from .schemas import Transaction, TransactionDetails, TransactionsSummary
+from .schemas import PayoutCreate, Transaction, TransactionDetails, TransactionsSummary
+from .service.payout import payout_transaction as payout_transaction_service
 from .service.transaction import SearchSortProperty
 from .service.transaction import transaction as transaction_service
 
@@ -78,3 +80,21 @@ async def get_summary(
         raise ResourceNotFound("Account not found")
 
     return await transaction_service.get_summary(session, auth.subject, account, authz)
+
+
+@router.post("/payout", response_model=Transaction, status_code=201, tags=[Tags.PUBLIC])
+async def create_payout(
+    auth: UserRequiredAuth,
+    payout_create: PayoutCreate,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> TransactionModel:
+    account_id = payout_create.account_id
+    account = await account_service.get(session, account_id)
+    if account is None:
+        raise ResourceNotFound("Account not found")
+
+    if not await authz.can(auth.user, AccessType.write, account):
+        raise NotPermitted()
+
+    return await payout_transaction_service.create_payout(session, account=account)

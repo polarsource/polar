@@ -55,8 +55,7 @@ async def create_transaction(
     return transaction
 
 
-@pytest_asyncio.fixture
-async def account(
+async def create_account(
     session: AsyncSession, organization: Organization, user: User
 ) -> Account:
     account = Account(
@@ -74,6 +73,13 @@ async def account(
     session.add(organization)
     await session.commit()
     return account
+
+
+@pytest_asyncio.fixture
+async def account(
+    session: AsyncSession, organization: Organization, user: User
+) -> Account:
+    return await create_account(session, organization, user)
 
 
 @pytest_asyncio.fixture

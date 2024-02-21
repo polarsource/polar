@@ -119,7 +119,7 @@ class Settings(BaseSettings):
     EMAIL_SENDER: EmailSender = EmailSender.logger
     RESEND_API_KEY: str = ""
 
-    ACCOUNT_TRANSFERS_REVIEW_THRESHOLD: int = 10000
+    ACCOUNT_BALANCE_REVIEW_THRESHOLD: int = 10000
 
     SUBSCRIPTION_FEE_PERCENT: int = 5
     PLEDGE_FEE_PERCENT: int = 5

@@ -1,11 +1,8 @@
-import uuid
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
-import stripe as stripe_lib
 from pytest_mock import MockerFixture
-from sqlalchemy import select
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
@@ -13,47 +10,13 @@ from polar.models import Account, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payout import (
-    StripePayoutNotPaid,
-    UnknownAccount,
-    UnknownTransaction,
+    InsufficientBalance,
+    NotReadyAccount,
+    UnderReviewAccount,
 )
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
-
-
-def build_stripe_balance_transaction(
-    *, fee: int | None = 100, source_transfer: str | None = None
-) -> stripe_lib.BalanceTransaction:
-    return stripe_lib.BalanceTransaction.construct_from(
-        {
-            "id": "STRIPE_BALANCE_TRANSACTION_ID",
-            "fee": fee,
-            "source": {"source_transfer": source_transfer}
-            if source_transfer is not None
-            else None,
-        },
-        None,
-    )
-
-
-def build_stripe_payout(
-    *,
-    status: str = "paid",
-    currency: str = "usd",
-    amount: int = 1000,
-    balance_transaction: str | None = None,
-) -> stripe_lib.Payout:
-    return stripe_lib.Payout.construct_from(
-        {
-            "id": "STRIPE_PAYOUT_ID",
-            "status": status,
-            "currency": currency,
-            "amount": amount,
-            "balance_transaction": balance_transaction,
-        },
-        None,
-    )
 
 
 @pytest.fixture(autouse=True)
@@ -63,290 +26,228 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-async def create_account(
-    session: AsyncSession, user: User, *, currency: str = "usd"
-) -> Account:
-    account = Account(
-        account_type=AccountType.stripe,
-        admin_id=user.id,
-        country="US",
+async def create_balance_transaction(
+    session: AsyncSession,
+    *,
+    account: Account,
+    currency: str = "usd",
+    amount: int = 1000,
+    charge_id: str = "STRIPE_CHARGE_ID",
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.balance,
+        account=account,
+        processor=None,
         currency=currency,
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=True,
-        stripe_id="STRIPE_ACCOUNT_ID",
+        amount=amount,
+        account_currency=currency,
+        account_amount=amount,
+        tax_amount=0,
+        charge_id=charge_id,
     )
-    session.add(account)
+    session.add(transaction)
     await session.commit()
-    return account
-
-
-@pytest_asyncio.fixture
-async def account_usd(session: AsyncSession, user: User) -> Account:
-    return await create_account(session, user)
-
-
-@pytest_asyncio.fixture
-async def account_eur(session: AsyncSession, user: User) -> Account:
-    return await create_account(session, user, currency="eur")
+    return transaction
 
 
 @pytest.mark.asyncio
-class TestCreatePayoutFromStripe:
-    async def test_not_paid_payout(self, session: AsyncSession) -> None:
-        stripe_payout = build_stripe_payout(status="pending")
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(StripePayoutNotPaid):
-            await payout_transaction_service.create_payout_from_stripe(
-                session, payout=stripe_payout, stripe_account_id="STRIPE_ACCOUNT_ID"
-            )
-
-    async def test_unknown_account(self, session: AsyncSession) -> None:
-        stripe_payout = build_stripe_payout()
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(UnknownAccount):
-            await payout_transaction_service.create_payout_from_stripe(
-                session, payout=stripe_payout, stripe_account_id="STRIPE_ACCOUNT_ID"
-            )
-
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        account_usd: Account,
-        stripe_service_mock: MagicMock,
+class TestCreatePayout:
+    async def test_insufficient_balance(
+        self, session: AsyncSession, user: User
     ) -> None:
-        transaction_params = {
-            "type": TransactionType.balance,
-            "processor": PaymentProcessor.stripe,
-            "currency": "usd",
-            "amount": 1000,
-            "account_currency": "usd",
-            "account_amount": 1000,
-            "tax_amount": 0,
-            "account": account_usd,
-        }
-        transactions: list[Transaction] = []
-        balance_transactions: list[stripe_lib.BalanceTransaction] = []
-        for i in range(0, 3):
-            transfer_id = f"STRIPE_TRANSFER_{i}"
-            transaction = Transaction(**transaction_params, transfer_id=transfer_id)
-            balance_transaction = build_stripe_balance_transaction(
-                source_transfer=transfer_id
-            )
-
-            session.add(transaction)
-            transactions.append(transaction)
-            balance_transactions.append(balance_transaction)
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        session.add(account)
         await session.commit()
 
-        stripe_service_mock.list_balance_transactions.return_value = (
-            balance_transactions
-        )
+        await create_balance_transaction(session, account=account, amount=-1000)
 
-        stripe_payout = build_stripe_payout(
-            amount=sum(transaction.amount for transaction in transactions)
+        # then
+        session.expunge_all()
+
+        with pytest.raises(InsufficientBalance):
+            await payout_transaction_service.create_payout(session, account=account)
+
+    async def test_under_review_account(
+        self, session: AsyncSession, user: User
+    ) -> None:
+        account = Account(
+            status=Account.Status.UNDER_REVIEW,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
         )
 
         # then
         session.expunge_all()
 
-        transaction = await payout_transaction_service.create_payout_from_stripe(
-            session, payout=stripe_payout, stripe_account_id="STRIPE_ACCOUNT_ID"
+        with pytest.raises(UnderReviewAccount):
+            await payout_transaction_service.create_payout(session, account=account)
+
+    async def test_inactive_account(self, session: AsyncSession, user: User) -> None:
+        account = Account(
+            status=Account.Status.ONBOARDING_STARTED,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
         )
 
-        assert transaction.type == TransactionType.payout
-        assert transaction.processor == PaymentProcessor.stripe
-        assert transaction.currency == stripe_payout.currency
-        assert transaction.amount == -stripe_payout.amount
-        assert transaction.tax_amount == 0
-        assert transaction.payout_id == stripe_payout.id
-        assert transaction.account_id == account_usd.id
+        # then
+        session.expunge_all()
 
-        paid_transactions_statement = select(Transaction).where(
-            Transaction.payout_transaction_id == transaction.id
-        )
-        result = await session.execute(paid_transactions_statement)
-        paid_transactions = result.scalars().all()
-        assert len(paid_transactions) == len(transactions)
+        with pytest.raises(NotReadyAccount):
+            await payout_transaction_service.create_payout(session, account=account)
 
-    async def test_valid_different_currencies(
-        self,
-        session: AsyncSession,
-        account_eur: Account,
-        stripe_service_mock: MagicMock,
+    async def test_stripe(
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
-        transaction_params = {
-            "type": TransactionType.balance,
-            "processor": PaymentProcessor.stripe,
-            "currency": "usd",
-            "amount": 1000,
-            "account_currency": "eur",
-            "account_amount": 900,
-            "tax_amount": 0,
-            "account": account_eur,
-        }
-        transactions: list[Transaction] = []
-        balance_transactions: list[stripe_lib.BalanceTransaction] = []
-        for i in range(0, 3):
-            transfer_id = f"STRIPE_TRANSFER_{i}"
-            transaction = Transaction(**transaction_params, transfer_id=transfer_id)
-            balance_transaction = build_stripe_balance_transaction(
-                source_transfer=transfer_id
-            )
-
-            session.add(transaction)
-            transactions.append(transaction)
-            balance_transactions.append(balance_transaction)
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        session.add(account)
         await session.commit()
 
-        stripe_service_mock.list_balance_transactions.return_value = (
-            balance_transactions
+        balance_transaction = await create_balance_transaction(session, account=account)
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
+        )
+        stripe_service_mock.create_payout.return_value = SimpleNamespace(
+            id="STRIPE_PAYOUT_ID"
         )
 
-        stripe_payout = build_stripe_payout(
-            amount=sum(transaction.account_amount for transaction in transactions),
+        # then
+        session.expunge_all()
+
+        payout = await payout_transaction_service.create_payout(
+            session, account=account
+        )
+
+        assert payout.account_id == account.id
+        assert payout.processor == PaymentProcessor.stripe
+        assert payout.transfer_id == "STRIPE_TRANSFER_ID"
+        assert payout.payout_id == "STRIPE_PAYOUT_ID"
+        assert payout.currency == "usd"
+        assert payout.amount == -balance_transaction.amount
+        assert payout.account_currency == "usd"
+        assert payout.account_amount == -balance_transaction.amount
+
+        stripe_service_mock.transfer.assert_called_once()
+        assert stripe_service_mock.transfer.call_args[1]["metadata"][
+            "payout_transaction_id"
+        ] == str(payout.id)
+
+        stripe_service_mock.create_payout.assert_called_once()
+        assert (
+            stripe_service_mock.create_payout.call_args[1]["metadata"][
+                "stripe_transfer_id"
+            ]
+            == "STRIPE_TRANSFER_ID"
+        )
+        assert stripe_service_mock.create_payout.call_args[1]["metadata"][
+            "payout_transaction_id"
+        ] == str(payout.id)
+        assert stripe_service_mock.create_payout.call_args[1]["amount"] == 1000
+
+    async def test_stripe_different_currencies(
+        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
+    ) -> None:
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="FR",
             currency="eur",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
         )
-
-        # then
-        session.expunge_all()
-
-        transaction = await payout_transaction_service.create_payout_from_stripe(
-            session, payout=stripe_payout, stripe_account_id="STRIPE_ACCOUNT_ID"
-        )
-
-        assert transaction.type == TransactionType.payout
-        assert transaction.processor == PaymentProcessor.stripe
-        assert transaction.currency == "usd"
-        assert transaction.amount == -sum(
-            transaction.amount for transaction in transactions
-        )
-        assert transaction.account_currency == "eur"
-        assert transaction.account_amount == -stripe_payout.amount
-        assert transaction.tax_amount == 0
-        assert transaction.payout_id == stripe_payout.id
-        assert transaction.account_id == account_eur.id
-
-        paid_transactions_statement = select(Transaction).where(
-            Transaction.payout_transaction_id == transaction.id
-        )
-        result = await session.execute(paid_transactions_statement)
-        paid_transactions = result.scalars().all()
-        assert len(paid_transactions) == len(transactions)
-
-
-@pytest.mark.asyncio
-class TestCreateManualPayout:
-    async def test_unknown_transaction(
-        self, session: AsyncSession, account_usd: Account
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(UnknownTransaction):
-            await payout_transaction_service.create_manual_payout(
-                session,
-                processor=PaymentProcessor.open_collective,
-                account=account_usd,
-                paid_transaction_ids=[uuid.uuid4()],
-            )
-
-    async def test_valid(self, session: AsyncSession, account_usd: Account) -> None:
-        transaction_params = {
-            "type": TransactionType.balance,
-            "processor": PaymentProcessor.open_collective,
-            "currency": "usd",
-            "amount": 1000,
-            "account_currency": "usd",
-            "account_amount": 1000,
-            "tax_amount": 0,
-            "account": account_usd,
-        }
-        transactions: list[Transaction] = []
-        for _ in range(0, 3):
-            transaction = Transaction(**transaction_params)
-            session.add(transaction)
-            transactions.append(transaction)
+        session.add(account)
         await session.commit()
 
+        balance_transaction = await create_balance_transaction(session, account=account)
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID",
+            balance_transaction="STRIPE_BALANCE_TRANSACTION_ID",
+            destination_payment="STRIPE_DESTINATION_CHARGE_ID",
+        )
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            id="STRIPE_DESTINATION_CHARGE_ID",
+            balance_transaction=SimpleNamespace(
+                amount=900, currency="eur", exchange_rate=0.9
+            ),
+        )
+        stripe_service_mock.create_payout.return_value = SimpleNamespace(
+            id="STRIPE_PAYOUT_ID"
+        )
+
         # then
         session.expunge_all()
 
-        transaction = await payout_transaction_service.create_manual_payout(
-            session,
-            processor=PaymentProcessor.open_collective,
-            account=account_usd,
-            paid_transaction_ids=[transaction.id for transaction in transactions],
+        payout = await payout_transaction_service.create_payout(
+            session, account=account
         )
 
-        assert transaction.type == TransactionType.payout
-        assert transaction.processor == PaymentProcessor.open_collective
-        assert transaction.currency == account_usd.currency
-        assert transaction.amount == -sum(
-            transaction.amount for transaction in transactions
-        )
-        assert transaction.tax_amount == 0
-        assert transaction.account_id == account_usd.id
+        assert payout.account_id == account.id
+        assert payout.processor == PaymentProcessor.stripe
+        assert payout.transfer_id == "STRIPE_TRANSFER_ID"
+        assert payout.payout_id == "STRIPE_PAYOUT_ID"
+        assert payout.currency == "usd"
+        assert payout.amount == -balance_transaction.amount
+        assert payout.account_currency == "eur"
+        assert payout.account_amount == -900
 
-        paid_transactions_statement = select(Transaction).where(
-            Transaction.payout_transaction_id == transaction.id
-        )
-        result = await session.execute(paid_transactions_statement)
-        paid_transactions = result.scalars().all()
-        assert len(paid_transactions) == len(transactions)
+        stripe_service_mock.create_payout.assert_called_once()
+        assert stripe_service_mock.create_payout.call_args[1]["amount"] == 900
 
-    async def test_valid_different_currencies(
-        self, session: AsyncSession, account_eur: Account
-    ) -> None:
-        transaction_params = {
-            "type": TransactionType.balance,
-            "processor": PaymentProcessor.open_collective,
-            "currency": "usd",
-            "amount": 1000,
-            "account_currency": "eur",
-            "account_amount": 900,
-            "tax_amount": 0,
-            "account": account_eur,
-        }
-        transactions: list[Transaction] = []
-        for _ in range(0, 3):
-            transaction = Transaction(**transaction_params)
-            session.add(transaction)
-            transactions.append(transaction)
+    async def test_open_collective(self, session: AsyncSession, user: User) -> None:
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.open_collective,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_details_submitted=False,
+            is_charges_enabled=False,
+            is_payouts_enabled=False,
+            open_collective_slug="polarsource",
+        )
+        session.add(account)
         await session.commit()
 
+        balance_transaction = await create_balance_transaction(session, account=account)
+
         # then
         session.expunge_all()
 
-        transaction = await payout_transaction_service.create_manual_payout(
-            session,
-            processor=PaymentProcessor.open_collective,
-            account=account_eur,
-            paid_transaction_ids=[transaction.id for transaction in transactions],
+        payout = await payout_transaction_service.create_payout(
+            session, account=account
         )
 
-        assert transaction.type == TransactionType.payout
-        assert transaction.processor == PaymentProcessor.open_collective
-        assert transaction.currency == "usd"
-        assert transaction.amount == -sum(
-            transaction.amount for transaction in transactions
-        )
-        assert transaction.account_currency == "eur"
-        assert transaction.account_amount == -sum(
-            transaction.account_amount for transaction in transactions
-        )
-        assert transaction.tax_amount == 0
-        assert transaction.account_id == account_eur.id
-
-        paid_transactions_statement = select(Transaction).where(
-            Transaction.payout_transaction_id == transaction.id
-        )
-        result = await session.execute(paid_transactions_statement)
-        paid_transactions = result.scalars().all()
-        assert len(paid_transactions) == len(transactions)
+        assert payout.account_id == account.id
+        assert payout.processor == PaymentProcessor.open_collective
+        assert payout.currency == "usd"
+        assert payout.amount == -balance_transaction.amount
+        assert payout.account_currency == "usd"
+        assert payout.account_amount == -balance_transaction.amount

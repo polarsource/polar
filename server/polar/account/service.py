@@ -121,7 +121,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return account
 
     async def check_review_threshold(
-        self, session: AsyncSession, account: Account, new_transfer_amount: int
+        self, session: AsyncSession, account: Account
     ) -> Account:
         if account.is_active() or account.is_under_review():
             return account
@@ -129,10 +129,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         transfers_sum = await transaction_service.get_transactions_sum(
             session, account.id, type=TransactionType.balance
         )
-        if (
-            transfers_sum + new_transfer_amount
-            >= settings.ACCOUNT_TRANSFERS_REVIEW_THRESHOLD
-        ):
+        if transfers_sum >= settings.ACCOUNT_BALANCE_REVIEW_THRESHOLD:
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
             await session.commit()
@@ -249,6 +246,8 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         if all(
             (
+                not account.is_active(),
+                not account.is_under_review(),
                 account.currency is not None,
                 account.is_details_submitted,
                 account.is_charges_enabled,

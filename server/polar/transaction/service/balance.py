@@ -78,6 +78,8 @@ class BalanceTransactionService(BaseTransactionService):
         session.add(incoming_transaction)
         await session.commit()
 
+        await account_service.check_review_threshold(session, destination_account)
+
         return (outgoing_transaction, incoming_transaction)
 
     async def create_balance_from_charge(

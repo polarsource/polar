@@ -18,7 +18,11 @@ import {
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import { useOrganizationArticles, useTrafficStatistics } from 'polarkit/hooks'
+import {
+  useOrganizationArticles,
+  useTrafficStatistics,
+  useTrafficTopReferrers,
+} from 'polarkit/hooks'
 import { useRef, useState } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
@@ -31,6 +35,8 @@ const startOfMonthThreeMonthsAgo = new Date()
 startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
 startOfMonthThreeMonthsAgo.setUTCDate(1)
 startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
+
+const today = new Date()
 
 function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
   if (idx !== undefined) {
@@ -66,6 +72,13 @@ const ClientPage = () => {
   const currentTraffic =
     idxOrLast(trafficStatistics.data?.periods || [], hoveredPeriodIndex)
       ?.views ?? 0
+
+  const topReferrers = useTrafficTopReferrers({
+    orgName: org?.name ?? '',
+    platform: org?.platform,
+    startDate: startOfMonthThreeMonthsAgo,
+    endDate: today,
+  }).data?.referrers.slice(0, 5)
 
   const showPosts = (posts.data?.items?.length ?? 0) > 0
   const showNoPostsYet =
@@ -127,17 +140,9 @@ const ClientPage = () => {
                 <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
                   <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
                     <h3 className=" text-sm font-medium">Views</h3>
-                    <div className="flex flex-col">
-                      <span className=" text-right text-sm">
-                        {currentTraffic}
-                      </span>
-                      <Link
-                        className="text-xs text-blue-500"
-                        href={`/maintainer/${org?.name}/posts/traffic`}
-                      >
-                        View more
-                      </Link>
-                    </div>
+                    <span className=" text-right text-sm">
+                      {currentTraffic}
+                    </span>
                   </div>
                   <Chart
                     y="views"
@@ -152,6 +157,22 @@ const ClientPage = () => {
                     onDataIndexHover={setHoveredPeriodIndex}
                     hoveredIndex={hoveredPeriodIndex}
                   />
+                </Card>
+              )}
+              {topReferrers && topReferrers.length > 0 && (
+                <Card className="flex flex-col gap-y-3 rounded-3xl p-4">
+                  <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
+                    <h3 className=" text-sm font-medium">Top Referrers</h3>
+                  </div>
+                  {topReferrers.map(({ referrer, views }) => (
+                    <div
+                      key={referrer}
+                      className="flex flex-row items-center justify-between gap-x-16 px-2 text-sm"
+                    >
+                      <span className="truncate">{referrer}</span>
+                      <span>{views}</span>
+                    </div>
+                  ))}
                 </Card>
               )}
             </div>

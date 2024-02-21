@@ -68,7 +68,6 @@ class HeldTransferService(ResourceServiceReader[HeldTransfer]):
                 pledge=held_transfer.pledge,
                 subscription=held_transfer.subscription,
                 issue_reward=held_transfer.issue_reward,
-                transfer_metadata=held_transfer.transfer_metadata,
             )
             transfers_tuples.append(transfer_tuple)
 

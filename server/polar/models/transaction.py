@@ -125,10 +125,10 @@ class Transaction(RecordModel):
 
     type: Mapped[TransactionType] = mapped_column(String, nullable=False, index=True)
     """Type of transaction."""
-    processor: Mapped[PaymentProcessor] = mapped_column(
-        String, nullable=False, index=True
+    processor: Mapped[PaymentProcessor | None] = mapped_column(
+        String, nullable=True, index=True
     )
-    """Payment processor."""
+    """Payment processor. For TransactionType.balance, it should be `None`."""
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     """Currency of this transaction from Polar's perspective. Should be `usd`."""

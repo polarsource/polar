@@ -69,7 +69,7 @@ class TransactionSubscription(TimestampedSchema):
 class Transaction(TimestampedSchema):
     id: UUID4
     type: TransactionType
-    processor: PaymentProcessor
+    processor: PaymentProcessor | None = None
 
     currency: str
     amount: int

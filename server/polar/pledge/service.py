@@ -879,15 +879,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             amount=payout_amount,
             pledge=pledge,
             issue_reward=split,
-            transfer_metadata={
-                "pledge_id": str(pledge.id),
-                "issue_reward_id": str(issue_reward_id),
-                **(
-                    {"stripe_payment_id": pledge.payment_id}
-                    if pledge.payment_id
-                    else {}
-                ),
-            },
         )
 
         transaction = PledgeTransaction(

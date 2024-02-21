@@ -92,9 +92,9 @@ You can also develop on Polar locally on your computer, which is the recommended
 * **[server](./server/README.md)** – Python / FastAPI / Arq / SQLAlchemy (PostgreSQL) / Redis
 * **[clients](./clients/README.md)** – Turborepo
   * [web](./clients/apps/web) (Dashboard) – NextJS (TypeScript)
-  * [chrome-extension](./clients/apps/chrome-extension) – React (TypeScript) - _To be deprecated_
   * [polarkit](./clients/packages/polarkit) - Shared React components
-  * [SDK](./clients/packages/sdk) - Polar SDK
+  * [`@polar-sh/sdk`](./clients/packages/sdk) - Polar JS SDK
+  * [next-js-example](./clients/examples/next-js-example) - NextJS App example powered by `@polar-sh/sdk`
 
 <sub>♥️🙏 To our `pyproject.toml` friends: [FastAPI](https://github.com/tiangolo/fastapi), [Pydantic](https://github.com/pydantic/pydantic), [Arq](https://github.com/samuelcolvin/arq), [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy), [Githubkit](https://github.com/yanyongyu/githubkit), [sse-starlette](https://github.com/sysid/sse-starlette), [Uvicorn](https://github.com/encode/uvicorn), [httpx-oauth](https://github.com/frankie567/httpx-oauth), [jinja](https://github.com/pallets/jinja), [blinker](https://github.com/pallets-eco/blinker), [pyjwt](https://github.com/jpadilla/pyjwt), [Sentry](https://github.com/getsentry/sentry) + more</sub><br />
 <sub>♥️🙏 To our `package.json` friends: [Next.js](https://github.com/vercel/next.js/), [TanStack Query](https://github.com/TanStack/query), [tailwindcss](https://github.com/tailwindlabs/tailwindcss), [zustand](https://github.com/pmndrs/zustand), [openapi-typescript-codegen](https://github.com/ferdikoomen/openapi-typescript-codegen), [axios](https://github.com/axios/axios), [radix-ui](https://github.com/radix-ui/primitives), [cmdk](https://github.com/pacocoursey/cmdk), [framer-motion](https://github.com/framer/motion) + more</sub>

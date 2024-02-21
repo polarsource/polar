@@ -48,7 +48,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     title: 'Posts',
     icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/posts`,
+    link: `/maintainer/${org.name}/posts/overview`,
     if: true,
     subs: [
       {
@@ -66,7 +66,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     title: 'Subscriptions',
     icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/subscriptions`,
+    link: `/maintainer/${org.name}/subscriptions/overview`,
     if: true,
     subs: [
       {

@@ -4,7 +4,6 @@ from arq import Retry
 
 from polar.account.service import account as account_service
 from polar.exceptions import PolarError
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import (
     PaymentIntentSuccessWebhook,
     ProductType,
@@ -52,11 +51,9 @@ async def account_updated(
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             stripe_account: stripe.Account = event["data"]["object"]
-            account = await account_service.update_account_from_stripe(
+            await account_service.update_account_from_stripe(
                 session, stripe_account=stripe_account
             )
-            if account.can_receive_transfers():
-                await held_balance_service.release_account(session, account)
 
 
 @task("stripe.webhook.payment_intent.succeeded")

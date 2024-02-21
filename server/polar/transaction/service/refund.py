@@ -7,9 +7,9 @@ from polar.models import Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
+from .balance import balance_transaction as balance_transaction_service
 from .base import BaseTransactionService, BaseTransactionServiceError
 from .fee import fee_transaction as fee_transaction_service
-from .transfer import transfer_transaction as transfer_transaction_service
 
 
 class RefundTransactionError(BaseTransactionServiceError):
@@ -88,23 +88,23 @@ class RefundTransactionService(BaseTransactionService):
             session.add(refund_transaction)
             refund_transactions.append(refund_transaction)
 
-            # Create reversal transfers if it was already transferred
-            transfer_transactions_couples = (
-                await self._get_transfer_transactions_for_payment(
+            # Create reversal balance if it was already balanced
+            balance_transactions_couples = (
+                await self._get_balance_transactions_for_payment(
                     session, payment_transaction=payment_transaction
                 )
             )
-            for transfer_transactions_couple in transfer_transactions_couples:
-                outgoing, _ = transfer_transactions_couple
-                # Refund each transfer proportionally
-                transfer_refund_amount = abs(
+            for balance_transactions_couple in balance_transactions_couples:
+                outgoing, _ = balance_transactions_couple
+                # Refund each balance proportionally
+                balance_refund_amount = abs(
                     int(math.floor(outgoing.amount * refund_amount) / total_amount)
                 )
-                await transfer_transaction_service.create_reversal_transfer(
+                await balance_transaction_service.create_reversal_balance(
                     session,
-                    transfer_transactions=transfer_transactions_couple,
+                    balance_transactions=balance_transactions_couple,
                     destination_currency=refund.currency,
-                    amount=transfer_refund_amount,
+                    amount=balance_refund_amount,
                     reversal_transfer_metadata={
                         "stripe_charge_id": charge.id,
                         "stripe_refund_id": refund.id,

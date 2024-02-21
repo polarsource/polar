@@ -25,11 +25,11 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 log: Logger = structlog.get_logger()
 
 
-class TransferTransactionError(BaseTransactionServiceError):
+class BalanceTransactionError(BaseTransactionServiceError):
     ...
 
 
-class UnsupportedAccountType(TransferTransactionError):
+class UnsupportedAccountType(BalanceTransactionError):
     def __init__(self, account: Account) -> None:
         self.account = account
         message = (
@@ -39,7 +39,7 @@ class UnsupportedAccountType(TransferTransactionError):
         super().__init__(message)
 
 
-class UnderReviewAccount(TransferTransactionError):
+class UnderReviewAccount(BalanceTransactionError):
     def __init__(self, account: Account) -> None:
         self.account = account
         message = (
@@ -49,7 +49,7 @@ class UnderReviewAccount(TransferTransactionError):
         super().__init__(message)
 
 
-class NotReadyAccount(TransferTransactionError):
+class NotReadyAccount(BalanceTransactionError):
     def __init__(self, account: Account) -> None:
         self.account = account
         message = (
@@ -59,15 +59,15 @@ class NotReadyAccount(TransferTransactionError):
         super().__init__(message)
 
 
-class PaymentTransactionForChargeDoesNotExist(TransferTransactionError):
+class PaymentTransactionForChargeDoesNotExist(BalanceTransactionError):
     def __init__(self, charge_id: str) -> None:
         self.charge_id = charge_id
         message = f"No payment transaction exist for charge {charge_id}."
         super().__init__(message)
 
 
-class TransferTransactionService(BaseTransactionService):
-    async def create_transfer(
+class BalanceTransactionService(BaseTransactionService):
+    async def create_balance(
         self,
         session: AsyncSession,
         *,
@@ -101,19 +101,19 @@ class TransferTransactionService(BaseTransactionService):
         source_currency = payment_transaction.currency.lower()
         destination_currency = destination_account.currency.lower()
 
-        transfer_correlation_key = str(uuid.uuid4())
+        balance_correlation_key = str(uuid.uuid4())
 
         outgoing_transaction = Transaction(
             id=generate_uuid(),
             account=None,  # Polar account
-            type=TransactionType.transfer,
+            type=TransactionType.balance,
             processor=processor,
             currency=source_currency,
             amount=-amount,  # Subtract the amount
             account_currency=source_currency,
             account_amount=-amount,
             tax_amount=0,
-            transfer_correlation_key=transfer_correlation_key,
+            balance_correlation_key=balance_correlation_key,
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
@@ -122,14 +122,14 @@ class TransferTransactionService(BaseTransactionService):
         incoming_transaction = Transaction(
             id=generate_uuid(),
             account=destination_account,  # User account
-            type=TransactionType.transfer,
+            type=TransactionType.balance,
             processor=processor,
             currency=source_currency,
             amount=amount,  # Add the amount
             account_currency=source_currency,
             account_amount=amount,
             tax_amount=0,
-            transfer_correlation_key=transfer_correlation_key,
+            balance_correlation_key=balance_correlation_key,
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
@@ -195,7 +195,7 @@ class TransferTransactionService(BaseTransactionService):
 
         return (outgoing_transaction, incoming_transaction)
 
-    async def create_transfer_from_charge(
+    async def create_balance_from_charge(
         self,
         session: AsyncSession,
         *,
@@ -213,7 +213,7 @@ class TransferTransactionService(BaseTransactionService):
         if payment_transaction is None:
             raise PaymentTransactionForChargeDoesNotExist(charge_id)
 
-        return await self.create_transfer(
+        return await self.create_balance(
             session,
             destination_account=destination_account,
             payment_transaction=payment_transaction,
@@ -224,7 +224,7 @@ class TransferTransactionService(BaseTransactionService):
             transfer_metadata=transfer_metadata,
         )
 
-    async def create_transfer_from_payment_intent(
+    async def create_balance_from_payment_intent(
         self,
         session: AsyncSession,
         *,
@@ -240,7 +240,7 @@ class TransferTransactionService(BaseTransactionService):
         assert payment_intent.latest_charge is not None
         charge_id = get_expandable_id(payment_intent.latest_charge)
 
-        return await self.create_transfer_from_charge(
+        return await self.create_balance_from_charge(
             session,
             destination_account=destination_account,
             charge_id=charge_id,
@@ -251,16 +251,16 @@ class TransferTransactionService(BaseTransactionService):
             transfer_metadata=transfer_metadata,
         )
 
-    async def create_reversal_transfer(
+    async def create_reversal_balance(
         self,
         session: AsyncSession,
         *,
-        transfer_transactions: tuple[Transaction, Transaction],
+        balance_transactions: tuple[Transaction, Transaction],
         destination_currency: str,
         amount: int,
         reversal_transfer_metadata: dict[str, str] | None = None,
     ) -> tuple[Transaction, Transaction]:
-        outgoing, incoming = transfer_transactions
+        outgoing, incoming = balance_transactions
         source_account_id = incoming.account_id
         assert source_account_id is not None
         source_account = await account_service.get(session, source_account_id)
@@ -275,39 +275,39 @@ class TransferTransactionService(BaseTransactionService):
 
         processor = outgoing.processor
 
-        transfer_correlation_key = str(uuid.uuid4())
+        balance_correlation_key = str(uuid.uuid4())
 
         outgoing_reversal = Transaction(
             id=generate_uuid(),
             account=source_account,  # User account
-            type=TransactionType.transfer,
+            type=TransactionType.balance,
             processor=processor,
             currency=destination_currency,
             amount=-amount,  # Subtract the amount
             account_currency=source_currency,
             account_amount=-amount,
             tax_amount=0,
-            transfer_correlation_key=transfer_correlation_key,
+            balance_correlation_key=balance_correlation_key,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,
-            transfer_reversal_transaction=incoming,
+            balance_reversal_transaction=incoming,
         )
         incoming_reversal = Transaction(
             id=generate_uuid(),
             account=None,  # Polar account
-            type=TransactionType.transfer,
+            type=TransactionType.balance,
             processor=processor,
             currency=destination_currency,
             amount=amount,  # Add the amount
             account_currency=destination_currency,
             account_amount=amount,
             tax_amount=0,
-            transfer_correlation_key=transfer_correlation_key,
+            balance_correlation_key=balance_correlation_key,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,
-            transfer_reversal_transaction=outgoing,
+            balance_reversal_transaction=outgoing,
         )
 
         if processor == PaymentProcessor.stripe:
@@ -369,4 +369,4 @@ class TransferTransactionService(BaseTransactionService):
         return (outgoing_reversal, incoming_reversal)
 
 
-transfer_transaction = TransferTransactionService(Transaction)
+balance_transaction = BalanceTransactionService(Transaction)

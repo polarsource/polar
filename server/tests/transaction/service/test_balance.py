@@ -11,21 +11,21 @@ from polar.integrations.stripe.service import StripeService
 from polar.models import Account, IssueReward, Pledge, Subscription, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.transfer import (
+from polar.transaction.service.balance import (
     NotReadyAccount,
     PaymentTransactionForChargeDoesNotExist,
     UnderReviewAccount,
     UnsupportedAccountType,
 )
-from polar.transaction.service.transfer import (
-    transfer_transaction as transfer_transaction_service,
+from polar.transaction.service.balance import (
+    balance_transaction as balance_transaction_service,
 )
 
 
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.transaction.service.transfer.stripe_service", new=mock)
+    mocker.patch("polar.transaction.service.balance.stripe_service", new=mock)
     return mock
 
 
@@ -59,7 +59,7 @@ async def create_payment_transaction(
 
 
 @pytest.mark.asyncio
-class TestCreateTransfer:
+class TestCreateBalance:
     async def test_unsupported_account_type(
         self, session: AsyncSession, user: User
     ) -> None:
@@ -76,7 +76,7 @@ class TestCreateTransfer:
         session.expunge_all()
 
         with pytest.raises(UnsupportedAccountType):
-            await transfer_transaction_service.create_transfer(
+            await balance_transaction_service.create_balance(
                 session,
                 destination_account=account,
                 payment_transaction=payment_transaction,
@@ -99,7 +99,7 @@ class TestCreateTransfer:
         session.expunge_all()
 
         with pytest.raises(UnderReviewAccount):
-            await transfer_transaction_service.create_transfer(
+            await balance_transaction_service.create_balance(
                 session,
                 destination_account=account,
                 payment_transaction=payment_transaction,
@@ -129,7 +129,7 @@ class TestCreateTransfer:
         )
 
         async def _check_review_threshold_mock(
-            session: AsyncSession, account: Account, new_transfer_amount: int
+            session: AsyncSession, account: Account, new_balance_amount: int
         ) -> Account:
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
@@ -142,7 +142,7 @@ class TestCreateTransfer:
         session.expunge_all()
 
         with pytest.raises(UnderReviewAccount):
-            await transfer_transaction_service.create_transfer(
+            await balance_transaction_service.create_balance(
                 session,
                 destination_account=account,
                 payment_transaction=payment_transaction,
@@ -163,7 +163,7 @@ class TestCreateTransfer:
         session.expunge_all()
 
         with pytest.raises(NotReadyAccount):
-            await transfer_transaction_service.create_transfer(
+            await balance_transaction_service.create_balance(
                 session,
                 destination_account=account,
                 payment_transaction=payment_transaction,
@@ -195,7 +195,7 @@ class TestCreateTransfer:
         # then
         session.expunge_all()
 
-        outgoing, incoming = await transfer_transaction_service.create_transfer(
+        outgoing, incoming = await balance_transaction_service.create_balance(
             session,
             destination_account=account,
             payment_transaction=payment_transaction,
@@ -203,20 +203,20 @@ class TestCreateTransfer:
         )
 
         assert outgoing.account_id is None
-        assert outgoing.type == TransactionType.transfer
+        assert outgoing.type == TransactionType.balance
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.amount == -1000
         assert outgoing.transfer_id == "STRIPE_TRANSFER_ID"
         assert outgoing.payment_transaction == payment_transaction
 
         assert incoming.account_id == account.id
-        assert incoming.type == TransactionType.transfer
+        assert incoming.type == TransactionType.balance
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
         assert incoming.payment_transaction == payment_transaction
 
-        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+        assert outgoing.balance_correlation_key == incoming.balance_correlation_key
 
         assert outgoing.id is not None
         assert incoming.id is not None
@@ -262,7 +262,7 @@ class TestCreateTransfer:
         # then
         session.expunge_all()
 
-        outgoing, incoming = await transfer_transaction_service.create_transfer(
+        outgoing, incoming = await balance_transaction_service.create_balance(
             session,
             destination_account=account,
             payment_transaction=payment_transaction,
@@ -270,7 +270,7 @@ class TestCreateTransfer:
         )
 
         assert outgoing.account_id is None
-        assert outgoing.type == TransactionType.transfer
+        assert outgoing.type == TransactionType.balance
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.currency == "usd"
         assert outgoing.amount == -1000
@@ -278,7 +278,7 @@ class TestCreateTransfer:
         assert outgoing.payment_transaction == payment_transaction
 
         assert incoming.account_id == account.id
-        assert incoming.type == TransactionType.transfer
+        assert incoming.type == TransactionType.balance
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.currency == "usd"
         assert incoming.amount == 1000
@@ -287,7 +287,7 @@ class TestCreateTransfer:
         assert incoming.transfer_id == "STRIPE_TRANSFER_ID"
         assert incoming.payment_transaction == payment_transaction
 
-        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+        assert outgoing.balance_correlation_key == incoming.balance_correlation_key
 
     async def test_open_collective(self, session: AsyncSession, user: User) -> None:
         account = Account(
@@ -308,7 +308,7 @@ class TestCreateTransfer:
         # then
         session.expunge_all()
 
-        outgoing, incoming = await transfer_transaction_service.create_transfer(
+        outgoing, incoming = await balance_transaction_service.create_balance(
             session,
             destination_account=account,
             payment_transaction=payment_transaction,
@@ -316,24 +316,24 @@ class TestCreateTransfer:
         )
 
         assert outgoing.account_id is None
-        assert outgoing.type == TransactionType.transfer
+        assert outgoing.type == TransactionType.balance
         assert outgoing.processor == PaymentProcessor.open_collective
         assert outgoing.amount == -1000
         assert outgoing.payment_transaction == payment_transaction
 
-        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+        assert outgoing.balance_correlation_key == incoming.balance_correlation_key
 
         assert incoming.account_id == account.id
-        assert incoming.type == TransactionType.transfer
+        assert incoming.type == TransactionType.balance
         assert incoming.processor == PaymentProcessor.open_collective
         assert incoming.amount == 1000
         assert incoming.payment_transaction == payment_transaction
 
-        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+        assert outgoing.balance_correlation_key == incoming.balance_correlation_key
 
 
 @pytest.mark.asyncio
-class TestCreateTransferFromCharge:
+class TestCreateBalanceFromCharge:
     async def test_not_existing_charge(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -351,7 +351,7 @@ class TestCreateTransferFromCharge:
         session.expunge_all()
 
         with pytest.raises(PaymentTransactionForChargeDoesNotExist):
-            await transfer_transaction_service.create_transfer_from_charge(
+            await balance_transaction_service.create_balance_from_charge(
                 session,
                 destination_account=account,
                 charge_id="STRIPE_CHARGE_ID",
@@ -392,7 +392,7 @@ class TestCreateTransferFromCharge:
         (
             incoming,
             outgoing,
-        ) = await transfer_transaction_service.create_transfer_from_charge(
+        ) = await balance_transaction_service.create_balance_from_charge(
             session,
             destination_account=account,
             charge_id="STRIPE_CHARGE_ID",
@@ -407,7 +407,7 @@ class TestCreateTransferFromCharge:
 
 
 @pytest.mark.asyncio
-class TestCreateTransferFromPaymentIntent:
+class TestCreateBalanceFromPaymentIntent:
     async def test_valid(
         self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
     ) -> None:
@@ -445,7 +445,7 @@ class TestCreateTransferFromPaymentIntent:
         (
             incoming,
             outgoing,
-        ) = await transfer_transaction_service.create_transfer_from_payment_intent(
+        ) = await balance_transaction_service.create_balance_from_payment_intent(
             session,
             destination_account=account,
             payment_intent_id="STRIPE_PAYMENT_INTENT_ID",
@@ -459,7 +459,7 @@ class TestCreateTransferFromPaymentIntent:
         assert outgoing.payment_transaction.id == payment_transaction.id
 
 
-async def create_transfer_transactions(
+async def create_balance_transactions(
     session: AsyncSession,
     *,
     destination_account: Account,
@@ -475,7 +475,7 @@ async def create_transfer_transactions(
 
     outgoing_transaction = Transaction(
         account=None,  # Polar account
-        type=TransactionType.transfer,
+        type=TransactionType.balance,
         processor=processor,
         currency=currency,
         amount=-amount,  # Subtract the amount
@@ -485,7 +485,7 @@ async def create_transfer_transactions(
     )
     incoming_transaction = Transaction(
         account=destination_account,  # User account
-        type=TransactionType.transfer,
+        type=TransactionType.balance,
         processor=processor,
         currency=currency,
         amount=amount,  # Add the amount
@@ -502,7 +502,7 @@ async def create_transfer_transactions(
 
 
 @pytest.mark.asyncio
-class TestCreateReversalTransfer:
+class TestCreateReversalBalance:
     async def test_inactive_account(self, session: AsyncSession, user: User) -> None:
         account = Account(
             status=Account.Status.ONBOARDING_STARTED,
@@ -516,7 +516,7 @@ class TestCreateReversalTransfer:
             stripe_id=None,
         )
 
-        transfer_transactions = await create_transfer_transactions(
+        balance_transactions = await create_balance_transactions(
             session, destination_account=account
         )
 
@@ -524,9 +524,9 @@ class TestCreateReversalTransfer:
         session.expunge_all()
 
         with pytest.raises(NotReadyAccount):
-            await transfer_transaction_service.create_reversal_transfer(
+            await balance_transaction_service.create_reversal_balance(
                 session,
-                transfer_transactions=transfer_transactions,
+                balance_transactions=balance_transactions,
                 destination_currency="usd",
                 amount=1000,
             )
@@ -555,36 +555,36 @@ class TestCreateReversalTransfer:
         # then
         session.expunge_all()
 
-        transfer_transactions = await create_transfer_transactions(
+        balance_transactions = await create_balance_transactions(
             session, destination_account=account
         )
-        transfer_outgoing, transfer_incoming = transfer_transactions
+        balance_outgoing, balance_incoming = balance_transactions
 
         (
             outgoing,
             incoming,
-        ) = await transfer_transaction_service.create_reversal_transfer(
+        ) = await balance_transaction_service.create_reversal_balance(
             session,
-            transfer_transactions=transfer_transactions,
+            balance_transactions=balance_transactions,
             destination_currency="usd",
             amount=1000,
         )
 
         assert outgoing.account_id == account.id
-        assert outgoing.type == TransactionType.transfer
+        assert outgoing.type == TransactionType.balance
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.amount == -1000
         assert outgoing.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
-        assert outgoing.transfer_reversal_transaction_id == transfer_incoming.id
+        assert outgoing.balance_reversal_transaction_id == balance_incoming.id
 
         assert incoming.account_id is None
-        assert incoming.type == TransactionType.transfer
+        assert incoming.type == TransactionType.balance
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
-        assert incoming.transfer_reversal_transaction_id == transfer_outgoing.id
+        assert incoming.balance_reversal_transaction_id == balance_outgoing.id
 
-        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+        assert outgoing.balance_correlation_key == incoming.balance_correlation_key
 
         assert outgoing.id is not None
         assert incoming.id is not None
@@ -628,39 +628,39 @@ class TestCreateReversalTransfer:
         # then
         session.expunge_all()
 
-        transfer_transactions = await create_transfer_transactions(
+        balance_transactions = await create_balance_transactions(
             session, destination_account=account
         )
-        transfer_outgoing, transfer_incoming = transfer_transactions
+        balance_outgoing, balance_incoming = balance_transactions
 
         (
             outgoing,
             incoming,
-        ) = await transfer_transaction_service.create_reversal_transfer(
+        ) = await balance_transaction_service.create_reversal_balance(
             session,
-            transfer_transactions=transfer_transactions,
+            balance_transactions=balance_transactions,
             destination_currency="usd",
             amount=1000,
         )
 
         assert outgoing.account_id == account.id
-        assert outgoing.type == TransactionType.transfer
+        assert outgoing.type == TransactionType.balance
         assert outgoing.processor == PaymentProcessor.stripe
         assert outgoing.amount == -1000
         assert outgoing.currency == "usd"
         assert outgoing.account_currency == "eur"
         assert outgoing.account_amount == -900
         assert outgoing.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
-        assert outgoing.transfer_reversal_transaction_id == transfer_incoming.id
+        assert outgoing.balance_reversal_transaction_id == balance_incoming.id
 
         assert incoming.account_id is None
-        assert incoming.type == TransactionType.transfer
+        assert incoming.type == TransactionType.balance
         assert incoming.processor == PaymentProcessor.stripe
         assert incoming.amount == 1000
         assert incoming.transfer_reversal_id == "STRIPE_REVERSAL_TRANSFER_ID"
-        assert incoming.transfer_reversal_transaction_id == transfer_outgoing.id
+        assert incoming.balance_reversal_transaction_id == balance_outgoing.id
 
-        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+        assert outgoing.balance_correlation_key == incoming.balance_correlation_key
 
         assert outgoing.id is not None
         assert incoming.id is not None
@@ -691,27 +691,27 @@ class TestCreateReversalTransfer:
         # then?
         session.expunge_all()
 
-        transfer_transactions = await create_transfer_transactions(
+        balance_transactions = await create_balance_transactions(
             session, destination_account=account
         )
 
         (
             outgoing,
             incoming,
-        ) = await transfer_transaction_service.create_reversal_transfer(
+        ) = await balance_transaction_service.create_reversal_balance(
             session,
-            transfer_transactions=transfer_transactions,
+            balance_transactions=balance_transactions,
             destination_currency="usd",
             amount=1000,
         )
 
         assert outgoing.account_id == account.id
-        assert outgoing.type == TransactionType.transfer
+        assert outgoing.type == TransactionType.balance
         assert outgoing.processor == PaymentProcessor.open_collective
         assert outgoing.amount == -1000
         assert incoming.account_id is None
-        assert incoming.type == TransactionType.transfer
+        assert incoming.type == TransactionType.balance
         assert incoming.processor == PaymentProcessor.open_collective
         assert incoming.amount == 1000
 
-        assert outgoing.transfer_correlation_key == incoming.transfer_correlation_key
+        assert outgoing.balance_correlation_key == incoming.balance_correlation_key

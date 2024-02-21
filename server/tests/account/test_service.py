@@ -12,7 +12,7 @@ async def create_transaction(
     session: AsyncSession, *, account: Account | None = None, amount: int = 1000
 ) -> Transaction:
     transaction = Transaction(
-        type=TransactionType.transfer,
+        type=TransactionType.balance,
         processor=PaymentProcessor.stripe,
         currency="usd",
         amount=amount,

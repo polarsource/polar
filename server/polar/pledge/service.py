@@ -61,8 +61,8 @@ from polar.notifications.service import (
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
 from polar.repository.service import repository as repository_service
-from polar.transaction.service.transfer import (
-    transfer_transaction as transfer_transaction_service,
+from polar.transaction.service.balance import (
+    balance_transaction as balance_transaction_service,
 )
 from polar.user.service import user as user_service
 
@@ -872,7 +872,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         (
             outgoing,
             _,
-        ) = await transfer_transaction_service.create_transfer_from_payment_intent(
+        ) = await balance_transaction_service.create_balance_from_payment_intent(
             session,
             destination_account=pay_to_account,
             payment_intent_id=pledge.payment_id,

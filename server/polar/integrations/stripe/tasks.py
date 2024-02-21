@@ -12,6 +12,7 @@ from polar.integrations.stripe.schemas import (
 from polar.pledge.service import pledge as pledge_service
 from polar.subscription.service.subscription import SubscriptionDoesNotExist
 from polar.subscription.service.subscription import subscription as subscription_service
+from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.dispute import (
     DisputeUnknownPaymentTransaction,
 )
@@ -33,7 +34,6 @@ from polar.transaction.service.payout import (
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
-from polar.transaction.service.transfer import PaymentTransactionForChargeDoesNotExist
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import stripe as stripe_service

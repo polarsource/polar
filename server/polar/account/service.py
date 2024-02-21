@@ -127,7 +127,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             return account
 
         transfers_sum = await transaction_service.get_transactions_sum(
-            session, account.id, type=TransactionType.transfer
+            session, account.id, type=TransactionType.balance
         )
         if (
             transfers_sum + new_transfer_amount

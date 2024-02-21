@@ -245,7 +245,7 @@ const ClientPage = ({
                 unique benefits as a bonus
               </p>
             </div>
-            <div className="-mx-4 flex flex-row items-start gap-6 overflow-x-auto px-4 pb-6 md:-mx-0 md:flex-col md:px-0 md:pb-0">
+            <div className="-mx-4 flex flex-row items-start gap-6 overflow-x-auto px-4 pb-6 md:mx-0 md:flex-col md:px-0 md:pb-0">
               {highlightedTiers?.map((tier) => (
                 <Link
                   key={tier.id}

@@ -15,14 +15,10 @@ import {
   LanguageOutlined,
   ViewDayOutlined,
 } from '@mui/icons-material'
-import { Article, SubscriptionTierType } from '@polar-sh/sdk'
+import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import {
-  useOrganizationArticles,
-  useSubscriptionStatistics,
-  useTrafficStatistics,
-} from 'polarkit/hooks'
+import { useOrganizationArticles, useTrafficStatistics } from 'polarkit/hooks'
 import { useRef, useState } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
@@ -55,19 +51,6 @@ const ClientPage = () => {
     showUnpublished: true,
   })
 
-  const subscriptionStatistics = useSubscriptionStatistics(
-    org?.name ?? '',
-    startOfMonthThreeMonthsAgo,
-    startOfMonth,
-  )
-
-  const paidSubscriptionStatistics = useSubscriptionStatistics(
-    org?.name ?? '',
-    startOfMonthThreeMonthsAgo,
-    startOfMonth,
-    [SubscriptionTierType.INDIVIDUAL, SubscriptionTierType.BUSINESS],
-  )
-
   const trafficStatistics = useTrafficStatistics({
     orgName: org?.name ?? '',
     platform: org?.platform,
@@ -79,16 +62,6 @@ const ClientPage = () => {
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
     number | undefined
   >()
-
-  const currentSubscribers =
-    idxOrLast(subscriptionStatistics.data?.periods || [], hoveredPeriodIndex)
-      ?.subscribers ?? 0
-
-  const currentPaidSubscribers =
-    idxOrLast(
-      paidSubscriptionStatistics.data?.periods || [],
-      hoveredPeriodIndex,
-    )?.subscribers ?? 0
 
   const currentTraffic =
     idxOrLast(trafficStatistics.data?.periods || [], hoveredPeriodIndex)
@@ -150,48 +123,6 @@ const ClientPage = () => {
               </h3>
             </div>
             <div className="flex flex-shrink-0 gap-2 lg:gap-8 xl:flex-col">
-              {subscriptionStatistics.data && (
-                <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-                  <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
-                    <h3 className="text-sm font-medium">Subscribers</h3>
-                    <span className="text-sm">{currentSubscribers}</span>
-                  </div>
-                  <Chart
-                    y="subscribers"
-                    axisYOptions={{
-                      ticks: 'month',
-                      label: null,
-                    }}
-                    data={subscriptionStatistics.data.periods.map((d) => ({
-                      ...d,
-                      parsedStartDate: new Date(d.start_date),
-                    }))}
-                    onDataIndexHover={setHoveredPeriodIndex}
-                    hoveredIndex={hoveredPeriodIndex}
-                  />
-                </Card>
-              )}
-              {paidSubscriptionStatistics.data && (
-                <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
-                  <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
-                    <h3 className="text-sm font-medium">Paying Subscribers</h3>
-                    <span className="text-sm">{currentPaidSubscribers}</span>
-                  </div>
-                  <Chart
-                    y="subscribers"
-                    axisYOptions={{
-                      ticks: 'month',
-                      label: null,
-                    }}
-                    data={paidSubscriptionStatistics.data.periods.map((d) => ({
-                      ...d,
-                      parsedStartDate: new Date(d.start_date),
-                    }))}
-                    onDataIndexHover={setHoveredPeriodIndex}
-                    hoveredIndex={hoveredPeriodIndex}
-                  />
-                </Card>
-              )}
               {trafficStatistics.data && (
                 <Card className="flex flex-col gap-y-4 rounded-3xl p-4">
                   <div className="flex w-full flex-grow flex-row items-center justify-between p-2">

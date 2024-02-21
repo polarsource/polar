@@ -42,8 +42,8 @@ from polar.subscription.service.subscription import (
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service.subscription import subscription as subscription_service
-from polar.transaction.service.transfer import (
-    TransferTransactionService,
+from polar.transaction.service.balance import (
+    BalanceTransactionService,
 )
 from polar.user.service import user as user_service
 from tests.fixtures.random_objects import (
@@ -741,10 +741,10 @@ class TestTransferSubscriptionPaidInvoice:
         )
 
         transaction_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.transfer_transaction_service",
-            spec=TransferTransactionService,
+            "polar.subscription.service.subscription.balance_transaction_service",
+            spec=BalanceTransactionService,
         )
-        transaction_service_mock.create_transfer_from_charge.return_value = (
+        transaction_service_mock.create_balance_from_charge.return_value = (
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
             Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         )
@@ -756,21 +756,21 @@ class TestTransferSubscriptionPaidInvoice:
             session, invoice=stripe_invoice
         )
 
-        transaction_service_mock.create_transfer_from_charge.assert_called_once()
+        transaction_service_mock.create_balance_from_charge.assert_called_once()
         assert (
-            transaction_service_mock.create_transfer_from_charge.call_args[1][
+            transaction_service_mock.create_balance_from_charge.call_args[1][
                 "destination_account"
             ].id
             == organization_account.id
         )
         assert (
-            transaction_service_mock.create_transfer_from_charge.call_args[1][
+            transaction_service_mock.create_balance_from_charge.call_args[1][
                 "charge_id"
             ]
             == stripe_invoice.charge
         )
         assert (
-            transaction_service_mock.create_transfer_from_charge.call_args[1]["amount"]
+            transaction_service_mock.create_balance_from_charge.call_args[1]["amount"]
             == 9500
         )
 
@@ -1509,11 +1509,11 @@ def get_net_amount(gross_amount: int) -> int:
     return int(gross_amount * (1 - settings.SUBSCRIPTION_FEE_PERCENT / 100))
 
 
-def get_transfers_sum(transfers: list[Transaction]) -> int:
-    return sum(transfer.amount for transfer in transfers)
+def get_balances_sum(balances: list[Transaction]) -> int:
+    return sum(balance.amount for balance in balances)
 
 
-async def create_subscription_transfers(
+async def create_subscription_balances(
     session: AsyncSession,
     *,
     gross_amount: int,
@@ -1528,7 +1528,7 @@ async def create_subscription_transfers(
     for month in range(start_month, end_month + 1):
         transaction = Transaction(
             created_at=datetime(year, month, 1, 0, 0, 0, 0, UTC),
-            type=TransactionType.transfer,
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             currency="usd",
             amount=net_amount,
@@ -1598,7 +1598,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers = await create_subscription_transfers(
+        balances = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1626,12 +1626,12 @@ class TestGetStatisticsPeriods:
             assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
             )
-            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
+            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == get_transfers_sum(transfers)
+            assert result.cumulative == get_balances_sum(balances)
 
     async def test_multiple_users_organization(
         self,
@@ -1665,7 +1665,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers = await create_subscription_transfers(
+        balances = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1693,12 +1693,12 @@ class TestGetStatisticsPeriods:
             assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
             )
-            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
+            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == get_transfers_sum(transfers)
+            assert result.cumulative == get_balances_sum(balances)
 
     async def test_filter_indirect_organization(
         self,
@@ -1718,7 +1718,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers_organization = await create_subscription_transfers(
+        balances_organization = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1733,7 +1733,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers_repository = await create_subscription_transfers(
+        balances_repository = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1763,15 +1763,15 @@ class TestGetStatisticsPeriods:
                 subscription_tier_organization.price_amount
                 + subscription_tier_repository.price_amount
             )
-            assert result.cumulative == get_transfers_sum(
-                transfers_organization[0 : i + 1] + transfers_repository[0 : i + 1]
+            assert result.cumulative == get_balances_sum(
+                balances_organization[0 : i + 1] + balances_repository[0 : i + 1]
             )
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == get_transfers_sum(
-                transfers_organization + transfers_repository
+            assert result.cumulative == get_balances_sum(
+                balances_organization + balances_repository
             )
 
     async def test_filter_repository(
@@ -1792,7 +1792,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers_organization = await create_subscription_transfers(
+        balances_organization = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1807,7 +1807,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers_repository = await create_subscription_transfers(
+        balances_repository = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1835,14 +1835,12 @@ class TestGetStatisticsPeriods:
             assert result.mrr == get_net_amount(
                 subscription_tier_repository.price_amount
             )
-            assert result.cumulative == get_transfers_sum(
-                transfers_repository[0 : i + 1]
-            )
+            assert result.cumulative == get_balances_sum(balances_repository[0 : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == get_transfers_sum(transfers_repository)
+            assert result.cumulative == get_balances_sum(balances_repository)
 
     async def test_filter_type(
         self,
@@ -1860,7 +1858,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        await create_subscription_transfers(
+        await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1904,7 +1902,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers_organization = await create_subscription_transfers(
+        balances_organization = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1919,7 +1917,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        transfers_repository = await create_subscription_transfers(
+        balances_repository = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1946,14 +1944,14 @@ class TestGetStatisticsPeriods:
             assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
             )
-            assert result.cumulative == get_transfers_sum(
-                transfers_organization[0 : i + 1]
+            assert result.cumulative == get_balances_sum(
+                balances_organization[0 : i + 1]
             )
 
         for result in results[6:]:
             assert result.subscribers == 0
             assert result.mrr == 0
-            assert result.cumulative == get_transfers_sum(transfers_organization)
+            assert result.cumulative == get_balances_sum(balances_organization)
 
     async def test_ongoing_subscription(
         self,
@@ -1971,7 +1969,7 @@ class TestGetStatisticsPeriods:
             user=user_second,
             started_at=datetime(2023, 1, 1),
         )
-        transfers = await create_subscription_transfers(
+        balances = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -1999,15 +1997,15 @@ class TestGetStatisticsPeriods:
             assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
             )
-            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
+            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for i, result in enumerate(results[9:]):
             assert result.subscribers == 1
             assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
             )
-            assert result.cumulative == get_transfers_sum(
-                transfers[:-1]
+            assert result.cumulative == get_balances_sum(
+                balances[:-1]
             ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)
 
     async def test_free_subscription(
@@ -2027,7 +2025,7 @@ class TestGetStatisticsPeriods:
             user=user_second,
             started_at=datetime(2023, 1, 1),
         )
-        transfers = await create_subscription_transfers(
+        balances = await create_subscription_balances(
             session,
             gross_amount=subscription_tier_organization.price_amount,
             start_month=1,
@@ -2061,15 +2059,15 @@ class TestGetStatisticsPeriods:
             assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
             )
-            assert result.cumulative == get_transfers_sum(transfers[0 : i + 1])
+            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for i, result in enumerate(results[9:]):
             assert result.subscribers == 2
             assert result.mrr == get_net_amount(
                 subscription_tier_organization.price_amount
             )
-            assert result.cumulative == get_transfers_sum(
-                transfers[:-1]
+            assert result.cumulative == get_balances_sum(
+                balances[:-1]
             ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)
 
     async def test_cancelled_subscriptions(

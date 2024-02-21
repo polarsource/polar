@@ -313,10 +313,10 @@ async def test_transfer_org(
         session,
     )
 
-    transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
+    balance = mocker.patch(
+        "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    transfer.return_value = (
+    balance.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
@@ -326,7 +326,7 @@ async def test_transfer_org(
 
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
-    transfer.assert_called_once()
+    balance.assert_called_once()
 
     after_transfer = await pledge_service.get(session, pledge.id)
     assert after_transfer is not None
@@ -362,10 +362,10 @@ async def test_transfer_org_no_account(
         session,
     )
 
-    transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
+    balance = mocker.patch(
+        "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    transfer.return_value = (
+    balance.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
@@ -376,7 +376,7 @@ async def test_transfer_org_no_account(
     with pytest.raises(NotPermitted, match="Receiving organization has no account"):
         await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
-    transfer.assert_not_called()
+    balance.assert_not_called()
     paid_notification.assert_not_called()
 
 
@@ -423,10 +423,10 @@ async def test_transfer_user(
         session,
     )
 
-    transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
+    balance = mocker.patch(
+        "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    transfer.return_value = (
+    balance.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
@@ -436,7 +436,7 @@ async def test_transfer_user(
 
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
-    transfer.assert_called_once()
+    balance.assert_called_once()
 
     after_transfer = await pledge_service.get(session, pledge.id)
     assert after_transfer is not None
@@ -472,10 +472,10 @@ async def test_transfer_user_no_account(
         session,
     )
 
-    transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
+    balance = mocker.patch(
+        "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    transfer.return_value = (
+    balance.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
@@ -486,7 +486,7 @@ async def test_transfer_user_no_account(
     with pytest.raises(NotPermitted, match="Receiving user has no account"):
         await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
-    transfer.assert_not_called()
+    balance.assert_not_called()
     paid_notification.assert_not_called()
 
 

@@ -82,17 +82,17 @@ async def test_list_rewards(
     assert org_tuple[2] is None  # no transfer
 
     # Create transfer to organization
-    transfer = mocker.patch(
-        "polar.transaction.service.transfer.TransferTransactionService.create_transfer_from_payment_intent"
+    balance = mocker.patch(
+        "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    transfer.return_value = (
+    balance.return_value = (
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
         Transaction(transfer_id="STRIPE_TRANSFER_ID"),
     )
 
     await pledge_service.transfer(session, pledge.id, issue_reward_id=org_tuple[1].id)
 
-    transfer.assert_called_once()
+    balance.assert_called_once()
 
     # assert rewards after transfer
     rewards = await reward_service.list(session, pledge_org_id=organization.id)

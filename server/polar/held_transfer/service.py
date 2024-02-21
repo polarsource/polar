@@ -12,8 +12,8 @@ from polar.models import (
 )
 from polar.models.organization import Organization
 from polar.postgres import AsyncSession
-from polar.transaction.service.transfer import (
-    transfer_transaction as transfer_transaction_service,
+from polar.transaction.service.balance import (
+    balance_transaction as balance_transaction_service,
 )
 
 log: Logger = structlog.get_logger()
@@ -60,7 +60,7 @@ class HeldTransferService(ResourceServiceReader[HeldTransfer]):
 
         transfers_tuples: list[tuple[Transaction, Transaction]] = []
         async for held_transfer in held_transfers:
-            transfer_tuple = await transfer_transaction_service.create_transfer(
+            transfer_tuple = await balance_transaction_service.create_balance(
                 session,
                 destination_account=account,
                 payment_transaction=held_transfer.payment_transaction,

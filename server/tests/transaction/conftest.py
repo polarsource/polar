@@ -27,7 +27,7 @@ async def create_transaction(
     account: Account | None = None,
     payment_user: User | None = None,
     payment_organization: Organization | None = None,
-    type: TransactionType = TransactionType.transfer,
+    type: TransactionType = TransactionType.balance,
     amount: int = 1000,
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,

@@ -8,6 +8,7 @@ from polar.enums import AccountType
 from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
+from polar.transaction.service.balance import BalanceTransactionService
 from polar.transaction.service.dispute import (  # type: ignore[attr-defined]
     DisputeUnknownPaymentTransaction,
     fee_transaction_service,
@@ -16,7 +17,6 @@ from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 from polar.transaction.service.fee import FeeTransactionService
-from polar.transaction.service.transfer import TransferTransactionService
 
 
 def build_stripe_balance_transaction(
@@ -74,10 +74,10 @@ def build_stripe_dispute(
 
 
 @pytest.fixture(autouse=True)
-def transfer_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = MagicMock(spec=TransferTransactionService)
+def balance_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=BalanceTransactionService)
     mocker.patch(
-        "polar.transaction.service.dispute.transfer_transaction_service", new=mock
+        "polar.transaction.service.dispute.balance_transaction_service", new=mock
     )
     return mock
 
@@ -110,7 +110,7 @@ class TestCreateDispute:
         session: AsyncSession,
         user: User,
         pledge: Pledge,
-        transfer_transaction_service_mock: MagicMock,
+        balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
@@ -146,8 +146,8 @@ class TestCreateDispute:
         )
         session.add(payment_transaction)
 
-        outgoing_transfer_1 = Transaction(
-            type=TransactionType.transfer,
+        outgoing_balance_1 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.75,
@@ -157,10 +157,10 @@ class TestCreateDispute:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_1",
+            balance_correlation_key="BALANCE_1",
         )
-        incoming_transfer_1 = Transaction(
-            type=TransactionType.transfer,
+        incoming_balance_1 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             account=account,
             currency=charge.currency,
@@ -171,13 +171,13 @@ class TestCreateDispute:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_1",
+            balance_correlation_key="BALANCE_1",
         )
-        session.add(outgoing_transfer_1)
-        session.add(incoming_transfer_1)
+        session.add(outgoing_balance_1)
+        session.add(incoming_balance_1)
 
-        outgoing_transfer_2 = Transaction(
-            type=TransactionType.transfer,
+        outgoing_balance_2 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.25,
@@ -187,10 +187,10 @@ class TestCreateDispute:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_2",
+            balance_correlation_key="BALANCE_2",
         )
-        incoming_transfer_2 = Transaction(
-            type=TransactionType.transfer,
+        incoming_balance_2 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             account=account,
             currency=charge.currency,
@@ -201,10 +201,10 @@ class TestCreateDispute:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_2",
+            balance_correlation_key="BALANCE_2",
         )
-        session.add(outgoing_transfer_2)
-        session.add(incoming_transfer_2)
+        session.add(outgoing_balance_2)
+        session.add(incoming_balance_2)
 
         await session.commit()
 
@@ -219,25 +219,23 @@ class TestCreateDispute:
         assert dispute_transaction.processor == PaymentProcessor.stripe
         assert dispute_transaction.amount == -dispute.amount
 
-        assert (
-            transfer_transaction_service_mock.create_reversal_transfer.call_count == 2
-        )
+        assert balance_transaction_service_mock.create_reversal_balance.call_count == 2
 
         first_call = (
-            transfer_transaction_service_mock.create_reversal_transfer.call_args_list[0]
+            balance_transaction_service_mock.create_reversal_balance.call_args_list[0]
         )
-        assert [t.id for t in first_call[1]["transfer_transactions"]] == [
-            outgoing_transfer_1.id,
-            incoming_transfer_1.id,
+        assert [t.id for t in first_call[1]["balance_transactions"]] == [
+            outgoing_balance_1.id,
+            incoming_balance_1.id,
         ]
         assert first_call[1]["amount"] == dispute.amount * 0.75
 
         second_call = (
-            transfer_transaction_service_mock.create_reversal_transfer.call_args_list[1]
+            balance_transaction_service_mock.create_reversal_balance.call_args_list[1]
         )
-        assert [t.id for t in second_call[1]["transfer_transactions"]] == [
-            outgoing_transfer_2.id,
-            incoming_transfer_2.id,
+        assert [t.id for t in second_call[1]["balance_transactions"]] == [
+            outgoing_balance_2.id,
+            incoming_balance_2.id,
         ]
         assert second_call[1]["amount"] == dispute.amount * 0.25
 
@@ -264,7 +262,7 @@ class TestCreateDisputeReversal:
         session: AsyncSession,
         user: User,
         pledge: Pledge,
-        transfer_transaction_service_mock: MagicMock,
+        balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
@@ -318,9 +316,9 @@ class TestCreateDisputeReversal:
         )
         session.add(dispute_transaction)
 
-        # First transfer
-        outgoing_transfer_1 = Transaction(
-            type=TransactionType.transfer,
+        # First balance
+        outgoing_balance_1 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.75,
@@ -330,10 +328,10 @@ class TestCreateDisputeReversal:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_1",
+            balance_correlation_key="BALANCE_1",
         )
-        incoming_transfer_1 = Transaction(
-            type=TransactionType.transfer,
+        incoming_balance_1 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             account=account,
             currency=charge.currency,
@@ -344,14 +342,14 @@ class TestCreateDisputeReversal:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_1",
+            balance_correlation_key="BALANCE_1",
         )
-        session.add(outgoing_transfer_1)
-        session.add(incoming_transfer_1)
+        session.add(outgoing_balance_1)
+        session.add(incoming_balance_1)
 
-        # First transfer reversal
-        outgoing_reversal_transfer_1 = Transaction(
-            type=TransactionType.transfer,
+        # First balance reversal
+        outgoing_reversal_balance_1 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             account=account,
             currency=charge.currency,
@@ -361,11 +359,11 @@ class TestCreateDisputeReversal:
             tax_amount=0,
             pledge=pledge,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_REVERSAL_1",
-            transfer_reversal_transaction=incoming_transfer_1,
+            balance_correlation_key="BALANCE_REVERSAL_1",
+            balance_reversal_transaction=incoming_balance_1,
         )
-        incoming_reversal_transfer_1 = Transaction(
-            type=TransactionType.transfer,
+        incoming_reversal_balance_1 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.75,
@@ -375,15 +373,15 @@ class TestCreateDisputeReversal:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_REVERSAL_1",
-            transfer_reversal_transaction=outgoing_transfer_1,
+            balance_correlation_key="BALANCE_REVERSAL_1",
+            balance_reversal_transaction=outgoing_balance_1,
         )
-        session.add(outgoing_reversal_transfer_1)
-        session.add(incoming_reversal_transfer_1)
+        session.add(outgoing_reversal_balance_1)
+        session.add(incoming_reversal_balance_1)
 
-        # Second transfer
-        outgoing_transfer_2 = Transaction(
-            type=TransactionType.transfer,
+        # Second balance
+        outgoing_balance_2 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.25,
@@ -393,10 +391,10 @@ class TestCreateDisputeReversal:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_2",
+            balance_correlation_key="BALANCE_2",
         )
-        incoming_transfer_2 = Transaction(
-            type=TransactionType.transfer,
+        incoming_balance_2 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             account=account,
             currency=charge.currency,
@@ -407,14 +405,14 @@ class TestCreateDisputeReversal:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_2",
+            balance_correlation_key="BALANCE_2",
         )
-        session.add(outgoing_transfer_2)
-        session.add(incoming_transfer_2)
+        session.add(outgoing_balance_2)
+        session.add(incoming_balance_2)
 
-        # Second transfer reversal
-        outgoing_reversal_transfer_2 = Transaction(
-            type=TransactionType.transfer,
+        # Second balance reversal
+        outgoing_reversal_balance_2 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             account=account,
             currency=charge.currency,
@@ -424,11 +422,11 @@ class TestCreateDisputeReversal:
             tax_amount=0,
             pledge=pledge,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_REVERSAL_2",
-            transfer_reversal_transaction=incoming_transfer_2,
+            balance_correlation_key="BALANCE_REVERSAL_2",
+            balance_reversal_transaction=incoming_balance_2,
         )
-        incoming_reversal_transfer_2 = Transaction(
-            type=TransactionType.transfer,
+        incoming_reversal_balance_2 = Transaction(
+            type=TransactionType.balance,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.25,
@@ -438,11 +436,11 @@ class TestCreateDisputeReversal:
             pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
-            transfer_correlation_key="TRANSFER_REVERSAL_2",
-            transfer_reversal_transaction=outgoing_transfer_2,
+            balance_correlation_key="BALANCE_REVERSAL_2",
+            balance_reversal_transaction=outgoing_balance_2,
         )
-        session.add(outgoing_reversal_transfer_2)
-        session.add(incoming_reversal_transfer_2)
+        session.add(outgoing_reversal_balance_2)
+        session.add(incoming_reversal_balance_2)
 
         await session.commit()
 
@@ -457,16 +455,14 @@ class TestCreateDisputeReversal:
         assert dispute_transaction.processor == PaymentProcessor.stripe
         assert dispute_transaction.amount == dispute.amount
 
-        assert transfer_transaction_service_mock.create_transfer.call_count == 2
+        assert balance_transaction_service_mock.create_balance.call_count == 2
 
-        first_call = transfer_transaction_service_mock.create_transfer.call_args_list[0]
+        first_call = balance_transaction_service_mock.create_balance.call_args_list[0]
         assert first_call[1]["destination_account"].id == account.id
-        assert first_call[1]["amount"] == incoming_transfer_1.amount
+        assert first_call[1]["amount"] == incoming_balance_1.amount
 
-        second_call = transfer_transaction_service_mock.create_transfer.call_args_list[
-            1
-        ]
+        second_call = balance_transaction_service_mock.create_balance.call_args_list[1]
         assert second_call[1]["destination_account"].id == account.id
-        assert second_call[1]["amount"] == incoming_transfer_2.amount
+        assert second_call[1]["amount"] == incoming_balance_2.amount
 
         create_dispute_fees_mock.assert_awaited_once()

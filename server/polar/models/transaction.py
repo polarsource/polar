@@ -37,8 +37,8 @@ class TransactionType(StrEnum):
     """Polar refunded a payment (totally or partially)."""
     dispute = "dispute"
     """A Polar payment is disputed (totally or partially)."""
-    transfer = "transfer"
-    """Money transfer between Polar and a user's account."""
+    balance = "balance"
+    """Money flow between Polar and a user's account."""
     payout = "payout"
     """Money paid to the user's bank account."""
 
@@ -152,11 +152,11 @@ class Transaction(RecordModel):
     Type of processor fee. Only applies to transactions of type `TransactionType.processor_fee`.
     """
 
-    transfer_correlation_key: Mapped[str] = mapped_column(
+    balance_correlation_key: Mapped[str] = mapped_column(
         String, nullable=True, index=True
     )
     """
-    Internal key used to correlate a couple of transfer transactions:
+    Internal key used to correlate a couple of balance transactions:
     the outgoing side and the incoming side.
     """
 
@@ -276,12 +276,12 @@ class Transaction(RecordModel):
                 cls.id,  # type: ignore
             ],
             foreign_keys="[Transaction.payment_transaction_id]",
-            back_populates="transfer_transactions",
+            back_populates="balance_transactions",
         )
 
     @declared_attr
-    def transfer_transactions(cls) -> Mapped[list["Transaction"]]:
-        """Transactions that transferred this payment transaction."""
+    def balance_transactions(cls) -> Mapped[list["Transaction"]]:
+        """Transactions that were balanced by this payment transaction."""
         return relationship(
             "Transaction",
             lazy="raise",
@@ -289,17 +289,17 @@ class Transaction(RecordModel):
             foreign_keys="[Transaction.payment_transaction_id]",
         )
 
-    transfer_reversal_transaction_id: Mapped[UUID | None] = mapped_column(
+    balance_reversal_transaction_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("transactions.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
-    """ID of the transfer transaction that reverses this transaction."""
+    """ID of the balance transaction that reverses this transaction."""
 
     @declared_attr
-    def transfer_reversal_transaction(cls) -> Mapped["Transaction | None"]:
-        """Transfer transaction that reverses this transaction."""
+    def balance_reversal_transaction(cls) -> Mapped["Transaction | None"]:
+        """Balance transaction that reverses this transaction."""
         return relationship(
             "Transaction",
             lazy="raise",
@@ -307,7 +307,7 @@ class Transaction(RecordModel):
             remote_side=[
                 cls.id,  # type: ignore
             ],
-            foreign_keys="[Transaction.transfer_reversal_transaction_id]",
+            foreign_keys="[Transaction.balance_reversal_transaction_id]",
         )
 
     payout_transaction_id: Mapped[UUID | None] = mapped_column(

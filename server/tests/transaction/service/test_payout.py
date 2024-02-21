@@ -122,7 +122,7 @@ class TestCreatePayoutFromStripe:
         stripe_service_mock: MagicMock,
     ) -> None:
         transaction_params = {
-            "type": TransactionType.transfer,
+            "type": TransactionType.balance,
             "processor": PaymentProcessor.stripe,
             "currency": "usd",
             "amount": 1000,
@@ -182,7 +182,7 @@ class TestCreatePayoutFromStripe:
         stripe_service_mock: MagicMock,
     ) -> None:
         transaction_params = {
-            "type": TransactionType.transfer,
+            "type": TransactionType.balance,
             "processor": PaymentProcessor.stripe,
             "currency": "usd",
             "amount": 1000,
@@ -259,7 +259,7 @@ class TestCreateManualPayout:
 
     async def test_valid(self, session: AsyncSession, account_usd: Account) -> None:
         transaction_params = {
-            "type": TransactionType.transfer,
+            "type": TransactionType.balance,
             "processor": PaymentProcessor.open_collective,
             "currency": "usd",
             "amount": 1000,
@@ -305,7 +305,7 @@ class TestCreateManualPayout:
         self, session: AsyncSession, account_eur: Account
     ) -> None:
         transaction_params = {
-            "type": TransactionType.transfer,
+            "type": TransactionType.balance,
             "processor": PaymentProcessor.open_collective,
             "currency": "usd",
             "amount": 1000,

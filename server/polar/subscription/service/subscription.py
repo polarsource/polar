@@ -62,13 +62,13 @@ from polar.notifications.service import notifications as notification_service
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.posthog import posthog
-from polar.transaction.service.transfer import (
+from polar.transaction.service.balance import (
     NotReadyAccount,
     PaymentTransactionForChargeDoesNotExist,
     UnderReviewAccount,
 )
-from polar.transaction.service.transfer import (
-    transfer_transaction as transfer_transaction_service,
+from polar.transaction.service.balance import (
+    balance_transaction as balance_transaction_service,
 )
 from polar.user.service import user as user_service
 from polar.user_organization.service import (
@@ -758,7 +758,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Prepare an held transfer
         # It'll be used if the account is none, or if the account is not ready
-        payment_transaction = await transfer_transaction_service.get_by(
+        payment_transaction = await balance_transaction_service.get_by(
             session, type=TransactionType.payment, charge_id=charge_id
         )
         if payment_transaction is None:
@@ -798,7 +798,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             (
                 incoming,
                 _,
-            ) = await transfer_transaction_service.create_transfer_from_charge(
+            ) = await balance_transaction_service.create_balance_from_charge(
                 session,
                 destination_account=account,
                 charge_id=charge_id,
@@ -1082,7 +1082,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             .join(
                 Transaction,
                 onclause=and_(
-                    Transaction.type == TransactionType.transfer,
+                    Transaction.type == TransactionType.balance,
                     Transaction.account_id.is_not(None),
                     Transaction.subscription_id.in_(
                         subscriptions_statement.with_only_columns(Subscription.id)

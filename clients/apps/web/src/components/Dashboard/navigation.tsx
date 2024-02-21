@@ -50,7 +50,16 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     postIcon: undefined,
     link: `/maintainer/${org.name}/posts`,
     if: true,
-    subs: undefined,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/posts/overview`,
+      },
+      {
+        title: 'Analytics',
+        link: `/maintainer/${org.name}/posts/analytics`,
+      },
+    ],
   },
   {
     id: 'org-subscriptions',

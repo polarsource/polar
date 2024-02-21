@@ -4,7 +4,7 @@ from .account import Account
 from .advertisement_campaign import AdvertisementCampaign
 from .article import Article
 from .articles_subscription import ArticlesSubscription
-from .held_transfer import HeldTransfer
+from .held_balance import HeldBalance
 from .invites import Invite
 from .issue import Issue
 from .issue_dependency import IssueDependency
@@ -36,7 +36,7 @@ __all__ = [
     "AdvertisementCampaign",
     "Article",
     "ArticlesSubscription",
-    "HeldTransfer",
+    "HeldBalance",
     "Invite",
     "Issue",
     "IssueDependency",

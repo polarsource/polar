@@ -5,7 +5,7 @@ from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from polar.config import settings
 from polar.enums import AccountType
 from polar.exceptions import PolarError
-from polar.held_transfer.service import held_transfer as held_transfer_service
+from polar.held_balance.service import held_balance as held_balance_service
 from polar.models import Account
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotificationPayload,
@@ -85,7 +85,7 @@ async def account_reviewed(
         if account is None:
             raise AccountDoesNotExist(account_id)
 
-        await held_transfer_service.release_account(session, account)
+        await held_balance_service.release_account(session, account)
 
         await notification_service.send_to_user(
             session=session,

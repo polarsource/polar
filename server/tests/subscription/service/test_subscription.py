@@ -10,7 +10,7 @@ from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Anonymous, Authz
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.held_transfer.service import held_transfer as held_transfer_service
+from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -675,11 +675,11 @@ class TestTransferSubscriptionPaidInvoice:
 
         stripe_service_mock.update_invoice.assert_not_called()
 
-        held_transfer = await held_transfer_service.get_by(
+        held_balance = await held_balance_service.get_by(
             session,
             organization_id=subscription_tier_organization.managing_organization_id,
         )
-        assert held_transfer is not None
+        assert held_balance is not None
 
     async def test_valid(
         self,

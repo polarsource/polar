@@ -8,8 +8,8 @@ from polar.account.tasks import (
     account_reviewed,
     account_under_review,
 )
-from polar.held_transfer.service import HeldTransferService
-from polar.held_transfer.service import held_transfer as held_transfer_service
+from polar.held_balance.service import HeldBalanceService
+from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Account, User
 from polar.notifications.service import NotificationsService
@@ -89,9 +89,9 @@ class TestAccountReviewed:
         )
 
         release_account_mock = mocker.patch.object(
-            held_transfer_service,
+            held_balance_service,
             "release_account",
-            spec=HeldTransferService.release_account,
+            spec=HeldBalanceService.release_account,
         )
         send_to_user_mock = mocker.patch.object(
             notification_service,

@@ -28,9 +28,6 @@ from polar.transaction.service.payment import (
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
-from polar.transaction.service.payout import (
-    payout_transaction as payout_transaction_service,
-)
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
@@ -46,16 +43,6 @@ DELAY = 10
 
 class StripeTaskError(PolarError):
     ...
-
-
-class UnsetAccountOnPayoutEvent(StripeTaskError):
-    def __init__(self, event_id: str) -> None:
-        self.event_id = event_id
-        message = (
-            f"Received the payout.paid event {event_id}, "
-            "but the connected account is not set"
-        )
-        super().__init__(message)
 
 
 @task("stripe.webhook.account.updated")
@@ -191,20 +178,6 @@ async def charge_dispute_funds_reinstated(
 
             await dispute_transaction_service.create_dispute_reversal(
                 session, dispute=dispute
-            )
-
-
-@task("stripe.webhook.payout.paid")
-async def payout_paid(
-    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
-) -> None:
-    if event.account is None:
-        raise UnsetAccountOnPayoutEvent(event.id)
-    with polar_context.to_execution_context():
-        async with AsyncSessionMaker(ctx) as session:
-            payout = event["data"]["object"]
-            await payout_transaction_service.create_payout_from_stripe(
-                session=session, payout=payout, stripe_account_id=event.account
             )
 
 

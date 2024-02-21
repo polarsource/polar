@@ -391,7 +391,7 @@ class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
 
 We wanted to inform you that your {self.account_type} account has reached a transaction threshold, and as part of our security measures, we are now conducting a review.<br><br>
 
-During this brief evaluation period, money transfers to your account will be temporarily paused. We assure you that this is a routine procedure to ensure the safety and security of your account.<br><br>
+During this brief evaluation period, payouts to your account won't be possible. We assure you that this is a routine procedure to ensure the safety and security of your account.<br><br>
 
 Our team is working diligently to complete the review promptly. We appreciate your understanding and cooperation during this process. If there are any specific details or documents required for the review, our support team will reach out to you directly.<br><br>
 """  # noqa: E501
@@ -413,7 +413,7 @@ class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
 
 We are pleased to inform you that the review of your {self.account_type} account has been successfully completed, and we appreciate your patience throughout this process.<br><br>
 
-Your payout account is now fully active, and money transfers are resumed without any restrictions. We apologize for any inconvenience caused during the brief review period and want to assure you that it was conducted to ensure the security of your account.<br><br>
+Your payout account is now fully active, and money transfers are now possible without any restrictions. We apologize for any inconvenience caused during the brief review period and want to assure you that it was conducted to ensure the security of your account.<br><br>
 """  # noqa: E501
 
 

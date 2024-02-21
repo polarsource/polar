@@ -26,10 +26,7 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "customer.subscription.deleted",
     "invoice.paid",
 }
-CONNECT_IMPLEMENTED_WEBHOOKS = {
-    "account.updated",
-    "payout.paid",
-}
+CONNECT_IMPLEMENTED_WEBHOOKS = {"account.updated"}
 
 
 async def enqueue(event: stripe.Event) -> None:

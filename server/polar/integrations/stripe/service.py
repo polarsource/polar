@@ -661,5 +661,20 @@ Thank you for your support!
             id, stripe_account=stripe_account, expand=expand or []
         )
 
+    def create_payout(
+        self,
+        *,
+        stripe_account: str,
+        amount: int,
+        currency: str,
+        metadata: dict[str, str] | None = None,
+    ) -> stripe_lib.Payout:
+        return stripe_lib.Payout.create(
+            stripe_account=stripe_account,
+            amount=amount,
+            currency=currency,
+            metadata=metadata or {},
+        )
+
 
 stripe = StripeService()

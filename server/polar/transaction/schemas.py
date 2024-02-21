@@ -101,3 +101,7 @@ class TransactionsBalance(Schema):
 class TransactionsSummary(Schema):
     balance: TransactionsBalance
     payout: TransactionsBalance
+
+
+class PayoutCreate(Schema):
+    account_id: UUID4

@@ -2,11 +2,23 @@ import uuid
 
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
-from polar.models import Account, Pledge, Transaction, UserOrganization
-from polar.models.transaction import TransactionType
+from polar.models import (
+    Account,
+    Organization,
+    Pledge,
+    Transaction,
+    User,
+    UserOrganization,
+)
+from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
-from tests.transaction.conftest import create_transaction
+from polar.transaction.endpoints import (  # type: ignore[attr-defined]
+    payout_transaction_service,
+)
+from polar.transaction.service.payout import PayoutTransactionService
+from tests.transaction.conftest import create_account, create_transaction
 
 
 @pytest.mark.asyncio
@@ -116,3 +128,80 @@ class TestGetSummary:
         json = response.json()
         assert "balance" in json
         assert "payout" in json
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestCreatePayout:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/transactions/payout", json={"account_id": str(uuid.uuid4())}
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing_account(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/transactions/payout", json={"account_id": str(uuid.uuid4())}
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_not_permitted(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        account = await create_account(session, organization, user_second)
+        response = await client.post(
+            "/api/v1/transactions/payout", json={"account_id": str(account.id)}
+        )
+
+        # then
+        session.expunge_all()
+
+        assert response.status_code == 403
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        account: Account,
+        user_organization: UserOrganization,
+    ) -> None:
+        payout = Transaction(
+            type=TransactionType.payout,
+            processor=PaymentProcessor.open_collective,
+            currency="usd",  # FIXME: Main Polar currency
+            amount=-1000,
+            account_currency=account.currency,
+            account_amount=-1000,
+            tax_amount=0,
+            account=account,
+            pledge=None,
+            issue_reward=None,
+            subscription=None,
+        )
+        session.add(payout)
+        await session.commit()
+        mocker.patch.object(
+            payout_transaction_service,
+            "create_payout",
+            spec=PayoutTransactionService.create_payout,
+            return_value=payout,
+        )
+
+        # then
+        session.expunge_all()
+
+        response = await client.post(
+            "/api/v1/transactions/payout", json={"account_id": str(account.id)}
+        )
+
+        assert response.status_code == 201

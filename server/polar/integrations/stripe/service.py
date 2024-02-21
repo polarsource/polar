@@ -156,6 +156,9 @@ class StripeService:
             "country": account.country,
             "type": "express",
             "capabilities": {"transfers": {"requested": True}},
+            "settings": {
+                "payouts": {"schedule": {"interval": "manual"}},
+            },
         }
 
         if name:

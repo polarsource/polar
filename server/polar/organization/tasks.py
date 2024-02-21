@@ -80,8 +80,7 @@ async def organization_account_set(
         if account is None:
             raise AccountDoesNotExist(organization.account_id)
 
-        if account.can_receive_transfers():
-            await held_balance_service.release_account(session, account)
+        await held_balance_service.release_account(session, account)
 
 
 @task("organization.post_install")

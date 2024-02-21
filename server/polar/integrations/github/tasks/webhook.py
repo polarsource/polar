@@ -480,6 +480,12 @@ async def repository_transferred(
                 repository.id, new_organization_id
             )
 
+        await service.github_repository.rename_deleted_repository_with_same_name(
+            session,
+            new_organization,
+            event.repository,
+        )
+
         repository.organization = new_organization
         # GitHub triggers the `installation_repositories.removed` event
         # from the source installation, so make sure it's not deleted

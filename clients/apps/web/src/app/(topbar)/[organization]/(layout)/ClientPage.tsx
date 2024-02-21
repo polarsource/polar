@@ -128,7 +128,9 @@ const ClientPage = ({
               </div>
             ) : (
               <>
-                {posts.isFetched && infinitePosts.length === 0 ? (
+                {posts.isFetched &&
+                infinitePosts.length === 0 &&
+                (pinnedArticles.items?.length ?? 0) === 0 ? (
                   <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-gray-600">
                     <ViewDayOutlined fontSize="large" />
                     <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">

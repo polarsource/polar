@@ -323,6 +323,69 @@ async def test_webhook_repositories_added(
 
 
 @pytest.mark.asyncio
+async def test_webhook_repositories_added_duplicate_name(
+    job_context: JobContext,
+    mocker: MockerFixture,
+    session: AsyncSession,
+    organization: Organization,
+    github_webhook: TestWebhookFactory,
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("polar.worker._enqueue_job")
+
+    hook = github_webhook.create("installation_repositories.added")
+    hook["installation"]["account"]["id"] = organization.external_id
+    hook["installation"]["account"]["name"] = organization.name
+    new_repo = hook["repositories_added"][0]
+
+    # A _deleted_ repository with the same name already exists in new_organization
+    deleted_repo = await Repository(
+        external_id=58585,  # different external ID than the repo being transferred
+        name=new_repo["name"],
+        platform="github",
+        is_private=True,
+        organization_id=organization.id,
+        deleted_at=utils.utc_now(),
+    ).save(session)
+
+    parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
+    if not isinstance(parsed, types.WebhookInstallationRepositoriesAdded):
+        raise Exception("wat")
+
+    # fake it
+    x = hook_as_obj(parsed)
+
+    response_mock = mocker.patch(
+        "githubkit.core.GitHubCore._arequest",
+        side_effect=[
+            httpx.Response(
+                200,
+                request=httpx.Request("POST", ""),
+                content=x.model_dump_json(),
+            ),
+        ],
+    )
+
+    # then
+    session.expunge_all()
+
+    repo = await service.github_repository.get_by_external_id(session, new_repo["id"])
+    assert repo is None
+
+    await webhook_tasks.repositories_added(
+        job_context,
+        "installation_repositories",
+        "added",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    await assert_repository_exists(session, new_repo)
+
+    response_mock.assert_called()
+
+
+@pytest.mark.asyncio
 async def test_webhook_repositories_removed(
     job_context: JobContext,
     mocker: MockerFixture,
@@ -842,7 +905,54 @@ async def test_webhook_repository_transferred(
 
     hook = github_webhook.create("repository.transferred")
     hook["repository"]["id"] = repository.external_id
+    hook["repository"]["name"] = repository.name
     hook["repository"]["owner"]["id"] = new_organization.external_id
+
+    # then
+    session.expunge_all()
+
+    await webhook_tasks.repositories_transferred(
+        job_context,
+        "repository",
+        "transferred",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    updated_repository = await service.github_repository.get_by_external_id(
+        session, repository.external_id
+    )
+    assert updated_repository is not None
+    assert updated_repository.organization_id == new_organization.id
+
+
+@pytest.mark.asyncio
+async def test_webhook_repository_transferred_duplicate_name(
+    job_context: JobContext,
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    repository: Repository,
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("polar.worker._enqueue_job")
+
+    new_organization = await random_objects.create_organization(session)
+
+    hook = github_webhook.create("repository.transferred")
+    hook["repository"]["id"] = repository.external_id
+    hook["repository"]["name"] = repository.name
+    hook["repository"]["owner"]["id"] = new_organization.external_id
+
+    # A _deleted_ repository with the same name already exists in new_organization
+    deleted_repo = await Repository(
+        external_id=58585,  # different external ID than the repo being transferred
+        name=repository.name,
+        platform=repository.platform,
+        is_private=True,
+        organization_id=new_organization.id,
+        deleted_at=utils.utc_now(),
+    ).save(session)
 
     # then
     session.expunge_all()

@@ -58,8 +58,7 @@ class GithubRepositoryService(RepositoryService):
             client.rest.apps.async_list_repos_accessible_to_installation,
             map_func=lambda r: r.parsed_data.repositories,
         ):
-            create = RepositoryCreate.from_github(repo, organization.id)
-            inst = await self.create_or_update(session, create)
+            inst = await self.create_or_update_from_github(session, organization, repo)
 
             # un-delete if previously deleted
             if inst.deleted_at is not None:
@@ -94,30 +93,9 @@ class GithubRepositoryService(RepositoryService):
                 external_id=data.id,
             )
 
-            # Check if an existing deleted repository with the same name (but different external_id)
-            # exists in our database.
-            #
-            # If it does, rename the existing repository to allow for the name to be re-used.
-            same_name_repo = await self.get_by_org_and_name(
-                session,
-                organization_id=organization.id,
-                name=data.name,
-                allow_deleted=True,
+            await self.rename_deleted_repository_with_same_name(
+                session, organization, data
             )
-
-            if (
-                same_name_repo
-                and same_name_repo.deleted_at is not None
-                and same_name_repo.external_id != data.id
-            ):
-                same_name_repo.name = (
-                    f"{same_name_repo.name}-renamed-{same_name_repo.external_id}"
-                )
-                log.debug(
-                    "renaming previously deleted repository with the same name",
-                    repository_id=same_name_repo.id,
-                )
-                await same_name_repo.save(session, autocommit=False)
 
             repository = await self.create(
                 session, RepositoryCreate.from_github(data, organization.id)
@@ -135,6 +113,41 @@ class GithubRepositoryService(RepositoryService):
             )
 
         return repository
+
+    async def rename_deleted_repository_with_same_name(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        data: types.Repository
+        | types.FullRepository
+        | types.WebhookIssuesTransferredPropChangesPropNewRepository
+        | types.RepositoryWebhooks,
+    ) -> None:
+        # Check if an existing deleted repository with the same name (but different external_id)
+        # exists in our database.
+        #
+        # If it does, rename the existing repository to allow for the name to be re-used.
+        same_name_repo = await self.get_by_org_and_name(
+            session,
+            organization_id=organization.id,
+            name=data.name,
+            allow_deleted=True,
+        )
+
+        if (
+            same_name_repo
+            and same_name_repo.deleted_at is not None
+            and same_name_repo.external_id != data.id
+        ):
+            same_name_repo.name = (
+                f"{same_name_repo.name}-renamed-{same_name_repo.external_id}"
+            )
+            log.debug(
+                "renaming previously deleted repository with the same name",
+                repository_id=same_name_repo.id,
+            )
+            await same_name_repo.save(session, autocommit=False)
+            await session.commit()
 
 
 github_repository = GithubRepositoryService(Repository)

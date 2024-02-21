@@ -27,7 +27,7 @@ from polar.authz.service import AccessType, Authz, Subject
 from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
-from polar.held_transfer.service import held_transfer as held_transfer_service
+from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -37,7 +37,7 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
-    HeldTransfer,
+    HeldBalance,
     OAuthAccount,
     Organization,
     Repository,
@@ -735,42 +735,30 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         transfer_amount = math.floor(
             (invoice.total - tax) * ((100 - settings.SUBSCRIPTION_FEE_PERCENT) / 100)
         )
-        transfer_metadata: dict[str, str] = {
-            "subscription_id": str(subscription.id),
-            "organization_id": str(
-                subscription.subscription_tier.managing_organization_id
-            ),
-            "stripe_subscription_id": subscription.stripe_subscription_id,
-            "stripe_product_id": cast(
-                str, subscription.subscription_tier.stripe_product_id
-            ),
-            "stripe_invoice_id": cast(str, invoice.id),
-        }
 
         charge_id = get_expandable_id(invoice.charge)
 
-        # Prepare an held transfer
-        # It'll be used if the account is none, or if the account is not ready
+        # Prepare an held balance
+        # It'll be used if the account is not created yet
         payment_transaction = await balance_transaction_service.get_by(
             session, type=TransactionType.payment, charge_id=charge_id
         )
         if payment_transaction is None:
             raise PaymentTransactionForChargeDoesNotExist(charge_id)
-        held_transfer = HeldTransfer(
+        held_balance = HeldBalance(
             amount=transfer_amount,
             subscription=subscription,
             payment_transaction=payment_transaction,
-            transfer_metadata=transfer_metadata,
         )
 
-        # No account, create the held transfer
+        # No account, create the held balance
         if account is None:
             managing_organization = await organization_service.get(
                 session, subscription.subscription_tier.managing_organization_id
             )
             assert managing_organization is not None
-            held_transfer.organization_id = managing_organization.id
-            await held_transfer_service.create(session, held_transfer=held_transfer)
+            held_balance.organization_id = managing_organization.id
+            await held_balance_service.create(session, held_balance=held_balance)
 
             await notification_service.send_to_org_admins(
                 session=session,

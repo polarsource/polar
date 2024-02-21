@@ -2,7 +2,7 @@ import uuid
 
 from polar.account.service import account as account_service
 from polar.exceptions import PolarError
-from polar.held_transfer.service import held_transfer as held_transfer_service
+from polar.held_balance.service import held_balance as held_balance_service
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -81,7 +81,7 @@ async def organization_account_set(
             raise AccountDoesNotExist(organization.account_id)
 
         if account.can_receive_transfers():
-            await held_transfer_service.release_account(session, account)
+            await held_balance_service.release_account(session, account)
 
 
 @task("organization.post_install")

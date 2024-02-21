@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     Mapped,
     declared_attr,
@@ -24,18 +23,16 @@ if TYPE_CHECKING:
     )
 
 
-class HeldTransfer(RecordModel):
+class HeldBalance(RecordModel):
     """
-    Represent an on hold transfer. It may happen because
+    Represent an on hold balance.
 
-    * The destination account is not yet created
-    * The destination account is under review
+    It may happen because the destination account is not yet created.
 
-    When the account is successfully created or reviewed,
-    those transfers should be actually executed.
+    When the account is successfully created, those balances should be executed.
     """
 
-    __tablename__ = "held_transfers"
+    __tablename__ = "held_balances"
 
     organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
@@ -44,7 +41,7 @@ class HeldTransfer(RecordModel):
         index=True,
     )
     """
-    ID of the `Organization` concerned by this transfer.
+    ID of the `Organization` concerned by this balance.
     Set only if the account is not yet created.
     """
 
@@ -55,7 +52,7 @@ class HeldTransfer(RecordModel):
         index=True,
     )
     """
-    ID of the `Account` concerned by this transfer.
+    ID of the `Account` concerned by this balance.
     Will be `None` if the account is not yet created.
     """
 
@@ -73,15 +70,15 @@ class HeldTransfer(RecordModel):
         nullable=False,
         index=True,
     )
-    """ID of the transaction that pays for this transfer."""
+    """ID of the transaction that pays for this balance."""
 
     @declared_attr
     def payment_transaction(cls) -> Mapped["Transaction"]:
-        """Transaction that pays for this transfer."""
+        """Transaction that pays for this balance."""
         return relationship("Transaction", lazy="raise")
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    """Amount in cents to transfer."""
+    """Amount in cents to balance."""
 
     pledge_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
@@ -89,7 +86,7 @@ class HeldTransfer(RecordModel):
         nullable=True,
         index=True,
     )
-    """ID of the `Pledge` related to this transfer."""
+    """ID of the `Pledge` related to this balance."""
 
     @declared_attr
     def pledge(cls) -> Mapped["Pledge | None"]:
@@ -101,7 +98,7 @@ class HeldTransfer(RecordModel):
         nullable=True,
         index=True,
     )
-    """ID of the `Subscription` related to this transfer."""
+    """ID of the `Subscription` related to this balance."""
 
     @declared_attr
     def subscription(cls) -> Mapped["Subscription | None"]:
@@ -113,13 +110,8 @@ class HeldTransfer(RecordModel):
         nullable=True,
         index=True,
     )
-    """ID of the `IssueReward` related to this transfer."""
+    """ID of the `IssueReward` related to this balance."""
 
     @declared_attr
     def issue_reward(cls) -> Mapped["IssueReward | None"]:
         return relationship("IssueReward", lazy="raise")
-
-    transfer_metadata: Mapped[dict[str, str] | None] = mapped_column(
-        "properties", JSONB, nullable=True
-    )
-    """Additional metadata to join with the transfer."""

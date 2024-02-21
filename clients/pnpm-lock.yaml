@@ -450,14 +450,11 @@ importers:
   examples/next-js-example:
     dependencies:
       '@polar-sh/sdk':
-        specifier: workspace:*
+        specifier: ^0.3.0
         version: link:../../packages/sdk
       next:
         specifier: ^14.0.4
         version: 14.0.4(react-dom@18.2.0)(react@18.2.0)
-      polarkit:
-        specifier: workspace:^
-        version: link:../../packages/polarkit
       react:
         specifier: ^18.2.0
         version: 18.2.0

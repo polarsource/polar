@@ -9,9 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@polar-sh/sdk": "workspace:*",
+    "@polar-sh/sdk": "^0.3.0",
     "next": "^14.0.4",
-    "polarkit": "workspace:^",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.1"

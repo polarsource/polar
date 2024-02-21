@@ -62,11 +62,7 @@ from polar.notifications.service import notifications as notification_service
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.posthog import posthog
-from polar.transaction.service.balance import (
-    NotReadyAccount,
-    PaymentTransactionForChargeDoesNotExist,
-    UnderReviewAccount,
-)
+from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
 )
@@ -750,9 +746,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ),
             "stripe_invoice_id": cast(str, invoice.id),
         }
-        invoice_metadata: dict[str, str] = {
-            "transferred_at": str(int(utc_now().timestamp())),
-        }
 
         charge_id = get_expandable_id(invoice.charge)
 
@@ -793,26 +786,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
             return
 
-        # Account created, create the transfer immediately
-        try:
-            (
-                incoming,
-                _,
-            ) = await balance_transaction_service.create_balance_from_charge(
-                session,
-                destination_account=account,
-                charge_id=charge_id,
-                amount=transfer_amount,
-                subscription=subscription,
-                transfer_metadata=transfer_metadata,
-            )
-        except (UnderReviewAccount, NotReadyAccount):
-            held_transfer.account = account
-            await held_transfer_service.create(session, held_transfer=held_transfer)
-        else:
-            invoice_metadata["transfer_id"] = cast(str, incoming.transfer_id)
-            assert invoice.id is not None
-            stripe_service.update_invoice(invoice.id, metadata=invoice_metadata)
+        # Account created, create the balance immediately
+        await balance_transaction_service.create_balance_from_charge(
+            session,
+            destination_account=account,
+            charge_id=charge_id,
+            amount=transfer_amount,
+            subscription=subscription,
+        )
 
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription

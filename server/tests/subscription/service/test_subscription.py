@@ -681,50 +681,6 @@ class TestTransferSubscriptionPaidInvoice:
         )
         assert held_transfer is not None
 
-    @pytest.mark.parametrize(
-        "status", [Account.Status.ONBOARDING_STARTED, Account.Status.UNDER_REVIEW]
-    )
-    async def test_account_under_review_or_not_ready(
-        self,
-        status: Account.Status,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription: Subscription,
-        organization_account: Account,
-    ) -> None:
-        organization_account.status = status
-        session.add(organization_account)
-
-        stripe_invoice = construct_stripe_invoice(
-            subscription_id=subscription.stripe_subscription_id
-        )
-
-        stripe_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.stripe_service", spec=StripeService
-        )
-
-        payment_transaction = await create_transaction(
-            session, type=TransactionType.payment, subscription=subscription
-        )
-        payment_transaction.charge_id = "CHARGE_ID"
-        session.add(payment_transaction)
-
-        await session.commit()
-
-        # then
-        session.expunge_all()
-
-        await subscription_service.transfer_subscription_paid_invoice(
-            session, invoice=stripe_invoice
-        )
-
-        stripe_service_mock.update_invoice.assert_not_called()
-
-        held_transfer = await held_transfer_service.get_by(
-            session, account_id=organization_account.id
-        )
-        assert held_transfer is not None
-
     async def test_valid(
         self,
         mocker: MockerFixture,
@@ -734,10 +690,6 @@ class TestTransferSubscriptionPaidInvoice:
     ) -> None:
         stripe_invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id
-        )
-
-        stripe_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.stripe_service", spec=StripeService
         )
 
         transaction_service_mock = mocker.patch(
@@ -773,8 +725,6 @@ class TestTransferSubscriptionPaidInvoice:
             transaction_service_mock.create_balance_from_charge.call_args[1]["amount"]
             == 9500
         )
-
-        stripe_service_mock.update_invoice.assert_called_once()
 
 
 @pytest.mark.asyncio

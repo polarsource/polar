@@ -105,10 +105,6 @@ class RefundTransactionService(BaseTransactionService):
                     balance_transactions=balance_transactions_couple,
                     destination_currency=refund.currency,
                     amount=balance_refund_amount,
-                    reversal_transfer_metadata={
-                        "stripe_charge_id": charge.id,
-                        "stripe_refund_id": refund.id,
-                    },
                 )
 
         await session.commit()

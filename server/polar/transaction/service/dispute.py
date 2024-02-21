@@ -93,10 +93,6 @@ class DisputeTransactionService(BaseTransactionService):
                 balance_transactions=balance_transactions_couple,
                 destination_currency=dispute.currency,
                 amount=balance_refund_amount,
-                reversal_transfer_metadata={
-                    "stripe_charge_id": charge_id,
-                    "stripe_dispute_id": dispute.id,
-                },
             )
 
         await session.commit()
@@ -169,10 +165,6 @@ class DisputeTransactionService(BaseTransactionService):
                 pledge=outgoing.pledge,
                 subscription=outgoing.subscription,
                 issue_reward=outgoing.issue_reward,
-                transfer_metadata={
-                    "stripe_charge_id": charge_id,
-                    "stripe_dispute_id": dispute.id,
-                },
             )
 
         await session.commit()

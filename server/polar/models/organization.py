@@ -3,7 +3,15 @@ from enum import Enum
 from uuid import UUID
 
 from citext import CIText
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    TIMESTAMP,
+    BigInteger,
+    Boolean,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -35,7 +43,7 @@ class Organization(RecordModel):
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     name: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
-    external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    external_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     avatar_url: Mapped[str] = mapped_column(String, nullable=False)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)
 

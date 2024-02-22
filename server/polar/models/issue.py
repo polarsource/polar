@@ -46,7 +46,7 @@ class IssueFields:
         CLOSED = "closed"
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
-    external_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    external_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     @declared_attr
     def organization_id(cls) -> MappedColumn[UUID]:

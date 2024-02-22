@@ -4,6 +4,7 @@ from uuid import UUID
 from citext import CIText
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     Boolean,
     ForeignKey,
     Integer,
@@ -29,7 +30,7 @@ class Repository(RecordModel):
     )
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
-    external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    external_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )

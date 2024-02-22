@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import and_, desc, func, null, text
+from sqlalchemy import ColumnExpressionArgument, and_, desc, func, null, text
 
 from polar.kit.utils import utc_now
 from polar.models.traffic import Traffic
@@ -15,21 +15,24 @@ class TrafficService:
     async def add(
         self,
         session: AsyncSession,
+        *,
         location_href: str,
-        referrer: str | None,
-        article_id: UUID,
         date: datetime.date,
+        referrer: str | None = None,
+        article_id: UUID | None = None,
+        organization_id: UUID | None = None,
     ) -> None:
         insert_stmt = sql.insert(Traffic).values(
             location_href=location_href,
             referrer=referrer,
             article_id=article_id,
+            organization_id=organization_id,
             date=date,
             views=1,
         )
 
         do_update = insert_stmt.on_conflict_do_update(
-            constraint="traffic_article_id_date_location_href_referrer_key",
+            constraint="traffic_unique_key",
             set_=dict(views=Traffic.views + 1),
         )
 
@@ -39,13 +42,18 @@ class TrafficService:
     async def views_statistics(
         self,
         session: AsyncSession,
-        article_ids: list[UUID],
+        *,
+        article_ids: list[UUID] | None = None,
+        organization_id: UUID | None = None,
         start_date: datetime.date,
         end_date: datetime.date,
         interval: Literal["month", "week", "day"],
         group_by_article: bool,
         start_of_last_period: datetime.date | None = None,
     ) -> Sequence[TrafficStatisticsPeriod]:
+        if article_ids is None and organization_id is None:
+            raise Exception("neither article_ids nor organization_id is set")
+
         interval_txt = {
             "month": "interval 'P1M'",
             "week": "interval 'P1W'",
@@ -61,6 +69,12 @@ class TrafficService:
 
         start_of_last_period = start_of_last_period or utc_now().date().replace(day=1)
 
+        joinclauses: list[ColumnExpressionArgument[bool]] = []
+        if article_ids is not None:
+            joinclauses.append(Traffic.article_id.in_(article_ids))
+        if organization_id is not None:
+            joinclauses.append(Traffic.organization_id == organization_id)
+
         stmt = (
             sql.select(
                 start_date_column,
@@ -68,7 +82,6 @@ class TrafficService:
             .add_columns(
                 end_date_column,
                 Traffic.article_id if group_by_article else null(),
-                # func.sum(Traffic.views).label("period_views"),
                 func.coalesce(
                     func.sum(Traffic.views).filter(
                         Traffic.date >= start_date_column,
@@ -79,9 +92,7 @@ class TrafficService:
             )
             .join(
                 Traffic,
-                onclause=and_(
-                    Traffic.article_id.in_(article_ids),
-                ),
+                onclause=and_(True, *joinclauses),
             )
             .where(start_date_column <= start_of_last_period)
             .group_by(start_date_column)

@@ -8,6 +8,7 @@ from polar.kit.schemas import Schema
 class TrackPageView(Schema):
     location_href: str
     article_id: UUID | None = None
+    organization_id: UUID | None = None
     referrer: str | None = None
 
 

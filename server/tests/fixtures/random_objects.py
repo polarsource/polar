@@ -49,6 +49,11 @@ async def organization(session: AsyncSession) -> Organization:
     return await create_organization(session)
 
 
+@pytest_asyncio.fixture(scope="function")
+async def second_organization(session: AsyncSession) -> Organization:
+    return await create_organization(session)
+
+
 async def create_organization(session: AsyncSession) -> Organization:
     create_schema = OrganizationCreate(
         platform=Platforms.github,

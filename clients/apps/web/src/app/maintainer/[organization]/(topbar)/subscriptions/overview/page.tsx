@@ -2,7 +2,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
-import SubscriptionsOverview from './SubscriptionsOverview'
+import ClientPage from './ClientPage'
 
 export async function generateMetadata(
   {
@@ -41,7 +41,7 @@ export default async function Page({
 
   return (
     <DashboardBody>
-      <SubscriptionsOverview
+      <ClientPage
         organization={organization}
         startDate={startOfMonthSixMonthsAgo}
         endDate={startOfMonth}

@@ -144,9 +144,9 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
           <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
           <span className="dark:text-polar-400 text-sm">
             {accountType === AccountType.STRIPE &&
-              'Transfers will be sent to the connected Stripe account'}
+              'Payouts will be made to the connected Stripe account'}
             {accountType === AccountType.OPEN_COLLECTIVE &&
-              'Transfers will be sent in bulk once per month to the connected Open Collective account'}
+              'Payouts will be made in bulk once per month to the connected Open Collective account'}
           </span>
         </Banner>
       </>

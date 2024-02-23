@@ -66,7 +66,7 @@ interface SubscriptionsOverviewProps {
   subscriptionTierType?: SubscriptionTierType
 }
 
-const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
+const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
   organization,
   startDate,
   endDate,
@@ -202,7 +202,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
       </div>
       <div
         className={twMerge(
-          'grid grid-cols-1 gap-6 md:grid-cols-3',
+          'grid grid-cols-1 gap-6 lg:grid-cols-3',
           isDemoData ? 'opacity-50' : '',
         )}
       >
@@ -252,7 +252,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
       </div>
       <div
         className={twMerge(
-          'grid grid-cols-1 gap-6 md:grid-cols-2',
+          'grid grid-cols-1 gap-6 lg:grid-cols-2',
           isDemoData ? 'opacity-50' : '',
         )}
       >
@@ -299,7 +299,7 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
           ))}
       </div>
       {(lastSubscriptions?.length ?? 0) > 0 && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <div className="text-lg font-medium">Subscription Activity</div>
@@ -385,4 +385,4 @@ const SubscriptionsOverview: React.FC<SubscriptionsOverviewProps> = ({
   )
 }
 
-export default SubscriptionsOverview
+export default ClientPage

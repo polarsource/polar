@@ -9,9 +9,9 @@ export interface GoalProps {
 export const Goal = ({ title, value, max }: GoalProps) => {
   return (
     <div className="flex flex-col gap-y-3">
-      <div className="flex flex-row items-center justify-between">
+      <div className="flex flex-row flex-wrap items-center justify-between gap-1">
         <h3 className="font-medium">{title}</h3>
-        <span>
+        <span className="flex-1 whitespace-nowrap text-right">
           {value} / {max}
         </span>
       </div>

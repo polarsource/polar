@@ -2,8 +2,10 @@ import datetime
 
 import pytest
 
+from polar.kit.extensions.sqlalchemy import sql
 from polar.models.article import Article
 from polar.models.organization import Organization
+from polar.models.traffic import Traffic
 from polar.postgres import AsyncSession
 from polar.traffic.schemas import TrafficStatisticsPeriod
 from polar.traffic.service import traffic_service
@@ -162,6 +164,11 @@ async def test_article_add(
         ),
     ] == daily
 
+    # assert db deduplication
+    stmt = sql.select(Traffic).order_by(Traffic.date)
+    r = await session.execute(stmt)
+    assert 8 == len(r.scalars().unique().all())
+
 
 @pytest.mark.asyncio
 async def test_organization_add(
@@ -241,3 +248,8 @@ async def test_organization_add(
             article_id=None,
         ),
     ] == monthly
+
+    # assert db deduplication
+    stmt = sql.select(Traffic).order_by(Traffic.date)
+    r = await session.execute(stmt)
+    assert 4 == len(r.scalars().unique().all())

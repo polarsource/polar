@@ -4,6 +4,7 @@ from enum import StrEnum
 from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import aliased, joinedload, subqueryload
 
 from polar.authz.service import AccessType, Authz
@@ -149,44 +150,47 @@ class TransactionService(BaseTransactionService):
         if not await authz.can(user, AccessType.read, account):
             raise NotPermitted()
 
-        statement = (
-            select(
-                Transaction.currency,
-                Transaction.account_currency,
-                cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),
-                cast(type[int], func.coalesce(func.sum(Transaction.account_amount), 0)),
-                cast(
-                    type[int],
-                    func.coalesce(
-                        func.sum(Transaction.amount).filter(
-                            Transaction.type == TransactionType.payout
-                        ),
-                        0,
+        statement = select(
+            cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),
+            cast(type[int], func.coalesce(func.sum(Transaction.account_amount), 0)),
+            cast(
+                type[int],
+                func.coalesce(
+                    func.sum(Transaction.amount).filter(
+                        Transaction.type == TransactionType.payout
                     ),
+                    0,
                 ),
-                cast(
-                    type[int],
-                    func.coalesce(
-                        func.sum(Transaction.account_amount).filter(
-                            Transaction.type == TransactionType.payout
-                        ),
-                        0,
+            ),
+            cast(
+                type[int],
+                func.coalesce(
+                    func.sum(Transaction.account_amount).filter(
+                        Transaction.type == TransactionType.payout
                     ),
+                    0,
                 ),
-            )
-            .where(Transaction.account_id == account.id)
-            .group_by(Transaction.currency, Transaction.account_currency)
-        )
+            ),
+        ).where(Transaction.account_id == account.id)
 
         result = await session.execute(statement)
-        (
-            currency,
-            account_currency,
-            amount,
-            account_amount,
-            payout_amount,
-            account_payout_amount,
-        ) = result.one()._tuple()
+
+        currency = "usd"  # FIXME: Main Polar currency
+        account_currency = account.currency
+        assert account_currency is not None
+
+        try:
+            (
+                amount,
+                account_amount,
+                payout_amount,
+                account_payout_amount,
+            ) = result.one()._tuple()
+        except NoResultFound:
+            amount = 0
+            account_amount = 0
+            payout_amount = 0
+            account_payout_amount = 0
 
         return TransactionsSummary(
             balance=TransactionsBalance(

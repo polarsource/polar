@@ -180,6 +180,29 @@ class TestGetSummary:
         with pytest.raises(NotPermitted):
             await transaction_service.get_summary(session, user_second, account, authz)
 
+    async def test_no_transaction(
+        self,
+        session: AsyncSession,
+        account: Account,
+        user: User,
+        user_organization: UserOrganization,
+        authz: Authz,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        summary = await transaction_service.get_summary(session, user, account, authz)
+
+        assert summary.balance.currency == "usd"
+        assert summary.balance.account_currency == account.currency
+        assert summary.balance.amount == 0
+        assert summary.balance.account_amount == 0
+
+        assert summary.payout.currency == "usd"
+        assert summary.payout.account_currency == account.currency
+        assert summary.payout.amount == 0
+        assert summary.payout.account_amount == 0
+
     async def test_valid(
         self,
         session: AsyncSession,
@@ -195,14 +218,14 @@ class TestGetSummary:
         summary = await transaction_service.get_summary(session, user, account, authz)
 
         assert summary.balance.currency == "usd"
-        assert summary.balance.account_currency == "eur"
+        assert summary.balance.account_currency == "usd"
         assert summary.balance.amount == sum(t.amount for t in account_transactions)
         assert summary.balance.account_amount == sum(
             t.account_amount for t in account_transactions
         )
 
         assert summary.payout.currency == "usd"
-        assert summary.payout.account_currency == "eur"
+        assert summary.payout.account_currency == "usd"
         assert summary.payout.amount == sum(
             t.amount for t in account_transactions if t.type == TransactionType.payout
         )

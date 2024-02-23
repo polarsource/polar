@@ -29,6 +29,7 @@ async def create_transaction(
     payment_organization: Organization | None = None,
     type: TransactionType = TransactionType.balance,
     amount: int = 1000,
+    account_currency: str = "eur",
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
     subscription: Subscription | None = None,
@@ -39,8 +40,8 @@ async def create_transaction(
         processor=PaymentProcessor.stripe,
         currency="usd",
         amount=amount,
-        account_currency="eur",
-        account_amount=int(amount * 0.9),
+        account_currency=account_currency,
+        account_amount=int(amount * 0.9) if account_currency != "usd" else amount,
         tax_amount=0,
         account=account,
         payment_user=payment_user,
@@ -126,16 +127,31 @@ async def account_transactions(
     return [
         await create_transaction(
             session,
+            type=TransactionType.balance,
+            account_currency="usd",
             account=account,
             pledge=transaction_pledge,
             issue_reward=transaction_issue_reward,
         ),
         await create_transaction(
-            session, account=account, subscription=transaction_subscription
+            session,
+            type=TransactionType.balance,
+            account_currency="usd",
+            account=account,
+            subscription=transaction_subscription,
         ),
-        await create_transaction(session, account=account),
         await create_transaction(
-            session, account=account, type=TransactionType.payout, amount=-3000
+            session,
+            type=TransactionType.balance,
+            account_currency="usd",
+            account=account,
+        ),
+        await create_transaction(
+            session,
+            type=TransactionType.payout,
+            account_currency="eur",
+            account=account,
+            amount=-3000,
         ),
     ]
 

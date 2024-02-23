@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/api'
 import { twMerge } from 'tailwind-merge'
 
 export default async function Layout({
@@ -6,15 +5,6 @@ export default async function Layout({
 }: {
   children: React.ReactNode
 }) {
-  const api = getServerSideAPI()
-
-  const [authenticatedUser] = await Promise.all([
-    // Handle unauthenticated
-    api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
-      return undefined
-    }),
-  ])
-
   return (
     <div
       className={twMerge(

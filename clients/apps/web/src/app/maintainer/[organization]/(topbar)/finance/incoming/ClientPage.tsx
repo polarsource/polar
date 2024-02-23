@@ -1,5 +1,6 @@
 'use client'
 
+import AccountBalance from '@/components/Transactions/AccountBalance'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
@@ -72,25 +73,36 @@ export default function ClientPage({
 
   const { data: organizationAccount } = useAccount(org?.account_id)
 
-  const transfersHook = useSearchTransactions({
+  const balancesHook = useSearchTransactions({
     accountId: organizationAccount?.id,
-    type: TransactionType.TRANSFER,
+    type: TransactionType.BALANCE,
     ...getAPIParams(pagination, sorting),
   })
-  const transfers = transfersHook.data?.items || []
-  const transfersCount = transfersHook.data?.pagination.max_page ?? 1
+  const balances = balancesHook.data?.items || []
+  const balancesCount = balancesHook.data?.pagination.max_page ?? 1
 
   const payoutsHooks = useSearchTransactions({
     accountId: organizationAccount?.id,
     type: TransactionType.PAYOUT,
     ...getAPIParams(pagination, sorting),
   })
+  const refetchPayouts = payoutsHooks.refetch
   const payouts = payoutsHooks.data?.items || []
   const payoutsCount = payoutsHooks.data?.pagination.max_page ?? 1
+
+  const onWithdrawSuccess = useCallback(async () => {
+    await refetchPayouts()
+  }, [refetchPayouts])
 
   return (
     <div className="flex flex-col gap-y-6">
       {org && <AccountBanner organization={org} />}
+      {organizationAccount && (
+        <AccountBalance
+          account={organizationAccount}
+          onWithdrawSuccess={onWithdrawSuccess}
+        />
+      )}
       <ShadowBoxOnMd>
         <Tabs
           defaultValue={params?.get('type') ?? 'transactions'}
@@ -103,8 +115,8 @@ export default function ClientPage({
               </h2>
               <p className="dark:text-polar-500 text-sm text-gray-500">
                 {params?.get('type') === 'payouts'
-                  ? 'Made from your transfer account to your bank account'
-                  : 'Made from Polar to your connected transfer account'}
+                  ? 'Made from your account to your bank account'
+                  : 'Made from Polar to your account'}
               </p>
             </div>
 
@@ -115,8 +127,8 @@ export default function ClientPage({
           </div>
           <TabsContent value="transactions">
             <TransactionsList
-              transactions={transfers}
-              pageCount={transfersCount}
+              transactions={balances}
+              pageCount={balancesCount}
               pagination={pagination}
               onPaginationChange={setPagination}
               sorting={sorting}

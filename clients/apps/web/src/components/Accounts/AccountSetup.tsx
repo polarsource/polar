@@ -215,8 +215,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
               conducting a review.
             </p>
             <p>
-              Transfers are temporarily paused during this brief evaluation
-              period.
+              Payouts are note possible during this brief evaluation period.
             </p>
           </>
         )}

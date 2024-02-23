@@ -45,6 +45,7 @@ async def track_page_view(
             location_href=track.location_href,
             referrer=track.referrer,
             article_id=track.article_id,
+            organization_id=track.organization_id,
             date=datetime.date.today(),
         )
 

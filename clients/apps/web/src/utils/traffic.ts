@@ -1,4 +1,4 @@
-import { Article, Organization } from '@polar-sh/sdk'
+import { Article, Organization, TrafficReferrer } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
 import { useEffect } from 'react'
 
@@ -67,4 +67,13 @@ export const useTrafficRecordPageView = (opts: {
       console.error(e)
     }
   }, [opts.article, opts.organization])
+}
+
+export const prettyReferrerURL = (r: TrafficReferrer): string => {
+  const url = new URL(r.referrer)
+  if (url.host === window.location.host) {
+    return url.pathname
+  } else {
+    return url.host + url.pathname
+  }
 }

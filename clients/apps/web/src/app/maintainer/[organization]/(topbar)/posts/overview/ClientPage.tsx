@@ -11,6 +11,7 @@ import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { captureEvent } from '@/utils/posthog'
+import { prettyReferrerURL } from '@/utils/traffic'
 import { EnvelopeIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
@@ -76,12 +77,17 @@ const ClientPage = () => {
     idxOrLast(trafficStatistics.data?.periods || [], hoveredPeriodIndex)
       ?.views ?? 0
 
-  const topReferrers = useTrafficTopReferrers({
+  const referrers = useTrafficTopReferrers({
     orgName: org?.name ?? '',
     platform: org?.platform,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: today,
-  }).data?.referrers.slice(0, 5)
+    limit: 5,
+  })
+
+  const prettyReferrerrs = (referrers.data?.items ?? []).map((r) => {
+    return { ...r, prettyURL: prettyReferrerURL(r) }
+  })
 
   const showPosts = (posts.data?.items?.length ?? 0) > 0
   const showNoPostsYet =
@@ -142,10 +148,10 @@ const ClientPage = () => {
                 </h3>
               </DashboardPaddingX>
               <div className="flex w-full overflow-x-auto md:overflow-hidden">
-                <DashboardPaddingX className="flex flex-row gap-6  md:overflow-hidden xl:flex-col xl:px-0">
+                <DashboardPaddingX className="flex flex-row gap-6 md:overflow-hidden xl:flex-col xl:px-0">
                   {trafficStatistics.data && (
-                    <Card className="md:min-w-inherit flex w-full min-w-[220px] flex-col gap-y-4 self-stretch p-1 lg:p-4">
-                      <div className="flex w-full flex-row items-center justify-between p-2">
+                    <Card className="md:min-w-inherit flex w-full min-w-[220px] flex-col gap-y-4 self-stretch p-4">
+                      <div className="flex w-full flex-row items-center justify-between">
                         <h3 className="text-sm font-medium">Views</h3>
                         <span className="text-right text-sm">
                           {currentTraffic.toLocaleString()}
@@ -166,20 +172,25 @@ const ClientPage = () => {
                       />
                     </Card>
                   )}
-                  {topReferrers && topReferrers.length > 0 && (
-                    <Card className="justify-top  md:min-w-inherit flex w-full min-w-[220px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-1 lg:p-4">
-                      <div className="flex w-full flex-row items-center justify-between p-2">
-                        <h3 className=" text-sm font-medium">Top Referrers</h3>
+                  {prettyReferrerrs && prettyReferrerrs.length > 0 && (
+                    <Card className="justify-top  md:min-w-inherit flex w-full min-w-[220px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-4">
+                      <div className="flex w-full flex-row items-center justify-between">
+                        <h3 className="text-sm font-medium">Top Referrers</h3>
                       </div>
-                      {topReferrers.map(({ referrer, views }) => (
-                        <div
-                          key={referrer}
-                          className="flex w-full flex-row items-center justify-between gap-x-16 px-2 text-sm"
-                        >
-                          <span className="truncate">{referrer}</span>
-                          <span>{views.toLocaleString()}</span>
-                        </div>
-                      ))}
+
+                      {prettyReferrerrs.map(
+                        ({ referrer, views, prettyURL }) => (
+                          <div
+                            key={referrer}
+                            className="flex w-full flex-row items-center justify-between gap-x-4 text-sm lg:gap-x-8"
+                          >
+                            <span className="truncate text-gray-600">
+                              {prettyURL}
+                            </span>
+                            <span>{views.toLocaleString()}</span>
+                          </div>
+                        ),
+                      )}
                     </Card>
                   )}
                 </DashboardPaddingX>

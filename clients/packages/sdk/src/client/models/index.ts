@@ -3048,6 +3048,25 @@ export interface ListResourceSubscriptionTier {
 /**
  * 
  * @export
+ * @interface ListResourceTrafficReferrer
+ */
+export interface ListResourceTrafficReferrer {
+    /**
+     * 
+     * @type {Array<TrafficReferrer>}
+     * @memberof ListResourceTrafficReferrer
+     */
+    items?: Array<TrafficReferrer>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceTrafficReferrer
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceTransaction
  */
 export interface ListResourceTransaction {
@@ -8238,19 +8257,6 @@ export interface TrafficReferrer {
      * @memberof TrafficReferrer
      */
     views: number;
-}
-/**
- * 
- * @export
- * @interface TrafficReferrers
- */
-export interface TrafficReferrers {
-    /**
-     * 
-     * @type {Array<TrafficReferrer>}
-     * @memberof TrafficReferrers
-     */
-    referrers: Array<TrafficReferrer>;
 }
 /**
  * 

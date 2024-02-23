@@ -1,8 +1,8 @@
-import { RepositoriesOverivew } from '@/components/Organization/RepositoriesOverview'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
+import { ClientPage } from './ClientPage'
 
 const cacheConfig = {
   next: {
@@ -109,7 +109,7 @@ export default async function Page({
   }
 
   return (
-    <RepositoriesOverivew
+    <ClientPage
       organization={organization}
       repositories={repositories.items ?? []}
     />

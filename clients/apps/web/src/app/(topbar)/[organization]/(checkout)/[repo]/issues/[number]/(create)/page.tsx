@@ -1,4 +1,3 @@
-import Pledge from '@/components/Pledge/Pledge'
 import { getServerSideAPI } from '@/utils/api'
 import {
   Issue,
@@ -9,6 +8,7 @@ import {
 } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
+import ClientPage from './ClientPage'
 
 const cacheConfig = {
   cache: 'no-store',
@@ -113,7 +113,7 @@ export default async function Page({
   }
 
   return (
-    <Pledge
+    <ClientPage
       issue={issue}
       htmlBody={issueHTMLBody}
       pledgers={pledgers}

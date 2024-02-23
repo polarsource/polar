@@ -1,8 +1,8 @@
-import OrganizationSubscriptionsPublicPage from '@/components/Subscriptions/OrganizationSubscriptionsPublicPage'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
+import ClientPage from './ClientPage'
 
 const cacheConfig = {
   next: {
@@ -105,7 +105,7 @@ export default async function Page({
   }
 
   return (
-    <OrganizationSubscriptionsPublicPage
+    <ClientPage
       organization={organization}
       subscriptionTiers={subscriptionTiers.items || []}
     />

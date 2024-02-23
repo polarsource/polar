@@ -7,6 +7,7 @@ import Spinner from '@/components/Shared/Spinner'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { useAuth, useIsOrganizationAdmin } from '@/hooks'
+import { useTrafficRecordPageView } from '@/utils/traffic'
 import { RssIcon } from '@heroicons/react/24/outline'
 import { ViewDayOutlined } from '@mui/icons-material'
 import {
@@ -49,6 +50,8 @@ const ClientPage = ({
   subscriptionTiers: ListResourceSubscriptionTier
   subscriptionSummary: ListResourceSubscriptionSummary
 }) => {
+  useTrafficRecordPageView({ organization })
+
   const {
     isShown: rssModalIsShown,
     hide: hideRssModal,

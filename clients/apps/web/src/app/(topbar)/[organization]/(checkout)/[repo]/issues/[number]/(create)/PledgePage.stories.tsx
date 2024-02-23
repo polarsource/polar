@@ -3,11 +3,11 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { PolarQueryClientProvider } from '@/app/providers'
 import PublicLayout from '@/components/Layout/PublicLayout'
 import { issue, issueBodyHTML, pledger } from 'polarkit/testdata'
-import Pledge from '../components/Pledge/Pledge'
+import ClientPage from './ClientPage'
 
-const meta: Meta<typeof Pledge> = {
+const meta: Meta<typeof ClientPage> = {
   title: 'Pages/Pledge',
-  component: Pledge,
+  component: ClientPage,
   args: {
     issue: issue,
     htmlBody: issueBodyHTML,
@@ -22,7 +22,7 @@ const meta: Meta<typeof Pledge> = {
 
 export default meta
 
-type Story = StoryObj<typeof Pledge>
+type Story = StoryObj<typeof ClientPage>
 
 export const Default: Story = {
   parameters: {
@@ -33,7 +33,7 @@ export const Default: Story = {
     return (
       <PolarQueryClientProvider>
         <PublicLayout showUpsellFooter={true}>
-          <Pledge {...args} />
+          <ClientPage {...args} />
         </PublicLayout>
       </PolarQueryClientProvider>
     )

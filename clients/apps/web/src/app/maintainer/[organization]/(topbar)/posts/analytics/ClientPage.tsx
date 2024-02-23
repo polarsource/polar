@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { prettyReferrerURL } from '@/utils/traffic'
 import { Organization, TrafficReferrer } from '@polar-sh/sdk'
 import {
   Card,
@@ -92,9 +93,8 @@ const TopReferrers = ({ org }: { org: Organization }) => {
         <DataTableColumnHeader column={column} title="Referrer" />
       ),
       cell: ({ row: { original: ref } }) => {
-        return (
-          <div className="flex flex-row items-center gap-2">{ref.referrer}</div>
-        )
+        const pretty = prettyReferrerURL(ref)
+        return <div className="flex flex-row items-center gap-2">{pretty}</div>
       },
     },
     {
@@ -115,10 +115,10 @@ const TopReferrers = ({ org }: { org: Organization }) => {
 
   return (
     <>
-      {data.data ? (
+      {data.data?.items ? (
         <DataTable
           columns={columns}
-          data={data.data.referrers}
+          data={data.data.items}
           className="w-full"
         />
       ) : null}

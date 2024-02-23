@@ -4697,6 +4697,50 @@ export type PaymentProcessor = typeof PaymentProcessor[keyof typeof PaymentProce
 /**
  * 
  * @export
+ * @interface PayoutCreate
+ */
+export interface PayoutCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof PayoutCreate
+     */
+    account_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface PayoutEstimate
+ */
+export interface PayoutEstimate {
+    /**
+     * 
+     * @type {string}
+     * @memberof PayoutEstimate
+     */
+    account_id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof PayoutEstimate
+     */
+    gross_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PayoutEstimate
+     */
+    fees_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PayoutEstimate
+     */
+    net_amount: number;
+}
+/**
+ * 
+ * @export
  * @interface PersonalAccessToken
  */
 export interface PersonalAccessToken {
@@ -4731,6 +4775,22 @@ export interface PersonalAccessToken {
      */
     comment: string;
 }
+
+/**
+ * Type of fees applied by Polar, and billed to the users.
+ * @export
+ */
+export const PlatformFeeType = {
+    PLATFORM: 'platform',
+    PAYMENT: 'payment',
+    SUBSCRIPTION: 'subscription',
+    INVOICE: 'invoice',
+    CROSS_BORDER_TRANSFER: 'cross_border_transfer',
+    PAYOUT: 'payout',
+    ACCOUNT: 'account'
+} as const;
+export type PlatformFeeType = typeof PlatformFeeType[keyof typeof PlatformFeeType];
+
 
 /**
  * 
@@ -8436,7 +8496,7 @@ export interface Transaction {
      * @type {PaymentProcessor}
      * @memberof Transaction
      */
-    processor: PaymentProcessor;
+    processor?: PaymentProcessor;
     /**
      * 
      * @type {string}
@@ -8463,6 +8523,12 @@ export interface Transaction {
     account_amount: number;
     /**
      * 
+     * @type {PlatformFeeType}
+     * @memberof Transaction
+     */
+    platform_fee_type?: PlatformFeeType;
+    /**
+     * 
      * @type {string}
      * @memberof Transaction
      */
@@ -8487,6 +8553,12 @@ export interface Transaction {
     payout_transaction_id?: string;
     /**
      * 
+     * @type {string}
+     * @memberof Transaction
+     */
+    incurred_by_transaction_id?: string;
+    /**
+     * 
      * @type {TransactionPledge}
      * @memberof Transaction
      */
@@ -8503,6 +8575,30 @@ export interface Transaction {
      * @memberof Transaction
      */
     subscription?: TransactionSubscription;
+    /**
+     * 
+     * @type {Array<TransactionEmbedded>}
+     * @memberof Transaction
+     */
+    account_incurred_transactions: Array<TransactionEmbedded>;
+    /**
+     * 
+     * @type {number}
+     * @memberof Transaction
+     */
+    readonly incurred_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Transaction
+     */
+    readonly gross_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Transaction
+     */
+    readonly net_amount: number;
 }
 /**
  * 
@@ -8539,7 +8635,7 @@ export interface TransactionDetails {
      * @type {PaymentProcessor}
      * @memberof TransactionDetails
      */
-    processor: PaymentProcessor;
+    processor?: PaymentProcessor;
     /**
      * 
      * @type {string}
@@ -8566,6 +8662,12 @@ export interface TransactionDetails {
     account_amount: number;
     /**
      * 
+     * @type {PlatformFeeType}
+     * @memberof TransactionDetails
+     */
+    platform_fee_type?: PlatformFeeType;
+    /**
+     * 
      * @type {string}
      * @memberof TransactionDetails
      */
@@ -8590,6 +8692,12 @@ export interface TransactionDetails {
     payout_transaction_id?: string;
     /**
      * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
+    incurred_by_transaction_id?: string;
+    /**
+     * 
      * @type {TransactionPledge}
      * @memberof TransactionDetails
      */
@@ -8608,10 +8716,131 @@ export interface TransactionDetails {
     subscription?: TransactionSubscription;
     /**
      * 
+     * @type {Array<TransactionEmbedded>}
+     * @memberof TransactionDetails
+     */
+    account_incurred_transactions: Array<TransactionEmbedded>;
+    /**
+     * 
      * @type {Array<Transaction>}
      * @memberof TransactionDetails
      */
     paid_transactions: Array<Transaction>;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    readonly incurred_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    readonly gross_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    readonly net_amount: number;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionEmbedded
+ */
+export interface TransactionEmbedded {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    id: string;
+    /**
+     * 
+     * @type {TransactionType}
+     * @memberof TransactionEmbedded
+     */
+    type: TransactionType;
+    /**
+     * 
+     * @type {PaymentProcessor}
+     * @memberof TransactionEmbedded
+     */
+    processor?: PaymentProcessor;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionEmbedded
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    account_currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionEmbedded
+     */
+    account_amount: number;
+    /**
+     * 
+     * @type {PlatformFeeType}
+     * @memberof TransactionEmbedded
+     */
+    platform_fee_type?: PlatformFeeType;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    pledge_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    issue_reward_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    subscription_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    payout_transaction_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    incurred_by_transaction_id?: string;
 }
 /**
  * 
@@ -8966,7 +9195,7 @@ export const TransactionType = {
     PROCESSOR_FEE: 'processor_fee',
     REFUND: 'refund',
     DISPUTE: 'dispute',
-    TRANSFER: 'transfer',
+    BALANCE: 'balance',
     PAYOUT: 'payout'
 } as const;
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];

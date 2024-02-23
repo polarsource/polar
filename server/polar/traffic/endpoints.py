@@ -9,6 +9,7 @@ from polar.article.service import article_service
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.organization.dependencies import (
     OptionalOrganizationNamePlatform,
     OrganizationNamePlatform,
@@ -20,7 +21,7 @@ from polar.tags.api import Tags
 from .schemas import (
     TrackPageView,
     TrackPageViewResponse,
-    TrafficReferrers,
+    TrafficReferrer,
     TrafficStatistics,
 )
 from .service import traffic_service
@@ -116,18 +117,19 @@ async def statistics(
 
 
 @router.get(
-    "/traffic/top_referrers",
-    response_model=TrafficReferrers,
+    "/traffic/referrers",
+    response_model=ListResource[TrafficReferrer],
     tags=[Tags.PUBLIC],
 )
-async def top_referrers(
+async def referrers(
+    pagination: PaginationParamsQuery,
     auth: UserRequiredAuth,
     organization_name_platform: OrganizationNamePlatform,
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> TrafficReferrers:
+) -> ListResource[TrafficReferrer]:
     article_ids = []
 
     (org_name, org_platform) = organization_name_platform
@@ -148,11 +150,16 @@ async def top_referrers(
         )
     ]
 
-    res = await traffic_service.top_referrers(
+    results, count = await traffic_service.referrers(
         session,
         article_ids=article_ids,
         start_date=start_date,
         end_date=end_date,
+        pagination=pagination,
     )
 
-    return TrafficReferrers(referrers=res)
+    return ListResource.from_paginated_results(
+        [TrafficReferrer.model_validate(result) for result in results],
+        count,
+        pagination,
+    )

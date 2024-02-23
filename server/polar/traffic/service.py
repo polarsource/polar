@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import ColumnExpressionArgument, and_, desc, func, null, text
 
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.models.traffic import Traffic
 from polar.postgres import AsyncSession, sql
@@ -114,14 +115,16 @@ class TrafficService:
             for (row_start_date, row_end_date, article_id, views) in res.tuples().all()
         ]
 
-    async def top_referrers(
+    async def referrers(
         self,
         session: AsyncSession,
+        *,
         article_ids: list[UUID],
         start_date: datetime.date,
         end_date: datetime.date,
-    ) -> Sequence[TrafficReferrer]:
-        stmt = (
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[TrafficReferrer], int]:
+        statement = (
             sql.select(Traffic.referrer, func.sum(Traffic.views))
             .where(
                 Traffic.article_id.in_(article_ids),
@@ -132,18 +135,17 @@ class TrafficService:
             )
             .group_by(Traffic.referrer)
             .order_by(desc(func.sum(Traffic.views)))
-            .limit(20)
         )
 
-        res = await session.execute(stmt)
+        results, count = await paginate(session, statement, pagination=pagination)
 
         return [
             TrafficReferrer(
                 referrer=referrer,
                 views=views,
             )
-            for (referrer, views) in res.tuples().all()
-        ]
+            for (referrer, views) in results
+        ], count
 
 
 traffic_service = TrafficService()

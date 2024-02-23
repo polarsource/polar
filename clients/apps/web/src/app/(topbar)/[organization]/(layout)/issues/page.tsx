@@ -1,4 +1,3 @@
-import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import {
   FilterSearchParams,
   buildFundingFilters,
@@ -8,7 +7,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import ClientPage from './ClientPage'
 
 const cacheConfig = {
   next: {
@@ -115,19 +114,5 @@ export default async function Page({
     notFound()
   }
 
-  return (
-    <div className="flex w-full flex-col gap-y-8">
-      <ShadowBoxOnMd>
-        <div className="p-4">
-          <div className="flex flex-row items-start justify-between pb-8">
-            <h2 className="text-lg font-medium">Issues looking for funding</h2>
-          </div>
-          <IssuesLookingForFunding
-            organization={organization}
-            issues={issues}
-          />
-        </div>
-      </ShadowBoxOnMd>
-    </div>
-  )
+  return <ClientPage organization={organization} issues={issues} />
 }

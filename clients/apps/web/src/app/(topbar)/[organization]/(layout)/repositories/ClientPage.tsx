@@ -1,3 +1,6 @@
+'use client'
+
+import { useTrafficRecordPageView } from '@/utils/traffic'
 import { StarIcon } from '@heroicons/react/24/solid'
 import { HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository, Visibility } from '@polar-sh/sdk'
@@ -15,10 +18,12 @@ interface RepositoriesOverviewProps {
   repositories: Repository[]
 }
 
-export const RepositoriesOverivew = ({
+export const ClientPage = ({
   organization,
   repositories,
 }: RepositoriesOverviewProps) => {
+  useTrafficRecordPageView({ organization })
+
   const repositoriesByStars = repositories.sort(
     (a, b) => (b.stars ?? 0) - (a.stars ?? 0),
   )

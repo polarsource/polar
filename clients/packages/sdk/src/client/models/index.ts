@@ -8199,6 +8199,12 @@ export interface TrackPageView {
      * @type {string}
      * @memberof TrackPageView
      */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TrackPageView
+     */
     referrer?: string;
 }
 /**
@@ -8852,6 +8858,7 @@ export interface TransactionSubscriptionTier {
  */
 export const TransactionType = {
     PAYMENT: 'payment',
+    PROCESSOR_FEE: 'processor_fee',
     REFUND: 'refund',
     DISPUTE: 'dispute',
     TRANSFER: 'transfer',

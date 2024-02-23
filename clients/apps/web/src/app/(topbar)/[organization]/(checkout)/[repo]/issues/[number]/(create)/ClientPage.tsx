@@ -1,5 +1,10 @@
 'use client'
 
+import FAQ from '@/components/Pledge/FAQ'
+import HowItWorks from '@/components/Pledge/HowItWorks'
+import IssueCard from '@/components/Pledge/IssueCard'
+import PledgeCheckoutPanel from '@/components/Pledge/PledgeCheckoutPanel'
+import { useTrafficRecordPageView } from '@/utils/traffic'
 import {
   Issue,
   Pledger,
@@ -11,12 +16,8 @@ import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { Banner } from 'polarkit/components/ui/molecules'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
-import FAQ from './FAQ'
-import HowItWorks from './HowItWorks'
-import IssueCard from './IssueCard'
-import PledgeCheckoutPanel from './PledgeCheckoutPanel'
 
-const Pledge = ({
+const ClientPage = ({
   issue,
   htmlBody,
   pledgers,
@@ -31,6 +32,8 @@ const Pledge = ({
   rewards?: RewardsSummary
   pullRequests?: PullRequest[]
 }) => {
+  useTrafficRecordPageView({ organization: issue.repository.organization })
+
   const [amount, setAmount] = useState(0)
   const onAmountChange = (amount: number) => {
     setAmount(amount)
@@ -89,4 +92,4 @@ const Pledge = ({
   )
 }
 
-export default Pledge
+export default ClientPage

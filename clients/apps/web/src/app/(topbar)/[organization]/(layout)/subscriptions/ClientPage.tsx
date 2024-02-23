@@ -1,22 +1,26 @@
 'use client'
 
+import SubscriptionGroupPublic from '@/components/Subscriptions/SubscriptionGroupPublic'
+import { getSubscriptionTiersByType } from '@/components/Subscriptions/utils'
+import { useTrafficRecordPageView } from '@/utils/traffic'
 import {
   Organization,
   SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import React, { useMemo } from 'react'
-import SubscriptionGroupPublic from './SubscriptionGroupPublic'
-import { getSubscriptionTiersByType } from './utils'
 
 interface OrganizationSubscriptionsPublicPageProps {
   subscriptionTiers: SubscriptionTier[]
   organization: Organization
 }
 
-const OrganizationSubscriptionsPublicPage: React.FC<
-  OrganizationSubscriptionsPublicPageProps
-> = ({ subscriptionTiers, organization }) => {
+const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
+  subscriptionTiers,
+  organization,
+}) => {
+  useTrafficRecordPageView({ organization })
+
   const subscriptionTiersByType = useMemo(
     () => getSubscriptionTiersByType(subscriptionTiers ?? []),
     [subscriptionTiers],
@@ -54,4 +58,4 @@ const OrganizationSubscriptionsPublicPage: React.FC<
   )
 }
 
-export default OrganizationSubscriptionsPublicPage
+export default ClientPage

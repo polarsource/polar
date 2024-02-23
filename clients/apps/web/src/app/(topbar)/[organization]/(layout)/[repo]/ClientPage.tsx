@@ -1,6 +1,9 @@
+'use client'
+
 import { externalURL, prettyURL } from '@/components/Organization'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import HowItWorks from '@/components/Pledge/HowItWorks'
+import { useTrafficRecordPageView } from '@/utils/traffic'
 import {
   ListResourceIssueFunding,
   Organization,
@@ -21,6 +24,8 @@ const ClientPage = ({
   issuesFunding: ListResourceIssueFunding
   totalIssueCount: number
 }) => {
+  useTrafficRecordPageView({ organization })
+
   return (
     <>
       {repository.visibility === Visibility.PRIVATE && (

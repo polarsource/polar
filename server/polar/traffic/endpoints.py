@@ -39,7 +39,7 @@ async def track_page_view(
     track: TrackPageView,
     session: AsyncSession = Depends(get_db_session),
 ) -> TrackPageViewResponse:
-    if track.article_id:
+    if track.article_id or track.organization_id:
         await traffic_service.add(
             session,
             location_href=track.location_href,

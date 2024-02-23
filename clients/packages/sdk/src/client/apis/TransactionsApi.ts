@@ -17,10 +17,21 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceTransaction,
+  PayoutCreate,
+  PayoutEstimate,
+  Transaction,
   TransactionDetails,
   TransactionType,
   TransactionsSummary,
 } from '../models/index';
+
+export interface TransactionsApiCreatePayoutRequest {
+    payoutCreate: PayoutCreate;
+}
+
+export interface TransactionsApiGetPayoutEstimateRequest {
+    accountId: string;
+}
 
 export interface TransactionsApiGetSummaryRequest {
     accountId: string;
@@ -35,6 +46,7 @@ export interface TransactionsApiSearchTransactionsRequest {
     accountId?: string;
     paymentUserId?: string;
     paymentOrganizationId?: string;
+    excludePlatformFees?: boolean;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
@@ -44,6 +56,89 @@ export interface TransactionsApiSearchTransactionsRequest {
  * 
  */
 export class TransactionsApi extends runtime.BaseAPI {
+
+    /**
+     * Create Payout
+     */
+    async createPayoutRaw(requestParameters: TransactionsApiCreatePayoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Transaction>> {
+        if (requestParameters.payoutCreate === null || requestParameters.payoutCreate === undefined) {
+            throw new runtime.RequiredError('payoutCreate','Required parameter requestParameters.payoutCreate was null or undefined when calling createPayout.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/transactions/payout`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.payoutCreate,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create Payout
+     */
+    async createPayout(requestParameters: TransactionsApiCreatePayoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Transaction> {
+        const response = await this.createPayoutRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get Payout Estimate
+     */
+    async getPayoutEstimateRaw(requestParameters: TransactionsApiGetPayoutEstimateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PayoutEstimate>> {
+        if (requestParameters.accountId === null || requestParameters.accountId === undefined) {
+            throw new runtime.RequiredError('accountId','Required parameter requestParameters.accountId was null or undefined when calling getPayoutEstimate.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.accountId !== undefined) {
+            queryParameters['account_id'] = requestParameters.accountId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/transactions/payout`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get Payout Estimate
+     */
+    async getPayoutEstimate(requestParameters: TransactionsApiGetPayoutEstimateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PayoutEstimate> {
+        const response = await this.getPayoutEstimateRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Get Summary
@@ -149,6 +244,10 @@ export class TransactionsApi extends runtime.BaseAPI {
 
         if (requestParameters.paymentOrganizationId !== undefined) {
             queryParameters['payment_organization_id'] = requestParameters.paymentOrganizationId;
+        }
+
+        if (requestParameters.excludePlatformFees !== undefined) {
+            queryParameters['exclude_platform_fees'] = requestParameters.excludePlatformFees;
         }
 
         if (requestParameters.page !== undefined) {

@@ -22,6 +22,9 @@ class TrafficService:
         article_id: UUID | None = None,
         organization_id: UUID | None = None,
     ) -> None:
+        if article_id is None and organization_id is None:
+            raise Exception("article_id or organization_id must be set")
+
         insert_stmt = sql.insert(Traffic).values(
             location_href=location_href,
             referrer=referrer,

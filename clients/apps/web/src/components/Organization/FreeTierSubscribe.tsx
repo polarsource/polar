@@ -140,18 +140,15 @@ export const AnonymousFreeTierSubscribe = ({
                         className="h-fit rounded-full bg-transparent px-3 py-[5px] text-[13px]"
                         type="email"
                         placeholder="Subscribe with Email..."
-                        data-1p-ignore
-                        postSlot={
-                          <Button
-                            className="-mr-3 aspect-square"
-                            size="sm"
-                            type="submit"
-                            loading={createFreeSubscription.isPending}
-                          >
-                            <ArrowForwardOutlined fontSize="inherit" />
-                          </Button>
-                        }
                       />
+                      <Button
+                        className="aspect-square h-8"
+                        size="sm"
+                        type="submit"
+                        loading={createFreeSubscription.isPending}
+                      >
+                        <ArrowForwardOutlined fontSize="inherit" />
+                      </Button>
                     </div>
                     <FormMessage />
                   </div>

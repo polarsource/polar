@@ -104,46 +104,33 @@ export default async function Page({
   let subscriptionSummary: ListResourceSubscriptionSummary | undefined
 
   try {
-    const [
-      loadOrganization,
-      loadPinnedArticles,
-      loadArticles,
-      loadSubscriptionTiers,
-    ] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-      api.articles.search(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          isPinned: true,
-        },
-        cacheConfig,
-      ),
-      api.articles.search(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          isPinned: false,
-        },
-        cacheConfig,
-      ),
-      api.subscriptions.searchSubscriptionTiers(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-    ])
+    const [loadOrganization, loadArticles, loadSubscriptionTiers] =
+      await Promise.all([
+        api.organizations.lookup(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+          },
+          cacheConfig,
+        ),
+        api.articles.search(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+            limit: 3,
+          },
+          cacheConfig,
+        ),
+        api.subscriptions.searchSubscriptionTiers(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+          },
+          cacheConfig,
+        ),
+      ])
 
     organization = loadOrganization
-    pinnedArticles = loadPinnedArticles
     articles = loadArticles
     subscriptionTiers = loadSubscriptionTiers
   } catch (e) {
@@ -153,8 +140,7 @@ export default async function Page({
   return (
     <ClientPage
       organization={organization}
-      pinnedArticles={pinnedArticles}
-      articles={articles}
+      latestPosts={articles}
       subscriptionTiers={subscriptionTiers}
     />
   )

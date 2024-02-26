@@ -19,13 +19,11 @@ import { useMemo } from 'react'
 
 const ClientPage = ({
   organization,
-  pinnedArticles,
-  articles,
+  latestPosts,
   subscriptionTiers,
 }: {
   organization: Organization
-  pinnedArticles: ListResourceArticle
-  articles: ListResourceArticle
+  latestPosts: ListResourceArticle
   subscriptionTiers: ListResourceSubscriptionTier
 }) => {
   useTrafficRecordPageView({ organization })
@@ -48,10 +46,10 @@ const ClientPage = ({
   return (
     <div className="flex w-full flex-col gap-y-6">
       <div className="flex w-full flex-col gap-y-16">
-        {(pinnedArticles.items?.length ?? 0) > 0 ? (
+        {(latestPosts.items?.length ?? 0) > 0 ? (
           <div className="flex flex-col gap-y-8">
             <div className="flex flex-row justify-between">
-              <h2 className="text-lg">Pinned Posts</h2>
+              <h2 className="text-lg">Latest Posts</h2>
               <Link
                 className="text-sm text-blue-500 dark:text-blue-400"
                 href={`/${organization.name}/posts`}
@@ -61,8 +59,8 @@ const ClientPage = ({
               </Link>
             </div>
             <div className="flex w-full flex-col gap-y-6">
-              {pinnedArticles.items?.map((post) => (
-                <PostComponent article={post} key={post.id} highlightPinned />
+              {latestPosts.items?.map((post) => (
+                <PostComponent article={post} key={post.id} />
               ))}
             </div>
           </div>

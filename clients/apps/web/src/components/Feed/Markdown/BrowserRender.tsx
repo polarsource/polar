@@ -159,5 +159,33 @@ export const AbbreviatedBrowserRender = ({
 export default BrowserRender
 
 export const abbreviatedContent = (body: string): string => {
-  return body.substring(0, 500).split('\n').slice(0, 4).join('\n').trimEnd()
+  const res: string[] = []
+  let l = 0
+
+  // If the post has a <hr> within 1000 characters, use that as the limit.
+  const manualBoundary = Math.min(
+    ...[
+      body.indexOf('---'),
+      body.indexOf('<hr>'),
+      body.indexOf('<hr/>'),
+      body.indexOf('<hr />'),
+    ].filter((d) => d >= 0),
+  )
+
+  if (manualBoundary >= 0 && manualBoundary < 1000) {
+    return body.substring(0, manualBoundary).trimEnd()
+  }
+
+  const parts = body.substring(0, 1000).replaceAll('\r\n', '\n').split('\n\n')
+
+  for (const p of parts) {
+    if (p.length + l > 500 && l > 0) {
+      break
+    }
+
+    l += p.length
+    res.push(p)
+  }
+
+  return res.join('\n\n').trimEnd()
 }

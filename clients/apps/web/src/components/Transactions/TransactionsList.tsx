@@ -96,7 +96,7 @@ const TransactionsList = ({
       ),
       cell: (props) => {
         const datetime = props.getValue() as string
-        return <FormattedDateTime datetime={datetime} displayTime />
+        return <FormattedDateTime datetime={datetime} resolution="time" />
       },
     },
     {

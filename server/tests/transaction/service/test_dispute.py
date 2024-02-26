@@ -11,12 +11,12 @@ from polar.postgres import AsyncSession
 from polar.transaction.service.balance import BalanceTransactionService
 from polar.transaction.service.dispute import (  # type: ignore[attr-defined]
     DisputeUnknownPaymentTransaction,
-    fee_transaction_service,
+    processor_fee_transaction_service,
 )
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
-from polar.transaction.service.fee import FeeTransactionService
+from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 
 
 def build_stripe_balance_transaction(
@@ -85,9 +85,9 @@ def balance_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture(autouse=True)
 def create_dispute_fees_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch.object(
-        fee_transaction_service,
+        processor_fee_transaction_service,
         "create_dispute_fees",
-        spec=FeeTransactionService.create_dispute_fees,
+        spec=ProcessorFeeTransactionService.create_dispute_fees,
         return_value=[],
     )
 

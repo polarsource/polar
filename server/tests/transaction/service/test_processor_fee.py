@@ -10,15 +10,15 @@ from polar.integrations.stripe.service import StripeService
 from polar.models import IssueReward, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, ProcessorFeeType, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.fee import (
-    fee_transaction as fee_transaction_service,
+from polar.transaction.service.processor_fee import (
+    processor_fee_transaction as processor_fee_transaction_service,
 )
 
 
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.transaction.service.fee.stripe_service", new=mock)
+    mocker.patch("polar.transaction.service.processor_fee.stripe_service", new=mock)
     return mock
 
 
@@ -123,7 +123,7 @@ class TestCreatePaymentFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_payment_fees(
+        fee_transactions = await processor_fee_transaction_service.create_payment_fees(
             session, payment_transaction=payment_transaction
         )
         assert len(fee_transactions) == 0
@@ -134,7 +134,7 @@ class TestCreatePaymentFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_payment_fees(
+        fee_transactions = await processor_fee_transaction_service.create_payment_fees(
             session, payment_transaction=payment_transaction
         )
         assert len(fee_transactions) == 0
@@ -161,7 +161,7 @@ class TestCreatePaymentFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_payment_fees(
+        fee_transactions = await processor_fee_transaction_service.create_payment_fees(
             session, payment_transaction=payment_transaction
         )
         assert len(fee_transactions) == 1
@@ -187,7 +187,7 @@ class TestCreateRefundFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_refund_fees(
+        fee_transactions = await processor_fee_transaction_service.create_refund_fees(
             session, refund_transaction=refund_transaction
         )
         assert len(fee_transactions) == 0
@@ -198,7 +198,7 @@ class TestCreateRefundFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_refund_fees(
+        fee_transactions = await processor_fee_transaction_service.create_refund_fees(
             session, refund_transaction=refund_transaction
         )
         assert len(fee_transactions) == 0
@@ -229,7 +229,7 @@ class TestCreateRefundFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_refund_fees(
+        fee_transactions = await processor_fee_transaction_service.create_refund_fees(
             session, refund_transaction=refund_transaction
         )
         assert len(fee_transactions) == 1
@@ -255,7 +255,7 @@ class TestCreateDisputeFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_dispute_fees(
+        fee_transactions = await processor_fee_transaction_service.create_dispute_fees(
             session, dispute_transaction=dispute_transaction, category="dispute"
         )
         assert len(fee_transactions) == 0
@@ -266,7 +266,7 @@ class TestCreateDisputeFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_dispute_fees(
+        fee_transactions = await processor_fee_transaction_service.create_dispute_fees(
             session, dispute_transaction=dispute_transaction, category="dispute"
         )
         assert len(fee_transactions) == 0
@@ -302,7 +302,7 @@ class TestCreateDisputeFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.create_dispute_fees(
+        fee_transactions = await processor_fee_transaction_service.create_dispute_fees(
             session, dispute_transaction=dispute_transaction, category=category
         )
         assert len(fee_transactions) == 1
@@ -452,7 +452,9 @@ class TestSyncStripeFees:
         # then
         session.expunge_all()
 
-        fee_transactions = await fee_transaction_service.sync_stripe_fees(session)
+        fee_transactions = await processor_fee_transaction_service.sync_stripe_fees(
+            session
+        )
 
         assert len(fee_transactions) == 7
 

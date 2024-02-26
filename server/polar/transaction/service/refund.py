@@ -9,7 +9,9 @@ from polar.postgres import AsyncSession
 
 from .balance import balance_transaction as balance_transaction_service
 from .base import BaseTransactionService, BaseTransactionServiceError
-from .fee import fee_transaction as fee_transaction_service
+from .processor_fee import (
+    processor_fee_transaction as processor_fee_transaction_service,
+)
 
 
 class RefundTransactionError(BaseTransactionServiceError):
@@ -80,8 +82,10 @@ class RefundTransactionService(BaseTransactionService):
             )
 
             # Compute and link fees
-            transaction_fees = await fee_transaction_service.create_refund_fees(
-                session, refund_transaction=refund_transaction
+            transaction_fees = (
+                await processor_fee_transaction_service.create_refund_fees(
+                    session, refund_transaction=refund_transaction
+                )
             )
             refund_transaction.incurred_transaction_fees = transaction_fees
 

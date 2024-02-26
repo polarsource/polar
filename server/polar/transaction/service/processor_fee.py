@@ -11,11 +11,11 @@ from polar.postgres import AsyncSession
 from .base import BaseTransactionService, BaseTransactionServiceError
 
 
-class FeeTransactionError(BaseTransactionServiceError):
+class ProcessorFeeTransactionError(BaseTransactionServiceError):
     ...
 
 
-class UnsupportedStripeFeeType(FeeTransactionError):
+class UnsupportedStripeFeeType(ProcessorFeeTransactionError):
     def __init__(self, description: str) -> None:
         self.description = description
         message = f"Unsupported Stripe fee type: {description}"
@@ -51,7 +51,7 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
     raise UnsupportedStripeFeeType(description)
 
 
-class FeeTransactionService(BaseTransactionService):
+class ProcessorFeeTransactionService(BaseTransactionService):
     async def create_payment_fees(
         self, session: AsyncSession, *, payment_transaction: Transaction
     ) -> list[Transaction]:
@@ -211,4 +211,4 @@ class FeeTransactionService(BaseTransactionService):
         return transactions
 
 
-fee_transaction = FeeTransactionService(Transaction)
+processor_fee_transaction = ProcessorFeeTransactionService(Transaction)

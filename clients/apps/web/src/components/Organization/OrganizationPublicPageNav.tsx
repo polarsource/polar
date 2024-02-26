@@ -67,15 +67,18 @@ export const OrganizationPublicPageNav = ({
     [organization, router],
   )
 
-  const isPageView = pathname.includes('/posts/')
+  const isPostsView = pathname.includes('/posts/')
 
   const tabsTriggerClassName =
     'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none'
 
   return mobileLayout ? (
     <>
-      {isPageView ? (
-        <Link className="flex flex-shrink-0" href={`/${organization.name}`}>
+      {isPostsView ? (
+        <Link
+          className="flex flex-shrink-0"
+          href={`/${organization.name}/posts`}
+        >
           <Button
             size="sm"
             variant="secondary"

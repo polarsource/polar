@@ -23,7 +23,7 @@ export const getSubscriptionColorByType = (
     case SubscriptionTierType.BUSINESS:
       return '#9d4cff' as const
     case SubscriptionTierType.INDIVIDUAL:
-      return '#29dea5' as const
+      return '#1fd39a' as const
     case SubscriptionTierType.FREE:
     default:
       return '#3381FF' as const

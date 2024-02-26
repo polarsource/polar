@@ -1,6 +1,6 @@
 'use client'
 
-import { SubscriptionTier } from '@polar-sh/sdk'
+import { SubscriptionTier, SubscriptionTierType } from '@polar-sh/sdk'
 import {
   Card,
   CardContent,
@@ -43,6 +43,17 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
   const [shineActive, setShineActive] = useState(false)
+
+  const getSubscriptionTierAudience = (type?: SubscriptionTier['type']) => {
+    switch (type) {
+      case SubscriptionTierType.FREE:
+        return 'For Anyone'
+      case SubscriptionTierType.INDIVIDUAL:
+        return 'For Individuals'
+      case SubscriptionTierType.BUSINESS:
+        return 'For Businesses'
+    }
+  }
 
   const style = {
     '--var-bg-color': hexToRGBA(subscriptionColor, 0.2),
@@ -107,23 +118,28 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     >
       <Shine active={shineActive} />
       <CardHeader className="grow gap-y-6 p-0">
-        <div className="flex justify-between">
-          <h3
-            className={twMerge(
-              'truncate font-medium',
-              variantStyles[variant]['name'],
-            )}
-          >
-            {subscriptionTier.name ? (
-              subscriptionTier.name
-            ) : (
-              <Skeleton className="inline-block h-4 w-[150px] bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
-            )}
-          </h3>
-          <SubscriptionGroupIcon
-            className="h-8! w-8! ml-2 text-2xl"
-            type={subscriptionTier.type}
-          />
+        <div className="flex flex-col gap-y-4">
+          <span className="dark:text-polar-500 text-xs text-gray-500">
+            {getSubscriptionTierAudience(subscriptionTier.type)}
+          </span>
+          <div className="flex justify-between">
+            <h3
+              className={twMerge(
+                'truncate font-medium',
+                variantStyles[variant]['name'],
+              )}
+            >
+              {subscriptionTier.name ? (
+                subscriptionTier.name
+              ) : (
+                <Skeleton className="inline-block h-4 w-[150px] bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+              )}
+            </h3>
+            <SubscriptionGroupIcon
+              className="h-8! w-8! ml-2 text-2xl"
+              type={subscriptionTier.type}
+            />
+          </div>
         </div>
         <div className="flex flex-col gap-y-8 text-gray-950 dark:text-[--var-dark-fg-color]">
           <div className={variantStyles[variant]['priceLabel']}>
@@ -137,7 +153,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
                 )}
               </>
             }
-            <span className="ml-4 text-xl font-normal text-gray-500">/mo</span>
+            <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
+              /mo
+            </span>
           </div>
           {subscriptionTier.description ? (
             <p

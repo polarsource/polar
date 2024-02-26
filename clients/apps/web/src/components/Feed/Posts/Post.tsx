@@ -33,7 +33,7 @@ export const Post = (props: FeedPost) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full flex-col justify-start gap-4 rounded-3xl bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 dark:border md:flex-row',
+        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full flex-col justify-start gap-6 rounded-3xl bg-white px-6 pb-6 pt-8 shadow-sm transition-all duration-100 dark:border md:flex-row',
         props.article.paid_subscribers_only &&
           'border border-blue-50 bg-gradient-to-b from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
       )}
@@ -48,7 +48,7 @@ export const Post = (props: FeedPost) => {
       }}
     >
       <Avatar
-        className="hidden h-10 w-10 md:block"
+        className="hidden h-12 w-12 md:block"
         avatar_url={props.article.byline.avatar_url}
         name={props.article.byline.name}
       />
@@ -64,11 +64,11 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
   return (
     <div className="flex w-full flex-row items-center gap-x-4 text-sm md:justify-between">
       <Avatar
-        className="block h-10 w-10 md:hidden"
+        className="block h-12 w-12 md:hidden"
         avatar_url={props.article.byline.avatar_url}
         name={props.article.byline.name}
       />
-      <div className="flex flex-col gap-y-0.5">
+      <div className="flex flex-col gap-y-1 pt-1">
         <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
           <Link
             className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
@@ -141,7 +141,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
       )}
     >
       <Link
-        className="dark:text-polar-50 hover:dark:text-polar-100 flex flex-col flex-wrap pt-2 text-lg font-medium text-gray-950 hover:text-gray-900"
+        className="dark:text-polar-50 hover:dark:text-polar-100 flex flex-col flex-wrap pt-2 text-2xl font-medium text-gray-950 hover:text-gray-900"
         href={articleHref(props.article)}
       >
         {props.article.title}

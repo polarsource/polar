@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionTier, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -136,18 +137,21 @@ export const AnonymousFreeTierSubscribe = ({
                     <div className="flex w-full flex-row items-center gap-x-1 space-x-1">
                       <Input
                         {...field}
-                        className="h-fit rounded-md px-2.5 py-[5px]"
+                        className="h-fit rounded-full bg-transparent px-3 py-[5px] text-[13px]"
                         type="email"
-                        placeholder="Email"
+                        placeholder="Subscribe with Email..."
+                        data-1p-ignore
+                        postSlot={
+                          <Button
+                            className="-mr-3 aspect-square"
+                            size="sm"
+                            type="submit"
+                            loading={createFreeSubscription.isPending}
+                          >
+                            <ArrowForwardOutlined fontSize="inherit" />
+                          </Button>
+                        }
                       />
-                      <Button
-                        className="h-full"
-                        size="sm"
-                        type="submit"
-                        loading={createFreeSubscription.isPending}
-                      >
-                        Subscribe
-                      </Button>
                     </div>
                     <FormMessage />
                   </div>

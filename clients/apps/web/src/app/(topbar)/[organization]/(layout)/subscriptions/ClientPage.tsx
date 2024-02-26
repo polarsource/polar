@@ -1,13 +1,11 @@
 'use client'
 
-import SubscriptionGroupPublic from '@/components/Subscriptions/SubscriptionGroupPublic'
-import { getSubscriptionTiersByType } from '@/components/Subscriptions/utils'
+import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
+import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import {
-  Organization,
-  SubscriptionTier,
-  SubscriptionTierType,
-} from '@polar-sh/sdk'
+import { Organization, SubscriptionTier } from '@polar-sh/sdk'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 
 interface OrganizationSubscriptionsPublicPageProps {
@@ -21,38 +19,44 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
 }) => {
   useTrafficRecordPageView({ organization })
 
-  const subscriptionTiersByType = useMemo(
-    () => getSubscriptionTiersByType(subscriptionTiers ?? []),
-    [subscriptionTiers],
+  const orgs = useListAdminOrganizations()
+
+  const shouldRenderSubscribeButton = useMemo(
+    () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
+    [organization, orgs],
   )
 
   return (
-    <div className="flex flex-col">
-      <div className="dark:divide-polar-700 flex flex-col divide-y">
-        <SubscriptionGroupPublic
-          title="Free"
-          description="Baseline tier giving access to public posts"
-          type={SubscriptionTierType.FREE}
-          tiers={subscriptionTiersByType.free}
-          organization={organization}
-          subscribePath="/subscribe"
-        />
-        <SubscriptionGroupPublic
-          title="Individual"
-          description="Tiers for individuals & fans who want to say thanks"
-          type={SubscriptionTierType.INDIVIDUAL}
-          tiers={subscriptionTiersByType.individual}
-          organization={organization}
-          subscribePath="/subscribe"
-        />
-        <SubscriptionGroupPublic
-          title="Business"
-          description="The most exclusive tiers for business customers"
-          type={SubscriptionTierType.BUSINESS}
-          tiers={subscriptionTiersByType?.business}
-          organization={organization}
-          subscribePath="/subscribe"
-        />
+    <div className="flex flex-col gap-y-12 py-8">
+      <div className="flex flex-col gap-y-2">
+        <h2 className="text-xl">Subscriptions</h2>
+        <p className="dark:text-polar-500 text-gray-500">
+          Support {organization.name} with a subscription and receive unique
+          benefits in return
+        </p>
+      </div>
+      <div className="flex flex-row flex-wrap gap-8">
+        {subscriptionTiers.map((tier) => (
+          <SubscriptionTierCard
+            className="w-full self-stretch md:max-w-[276px]"
+            key={tier.id}
+            subscriptionTier={tier}
+          >
+            {shouldRenderSubscribeButton &&
+              (tier.type === 'free' ? (
+                <FreeTierSubscribe
+                  subscriptionTier={tier}
+                  organization={organization}
+                />
+              ) : (
+                <SubscriptionTierSubscribeButton
+                  organization={organization}
+                  subscriptionTier={tier}
+                  subscribePath="/subscribe"
+                />
+              ))}
+          </SubscriptionTierCard>
+        ))}
       </div>
     </div>
   )

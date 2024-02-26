@@ -72,6 +72,7 @@ export const MarkdownEditor = ({
     }
     const resizeObserver = new ResizeObserver((entries) => {
       for (const e of entries) {
+        console.log(e)
         setPreviewHeight(e.borderBoxSize[0].blockSize)
       }
     })
@@ -84,6 +85,8 @@ export const MarkdownEditor = ({
 
   const previewContent = abbreviatedContent(value)
   const showPreviewArea = previewContent !== value.trimEnd()
+
+  console.log(previewContent)
 
   return (
     <div className="relative">
@@ -125,10 +128,10 @@ export const MarkdownEditor = ({
         </div>
       ) : null}
 
-      {/* Render the abbreviated article contents in a similarly styled div (but hidden) as the textarea.
+      {/* Render the abbreviated article contents in a similarly styled div as the textarea.
         This is used to calculate the "height" of the input-content that will be used in previews.
       */}
-      <div>
+      <div className="w-full overflow-x-hidden">
         <div
           className={twMerge(
             'absolute left-[200000px] top-0 z-0 overflow-hidden whitespace-pre-wrap rounded-3xl !bg-blue-200 p-6 text-lg',

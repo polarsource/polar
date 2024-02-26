@@ -59,10 +59,45 @@ class Article(Schema):
         body = re.sub(paywall_regex, "<Paywall></Paywall>", body, 0, re.MULTILINE)
 
         if paid_subscribers_only:
-            # Keep up to 4 lines, but no more than 500 characters
-            return "\n".join(body[:500].splitlines()[:4])
+            return cls.abbreviated_content(body)
 
         return body
+
+    @classmethod
+    def abbreviated_content(cls, body: str) -> str:
+        # sync with abbreviatedContent in BrowserRender.tsx
+
+        res: list[str] = []
+        len_sum = 0
+
+        # If the post has a <hr> within 1000 characters, use that as the limit.
+        manual_boundary = -1
+        idx = [
+            d
+            for d in [
+                body.find("---"),
+                body.find("<hr>"),
+                body.find("<hr/>"),
+                body.find("<hr />"),
+            ]
+            if d >= 0
+        ]
+        if idx:
+            manual_boundary = min(idx)
+
+        if manual_boundary >= 0 and manual_boundary < 1000:
+            return body[0:manual_boundary].rstrip()
+
+        parts = body[0:1000].replace("\r\n", "\n").split("\n\n")
+
+        for p in parts:
+            if len(p) + len_sum > 500 and len_sum > 0:
+                break
+
+            len_sum += len(p)
+            res.append(p)
+
+        return "\n\n".join(res).rstrip()
 
     @classmethod
     def from_db(

@@ -4,6 +4,7 @@ import httpx
 import structlog
 
 from polar.config import settings
+from polar.enums import AccountType
 from polar.logging import Logger
 
 log: Logger = structlog.get_logger()
@@ -25,6 +26,7 @@ class Properties(TypedDict, total=False):
     organizationInstalled: bool
     repositoryInstalled: bool
     issueBadged: bool
+    accountType: AccountType
 
 
 class LoopsClient:

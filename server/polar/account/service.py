@@ -12,6 +12,7 @@ from sqlalchemy.orm import joinedload
 from polar.config import settings
 from polar.enums import AccountType
 from polar.exceptions import PolarError
+from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.open_collective.service import (
     CollectiveNotFoundError,
     OpenCollectiveAPIError,
@@ -101,19 +102,21 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         self,
         session: AsyncSession,
         *,
-        admin_id: UUID,
+        admin: User,
         account_create: AccountCreate,
     ) -> Account:
         if account_create.account_type == AccountType.stripe:
             account = await self._create_stripe_account(
-                session, admin_id, account_create
+                session, admin.id, account_create
             )
         elif account_create.account_type == AccountType.open_collective:
             account = await self._create_open_collective_account(
-                session, admin_id, account_create
+                session, admin.id, account_create
             )
         else:
             raise AccountServiceError("Unknown account type")
+
+        await loops_service.user_update(admin, accountType=account.account_type)
 
         return account
 

@@ -151,6 +151,9 @@ class TestCreatePayout:
         assert payout.account_currency == "usd"
         assert payout.account_amount == -balance_transaction.amount
 
+        assert len(payout.paid_transactions) == 1
+        assert payout.paid_transactions[0].id == balance_transaction.id
+
         stripe_service_mock.transfer.assert_called_once()
         assert stripe_service_mock.transfer.call_args[1]["metadata"][
             "payout_transaction_id"
@@ -218,6 +221,9 @@ class TestCreatePayout:
         assert payout.account_currency == "eur"
         assert payout.account_amount == -900
 
+        assert len(payout.paid_transactions) == 1
+        assert payout.paid_transactions[0].id == balance_transaction.id
+
         stripe_service_mock.create_payout.assert_called_once()
         assert stripe_service_mock.create_payout.call_args[1]["amount"] == 900
 
@@ -251,3 +257,6 @@ class TestCreatePayout:
         assert payout.amount == -balance_transaction.amount
         assert payout.account_currency == "usd"
         assert payout.account_amount == -balance_transaction.amount
+
+        assert len(payout.paid_transactions) == 1
+        assert payout.paid_transactions[0].id == balance_transaction.id

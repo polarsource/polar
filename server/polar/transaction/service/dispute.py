@@ -12,7 +12,9 @@ from polar.postgres import AsyncSession
 
 from .balance import balance_transaction as balance_transaction_service
 from .base import BaseTransactionService, BaseTransactionServiceError
-from .fee import fee_transaction as fee_transaction_service
+from .processor_fee import (
+    processor_fee_transaction as processor_fee_transaction_service,
+)
 
 
 class DisputeTransactionError(BaseTransactionServiceError):
@@ -71,7 +73,7 @@ class DisputeTransactionService(BaseTransactionService):
         )
 
         # Compute and link fees
-        transaction_fees = await fee_transaction_service.create_dispute_fees(
+        transaction_fees = await processor_fee_transaction_service.create_dispute_fees(
             session, dispute_transaction=dispute_transaction, category="dispute"
         )
         dispute_transaction.incurred_transaction_fees = transaction_fees
@@ -139,7 +141,7 @@ class DisputeTransactionService(BaseTransactionService):
         )
 
         # Compute and link fees
-        transaction_fees = await fee_transaction_service.create_dispute_fees(
+        transaction_fees = await processor_fee_transaction_service.create_dispute_fees(
             session,
             dispute_transaction=dispute_transaction,
             category="dispute_reversal",

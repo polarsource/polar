@@ -10,10 +10,10 @@ from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import BalanceTransactionService
-from polar.transaction.service.fee import FeeTransactionService
+from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from polar.transaction.service.refund import (  # type: ignore[attr-defined]
     RefundUnknownPaymentTransaction,
-    fee_transaction_service,
+    processor_fee_transaction_service,
 )
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
@@ -89,9 +89,9 @@ def balance_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture(autouse=True)
 def create_refund_fees_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch.object(
-        fee_transaction_service,
+        processor_fee_transaction_service,
         "create_refund_fees",
-        spec=FeeTransactionService.create_refund_fees,
+        spec=ProcessorFeeTransactionService.create_refund_fees,
         return_value=[],
     )
 

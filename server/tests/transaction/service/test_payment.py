@@ -9,15 +9,15 @@ from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, Pledge, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.fee import FeeTransactionService
 from polar.transaction.service.payment import (  # type: ignore[attr-defined]
     PledgeDoesNotExist,
     SubscriptionDoesNotExist,
-    fee_transaction_service,
+    processor_fee_transaction_service,
 )
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
+from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.random_objects import create_subscription, create_subscription_tier
 
 
@@ -78,9 +78,9 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture(autouse=True)
 def create_payment_fees_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch.object(
-        fee_transaction_service,
+        processor_fee_transaction_service,
         "create_payment_fees",
-        spec=FeeTransactionService.create_payment_fees,
+        spec=ProcessorFeeTransactionService.create_payment_fees,
         return_value=[],
     )
 

@@ -67,7 +67,7 @@ const ClientPage = ({
             </div>
           </div>
         ) : null}
-        <div className="dark:border-polar-800 flex flex-col items-center gap-y-12 rounded-[3rem] border-gray-100 bg-white shadow-sm dark:bg-transparent md:border md:py-12">
+        <div className="dark:border-polar-800 flex flex-col items-center gap-y-12 rounded-[3rem] border-gray-100 dark:bg-transparent md:border md:bg-white md:py-12 md:shadow-sm">
           <div className="flex flex-col items-center gap-y-4">
             <BoltOutlined
               className="text-blue-500 dark:text-blue-400"

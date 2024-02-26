@@ -151,29 +151,38 @@ export const AbbreviatedBrowserRender = ({
         }),
       }}
     >
-      {abbreviatedContent(article.body)}
+      {abbreviatedContent(article.body).body}
     </Markdown>
   )
 }
 
 export default BrowserRender
 
-export const abbreviatedContent = (body: string): string => {
+export type AbbreviatedContentResult = {
+  body: string
+  manualBoundary: boolean
+}
+
+// must be synced with Article.abbreviated_content on the backend
+export const abbreviatedContent = (body: string): AbbreviatedContentResult => {
   const res: string[] = []
   let l = 0
 
   // If the post has a <hr> within 1000 characters, use that as the limit.
   const manualBoundary = Math.min(
     ...[
-      body.indexOf('---'),
-      body.indexOf('<hr>'),
-      body.indexOf('<hr/>'),
-      body.indexOf('<hr />'),
+      body.indexOf('---\n'),
+      body.indexOf('<hr>\n'),
+      body.indexOf('<hr/>\n'),
+      body.indexOf('<hr />\n'),
     ].filter((d) => d >= 0),
   )
 
   if (manualBoundary >= 0 && manualBoundary < 1000) {
-    return body.substring(0, manualBoundary).trimEnd()
+    return {
+      body: body.substring(0, manualBoundary),
+      manualBoundary: true,
+    }
   }
 
   const parts = body.substring(0, 1000).replaceAll('\r\n', '\n').split('\n\n')
@@ -187,5 +196,5 @@ export const abbreviatedContent = (body: string): string => {
     res.push(p)
   }
 
-  return res.join('\n\n').trimEnd()
+  return { body: res.join('\n\n').trimEnd(), manualBoundary: false }
 }

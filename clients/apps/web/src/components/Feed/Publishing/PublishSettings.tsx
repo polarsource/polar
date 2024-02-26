@@ -141,7 +141,11 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={showArchiveModal}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    showArchiveModal()
+                  }}
                 >
                   Archive
                 </Button>

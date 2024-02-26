@@ -1,8 +1,16 @@
+import { InformationCircleIcon } from '@heroicons/react/20/solid'
 import { TextArea } from 'polarkit/components/ui/atoms'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { abbreviatedContent } from '../Feed/Markdown/BrowserRender'
 import { PostEditorContext } from '../Feed/PostEditor'
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from 'polarkit/components/ui/tooltip'
 
 interface MarkdownEditorProps {
   className?: string
@@ -72,7 +80,6 @@ export const MarkdownEditor = ({
     }
     const resizeObserver = new ResizeObserver((entries) => {
       for (const e of entries) {
-        console.log(e)
         setPreviewHeight(e.borderBoxSize[0].blockSize)
       }
     })
@@ -85,8 +92,6 @@ export const MarkdownEditor = ({
 
   const previewContent = abbreviatedContent(value)
   const showPreviewArea = previewContent !== value.trimEnd()
-
-  console.log(previewContent)
 
   return (
     <div className="relative">
@@ -111,19 +116,53 @@ export const MarkdownEditor = ({
 
       {showPreviewArea ? (
         <div
-          className="absolute -left-8 top-0 hidden xl:block"
+          className="absolute -left-8 top-0 hidden lg:block "
           style={{
             height: previewHeight,
           }}
         >
           <div className="dark:text-polar-500 flex h-full w-8 flex-col items-center text-gray-300">
-            <div className="dark:bg-polar-500 w-[2px] flex-1 bg-gray-300"></div>
-            <div>
-              <div className="dark:bg-polar-900 -rotate-90 bg-white px-2 text-xs">
-                Preview
+            <div className="dark:bg-polar-500 w-[1px] flex-1 bg-gray-300"></div>
+            <div className="hidden xl:block">
+              <div className="dark:bg-polar-900 py-2 text-xs">
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="flex cursor-pointer flex-col items-center font-mono">
+                        <InformationCircleIcon className="h-4 w-4" />
+
+                        {previewHeight > 180 ? (
+                          <>
+                            <span className="mt-2">P</span>
+                            <span>R</span>
+                            <span>E</span>
+                            <span>V</span>
+                            <span>I</span>
+                            <span>E</span>
+                            <span>W</span>
+                          </>
+                        ) : null}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      className="flex max-w-[300px] flex-col gap-2"
+                    >
+                      <p>
+                        This section will be used as the post preview in list
+                        views, and as the free introduction in premium posts.
+                      </p>
+                      <p>
+                        You can customize the section that will be used as the
+                        preview by adding a <code>&lt;hr&gt;</code>-tag where
+                        you want the section to end.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
-            <div className="dark:bg-polar-500 w-[2px] flex-1 bg-gray-300"></div>
+            <div className="dark:bg-polar-500 w-[1px] flex-1 bg-gray-300"></div>
           </div>
         </div>
       ) : null}

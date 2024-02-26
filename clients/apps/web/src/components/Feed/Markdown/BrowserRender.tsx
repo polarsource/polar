@@ -161,6 +161,7 @@ export default BrowserRender
 export type AbbreviatedContentResult = {
   body: string
   manualBoundary: boolean
+  matchedBoundary?: string
 }
 
 // must be synced with Article.abbreviated_content on the backend
@@ -169,19 +170,27 @@ export const abbreviatedContent = (body: string): AbbreviatedContentResult => {
   let l = 0
 
   // If the post has a <hr> within 1000 characters, use that as the limit.
-  const manualBoundary = Math.min(
-    ...[
-      body.indexOf('---\n'),
-      body.indexOf('<hr>\n'),
-      body.indexOf('<hr/>\n'),
-      body.indexOf('<hr />\n'),
-    ].filter((d) => d >= 0),
-  )
 
-  if (manualBoundary >= 0 && manualBoundary < 1000) {
+  const boundaries = ['---\n', '<hr>\n', '<hr/>\n', '<hr />\n']
+
+  let firstAt: number | undefined = undefined
+  let firstBoundary: string | undefined = undefined
+
+  for (const b of boundaries) {
+    const idx = body.indexOf(b)
+    if (idx >= 0) {
+      if (firstAt === undefined || idx < firstAt) {
+        firstAt = idx
+        firstBoundary = b
+      }
+    }
+  }
+
+  if (firstAt !== undefined && firstBoundary !== undefined && firstAt < 1000) {
     return {
-      body: body.substring(0, manualBoundary),
+      body: body.substring(0, firstAt + firstBoundary.length),
       manualBoundary: true,
+      matchedBoundary: firstBoundary,
     }
   }
 

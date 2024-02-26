@@ -1,16 +1,14 @@
-import { ArrowLeftIcon, InformationCircleIcon } from '@heroicons/react/20/solid'
 import { TextArea } from 'polarkit/components/ui/atoms'
-import { useContext, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { PostEditorContext } from '../Feed/PostEditor'
-import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from 'polarkit/components/ui/tooltip'
+import { useContext, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { abbreviatedContent } from '../Feed/Markdown/BrowserRender'
+import { PostEditorContext } from '../Feed/PostEditor'
 
 interface MarkdownEditorProps {
   className?: string
@@ -117,76 +115,60 @@ export const MarkdownEditor = ({
       {showPreviewArea ? (
         <>
           <div
-            className="absolute -left-8 top-0 hidden  "
+            className="pointer-events-none absolute -left-[30px] z-0 flex select-none items-center justify-center border-t-[2px] border-dashed "
             style={{
-              height: previewHeight,
+              top: previewContent.manualBoundary
+                ? previewHeight - 14
+                : previewHeight + 6,
+              width: previewContent.manualBoundary ? 30 - 20 : 30 - 2,
             }}
-          >
-            <div className="dark:text-polar-500 flex h-full w-8 flex-col items-center text-gray-400">
-              <div className="dark:bg-polar-500 w-[1px] flex-1 bg-gray-300"></div>
-              <div className="hidden xl:block">
-                <div className="dark:bg-polar-900 py-2 text-xs">
-                  <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <div className="flex cursor-pointer flex-col items-center font-mono">
-                          <InformationCircleIcon className="h-4 w-4" />
+          ></div>
 
-                          {previewHeight > 180 ? (
-                            <>
-                              <span className="mt-2">P</span>
-                              <span>R</span>
-                              <span>E</span>
-                              <span>V</span>
-                              <span>I</span>
-                              <span>E</span>
-                              <span>W</span>
-                            </>
-                          ) : null}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="right"
-                        className="flex max-w-[300px] flex-col gap-2"
-                      >
-                        <p>
-                          This section will be used as the post preview in list
-                          views, and as the free introduction in premium posts.
-                        </p>
-                        <p>
-                          You can customize the section that will be used as the
-                          preview by adding a <code>&lt;hr&gt;</code>-tag where
-                          you want the section to end.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
-              <div className="dark:bg-polar-500 w-[1px] flex-1 bg-gray-300"></div>
-            </div>
-          </div>
           <div
-            className="absolute -left-8 flex select-none items-center text-center text-xs text-gray-400"
+            className="pointer-events-none absolute -right-[30px] z-0 flex select-none items-center justify-center border-t-[2px] border-dashed "
             style={{
               top: previewContent.manualBoundary
-                ? previewHeight + 6
-                : previewHeight,
-              color: previewContent.manualBoundary ? 'green' : 'red',
+                ? previewHeight - 14
+                : previewHeight + 6,
+              left: previewContent.manualBoundary
+                ? (previewContent.matchedBoundary ?? '').length * 8 + 20
+                : 0,
             }}
-          >
-            <ArrowRightIcon className="h-4 w-4" />
-          </div>
+          ></div>
+
           <div
-            className="absolute -right-8  text-gray-400"
+            className="absolute"
             style={{
-              top: previewContent.manualBoundary
-                ? previewHeight + 34
-                : previewHeight,
-              color: previewContent.manualBoundary ? 'green' : 'red',
+              top:
+                (previewContent.manualBoundary
+                  ? previewHeight - 14
+                  : previewHeight + 6) - 6,
+              left: (editorScrollWidth - 240) / 2,
             }}
           >
-            <ArrowLeftIcon className="h-4 w-4" />
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="dark:bg-polar-800 w-[240px] select-none rounded-b-md bg-gray-100 px-4 text-center text-xs text-gray-400">
+                    {'PREVIEW ABOVE'}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="bottom"
+                  className="flex max-w-[300px] flex-col gap-2"
+                >
+                  <p>
+                    This section will be used as the post preview in list views,
+                    and as the free introduction in premium posts.
+                  </p>
+                  <p>
+                    You can customize the section that will be used as the
+                    preview by adding a <code>&lt;hr&gt;</code>-tag where you
+                    want the section to end.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </>
       ) : null}
@@ -194,22 +176,19 @@ export const MarkdownEditor = ({
       {/* Render the abbreviated article contents in a similarly styled div as the textarea.
         This is used to calculate the "height" of the input-content that will be used in previews.
       */}
-      <div className="w-full overflow-x-hidden">
+      <div>
         <div
           className={twMerge(
-            'absolute left-[200000px] top-0 z-0 overflow-hidden whitespace-pre-wrap rounded-3xl !bg-blue-200 p-6 text-lg',
+            'absolute left-0 top-0 z-0 overflow-hidden whitespace-pre-wrap rounded-3xl p-6 text-lg',
             className,
+            'pointer-events-none select-none bg-transparent text-transparent',
           )}
           style={{
             width: editorScrollWidth,
           }}
           ref={setPreviewRef}
         >
-<<<<<<< HEAD
-          {previewContent}
-=======
           {previewContent.body}
->>>>>>> 7738a7960 (lol)
         </div>
       </div>
     </div>

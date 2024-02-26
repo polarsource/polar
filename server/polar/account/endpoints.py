@@ -114,7 +114,7 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
     created = await account_service.create_account(
-        session, admin_id=auth.user.id, account_create=account_create
+        session, admin=auth.user, account_create=account_create
     )
 
     return Account.from_db(created)

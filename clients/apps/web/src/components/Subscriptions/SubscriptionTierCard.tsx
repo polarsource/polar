@@ -95,7 +95,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     },
     small: {
       name: 'text-md',
-      card: 'p-6',
+      card: 'p-6 min-h-[360px]',
       priceLabel: 'text-4xl !font-[200]',
       description: 'text-sm',
       footer: 'mt-none',
@@ -107,7 +107,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       ref={containerRef}
       id={subscriptionTier.name}
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-800 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm',
+        'dark:bg-polar-900 dark:border-polar-800 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-none',
         variantStyles[variant]['card'],
         className,
       )}
@@ -141,7 +141,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             />
           </div>
         </div>
-        <div className="flex flex-col gap-y-8 text-gray-950 dark:text-[--var-dark-fg-color]">
+        <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
           <div className={variantStyles[variant]['priceLabel']}>
             {
               <>
@@ -190,9 +190,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         {subscriptionTier.benefits?.map((benefit) => (
           <div
             key={benefit.id}
-            className="flex flex-row items-start text-blue-500 dark:text-[--var-dark-fg-color]"
+            className="flex flex-row items-start text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
           >
-            <span className="flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-[--var-dark-border-color]">
+            <span className="flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-[--var-border-color] text-[14px] dark:bg-[--var-dark-border-color]">
               {resolveBenefitIcon(benefit, 'inherit')}
             </span>
             <span className="ml-3 text-sm leading-relaxed">

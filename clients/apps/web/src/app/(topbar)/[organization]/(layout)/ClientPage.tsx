@@ -50,7 +50,16 @@ const ClientPage = ({
       <div className="flex w-full flex-col gap-y-16">
         {(pinnedArticles.items?.length ?? 0) > 0 ? (
           <div className="flex flex-col gap-y-8">
-            <h2 className="text-lg">Pinned Posts</h2>
+            <div className="flex flex-row justify-between">
+              <h2 className="text-lg">Pinned Posts</h2>
+              <Link
+                className="text-sm text-blue-500 dark:text-blue-400"
+                href={`/${organization.name}/posts`}
+              >
+                <span>View all posts</span>
+                <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+              </Link>
+            </div>
             <div className="flex w-full flex-col gap-y-6">
               {pinnedArticles.items?.map((post) => (
                 <PostComponent article={post} key={post.id} highlightPinned />
@@ -58,22 +67,23 @@ const ClientPage = ({
             </div>
           </div>
         ) : null}
-        <div className="flex flex-col items-center gap-y-12 py-8">
+        <div className="dark:border-polar-800 flex flex-col items-center gap-y-12 rounded-[3rem] border-gray-100 bg-white shadow-sm dark:bg-transparent md:border md:py-12">
           <div className="flex flex-col items-center gap-y-4">
             <BoltOutlined
               className="text-blue-500 dark:text-blue-400"
               fontSize="large"
             />
-            <h2 className="text-2xl">Subscriptions</h2>
-            <p className="dark:text-polar-500 text-center text-gray-500">
+            <h2 className="text-xl">Subscriptions</h2>
+            <p className="dark:text-polar-500 text-center text-gray-500 [text-wrap:balance]">
               Support {organization.name} with a subscription & receive unique
               benefits in return
             </p>
           </div>
-          <div className="flex w-fit flex-row flex-wrap gap-8">
+          <div className="flex w-fit flex-row flex-wrap gap-6">
             {highlightedTiers.map((tier) => (
               <SubscriptionTierCard
-                className="w-full self-stretch md:w-[276px]"
+                variant="small"
+                className="w-full self-stretch md:w-[250px]"
                 key={tier.id}
                 subscriptionTier={tier}
               >

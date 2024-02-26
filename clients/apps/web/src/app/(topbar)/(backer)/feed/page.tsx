@@ -51,8 +51,8 @@ export default function Page() {
   const subscriptionsToRender = userSubscriptions.data?.items ?? []
 
   return (
-    <div className="relative flex h-full flex-col justify-center md:flex-row md:gap-x-24 md:pt-6">
-      <div className="flex w-full flex-col gap-y-8 pb-12 md:max-w-xl">
+    <div className="relative flex h-full flex-col md:flex-row md:gap-x-24 md:pt-6">
+      <div className="flex w-full flex-col gap-y-8 pb-12 md:w-full">
         <Feed />
       </div>
       <div className="flex h-full flex-col gap-y-12 self-stretch md:max-w-xs">

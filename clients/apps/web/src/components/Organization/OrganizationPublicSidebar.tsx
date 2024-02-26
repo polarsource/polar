@@ -52,7 +52,7 @@ export const OrganizationPublicSidebar = ({
   } = useModal()
 
   const subscribers = useMemo(
-    () => (subscriptionsSummary.items ?? []).slice(0, 4),
+    () => (subscriptionsSummary.items ?? []).slice(0, 9),
     [subscriptionsSummary],
   )
 
@@ -118,7 +118,7 @@ export const OrganizationPublicSidebar = ({
               ) : null}
               <div className="flex flex-row items-center gap-x-2">
                 <SocialLink href={`https://github.com/${organization.name}`}>
-                  <GitHubIcon width={12} height={12} />
+                  <GitHubIcon width={15} height={15} />
                 </SocialLink>
                 <SocialLink
                   href={`https://twitter.com/${organization.twitter_username}`}
@@ -161,7 +161,12 @@ export const OrganizationPublicSidebar = ({
             ) : null}
           </div>
           {subscribers.length > 0 && (
-            <div className="flex flex-col gap-y-4">
+            <div
+              className={twMerge(
+                'flex w-full flex-col gap-y-4',
+                isPostView ? 'hidden  md:flex' : 'flex',
+              )}
+            >
               <div className="flex flex-row items-start justify-between">
                 <h3 className="dark:text-polar-50 text-gray-950">
                   Subscribers
@@ -230,7 +235,7 @@ export const OrganizationPublicSidebar = ({
                   onClick={showRssModal}
                   variant="ghost"
                 >
-                  <span className="ml-2 text-sm">Generate Link</span>
+                  <span className="ml-2 text-xs">Generate Link</span>
                 </Button>
               </div>
               <p className="dark:text-polar-500 text-sm leading-normal text-gray-500">

@@ -46,7 +46,7 @@ export default async function Layout({
           {
             organizationName: params.organization,
             platform: Platforms.GITHUB,
-            limit: 4,
+            limit: 9,
           },
           cacheConfig,
         ),

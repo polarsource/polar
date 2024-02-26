@@ -1,7 +1,9 @@
+from collections.abc import Sequence
 from typing import cast
 
 import stripe as stripe_lib
 import structlog
+from sqlalchemy import select
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -85,7 +87,10 @@ class PayoutTransactionService(BaseTransactionService):
                 subscription=None,
             )
 
-        # TODO: get and mark the balance transactions paid by this payout
+        for balance_transaction in await self.get_unpaid_balance_transactions(
+            session, account
+        ):
+            transaction.paid_transactions.append(balance_transaction)
 
         session.add(transaction)
         await session.commit()
@@ -158,6 +163,17 @@ class PayoutTransactionService(BaseTransactionService):
         transaction.payout_id = stripe_payout.id
 
         return transaction
+
+    async def get_unpaid_balance_transactions(
+        self, session: AsyncSession, account: Account
+    ) -> Sequence[Transaction]:
+        statement = select(Transaction).where(
+            Transaction.type == TransactionType.balance,
+            Transaction.account_id == account.id,
+            Transaction.payout_transaction_id.is_(None),
+        )
+        result = await session.execute(statement)
+        return result.scalars().all()
 
 
 payout_transaction = PayoutTransactionService(Transaction)

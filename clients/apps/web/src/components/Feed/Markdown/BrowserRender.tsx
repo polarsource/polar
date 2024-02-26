@@ -151,9 +151,13 @@ export const AbbreviatedBrowserRender = ({
         }),
       }}
     >
-      {article.body.substring(0, 500).split('\n').slice(0, 4).join('\n')}
+      {abbreviatedContent(article.body)}
     </Markdown>
   )
 }
 
 export default BrowserRender
+
+export const abbreviatedContent = (body: string): string => {
+  return body.substring(0, 500).split('\n').slice(0, 4).join('\n').trimEnd()
+}

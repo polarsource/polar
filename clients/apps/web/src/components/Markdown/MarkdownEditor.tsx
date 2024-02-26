@@ -90,6 +90,9 @@ export const MarkdownEditor = ({
 
   const previewContent = abbreviatedContent(value)
   const showPreviewArea = previewContent.body !== value.trimEnd()
+  const previewRulerTop = previewContent.manualBoundary
+    ? previewHeight - 14
+    : previewHeight + 6
 
   return (
     <div className="relative">
@@ -117,9 +120,7 @@ export const MarkdownEditor = ({
           <div
             className="pointer-events-none absolute -left-[30px] z-0 flex select-none items-center justify-center border-t-[2px] border-dashed "
             style={{
-              top: previewContent.manualBoundary
-                ? previewHeight - 14
-                : previewHeight + 6,
+              top: previewRulerTop,
               width: previewContent.manualBoundary ? 30 - 20 : 30 - 2,
             }}
           ></div>
@@ -127,9 +128,7 @@ export const MarkdownEditor = ({
           <div
             className="pointer-events-none absolute -right-[30px] z-0 flex select-none items-center justify-center border-t-[2px] border-dashed "
             style={{
-              top: previewContent.manualBoundary
-                ? previewHeight - 14
-                : previewHeight + 6,
+              top: previewRulerTop,
               left: previewContent.manualBoundary
                 ? (previewContent.matchedBoundary ?? '').length * 8 + 20
                 : 0,
@@ -139,10 +138,7 @@ export const MarkdownEditor = ({
           <div
             className="absolute"
             style={{
-              top:
-                (previewContent.manualBoundary
-                  ? previewHeight - 14
-                  : previewHeight + 6) - 6,
+              top: previewRulerTop - 6,
               left: (editorScrollWidth - 240) / 2,
             }}
           >

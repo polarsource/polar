@@ -1,8 +1,6 @@
 import { getServerSideAPI } from '@/utils/api'
 import {
   ListResourceArticle,
-  ListResourceSubscriptionSummary,
-  ListResourceSubscriptionTier,
   Organization,
   Platforms,
   ResponseError,
@@ -100,52 +98,38 @@ export default async function Page({
   let organization: Organization | undefined
   let pinnedArticles: ListResourceArticle | undefined
   let articles: ListResourceArticle | undefined
-  let subscriptionTiers: ListResourceSubscriptionTier | undefined
-  let subscriptionSummary: ListResourceSubscriptionSummary | undefined
 
   try {
-    const [
-      loadOrganization,
-      loadPinnedArticles,
-      loadArticles,
-      loadSubscriptionTiers,
-    ] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-      api.articles.search(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          isPinned: true,
-        },
-        cacheConfig,
-      ),
-      api.articles.search(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          isPinned: false,
-        },
-        cacheConfig,
-      ),
-      api.subscriptions.searchSubscriptionTiers(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-    ])
+    const [loadOrganization, loadPinnedArticles, loadArticles] =
+      await Promise.all([
+        api.organizations.lookup(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+          },
+          cacheConfig,
+        ),
+        api.articles.search(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+            isPinned: true,
+          },
+          cacheConfig,
+        ),
+        api.articles.search(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+            isPinned: false,
+          },
+          cacheConfig,
+        ),
+      ])
 
     organization = loadOrganization
     pinnedArticles = loadPinnedArticles
     articles = loadArticles
-    subscriptionTiers = loadSubscriptionTiers
   } catch (e) {
     notFound()
   }
@@ -155,7 +139,6 @@ export default async function Page({
       organization={organization}
       pinnedArticles={pinnedArticles}
       articles={articles}
-      subscriptionTiers={subscriptionTiers}
     />
   )
 }

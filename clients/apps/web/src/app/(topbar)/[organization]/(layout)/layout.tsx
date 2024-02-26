@@ -2,7 +2,11 @@ import EmptyLayout from '@/components/Layout/EmptyLayout'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api'
-import { Organization, Platforms, UserRead } from '@polar-sh/sdk'
+import {
+  ListResourceSubscriptionSummary,
+  Organization,
+  Platforms,
+} from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
@@ -22,25 +26,34 @@ export default async function Layout({
   const api = getServerSideAPI()
 
   let organization: Organization | undefined
-  let authenticatedUser: UserRead | undefined
+  let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
 
   try {
-    const [loadOrganization, loadAuthenticatedUser] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-      // Handle unauthenticated
-      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
-        return undefined
-      }),
-    ])
+    const [loadOrganization, loadAuthenticatedUser, loadSubscriptionsSummary] =
+      await Promise.all([
+        api.organizations.lookup(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+          },
+          cacheConfig,
+        ),
+        // Handle unauthenticated
+        api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+          return undefined
+        }),
+        api.subscriptions.searchSubscriptionsSummary(
+          {
+            organizationName: params.organization,
+            platform: Platforms.GITHUB,
+            limit: 4,
+          },
+          cacheConfig,
+        ),
+      ])
 
     organization = loadOrganization
-    authenticatedUser = loadAuthenticatedUser
+    subscriptionsSummary = loadSubscriptionsSummary
   } catch (e) {
     notFound()
   }
@@ -55,7 +68,10 @@ export default async function Layout({
         <div className="flex shrink-0 flex-col">
           <div className="mx-auto mt-4 flex w-full max-w-7xl shrink-0 flex-col px-4 md:space-y-8">
             <div className="flex w-full shrink-0 flex-col gap-8 md:min-h-screen md:flex-row md:gap-24">
-              <OrganizationPublicSidebar organization={organization} />
+              <OrganizationPublicSidebar
+                subscriptionsSummary={subscriptionsSummary}
+                organization={organization}
+              />
               <div className="flex w-full flex-row items-center gap-2 pb-4 md:hidden">
                 <OrganizationPublicPageNav
                   className="w-full flex-row"

@@ -43,7 +43,7 @@ export const OrganizationPublicPageNav = ({
       return 'overview'
     }
     if (pathParts.length >= 3 && pathParts[2] === 'posts') {
-      return 'overview'
+      return 'posts'
     }
     if (pathParts.length >= 3 && pathParts[2] === 'subscriptions') {
       return 'subscriptions'
@@ -91,6 +91,7 @@ export const OrganizationPublicPageNav = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="overview">Overview</SelectItem>
+          <SelectItem value="posts">Posts</SelectItem>
           <SelectItem value="subscriptions">Subscriptions</SelectItem>
           <SelectItem value="issues">Issues</SelectItem>
           <SelectItem value="repositories">Repositories</SelectItem>
@@ -112,6 +113,16 @@ export const OrganizationPublicPageNav = ({
             size="small"
           >
             Overview
+          </TabsTrigger>
+        </Link>
+
+        <Link href={`/${organization.name}/posts`}>
+          <TabsTrigger
+            className={tabsTriggerClassName}
+            value="posts"
+            size="small"
+          >
+            Posts
           </TabsTrigger>
         </Link>
 

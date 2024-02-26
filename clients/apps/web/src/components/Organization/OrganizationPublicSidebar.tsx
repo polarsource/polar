@@ -1,32 +1,67 @@
 'use client'
 
+import { useAuth } from '@/hooks/auth'
+import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
-  BusinessOutlined,
-  EmailOutlined,
-  LanguageOutlined,
-  ShortTextOutlined,
-} from '@mui/icons-material'
-import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
+  CreatePersonalAccessTokenResponse,
+  ListResourceSubscriptionSummary,
+  Organization,
+  SubscriptionTierType,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Avatar, Button } from 'polarkit/components/ui/atoms'
+import { api } from 'polarkit'
+import {
+  Avatar,
+  Button,
+  CopyToClipboardInput,
+} from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations, useSubscriptionTiers } from 'polarkit/hooks'
-import { useMemo } from 'react'
+import {
+  Fragment,
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
-import { externalURL, prettyURL } from '.'
+import { externalURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
+import { Modal, ModalHeader } from '../Modal'
+import { useModal } from '../Modal/useModal'
+import Spinner from '../Shared/Spinner'
 import { FreeTierSubscribe } from './FreeTierSubscribe'
 
 interface OrganizationPublicSidebarProps {
   organization: Organization
+  subscriptionsSummary: ListResourceSubscriptionSummary
 }
 
 export const OrganizationPublicSidebar = ({
   organization,
+  subscriptionsSummary,
 }: OrganizationPublicSidebarProps) => {
   const pathname = usePathname()
   const { data: { items: subscriptionTiers } = { items: [] } } =
     useSubscriptionTiers(organization.name, 100)
+
+  const {
+    isShown: rssModalIsShown,
+    hide: hideRssModal,
+    show: showRssModal,
+  } = useModal()
+
+  const subscribers = useMemo(
+    () => (subscriptionsSummary.items ?? []).slice(0, 4),
+    [subscriptionsSummary],
+  )
+
+  const subscribersCount = subscriptionsSummary.pagination.total_count
+
+  const subscribersHiddenCount = useMemo(
+    () => subscribersCount - subscribers.length,
+    [subscribers, subscribersCount],
+  )
 
   const freeSubscriptionTier = useMemo(
     () =>
@@ -51,7 +86,7 @@ export const OrganizationPublicSidebar = ({
         <div className="flex flex-col items-start gap-y-6">
           <div className="flex w-full flex-row items-center gap-x-2 gap-y-2 md:flex-col md:items-start md:gap-x-0">
             <Avatar
-              className="h-16 w-16 md:mb-6 md:h-60 md:w-60"
+              className="h-16 w-16 md:mb-6 md:h-32 md:w-32"
               name={organization.name}
               avatar_url={organization.avatar_url}
               height={240}
@@ -75,11 +110,42 @@ export const OrganizationPublicSidebar = ({
               isPostView ? 'hidden  md:flex' : 'flex',
             )}
           >
-            {organization.bio ? (
-              <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
-                {organization.bio}
-              </p>
-            ) : null}
+            <div className="flex flex-col gap-y-6">
+              {organization.bio ? (
+                <p className="dark:text-polar-500 text-start text-sm leading-relaxed text-gray-500">
+                  {organization.bio}
+                </p>
+              ) : null}
+              <div className="flex flex-row items-center gap-x-2">
+                <SocialLink href={`https://github.com/${organization.name}`}>
+                  <GitHubIcon width={12} height={12} />
+                </SocialLink>
+                <SocialLink
+                  href={`https://twitter.com/${organization.twitter_username}`}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 300 300.251"
+                    version="1.1"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </SocialLink>
+                {organization.blog && (
+                  <SocialLink href={externalURL(organization.blog)}>
+                    <LanguageOutlined fontSize="inherit" />
+                  </SocialLink>
+                )}
+                <SocialLink href={`mailto:${organization.email}`}>
+                  <MailOutline fontSize="inherit" />
+                </SocialLink>
+              </div>
+            </div>
             {shouldRenderDashboardButton ? (
               <Link
                 className="w-full"
@@ -94,80 +160,182 @@ export const OrganizationPublicSidebar = ({
               />
             ) : null}
           </div>
-          <div
-            className={twMerge(
-              'dark:text-polar-500 flex flex-col gap-y-2 text-sm',
-              isPostView ? 'hidden md:flex' : '',
-            )}
-          >
-            {organization.company && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <BusinessOutlined fontSize="inherit" />
-                </span>
-                <span>{organization.company}</span>
+          {subscribers.length > 0 && (
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-start justify-between">
+                <h3 className="dark:text-polar-50 text-gray-950">
+                  Subscribers
+                </h3>
+                <h3 className="dark:text-polar-500 text-sm text-gray-500">
+                  {subscribersCount}
+                </h3>
               </div>
-            )}
-            <div className="flex flex-row items-center gap-x-3">
-              <span className="text-[17px]">
-                <GitHubIcon width={16} height={16} />
-              </span>
-              <a
-                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                href={`https://github.com/${organization.name}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {organization.name}
-              </a>
+              <div className="flex flex-row flex-wrap gap-3">
+                {subscribers.map(({ user, organization }, idx) => (
+                  <Fragment key={idx}>
+                    {organization && (
+                      <Link
+                        key={organization.name}
+                        href={`https://github.com/${organization.name}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Avatar
+                          className="h-10 w-10"
+                          name={organization.name}
+                          avatar_url={organization.avatar_url}
+                        />
+                      </Link>
+                    )}
+                    {!organization && (
+                      <>
+                        {user.github_username ? (
+                          <Link
+                            key={user.github_username}
+                            href={`https://github.com/${user.github_username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Avatar
+                              className="h-10 w-10"
+                              name={user.github_username}
+                              avatar_url={user.avatar_url}
+                            />
+                          </Link>
+                        ) : (
+                          <Avatar
+                            className="h-10 w-10"
+                            name={user.public_name}
+                            avatar_url={user.avatar_url}
+                          />
+                        )}
+                      </>
+                    )}
+                  </Fragment>
+                ))}
+                {subscribersHiddenCount > 0 && (
+                  <div className="dark:border-polar-700 dark:bg-polar-900 dark:text-polar-400 flex h-10 w-10 flex-col items-center justify-center rounded-full bg-blue-50 text-xs font-medium text-blue-400 dark:border-2">
+                    +{subscribersHiddenCount}
+                  </div>
+                )}
+              </div>
             </div>
-            {organization.blog && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <LanguageOutlined fontSize="inherit" />
-                </span>
-                <a
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  href={externalURL(organization.blog)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+          )}
+          <div className="flex flex-col justify-start gap-y-6">
+            <div className="hidden flex-col gap-y-2 md:flex">
+              <div className="flex flex-row items-center justify-between">
+                <h3>RSS Feed</h3>
+                <Button
+                  className="flex flex-row self-start p-0 text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+                  onClick={showRssModal}
+                  variant="ghost"
                 >
-                  {prettyURL(organization.blog)}
-                </a>
+                  <span className="ml-2 text-sm">Generate Link</span>
+                </Button>
               </div>
-            )}
-            {organization.email && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <EmailOutlined fontSize="inherit" />
-                </span>
-                <a
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  href={`mailto:${organization.email}`}
-                  rel="noopener noreferrer"
-                >
-                  {organization.email}
-                </a>
-              </div>
-            )}
-            {organization.twitter_username && (
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="text-[17px]">
-                  <ShortTextOutlined fontSize="inherit" />
-                </span>
-                <a
-                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  href={`https://twitter.com/${organization.twitter_username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {organization.twitter_username}
-                </a>
-              </div>
-            )}
+              <p className="dark:text-polar-500 text-sm leading-normal text-gray-500">
+                Consume posts from {organization.name} in your favorite RSS
+                reader
+              </p>
+            </div>
           </div>
         </div>
       </>
+      <Modal
+        isShown={rssModalIsShown}
+        hide={hideRssModal}
+        modalContent={
+          <RssModal hide={hideRssModal} organization={organization} />
+        }
+      />
     </div>
+  )
+}
+
+const SocialLink = (props: PropsWithChildren<{ href?: string }>) => {
+  if (!props.href) return null
+
+  return (
+    <Link
+      target="_blank"
+      rel="noopener nofollow"
+      className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:text-polar-200 flex h-8 w-8 flex-col items-center justify-center rounded-full bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100"
+      href={props.href}
+    >
+      {props.children}
+    </Link>
+  )
+}
+
+const RssModal = ({
+  hide,
+  organization,
+}: {
+  hide: () => void
+  organization: Organization
+}) => {
+  const { currentUser } = useAuth()
+  const [token, setToken] = useState<string>()
+  const auth = token ? `?auth=${token}` : ''
+  const url = `https://polar.sh/${organization.name}/rss${auth}`
+
+  useEffect(() => {
+    if (!currentUser) {
+      return
+    }
+
+    let active = true
+
+    api.personalAccessToken
+      .create({
+        createPersonalAccessToken: {
+          comment: `RSS for ${organization.name}`,
+          scopes: ['articles:read'],
+        },
+      })
+      .then((res: CreatePersonalAccessTokenResponse) => {
+        if (active) {
+          setToken(res.token)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [currentUser])
+
+  return (
+    <>
+      <ModalHeader className="px-8 py-4" hide={hide}>
+        <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+          Subscribe to {organization.pretty_name || organization.name} via RSS
+        </h3>
+      </ModalHeader>
+      <div className="p-8">
+        <div className="flex flex-col gap-y-4">
+          <div className="flex flex-col gap-y-2">
+            <span className="font-medium">
+              {currentUser ? 'Your feed URL' : 'Feed URL'}
+            </span>
+            {currentUser ? (
+              <p className="text-polar-500 dark:text-polar-500 text-sm">
+                This URL is personal, keep it safe.
+              </p>
+            ) : null}
+          </div>
+
+          {url ? (
+            <div className="flex items-center gap-2">
+              <CopyToClipboardInput value={url} id={'rssurl'} />
+              <Link href={`feed:${url}`}>
+                <Button asChild>Open</Button>
+              </Link>
+            </div>
+          ) : (
+            <Spinner />
+          )}
+        </div>
+      </div>
+    </>
   )
 }

@@ -59,10 +59,14 @@ const SubscriptionsMetric: React.FC<SubscriptionsMetricProps> = ({
       {(dataDate || previousData) && (
         <CardFooter>
           <div className="dark:text-polar-500 text-gray-400">
-            {previousData !== undefined &&
-              getEvolutionPercentage(data, previousData)}
-            {previousData === undefined && dataDate && (
-              <FormattedDateTime datetime={dataDate} />
+            {previousData !== undefined ? (
+              getEvolutionPercentage(data, previousData)
+            ) : (
+              <>
+                {previousData === undefined && dataDate ? (
+                  <FormattedDateTime datetime={dataDate} resolution="month" />
+                ) : null}
+              </>
             )}
           </div>
         </CardFooter>

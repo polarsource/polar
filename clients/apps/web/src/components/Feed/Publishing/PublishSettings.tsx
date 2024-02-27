@@ -1,7 +1,9 @@
 'use client'
 
+import ImageUpload from '@/components/Form/ImageUpload'
 import { useModal } from '@/components/Modal/useModal'
 import { ConfirmModal } from '@/components/Shared/ConfirmModal'
+import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
@@ -14,9 +16,11 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { Textarea } from 'polarkit/components/ui/textarea'
 import { useDeleteArticle, useUpdateArticle } from 'polarkit/hooks'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
+import PreviewText from '../Markdown/preview'
 import { AudiencePicker } from './AudiencePicker'
 import { PublishShareModal } from './PublishShareModal'
 import { PublishSummary, isPublished } from './PublishSummary'
@@ -34,6 +38,8 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
       published_at: article.published_at,
       slug: article.slug,
       is_pinned: article.is_pinned,
+      og_description: article.og_description,
+      og_image_url: article.og_image_url,
     },
   })
   const { handleSubmit } = form
@@ -86,6 +92,9 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
         published_at: publishedAt ?? new Date().toISOString(),
 
         visibility: ArticleVisibilityEnum.PUBLIC,
+
+        set_og_description: true,
+        set_og_image_url: true,
       },
     })
 
@@ -125,6 +134,24 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
                 <FormSlug article={article} />
 
                 <FormIsPinned />
+              </>
+            </ShadowBoxOnMd>
+
+            <ShadowBoxOnMd className="flex flex-col gap-y-8">
+              <>
+                <div className="flex flex-col gap-y-2">
+                  <span className="font-medium">Social metadata</span>
+                  <p className="text-polar-500 dark:text-polar-500 text-sm">
+                    Customize the image and description used when sharing this
+                    post on other platforms.
+                  </p>
+                </div>
+
+                <div className="flex w-full items-stretch gap-x-4">
+                  <OgImage article={article} />
+
+                  <OgDescription article={article} />
+                </div>
               </>
             </ShadowBoxOnMd>
 
@@ -343,6 +370,90 @@ const FormIsPinned = () => {
               <FormLabel className="text-sm font-normal">
                 Pin this post to the top of your profile
               </FormLabel>
+            </div>
+
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
+  )
+}
+
+const OgDescription = ({ article }: { article: Article }) => {
+  const { control } = useFormContext<ArticleUpdate>()
+
+  const [defaultDescription, setDefaultDescription] = useState<
+    string | undefined
+  >()
+
+  const [previewTextEl, setPreviewTextEl] = useState<HTMLDivElement | null>(
+    null,
+  )
+
+  useEffect(() => {
+    setDefaultDescription(previewTextEl?.innerText ?? undefined)
+  }, [article, previewTextEl])
+
+  return (
+    <>
+      <div className="hidden" ref={setPreviewTextEl}>
+        <PreviewText article={article} />
+      </div>
+
+      <FormField
+        control={control}
+        name="og_description"
+        render={({ field }) => {
+          return (
+            <FormItem className="flex flex-1 flex-col">
+              <div className="flex flex-col gap-2">
+                <FormLabel>Description</FormLabel>
+              </div>
+
+              <div className="flex flex-1 flex-col ">
+                <FormControl>
+                  <Textarea
+                    className="flex-1"
+                    onChange={field.onChange}
+                    defaultValue={field.value}
+                    placeholder={defaultDescription}
+                  />
+                </FormControl>
+              </div>
+
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </>
+  )
+}
+
+const OgImage = ({ article }: { article: Article }) => {
+  const { control } = useFormContext<ArticleUpdate>()
+
+  const defaultImage = firstImageUrlFromMarkdown(article.body)
+
+  return (
+    <FormField
+      control={control}
+      name="og_image_url"
+      render={({ field }) => {
+        return (
+          <FormItem>
+            <div className="flex flex-col gap-2">
+              <FormLabel>Image</FormLabel>
+            </div>
+
+            <div className="flex flex-row items-center gap-2">
+              <FormControl>
+                <ImageUpload
+                  defaultValue={field.value ?? defaultImage}
+                  onUploaded={field.onChange}
+                />
+              </FormControl>
             </div>
 
             <FormMessage />

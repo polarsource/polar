@@ -50,36 +50,47 @@ export async function generateMetadata(
     notFound()
   }
 
-  // First: I'm sorry.
-  // NextJS does not allow static imports of react-dom/server, so we're importing it dynamically here instead.
-  //
-  // We're using ReactDOMServer to render <PreviewText> (the output is a plain string), so that we can use it as the
-  // description.
-  //
-  // This is pretty fast so it's nothing that I'm worried about.
-  const ReactDOMServer = (await import('react-dom/server')).default
+  // og:description or fallback
+  let description = UnescapeText(article.og_description ?? '')
+  if (!description) {
+    // First: I'm sorry.
+    // NextJS does not allow static imports of react-dom/server, so we're importing it dynamically here instead.
+    //
+    // We're using ReactDOMServer to render <PreviewText> (the output is a plain string), so that we can use it as the
+    // description.
+    //
+    // This is pretty fast so it's nothing that I'm worried about.
+    const ReactDOMServer = (await import('react-dom/server')).default
 
-  const preview = UnescapeText(
-    ReactDOMServer.renderToStaticMarkup(<PreviewText article={article} />),
-  )
+    description = UnescapeText(
+      ReactDOMServer.renderToStaticMarkup(<PreviewText article={article} />),
+    )
+  }
 
-  const image = firstImageUrlFromMarkdown(article.body)
+  // og:image or fallback
+  let imageUrl = article.og_image_url
+  if (!imageUrl) {
+    imageUrl = firstImageUrlFromMarkdown(article.body)
+  }
+  if (!imageUrl) {
+    imageUrl = `https://polar.sh/og?articleId=${article.id}`
+  }
 
   return {
     title: {
       absolute: `${article.title} by ${article.byline.name}`,
     },
 
-    description: preview,
+    description: description,
 
     openGraph: {
       title: `${article.title}`,
-      description: `${preview}`,
+      description: `${description}`,
       siteName: 'Polar',
 
       images: [
         {
-          url: image ?? `https://polar.sh/og?articleId=${article.id}`,
+          url: imageUrl,
           width: 1200,
           height: 630,
         },
@@ -88,7 +99,7 @@ export async function generateMetadata(
     twitter: {
       images: [
         {
-          url: image ?? `https://polar.sh/og?articleId=${article.id}`,
+          url: imageUrl,
           width: 1200,
           height: 630,
           alt: `${article.title}`,
@@ -96,7 +107,7 @@ export async function generateMetadata(
       ],
       card: 'summary_large_image',
       title: `${article.title}`,
-      description: `${preview}`,
+      description: `${description}`,
     },
 
     alternates: {

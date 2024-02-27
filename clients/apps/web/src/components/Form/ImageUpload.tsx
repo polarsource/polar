@@ -141,7 +141,7 @@ const ImageUpload = ({
               style={{
                 maxWidth: width,
                 maxHeight: height,
-                width: '100%',
+                width: width && height ? '100%' : undefined,
                 aspectRatio: `${width} / ${height}`,
               }}
             >

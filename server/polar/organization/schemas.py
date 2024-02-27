@@ -42,6 +42,8 @@ class Organization(Schema):
         description="Whether the organization has the Polar GitHub App installed for repositories or not."
     )
 
+    custom_domain: str | None = None
+
     # Team fields
     billing_email: str | None = Field(
         None,
@@ -83,6 +85,7 @@ class Organization(Schema):
             default_upfront_split_to_contributors=o.default_upfront_split_to_contributors,
             account_id=o.account_id,
             has_app_installed=o.installation_id is not None,
+            custom_domain=o.custom_domain,
             #
             billing_email=o.billing_email if include_member_fields else None,
             #

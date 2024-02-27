@@ -131,13 +131,21 @@ async def search(
 async def lookup(
     platform: Platforms | None = None,
     organization_name: str | None = None,
+    custom_domain: str | None = None,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(WebOrAnonymous),
 ) -> OrganizationSchema:
     # Search by platform and organization name.
-    # Currently the only way to search
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
+        if org:
+            return await to_schema(session, auth.subject, org)
+
+    # Search by custom domain
+    if custom_domain:
+        org = await organization.get_by_custom_domain(
+            session, custom_domain=custom_domain
+        )
         if org:
             return await to_schema(session, auth.subject, org)
 

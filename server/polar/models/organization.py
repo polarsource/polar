@@ -141,6 +141,10 @@ class Organization(RecordModel):
         default=None,
     )
 
+    custom_domain: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None, unique=True
+    )
+
     #
     # Fields synced from GitHub
     #

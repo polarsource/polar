@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks/auth'
+import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
   CreatePersonalAccessTokenResponse,
@@ -144,6 +145,12 @@ export const OrganizationPublicSidebar = ({
                 <SocialLink href={`mailto:${organization.email}`}>
                   <MailOutline fontSize="inherit" />
                 </SocialLink>
+                <Button
+                  className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:text-polar-200 flex h-8 w-8 flex-col items-center justify-center rounded-full border-none bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100"
+                  onClick={showRssModal}
+                >
+                  <RssIcon className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
             {shouldRenderDashboardButton ? (
@@ -226,24 +233,6 @@ export const OrganizationPublicSidebar = ({
               </div>
             </div>
           )}
-          <div className="flex flex-col justify-start gap-y-6">
-            <div className="hidden flex-col gap-y-2 md:flex">
-              <div className="flex flex-row items-center justify-between">
-                <h3>RSS Feed</h3>
-                <Button
-                  className="flex flex-row self-start p-0 text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                  onClick={showRssModal}
-                  variant="ghost"
-                >
-                  <span className="ml-2 text-xs">Generate Link</span>
-                </Button>
-              </div>
-              <p className="dark:text-polar-500 text-sm leading-normal text-gray-500">
-                Consume posts from {organization.name} in your favorite RSS
-                reader
-              </p>
-            </div>
-          </div>
         </div>
       </>
       <Modal

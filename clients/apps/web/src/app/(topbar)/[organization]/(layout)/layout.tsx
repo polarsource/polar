@@ -29,28 +29,23 @@ export default async function Layout({
   let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
 
   try {
-    const [loadOrganization, loadAuthenticatedUser, loadSubscriptionsSummary] =
-      await Promise.all([
-        api.organizations.lookup(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-          },
-          cacheConfig,
-        ),
-        // Handle unauthenticated
-        api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
-          return undefined
-        }),
-        api.subscriptions.searchSubscriptionsSummary(
-          {
-            organizationName: params.organization,
-            platform: Platforms.GITHUB,
-            limit: 9,
-          },
-          cacheConfig,
-        ),
-      ])
+    const [loadOrganization, loadSubscriptionsSummary] = await Promise.all([
+      api.organizations.lookup(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.subscriptions.searchSubscriptionsSummary(
+        {
+          organizationName: params.organization,
+          platform: Platforms.GITHUB,
+          limit: 9,
+        },
+        cacheConfig,
+      ),
+    ])
 
     organization = loadOrganization
     subscriptionsSummary = loadSubscriptionsSummary
@@ -66,7 +61,7 @@ export default async function Layout({
     <EmptyLayout>
       <div className="flex min-h-screen flex-col justify-between">
         <div className="flex shrink-0 flex-col">
-          <div className="mx-auto mt-4 flex w-full max-w-7xl shrink-0 flex-col px-4 md:space-y-8">
+          <div className="mx-auto mt-4 flex w-full max-w-7xl shrink-0 flex-col px-2 md:space-y-8">
             <div className="flex w-full shrink-0 flex-col gap-8 md:min-h-screen md:flex-row md:gap-24">
               <OrganizationPublicSidebar
                 subscriptionsSummary={subscriptionsSummary}

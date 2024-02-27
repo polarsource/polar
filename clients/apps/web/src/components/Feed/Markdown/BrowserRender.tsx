@@ -151,7 +151,10 @@ export const AbbreviatedBrowserRender = ({
         }),
       }}
     >
-      {abbreviatedContent(article.body).body}
+      {
+        abbreviatedContent({ body: article.body, includeBoundaryInBody: false })
+          .body
+      }
     </Markdown>
   )
 }
@@ -165,7 +168,13 @@ export type AbbreviatedContentResult = {
 }
 
 // must be synced with Article.abbreviated_content on the backend
-export const abbreviatedContent = (body: string): AbbreviatedContentResult => {
+export const abbreviatedContent = ({
+  body,
+  includeBoundaryInBody,
+}: {
+  body: string
+  includeBoundaryInBody: boolean
+}): AbbreviatedContentResult => {
   const res: string[] = []
   let l = 0
 
@@ -187,8 +196,13 @@ export const abbreviatedContent = (body: string): AbbreviatedContentResult => {
   }
 
   if (firstAt !== undefined && firstBoundary !== undefined && firstAt < 1000) {
+    let retbod = body.substring(0, firstAt).trimEnd()
+    if (includeBoundaryInBody) {
+      retbod = body.substring(0, firstAt + firstBoundary.length)
+    }
+
     return {
-      body: body.substring(0, firstAt + firstBoundary.length),
+      body: retbod,
       manualBoundary: true,
       matchedBoundary: firstBoundary,
     }

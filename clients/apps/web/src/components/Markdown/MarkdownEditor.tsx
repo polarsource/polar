@@ -90,7 +90,10 @@ export const MarkdownEditor = ({
     }
   }, [previewRef])
 
-  const previewContent = abbreviatedContent(value)
+  const previewContent = abbreviatedContent({
+    body: value,
+    includeBoundaryInBody: true,
+  })
   const showPreviewArea = previewContent.body !== value.trimEnd()
   const previewRulerTop = previewContent.manualBoundary
     ? previewHeight - 14

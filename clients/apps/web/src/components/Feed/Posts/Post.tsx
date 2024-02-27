@@ -1,5 +1,6 @@
 'use client'
 
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowForward } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import { motion, useSpring, useTransform } from 'framer-motion'
@@ -18,7 +19,7 @@ type FeedPost = {
 }
 
 const articleHref = (art: Article): string => {
-  return `/${art.organization.name}/posts/${art.slug}`
+  return organizationPageLink(art.organization, `posts/${art.slug}`)
 }
 
 export const Post = (props: FeedPost) => {

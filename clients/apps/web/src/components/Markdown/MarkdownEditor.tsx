@@ -15,6 +15,7 @@ interface MarkdownEditorProps {
   value: string
   autoFocus?: boolean
   disabled?: boolean
+  isPaidArticle: boolean
 }
 
 export const MarkdownEditor = ({
@@ -22,6 +23,7 @@ export const MarkdownEditor = ({
   className,
   autoFocus,
   disabled,
+  isPaidArticle,
 }: MarkdownEditorProps) => {
   const {
     bodyRef,
@@ -146,7 +148,9 @@ export const MarkdownEditor = ({
               <Tooltip>
                 <TooltipTrigger>
                   <div className="dark:bg-polar-800 w-[240px] select-none rounded-b-md bg-gray-100 px-4 text-center text-xs text-gray-400">
-                    {'PREVIEW ABOVE'}
+                    {isPaidArticle
+                      ? 'FREE PREVIEW ABOVE'
+                      : 'PREVIEW SECTION ABOVE'}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
@@ -159,8 +163,8 @@ export const MarkdownEditor = ({
                   </p>
                   <p>
                     You can customize the section that will be used as the
-                    preview by adding a <code>&lt;hr&gt;</code>-tag where you
-                    want the section to end.
+                    preview by adding a <code>---</code> divider where you want
+                    the section to end.
                   </p>
                 </TooltipContent>
               </Tooltip>

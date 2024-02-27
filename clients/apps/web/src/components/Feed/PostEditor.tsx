@@ -104,6 +104,7 @@ export const PostEditor = ({
                   body={body}
                   onTitleChange={onTitleChange}
                   disabled={disabled}
+                  article={article}
                 />
               </TabsContent>
               <TabsContent value="preview">
@@ -137,10 +138,16 @@ export const PostEditor = ({
 
 type EditorProps = Pick<
   PostEditorProps,
-  'title' | 'body' | 'onTitleChange' | 'disabled'
+  'title' | 'body' | 'onTitleChange' | 'disabled' | 'article'
 >
 
-const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
+const Editor = ({
+  title,
+  body,
+  onTitleChange,
+  disabled,
+  article,
+}: EditorProps) => {
   const { titleRef, bodyRef, insertTextAtCursor } =
     useContext(PostEditorContext)
 
@@ -171,6 +178,7 @@ const Editor = ({ title, body, onTitleChange, disabled }: EditorProps) => {
           className="focus:ring-none rounded-none border-none bg-transparent p-0 shadow-none outline-none focus:ring-transparent focus-visible:ring-transparent dark:bg-transparent dark:shadow-none dark:outline-none dark:focus:ring-transparent"
           value={body}
           disabled={disabled}
+          isPaidArticle={Boolean(article?.paid_subscribers_only)}
         />
       </div>
       <Sidebar />

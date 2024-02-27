@@ -329,7 +329,7 @@ export class PolarUploadBuilder<
           entry,
           exists: !!articles.find((article) => article.slug === entry.slug),
           article: {
-            title: entry.title,
+            title: entry.id,
             slug: entry.slug,
             body: entry.body,
             organization_id: this.options.organizationId,

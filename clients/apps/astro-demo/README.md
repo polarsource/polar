@@ -1,68 +1,68 @@
-# Astro Starter Kit: Blog
+# Astro Polar Demo
 
-```sh
-npm create astro@latest -- --template blog
+This directory contains a demo site to show off the
+[`@polar-sh/astro`](https://npmjs.com/package/@polar-sh/astro) package for integrating
+Polar and [Astro](https://astro.build).
+
+The site is based on the Astro blog template that ships with Astro:
+
+```bash
+pnpm create astro@latest -- --template blog
 ```
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/blog)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/blog)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/blog/devcontainer.json)
+The only change is in the [`src/pages/blog/index.astro`](./src/pages/blog/index.astro)
+file, which contains an example of how to use the integration to upload posts to Polar.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Note: this code will fail unless you provide both a personal access token and an
+organization ID. The example is not intended to be run.
 
-![blog](https://github.com/withastro/astro/assets/2244813/ff10799f-a816-4703-b967-c78997e8323d)
+## Example
 
-Features:
+The following code will upload all posts to Polar that have not been uploaded
+previously. It will also add the header image to the Polar post, if it exists, and will
+set the title of the post. By default, the title will be the filename.
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and OpenGraph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
+```typescript
+import { getCollection } from 'astro:content'
+import { Polar } from '@polar-sh/astro'
 
-## 🚀 Project Structure
+const posts = (await getCollection('blog')).sort(
+  (a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
+)
 
-Inside of your Astro project, you'll see the following folders and files:
+/**
+ * Upload all posts to Polar
+ */
+// Create a Polar client with your API key
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+})
 
-```text
-├── public/
-├── src/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+// Upload all posts to Polar
+const { error: postUploadError } = await polar
+  .upload(posts, {
+    organizationId: process.env.POLAR_ORGANIZATION_ID ?? '',
+    organizationName: 'polar',
+  })
+  // Filter for only new posts
+  .filter(({ exists }) => !exists)
+  // Add the correct title to the post
+  .transform(({ article, entry }) => {
+    article.title = entry.data.title
+    return article
+  })
+  // Add the header image to the post
+  .transform(({ article, entry }) => {
+    if (entry.data.heroImage) {
+      article.body = `![${entry.data.title}](${entry.data.heroImage})\n\n${article.body}`
+    }
+    return article
+  })
+
+if (postUploadError) {
+  console.error('Error uploading posts to Polar:', postUploadError)
+}
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Credit
-
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+If you'd like to see more examples, check out
+[`@polar-sh/astro` on NPM](https://npmjs.com/package/@polar-sh/astro).

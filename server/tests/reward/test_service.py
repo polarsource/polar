@@ -12,7 +12,6 @@ from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
-from polar.models.transaction import Transaction
 from polar.models.user import OAuthAccount, User
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
@@ -85,14 +84,14 @@ async def test_list_rewards(
     balance = mocker.patch(
         "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    balance.return_value = (
-        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
-        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    platform_fee = mocker.patch(
+        "polar.transaction.service.platform_fee.PlatformFeeTransactionService.create_fees_reversal_balances"
     )
 
     await pledge_service.transfer(session, pledge.id, issue_reward_id=org_tuple[1].id)
 
     balance.assert_called_once()
+    platform_fee.assert_called_once()
 
     # assert rewards after transfer
     rewards = await reward_service.list(session, pledge_org_id=organization.id)
@@ -103,7 +102,7 @@ async def test_list_rewards(
     assert org_tuple[1].github_username is None
     assert org_tuple[1].organization_id is organization.id
     assert org_tuple[1].share_thousands == 700
-    assert org_tuple[2].amount == round(pledge.amount * 0.95 * 0.7)  # hmmm
+    assert org_tuple[2].amount == round(pledge.amount * 0.7)
 
 
 @pytest.mark.asyncio

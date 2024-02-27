@@ -316,9 +316,8 @@ async def test_transfer_org(
     balance = mocker.patch(
         "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    balance.return_value = (
-        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
-        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    platform_fee = mocker.patch(
+        "polar.transaction.service.platform_fee.PlatformFeeTransactionService.create_fees_reversal_balances"
     )
 
     # then
@@ -327,6 +326,7 @@ async def test_transfer_org(
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
     balance.assert_called_once()
+    platform_fee.assert_called_once()
 
     after_transfer = await pledge_service.get(session, pledge.id)
     assert after_transfer is not None
@@ -426,9 +426,8 @@ async def test_transfer_user(
     balance = mocker.patch(
         "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
     )
-    balance.return_value = (
-        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
-        Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+    platform_fee = mocker.patch(
+        "polar.transaction.service.platform_fee.PlatformFeeTransactionService.create_fees_reversal_balances"
     )
 
     # then
@@ -437,6 +436,7 @@ async def test_transfer_user(
     await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
     balance.assert_called_once()
+    platform_fee.assert_called_once()
 
     after_transfer = await pledge_service.get(session, pledge.id)
     assert after_transfer is not None

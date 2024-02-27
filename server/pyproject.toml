@@ -28,7 +28,7 @@ posthog = "^3.4.0"
 sqlalchemy-citext = { git = "https://github.com/akolov/sqlalchemy-citext.git", rev = "15b3de84730bb4645c83d890a73f5c9b6b289531" }
 python-slugify = "^8.0.1"
 resend = "^0.7.2"
-python-multipart = "^0.0.6"
+python-multipart = "^0.0.7"
 safe-redirect-url = "^0.1.1"
 httpx-oauth = "^0.13.1"
 httpx = "^0.23.0"

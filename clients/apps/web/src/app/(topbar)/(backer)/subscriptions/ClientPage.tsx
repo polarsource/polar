@@ -29,6 +29,7 @@ import {
 import { Separator } from 'polarkit/components/ui/separator'
 import { useOrganization } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
   subscriptions,
@@ -44,7 +45,7 @@ const ClientPage = ({
 
   const [selectedBenefit, setSelectedBenefit] = useState<
     BenefitSubscriber | undefined
-  >(subscriptions[0]?.subscription_tier?.benefits[0])
+  >()
   const [selectedBenefitSubscription, setSelectedBenefitSubscription] =
     useState<SubscriptionSubscriber | undefined>(subscriptions[0])
 
@@ -59,27 +60,32 @@ const ClientPage = ({
       </div>
     </div>
   ) : (
-    <div className="relative flex flex-row items-start gap-x-12">
-      <div className="flex w-2/3 flex-col gap-y-4">
-        {subscriptions.map((subscription) => (
-          <Subscription
-            key={subscription.id}
-            subscription={subscription}
-            selectedBenefit={selectedBenefit}
-            onSelectBenefit={(b) => {
-              setSelectedBenefit(b)
-              setSelectedBenefitSubscription(subscription)
-            }}
-          />
-        ))}
+    <div className="flex flex-col gap-y-8">
+      <div className="flex flex-row items-center">
+        <h3 className="text-lg">My Subscriptions</h3>
       </div>
+      <div className="relative flex w-full flex-row items-start gap-x-12">
+        <div className="dark:border-polar-800 dark:divide-polar-800 dark:bg-polar-900 flex w-2/3 flex-col divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100  bg-white">
+          {subscriptions.map((subscription) => (
+            <Subscription
+              key={subscription.id}
+              subscription={subscription}
+              selectedBenefit={selectedBenefit}
+              onSelectBenefit={(b) => {
+                setSelectedBenefit(b)
+                setSelectedBenefitSubscription(subscription)
+              }}
+            />
+          ))}
+        </div>
 
-      {selectedBenefitSubscription && selectedBenefit ? (
-        <BenefitContextWidget
-          subscription={selectedBenefitSubscription}
-          benefit={selectedBenefit}
-        />
-      ) : null}
+        {selectedBenefitSubscription && selectedBenefit ? (
+          <BenefitContextWidget
+            subscription={selectedBenefitSubscription}
+            benefit={selectedBenefit}
+          />
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -97,6 +103,7 @@ const Subscription = ({
   selectedBenefit,
   onSelectBenefit,
 }: SubscriptionOrganizationProps) => {
+  const [expanded, setExpanded] = useState(false)
   const { data: org } = useOrganization(
     subscription.subscription_tier.organization_id ?? '',
   )
@@ -113,22 +120,30 @@ const Subscription = ({
   }, [subscription])
 
   return (
-    <ShadowBoxOnMd className="flex flex-col gap-y-8">
-      <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-row items-center gap-x-4">
-          <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-blue-400">
+    <div className="flex flex-col">
+      <div
+        className={twMerge(
+          'flex cursor-pointer flex-row items-center justify-between px-4 py-3 transition-colors',
+          expanded
+            ? 'dark:bg-polar-800 bg-gray-75'
+            : 'dark:hover:bg-polar-800 hover:bg-gray-75',
+        )}
+        onClick={() => setExpanded((expanded) => !expanded)}
+      >
+        <div className="flex flex-row items-center gap-x-2">
+          <div className="flex flex-row items-center gap-x-1 text-xs text-blue-500 dark:text-blue-400">
             <Avatar
-              className="h-14 w-14"
+              className="h-8 w-8"
               avatar_url={org?.avatar_url}
               name={org?.name ?? ''}
             />
           </div>
-          <div className="flex flex-col gap-y-2">
+          <div className="flex flex-row gap-x-4">
             <Link
               className="dark:text-polar-50 flex flex-row items-center gap-x-2 text-gray-950"
               href={`/${org?.name}`}
             >
-              <h3>{org?.name}</h3>
+              <h3 className="text-sm">{org?.name}</h3>
             </Link>
             <div className="dark:text-polar-400 flex flex-row items-center gap-x-3 text-sm text-gray-500">
               <Link href={`/${org?.name}/subscriptions`}>
@@ -164,7 +179,7 @@ const Subscription = ({
         </div>
         <div className="flex flex-row items-center gap-x-2">
           <Link href={`/${org?.name}/subscriptions`}>
-            <Button size="sm" asChild>
+            <Button size="sm" variant="ghost" asChild>
               Upgrade
             </Button>
           </Link>
@@ -196,23 +211,25 @@ const Subscription = ({
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-y-4">
-        <h2 className="font-medium">Benefits</h2>
-        <StaggerReveal
-          key={subscription.subscription_tier_id}
-          className="flex flex-col gap-y-2"
-        >
-          {subscription.subscription_tier.benefits.map((benefit) => (
-            <StaggerReveal.Child key={benefit.id}>
-              <BenefitRow
-                benefit={benefit}
-                selected={benefit.id === selectedBenefit?.id}
-                onSelect={onSelectBenefit}
-              />
-            </StaggerReveal.Child>
-          ))}
-        </StaggerReveal>
-      </div>
+      {expanded && (
+        <div className="dark:bg-polar-900 flex flex-col gap-y-4 bg-white px-6 py-4">
+          <h2 className="font-medium">Benefits</h2>
+          <StaggerReveal
+            key={subscription.subscription_tier_id}
+            className="flex flex-col gap-y-2"
+          >
+            {subscription.subscription_tier.benefits.map((benefit) => (
+              <StaggerReveal.Child key={benefit.id}>
+                <BenefitRow
+                  benefit={benefit}
+                  selected={benefit.id === selectedBenefit?.id}
+                  onSelect={onSelectBenefit}
+                />
+              </StaggerReveal.Child>
+            ))}
+          </StaggerReveal>
+        </div>
+      )}
       <ConfirmModal
         isShown={showCancelModal}
         hide={() => setShowCancelModal(false)}
@@ -226,7 +243,7 @@ const Subscription = ({
         onConfirm={() => cancelSubscription()}
         destructive
       />
-    </ShadowBoxOnMd>
+    </div>
   )
 }
 

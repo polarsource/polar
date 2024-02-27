@@ -39,6 +39,7 @@ def build_stripe_invoice(
             "tax": tax,
             "subscription": subscription,
             "total_tax_amounts": [{"tax_rate": {"country": "US", "state": "NY"}}],
+            "metadata": None,
         },
         None,
     )

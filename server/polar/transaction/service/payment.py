@@ -67,6 +67,7 @@ class PaymentTransactionService(BaseTransactionService):
         tax_amount = 0
         tax_country = None
         tax_state = None
+        pledge_invoice = False
         if charge.invoice:
             stripe_invoice = stripe_service.get_invoice(
                 get_expandable_id(charge.invoice)
@@ -89,8 +90,14 @@ class PaymentTransactionService(BaseTransactionService):
                 if subscription is None:
                     raise SubscriptionDoesNotExist(charge.id, stripe_subscription_id)
 
+            if (
+                stripe_invoice.metadata
+                and stripe_invoice.metadata.get("type") == ProductType.pledge
+            ):
+                pledge_invoice = True
+
         # Try to link with a Pledge
-        if charge.metadata.get("type") == ProductType.pledge:
+        if pledge_invoice or charge.metadata.get("type") == ProductType.pledge:
             assert charge.payment_intent is not None
             payment_intent = get_expandable_id(charge.payment_intent)
             pledge = await pledge_service.get_by_payment_id(session, payment_intent)

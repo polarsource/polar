@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api'
 import {
   ListResourceArticle,
-  ListResourceSubscriptionSummary,
+  ListResourceRepository,
   ListResourceSubscriptionTier,
   Organization,
   Platforms,
@@ -101,46 +101,81 @@ export default async function Page({
   let pinnedArticles: ListResourceArticle | undefined
   let articles: ListResourceArticle | undefined
   let subscriptionTiers: ListResourceSubscriptionTier | undefined
-  let subscriptionSummary: ListResourceSubscriptionSummary | undefined
+  let repositories: ListResourceRepository | undefined
 
   try {
-    const [loadOrganization, loadArticles, loadSubscriptionTiers] =
-      await Promise.all([
-        api.organizations.lookup(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-          },
-          cacheConfig,
-        ),
-        api.articles.search(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-            limit: 3,
-          },
-          cacheConfig,
-        ),
-        api.subscriptions.searchSubscriptionTiers(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-          },
-          cacheConfig,
-        ),
-      ])
+    const [
+      loadOrganization,
+      loadArticles,
+      loadPinnedArticles,
+      loadSubscriptionTiers,
+      loadRepositories,
+    ] = await Promise.all([
+      api.organizations.lookup(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.articles.search(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          isPinned: false,
+          limit: 3,
+        },
+        cacheConfig,
+      ),
+      api.articles.search(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          isPinned: true,
+          limit: 3,
+        },
+        cacheConfig,
+      ),
+      api.subscriptions.searchSubscriptionTiers(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.repositories.search(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+    ])
 
     organization = loadOrganization
     articles = loadArticles
+    pinnedArticles = loadPinnedArticles
     subscriptionTiers = loadSubscriptionTiers
+    repositories = loadRepositories
   } catch (e) {
     notFound()
   }
 
+  const posts = [
+    ...(pinnedArticles.items ?? []),
+    ...(articles.items ?? []),
+  ].slice(0, 3)
+
+  const sortedRepositories =
+    repositories.items
+      ?.sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0))
+      .slice(0, 4) ?? []
+
   return (
     <ClientPage
       organization={organization}
-      latestPosts={articles}
+      posts={posts}
+      repositories={sortedRepositories}
       subscriptionTiers={subscriptionTiers}
     />
   )

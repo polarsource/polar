@@ -187,6 +187,7 @@ class TestCreatePayout:
             pledge=None,
             issue_reward=None,
             subscription=None,
+            account_incurred_transactions=[],
         )
         session.add(payout)
         await session.commit()

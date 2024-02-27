@@ -87,7 +87,7 @@ class RefundTransactionService(BaseTransactionService):
                     session, refund_transaction=refund_transaction
                 )
             )
-            refund_transaction.incurred_transaction_fees = transaction_fees
+            refund_transaction.incurred_transactions = transaction_fees
 
             session.add(refund_transaction)
             refund_transactions.append(refund_transaction)

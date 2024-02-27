@@ -47,6 +47,7 @@ class TransactionService(BaseTransactionService):
         account_id: uuid.UUID | None = None,
         payment_user_id: uuid.UUID | None = None,
         payment_organization_id: uuid.UUID | None = None,
+        exclude_platform_fees: bool = False,
         pagination: PaginationParams,
         sorting: list[Sorting[SearchSortProperty]] = [
             (SearchSortProperty.created_at, True)
@@ -55,6 +56,8 @@ class TransactionService(BaseTransactionService):
         statement = self._get_readable_transactions_statement(user)
 
         statement = statement.options(
+            # Incurred transactions
+            subqueryload(Transaction.account_incurred_transactions),
             # Pledge
             subqueryload(Transaction.pledge).options(
                 # Pledge.issue
@@ -84,6 +87,8 @@ class TransactionService(BaseTransactionService):
             statement = statement.where(
                 Transaction.payment_organization_id == payment_organization_id
             )
+        if exclude_platform_fees:
+            statement = statement.where(Transaction.platform_fee_type.is_(None))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -104,6 +109,8 @@ class TransactionService(BaseTransactionService):
         statement = (
             self._get_readable_transactions_statement(user)
             .options(
+                # Incurred transactions
+                subqueryload(Transaction.account_incurred_transactions),
                 # Pledge
                 subqueryload(Transaction.pledge).options(
                     # Pledge.issue
@@ -133,6 +140,9 @@ class TransactionService(BaseTransactionService):
                 .subqueryload(Transaction.subscription)
                 .options(
                     joinedload(Subscription.subscription_tier),
+                ),
+                subqueryload(Transaction.paid_transactions).subqueryload(
+                    Transaction.account_incurred_transactions
                 ),
             )
             .where(Transaction.id == id)

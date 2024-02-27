@@ -76,7 +76,7 @@ class DisputeTransactionService(BaseTransactionService):
         transaction_fees = await processor_fee_transaction_service.create_dispute_fees(
             session, dispute_transaction=dispute_transaction, category="dispute"
         )
-        dispute_transaction.incurred_transaction_fees = transaction_fees
+        dispute_transaction.incurred_transactions = transaction_fees
 
         session.add(dispute_transaction)
 
@@ -146,7 +146,7 @@ class DisputeTransactionService(BaseTransactionService):
             dispute_transaction=dispute_transaction,
             category="dispute_reversal",
         )
-        dispute_transaction.incurred_transaction_fees = transaction_fees
+        dispute_transaction.incurred_transactions = transaction_fees
 
         session.add(dispute_transaction)
 

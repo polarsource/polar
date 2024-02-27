@@ -45,6 +45,9 @@ from polar.subscription.service.subscription import subscription as subscription
 from polar.transaction.service.balance import (
     BalanceTransactionService,
 )
+from polar.transaction.service.platform_fee import (
+    PlatformFeeTransactionService,
+)
 from polar.user.service import user as user_service
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
@@ -691,14 +694,29 @@ class TestTransferSubscriptionPaidInvoice:
         stripe_invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id
         )
+        invoice_total = stripe_invoice.total - (stripe_invoice.tax or 0)
 
         transaction_service_mock = mocker.patch(
             "polar.subscription.service.subscription.balance_transaction_service",
             spec=BalanceTransactionService,
         )
         transaction_service_mock.create_balance_from_charge.return_value = (
-            Transaction(transfer_id="STRIPE_TRANSFER_ID"),
-            Transaction(transfer_id="STRIPE_TRANSFER_ID"),
+            Transaction(
+                type=TransactionType.balance,
+                amount=-invoice_total,
+                subscription_id=subscription.id,
+            ),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+                subscription_id=subscription.id,
+            ),
+        )
+
+        platform_fee_transaction_service_mock = mocker.patch(
+            "polar.subscription.service.subscription.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
         )
 
         # then
@@ -723,8 +741,10 @@ class TestTransferSubscriptionPaidInvoice:
         )
         assert (
             transaction_service_mock.create_balance_from_charge.call_args[1]["amount"]
-            == 9500
+            == invoice_total
         )
+
+        platform_fee_transaction_service_mock.create_fees_reversal_balances.assert_called_once()
 
 
 @pytest.mark.asyncio

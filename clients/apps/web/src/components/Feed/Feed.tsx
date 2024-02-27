@@ -45,7 +45,9 @@ export const Feed = () => {
 
   return (
     <div className="flex flex-col gap-y-4">
-      {infiniteArticles?.map((entity) => <PostComponent article={entity} />)}
+      {infiniteArticles?.map((entity) => (
+        <PostComponent key={entity.id} article={entity} />
+      ))}
       <div ref={ref} />
     </div>
   )

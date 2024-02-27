@@ -98,7 +98,7 @@ const ClientPage = () => {
       <DashboardBody className="!p-0">
         <DashboardPaddingX className="relative !px-0 xl:!px-8">
           <div className="items mb-24 flex w-full flex-col-reverse items-start gap-y-12 xl:flex-row xl:gap-x-4 xl:gap-y-0">
-            <DashboardPaddingX className="flex w-full flex-1 flex-col gap-y-8">
+            <DashboardPaddingX className="flex w-full flex-1 flex-col gap-y-8 overflow-hidden ">
               <div className="flex flex-row items-center justify-between">
                 <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
                   Overview
@@ -150,7 +150,7 @@ const ClientPage = () => {
               <div className="flex w-full overflow-x-auto md:overflow-hidden">
                 <DashboardPaddingX className="flex flex-row gap-6 md:overflow-hidden xl:flex-col xl:px-0">
                   {trafficStatistics.data && (
-                    <Card className="md:min-w-inherit flex w-full min-w-[220px] flex-col gap-y-4 self-stretch p-4">
+                    <Card className="md:min-w-inherit flex w-full min-w-[300px] flex-col gap-y-4 self-stretch p-4">
                       <div className="flex w-full flex-row items-center justify-between">
                         <h3 className="text-sm font-medium">Views</h3>
                         <span className="text-right text-sm">
@@ -173,7 +173,7 @@ const ClientPage = () => {
                     </Card>
                   )}
                   {prettyReferrerrs && prettyReferrerrs.length > 0 && (
-                    <Card className="justify-top  md:min-w-inherit flex w-full min-w-[220px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-4">
+                    <Card className="justify-top  md:min-w-inherit flex w-full min-w-[300px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-4">
                       <div className="flex w-full flex-row items-center justify-between">
                         <h3 className="text-sm font-medium">Top Referrers</h3>
                       </div>

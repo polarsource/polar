@@ -128,6 +128,14 @@ export function Chart<T extends ChartData, K extends keyof T>({
     }
   }, [containerRef])
 
+  const smallGraphAxisOpts = {
+    margin: 0,
+    labelOffset: 0,
+    tickSize: 0,
+    tickPadding: 0,
+    tickFormat: '',
+  }
+
   useEffect(() => {
     if (!containerRef) {
       return
@@ -141,9 +149,13 @@ export function Chart<T extends ChartData, K extends keyof T>({
       width: width || undefined,
       marks: [
         () => createAreaGradient(gradientId),
-        Plot.gridY(axisYOptions),
-        Plot.axisX({ ticks: 'month', label: null, stroke: 'none' }),
-        Plot.axisY(axisYOptions),
+        Plot.axisX({
+          ticks: 'month',
+          label: null,
+          stroke: 'none',
+          ...(width < 300 ? smallGraphAxisOpts : {}),
+        }),
+        Plot.axisY({ ...axisYOptions, margin: 0 }),
         Plot.areaY(data, {
           x: 'parsedStartDate',
           y: y.toString(),

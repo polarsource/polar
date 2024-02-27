@@ -34,10 +34,15 @@ const { error: postUploadError } = await polar
     article.title = entry.data.title
     return article
   })
-  // Add the header image to the post
+  // Add the header image and Polar metadata to the post
   .transform(({ article, entry }) => {
     if (entry.data.heroImage) {
       article.body = `![${entry.data.title}](${rootUrl}${entry.data.heroImage.src})\n\n${article.body}`
+    }
+    article = {
+      ...article,
+      ...entry.data.polar,
+      published_at: entry.data.polar?.published_at?.toISOString(),
     }
     return article
   })

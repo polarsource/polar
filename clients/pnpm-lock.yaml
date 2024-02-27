@@ -553,6 +553,9 @@ importers:
       prettier-plugin-astro:
         specifier: ^0.13.0
         version: 0.13.0
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
 
   packages/eslint-config-custom:
     dependencies:

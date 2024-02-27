@@ -101,6 +101,12 @@ export const previewOpts = {
     embed: () => <></>,
     iframe: () => <></>,
     pre: () => <></>,
+
+    p: (args: any) => <p className="first:mt-0 last:mb-0">{args.children}</p>,
+
+    img: (args: any) => (
+      <img {...args} className="w-full first:mt-0 last:mb-0" />
+    ),
   },
 } as const
 
@@ -148,6 +154,7 @@ export const AbbreviatedBrowserRender = ({
           article,
           showPaywalledContent,
           isSubscriber: true, // Do not show <SubscribeNow /> in abbreviations
+          extraAllowedCustomComponents: Object.keys(previewOpts.overrides),
         }),
       }}
     >

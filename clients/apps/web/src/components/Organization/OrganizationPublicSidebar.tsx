@@ -121,30 +121,34 @@ export const OrganizationPublicSidebar = ({
                 <SocialLink href={`https://github.com/${organization.name}`}>
                   <GitHubIcon width={15} height={15} />
                 </SocialLink>
-                <SocialLink
-                  href={`https://twitter.com/${organization.twitter_username}`}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 300 300.251"
-                    version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
+                {organization.twitter_username && (
+                  <SocialLink
+                    href={`https://twitter.com/${organization.twitter_username}`}
                   >
-                    <path
-                      d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </SocialLink>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 300 300.251"
+                      version="1.1"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </SocialLink>
+                )}
                 {organization.blog && (
                   <SocialLink href={externalURL(organization.blog)}>
                     <LanguageOutlined fontSize="inherit" />
                   </SocialLink>
                 )}
-                <SocialLink href={`mailto:${organization.email}`}>
-                  <MailOutline fontSize="inherit" />
-                </SocialLink>
+                {organization.email && (
+                  <SocialLink href={`mailto:${organization.email}`}>
+                    <MailOutline fontSize="inherit" />
+                  </SocialLink>
+                )}
                 <Button
                   className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:text-polar-200 flex h-8 w-8 flex-col items-center justify-center rounded-full border-none bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100"
                   onClick={showRssModal}
@@ -246,9 +250,7 @@ export const OrganizationPublicSidebar = ({
   )
 }
 
-const SocialLink = (props: PropsWithChildren<{ href?: string }>) => {
-  if (!props.href) return null
-
+const SocialLink = (props: PropsWithChildren<{ href: string }>) => {
   return (
     <Link
       target="_blank"

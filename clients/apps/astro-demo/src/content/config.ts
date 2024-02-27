@@ -1,4 +1,5 @@
 import { defineCollection, z } from 'astro:content';
+import { polarArticleSchema } from '@polar-sh/astro';
 
 const blog = defineCollection({
   type: 'content',
@@ -10,6 +11,7 @@ const blog = defineCollection({
     pubDate: z.coerce.date(),
     updatedDate: z.coerce.date().optional(),
     heroImage: image().optional(),
+    polar: polarArticleSchema.optional(),
   }),
 });
 

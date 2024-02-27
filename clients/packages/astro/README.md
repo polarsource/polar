@@ -25,6 +25,25 @@ const polar = new Polar({ accessToken })
 
 Access tokens can be generated on your Polar [Settings page](https://polar.sh/settings).
 
+### Custom frontmatter schema
+
+The Polar Astro SDK ships with a Zod schema for defining frontmatter properties in your
+Astro content collections. It contains common Polar article metadata, such as a `title`
+and whether or not to `notifySubscribers` of the article.
+
+```typescript
+ import { z, defineCollection } from 'astro:content'
+ import { polarArticleSchema } from '@polar-sh/astro'
+
+ defineCollection({
+    schema: z.object({
+      // Your custom frontmatter properties here...
+      // ...
+      polar: polarArticleSchema.optional(),
+    }),
+ })
+```
+
 ### Uploading posts to Polar
 
 The upload module is designed to be used with
@@ -89,8 +108,8 @@ const { data, error } = await polar
     // `article` is the Polar article
     article,
   }) => {
-     article.title = entry.data.title
-     return article
+    article.title = entry.data.title
+    return article
   })
 ```
 
@@ -108,10 +127,46 @@ const { data, error } = await polar
   })
   .filter(({ exists }) => exists)
   .transform(({ entry, article }) => {
-     if (entry.data.image) {
-       // Add the image as a markdown image at the start of the article
-       article.body = `![](${Astro.url.host}${entry.data.image.src})\n\n${article.body}`
-     }
-     return article
+    if (entry.data.image) {
+      // Add the image as a markdown image at the start of the article
+      article.body = `![](${Astro.url.host}${entry.data.image.src})\n\n${article.body}`
+    }
+    return article
   })
 ```
+
+##### Using the custom frontmatter schema
+
+You can use the custom frontmatter schema directly with the upload client. This article assumes
+the properties exist under a `polar` key in your frontmatter.
+
+
+```typescript
+const { data, error } = await polar
+  .upload(posts, {
+    organizationId,
+    organizationName,
+  })
+  .filter(({ exists }) => exists)
+  .transform(({ entry, article }) => {
+    article = {
+      ...article,
+      ...entry.data.polar,
+      // `published_at` is a date and needs to be a string
+      published_at: entry.data.polar?.published_at?.toISOString()
+    }
+    return article
+  })
+```
+
+## TODOs
+
+- [x] Add Polar article upload
+- [ ] Add functions for authenticating on an Astro site using Polar
+    - [ ] Add helper methods for determining a user's subscription tier
+- [ ] Add Polar-specific components like `<Paywall>`
+    - These will probably be React components, as Polar is written in React and Astro
+      supports React
+- [ ] Add functionality for pulling articles from Polar to generate static or SSR
+      pages on Polar sites
+

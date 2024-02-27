@@ -4280,6 +4280,12 @@ export interface Organization {
      */
     has_app_installed: boolean;
     /**
+     * 
+     * @type {string}
+     * @memberof Organization
+     */
+    custom_domain?: string;
+    /**
      * Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization
      * @type {string}
      * @memberof Organization

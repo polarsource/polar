@@ -1,5 +1,6 @@
 'use client'
 
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -109,7 +110,7 @@ export const OrganizationPublicPageNav = ({
           className,
         )}
       >
-        <Link href={`/${organization.name}`}>
+        <Link href={organizationPageLink(organization)}>
           <TabsTrigger
             className={tabsTriggerClassName}
             value="overview"
@@ -119,7 +120,7 @@ export const OrganizationPublicPageNav = ({
           </TabsTrigger>
         </Link>
 
-        <Link href={`/${organization.name}/posts`}>
+        <Link href={organizationPageLink(organization, 'posts')}>
           <TabsTrigger
             className={tabsTriggerClassName}
             value="posts"
@@ -129,7 +130,7 @@ export const OrganizationPublicPageNav = ({
           </TabsTrigger>
         </Link>
 
-        <Link href={`/${organization.name}/subscriptions`}>
+        <Link href={organizationPageLink(organization, 'subscriptions')}>
           <TabsTrigger
             className={tabsTriggerClassName}
             value="subscriptions"
@@ -139,7 +140,7 @@ export const OrganizationPublicPageNav = ({
           </TabsTrigger>
         </Link>
 
-        <Link href={`/${organization.name}/issues`}>
+        <Link href={organizationPageLink(organization, 'issues')}>
           <TabsTrigger
             className={tabsTriggerClassName}
             value="issues"
@@ -149,7 +150,7 @@ export const OrganizationPublicPageNav = ({
           </TabsTrigger>
         </Link>
 
-        <Link href={`/${organization.name}/repositories`}>
+        <Link href={organizationPageLink(organization, 'repositories')}>
           <TabsTrigger
             className={tabsTriggerClassName}
             value="repositories"

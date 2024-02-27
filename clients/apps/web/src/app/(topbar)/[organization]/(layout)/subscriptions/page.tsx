@@ -1,6 +1,8 @@
 import { getServerSideAPI } from '@/utils/api'
+import { redirectToCustomDomain } from '@/utils/nav'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -103,6 +105,8 @@ export default async function Page({
   if (!organization) {
     notFound()
   }
+
+  redirectToCustomDomain(organization, headers(), `/organization`)
 
   return (
     <ClientPage

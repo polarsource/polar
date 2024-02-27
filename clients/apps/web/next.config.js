@@ -142,7 +142,7 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: 'polar.sh',
+            value: defaultHostname,
           },
         ],
         permanent: false,
@@ -281,7 +281,7 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: 'polar.sh',
+            value: defaultHostname,
           },
         ],
       },

@@ -1,6 +1,7 @@
 import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
+import { redirectToCustomDomain } from '@/utils/nav'
 import {
   Article,
   ListResourceSubscriptionTier,
@@ -8,6 +9,7 @@ import {
   ResponseError,
 } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -165,6 +167,12 @@ export default async function Page({
   if (!article) {
     notFound()
   }
+
+  redirectToCustomDomain(
+    article.organization,
+    headers(),
+    `/posts/${article.slug}`,
+  )
 
   return (
     <ClientPage

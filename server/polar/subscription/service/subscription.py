@@ -1,4 +1,3 @@
-import math
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
@@ -65,6 +64,9 @@ from polar.posthog import posthog
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
+)
+from polar.transaction.service.platform_fee import (
+    platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service import user as user_service
 from polar.user_organization.service import (
@@ -732,9 +734,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         tax = invoice.tax or 0
-        transfer_amount = math.floor(
-            (invoice.total - tax) * ((100 - settings.SUBSCRIPTION_FEE_PERCENT) / 100)
-        )
+        transfer_amount = invoice.total - tax
 
         charge_id = get_expandable_id(invoice.charge)
 
@@ -775,12 +775,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             return
 
         # Account created, create the balance immediately
-        await balance_transaction_service.create_balance_from_charge(
-            session,
-            destination_account=account,
-            charge_id=charge_id,
-            amount=transfer_amount,
-            subscription=subscription,
+        balance_transactions = (
+            await balance_transaction_service.create_balance_from_charge(
+                session,
+                destination_account=account,
+                charge_id=charge_id,
+                amount=transfer_amount,
+                subscription=subscription,
+            )
+        )
+        await platform_fee_transaction_service.create_fees_reversal_balances(
+            session, balance_transactions=balance_transactions
         )
 
     async def enqueue_benefits_grants(

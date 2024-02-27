@@ -47,6 +47,10 @@ class Account(RecordModel):
     is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
     is_payouts_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
+    processor_fees_applicable: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
     business_type: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
     )

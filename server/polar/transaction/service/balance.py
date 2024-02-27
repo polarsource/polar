@@ -8,7 +8,7 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
-from polar.models.transaction import TransactionType
+from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 
 from .base import BaseTransactionService, BaseTransactionServiceError
@@ -141,6 +141,9 @@ class BalanceTransactionService(BaseTransactionService):
         balance_transactions: tuple[Transaction, Transaction],
         destination_currency: str,
         amount: int,
+        platform_fee_type: PlatformFeeType | None = None,
+        outgoing_incurred_by: Transaction | None = None,
+        incoming_incurred_by: Transaction | None = None,
     ) -> tuple[Transaction, Transaction]:
         outgoing, incoming = balance_transactions
         source_account_id = incoming.account_id
@@ -162,10 +165,12 @@ class BalanceTransactionService(BaseTransactionService):
             account_amount=-amount,
             tax_amount=0,
             balance_correlation_key=balance_correlation_key,
+            platform_fee_type=platform_fee_type,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,
             balance_reversal_transaction=incoming,
+            incurred_by_transaction=outgoing_incurred_by,
         )
         incoming_reversal = Transaction(
             id=generate_uuid(),
@@ -177,10 +182,12 @@ class BalanceTransactionService(BaseTransactionService):
             account_amount=amount,
             tax_amount=0,
             balance_correlation_key=balance_correlation_key,
+            platform_fee_type=platform_fee_type,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
             subscription_id=outgoing.subscription_id,
             balance_reversal_transaction=outgoing,
+            incurred_by_transaction=incoming_incurred_by,
         )
 
         session.add(outgoing_reversal)

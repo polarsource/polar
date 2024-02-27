@@ -116,6 +116,49 @@ class ProcessorFeeType(StrEnum):
     """
 
 
+class PlatformFeeType(StrEnum):
+    """
+    Type of fees applied by Polar, and billed to the users.
+    """
+
+    platform = "platform"
+    """
+    Polar platform fee.
+    """
+
+    payment = "payment"
+    """
+    Fee applied by the payment processor to a payment, like a credit card fee.
+    """
+
+    subscription = "subscription"
+    """
+    Fee applied by the payment processor to a recurring subscription.
+    """
+
+    invoice = "invoice"
+    """
+    Fee applied by the payment processor to an issued invoice.
+    """
+
+    cross_border_transfer = "cross_border_transfer"
+    """
+    Fee applied by the payment processor when money is transferred
+    to a different country than Polar's.
+    """
+
+    payout = "payout"
+    """
+    Fee applied by the payment processor when money
+    is paid out to the user's bank account.
+    """
+
+    account = "account"
+    """
+    Fee applied recurrently by the payment processor to an active account.
+    """
+
+
 class Transaction(RecordModel):
     """
     Represent a money flow in the Polar system.
@@ -158,6 +201,16 @@ class Transaction(RecordModel):
     """
     Internal key used to correlate a couple of balance transactions:
     the outgoing side and the incoming side.
+    """
+
+    platform_fee_type: Mapped[PlatformFeeType | None] = mapped_column(
+        String, nullable=True, index=True
+    )
+    """
+    Type of platform fee.
+
+    Only applies to transactions of type `TransactionType.balance`
+    with a set `account_id`.
     """
 
     customer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)

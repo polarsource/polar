@@ -1,5 +1,9 @@
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
+const defaultHostname = process.env.NEXT_PUBLIC_API_URL
+  ? new URL(process.env.NEXT_PUBLIC_API_URL).hostname
+  : 'polar.sh'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -135,6 +139,12 @@ const nextConfig = {
             value: 'polar.new',
           },
         ],
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
         permanent: false,
       },
 
@@ -268,6 +278,12 @@ const nextConfig = {
         source: '/posts',
         destination: '/feed',
         permanent: false,
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
       },
 
       // Access tokens redirect

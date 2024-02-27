@@ -11,6 +11,7 @@ export const useSearchTransactions = (variables: {
   accountId?: string
   paymentUserId?: string
   paymentOrganizationId?: string
+  excludePlatformFees?: boolean
   type?: TransactionType
   page?: number
   limit?: number

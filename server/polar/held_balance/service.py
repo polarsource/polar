@@ -15,6 +15,9 @@ from polar.postgres import AsyncSession
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
 )
+from polar.transaction.service.platform_fee import (
+    platform_fee_transaction as platform_fee_transaction_service,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -58,9 +61,9 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
         )
         held_balances = await session.stream_scalars(statement)
 
-        balances_tuples: list[tuple[Transaction, Transaction]] = []
+        balance_transactions_list: list[tuple[Transaction, Transaction]] = []
         async for held_balance in held_balances:
-            balance_tuple = await balance_transaction_service.create_balance(
+            balance_transactions = await balance_transaction_service.create_balance(
                 session,
                 destination_account=account,
                 payment_transaction=held_balance.payment_transaction,
@@ -69,13 +72,17 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 subscription=held_balance.subscription,
                 issue_reward=held_balance.issue_reward,
             )
-            balances_tuples.append(balance_tuple)
+            balance_transactions_list.append(balance_transactions)
+
+            await platform_fee_transaction_service.create_fees_reversal_balances(
+                session, balance_transactions=balance_transactions
+            )
 
             await session.delete(held_balance)
 
         await session.commit()
 
-        return balances_tuples
+        return balance_transactions_list
 
 
 held_balance = HeldBalanceService(HeldBalance)

@@ -64,6 +64,9 @@ from polar.repository.service import repository as repository_service
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
 )
+from polar.transaction.service.platform_fee import (
+    platform_fee_transaction as platform_fee_transaction_service,
+)
 from polar.user.service import user as user_service
 
 from .hooks import (
@@ -848,7 +851,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 "A transfer for this pledge_id and issue_reward_id already exists, refusing to make another one"  # noqa: E501
             )
 
-        # pledge amount - 10% (polars cut) * the users share
+        # pledge amount * the users share
         payout_amount = split.get_share_amount(pledge)
 
         if split.user_id:
@@ -869,23 +872,24 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         assert pledge.payment_id is not None
 
-        (
-            outgoing,
-            _,
-        ) = await balance_transaction_service.create_balance_from_payment_intent(
-            session,
-            destination_account=pay_to_account,
-            payment_intent_id=pledge.payment_id,
-            amount=payout_amount,
-            pledge=pledge,
-            issue_reward=split,
+        balance_transactions = (
+            await balance_transaction_service.create_balance_from_payment_intent(
+                session,
+                destination_account=pay_to_account,
+                payment_intent_id=pledge.payment_id,
+                amount=payout_amount,
+                pledge=pledge,
+                issue_reward=split,
+            )
+        )
+        await platform_fee_transaction_service.create_fees_reversal_balances(
+            session, balance_transactions=balance_transactions
         )
 
         transaction = PledgeTransaction(
             pledge_id=pledge.id,
             type=PledgeTransactionType.transfer,
             amount=payout_amount,
-            transaction_id=outgoing.transfer_id,
             issue_reward_id=split.id,
         )
 

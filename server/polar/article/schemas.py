@@ -3,7 +3,7 @@ import re
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, HttpUrl
 
 from polar.kit.schemas import Schema
 from polar.models.article import Article as ArticleModel
@@ -38,6 +38,9 @@ class Article(Schema):
     notifications_sent_at: datetime.datetime | None = None
     email_sent_to_count: int | None = None
     web_view_count: int | None = None
+
+    og_image_url: str | None = None
+    og_description: str | None = None
 
     @classmethod
     def cut_premium_content(
@@ -148,6 +151,8 @@ class Article(Schema):
             email_sent_to_count=i.email_sent_to_count if include_admin_fields else None,
             web_view_count=i.web_view_count if include_admin_fields else None,
             is_pinned=i.is_pinned,
+            og_image_url=i.og_image_url,
+            og_description=i.og_description,
         )
 
 
@@ -182,6 +187,12 @@ class ArticleCreate(Schema):
     is_pinned: bool | None = Field(
         default=None, description="If the article should be pinned"
     )
+    og_image_url: HttpUrl | None = Field(
+        default=None, description="Custom og:image URL value"
+    )
+    og_description: str | None = Field(
+        default=None, description="Custom og:description value"
+    )
 
 
 class ArticleUpdate(Schema):
@@ -205,7 +216,7 @@ class ArticleUpdate(Schema):
     )
     set_published_at: bool | None = Field(
         default=None,
-        description="Set to true for changes to published_at to take affect.",
+        description="Set to true for changes to published_at to take effect.",
     )
     notify_subscribers: bool | None = Field(
         default=None,
@@ -213,6 +224,22 @@ class ArticleUpdate(Schema):
     )
     is_pinned: bool | None = Field(
         default=None, description="If the article should be pinned"
+    )
+
+    set_og_image_url: bool | None = Field(
+        default=None,
+        description="Set to true for changes to og_image_url to take effect.",
+    )
+    og_image_url: HttpUrl | None = Field(
+        default=None, description="Custom og:image URL value"
+    )
+
+    set_og_description: bool | None = Field(
+        default=None,
+        description="Set to true for changes to og_description to take effect.",
+    )
+    og_description: str | None = Field(
+        default=None, description="Custom og:description value"
     )
 
 

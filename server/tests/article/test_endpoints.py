@@ -808,3 +808,139 @@ async def test_pinned(
     search_res = search.json()
 
     assert len(search_res["items"]) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_og_image_url(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "og_image_url": "https://polar.sh/foo.png",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_image_url"] == "https://polar.sh/foo.png"
+
+    article_id = res["id"]
+
+    # update
+    response = await client.put(
+        f"/api/v1/articles/{article_id}",
+        json={
+            "set_og_image_url": "true",
+            "og_image_url": "https://polar.sh/foo2.png",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_image_url"] == "https://polar.sh/foo2.png"
+
+    # update without set does not change anything
+    response = await client.put(
+        f"/api/v1/articles/{article_id}",
+        json={
+            "og_image_url": "https://polar.sh/foo3.png",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_image_url"] == "https://polar.sh/foo2.png"
+
+    # unset
+    response = await client.put(
+        f"/api/v1/articles/{article_id}",
+        json={
+            "set_og_image_url": "true",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_image_url"] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_og_description(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "og_description": "description!",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_description"] == "description!"
+
+    article_id = res["id"]
+
+    # update
+    response = await client.put(
+        f"/api/v1/articles/{article_id}",
+        json={
+            "set_og_description": "true",
+            "og_description": "updated",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_description"] == "updated"
+
+    # update without set does not change anything
+    response = await client.put(
+        f"/api/v1/articles/{article_id}",
+        json={
+            "og_description": "whaaaaaaa",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_description"] == "updated"
+
+    # unset
+    response = await client.put(
+        f"/api/v1/articles/{article_id}",
+        json={
+            "set_og_description": "true",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert response.status_code == 200
+    res = response.json()
+    assert res["og_description"] is None

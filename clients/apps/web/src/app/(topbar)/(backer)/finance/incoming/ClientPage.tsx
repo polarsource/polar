@@ -79,6 +79,7 @@ export default function ClientPage({
   const balancesHook = useSearchTransactions({
     accountId: organizationAccount?.id,
     type: TransactionType.BALANCE,
+    excludePlatformFees: true,
     ...getAPIParams(pagination, sorting),
   })
   const balances = balancesHook.data?.items || []

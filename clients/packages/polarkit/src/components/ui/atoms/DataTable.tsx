@@ -7,6 +7,7 @@ import {
   SortingState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 
@@ -29,6 +30,7 @@ interface DataTableProps<TData, TValue> {
   onPaginationChange?: OnChangeFn<PaginationState>
   sorting?: SortingState
   onSortingChange?: OnChangeFn<SortingState>
+  getSubRows?: (row: TData) => TData[] | undefined
   className?: string
 }
 
@@ -48,6 +50,7 @@ export function DataTable<TData, TValue>({
   onPaginationChange,
   sorting,
   onSortingChange,
+  getSubRows,
   className,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
@@ -59,6 +62,8 @@ export function DataTable<TData, TValue>({
     pageCount,
     onPaginationChange,
     onSortingChange,
+    getSubRows,
+    getExpandedRowModel: getExpandedRowModel(),
     state: {
       pagination,
       sorting,

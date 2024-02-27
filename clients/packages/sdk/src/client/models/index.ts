@@ -1086,6 +1086,18 @@ export interface Article {
      * @memberof Article
      */
     web_view_count?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    og_image_url?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    og_description?: string;
 }
 
 
@@ -1165,6 +1177,18 @@ export interface ArticleCreate {
      * @memberof ArticleCreate
      */
     is_pinned?: boolean;
+    /**
+     * Custom og:image URL value
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    og_image_url?: string;
+    /**
+     * Custom og:description value
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    og_description?: string;
 }
 
 
@@ -1326,7 +1350,7 @@ export interface ArticleUpdate {
      */
     published_at?: string;
     /**
-     * Set to true for changes to published_at to take affect.
+     * Set to true for changes to published_at to take effect.
      * @type {boolean}
      * @memberof ArticleUpdate
      */
@@ -1343,6 +1367,30 @@ export interface ArticleUpdate {
      * @memberof ArticleUpdate
      */
     is_pinned?: boolean;
+    /**
+     * Set to true for changes to og_image_url to take effect.
+     * @type {boolean}
+     * @memberof ArticleUpdate
+     */
+    set_og_image_url?: boolean;
+    /**
+     * Custom og:image URL value
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    og_image_url?: string;
+    /**
+     * Set to true for changes to og_description to take effect.
+     * @type {boolean}
+     * @memberof ArticleUpdate
+     */
+    set_og_description?: boolean;
+    /**
+     * Custom og:description value
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    og_description?: string;
 }
 
 

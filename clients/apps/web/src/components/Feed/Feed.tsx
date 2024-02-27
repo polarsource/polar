@@ -5,7 +5,6 @@ import { Article } from '@polar-sh/sdk'
 import { useListArticles, useSSE } from 'polarkit/hooks'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
-import { StaggerReveal } from '../Shared/StaggerReveal'
 import { Post as PostComponent } from './Posts/Post'
 
 export const Feed = () => {
@@ -46,13 +45,7 @@ export const Feed = () => {
 
   return (
     <div className="flex flex-col gap-y-4">
-      <StaggerReveal className="flex flex-col gap-y-4">
-        {infiniteArticles?.map((entity) => (
-          <StaggerReveal.Child key={entity.id}>
-            <PostComponent article={entity} />
-          </StaggerReveal.Child>
-        ))}
-      </StaggerReveal>
+      {infiniteArticles?.map((entity) => <PostComponent article={entity} />)}
       <div ref={ref} />
     </div>
   )

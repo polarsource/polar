@@ -7,6 +7,8 @@ import { getCollection } from 'astro:content'
 import FormattedDate from '../../components/FormattedDate.astro'
 import { Polar } from '@polar-sh/astro'
 
+const rootUrl = Astro.url.host
+
 const posts = (await getCollection('blog')).sort(
   (a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
 )
@@ -35,7 +37,7 @@ const { error: postUploadError } = await polar
   // Add the header image to the post
   .transform(({ article, entry }) => {
     if (entry.data.heroImage) {
-      article.body = `![${entry.data.title}](${entry.data.heroImage})\n\n${article.body}`
+      article.body = `![${entry.data.title}](${rootUrl}${entry.data.heroImage.src})\n\n${article.body}`
     }
     return article
   })

@@ -1,11 +1,11 @@
-from pydantic import UUID4
+from pydantic import UUID4, computed_field
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 
 
 class TransactionRepository(TimestampedSchema):
@@ -66,7 +66,7 @@ class TransactionSubscription(TimestampedSchema):
     subscription_tier: TransactionSubscriptionTier
 
 
-class Transaction(TimestampedSchema):
+class TransactionEmbedded(TimestampedSchema):
     id: UUID4
     type: TransactionType
     processor: PaymentProcessor | None = None
@@ -76,15 +76,41 @@ class Transaction(TimestampedSchema):
     account_currency: str
     account_amount: int
 
+    platform_fee_type: PlatformFeeType | None = None
+
     pledge_id: UUID4 | None = None
     issue_reward_id: UUID4 | None = None
     subscription_id: UUID4 | None = None
 
     payout_transaction_id: UUID4 | None = None
+    incurred_by_transaction_id: UUID4 | None = None
 
+
+class Transaction(TransactionEmbedded):
     pledge: TransactionPledge | None = None
     issue_reward: TransactionIssueReward | None = None
     subscription: TransactionSubscription | None = None
+
+    account_incurred_transactions: list[TransactionEmbedded]
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def incurred_amount(self) -> int:
+        return sum(
+            transaction.amount for transaction in self.account_incurred_transactions
+        )
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def gross_amount(self) -> int:
+        inclusive = 0 if self.type == TransactionType.balance else 1
+        return self.amount + inclusive * self.incurred_amount
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def net_amount(self) -> int:
+        inclusive = 1 if self.type == TransactionType.balance else -1
+        return self.gross_amount + inclusive * self.incurred_amount
 
 
 class TransactionDetails(Transaction):

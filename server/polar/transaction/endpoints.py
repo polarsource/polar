@@ -37,6 +37,7 @@ async def search_transactions(
     account_id: UUID4 | None = Query(None),
     payment_user_id: UUID4 | None = Query(None),
     payment_organization_id: UUID4 | None = Query(None),
+    exclude_platform_fees: bool = Query(False),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[Transaction]:
     results, count = await transaction_service.search(
@@ -46,6 +47,7 @@ async def search_transactions(
         account_id=account_id,
         payment_user_id=payment_user_id,
         payment_organization_id=payment_organization_id,
+        exclude_platform_fees=exclude_platform_fees,
         pagination=pagination,
         sorting=sorting,
     )

@@ -135,7 +135,7 @@ class PaymentTransactionService(BaseTransactionService):
         transaction_fees = await processor_fee_transaction_service.create_payment_fees(
             session, payment_transaction=transaction
         )
-        transaction.incurred_transaction_fees = transaction_fees
+        transaction.incurred_transactions = transaction_fees
 
         session.add(transaction)
         await session.commit()

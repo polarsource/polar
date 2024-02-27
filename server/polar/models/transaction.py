@@ -348,11 +348,11 @@ class Transaction(RecordModel):
         nullable=True,
         index=True,
     )
-    """ID of the balance transaction that reverses this transaction."""
+    """ID of the balance transaction which is reversed by this transaction."""
 
     @declared_attr
     def balance_reversal_transaction(cls) -> Mapped["Transaction | None"]:
-        """Balance transaction that reverses this transaction."""
+        """Balance transaction which is reversed by this transaction."""
         return relationship(
             "Transaction",
             lazy="raise",
@@ -361,6 +361,17 @@ class Transaction(RecordModel):
                 cls.id,  # type: ignore
             ],
             foreign_keys="[Transaction.balance_reversal_transaction_id]",
+            back_populates="balance_reversal_transactions",
+        )
+
+    @declared_attr
+    def balance_reversal_transactions(cls) -> Mapped[list["Transaction"]]:
+        """Balance transactions that reverses this transaction."""
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            foreign_keys="[Transaction.balance_reversal_transaction_id]",
+            back_populates="balance_reversal_transaction",
         )
 
     payout_transaction_id: Mapped[UUID | None] = mapped_column(
@@ -402,15 +413,17 @@ class Transaction(RecordModel):
         index=True,
     )
     """
-    ID of the transaction that incurred this fee transaction.
-    Only applies to transactions of type `TransactionType.processor_fee`.
+    ID of the transaction that incurred this transaction.
+    Generally applies to transactions of type `TransactionType.processor_fee`
+    or platform fees balances.
     """
 
     @declared_attr
     def incurred_by_transaction(cls) -> Mapped["Transaction | None"]:
         """
-        Transaction that incurred this fee transaction.
-        Only applies to transactions of type `TransactionType.processor_fee`.
+        Transaction that incurred this transaction.
+        Generally applies to transactions of type `TransactionType.processor_fee`
+        or platform fees balances.
         """
         return relationship(
             "Transaction",
@@ -419,16 +432,35 @@ class Transaction(RecordModel):
             remote_side=[
                 cls.id,  # type: ignore
             ],
-            back_populates="incurred_transaction_fees",
+            back_populates="incurred_transactions",
             foreign_keys="[Transaction.incurred_by_transaction_id]",
         )
 
     @declared_attr
-    def incurred_transaction_fees(cls) -> Mapped[list["Transaction"]]:
-        """Transaction fees that were incurred by this transaction."""
+    def incurred_transactions(cls) -> Mapped[list["Transaction"]]:
+        """Transactions that were incurred by this transaction."""
         return relationship(
             "Transaction",
             lazy="raise",
             back_populates="incurred_by_transaction",
             foreign_keys="[Transaction.incurred_by_transaction_id]",
+        )
+
+    @declared_attr
+    def account_incurred_transactions(cls) -> Mapped[list["Transaction"]]:
+        """
+        Transactions that were incurred by this transaction,
+        filtered on the current transaction account.
+        """
+        return relationship(
+            "Transaction",
+            lazy="raise",
+            foreign_keys="[Transaction.incurred_by_transaction_id]",
+            primaryjoin=(
+                "and_("
+                "foreign(Transaction.incurred_by_transaction_id) == Transaction.id, "
+                "foreign(Transaction.account_id) == Transaction.account_id,"
+                ")"
+            ),
+            viewonly=True,
         )

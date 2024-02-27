@@ -85,6 +85,7 @@ class PayoutTransactionService(BaseTransactionService):
                 pledge=None,
                 issue_reward=None,
                 subscription=None,
+                incurred_transactions=[],
             )
 
         for balance_transaction in await self.get_unpaid_balance_transactions(
@@ -113,6 +114,7 @@ class PayoutTransactionService(BaseTransactionService):
             pledge=None,
             issue_reward=None,
             subscription=None,
+            incurred_transactions=[],
         )
 
         # Let's first make a transfer to the Stripe Connect account

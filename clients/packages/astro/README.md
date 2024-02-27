@@ -1,35 +1,117 @@
-# Astro Starter Kit: Component Package
+# Polar Astro SDK
 
-This is a template for an Astro component library. Use this template for writing components to use in multiple projects or publish to NPM.
+The Polar Astro SDK is an Astro library designed for interacting with the
+[Polar](https://polar.sh) API.
 
-```sh
-npm create astro@latest -- --template component
+The SDK is designed to run in both static and SSR mode, and provides wrappers the
+[`@polar-sh/sdk`](https://www.npmjs.com/package/@polar-sh/sdk) package for integrating
+your Astro site with Polar.
+
+## Usage
+
+Install the SDK with your favourite package manager (ours is PNPM!):
+
+```bash
+pnpm add @polar-sh/astro
 ```
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/non-html-pages)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/non-html-pages)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/component/devcontainer.json)
+Then, get started by creating a Polar client with your access token:
 
-## 🚀 Project Structure
+```typescript
+import { Polar } from '@polar-sh/astro'
 
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── index.ts
-├── src
-│   └── MyComponent.astro
-├── tsconfig.json
-├── package.json
+const polar = new Polar({ accessToken })
 ```
 
-The `index.ts` file is the "entry point" for your package. Export your components in `index.ts` to make them importable from your package.
+Access tokens can be generated on your Polar [Settings page](https://polar.sh/settings).
 
-## 🧞 Commands
+### Uploading posts to Polar
 
-All commands are run from the root of the project, from a terminal:
+The upload module is designed to be used with
+[Astro content collections](https://docs.astro.build/en/guides/content-collections/).
 
-| Command       | Action                                                                                                                                                                                                                           |
-| :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm link`    | Registers this package locally. Run `npm link my-component-library` in an Astro project to install your components                                                                                                               |
-| `npm publish` | [Publishes](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages#publishing-unscoped-public-packages) this package to NPM. Requires you to be [logged in](https://docs.npmjs.com/cli/v8/commands/npm-adduser) |
+The upload client uses the builder pattern to transform and filter posts before
+uploading them to Polar. For example, to upload all your posts with no modification:
+
+```typescript
+import { getCollection } from 'astro:content'
+import { Polar } from '@polar-sh/astro'
+
+const posts = await getCollection('blog')
+
+const polar = new Polar({ accessToken })
+
+const { data, error } = await polar.upload(posts, {
+  organizationId,
+  organizationName,
+})
+```
+
+Both `organizationId` and `organizationName` are required fields. The returned `data`
+will contain two arrays: one for newly-created posts, and one for updated posts.
+
+The `error` property of the response will contain either an error or a group of errors.
+
+`data` and `error` are mutually exclusive.
+
+The Polar upload builder includes functions for transforming and filtering your posts
+before they're uploaded.
+
+#### Examples
+
+##### Filter existing posts
+
+Only upload new posts that haven't previously been uploaded to Polar. Posts are
+deduplicated by slug.
+
+```typescript
+const { data, error } = await polar
+  .upload(posts, {
+    organizationId,
+    organizationName,
+  })
+  .filter(({ exists }) => !exists)
+```
+
+##### Add a title to the posts
+
+This assumes you have a title in your content collection frontmatter.
+
+```typescript
+const { data, error } = await polar
+  .upload(posts, {
+    organizationId,
+    organizationName,
+  })
+  .transform(({
+    // `entry` is the Astro collection entry
+    entry,
+    // `article` is the Polar article
+    article,
+  }) => {
+     article.title = entry.data.title
+     return article
+  })
+```
+
+##### Update existing posts with new hero images
+
+If you have hero images on your
+[Astro collection entries](https://docs.astro.build/en/guides/images/#images-in-content-collections),
+you can add them as markdown images.
+
+```typescript
+const { data, error } = await polar
+  .upload(posts, {
+    organizationId,
+    organizationName,
+  })
+  .filter(({ exists }) => exists)
+  .transform(({ entry, article }) => {
+     if (entry.data.image) {
+       // Add the image as a markdown image at the start of the article
+       article.body = `![](${Astro.url.host}${entry.data.image.src})\n\n${article.body}`
+     }
+     return article
+  })
+```

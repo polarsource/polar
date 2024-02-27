@@ -54,7 +54,7 @@ const { error: postUploadError } = await polar
   // Add the header image to the post
   .transform(({ article, entry }) => {
     if (entry.data.heroImage) {
-      article.body = `![${entry.data.title}](${entry.data.heroImage})\n\n${article.body}`
+      article.body = `![${entry.data.title}](${rootUrl}${entry.data.heroImage.src})\n\n${article.body}`
     }
     return article
   })
@@ -63,6 +63,8 @@ if (postUploadError) {
   console.error('Error uploading posts to Polar:', postUploadError)
 }
 ```
+
+The only other change has been to use an `image` in the collection config.
 
 If you'd like to see more examples, check out
 [`@polar-sh/astro` on NPM](https://npmjs.com/package/@polar-sh/astro).

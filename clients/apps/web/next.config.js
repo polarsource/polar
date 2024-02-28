@@ -1,7 +1,9 @@
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
-const defaultHostname = process.env.NEXT_PUBLIC_API_URL
-  ? new URL(process.env.NEXT_PUBLIC_API_URL).hostname
+const defaultApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.polar.sh'
+
+const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
   : 'polar.sh'
 
 /** @type {import('next').NextConfig} */
@@ -84,6 +86,18 @@ const nextConfig = {
         source: '/ingest/:path*',
         destination: 'https://app.posthog.com/:path*',
       },
+
+      // API rewrite for custom domains
+      {
+        source: '/api/v1/:path*',
+        destination: `${defaultApiUrl}/:path*`,
+        missing: [
+          {
+            type: 'host',
+            value: defaultFrontendHostname,
+          },
+        ],
+      },
     ]
   },
   async redirects() {
@@ -142,7 +156,7 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: defaultHostname,
+            value: defaultFrontendHostname,
           },
         ],
         permanent: false,
@@ -157,22 +171,15 @@ const nextConfig = {
             type: 'cookie',
             key: POLAR_AUTH_COOKIE_KEY,
           },
+          {
+            type: 'host',
+            value: defaultFrontendHostname,
+          },
         ],
         missing: [
           {
             type: 'host',
             value: 'polar.new',
-          },
-        ],
-        permanent: false,
-      },
-      {
-        source: '/login(.*)',
-        destination: '/feed',
-        has: [
-          {
-            type: 'cookie',
-            key: POLAR_AUTH_COOKIE_KEY,
           },
         ],
         permanent: false,
@@ -186,6 +193,19 @@ const nextConfig = {
           {
             type: 'host',
             value: 'polar.new',
+          },
+        ],
+        permanent: false,
+      },
+
+      // Redirect /maintainer to polar.sh if on a different domain name
+      {
+        source: '/maintainer/:path*',
+        destination: `https://${defaultFrontendHostname}/maintainer/:path*`,
+        missing: [
+          {
+            type: 'host',
+            value: defaultFrontendHostname,
           },
         ],
         permanent: false,
@@ -281,7 +301,7 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: defaultHostname,
+            value: defaultFrontendHostname,
           },
         ],
       },

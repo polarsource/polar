@@ -8,10 +8,7 @@ export const organizationPageLink = (
   path?: string,
 ): string => {
   if (org.custom_domain) {
-    if (process.env.NODE_ENV === 'production') {
-      return `https://${org.custom_domain}/${path ?? ''}`
-    }
-    return `http://${org.custom_domain}/${path ?? ''}`
+    return `https://${org.custom_domain}/${path ?? ''}`
   }
 
   return `${CONFIG.FRONTEND_BASE_URL}/${org.name}/${path ?? ''}`

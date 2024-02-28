@@ -137,7 +137,7 @@ export const AnonymousFreeTierSubscribe = ({
                     <div className="flex w-full flex-row items-center gap-x-1 space-x-1">
                       <Input
                         {...field}
-                        className="h-fit rounded-full bg-transparent px-3 py-[5px] text-[13px]"
+                        className="h-fit rounded-full bg-transparent px-4 py-2 text-sm"
                         type="email"
                         placeholder="Subscribe with Email..."
                       />

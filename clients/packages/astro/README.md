@@ -159,6 +159,18 @@ const { data, error } = await polar
   })
 ```
 
+### Using the Polar SDK
+
+You can also access other Polar SDK functions through the `client` property on the
+`Polar` class.
+
+```typescript
+pledge = await polar
+  .client
+  .pledges
+  .get({ id: 'pledge-id' })
+```
+
 ## TODOs
 
 - [x] Add Polar article upload

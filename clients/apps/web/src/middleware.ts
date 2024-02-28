@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSideAPI } from './utils/api'
+import { defaultFrontendHostname } from './utils/domain'
 
 // Custom domain name handlings
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let url = new URL(request.url)
 
   // Unaffected by middleware
@@ -19,18 +21,20 @@ export function middleware(request: NextRequest) {
     hostname = forwardedHost.split(':')[0]
   }
 
-  // Test custom domains
-  // TODO: move this to a API lookup
-  const mapping: Record<string, string> = {
-    // 'dev.forfunc.com': 'zegl',
-    // 'zegl.forfunc.com': 'zegl',
-  }
-
-  if (!mapping[hostname]) {
+  // Skip dynamic lookup for polar.sh
+  if (hostname === defaultFrontendHostname) {
     return
   }
 
-  const orgname = mapping[hostname]
+  const api = getServerSideAPI()
+  const org = await api.organizations.lookup({
+    customDomain: hostname,
+  })
+  if (!org) {
+    return
+  }
+
+  const orgname = org.name
 
   const strictMatches = ['/']
 

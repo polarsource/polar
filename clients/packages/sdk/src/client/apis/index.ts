@@ -3,6 +3,7 @@
 export * from './AccountsApi';
 export * from './AdvertisementsApi';
 export * from './ArticlesApi';
+export * from './AuthApi';
 export * from './BackofficeApi';
 export * from './DashboardApi';
 export * from './ExtensionApi';

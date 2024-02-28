@@ -2024,6 +2024,51 @@ export interface CurrencyAmount {
 /**
  * 
  * @export
+ * @interface CustomDomainExchangeRequest
+ */
+export interface CustomDomainExchangeRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomDomainExchangeRequest
+     */
+    token: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomDomainExchangeResponse
+ */
+export interface CustomDomainExchangeResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomDomainExchangeResponse
+     */
+    token: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomDomainExchangeResponse
+     */
+    expires_at: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomDomainForwardResponse
+ */
+export interface CustomDomainForwardResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomDomainForwardResponse
+     */
+    token: string;
+}
+/**
+ * 
+ * @export
  * @interface DiscordGuild
  */
 export interface DiscordGuild {

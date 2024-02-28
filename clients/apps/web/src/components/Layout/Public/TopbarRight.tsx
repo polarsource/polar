@@ -35,8 +35,9 @@ const TopbarRight = ({
             className="hidden md:flex"
           />
 
+          {/* Login link needs to be on the default frontend (polar.sh) to handle custom domains. */}
           <Link
-            href={`/login?return_to=${returnTo}`}
+            href={`${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}/login?return_to=${returnTo}`}
             className="font-medium text-blue-500 hover:text-blue-600"
           >
             Login

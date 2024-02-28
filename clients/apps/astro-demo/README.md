@@ -14,7 +14,8 @@ The only change is in the [`src/pages/blog/index.astro`](./src/pages/blog/index.
 file, which contains an example of how to use the integration to upload posts to Polar.
 
 Note: this code will fail unless you provide both a personal access token and an
-organization ID. The example is not intended to be run.
+organization ID. The example is not intended to be run. Similarly, the `build` script
+has been removed as the code would run at build time.
 
 ## Example
 

@@ -71,7 +71,7 @@ export const OrganizationPublicPageNav = ({
   const isPostsView = pathname.includes('/posts/')
 
   const tabsTriggerClassName =
-    'data-[state=active]:text-blue-500 hover:text-blue-500 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none p-0 data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent text-md'
+    'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none'
 
   return mobileLayout ? (
     <>
@@ -105,9 +105,8 @@ export const OrganizationPublicPageNav = ({
   ) : (
     <Tabs value={currentTab}>
       <TabsList
-        vertical
         className={twMerge(
-          'flex flex-col bg-transparent p-0 ring-0 dark:bg-transparent dark:ring-0',
+          'flex bg-transparent ring-0 dark:bg-transparent dark:ring-0',
           className,
         )}
       >
@@ -117,8 +116,7 @@ export const OrganizationPublicPageNav = ({
             value="overview"
             size="small"
           >
-            {currentTab === 'overview' && <span>—</span>}
-            <span>Overview</span>
+            Overview
           </TabsTrigger>
         </Link>
 
@@ -128,8 +126,7 @@ export const OrganizationPublicPageNav = ({
             value="posts"
             size="small"
           >
-            {currentTab === 'posts' && <span>—</span>}
-            <span>Posts</span>
+            Posts
           </TabsTrigger>
         </Link>
 
@@ -139,8 +136,7 @@ export const OrganizationPublicPageNav = ({
             value="subscriptions"
             size="small"
           >
-            {currentTab === 'subscriptions' && <span>—</span>}
-            <span>Subscriptions</span>
+            Subscriptions
           </TabsTrigger>
         </Link>
 
@@ -150,8 +146,7 @@ export const OrganizationPublicPageNav = ({
             value="issues"
             size="small"
           >
-            {currentTab === 'issues' && <span>—</span>}
-            <span>Issues</span>
+            Issues
           </TabsTrigger>
         </Link>
 
@@ -161,8 +156,7 @@ export const OrganizationPublicPageNav = ({
             value="repositories"
             size="small"
           >
-            {currentTab === 'repositories' && <span>—</span>}
-            <span>Repositories</span>
+            Repositories
           </TabsTrigger>
         </Link>
       </TabsList>

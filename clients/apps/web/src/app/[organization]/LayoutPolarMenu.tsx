@@ -17,9 +17,6 @@ export const PolarMenu = ({
 
   return (
     <div className="flex flex-row items-center gap-x-4">
-      <a href="/">
-        <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
-      </a>
       {authenticatedUser ? (
         <div>
           <div className="relative flex w-max flex-shrink-0 flex-row items-center justify-between gap-x-6">
@@ -32,6 +29,9 @@ export const PolarMenu = ({
       ) : (
         <>
           <CreateWithPolar returnTo={returnTo} />
+          <a href="/">
+            <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
+          </a>
         </>
       )}
     </div>

@@ -22,8 +22,8 @@ export function middleware(request: NextRequest) {
   // Test custom domains
   // TODO: move this to a API lookup
   const mapping: Record<string, string> = {
-    'dev.forfunc.com': 'zegl',
-    'zegl.forfunc.com': 'zegl',
+    // 'dev.forfunc.com': 'zegl',
+    // 'zegl.forfunc.com': 'zegl',
   }
 
   if (!mapping[hostname]) {

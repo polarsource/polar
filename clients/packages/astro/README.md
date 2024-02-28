@@ -66,6 +66,20 @@ const { data, error } = await polar.upload(posts, {
 })
 ```
 
+The above code will upload all your posts to Polar, and will update any existing posts
+that share a `slug` between Astro and Polar. The default parameters are as follows:
+
+```typescript
+{
+  title: entry.id,
+  slug: entry.slug,
+  body: entry.body,
+}
+```
+
+Where `entry` is an Astro collection entry object. `entry.id` usually corresponds to the
+filename.
+
 Both `organizationId` and `organizationName` are required fields. The returned `data`
 will contain two arrays: one for newly-created posts, and one for updated posts.
 

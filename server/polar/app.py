@@ -7,7 +7,6 @@ import structlog
 from fastapi import Depends, FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
-from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import BaseRoute
 
 from polar import receivers, worker  # noqa
@@ -19,6 +18,8 @@ from polar.exception_handlers import (
 )
 from polar.exceptions import PolarError, PolarRedirectionError
 from polar.health.endpoints import router as health_router
+from polar.kit.cors.cors import CallbackCORSMiddleware
+from polar.kit.cors.custom_domain_cors import is_allowed_custom_domain
 from polar.kit.db.postgres import (
     AsyncEngine,
     AsyncSession,
@@ -43,11 +44,12 @@ def configure_cors(app: FastAPI) -> None:
         return
 
     app.add_middleware(
-        CORSMiddleware,
+        CallbackCORSMiddleware,
         allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        is_allowed_origin_hook=is_allowed_custom_domain,
     )
 
 

@@ -1,3 +1,4 @@
+import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api'
 import {
@@ -66,17 +67,18 @@ export default async function Layout({
 
   return (
     <div className="flex flex-col">
-      <div className="relative mx-auto flex w-full max-w-[1728px] shrink-0 flex-col items-start px-2 md:h-full md:flex-row md:gap-32 md:space-y-8 md:px-24">
-        <div className="relative flex h-screen max-w-md flex-col justify-between py-16 md:sticky md:top-0">
+      <div className="relative mx-auto flex w-full max-w-[1580px] shrink-0 flex-col items-start px-2 md:h-full md:flex-row md:gap-32 md:space-y-8 md:px-24">
+        <div className="relative flex w-full max-w-xs flex-col justify-between py-16 md:sticky md:top-0">
           <OrganizationPublicSidebar
             subscriptionsSummary={subscriptionsSummary}
             organization={organization}
           />
-          <div className="flex flex-row gap-x-8">
+        </div>
+        <div className="flex h-full w-full flex-col py-12 md:gap-y-16">
+          <div className="flex flex-row items-center justify-between">
+            <OrganizationPublicPageNav organization={organization} />
             <PolarMenu authenticatedUser={authenticatedUser} />
           </div>
-        </div>
-        <div className="flex h-full w-full flex-col py-12 md:gap-y-8">
           {children}
         </div>
       </div>

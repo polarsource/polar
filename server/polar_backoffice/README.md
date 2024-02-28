@@ -31,7 +31,7 @@ export POLAR_BACKOFFICE_RENDER_API_KEY=XXX
 The tool will open an SSH tunnel to the backend server. You'll need to pass our server ID to the CLI or, once again, set it in shell profile:
 
 ```sh
-export POLAR_BACKOFFICE_RENDER_SERVICE_ID=srv-ci4r87h8g3ne0dmvvl60
+export POLAR_BACKOFFICE_RENDER_SERVICE_ID=XXX
 ```
 
 ### 4. Install Python dependencies

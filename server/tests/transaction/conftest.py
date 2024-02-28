@@ -12,6 +12,7 @@ from polar.models import (
     Transaction,
     User,
 )
+from polar.models.pledge import PledgeType
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import (
@@ -57,7 +58,11 @@ async def create_transaction(
 
 
 async def create_account(
-    session: AsyncSession, organization: Organization, user: User
+    session: AsyncSession,
+    organization: Organization,
+    user: User,
+    *,
+    processor_fees_applicable: bool = False,
 ) -> Account:
     account = Account(
         status=Account.Status.ACTIVE,
@@ -68,6 +73,7 @@ async def create_account(
         is_details_submitted=True,
         is_charges_enabled=True,
         is_payouts_enabled=True,
+        processor_fees_applicable=processor_fees_applicable,
     )
     session.add(account)
     organization.account = account
@@ -90,7 +96,14 @@ async def transaction_pledge(
     repository: Repository,
     issue: Issue,
 ) -> Pledge:
-    return await create_pledge(session, organization, repository, issue, organization)
+    return await create_pledge(
+        session,
+        organization,
+        repository,
+        issue,
+        organization,
+        type=PledgeType.pay_on_completion,
+    )
 
 
 @pytest_asyncio.fixture

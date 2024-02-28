@@ -1,4 +1,3 @@
-import math
 from datetime import UTC, datetime
 from typing import Literal
 
@@ -20,18 +19,6 @@ class UnsupportedStripeFeeType(ProcessorFeeTransactionError):
         self.description = description
         message = f"Unsupported Stripe fee type: {description}"
         super().__init__(message)
-
-
-def _round_stripe(amount: float) -> int:
-    return math.ceil(amount) if amount - int(amount) >= 0.5 else math.floor(amount)
-
-
-def _get_stripe_subscription_fee(amount: int) -> int:
-    return _round_stripe(amount * 0.005)
-
-
-def _get_stripe_tax_fee(amount: int) -> int:
-    return _round_stripe(amount * 0.005)
 
 
 def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:

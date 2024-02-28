@@ -230,6 +230,7 @@ async def create_pledge(
         fee=fee,
         state=state,
         type=type,
+        invoice_id="INVOICE_ID" if type == PledgeType.pay_on_completion else None,
     ).save(session=session)
 
     await session.commit()

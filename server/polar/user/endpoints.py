@@ -100,7 +100,10 @@ async def set_account(
     )
 
 
-@router.get("/logout")
+@router.get(
+    "/logout",
+    deprecated=True,  # Use /api/v1/auth/logout instead, which also has support for custom domains
+)
 async def logout(
     response: Response,
     auth: UserRequiredAuth,

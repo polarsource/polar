@@ -29,6 +29,10 @@ export interface AuthApiCustomDomainForwardRequest {
     organizationId: string;
 }
 
+export interface AuthApiLogoutRequest {
+    organizationId?: string;
+}
+
 /**
  * 
  */
@@ -114,6 +118,48 @@ export class AuthApi extends runtime.BaseAPI {
      */
     async customDomainForward(requestParameters: AuthApiCustomDomainForwardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomDomainForwardResponse> {
         const response = await this.customDomainForwardRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Logout
+     */
+    async logoutRaw(requestParameters: AuthApiLogoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.organizationId !== undefined) {
+            queryParameters['organization_id'] = requestParameters.organizationId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/auth/logout`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Logout
+     */
+    async logout(requestParameters: AuthApiLogoutRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.logoutRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

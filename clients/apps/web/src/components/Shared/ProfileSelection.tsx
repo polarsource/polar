@@ -9,6 +9,7 @@ import { UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
+import { CONFIG } from 'polarkit/config'
 import { useListAllOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
@@ -203,7 +204,15 @@ export const ProfileMenu = ({
     setOpen(false)
   })
 
+  const { org: currentUrlOrg } = useCurrentOrgAndRepoFromURL()
+
   const onLogout = async () => {
+    // logging out on custom domain
+    if (currentUrlOrg && currentUrlOrg.custom_domain) {
+      window.location.href = `${CONFIG.BASE_URL}/api/v1/auth/logout?organization_id=${currentUrlOrg.id}`
+      return
+    }
+
     await logout()
     // Do not use the next router here. Trigger a full refresh.
     window.location.href = '/'

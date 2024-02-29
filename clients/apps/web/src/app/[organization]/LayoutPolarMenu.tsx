@@ -1,27 +1,34 @@
 'use client'
 
 import { ProfileMenu } from '@/components/Shared/ProfileSelection'
-import { useAuth } from '@/hooks'
+import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { getGitHubAuthorizeURL } from 'polarkit/auth'
 import { Button } from 'polarkit/components/ui/atoms'
+import { CONFIG } from 'polarkit/config'
 
 export const PolarMenu = ({
   authenticatedUser,
   userAdminOrganizations,
+  organization,
 }: {
   authenticatedUser?: UserRead
   userAdminOrganizations: Organization[]
+  organization: Organization
 }) => {
   const pathname = usePathname()
   const returnTo = pathname ?? '/feed'
 
-  // Fallback to client side user loading
+  // Fallback to client side user loading (needed as we're loading data in the layout, and it isn't refreshed on navigation)
   const { currentUser: clientCurrentUser } = useAuth()
   const currentUser = authenticatedUser ?? clientCurrentUser
+
+  // Fallback to client side org loading
+  const { org: clientOrg } = useCurrentOrgAndRepoFromURL()
+  const currentOrg = clientOrg ?? organization
 
   const personalOrg = userAdminOrganizations?.find((o) => o.is_personal)
 
@@ -32,6 +39,11 @@ export const PolarMenu = ({
   const creatorPath = personalOrg
     ? `/maintainer/${currentUser?.username}/overview`
     : `/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
+
+  // Login through polar.sh with auth forwarding if on custom domain
+  const loginLink = currentOrg.custom_domain
+    ? `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${returnTo}&for_organization_id=${currentOrg.id}`
+    : `/login?return_to=${returnTo}`
 
   return (
     <div className="flex flex-row items-center gap-x-4">
@@ -61,7 +73,7 @@ export const PolarMenu = ({
         <>
           <CreateWithPolar returnTo={returnTo} />
           <Link
-            href={`/login?return_to=${returnTo}`}
+            href={loginLink}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
           >
             Login

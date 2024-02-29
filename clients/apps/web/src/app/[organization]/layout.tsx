@@ -88,6 +88,7 @@ export default async function Layout({
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
           </a>
           <PolarMenu
+            organization={organization}
             authenticatedUser={authenticatedUser}
             userAdminOrganizations={userAdminOrganizations?.items ?? []}
           />
@@ -113,6 +114,7 @@ export default async function Layout({
             </div>
             <div className="hidden md:flex">
               <PolarMenu
+                organization={organization}
                 authenticatedUser={authenticatedUser}
                 userAdminOrganizations={userAdminOrganizations?.items ?? []}
               />

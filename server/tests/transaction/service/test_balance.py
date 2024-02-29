@@ -74,6 +74,7 @@ class TestCreateBalance:
 
         outgoing, incoming = await balance_transaction_service.create_balance(
             session,
+            source_account=None,
             destination_account=account,
             payment_transaction=payment_transaction,
             amount=1000,
@@ -115,6 +116,7 @@ class TestCreateBalanceFromCharge:
         with pytest.raises(PaymentTransactionForChargeDoesNotExist):
             await balance_transaction_service.create_balance_from_charge(
                 session,
+                source_account=None,
                 destination_account=account,
                 charge_id="STRIPE_CHARGE_ID",
                 amount=1000,
@@ -151,6 +153,7 @@ class TestCreateBalanceFromCharge:
             outgoing,
         ) = await balance_transaction_service.create_balance_from_charge(
             session,
+            source_account=None,
             destination_account=account,
             charge_id="STRIPE_CHARGE_ID",
             amount=1000,
@@ -199,6 +202,7 @@ class TestCreateBalanceFromPaymentIntent:
             outgoing,
         ) = await balance_transaction_service.create_balance_from_payment_intent(
             session,
+            source_account=None,
             destination_account=account,
             payment_intent_id="STRIPE_PAYMENT_INTENT_ID",
             amount=1000,

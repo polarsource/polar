@@ -65,6 +65,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
         async for held_balance in held_balances:
             balance_transactions = await balance_transaction_service.create_balance(
                 session,
+                source_account=None,
                 destination_account=account,
                 payment_transaction=held_balance.payment_transaction,
                 amount=held_balance.amount,

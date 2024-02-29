@@ -161,6 +161,7 @@ class DisputeTransactionService(BaseTransactionService):
             assert outgoing.account is not None
             await balance_transaction_service.create_balance(
                 session,
+                source_account=None,
                 destination_account=outgoing.account,
                 payment_transaction=payment_transaction,
                 amount=abs(outgoing.amount),

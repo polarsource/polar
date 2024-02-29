@@ -32,24 +32,25 @@ class BalanceTransactionService(BaseTransactionService):
         self,
         session: AsyncSession,
         *,
-        destination_account: Account,
-        payment_transaction: Transaction,
+        source_account: Account | None,
+        destination_account: Account | None,
         amount: int,
+        payment_transaction: Transaction | None = None,
         pledge: Pledge | None = None,
         subscription: Subscription | None = None,
         issue_reward: IssueReward | None = None,
     ) -> tuple[Transaction, Transaction]:
-        source_currency = payment_transaction.currency.lower()
+        currency = "usd"  # FIXME: Main Polar currency
 
         balance_correlation_key = str(uuid.uuid4())
 
         outgoing_transaction = Transaction(
             id=generate_uuid(),
-            account=None,  # Polar account
+            account=source_account,
             type=TransactionType.balance,
-            currency=source_currency,
+            currency=currency,
             amount=-amount,  # Subtract the amount
-            account_currency=source_currency,
+            account_currency=currency,
             account_amount=-amount,
             tax_amount=0,
             balance_correlation_key=balance_correlation_key,
@@ -60,11 +61,11 @@ class BalanceTransactionService(BaseTransactionService):
         )
         incoming_transaction = Transaction(
             id=generate_uuid(),
-            account=destination_account,  # User account
+            account=destination_account,
             type=TransactionType.balance,
-            currency=source_currency,
+            currency=currency,
             amount=amount,  # Add the amount
-            account_currency=source_currency,
+            account_currency=currency,
             account_amount=amount,
             tax_amount=0,
             balance_correlation_key=balance_correlation_key,
@@ -78,7 +79,8 @@ class BalanceTransactionService(BaseTransactionService):
         session.add(incoming_transaction)
         await session.commit()
 
-        await account_service.check_review_threshold(session, destination_account)
+        if destination_account is not None:
+            await account_service.check_review_threshold(session, destination_account)
 
         return (outgoing_transaction, incoming_transaction)
 
@@ -86,7 +88,8 @@ class BalanceTransactionService(BaseTransactionService):
         self,
         session: AsyncSession,
         *,
-        destination_account: Account,
+        source_account: Account | None,
+        destination_account: Account | None,
         charge_id: str,
         amount: int,
         pledge: Pledge | None = None,
@@ -101,6 +104,7 @@ class BalanceTransactionService(BaseTransactionService):
 
         return await self.create_balance(
             session,
+            source_account=source_account,
             destination_account=destination_account,
             payment_transaction=payment_transaction,
             amount=amount,
@@ -113,7 +117,8 @@ class BalanceTransactionService(BaseTransactionService):
         self,
         session: AsyncSession,
         *,
-        destination_account: Account,
+        source_account: Account | None,
+        destination_account: Account | None,
         payment_intent_id: str,
         amount: int,
         pledge: Pledge | None = None,
@@ -126,6 +131,7 @@ class BalanceTransactionService(BaseTransactionService):
 
         return await self.create_balance_from_charge(
             session,
+            source_account=source_account,
             destination_account=destination_account,
             charge_id=charge_id,
             amount=amount,

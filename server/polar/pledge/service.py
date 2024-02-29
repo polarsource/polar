@@ -875,6 +875,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         balance_transactions = (
             await balance_transaction_service.create_balance_from_payment_intent(
                 session,
+                source_account=None,
                 destination_account=pay_to_account,
                 payment_intent_id=pledge.payment_id,
                 amount=payout_amount,

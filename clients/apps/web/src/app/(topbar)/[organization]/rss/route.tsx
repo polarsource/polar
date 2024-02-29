@@ -1,5 +1,6 @@
 import EmailRender from '@/components/Feed/Markdown/EmailRender'
 import { getServerSideAPI } from '@/utils/api'
+import { organizationPageLink } from '@/utils/nav'
 import { Platforms } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -43,7 +44,7 @@ export async function GET(
   const feed = new RSS({
     title: organization.pretty_name || organization.name,
     feed_url: `https://polar.sh/${organization.name}/rss`,
-    site_url: `https://polar.sh/${organization.name}/`,
+    site_url: organizationPageLink(organization),
     generator: 'polar.sh',
     image_url: organization.avatar_url,
   })
@@ -58,7 +59,7 @@ export async function GET(
     feed.item({
       title: article.title,
       description: preview,
-      url: `https://polar.sh/${organization.name}/posts/${article.slug}`,
+      url: organizationPageLink(organization, `posts/${article.slug}`),
       date: article.published_at ? new Date(article.published_at) : new Date(),
     })
   }

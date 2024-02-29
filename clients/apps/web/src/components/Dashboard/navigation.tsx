@@ -1,5 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
@@ -133,7 +134,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   {
     id: 'public-page',
     title: 'Public Page',
-    link: `/${org.name}`,
+    link: organizationPageLink(org),
     postIcon: undefined,
     icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,
     if: true,

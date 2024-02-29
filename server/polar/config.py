@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     TESTING: bool = False
 
     SECRET: str = "super secret jwt secret"
+    SECRET_CUSTOM_DOMAIN_EXCHANGE: str = "SETME! secret key used for custom domain auth"
 
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []

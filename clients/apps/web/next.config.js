@@ -257,6 +257,12 @@ const nextConfig = {
         source: '/issues(.*)',
         destination: '/maintainer',
         permanent: false,
+        missing: [
+          {
+            type: 'host',
+            value: defaultFrontendHostname,
+          },
+        ],
       },
       {
         source: '/promote(.*)',

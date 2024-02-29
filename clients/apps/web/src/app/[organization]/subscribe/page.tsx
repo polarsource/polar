@@ -92,8 +92,10 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: { organization: string }
+  searchParams: { email?: string }
 }) {
   const api = getServerSideAPI()
 
@@ -130,6 +132,7 @@ export default async function Page({
     <ClientPage
       organization={organization}
       subscriptionTiers={subscriptionTiers}
+      email={searchParams.email}
     />
   )
 }

@@ -53,7 +53,7 @@ export default function ClientPage({
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex max-w-5xl flex-row flex-wrap gap-8">
         {sortedTiers.map((tier, index) => (
           <div
             className={twMerge(
@@ -75,7 +75,7 @@ export default function ClientPage({
           </div>
         ))}
       </div>
-      <div className="flex w-full max-w-xs flex-row items-center">
+      <div className="flex w-48 flex-row items-center">
         {selectedTier &&
           shouldRenderSubscribeButton &&
           (selectedTier.type === 'free' ? (

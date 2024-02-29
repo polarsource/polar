@@ -121,8 +121,10 @@ const { data, error } = await polar
     entry,
     // `article` is the Polar article
     article,
+    // `existing` is the existing Polar article, if it's been uploaded previously
+    existing,
   }) => {
-    article.title = entry.data.title
+    article.title = entry.data.title ?? existing.title
     return article
   })
 ```

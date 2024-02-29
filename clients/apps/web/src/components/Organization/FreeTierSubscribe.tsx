@@ -1,19 +1,17 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionTier, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import { Button, Input } from 'polarkit/components/ui/atoms'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
 import { useCreateFreeSubscription, useUserSubscriptions } from 'polarkit/hooks'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { Modal } from '../Modal'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
-import SubscriptionTierCelebration from '../Subscriptions/SubscriptionTierCelebration'
 
 interface AuthenticatedFreeTierSubscribeProps {
   organization: Organization
@@ -82,42 +80,28 @@ export const AnonymousFreeTierSubscribe = ({
 }: AnonymousFreeTierSubscribeProps) => {
   const router = useRouter()
 
-  const [showModal, setShowModal] = useState(false)
-  const [success, setSuccess] = useState(false)
   const form = useForm<{ customer_email: string }>()
   const { control, handleSubmit } = form
-
-  const [email, setEmail] = useState('')
 
   const createFreeSubscription = useCreateFreeSubscription()
 
   const onSubscribeFree: SubmitHandler<{ customer_email: string }> =
     useCallback(
       async (data) => {
-        setSuccess(false)
-
         await createFreeSubscription.mutateAsync({
           tier_id: subscriptionTier.id,
           customer_email: data.customer_email,
         })
 
-        setShowModal(true)
-        setEmail(data.customer_email)
-        setSuccess(true)
+        router.push(
+          organizationPageLink(
+            organization,
+            `subscribe?email=${data.customer_email}`,
+          ),
+        )
       },
-      [subscriptionTier, createFreeSubscription],
+      [createFreeSubscription, subscriptionTier, router, organization],
     )
-
-  const [emailSignInClicked, setEmailSignInClicked] = useState(false)
-  const onEmailSignin = useCallback(async () => {
-    setEmailSignInClicked(true) // set to true, never resets to false
-
-    await api.magicLink.magicLinkRequest({
-      magicLinkRequest: { email, return_to: window.location.href },
-    })
-    const searchParams = new URLSearchParams({ email: email })
-    router.push(`/login/magic-link/request?${searchParams}`)
-  }, [email, router])
 
   return (
     <>
@@ -158,33 +142,6 @@ export const AnonymousFreeTierSubscribe = ({
           </form>
         </Form>
       </div>
-      <Modal
-        className="overflow-visible"
-        isShown={showModal}
-        hide={() => setShowModal(false)}
-        modalContent={
-          <div className="flex min-h-[240px] w-full flex-col items-center justify-center gap-y-6 px-16 py-10">
-            {success && (
-              <>
-                <SubscriptionTierCelebration type={subscriptionTier.type} />
-                <p className="text-muted-foreground text-center">Thank you!</p>
-                <h2 className="text-center text-lg">
-                  You&apos;re now subscribed to {organization.name}
-                </h2>
-                <Button
-                  type="button"
-                  size="lg"
-                  disabled={emailSignInClicked}
-                  loading={emailSignInClicked}
-                  onClick={onEmailSignin}
-                >
-                  Sign in with email
-                </Button>
-              </>
-            )}
-          </div>
-        }
-      />
     </>
   )
 }

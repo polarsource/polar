@@ -778,6 +778,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         balance_transactions = (
             await balance_transaction_service.create_balance_from_charge(
                 session,
+                source_account=None,
                 destination_account=account,
                 charge_id=charge_id,
                 amount=transfer_amount,

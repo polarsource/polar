@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/astro",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": "./index.ts"

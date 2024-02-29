@@ -1,6 +1,7 @@
 'use client'
 
 import { useCurrentOrgAndRepoFromURL, useGitHubAccount } from '@/hooks'
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
@@ -257,7 +258,7 @@ export const ProfileMenu = ({
                   ))}
               {personalOrg && (
                 <LinkItem
-                  href={`/${personalOrg.name}`}
+                  href={organizationPageLink(personalOrg)}
                   icon={<ArrowUpRightIcon className="h-5 w-5" />}
                 >
                   <span className="mx-2 text-sm">Public Page</span>

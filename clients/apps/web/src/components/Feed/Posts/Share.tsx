@@ -1,3 +1,4 @@
+import { organizationPageLink } from '@/utils/nav'
 import { LinkedIn } from '@mui/icons-material'
 import XIcon from '@mui/icons-material/X'
 
@@ -40,7 +41,10 @@ export const Share = ({
     setOpen(false)
   })
 
-  const url = `https://polar.sh/${article.organization.name}/posts/${article.slug}`
+  const url = organizationPageLink(
+    article.organization,
+    `posts/${article.slug}`,
+  )
 
   return (
     <>

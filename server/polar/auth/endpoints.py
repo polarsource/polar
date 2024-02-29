@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import RedirectResponse
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.auth.schemas import (
@@ -76,3 +77,28 @@ async def custom_domain_exchange(
         token=token,
         expires_at=expires_at,
     )
+
+
+@router.get(
+    "/auth/logout",
+)
+async def logout(
+    organization_id: UUID | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> RedirectResponse:
+    redirect_to = settings.FRONTEND_BASE_URL
+
+    # redirect to custom domain to logout there as well
+    if organization_id:
+        org = await organization_service.get(session, organization_id)
+        if not org:
+            raise ResourceNotFound()
+
+        if not org.custom_domain:
+            raise ResourceNotFound()
+
+        redirect_to = f"https://{org.custom_domain}/api/auth/logout"
+
+    response = RedirectResponse(redirect_to)
+    AuthService.set_auth_cookie(response=response, value="", expires=0)
+    return response

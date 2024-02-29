@@ -56,7 +56,7 @@ class Account(Schema):
             stripe_id=o.stripe_id,
             open_collective_slug=o.open_collective_slug,
             is_details_submitted=o.is_details_submitted,
-            country=o.country or "SE",
+            country=o.country,
             users=[UserBase.model_validate(user) for user in o.users],
             organizations=[
                 Organization.from_db(organization) for organization in o.organizations

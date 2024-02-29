@@ -237,11 +237,12 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             raise AccountExternalIdDoesNotExist(stripe_account.id)
 
         account.email = stripe_account.email
-        account.country = stripe_account.country
         account.currency = stripe_account.default_currency
         account.is_details_submitted = stripe_account.details_submitted or False
         account.is_charges_enabled = stripe_account.charges_enabled or False
         account.is_payouts_enabled = stripe_account.payouts_enabled or False
+        if stripe_account.country is not None:
+            account.country = stripe_account.country
         account.data = stripe_account.to_dict()
 
         if all(

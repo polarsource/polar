@@ -40,7 +40,7 @@ class Account(RecordModel):
 
     email: Mapped[str | None] = mapped_column(String(254), nullable=True, default=None)
 
-    country: Mapped[str | None] = mapped_column(String(2))
+    country: Mapped[str] = mapped_column(String(2), nullable=False)
     currency: Mapped[str | None] = mapped_column(String(3))
 
     is_details_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False)

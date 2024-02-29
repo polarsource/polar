@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 import jwt
 
@@ -22,7 +22,11 @@ def encode(
     secret: str,
     expires_at: datetime | None = None,
     expires_in: int | None = DEFAULT_EXPIRATION,
+    type: Literal["custom_domain_forward"] | None = None,  # TODO: make required
 ) -> str:
+    if type:
+        data["type"] = type
+
     to_encode = data.copy()
     if not expires_at:
         expires_in = expires_in or DEFAULT_EXPIRATION

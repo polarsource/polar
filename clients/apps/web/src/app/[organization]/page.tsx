@@ -3,6 +3,7 @@ import { redirectToCustomDomain } from '@/utils/nav'
 import {
   ListResourceArticle,
   ListResourceRepository,
+  ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
   Organization,
   Platforms,
@@ -104,6 +105,7 @@ export default async function Page({
   let articles: ListResourceArticle | undefined
   let subscriptionTiers: ListResourceSubscriptionTier | undefined
   let repositories: ListResourceRepository | undefined
+  let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
 
   try {
     const [
@@ -112,6 +114,7 @@ export default async function Page({
       loadPinnedArticles,
       loadSubscriptionTiers,
       loadRepositories,
+      loadSubscriptionsSummary,
     ] = await Promise.all([
       api.organizations.lookup(
         {
@@ -152,6 +155,14 @@ export default async function Page({
         },
         cacheConfig,
       ),
+      api.subscriptions.searchSubscriptionsSummary(
+        {
+          organizationName: params.organization,
+          platform: Platforms.GITHUB,
+          limit: 3,
+        },
+        cacheConfig,
+      ),
     ])
 
     organization = loadOrganization
@@ -159,6 +170,7 @@ export default async function Page({
     pinnedArticles = loadPinnedArticles
     subscriptionTiers = loadSubscriptionTiers
     repositories = loadRepositories
+    subscriptionsSummary = loadSubscriptionsSummary
   } catch (e) {
     notFound()
   }
@@ -173,7 +185,7 @@ export default async function Page({
   const sortedRepositories =
     repositories.items
       ?.sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0))
-      .slice(0, 4) ?? []
+      .slice(0, 2) ?? []
 
   return (
     <ClientPage
@@ -181,6 +193,7 @@ export default async function Page({
       posts={posts}
       repositories={sortedRepositories}
       subscriptionTiers={subscriptionTiers}
+      subscriptionsSummary={subscriptionsSummary}
     />
   )
 }

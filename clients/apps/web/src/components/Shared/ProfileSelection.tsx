@@ -184,9 +184,11 @@ export default ProfileSelection
 export const ProfileMenu = ({
   className,
   authenticatedUser,
+  allBackerRoutes = false,
 }: {
   className?: string
   authenticatedUser: UserRead | undefined
+  allBackerRoutes?: boolean
 }) => {
   const classNames = twMerge('relative', className)
   const { logout } = useAuth()
@@ -245,6 +247,14 @@ export const ProfileMenu = ({
             </Link>
 
             <ul className="mt-2 flex w-full flex-col">
+              {allBackerRoutes &&
+                backerRoutes()
+                  .filter((route) => ('if' in route ? route.if : true))
+                  .map((n) => (
+                    <LinkItem href={n.link} icon={n.icon} key={n.link}>
+                      <span className="mx-2 text-sm">{n.title}</span>
+                    </LinkItem>
+                  ))}
               {personalOrg && (
                 <LinkItem
                   href={`/${personalOrg.name}`}

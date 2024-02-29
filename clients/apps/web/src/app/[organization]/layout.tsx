@@ -82,7 +82,7 @@ export default async function Layout({
 
   return (
     <div className="flex flex-col">
-      <div className="mx-auto flex w-full max-w-[1580px] flex-col items-start px-4 md:h-full md:flex-row md:gap-32 md:space-y-8 md:px-24">
+      <div className="mx-auto flex w-full max-w-[1580px] flex-col items-start px-4 md:h-full md:flex-row md:gap-16 md:space-y-8 md:px-24 lg:gap-32">
         <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
           <a href="/">
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
@@ -100,8 +100,8 @@ export default async function Layout({
           />
         </div>
         <div className="flex h-full w-full flex-col gap-y-8 md:gap-y-16 md:py-12">
-          <div className="flex w-full flex-row items-center justify-between gap-x-8">
-            <div className="flex w-full flex-row items-center gap-x-6">
+          <div className="flex w-full flex-row flex-wrap items-center justify-between gap-x-8 gap-y-4">
+            <div className="flex flex-row items-center gap-x-6">
               <a className="hidden md:flex" href="/">
                 <LogoIcon
                   className="text-blue-500 dark:text-blue-400"
@@ -112,7 +112,7 @@ export default async function Layout({
                 <OrganizationPublicPageNav organization={organization} />
               </div>
             </div>
-            <div className="hidden md:flex">
+            <div className="hidden flex-row justify-end md:flex">
               <PolarMenu
                 organization={organization}
                 authenticatedUser={authenticatedUser}

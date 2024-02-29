@@ -74,7 +74,7 @@ export const OrganizationPublicPageNav = ({
     'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none'
 
   return mobileLayout ? (
-    <>
+    <div className="flex w-full flex-row items-center justify-stretch gap-x-2">
       {isPostsView ? (
         <Link
           className="flex flex-shrink-0"
@@ -101,12 +101,12 @@ export const OrganizationPublicPageNav = ({
           <SelectItem value="repositories">Repositories</SelectItem>
         </SelectContent>
       </Select>
-    </>
+    </div>
   ) : (
     <Tabs value={currentTab}>
       <TabsList
         className={twMerge(
-          'flex bg-transparent ring-0 dark:bg-transparent dark:ring-0',
+          'flex w-full flex-row overflow-x-auto bg-transparent ring-0 dark:bg-transparent dark:ring-0',
           className,
         )}
       >

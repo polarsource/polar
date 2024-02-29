@@ -2,12 +2,14 @@ import { OrganizationPublicPageNav } from '@/components/Organization/Organizatio
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api'
 import {
+  ListResourceOrganization,
   ListResourceSubscriptionSummary,
   Organization,
   Platforms,
   UserRead,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
+import { LogoIcon } from 'polarkit/components/brand'
 import React from 'react'
 import { PolarMenu } from './LayoutPolarMenu'
 
@@ -29,34 +31,47 @@ export default async function Layout({
   let authenticatedUser: UserRead | undefined
   let organization: Organization | undefined
   let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
+  let userAdminOrganizations: ListResourceOrganization | undefined
 
   try {
-    const [loadAuthenticatedUser, loadOrganization, loadSubscriptionsSummary] =
-      await Promise.all([
-        api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+    const [
+      loadAuthenticatedUser,
+      loadOrganization,
+      loadSubscriptionsSummary,
+      loadUserAdminOrganizations,
+    ] = await Promise.all([
+      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+        // Handle unauthenticated
+        return undefined
+      }),
+      api.organizations.lookup(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.subscriptions.searchSubscriptionsSummary(
+        {
+          organizationName: params.organization,
+          platform: Platforms.GITHUB,
+          limit: 3,
+        },
+        cacheConfig,
+      ),
+      // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
+      api.organizations
+        .list({ isAdminOnly: true }, { cache: 'no-store' })
+        .catch(() => {
           // Handle unauthenticated
           return undefined
         }),
-        api.organizations.lookup(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-          },
-          cacheConfig,
-        ),
-        api.subscriptions.searchSubscriptionsSummary(
-          {
-            organizationName: params.organization,
-            platform: Platforms.GITHUB,
-            limit: 9,
-          },
-          cacheConfig,
-        ),
-      ])
+    ])
 
     authenticatedUser = loadAuthenticatedUser
     organization = loadOrganization
     subscriptionsSummary = loadSubscriptionsSummary
+    userAdminOrganizations = loadUserAdminOrganizations
   } catch (e) {
     notFound()
   }
@@ -67,17 +82,41 @@ export default async function Layout({
 
   return (
     <div className="flex flex-col">
-      <div className="relative mx-auto flex w-full max-w-[1580px] shrink-0 flex-col items-start px-2 md:h-full md:flex-row md:gap-32 md:space-y-8 md:px-24">
-        <div className="relative flex w-full max-w-xs flex-col justify-between py-16 md:sticky md:top-0">
+      <div className="mx-auto flex w-full max-w-[1580px] flex-col items-start px-4 md:h-full md:flex-row md:gap-32 md:space-y-8 md:px-24">
+        <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
+          <a href="/">
+            <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
+          </a>
+          <PolarMenu
+            authenticatedUser={authenticatedUser}
+            userAdminOrganizations={userAdminOrganizations?.items ?? []}
+          />
+        </div>
+        <div className="relative flex w-full flex-col justify-between py-8 md:sticky md:top-0 md:max-w-xs md:py-16">
           <OrganizationPublicSidebar
             subscriptionsSummary={subscriptionsSummary}
             organization={organization}
           />
         </div>
-        <div className="flex h-full w-full flex-col py-12 md:gap-y-16">
-          <div className="flex flex-row items-center justify-between">
-            <OrganizationPublicPageNav organization={organization} />
-            <PolarMenu authenticatedUser={authenticatedUser} />
+        <div className="flex h-full w-full flex-col gap-y-8 md:gap-y-16 md:py-12">
+          <div className="flex w-full flex-row items-center justify-between gap-x-8">
+            <div className="flex w-full flex-row items-center gap-x-6">
+              <a className="hidden md:flex" href="/">
+                <LogoIcon
+                  className="text-blue-500 dark:text-blue-400"
+                  size={40}
+                />
+              </a>
+              <div className="flex w-full flex-row items-center overflow-x-auto pb-2 md:pb-0">
+                <OrganizationPublicPageNav organization={organization} />
+              </div>
+            </div>
+            <div className="hidden md:flex">
+              <PolarMenu
+                authenticatedUser={authenticatedUser}
+                userAdminOrganizations={userAdminOrganizations?.items ?? []}
+              />
+            </div>
           </div>
           {children}
         </div>

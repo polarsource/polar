@@ -4,6 +4,7 @@ import { PostEditor } from '@/components/Feed/PostEditor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
+import { organizationPageLink } from '@/utils/nav'
 import { captureEvent } from '@/utils/posthog'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
@@ -134,7 +135,10 @@ const ClientPage = () => {
             {isPublished ? 'Published' : 'Unpublished'}
           </span>
           <Link
-            href={`/${post.data.organization.name}/posts/${post.data.slug}`}
+            href={organizationPageLink(
+              post.data.organization,
+              `posts/${post.data.slug}`,
+            )}
             target="_blank"
           >
             <Button variant="secondary">

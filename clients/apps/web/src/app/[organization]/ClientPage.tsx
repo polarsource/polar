@@ -5,6 +5,7 @@ import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
+import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { StarIcon } from '@heroicons/react/20/solid'
 import {
@@ -76,7 +77,7 @@ const ClientPage = ({
               <h2 className="text-lg">Pinned & Latest Posts</h2>
               <Link
                 className="text-sm text-blue-500 dark:text-blue-400"
-                href={`/${organization.name}/posts`}
+                href={organizationPageLink(organization, 'posts')}
               >
                 <span>View all posts</span>
                 <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
@@ -156,7 +157,7 @@ const ClientPage = ({
             </div>
             <Link
               className="text-sm text-blue-500 dark:text-blue-400"
-              href={`/${organization.name}/subscriptions`}
+              href={organizationPageLink(organization, 'subscriptions')}
             >
               <span>View all tiers</span>
               <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
@@ -170,7 +171,7 @@ const ClientPage = ({
               <h3 className="text-lg">Popular Repositories</h3>
               <Link
                 className="text-sm text-blue-500 dark:text-blue-400"
-                href={`/${organization.name}/repositories`}
+                href={organizationPageLink(organization, 'repositories')}
               >
                 <span>View all repositories</span>
                 <ArrowForwardOutlined className="ml-2" fontSize="inherit" />

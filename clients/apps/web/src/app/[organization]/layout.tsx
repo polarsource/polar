@@ -112,7 +112,7 @@ export default async function Layout({
                 <OrganizationPublicPageNav organization={organization} />
               </div>
             </div>
-            <div className="hidden flex-row justify-end md:flex">
+            <div className="ml-auto hidden flex-row md:flex">
               <PolarMenu
                 organization={organization}
                 authenticatedUser={authenticatedUser}

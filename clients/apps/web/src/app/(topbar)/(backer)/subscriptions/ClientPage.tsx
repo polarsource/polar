@@ -9,6 +9,7 @@ import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
 import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { useAuth } from '@/hooks'
+import { organizationPageLink } from '@/utils/nav'
 import { BoltOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { SubscriptionSubscriber } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -119,6 +120,10 @@ const Subscription = ({
     router.refresh()
   }, [subscription])
 
+  if (!org) {
+    return <></>
+  }
+
   return (
     <div className="flex flex-col">
       <div
@@ -134,19 +139,19 @@ const Subscription = ({
           <div className="flex flex-row items-center gap-x-1 text-xs text-blue-500 dark:text-blue-400">
             <Avatar
               className="h-8 w-8"
-              avatar_url={org?.avatar_url}
-              name={org?.name ?? ''}
+              avatar_url={org.avatar_url}
+              name={org.name}
             />
           </div>
           <div className="flex flex-row gap-x-4">
             <Link
               className="dark:text-polar-50 flex flex-row items-center gap-x-2 text-gray-950"
-              href={`/${org?.name}`}
+              href={organizationPageLink(org)}
             >
-              <h3 className="text-sm">{org?.name}</h3>
+              <h3 className="text-sm">{org.name}</h3>
             </Link>
             <div className="dark:text-polar-400 flex flex-row items-center gap-x-3 text-sm text-gray-500">
-              <Link href={`/${org?.name}/subscriptions`}>
+              <Link href={organizationPageLink(org, 'subscriptions')}>
                 <SubscriptionTierPill
                   amount={subscription.subscription_tier.price_amount}
                   subscriptionTier={subscription.subscription_tier}
@@ -178,7 +183,7 @@ const Subscription = ({
           </div>
         </div>
         <div className="flex flex-row items-center gap-x-2">
-          <Link href={`/${org?.name}/subscriptions`}>
+          <Link href={organizationPageLink(org, 'subscriptions')}>
             <Button size="sm" variant="ghost" asChild>
               Upgrade
             </Button>
@@ -282,6 +287,10 @@ const BenefitContextWidget = ({
 }: BenefitContextWidgetProps) => {
   const { data: org } = useOrganization(benefit?.organization_id ?? '')
 
+  if (!org) {
+    return <></>
+  }
+
   return (
     <ShadowBoxOnMd className="sticky top-28 flex w-1/3 flex-col gap-y-6">
       <div className="flex flex-row items-center gap-x-2">
@@ -301,7 +310,7 @@ const BenefitContextWidget = ({
       </p>
       {benefit.type === 'custom' && benefit.properties.note && (
         <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm dark:bg-blue-950">
-          <p className="mb-4 font-medium">Note from {org?.name}</p>
+          <p className="mb-4 font-medium">Note from {org.name}</p>
           <p className="whitespace-pre-line">{benefit.properties.note}</p>
         </div>
       )}
@@ -319,14 +328,14 @@ const BenefitContextWidget = ({
         <div className="flex flex-row items-center gap-x-2">
           <Avatar
             className="h-8 w-8"
-            avatar_url={org?.avatar_url}
-            name={org?.name ?? ''}
+            avatar_url={org.avatar_url}
+            name={org.name}
           />
           <Link
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-            href={`/${org?.name}`}
+            href={organizationPageLink(org)}
           >
-            {org?.name}
+            {org.name}
           </Link>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
+import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
@@ -248,7 +249,7 @@ const UpsellFreeSubscriberToPaid = ({
               article.organization.pretty_name || article.organization.name
             } by subscribing to their work and get access to exclusive content.`}
       </p>
-      <Link href={`/${article.organization.name}/subscriptions`}>
+      <Link href={organizationPageLink(article.organization, 'subscriptions')}>
         <Button className="mt-4">Upgrade</Button>
       </Link>
     </div>

@@ -67,29 +67,22 @@ class PlatformFeeTransactionService(BaseTransactionService):
 
         return fees_reversal_balances
 
-    async def create_payout_fees_balances(
+    async def get_payout_fees(
         self, session: AsyncSession, *, account: Account, balance_amount: int
-    ) -> tuple[int, list[tuple[Transaction, Transaction]]]:
+    ) -> list[tuple[PlatformFeeType, int]]:
         if not account.processor_fees_applicable:
-            return balance_amount, []
+            return []
 
         if account.account_type != AccountType.stripe:
-            return balance_amount, []
+            return []
 
-        payout_fees_balances: list[tuple[Transaction, Transaction]] = []
+        payout_fees: list[tuple[PlatformFeeType, int]] = []
 
         last_payout = await self._get_last_payout(session, account)
         if last_payout is None:
             account_fee_amount = get_stripe_account_fee()
             balance_amount -= account_fee_amount
-            fee_balances = await balance_transaction_service.create_balance(
-                session,
-                source_account=account,
-                destination_account=None,
-                amount=account_fee_amount,
-                platform_fee_type=PlatformFeeType.account,
-            )
-            payout_fees_balances.append(fee_balances)
+            payout_fees.append((PlatformFeeType.account, account_fee_amount))
 
         try:
             transfer_fee_amount, payout_fee_amount = get_reverse_stripe_payout_fees(
@@ -99,26 +92,33 @@ class PlatformFeeTransactionService(BaseTransactionService):
             raise PayoutAmountTooLow(balance_amount) from e
 
         if transfer_fee_amount > 0:
-            fee_balances = await balance_transaction_service.create_balance(
-                session,
-                source_account=account,
-                destination_account=None,
-                amount=transfer_fee_amount,
-                platform_fee_type=PlatformFeeType.cross_border_transfer,
+            payout_fees.append(
+                (PlatformFeeType.cross_border_transfer, transfer_fee_amount)
             )
-            payout_fees_balances.append(fee_balances)
 
         if payout_fee_amount > 0:
+            payout_fees.append((PlatformFeeType.payout, payout_fee_amount))
+
+        return payout_fees
+
+    async def create_payout_fees_balances(
+        self, session: AsyncSession, *, account: Account, balance_amount: int
+    ) -> tuple[int, list[tuple[Transaction, Transaction]]]:
+        payout_fees = await self.get_payout_fees(
+            session, account=account, balance_amount=balance_amount
+        )
+
+        payout_fees_balances: list[tuple[Transaction, Transaction]] = []
+        for payout_fee_type, fee_amount in payout_fees:
             fee_balances = await balance_transaction_service.create_balance(
                 session,
                 source_account=account,
                 destination_account=None,
-                amount=payout_fee_amount,
-                platform_fee_type=PlatformFeeType.payout,
+                amount=fee_amount,
+                platform_fee_type=payout_fee_type,
             )
             payout_fees_balances.append(fee_balances)
-
-        balance_amount -= transfer_fee_amount + payout_fee_amount
+            balance_amount -= fee_amount
 
         return balance_amount, payout_fees_balances
 

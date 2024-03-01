@@ -14,7 +14,13 @@ from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from .schemas import PayoutCreate, Transaction, TransactionDetails, TransactionsSummary
+from .schemas import (
+    PayoutCreate,
+    PayoutEstimate,
+    Transaction,
+    TransactionDetails,
+    TransactionsSummary,
+)
 from .service.payout import payout_transaction as payout_transaction_service
 from .service.transaction import SearchSortProperty
 from .service.transaction import transaction as transaction_service
@@ -82,6 +88,25 @@ async def get_summary(
         raise ResourceNotFound("Account not found")
 
     return await transaction_service.get_summary(session, auth.subject, account, authz)
+
+
+@router.get("/payout", response_model=PayoutEstimate, tags=[Tags.PUBLIC])
+async def get_payout_estimate(
+    auth: UserRequiredAuth,
+    account_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> PayoutEstimate:
+    account = await account_service.get(session, account_id)
+    if account is None:
+        raise ResourceNotFound("Account not found")
+
+    if not await authz.can(auth.user, AccessType.write, account):
+        raise NotPermitted()
+
+    return await payout_transaction_service.get_payout_estimate(
+        session, account=account
+    )
 
 
 @router.post("/payout", response_model=Transaction, status_code=201, tags=[Tags.PUBLIC])

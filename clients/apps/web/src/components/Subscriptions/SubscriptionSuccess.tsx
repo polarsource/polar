@@ -1,10 +1,10 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { useSendMagicLink } from '@/hooks/magicLink'
 import { SubscribeSession } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import {
   Button,
   Card,
@@ -32,6 +32,8 @@ export const SubscriptionSuccess = (props: {
   const { currentUser } = useAuth()
 
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)
+  const sendMagicLink = useSendMagicLink()
+
   const onEmailSignin = useCallback(async () => {
     if (!email) {
       router.push('/login')
@@ -40,9 +42,7 @@ export const SubscriptionSuccess = (props: {
 
     setEmailSigninLoading(true)
     try {
-      await api.magicLink.magicLinkRequest({ magicLinkRequest: { email } })
-      const searchParams = new URLSearchParams({ email: email })
-      router.push(`/login/magic-link/request?${searchParams}`)
+      sendMagicLink(email)
     } catch (err) {
       // TODO: error handling
     } finally {
@@ -99,7 +99,12 @@ export const SubscriptionSuccess = (props: {
                     You now have an account with Polar! Sign in now to manage
                     your subscriptions and benefits.
                   </p>
-                  <Button className="w-full" size="lg" onClick={onEmailSignin}>
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={onEmailSignin}
+                    loading={emailSigninLoading}
+                  >
                     Verify Email
                   </Button>
                 </div>

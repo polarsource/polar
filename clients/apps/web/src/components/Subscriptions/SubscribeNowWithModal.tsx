@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/auth'
+import { useSendMagicLink } from '@/hooks/magicLink'
 import { captureEvent } from '@/utils/posthog'
 import { CheckIcon } from '@heroicons/react/24/outline'
 import {
@@ -9,7 +10,6 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit/api'
 import { Button, Input } from 'polarkit/components/ui/atoms'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
 import {
@@ -248,6 +248,9 @@ const AnonymousSubscribeModalContent = ({
     )
 
   const [emailSignInClicked, setEmailSignInClicked] = useState(false)
+
+  const sendMagicLink = useSendMagicLink()
+
   const onEmailSignin = useCallback(async () => {
     setEmailSignInClicked(true) // set to true, never resets to false
 
@@ -255,11 +258,7 @@ const AnonymousSubscribeModalContent = ({
       'subscriptions:subscribe_modal_email_free_subscribed_sign_in:click',
     )
 
-    await api.magicLink.magicLinkRequest({
-      magicLinkRequest: { email, return_to: window.location.href },
-    })
-    const searchParams = new URLSearchParams({ email: email })
-    router.push(`/login/magic-link/request?${searchParams}`)
+    sendMagicLink(email)
   }, [email, router])
 
   if (success) {

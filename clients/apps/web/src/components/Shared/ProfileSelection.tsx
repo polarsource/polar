@@ -1,6 +1,10 @@
 'use client'
 
-import { useCurrentOrgAndRepoFromURL, useGitHubAccount } from '@/hooks'
+import {
+  useCurrentOrgAndRepoFromURL,
+  useGitHubAccount,
+  useLogout,
+} from '@/hooks'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
@@ -9,7 +13,6 @@ import { UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
-import { CONFIG } from 'polarkit/config'
 import { useListAllOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
@@ -26,7 +29,8 @@ const ProfileSelection = ({
     'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-800 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-700 dark:border dark:border-polar-700 transition-colors',
     className,
   )
-  const { currentUser: loggedUser, logout } = useAuth()
+  const { currentUser: loggedUser } = useAuth()
+  const logout = useLogout()
   const listOrganizationQuery = useListAllOrganizations()
   const githubAccount = useGitHubAccount()
 
@@ -53,8 +57,6 @@ const ProfileSelection = ({
 
   const onLogout = async () => {
     await logout()
-    // Do not use the next router here. Trigger a full refresh.
-    window.location.href = '/'
   }
 
   if (!loggedUser) {
@@ -193,7 +195,7 @@ export const ProfileMenu = ({
   allBackerRoutes?: boolean
 }) => {
   const classNames = twMerge('relative', className)
-  const { logout } = useAuth()
+  const logout = useLogout()
   const personalOrg = usePersonalOrganization()
 
   const [isOpen, setOpen] = useState<boolean>(false)
@@ -204,18 +206,8 @@ export const ProfileMenu = ({
     setOpen(false)
   })
 
-  const { org: currentUrlOrg } = useCurrentOrgAndRepoFromURL()
-
   const onLogout = async () => {
-    // logging out on custom domain
-    if (currentUrlOrg && currentUrlOrg.custom_domain) {
-      window.location.href = `${CONFIG.BASE_URL}/api/v1/auth/logout?organization_id=${currentUrlOrg.id}`
-      return
-    }
-
     await logout()
-    // Do not use the next router here. Trigger a full refresh.
-    window.location.href = '/'
   }
 
   const loggedUser = authenticatedUser

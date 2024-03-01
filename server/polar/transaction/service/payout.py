@@ -15,6 +15,8 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 
 from .base import BaseTransactionService, BaseTransactionServiceError
+from .platform_fee import PayoutAmountTooLow
+from .platform_fee import platform_fee_transaction as platform_fee_transaction_service
 from .transaction import transaction as transaction_service
 
 log: Logger = structlog.get_logger()
@@ -67,31 +69,49 @@ class PayoutTransactionService(BaseTransactionService):
         if balance_amount <= 0:
             raise InsufficientBalance(account, balance_amount)
 
+        try:
+            (
+                balance_amount_after_fees,
+                payout_fees_balances,
+            ) = await platform_fee_transaction_service.create_payout_fees_balances(
+                session, account=account, balance_amount=balance_amount
+            )
+        except PayoutAmountTooLow as e:
+            raise InsufficientBalance(account, balance_amount) from e
+
+        transaction = Transaction(
+            id=generate_uuid(),
+            type=TransactionType.payout,
+            currency="usd",  # FIXME: Main Polar currency
+            amount=-balance_amount_after_fees,
+            account_currency=account.currency,
+            account_amount=-balance_amount_after_fees,
+            tax_amount=0,
+            account=account,
+            pledge=None,
+            issue_reward=None,
+            subscription=None,
+            paid_transactions=[],
+            incurred_transactions=[],
+            account_incurred_transactions=[],
+        )
+
         if account.account_type == AccountType.stripe:
             transaction = await self._create_stripe_payout(
-                account=account, amount=balance_amount
+                transaction=transaction, account=account
             )
         elif account.account_type == AccountType.open_collective:
-            transaction = Transaction(
-                id=generate_uuid(),
-                type=TransactionType.payout,
-                processor=PaymentProcessor.open_collective,
-                currency="usd",  # FIXME: Main Polar currency
-                amount=-balance_amount,
-                account_currency=account.currency,
-                account_amount=-balance_amount,
-                tax_amount=0,
-                account=account,
-                pledge=None,
-                issue_reward=None,
-                subscription=None,
-                incurred_transactions=[],
-            )
+            transaction.processor = PaymentProcessor.open_collective
 
         for balance_transaction in await self.get_unpaid_balance_transactions(
             session, account
         ):
             transaction.paid_transactions.append(balance_transaction)
+
+        for outgoing, incoming in payout_fees_balances:
+            transaction.incurred_transactions.append(outgoing)
+            transaction.account_incurred_transactions.append(outgoing)
+            transaction.incurred_transactions.append(incoming)
 
         session.add(transaction)
         await session.commit()
@@ -99,29 +119,15 @@ class PayoutTransactionService(BaseTransactionService):
         return transaction
 
     async def _create_stripe_payout(
-        self, *, amount: int, account: Account
+        self, *, transaction: Transaction, account: Account
     ) -> Transaction:
-        transaction = Transaction(
-            id=generate_uuid(),
-            type=TransactionType.payout,
-            processor=PaymentProcessor.stripe,
-            currency="usd",  # FIXME: Main Polar currency
-            amount=-amount,
-            account_currency=account.currency,
-            account_amount=-amount,
-            tax_amount=0,
-            account=account,
-            pledge=None,
-            issue_reward=None,
-            subscription=None,
-            incurred_transactions=[],
-        )
+        transaction.processor = PaymentProcessor.stripe
 
         # Let's first make a transfer to the Stripe Connect account
         assert account.stripe_id is not None
         stripe_transfer = stripe_service.transfer(
             account.stripe_id,
-            amount,
+            -transaction.amount,
             metadata={"payout_transaction_id": str(transaction.id)},
         )
         transaction.transfer_id = stripe_transfer.id

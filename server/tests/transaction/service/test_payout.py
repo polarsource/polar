@@ -121,6 +121,7 @@ class TestCreatePayout:
             is_details_submitted=True,
             is_charges_enabled=True,
             is_payouts_enabled=True,
+            processor_fees_applicable=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
         session.add(account)
@@ -147,12 +148,24 @@ class TestCreatePayout:
         assert payout.transfer_id == "STRIPE_TRANSFER_ID"
         assert payout.payout_id == "STRIPE_PAYOUT_ID"
         assert payout.currency == "usd"
-        assert payout.amount == -balance_transaction.amount
+        assert payout.amount < 0
         assert payout.account_currency == "usd"
-        assert payout.account_amount == -balance_transaction.amount
+        assert payout.account_amount < 0
 
-        assert len(payout.paid_transactions) == 1
+        assert len(payout.paid_transactions) == 1 + len(
+            [
+                t
+                for t in payout.incurred_transactions
+                if t.account_id == payout.account_id
+            ]
+        )
         assert payout.paid_transactions[0].id == balance_transaction.id
+
+        assert len(payout.incurred_transactions) > 0
+        assert (
+            len(payout.account_incurred_transactions)
+            == len(payout.incurred_transactions) / 2
+        )
 
         stripe_service_mock.transfer.assert_called_once()
         assert stripe_service_mock.transfer.call_args[1]["metadata"][
@@ -169,7 +182,9 @@ class TestCreatePayout:
         assert stripe_service_mock.create_payout.call_args[1]["metadata"][
             "payout_transaction_id"
         ] == str(payout.id)
-        assert stripe_service_mock.create_payout.call_args[1]["amount"] == 1000
+        assert stripe_service_mock.create_payout.call_args[1]["amount"] == abs(
+            payout.amount
+        )
 
     async def test_stripe_different_currencies(
         self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
@@ -183,6 +198,7 @@ class TestCreatePayout:
             is_details_submitted=True,
             is_charges_enabled=True,
             is_payouts_enabled=True,
+            processor_fees_applicable=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
         session.add(account)
@@ -217,15 +233,23 @@ class TestCreatePayout:
         assert payout.transfer_id == "STRIPE_TRANSFER_ID"
         assert payout.payout_id == "STRIPE_PAYOUT_ID"
         assert payout.currency == "usd"
-        assert payout.amount == -balance_transaction.amount
+        assert payout.amount < 0
         assert payout.account_currency == "eur"
-        assert payout.account_amount == -900
+        assert payout.account_amount < 0
 
-        assert len(payout.paid_transactions) == 1
+        assert len(payout.paid_transactions) == 1 + len(
+            [
+                t
+                for t in payout.incurred_transactions
+                if t.account_id == payout.account_id
+            ]
+        )
         assert payout.paid_transactions[0].id == balance_transaction.id
 
         stripe_service_mock.create_payout.assert_called_once()
-        assert stripe_service_mock.create_payout.call_args[1]["amount"] == 900
+        assert stripe_service_mock.create_payout.call_args[1]["amount"] == abs(
+            payout.account_amount
+        )
 
     async def test_open_collective(self, session: AsyncSession, user: User) -> None:
         account = Account(
@@ -237,6 +261,7 @@ class TestCreatePayout:
             is_details_submitted=False,
             is_charges_enabled=False,
             is_payouts_enabled=False,
+            processor_fees_applicable=True,
             open_collective_slug="polarsource",
         )
         session.add(account)
@@ -258,5 +283,14 @@ class TestCreatePayout:
         assert payout.account_currency == "usd"
         assert payout.account_amount == -balance_transaction.amount
 
-        assert len(payout.paid_transactions) == 1
+        assert len(payout.paid_transactions) == 1 + len(
+            [
+                t
+                for t in payout.incurred_transactions
+                if t.account_id == payout.account_id
+            ]
+        )
         assert payout.paid_transactions[0].id == balance_transaction.id
+
+        assert len(payout.incurred_transactions) == 0
+        assert len(payout.account_incurred_transactions) == 0

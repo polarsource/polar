@@ -29,14 +29,13 @@ export default function ClientPage({
     [organization, orgs],
   )
 
-  const sortedTiers = useMemo(() => {
-    const [freeTier, ...rest] = subscriptionTiers.items ?? []
-    return [...rest, freeTier]
+  const highlightedTiers = useMemo(() => {
+    return subscriptionTiers.items?.filter((tier) => tier.is_highlighted) ?? []
   }, [subscriptionTiers])
 
   const selectedTier = useMemo(
-    () => sortedTiers[selectedTierIndex],
-    [sortedTiers, selectedTierIndex],
+    () => highlightedTiers[selectedTierIndex],
+    [highlightedTiers, selectedTierIndex],
   )
 
   return (
@@ -55,16 +54,14 @@ export default function ClientPage({
           />
         </Link>
         <div className="flex flex-col items-center gap-y-2">
-          <h3 className="text-2xl">
-            Support {organization.name} with a subscription
-          </h3>
+          <h3 className="text-2xl">Thank you for your subscription</h3>
           <p className="dark:text-polar-500 text-lg text-gray-500">
-            Select a subscription tier & click Subscribe in the bottom
+            Consider subscribing to a paid tier to support {organization.name}
           </p>
         </div>
       </div>
       <div className="flex max-w-5xl flex-row flex-wrap gap-8">
-        {sortedTiers.map((tier, index) => (
+        {highlightedTiers.map((tier, index) => (
           <div
             className={twMerge(
               'flex w-full cursor-pointer flex-col rounded-3xl transition-shadow md:w-[300px]',
@@ -85,7 +82,7 @@ export default function ClientPage({
           </div>
         ))}
       </div>
-      <div className="flex w-48 flex-row items-center">
+      <div className="flex w-48 flex-col items-center gap-y-4">
         {selectedTier &&
           shouldRenderSubscribeButton &&
           (selectedTier.type === 'free' ? (
@@ -100,6 +97,9 @@ export default function ClientPage({
               variant="default"
             />
           ))}
+        <Link href={organizationPageLink(organization)}>
+          <Button variant="ghost">Skip</Button>
+        </Link>
       </div>
     </div>
   )

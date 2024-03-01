@@ -43,8 +43,8 @@ export const AuthenticatedFreeTierSubscribe = ({
   const isSubscribed = subscription !== undefined
   const router = useRouter()
   const orgSubscriptionTiers = useSubscriptionTiers(organization.name, 100)
-  const hasPaidSubscriptions = orgSubscriptionTiers.data?.items?.some(
-    (tier) => tier.type !== 'free',
+  const hasHighlightedSubscriptions = orgSubscriptionTiers.data?.items?.some(
+    (tier) => tier.is_highlighted,
   )
 
   const createFreeSubscription = useCreateFreeSubscription()
@@ -52,7 +52,7 @@ export const AuthenticatedFreeTierSubscribe = ({
   const onSubscribeFree = async () => {
     await createFreeSubscription.mutateAsync({ tier_id: subscriptionTier.id })
 
-    if (upsellSubscriptions && hasPaidSubscriptions) {
+    if (upsellSubscriptions && hasHighlightedSubscriptions) {
       router.push(organizationPageLink(organization, 'subscribe'))
     }
   }
@@ -101,8 +101,8 @@ export const AnonymousFreeTierSubscribe = ({
   const router = useRouter()
 
   const orgSubscriptionTiers = useSubscriptionTiers(organization.name, 100)
-  const hasPaidSubscriptions = orgSubscriptionTiers.data?.items?.some(
-    (tier) => tier.type !== 'free',
+  const hasHighlightedSubscriptions = orgSubscriptionTiers.data?.items?.some(
+    (tier) => tier.is_highlighted,
   )
 
   const [showModal, setShowModal] = useState(false)
@@ -125,7 +125,7 @@ export const AnonymousFreeTierSubscribe = ({
         })
 
         // Redirect to /org/subscribe to upsell subscriptions
-        if (upsellSubscriptions && hasPaidSubscriptions) {
+        if (upsellSubscriptions && hasHighlightedSubscriptions) {
           router.push(
             organizationPageLink(
               organization,
@@ -144,7 +144,7 @@ export const AnonymousFreeTierSubscribe = ({
         router,
         organization,
         upsellSubscriptions,
-        hasPaidSubscriptions,
+        hasHighlightedSubscriptions,
       ],
     )
 

@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 
 from polar.auth.dependencies import Auth
 from polar.auth.service import AuthService
+from polar.config import settings
 from polar.exceptions import PolarRedirectionError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo
@@ -25,18 +26,17 @@ router = APIRouter(prefix="/magic_link", tags=["magic_link"])
     tags=[Tags.INTERNAL],
 )
 async def request_magic_link(
-    request: Request,
     magic_link_request: MagicLinkRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     magic_link, token = await magic_link_service.request(
         session, magic_link_request.email, source="user_login"
     )
-    base_url = str(request.url_for("magic_link.authenticate"))
+
     await magic_link_service.send(
         magic_link,
         token,
-        base_url,
+        base_url=str(settings.generate_external_url("/magic_link/authenticate")),
         extra_url_params={"return_to": magic_link_request.return_to}
         if magic_link_request.return_to
         else {},

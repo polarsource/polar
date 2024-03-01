@@ -5,6 +5,7 @@ import SubscriptionTierSubscribeButton from '@/components/Subscriptions/Subscrip
 import { organizationPageLink } from '@/utils/nav'
 import { ListResourceSubscriptionTier, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useMemo, useState } from 'react'
@@ -40,16 +41,26 @@ export default function ClientPage({
 
   return (
     <div className="flex w-full flex-col items-center gap-y-16 py-16">
+      <div className="flex flex-row items-center justify-center">
+        <a href="/">
+          <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
+        </a>
+      </div>
       <div className="flex flex-col items-center gap-y-6 text-center">
-        <Avatar
-          className="h-12 w-12"
-          avatar_url={organization.avatar_url}
-          name={organization.name}
-        />
+        <Link href={organizationPageLink(organization)}>
+          <Avatar
+            className="h-16 w-16"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
+        </Link>
         <div className="flex flex-col items-center gap-y-2">
-          <h3 className="text-2xl">Select a subscription tier</h3>
-          <p className="dark:text-polar-500 text-lg text-gray-500">
+          <h3 className="text-2xl">
+            {' '}
             Support {organization.name} with a subscription
+          </h3>
+          <p className="dark:text-polar-500 text-lg text-gray-500">
+            Select a subscription tier & click Subscribe in the bottom
           </p>
         </div>
       </div>
@@ -57,7 +68,7 @@ export default function ClientPage({
         {sortedTiers.map((tier, index) => (
           <div
             className={twMerge(
-              'flex cursor-pointer flex-col rounded-3xl transition-shadow',
+              'flex w-full cursor-pointer flex-col rounded-3xl transition-shadow md:w-[300px]',
               selectedTierIndex === index
                 ? 'shadow-2xl grayscale-0'
                 : 'grayscale hover:grayscale-0',
@@ -67,7 +78,7 @@ export default function ClientPage({
           >
             <SubscriptionTierCard
               className={twMerge(
-                'h-full w-full self-stretch md:max-w-[300px]',
+                'h-full w-full self-stretch',
                 selectedTierIndex === index && 'border-transparent',
               )}
               subscriptionTier={tier}
@@ -87,6 +98,7 @@ export default function ClientPage({
               organization={organization}
               subscriptionTier={selectedTier}
               subscribePath="/subscribe"
+              variant="default"
             />
           ))}
       </div>

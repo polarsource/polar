@@ -90,7 +90,7 @@ export const OrganizationPublicSidebar = ({
       </div>
       <div
         className={twMerge(
-          'flex flex-col items-start gap-y-6',
+          'flex flex-col items-start gap-y-6 md:w-60',
           isPostView ? 'hidden  md:flex' : 'flex',
         )}
       >
@@ -140,12 +140,13 @@ export const OrganizationPublicSidebar = ({
             </Button>
           </div>
         </div>
-        <div className="flex w-full flex-col gap-y-6 md:max-w-xs">
+        <div className="flex w-full flex-col gap-y-6">
           {freeSubscriptionTier && !isAdmin ? (
             <>
               <FreeTierSubscribe
                 subscriptionTier={freeSubscriptionTier}
                 organization={organization}
+                upsellSubscriptions
               />
             </>
           ) : null}

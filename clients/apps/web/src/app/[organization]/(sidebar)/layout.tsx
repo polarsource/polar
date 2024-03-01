@@ -108,7 +108,7 @@ export default async function Layout({
                   size={40}
                 />
               </a>
-              <div className="flex w-full flex-row items-center overflow-x-auto pb-2 md:pb-0">
+              <div className="flex w-full flex-row items-center pb-2 md:pb-0">
                 <OrganizationPublicPageNav organization={organization} />
               </div>
             </div>

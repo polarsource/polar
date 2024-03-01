@@ -1,5 +1,6 @@
 import {
   ListResourceTransaction,
+  PayoutEstimate,
   TransactionType,
   TransactionsSummary,
 } from '@polar-sh/sdk'
@@ -40,4 +41,15 @@ export const useTransactionsSummary = (
         accountId,
       }),
     retry: defaultRetry,
+  })
+
+export const usePayoutEstimate = (
+  accountId: string,
+  enabled: boolean = true,
+): UseQueryResult<PayoutEstimate> =>
+  useQuery({
+    queryKey: ['payout_estimate', accountId],
+    queryFn: () => api.transactions.getPayoutEstimate({ accountId }),
+    retry: defaultRetry,
+    enabled,
   })

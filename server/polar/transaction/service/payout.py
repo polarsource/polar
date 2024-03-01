@@ -13,6 +13,7 @@ from polar.logging import Logger
 from polar.models import Account, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
+from polar.transaction.schemas import PayoutEstimate
 
 from .base import BaseTransactionService, BaseTransactionServiceError
 from .platform_fee import PayoutAmountTooLow
@@ -55,6 +56,34 @@ class NotReadyAccount(PayoutTransactionError):
 
 
 class PayoutTransactionService(BaseTransactionService):
+    async def get_payout_estimate(
+        self, session: AsyncSession, *, account: Account
+    ) -> PayoutEstimate:
+        if account.is_under_review():
+            raise UnderReviewAccount(account)
+        if not account.is_ready():
+            raise NotReadyAccount(account)
+
+        balance_amount = await transaction_service.get_transactions_sum(
+            session, account.id
+        )
+        if balance_amount <= 0:
+            raise InsufficientBalance(account, balance_amount)
+
+        try:
+            payout_fees = await platform_fee_transaction_service.get_payout_fees(
+                session, account=account, balance_amount=balance_amount
+            )
+        except PayoutAmountTooLow as e:
+            raise InsufficientBalance(account, balance_amount) from e
+
+        return PayoutEstimate(
+            account_id=account.id,
+            gross_amount=balance_amount,
+            fees_amount=sum(fee for _, fee in payout_fees),
+            net_amount=balance_amount - sum(fee for _, fee in payout_fees),
+        )
+
     async def create_payout(
         self, session: AsyncSession, *, account: Account
     ) -> Transaction:

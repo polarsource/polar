@@ -131,3 +131,10 @@ class TransactionsSummary(Schema):
 
 class PayoutCreate(Schema):
     account_id: UUID4
+
+
+class PayoutEstimate(Schema):
+    account_id: UUID4
+    gross_amount: int
+    fees_amount: int
+    net_amount: int

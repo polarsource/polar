@@ -39,6 +39,7 @@ class BalanceTransactionService(BaseTransactionService):
         pledge: Pledge | None = None,
         subscription: Subscription | None = None,
         issue_reward: IssueReward | None = None,
+        platform_fee_type: PlatformFeeType | None = None,
     ) -> tuple[Transaction, Transaction]:
         currency = "usd"  # FIXME: Main Polar currency
 
@@ -58,6 +59,7 @@ class BalanceTransactionService(BaseTransactionService):
             issue_reward=issue_reward,
             subscription=subscription,
             payment_transaction=payment_transaction,
+            platform_fee_type=platform_fee_type,
         )
         incoming_transaction = Transaction(
             id=generate_uuid(),
@@ -73,6 +75,7 @@ class BalanceTransactionService(BaseTransactionService):
             issue_reward=issue_reward,
             subscription=subscription,
             payment_transaction=payment_transaction,
+            platform_fee_type=platform_fee_type,
         )
 
         session.add(outgoing_transaction)

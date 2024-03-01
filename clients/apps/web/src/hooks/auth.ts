@@ -1,8 +1,10 @@
+import { PublicPageOrganizationContext } from '@/providers/organization'
 import { type UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
+import { CONFIG } from 'polarkit/config'
 import { UserState, useStore } from 'polarkit/store'
 import posthog from 'posthog-js'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 
 export const useAuth = (): UserState & {
   hasChecked: boolean
@@ -94,4 +96,24 @@ export const useAuth = (): UserState & {
     },
     hydrated,
   }
+}
+
+export const useLogout = () => {
+  const org = useContext(PublicPageOrganizationContext)
+
+  const { logout: authLogout } = useAuth()
+
+  const func = useCallback(async () => {
+    // custom domain logout
+    if (org && org.custom_domain) {
+      window.location.href = `${CONFIG.BASE_URL}/api/v1/auth/logout?organization_id=${org.id}`
+      return
+    }
+
+    // polar.sh logout
+    await authLogout()
+    window.location.href = '/'
+  }, [org, useLogout])
+
+  return func
 }

@@ -1,6 +1,9 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 import pytest_asyncio
 
+from polar.enums import AccountType
 from polar.models import (
     Account,
     IssueReward,
@@ -14,6 +17,7 @@ from polar.models.transaction import PaymentProcessor, PlatformFeeType, Transact
 from polar.postgres import AsyncSession
 from polar.transaction.service.platform_fee import (
     DanglingBalanceTransactions,
+    PayoutAmountTooLow,
 )
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
@@ -242,3 +246,187 @@ class TestCreateFeesReversalBalances:
         assert reversal_incoming.account_id is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
         assert reversal_incoming.incurred_by_transaction == outgoing
+
+
+@pytest.mark.asyncio
+class TestCreatePayoutFeesBalances:
+    async def test_not_processor_fees_applicable(
+        self, session: AsyncSession, account: Account
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        (
+            balance_amount,
+            payout_fees_balances,
+        ) = await platform_fee_transaction_service.create_payout_fees_balances(
+            session, account=account, balance_amount=10000
+        )
+
+        assert balance_amount == 10000
+        assert payout_fees_balances == []
+
+    async def test_not_stripe(
+        self, session: AsyncSession, organization: Organization, user: User
+    ) -> None:
+        account = await create_account(
+            session,
+            organization=organization,
+            user=user,
+            account_type=AccountType.open_collective,
+        )
+
+        # then
+        session.expunge_all()
+
+        (
+            balance_amount,
+            payout_fees_balances,
+        ) = await platform_fee_transaction_service.create_payout_fees_balances(
+            session, account=account, balance_amount=10000
+        )
+
+        assert balance_amount == 10000
+        assert payout_fees_balances == []
+
+    async def test_stripe_amount_too_low(
+        self, session: AsyncSession, account_processor_fees: Account
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        with pytest.raises(PayoutAmountTooLow):
+            await platform_fee_transaction_service.create_payout_fees_balances(
+                session, account=account_processor_fees, balance_amount=1
+            )
+
+    @pytest.mark.parametrize(
+        "payout_created_at", [None, datetime.now(UTC) - timedelta(days=31)]
+    )
+    async def test_stripe_no_last_payout(
+        self,
+        payout_created_at: datetime | None,
+        session: AsyncSession,
+        account_processor_fees: Account,
+    ) -> None:
+        if payout_created_at is not None:
+            payout_transaction = Transaction(
+                created_at=payout_created_at,
+                type=TransactionType.payout,
+                processor=PaymentProcessor.stripe,
+                currency="usd",
+                amount=-10000,
+                account_currency="usd",
+                account_amount=-10000,
+                account=account_processor_fees,
+                tax_amount=0,
+            )
+            session.add(payout_transaction)
+            await session.commit()
+
+        # then
+        session.expunge_all()
+
+        (
+            balance_amount,
+            payout_fees_balances,
+        ) = await platform_fee_transaction_service.create_payout_fees_balances(
+            session, account=account_processor_fees, balance_amount=10000
+        )
+
+        assert len(payout_fees_balances) == 2
+
+        account_fee_outgoing = payout_fees_balances[0][0]
+        assert account_fee_outgoing.platform_fee_type == PlatformFeeType.account
+        assert account_fee_outgoing.account_id == account_processor_fees.id
+
+        payout_fee_outgoing = payout_fees_balances[1][0]
+        assert payout_fee_outgoing.platform_fee_type == PlatformFeeType.payout
+        assert payout_fee_outgoing.account_id == account_processor_fees.id
+
+        assert (
+            balance_amount
+            == 10000 + account_fee_outgoing.amount + payout_fee_outgoing.amount
+        )
+
+    async def test_stripe_last_payout(
+        self, session: AsyncSession, account_processor_fees: Account
+    ) -> None:
+        payout_transaction = Transaction(
+            created_at=datetime.now(UTC) - timedelta(days=7),
+            type=TransactionType.payout,
+            processor=PaymentProcessor.stripe,
+            currency="usd",
+            amount=-10000,
+            account_currency="usd",
+            account_amount=-10000,
+            account=account_processor_fees,
+            tax_amount=0,
+        )
+        session.add(payout_transaction)
+        await session.commit()
+
+        # then
+        session.expunge_all()
+
+        (
+            balance_amount,
+            payout_fees_balances,
+        ) = await platform_fee_transaction_service.create_payout_fees_balances(
+            session, account=account_processor_fees, balance_amount=10000
+        )
+
+        assert len(payout_fees_balances) == 1
+
+        payout_fee_outgoing = payout_fees_balances[0][0]
+        assert payout_fee_outgoing.platform_fee_type == PlatformFeeType.payout
+        assert payout_fee_outgoing.account_id == account_processor_fees.id
+
+        assert balance_amount == 10000 + payout_fee_outgoing.amount
+
+    async def test_stripe_cross_border(
+        self, session: AsyncSession, organization: Organization, user: User
+    ) -> None:
+        account = await create_account(
+            session,
+            organization,
+            user,
+            country="FR",
+            currency="eur",
+            processor_fees_applicable=True,
+        )
+
+        # then
+        session.expunge_all()
+
+        (
+            balance_amount,
+            payout_fees_balances,
+        ) = await platform_fee_transaction_service.create_payout_fees_balances(
+            session, account=account, balance_amount=10000
+        )
+
+        assert len(payout_fees_balances) == 3
+
+        account_fee_outgoing = payout_fees_balances[0][0]
+        assert account_fee_outgoing.platform_fee_type == PlatformFeeType.account
+        assert account_fee_outgoing.account_id == account.id
+
+        cross_border_fee_outgoing = payout_fees_balances[1][0]
+        assert (
+            cross_border_fee_outgoing.platform_fee_type
+            == PlatformFeeType.cross_border_transfer
+        )
+        assert cross_border_fee_outgoing.account_id == account.id
+
+        payout_fee_outgoing = payout_fees_balances[2][0]
+        assert payout_fee_outgoing.platform_fee_type == PlatformFeeType.payout
+        assert payout_fee_outgoing.account_id == account.id
+
+        assert (
+            balance_amount
+            == 10000
+            + account_fee_outgoing.amount
+            + cross_border_fee_outgoing.amount
+            + payout_fee_outgoing.amount
+        )

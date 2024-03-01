@@ -92,7 +92,7 @@ const ClientPage = ({
         ) : null}
 
         {highlightedTiers.length > 1 && (
-          <div className="flex flex-col items-center gap-y-12">
+          <div className="flex w-full flex-col items-center gap-y-12">
             <div className="flex flex-col items-center gap-y-6">
               <div className="flex flex-col items-center gap-y-4">
                 <BoltOutlined
@@ -131,7 +131,7 @@ const ClientPage = ({
                 </div>
               )}
             </div>
-            <div className="flex flex-row flex-wrap gap-8">
+            <div className="flex w-full flex-row flex-wrap items-center justify-center gap-8">
               {highlightedTiers.map((tier) => (
                 <SubscriptionTierCard
                   className="w-full self-stretch md:max-w-[260px]"

@@ -3,6 +3,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { UserRead } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { CONFIG } from 'polarkit/config'
 
 export const metadata: Metadata = {
   title: 'Login to Polar',
@@ -52,6 +53,21 @@ export default async function Page({
     redirect(
       `https://${domain}/api/auth/custom_domain_exchange?token=${auth.token}`,
     )
+  }
+
+  if (for_organization_id) {
+    // Return to this page with for_organization_id set after logged in
+    // The redirect handler above will redirect back to the custom domain
+    const customDomainReturnTo = new URL(`${CONFIG.FRONTEND_BASE_URL}/login`)
+    if (return_to) {
+      customDomainReturnTo.searchParams.append('return_to', return_to)
+    }
+    customDomainReturnTo.searchParams.append(
+      'for_organization_id',
+      for_organization_id,
+    )
+
+    return <Login returnTo={customDomainReturnTo.toString()} />
   }
 
   return <Login returnTo={return_to} />

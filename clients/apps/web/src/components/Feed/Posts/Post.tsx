@@ -73,7 +73,7 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
         <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
           <Link
             className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
-            href={`/${props.article.organization.name}`}
+            href={organizationPageLink(props.article.organization)}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:dark:text-blue-500">

@@ -1,11 +1,5 @@
 import { getServerSideAPI } from '@/utils/api'
-import {
-  ListResourceOrganization,
-  ListResourceSubscriptionSummary,
-  Organization,
-  Platforms,
-  UserRead,
-} from '@polar-sh/sdk'
+import { Organization, Platforms } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
@@ -24,22 +18,10 @@ export default async function Layout({
 }) {
   const api = getServerSideAPI()
 
-  let authenticatedUser: UserRead | undefined
   let organization: Organization | undefined
-  let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
-  let userAdminOrganizations: ListResourceOrganization | undefined
 
   try {
-    const [
-      loadAuthenticatedUser,
-      loadOrganization,
-      loadSubscriptionsSummary,
-      loadUserAdminOrganizations,
-    ] = await Promise.all([
-      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
-        // Handle unauthenticated
-        return undefined
-      }),
+    const [loadOrganization] = await Promise.all([
       api.organizations.lookup(
         {
           platform: Platforms.GITHUB,
@@ -47,27 +29,9 @@ export default async function Layout({
         },
         cacheConfig,
       ),
-      api.subscriptions.searchSubscriptionsSummary(
-        {
-          organizationName: params.organization,
-          platform: Platforms.GITHUB,
-          limit: 3,
-        },
-        cacheConfig,
-      ),
-      // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
-      api.organizations
-        .list({ isAdminOnly: true }, { cache: 'no-store' })
-        .catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
     ])
 
-    authenticatedUser = loadAuthenticatedUser
     organization = loadOrganization
-    subscriptionsSummary = loadSubscriptionsSummary
-    userAdminOrganizations = loadUserAdminOrganizations
   } catch (e) {
     notFound()
   }

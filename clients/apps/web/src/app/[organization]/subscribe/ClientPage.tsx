@@ -56,7 +56,6 @@ export default function ClientPage({
         </Link>
         <div className="flex flex-col items-center gap-y-2">
           <h3 className="text-2xl">
-            {' '}
             Support {organization.name} with a subscription
           </h3>
           <p className="dark:text-polar-500 text-lg text-gray-500">

@@ -15,6 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from 'polarkit/components/ui/atoms'
+import { ButtonProps } from 'polarkit/components/ui/button'
 import {
   useListAllOrganizations,
   useOrganizationSubscriptions,
@@ -31,17 +32,22 @@ const buttonClasses =
 interface AnonymousSubscriptionTierSubscribeButtonProps {
   subscriptionTier: SubscriptionTier
   subscribePath: string
+  variant?: ButtonProps['variant']
 }
 
 const AnonymousSubscriptionTierSubscribeButton: React.FC<
   AnonymousSubscriptionTierSubscribeButtonProps
-> = ({ subscriptionTier, subscribePath }) => {
+> = ({ subscriptionTier, subscribePath, variant = 'outline' }) => {
   return (
     <Link
       className="w-full"
       href={`${subscribePath}?tier=${subscriptionTier.id}`}
     >
-      <Button className={buttonClasses} fullWidth variant="outline">
+      <Button
+        className={variant === 'outline' ? buttonClasses : ''}
+        fullWidth
+        variant={variant}
+      >
         Subscribe
       </Button>
     </Link>
@@ -53,11 +59,18 @@ interface AuthenticatedSubscriptionTierSubscribeButtonProps {
   subscriptionTier: SubscriptionTier
   organization: Organization
   subscribePath: string
+  variant?: ButtonProps['variant']
 }
 
 const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   AuthenticatedSubscriptionTierSubscribeButtonProps
-> = ({ user, subscriptionTier, organization, subscribePath }) => {
+> = ({
+  user,
+  subscriptionTier,
+  organization,
+  subscribePath,
+  variant = 'outline',
+}) => {
   const router = useRouter()
 
   const { data: organizationsList } = useListAllOrganizations(true)
@@ -211,10 +224,10 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
       <div className="grow">
         {isSubscribed && (
           <Button
-            className={buttonClasses}
+            className={variant === 'outline' ? buttonClasses : ''}
             fullWidth
             disabled
-            variant="outline"
+            variant={variant}
           >
             Subscribed
           </Button>
@@ -222,9 +235,9 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
         {upgradableSubscription && (
           <>
             <Button
-              className={buttonClasses}
+              className={variant === 'outline' ? buttonClasses : ''}
               fullWidth
-              variant="outline"
+              variant={variant}
               onClick={() => onUpgrade()}
             >
               {isDowngrade ? 'Downgrade' : 'Upgrade'}
@@ -260,7 +273,11 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
               !isUserSelected ? `&organization_id=${selectedSubscriber.id}` : ''
             }`}
           >
-            <Button className={buttonClasses} fullWidth variant="outline">
+            <Button
+              className={variant === 'outline' ? buttonClasses : ''}
+              fullWidth
+              variant={variant}
+            >
               Subscribe
             </Button>
           </Link>
@@ -274,11 +291,12 @@ interface SubscriptionTierSubscribeButtonProps {
   subscriptionTier: SubscriptionTier
   organization: Organization
   subscribePath: string
+  variant?: ButtonProps['variant']
 }
 
 const SubscriptionTierSubscribeButton: React.FC<
   SubscriptionTierSubscribeButtonProps
-> = ({ subscriptionTier, organization, subscribePath }) => {
+> = ({ subscriptionTier, organization, subscribePath, variant }) => {
   const { currentUser } = useAuth()
 
   return (
@@ -287,6 +305,7 @@ const SubscriptionTierSubscribeButton: React.FC<
         <AnonymousSubscriptionTierSubscribeButton
           subscriptionTier={subscriptionTier}
           subscribePath={subscribePath}
+          variant={variant}
         />
       )}
       {currentUser && (
@@ -295,6 +314,7 @@ const SubscriptionTierSubscribeButton: React.FC<
           subscriptionTier={subscriptionTier}
           organization={organization}
           subscribePath={subscribePath}
+          variant={variant}
         />
       )}
     </>

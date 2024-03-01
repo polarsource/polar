@@ -6,23 +6,32 @@ import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionTier, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { api } from 'polarkit'
 import { Button, Input } from 'polarkit/components/ui/atoms'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
-import { useCreateFreeSubscription, useUserSubscriptions } from 'polarkit/hooks'
-import { useCallback } from 'react'
+import {
+  useCreateFreeSubscription,
+  useSubscriptionTiers,
+  useUserSubscriptions,
+} from 'polarkit/hooks'
+import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import { Modal } from '../Modal'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
+import SubscriptionTierCelebration from '../Subscriptions/SubscriptionTierCelebration'
 
 interface AuthenticatedFreeTierSubscribeProps {
   organization: Organization
   subscriptionTier: SubscriptionTier
   user: UserRead
+  upsellSubscriptions?: boolean
 }
 
 export const AuthenticatedFreeTierSubscribe = ({
   subscriptionTier,
   organization,
   user,
+  upsellSubscriptions,
 }: AuthenticatedFreeTierSubscribeProps) => {
   const { data } = useUserSubscriptions(
     user.id,
@@ -32,11 +41,20 @@ export const AuthenticatedFreeTierSubscribe = ({
   )
   const subscription = data && data.items && data.items[0]
   const isSubscribed = subscription !== undefined
+  const router = useRouter()
+  const orgSubscriptionTiers = useSubscriptionTiers(organization.name, 100)
+  const hasPaidSubscriptions = orgSubscriptionTiers.data?.items?.some(
+    (tier) => tier.type !== 'free',
+  )
 
   const createFreeSubscription = useCreateFreeSubscription()
 
   const onSubscribeFree = async () => {
     await createFreeSubscription.mutateAsync({ tier_id: subscriptionTier.id })
+
+    if (upsellSubscriptions && hasPaidSubscriptions) {
+      router.push(organizationPageLink(organization, 'subscribe'))
+    }
   }
 
   return (
@@ -72,36 +90,74 @@ export const AuthenticatedFreeTierSubscribe = ({
 interface AnonymousFreeTierSubscribeProps {
   organization: Organization
   subscriptionTier: SubscriptionTier
+  upsellSubscriptions?: boolean
 }
 
 export const AnonymousFreeTierSubscribe = ({
   organization,
   subscriptionTier,
+  upsellSubscriptions,
 }: AnonymousFreeTierSubscribeProps) => {
   const router = useRouter()
 
+  const orgSubscriptionTiers = useSubscriptionTiers(organization.name, 100)
+  const hasPaidSubscriptions = orgSubscriptionTiers.data?.items?.some(
+    (tier) => tier.type !== 'free',
+  )
+
+  const [showModal, setShowModal] = useState(false)
+  const [success, setSuccess] = useState(false)
   const form = useForm<{ customer_email: string }>()
   const { control, handleSubmit } = form
+
+  const [email, setEmail] = useState('')
 
   const createFreeSubscription = useCreateFreeSubscription()
 
   const onSubscribeFree: SubmitHandler<{ customer_email: string }> =
     useCallback(
       async (data) => {
+        setSuccess(false)
+
         await createFreeSubscription.mutateAsync({
           tier_id: subscriptionTier.id,
           customer_email: data.customer_email,
         })
 
-        router.push(
-          organizationPageLink(
-            organization,
-            `subscribe?email=${data.customer_email}`,
-          ),
-        )
+        // Redirect to /org/subscribe to upsell subscriptions
+        if (upsellSubscriptions && hasPaidSubscriptions) {
+          router.push(
+            organizationPageLink(
+              organization,
+              `subscribe?email=${data.customer_email}`,
+            ),
+          )
+        } else {
+          setShowModal(true)
+          setEmail(data.customer_email)
+          setSuccess(true)
+        }
       },
-      [createFreeSubscription, subscriptionTier, router, organization],
+      [
+        createFreeSubscription,
+        subscriptionTier,
+        router,
+        organization,
+        upsellSubscriptions,
+        hasPaidSubscriptions,
+      ],
     )
+
+  const [emailSignInClicked, setEmailSignInClicked] = useState(false)
+  const onEmailSignin = useCallback(async () => {
+    setEmailSignInClicked(true) // set to true, never resets to false
+
+    await api.magicLink.magicLinkRequest({
+      magicLinkRequest: { email, return_to: window.location.href },
+    })
+    const searchParams = new URLSearchParams({ email: email })
+    router.push(`/login/magic-link/request?${searchParams}`)
+  }, [email, router])
 
   return (
     <>
@@ -142,6 +198,33 @@ export const AnonymousFreeTierSubscribe = ({
           </form>
         </Form>
       </div>
+      <Modal
+        className="overflow-visible"
+        isShown={showModal}
+        hide={() => setShowModal(false)}
+        modalContent={
+          <div className="flex min-h-[240px] w-full flex-col items-center justify-center gap-y-6 px-16 py-10">
+            {success && (
+              <>
+                <SubscriptionTierCelebration type={subscriptionTier.type} />
+                <p className="text-muted-foreground text-center">Thank you!</p>
+                <h2 className="text-center text-lg">
+                  You&apos;re now subscribed to {organization.name}
+                </h2>
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={emailSignInClicked}
+                  loading={emailSignInClicked}
+                  onClick={onEmailSignin}
+                >
+                  Sign in with email
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      />
     </>
   )
 }
@@ -149,11 +232,13 @@ export const AnonymousFreeTierSubscribe = ({
 interface FreeTierSubscribeProps {
   subscriptionTier: SubscriptionTier
   organization: Organization
+  upsellSubscriptions?: boolean
 }
 
 export const FreeTierSubscribe = ({
   subscriptionTier,
   organization,
+  upsellSubscriptions,
 }: FreeTierSubscribeProps) => {
   const { currentUser } = useAuth()
   return (
@@ -163,11 +248,13 @@ export const FreeTierSubscribe = ({
           subscriptionTier={subscriptionTier}
           organization={organization}
           user={currentUser}
+          upsellSubscriptions={upsellSubscriptions}
         />
       ) : (
         <AnonymousFreeTierSubscribe
           subscriptionTier={subscriptionTier}
           organization={organization}
+          upsellSubscriptions={upsellSubscriptions}
         />
       )}
     </>

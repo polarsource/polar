@@ -3,10 +3,10 @@
 import IssueListItem from '@/components/Issues/IssueListItem'
 import ThankYouUpsell from '@/components/Pledge/ThankYouUpsell'
 import { useAuth } from '@/hooks'
+import { useSendMagicLink } from '@/hooks/magicLink'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Pledge } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { api } from 'polarkit'
 import { GrayCard } from 'polarkit/components/ui/Cards'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { useStore } from 'polarkit/store'
@@ -48,6 +48,7 @@ export const Status = (props: {
 
   const email = props.email
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)
+  const sendMagicLink = useSendMagicLink()
   const onEmailSignin = useCallback(async () => {
     if (!email) {
       router.push('/login')
@@ -56,9 +57,7 @@ export const Status = (props: {
 
     setEmailSigninLoading(true)
     try {
-      await api.magicLink.magicLinkRequest({ magicLinkRequest: { email } })
-      const searchParams = new URLSearchParams({ email: email })
-      router.push(`/login/magic-link/request?${searchParams}`)
+      sendMagicLink(email)
     } catch (err) {
       // TODO: error handling
     } finally {

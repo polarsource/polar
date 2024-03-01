@@ -1,12 +1,12 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { useSendMagicLink } from '@/hooks/magicLink'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionTier, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import { Button, Input } from 'polarkit/components/ui/atoms'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
 import {
@@ -148,15 +148,12 @@ export const AnonymousFreeTierSubscribe = ({
       ],
     )
 
+  const sendMagicLink = useSendMagicLink()
+
   const [emailSignInClicked, setEmailSignInClicked] = useState(false)
   const onEmailSignin = useCallback(async () => {
     setEmailSignInClicked(true) // set to true, never resets to false
-
-    await api.magicLink.magicLinkRequest({
-      magicLinkRequest: { email, return_to: window.location.href },
-    })
-    const searchParams = new URLSearchParams({ email: email })
-    router.push(`/login/magic-link/request?${searchParams}`)
+    sendMagicLink(email)
   }, [email, router])
 
   return (

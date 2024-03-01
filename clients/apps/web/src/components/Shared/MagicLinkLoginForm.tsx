@@ -1,9 +1,9 @@
 'use client'
 
+import { useSendMagicLink } from '@/hooks/magicLink'
 import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import { setValidationErrors } from 'polarkit/api/errors'
 import { Button, Input } from 'polarkit/components/ui/atoms'
 import {
@@ -26,15 +26,12 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const sendMagicLink = useSendMagicLink()
 
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
     setLoading(true)
     try {
-      await api.magicLink.magicLinkRequest({
-        magicLinkRequest: { email, return_to: returnTo },
-      })
-      const searchParams = new URLSearchParams({ email })
-      router.push(`/login/magic-link/request?${searchParams}`)
+      sendMagicLink(email)
     } catch (e) {
       if (e instanceof ResponseError) {
         const body = await e.response.json()

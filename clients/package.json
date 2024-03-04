@@ -12,7 +12,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm",
     "postinstall": "manypkg check",
-    "publish-packages": "pnpm build && pnpm test && changeset version && changeset publish"
+    "publish-packages": "pnpm build && pnpm test && changeset version && changeset publish",
+    "version-packages": "changeset version"
   },
   "dependencies": {
     "@changesets/cli": "^2.27.1",

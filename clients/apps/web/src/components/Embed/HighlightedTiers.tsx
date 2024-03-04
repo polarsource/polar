@@ -29,7 +29,7 @@ export const HighlightedTiers = ({
         display: 'flex',
         color: darkmode ? '#D2D4DF' : '#181a1f',
         backgroundColor: darkmode ? '#0C0D11' /*gray-700*/ : '#F8F9FB',
-        width: '720px',
+        width: '840px',
         borderRadius: 32,
         overflow: 'hidden',
         flexDirection: 'column',
@@ -66,7 +66,7 @@ export const HighlightedTiers = ({
           display: 'flex',
           flexDirection: 'row',
           justifyContent: 'center',
-          gap: 20,
+          gap: 32,
           width: '100%',
         }}
       >

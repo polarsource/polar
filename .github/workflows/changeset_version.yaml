@@ -1,4 +1,4 @@
-name: Release
+name: Release to npm
 
 on:
   push:
@@ -24,22 +24,21 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: v18
-          cache: 'pnpm'
-          cache-dependency-path: 'clients/pnpm-lock.yaml'
-          registry-url: 'https://registry.npmjs.org'
-      
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install dependencies
         working-directory: ./clients
         run: pnpm install
 
       - name: Create Release Pull Request or Publish to npm
-        working-directory: ./clients
         # https://github.com/changesets/action
         uses: changesets/action@v1
         with:
-          # this expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: pnpm publish-packages
-          version: pnpm version-packages
+          publish: "pnpm publish-packages"
+          version: "pnpm version-packages"
+          cwd: "./clients"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

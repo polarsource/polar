@@ -14,8 +14,7 @@ The only change is in the [`src/pages/blog/index.astro`](./src/pages/blog/index.
 file, which contains an example of how to use the integration to upload posts to Polar.
 
 Note: this code will fail unless you provide both a personal access token and an
-organization ID. The example is not intended to be run. Similarly, the `build` script
-has been removed as the code would run at build time.
+organization ID. The example is not intended to be run.
 
 ## Example
 
@@ -42,8 +41,7 @@ const polar = new Polar({
 // Upload all posts to Polar
 const { error: postUploadError } = await polar
   .upload(posts, {
-    organizationId: process.env.POLAR_ORGANIZATION_ID ?? '',
-    organizationName: 'polar',
+    organizationName: 'my-organization-name',
   })
   // Filter for only new posts
   .filter(({ exists }) => !exists)

@@ -2,7 +2,7 @@
   "private": true,
   "name": "polar",
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=!astro-example",
     "dev": "turbo run dev",
     "dev-web": "turbo run dev --filter=web",
     "lint": "turbo run lint",

@@ -15,8 +15,7 @@
   ],
   "scripts": {
     "format": "prettier -w .",
-    "lint": "eslint . --ext .ts,.js,.astro src",
-    "dev": "cd example && astro dev"
+    "lint": "eslint . --ext .ts,.js,.astro src"
   },
   "devDependencies": {
     "@polar-sh/sdk": "workspace:*",

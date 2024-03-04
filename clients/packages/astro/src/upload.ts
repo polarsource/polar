@@ -19,14 +19,14 @@
  * This is inspired by the [Supabase Client](https://supabase.com/docs/reference/javascript/select),
  * which uses a similar pattern for building queries.
  */
-import type { Article, ArticleCreate, ArticleUpdate, PolarAPI } from '@polar-sh/sdk';
+import type { Article, ArticleCreate, ArticleUpdate, Organization, PolarAPI } from '@polar-sh/sdk';
 import { ErrorGroup, PolarUploadError, type AstroCollectionEntry, type PolarResult } from './types';
 
 /**
  * A PolarArticle contains all the details required for creating or updating
  * articles via the Polar API.
  */
-export type PolarArticle = ArticleCreate & ArticleUpdate;
+export type PolarArticle = Omit<ArticleCreate, 'organization_id'> & ArticleUpdate;
 
 /**
  * Information about the current article in the upload pipeline.
@@ -95,7 +95,6 @@ export type PolarUploadResult = PolarResult<
  * Options for uploading articles to Polar.
  */
 export type UploadOptions = {
-	organizationId: string;
 	organizationName: string;
 	platform?: 'github';
 	showUnpublished?: boolean;
@@ -152,6 +151,13 @@ export class PolarUploadBuilder<
 		return this.withFunction<NewTArticle>({
 			type: 'transform',
 			function: func as UploadTransformFunction<TEntry, PolarArticle, NewTArticle>,
+		});
+	}
+
+	private async getOrganization(): Promise<Organization> {
+		return this.client.organizations.lookup({
+			organizationName: this.options.organizationName,
+			platform: this.options.platform ?? 'github',
 		});
 	}
 
@@ -294,6 +300,11 @@ export class PolarUploadBuilder<
 			| null
 			| undefined
 	): Promise<TResult1 | TResult2> {
+		// Find organization
+		const org = await this.getOrganization().catch(() => {
+			throw Error(`Organization '${this.options.organizationName}' not found.`);
+		});
+
 		// Fetch articles
 		const articlesResult = await this.getArticles();
 		if (articlesResult.error) {
@@ -315,7 +326,6 @@ export class PolarUploadBuilder<
 						title: entry.id,
 						slug: entry.slug,
 						body: entry.body,
-						organization_id: this.options.organizationId,
 					},
 				};
 			}
@@ -335,7 +345,9 @@ export class PolarUploadBuilder<
 			.filter(Boolean) as { article: TArticle; id: string }[];
 
 		// Create/Update articles
-		const createResults = await Promise.all(toCreate.map((article) => this.createArticle(article)));
+		const createResults = await Promise.all(
+			toCreate.map((article) => this.createArticle({ ...article, organization_id: org.id }))
+		);
 		const updateResults = await Promise.all(
 			toUpdate.map(({ article, id }) => this.updateArticle(id, article))
 		);

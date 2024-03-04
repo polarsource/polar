@@ -18,9 +18,9 @@ pnpm add @polar-sh/astro
 Then, get started by creating a Polar client with your access token:
 
 ```typescript
-import { Polar } from '@polar-sh/astro'
+import { Polar } from '@polar-sh/astro';
 
-const polar = new Polar({ accessToken })
+const polar = new Polar({ accessToken });
 ```
 
 Access tokens can be generated on your Polar [Settings page](https://polar.sh/settings).
@@ -32,16 +32,16 @@ Astro content collections. It contains common Polar article metadata, such as a 
 and whether or not to `notifySubscribers` of the article.
 
 ```typescript
- import { z, defineCollection } from 'astro:content'
- import { polarArticleSchema } from '@polar-sh/astro'
+import { z, defineCollection } from 'astro:content';
+import { polarArticleSchema } from '@polar-sh/astro';
 
- defineCollection({
-    schema: z.object({
-      // Your custom frontmatter properties here...
-      // ...
-      polar: polarArticleSchema.optional(),
-    }),
- })
+defineCollection({
+  schema: z.object({
+    // Your custom frontmatter properties here...
+    // ...
+    polar: polarArticleSchema.optional(),
+  }),
+});
 ```
 
 ### Uploading posts to Polar
@@ -53,17 +53,17 @@ The upload client uses the builder pattern to transform and filter posts before
 uploading them to Polar. For example, to upload all your posts with no modification:
 
 ```typescript
-import { getCollection } from 'astro:content'
-import { Polar } from '@polar-sh/astro'
+import { getCollection } from 'astro:content';
+import { Polar } from '@polar-sh/astro';
 
-const posts = await getCollection('blog')
+const posts = await getCollection('blog');
 
-const polar = new Polar({ accessToken })
+const polar = new Polar({ accessToken });
 
 const { data, error } = await polar.upload(posts, {
   organizationId,
   organizationName,
-})
+});
 ```
 
 The above code will upload all your posts to Polar, and will update any existing posts
@@ -103,7 +103,7 @@ const { data, error } = await polar
     organizationId,
     organizationName,
   })
-  .filter(({ exists }) => !exists)
+  .filter(({ exists }) => !exists);
 ```
 
 ##### Add a title to the posts
@@ -116,17 +116,19 @@ const { data, error } = await polar
     organizationId,
     organizationName,
   })
-  .transform(({
-    // `entry` is the Astro collection entry
-    entry,
-    // `article` is the Polar article
-    article,
-    // `existing` is the existing Polar article, if it's been uploaded previously
-    existing,
-  }) => {
-    article.title = entry.data.title ?? existing.title
-    return article
-  })
+  .transform(
+    ({
+      // `entry` is the Astro collection entry
+      entry,
+      // `article` is the Polar article
+      article,
+      // `existing` is the existing Polar article, if it's been uploaded previously
+      existing,
+    }) => {
+      article.title = entry.data.title ?? existing.title;
+      return article;
+    }
+  );
 ```
 
 ##### Update existing posts with new hero images
@@ -145,17 +147,16 @@ const { data, error } = await polar
   .transform(({ entry, article }) => {
     if (entry.data.image) {
       // Add the image as a markdown image at the start of the article
-      article.body = `![](${Astro.url.host}${entry.data.image.src})\n\n${article.body}`
+      article.body = `![](${Astro.url.host}${entry.data.image.src})\n\n${article.body}`;
     }
-    return article
-  })
+    return article;
+  });
 ```
 
 ##### Using the custom frontmatter schema
 
 You can use the custom frontmatter schema directly with the upload client. This article assumes
 the properties exist under a `polar` key in your frontmatter.
-
 
 ```typescript
 const { data, error } = await polar
@@ -169,10 +170,10 @@ const { data, error } = await polar
       ...article,
       ...entry.data.polar,
       // `published_at` is a date and needs to be a string
-      published_at: entry.data.polar?.published_at?.toISOString()
-    }
-    return article
-  })
+      published_at: entry.data.polar?.published_at?.toISOString(),
+    };
+    return article;
+  });
 ```
 
 ### Using the Polar SDK
@@ -181,20 +182,16 @@ You can also access other Polar SDK functions through the `client` property on t
 `Polar` class.
 
 ```typescript
-pledge = await polar
-  .client
-  .pledges
-  .get({ id: 'pledge-id' })
+pledge = await polar.client.pledges.get({ id: 'pledge-id' });
 ```
 
 ## TODOs
 
 - [x] Add Polar article upload
 - [ ] Add functions for authenticating on an Astro site using Polar
-    - [ ] Add helper methods for determining a user's subscription tier
+  - [ ] Add helper methods for determining a user's subscription tier
 - [ ] Add Polar-specific components like `<Paywall>`
-    - These will probably be React components, as Polar is written in React and Astro
-      supports React
+  - These will probably be React components, as Polar is written in React and Astro
+    supports React
 - [ ] Add functionality for pulling articles from Polar to generate static or SSR
       pages on Polar sites
-

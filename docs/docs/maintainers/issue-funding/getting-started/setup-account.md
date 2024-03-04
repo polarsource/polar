@@ -64,6 +64,8 @@ repositories you want.
     contributors about granted rewards via an in-line comment. No such comment
     is automated, required or hard-coded (you can edit them freely in our UI) and they
     require you to manually submit them each time.
+
+
 ## Upgrade an existing account
 
 Funded an issue on Polar and already have an account? Or want to connect a

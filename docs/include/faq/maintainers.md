@@ -187,21 +187,9 @@ our thinking behind it.
 
 ## Payouts
 
-### How do I receive funding?
+### How do I receive funding & when are funds paid out?
 
-Polar is built on Stripe Connect. You can seamlessly create and connect a Stripe
-account directly within your Polar dashboard provided you live in a [supported country](#which-countries-are-supported).
-Funds will then be automatically transfered once they're ready and subsequently paid out to your bank account from Stripe.
-
----
-
-
-### When are funds paid out?
-
-Once you mark an issue as completed, we give backers a 7-day dispute & payment window (pledges). After which, we'll transfer
-the available funds (minus our revenue share & Stripe fees) to your connected Stripe account.
-
-You then receive Stripe payouts to your bank account based on your [Stripe Payout Schedule & Speed](https://stripe.com/docs/payouts#payout-schedule).
+Checkout our [Payout](/payment/#payouts) documentation for full details on this topic.
 
 ---
 

@@ -59,7 +59,7 @@ This includes not adding the value-add tax in case of the reverse charge mechani
 applicable.
 
 
-## Fees & Payouts (Maintainers)
+## Fees & Payouts (Creators)
 
 
 ### Fees
@@ -69,10 +69,87 @@ Polar has no fixed, monthly, fees. We only earn when you do by taking a 5% reven
 Stripe transaction- and payout fees apply in addition. _We're covering this up until March 31st, 2024._
 
 
-### Payouts
+### Balance & Payouts
 
-See [Receive Funding](/maintainers/issue-funding/workflow/#receive-funding) as
-part of our maintainer guides.
+#### Account Setup
+
+![Polar Account Setup](../../../../assets/maintainers/issue-funding/polar-account-nudge-light.jpg#only-light)
+![Polar Account Setup](../../../../assets/maintainers/issue-funding/polar-account-nudge-dark.jpg#only-dark)
+
+You need to setup an account so that we can transfer the funding - minus our fees - to it.
+
+1. Goto the `Finance` page in your Polar dashboard
+2. Click `Setup` in the card shown above in your dashboard
+3. Choose account type & follow their setup instructions
+
+*This is only required the first time and you can do this proactively too in order - recommended to avoid
+any additional delays.*
+
+##### Stripe Connect Express
+
+![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-stripe-setup-light.jpg#only-light)
+![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-stripe-setup-dark.jpg#only-dark)
+
+Stripe is the default and recommended option since it enables instant transfers.
+
+##### Open Collective
+
+![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-oc-setup-light.jpg#only-light)
+![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-oc-setup-dark.jpg#only-dark)
+
+We support the ability to easily connect a verified Open Collective account to
+Polar. However, such transfers are done manually vs. automatically via an API
+(such as Stripe) and therefore we only do them:
+
+- Once per month
+- For accounts reaching a $100 minimum threshold
+
+!!! info "Open Collective fees apply in addition"
+    We only support Open Collective accounts using the Open Source Collective
+    fiscal host and their fees apply in addition to offer their services on top.
+
+#### Balance
+
+![Polar Balance](../../../../assets/payment/polar-balance-light.jpg#only-light)
+![Polar Balance](../../../../assets/payment/polar-balance-dark.jpg#only-dark)
+
+You can see your available balance for payout at any time under your `Finance`
+page.
+
+Your balance is all the earnings minus:
+
+1. Any VAT we've captured for remittance, i.e balance is excluding VAT
+2. Our revenue share (5%)
+3. Stripe transaction fees (we're covering this until March 31st)
+
+All historic transactions are available in chronological order along with their
+associated fees that have been deducted.
+
+Note: Upon payout (withdrawal), Stripe incurrs additional fees that will be
+deducted before the final payout of the balance. See next section.
+
+#### Payout (Withdrawal)
+
+You can issue a withdrawal, i.e payout, at any time once there is a balance. We
+will then transfer the balance minus Stripe payout fees (see below) to your Stripe account & issue a payout on their
+side.
+
+We require this to be done manually since:
+
+1. Users have requested control for easier accounting vs. frequent & small payouts
+2. Giving users control of Stripe payout fees
+
+
+**Stripe Payout Fees**
+
+1. $2 per month of active payout(s)
+2. 0.25% + $0.25 per payout
+3. Cross border fees (currency conversion): 0.25% (EU) - 1% in other countries.
+
+Given the fixed costs, we want to default to manual payouts so you can control
+when you want to incurr them and do it once vs. per each individual transaction
+in order to reduce the overall fees.
+
 
 ### Taxes
 

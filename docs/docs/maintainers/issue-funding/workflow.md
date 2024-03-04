@@ -212,57 +212,20 @@ comment freely. Just make sure to keep the username pings & instructions 🙂
 
 ### Receive Funding
 
-Great. You've setup funding, hacked away with contributors to complete the issue
-and shared some rewards. Now what?
+Great. You've setup funding, received it from your community towards a few
+issues & hacked away to complete one of them. Now what?
 
-#### Setup Payouts
-
-![Polar Account Setup](../../../../assets/maintainers/issue-funding/polar-account-nudge-light.jpg#only-light)
-![Polar Account Setup](../../../../assets/maintainers/issue-funding/polar-account-nudge-dark.jpg#only-dark)
-
-You need to setup an account so that we can transfer the funding - minus our fees - to it.
-
-1. Goto the `Finance` page in your Polar dashboard
-2. Click `Setup` in the card shown above in your dashboard
-3. Choose account type & follow their setup instructions
-
-*This is only required the first time and you can do this proactively too in order - recommended to avoid
-any additional delays.*
-
-##### Stripe Connect Express
-
-![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-stripe-setup-light.jpg#only-light)
-![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-stripe-setup-dark.jpg#only-dark)
-
-Stripe is the default and recommended option since it enables instant transfers.
-
-##### Open Collective
-
-![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-oc-setup-light.jpg#only-light)
-![Polar Stripe Account Setup](../../../../assets/maintainers/issue-funding/polar-account-oc-setup-dark.jpg#only-dark)
-
-We support the ability to easily connect a verified Open Collective account to
-Polar. However, such transfers are done manually vs. automatically via an API
-(such as Stripe) and therefore we only do them:
-
-- Once per month
-- For accounts reaching a $100 minimum threshold
-
-!!! info "Open Collective fees apply in addition"
-    We only support Open Collective accounts using the Open Source Collective
-    fiscal host and their fees apply in addition to offer their services on top.
-
-#### Await Payouts
-
-Once you mark an issue as completed backers receive an email notification about
-it and have 7 days to either:
+Once an issue is closed, you'll be prompted by Polar to mark it as completes.
+Backers will then receive an email notification about it and have 7 days to
+either:
 
 - **Dispute**. In case they paid upfront and want to dispute the completion.
 - **Pay invoices**. In case they made a pledge to pay on completion.
 
 Polar then reviews and approves transfers from our platform account to your
-connected account. In case of disputes, we review it to make a fair decision.
+balance on Polar. In case of disputes, we review it to make a fair decision.
 
-If you're using Stripe you will almost immediately see the transfer on your
-Stripe Connect Express account. Those funds will then be paid out to your bank based on
-your Stripe Payout schedule.
+Once completed, the funds will be available on your Polar balance and you can
+manually withdraw it at anytime.
+
+Read more about how to see & manage your [Balance & Payouts](/payment/#payouts).

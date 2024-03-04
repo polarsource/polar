@@ -35,7 +35,6 @@ export class Polar {
 	 * const uploadResult = await polar
 	 *   .upload(posts, {
 	 *     organizationName: 'my-organization',
-	 *     organizationId: 'my-organization-id',
 	 *   })
 	 *   // Filter out any articles that are drafts
 	 *   .filter(({ entry }) => !!entry.publishedAt)

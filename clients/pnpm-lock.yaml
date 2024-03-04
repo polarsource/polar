@@ -477,7 +477,7 @@ importers:
   examples/next-js-example:
     dependencies:
       '@polar-sh/sdk':
-        specifier: 0.4.5
+        specifier: 0.4.6
         version: link:../../packages/sdk
       next:
         specifier: ^14.0.4

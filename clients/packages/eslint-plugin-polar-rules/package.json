@@ -2,5 +2,6 @@
   "name": "eslint-plugin-polar-rules",
   "version": "0.0.0",
   "license": "MIT",
-  "main": "eslint-plugin-polar-rules.js"
+  "main": "eslint-plugin-polar-rules.js",
+  "private": true
 }

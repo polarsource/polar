@@ -14,6 +14,7 @@
     "postinstall": "manypkg check"
   },
   "dependencies": {
+    "@changesets/cli": "^2.27.1",
     "@manypkg/cli": "latest",
     "eslint": "^8.55.0",
     "eslint-config-custom": "workspace:*",

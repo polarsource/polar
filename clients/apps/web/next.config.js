@@ -1,7 +1,5 @@
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
-const defaultApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.polar.sh'
-
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
   : 'polar.sh'
@@ -11,6 +9,10 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   transpilePackages: ['polarkit'],
+
+  // Do not do any fiddling with trailing slashes
+  trailingSlash: undefined,
+  skipTrailingSlashRedirect: true,
 
   images: {
     remotePatterns: [
@@ -85,18 +87,6 @@ const nextConfig = {
       {
         source: '/ingest/:path*',
         destination: 'https://app.posthog.com/:path*',
-      },
-
-      // API rewrite for custom domains
-      {
-        source: '/api/v1/:path*',
-        destination: `${defaultApiUrl}/:path*`,
-        missing: [
-          {
-            type: 'host',
-            value: defaultFrontendHostname,
-          },
-        ],
       },
     ]
   },

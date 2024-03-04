@@ -53,9 +53,9 @@ communities with Polar Rewards in our original [blog post from the Rewards launc
 
 ## Pricing
 
-Polar has no fixed, monthly, fees. We take a 5% commission once transfers are
-made for successfully funded & completed issues. Payment processing fees apply
-in addition (Stripe).
+Polar has no fixed, monthly, fees. We only earn when you do by taking a 5% revenue share of successful payments.
+
+Stripe transaction- and payout fees apply in addition. _We're covering this up until March 31st, 2024._
 
 
 ## Get up and running in minutes

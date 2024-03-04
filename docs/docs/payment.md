@@ -64,10 +64,9 @@ applicable.
 
 ### Fees
 
-Polar has no fixed, monthly, fees. We take a 5% commission once transfers are
-made for successfully funded & completed issues and monthly subscriptions.
+Polar has no fixed, monthly, fees. We only earn when you do by taking a 5% revenue share of successful payments.
 
-Stripe transaction- and payout fees apply before transfers. _We're covering this up until March 31st, 2024._
+Stripe transaction- and payout fees apply in addition. _We're covering this up until March 31st, 2024._
 
 
 ### Payouts
@@ -83,9 +82,8 @@ creating more powerful & beneficial opportunities within the open source
 ecosystem.
 
 However, such value-add services are often subject to international taxation.
-Calculating, capturing and remitting them to separate governmental agencies is an impossible overhead and ask from
-individual maintainers. **Polar is therefore proud to be the merchant of record
-and manage value-add taxes for subscriptions offered by maintainers.**
+Calculating, capturing and remitting them to separate governmental agencies is almost an impossible overhead and ask from
+individual maintainers. **Polar is therefore proud to take this on and to manage value-add taxes for subscriptions offered by maintainers.**
 
 **How it works (Example)**
 

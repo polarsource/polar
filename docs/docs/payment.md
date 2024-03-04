@@ -120,6 +120,41 @@ will therefore also offer you the chance to opt-in for Polar to deduct the neces
 from impacted subscriptions instead if you'd prefer. Of course, new subscriptions would
 automatically have the taxes applied at the point of subscribing.
 
+## 1099-K Form (US)
+
+Polar will issue 1099-K forms via Stripe to eligible users in the US on an annual basis.
+
+For tax year 2023, 1099-K forms are required for users who received:
+
+1. $20,000 in gross volume (USD)
+2. Over 200 transactions
+
+IRS has expressed intent to lower the threshold to be equilivant to other 1099
+forms, e.g NEC, at $600. However, it's still being discussed and is not
+guaranteed for 2024 and onward. Stripe keeps the thresholds up-to-date based on
+the requirements and their developments.
+
+**Why not a 1099-NEC or 1099-MISC?**
+
+TurboTax has [this great article](https://blog.turbotax.intuit.com/self-employed/1099-misc-or-1099-k-whats-the-difference-29903/) on the difference between 1099-K, 1099-NEC & 1099-MISC
+
+<blockquote>
+If you’re self-employed and accept credit, debit, or prepaid cards, you may receive Form 1099-K for transactions processed by a third party. This includes creators, influencers, rideshare drivers, or side-giggers. If you’re an online seller selling on platforms like Ebay, AirBnB, Etsy, and VRBO, you may also receive Form 1099-K.
+</blockquote>
+
+Stripe further clarifies 1099-K requirements for Payment Settlement Entities
+(PSE) in [this
+article](https://support.stripe.com/questions/intro-to-1099-k-tax-forms-for-platforms-and-marketplaces).
+
+Effectively, `1099-K` is required for platforms/marketplaces which:
+
+1. Handles payment between someone providing goods/services to purchasers
+2. Such payments are made with credit, debit, or prepaid cards.
+3. Receiver is not a contractor/freelancer to the platform/marketplace
+
+Polar meets all of these criterias and therefore issues 1099-K forms to eligible
+developers on the platform vs. other forms.
+
 ## Polar Registrations
 
 Currently, Polar has the following registrations:

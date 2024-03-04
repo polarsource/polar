@@ -33,30 +33,6 @@ importers:
         specifier: ^1.12.4
         version: 1.12.4
 
-  apps/astro-demo:
-    dependencies:
-      '@astrojs/check':
-        specifier: ^0.5.4
-        version: 0.5.6(prettier@3.1.1)(typescript@5.3.3)
-      '@astrojs/mdx':
-        specifier: ^2.1.1
-        version: 2.1.1(astro@4.4.5)
-      '@astrojs/rss':
-        specifier: ^4.0.5
-        version: 4.0.5
-      '@astrojs/sitemap':
-        specifier: ^3.1.1
-        version: 3.1.1
-      '@polar-sh/astro':
-        specifier: workspace:*
-        version: link:../../packages/astro
-      astro:
-        specifier: ^4.4.0
-        version: 4.4.5(typescript@5.3.3)
-      typescript:
-        specifier: 5.3.3
-        version: 5.3.3
-
   apps/chrome-extension:
     dependencies:
       '@polar-sh/sdk':
@@ -467,6 +443,30 @@ importers:
       tsconfig:
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      typescript:
+        specifier: 5.3.3
+        version: 5.3.3
+
+  examples/astro-example:
+    dependencies:
+      '@astrojs/check':
+        specifier: ^0.5.4
+        version: 0.5.6(prettier@3.1.1)(typescript@5.3.3)
+      '@astrojs/mdx':
+        specifier: ^2.1.1
+        version: 2.1.1(astro@4.4.5)
+      '@astrojs/rss':
+        specifier: ^4.0.5
+        version: 4.0.5
+      '@astrojs/sitemap':
+        specifier: ^3.1.1
+        version: 3.1.1
+      '@polar-sh/astro':
+        specifier: workspace:*
+        version: link:../../packages/astro
+      astro:
+        specifier: ^4.4.0
+        version: 4.4.5(typescript@5.3.3)
       typescript:
         specifier: 5.3.3
         version: 5.3.3

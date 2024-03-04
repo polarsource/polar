@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSideAPI } from './utils/api'
-import { defaultFrontendHostname } from './utils/domain'
+import { defaultApiUrl, defaultFrontendHostname } from './utils/domain'
 
 // Custom domain name handlings
 export async function middleware(request: NextRequest) {
@@ -10,8 +10,21 @@ export async function middleware(request: NextRequest) {
   if (url.pathname.startsWith('/_next/')) {
     return
   }
+
+  // Proxy API requests to the Python API
+  // Used on custom domains
+  if (url.pathname.startsWith('/api/v1/')) {
+    return customDomainApiProxy(request)
+  }
+
   if (url.pathname.startsWith('/api/')) {
     return
+  }
+
+  // Trailing slash handling (we've disabled the default NextJS trailing slash handler)
+  // This handling needs to happen _after_ the proxy handler above.
+  if (request.nextUrl.pathname !== '/' && request.url.endsWith('/')) {
+    return webPagesTrailingSlashRedirect(request)
   }
 
   // Get hostname from request or x-forwarded-host header
@@ -76,4 +89,21 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.redirect(to)
+}
+
+async function customDomainApiProxy(
+  request: NextRequest,
+): Promise<NextResponse> {
+  const url = new URL(request.url, defaultApiUrl)
+  const upstream = new URL(defaultApiUrl)
+  url.protocol = upstream.protocol
+  url.hostname = upstream.hostname
+  url.port = upstream.port
+  return NextResponse.rewrite(url)
+}
+
+function webPagesTrailingSlashRedirect(
+  request: NextRequest,
+): NextResponse | undefined {
+  return NextResponse.redirect(request.url.substring(0, request.url.length - 1))
 }

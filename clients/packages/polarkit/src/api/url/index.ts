@@ -3,7 +3,6 @@ export const getServerURL = (path?: string): string => {
   let baseURL = process.env.NEXT_PUBLIC_API_URL
 
   if (isOnCustomDomain() && typeof window === 'object') {
-    console.log('is on custom domain!')
     baseURL = window.location.origin
   }
 

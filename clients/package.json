@@ -13,7 +13,7 @@
     "preinstall": "npx only-allow pnpm",
     "postinstall": "manypkg check",
     "publish-packages": "pnpm build && pnpm test && changeset version && changeset publish",
-    "version-packages": "changeset version && pnpm install"
+    "version-packages": "changeset version && pnpm install --fix-lockfile"
   },
   "dependencies": {
     "@changesets/cli": "^2.27.1",

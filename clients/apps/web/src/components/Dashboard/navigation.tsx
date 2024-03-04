@@ -98,17 +98,12 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     subs: [
       {
         title: 'Overview',
-        link: `/maintainer/${org.name}/issues`,
+        link: `/maintainer/${org.name}/issues/overview`,
         icon: <HowToVoteOutlined fontSize="inherit" />,
       },
       {
-        title: 'Promote',
-        link: `/maintainer/${org.name}/issues/promote`,
-        icon: <WifiTetheringOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Embeds',
-        link: `/maintainer/${org.name}/issues/embeds`,
+        title: 'Badge',
+        link: `/maintainer/${org.name}/issues/badge`,
         icon: <CropFreeOutlined fontSize="inherit" />,
       },
     ],
@@ -129,6 +124,15 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     icon: <Face fontSize="inherit" />,
     postIcon: undefined,
     if: org?.is_teams_enabled,
+    subs: undefined,
+  },
+  {
+    id: 'promote',
+    title: 'Promote',
+    icon: <WifiTetheringOutlined fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/promote`,
+    if: true,
     subs: undefined,
   },
   {

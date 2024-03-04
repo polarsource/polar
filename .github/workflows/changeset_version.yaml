@@ -12,6 +12,11 @@ jobs:
     name: Release
     if: github.repository == 'polarsource/polar'
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3

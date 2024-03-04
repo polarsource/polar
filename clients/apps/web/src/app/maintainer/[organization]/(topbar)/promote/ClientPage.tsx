@@ -10,9 +10,11 @@ import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import {
   CopyToClipboardInput,
-  LabeledRadioButton,
   ShadowBox,
+  Tabs,
+  TabsTrigger,
 } from 'polarkit/components/ui/atoms'
+import { TabsList } from 'polarkit/components/ui/tabs'
 import {
   useListRepositories,
   useSearchIssues,
@@ -49,7 +51,7 @@ export default function ClientPage() {
 
   const subscriptionsSummary = useSubscriptionSummary(org?.name ?? '', 3)
 
-  const [currentEmbedTab, setCurrentEmbedTab] = useState('Subscribe')
+  const [currentEmbedTab, setCurrentEmbedTab] = useState('Tiers')
 
   if (!org && isLoaded) {
     return (
@@ -63,6 +65,20 @@ export default function ClientPage() {
   }
 
   const previews: Record<string, ReactElement> = {
+    Tiers: (
+      <>
+        <picture>
+          <source
+            media="(prefers-color-scheme: dark)"
+            srcSet={`/embed/tiers.svg?org=${org?.name}&darkmode`}
+          />
+          <img
+            alt="Subscription Tiers on Polar"
+            src={`/tiers.svg?org=${org?.name}`}
+          />
+        </picture>
+      </>
+    ),
     Subscribe: (
       <Subscribe
         subscriptions={subscriptionsSummary.data?.items || []}
@@ -87,6 +103,7 @@ export default function ClientPage() {
   }
 
   const embedCodes: Record<string, string> = {
+    Tiers: `<a href="https://polar.sh/${orgSlashRepo}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${org?.name}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${org?.name}"></picture></a>`,
     Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
@@ -128,43 +145,53 @@ export default function ClientPage() {
               </div>
             </div>
           </ShadowBox>
-          <h2 className="pt-8 text-lg font-medium">Readme embeds</h2>
+          <h2 className="pt-8 text-lg font-medium">README Embeds</h2>
           <p className="dark:text-polar-400 text-sm text-gray-500">
-            Embed the Polar SVG in your README or on your website to showcase
-            issues that you&apos;re seeking funding for.
+            Polar Embeds allow you to promote Subscription Tiers & Issues on
+            your GitHub README & website
           </p>
           <ShadowBox>
-            <div className="flex flex-col gap-8">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
+            <Tabs value={currentEmbedTab} onValueChange={setCurrentEmbedTab}>
+              <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="dark:text-polar-200 font-medium text-gray-500">
+                      Preview
+                    </h3>
+
+                    <TabsList className="bg-transparent dark:bg-transparent">
+                      {['Tiers', 'Subscribe', 'Issues', 'Shield'].map(
+                        (item) => (
+                          <TabsTrigger
+                            className="hover:text-blue-500 data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 data-[state=active]:shadow-none dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300"
+                            value={item}
+                            size="small"
+                          >
+                            {item}
+                          </TabsTrigger>
+                        ),
+                      )}
+                    </TabsList>
+                  </div>
+
+                  <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full justify-center rounded-2xl border border-gray-200 bg-gray-50 p-12">
+                    {previews[currentEmbedTab] || <></>}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4">
                   <h3 className="dark:text-polar-200 font-medium text-gray-500">
-                    Preview
+                    Embed code
                   </h3>
-
-                  <LabeledRadioButton
-                    values={['Subscribe', 'Issues', 'Shield']}
-                    value={currentEmbedTab}
-                    onSelected={setCurrentEmbedTab}
-                  />
-                </div>
-
-                <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full justify-center rounded-2xl border border-gray-200 bg-gray-50 p-12">
-                  {previews[currentEmbedTab] || <></>}
+                  <div className="max-w-[600px]">
+                    <CopyToClipboardInput
+                      id="embed-svg"
+                      value={embedCodes[currentEmbedTab] || ''}
+                    />
+                  </div>
                 </div>
               </div>
-
-              <div className="flex flex-col gap-4">
-                <h3 className="dark:text-polar-200 font-medium text-gray-500">
-                  Embed code
-                </h3>
-                <div className="max-w-[600px]">
-                  <CopyToClipboardInput
-                    id="embed-svg"
-                    value={embedCodes[currentEmbedTab] || ''}
-                  />
-                </div>
-              </div>
-            </div>
+            </Tabs>
           </ShadowBox>
         </div>
       </DashboardBody>

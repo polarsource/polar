@@ -30,6 +30,14 @@ const posts = (await getCollection('blog')).sort(
   (a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
 )
 
+if (!process.env.POLAR_ACCESS_TOKEN) {
+  throw Error('POLAR_ACCESS_TOKEN is not set')
+}
+
+if (!process.env.POLAR_ORGANIZATION_NAME) {
+  throw Error('POLAR_ORGANIZATION_NAME is not set')
+}
+
 /**
  * Upload all posts to Polar
  */
@@ -41,7 +49,7 @@ const polar = new Polar({
 // Upload all posts to Polar
 const { error: postUploadError } = await polar
   .upload(posts, {
-    organizationName: 'my-organization-name',
+    organizationName: process.env.POLAR_ORGANIZATION_NAME,
   })
   // Filter for only new posts
   .filter(({ exists }) => !exists)
@@ -58,7 +66,7 @@ const { error: postUploadError } = await polar
     article = {
       ...article,
       ...entry.data.polar,
-      published_at: entry.data.polar?.published_at?.toISOString()
+      published_at: entry.data.polar?.published_at?.toISOString(),
     }
     return article
   })

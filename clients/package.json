@@ -11,7 +11,8 @@
     "generate": "cd packages/sdk && pnpm generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm",
-    "postinstall": "manypkg check"
+    "postinstall": "manypkg check",
+    "publish-packages": "pnpm build && pnpm test && changeset version && changeset publish"
   },
   "dependencies": {
     "@changesets/cli": "^2.27.1",

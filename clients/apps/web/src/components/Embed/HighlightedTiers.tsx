@@ -134,9 +134,10 @@ export const HighlightedTiers = ({
                 style={{
                   display: 'flex',
                   flexDirection: 'row',
+                  lineHeight: '1.6em',
                   color: darkmode ? '#8186A4' : '#666',
                   fontWeight: '500',
-                  fontSize: 14,
+                  fontSize: 12,
                 }}
               >
                 {tier.description}
@@ -146,7 +147,7 @@ export const HighlightedTiers = ({
               style={{
                 width: '100%',
                 height: '1px',
-                backgroundColor: darkmode ? '#343748' : '#eee',
+                backgroundColor: darkmode ? '#1D1E27' : '#eee',
                 display: 'flex ',
               }}
             ></div>

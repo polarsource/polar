@@ -52,7 +52,7 @@ export const PolarMenu = ({
           <div className="relative flex w-max flex-shrink-0 flex-row items-center justify-between gap-x-6">
             {hasAdminOrgs && (
               <Link href={creatorPath}>
-                <Button size="sm">
+                <Button>
                   <div className="flex flex-row items-center gap-x-2">
                     <span className="whitespace-nowrap text-xs">
                       Creator Dashboard
@@ -93,7 +93,7 @@ const CreateWithPolar = ({ returnTo }: { returnTo: string }) => {
 
   return (
     <a href={authorizeURL}>
-      <Button variant="secondary" size="sm" asChild>
+      <Button variant="secondary" asChild>
         Create with Polar
       </Button>
     </a>

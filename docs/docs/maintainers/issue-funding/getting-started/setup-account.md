@@ -52,7 +52,7 @@ Once authorization has been granted, you will be redirect to GitHub again to
 repositories you want.
 
 ???+ question "What does 'Act on my behalf' mean?"
-    Unfortunately, this is a default notice - poorly explained - from GitHub in all their OAuth
+    This is a default notice from GitHub in all their OAuth
     authentication flows. [See this ticket from the wider community asking GitHub to improve
     the copy.](https://github.com/orgs/community/discussions/37117b)
 

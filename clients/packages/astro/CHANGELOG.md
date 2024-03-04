@@ -1,5 +1,11 @@
 # @polar-sh/astro
 
+## 0.1.3
+
+### Patch Changes
+
+- c121ba1: Fix tsconfig dependency
+
 ## 0.1.2
 
 ### Patch Changes

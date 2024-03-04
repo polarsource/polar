@@ -8,7 +8,7 @@ jobs:
       name: "Publish"
       timeout-minutes: 15
       runs-on: ubuntu-22.04
-      if: ${{ startsWith(env.GITHUB_REF, "refs/tags/astro/") }}
+      if: ${{ startsWith(github.ref, "refs/tags/astro/") }}
 
       steps:
         - name: Check out code

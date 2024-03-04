@@ -16,6 +16,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
 
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}

@@ -28,7 +28,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../../../../../hooks'
 
 export default function ClientPage() {
   const router = useRouter()

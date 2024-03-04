@@ -275,13 +275,18 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/maintainer/:organization/promote',
-        destination: '/maintainer/:organization/promote/issues',
+        source: '/maintainer/:organization/issues',
+        destination: '/maintainer/:organization/issues/overview',
         permanent: false,
       },
       {
         source: '/maintainer/:organization/promote/issues',
-        destination: '/maintainer/:organization/issues/promote',
+        destination: '/maintainer/:organization/issues/badge',
+        permanent: false,
+      },
+      {
+        source: '/maintainer/:organization/issues/promote',
+        destination: '/maintainer/:organization/issues/badge',
         permanent: false,
       },
       {

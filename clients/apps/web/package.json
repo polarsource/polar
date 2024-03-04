@@ -10,7 +10,7 @@
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "chromatic": "chromatic --exit-zero-on-changes --exit-once-uploaded",
-    "test": "jest"
+    "test": "DOTENV_CONFIG_PATH=.env.test jest"
   },
   "engines": {
     "node": ">= 18 <20"

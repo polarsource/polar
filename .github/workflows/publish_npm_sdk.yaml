@@ -8,7 +8,7 @@ jobs:
       name: "Publish"
       timeout-minutes: 15
       runs-on: ubuntu-22.04
-      if: ${{ startsWith(github.ref, "refs/tags/jssdk/") }}
+      if: ${{ startsWith(github.ref, 'refs/tags/jssdk/') }}
 
       steps:
         - name: Check out code

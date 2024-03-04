@@ -103,7 +103,7 @@ export default function ClientPage() {
   }
 
   const embedCodes: Record<string, string> = {
-    Tiers: `<a href="https://polar.sh/${orgSlashRepo}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${org?.name}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${org?.name}"></picture></a>`,
+    Tiers: `<a href="https://polar.sh/${org?.name}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${org?.name}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${org?.name}"></picture></a>`,
     Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
@@ -118,14 +118,17 @@ export default function ClientPage() {
         />
       </DashboardTopbar>
       <DashboardBody>
-        <div className="space-y-4">
+        <div className="flex flex-col gap-y-8">
           {!org?.has_app_installed && <GitHubAppInstallationUpsell />}
-          <h2 className="text-lg font-medium">GitHub Sponsors</h2>
-          <p className="dark:text-polar-400 text-sm text-gray-500">
-            Make sure to link to your public funding page from GitHub&apos;s
-            Sponsor section.
-          </p>
-          <ShadowBox>
+
+          <ShadowBox className="flex flex-col gap-y-8">
+            <div className="flex flex-col gap-y-2">
+              <h2 className="text-lg font-medium">GitHub Sponsors</h2>
+              <p className="dark:text-polar-400 text-sm text-gray-500">
+                Make sure to link to your public funding page from GitHub&apos;s
+                Sponsor section.
+              </p>
+            </div>
             <div className="flex flex-col gap-4">
               <h3 className="dark:text-polar-200 font-medium text-gray-500">
                 Link to your Polar funding page
@@ -145,20 +148,18 @@ export default function ClientPage() {
               </div>
             </div>
           </ShadowBox>
-          <h2 className="pt-8 text-lg font-medium">README Embeds</h2>
-          <p className="dark:text-polar-400 text-sm text-gray-500">
-            Polar Embeds allow you to promote Subscription Tiers & Issues on
-            your GitHub README & website
-          </p>
-          <ShadowBox>
+          <ShadowBox className="flex flex-col gap-y-8">
+            <div className="flex flex-col gap-y-2">
+              <h2 className="text-lg font-medium">README Embeds</h2>
+              <p className="dark:text-polar-400 text-sm text-gray-500">
+                Polar Embeds allow you to promote Subscription Tiers & Issues on
+                your GitHub README & website
+              </p>
+            </div>
             <Tabs value={currentEmbedTab} onValueChange={setCurrentEmbedTab}>
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="dark:text-polar-200 font-medium text-gray-500">
-                      Preview
-                    </h3>
-
                     <TabsList className="bg-transparent dark:bg-transparent">
                       {['Tiers', 'Subscribe', 'Issues', 'Shield'].map(
                         (item) => (

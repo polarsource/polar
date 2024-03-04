@@ -2,10 +2,11 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.config import settings
 from polar.enums import AccountType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
@@ -49,6 +50,18 @@ class Account(RecordModel):
 
     processor_fees_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
+    )
+    _platform_pledge_fee_percent: Mapped[int | None] = mapped_column(
+        Integer,
+        name="platform_pledge_fee_percent",
+        nullable=True,
+        default=None,
+    )
+    _platform_subscription_fee_percent: Mapped[int | None] = mapped_column(
+        Integer,
+        name="platform_subscription_fee_percent",
+        nullable=True,
+        default=None,
     )
 
     business_type: Mapped[str | None] = mapped_column(
@@ -98,3 +111,15 @@ class Account(RecordModel):
         for organization in self.organizations:
             associations_names.append(organization.name)
         return associations_names
+
+    @property
+    def platform_pledge_fee_percent(self) -> int:
+        if self._platform_pledge_fee_percent is None:
+            return settings.PLEDGE_FEE_PERCENT
+        return self._platform_pledge_fee_percent
+
+    @property
+    def platform_subscription_fee_percent(self) -> int:
+        if self._platform_subscription_fee_percent is None:
+            return settings.SUBSCRIPTION_FEE_PERCENT
+        return self._platform_subscription_fee_percent

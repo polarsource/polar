@@ -7,7 +7,6 @@ import structlog
 from sqlalchemy import select
 
 from polar.account.service import account as account_service
-from polar.config import settings
 from polar.enums import AccountType
 from polar.logging import Logger
 from polar.models import Account, Transaction
@@ -129,15 +128,15 @@ class PlatformFeeTransactionService(BaseTransactionService):
         balance_transactions: tuple[Transaction, Transaction],
     ) -> tuple[Transaction, Transaction]:
         outgoing, incoming = balance_transactions
+        account = incoming.account
+        assert account is not None
 
         if incoming.pledge_id is not None and incoming.issue_reward_id is not None:
-            fee_amount = math.floor(
-                incoming.amount * (settings.PLEDGE_FEE_PERCENT / 100)
-            )
+            fee_percent = account.platform_pledge_fee_percent
+            fee_amount = math.floor(incoming.amount * (fee_percent / 100))
         elif incoming.subscription_id is not None:
-            fee_amount = math.floor(
-                incoming.amount * (settings.SUBSCRIPTION_FEE_PERCENT / 100)
-            )
+            fee_percent = account.platform_subscription_fee_percent
+            fee_amount = math.floor(incoming.amount * (fee_percent / 100))
         else:
             raise DanglingBalanceTransactions(balance_transactions)
 

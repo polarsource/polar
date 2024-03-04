@@ -7,6 +7,9 @@ The SDK is designed to run in both static and SSR mode, and provides wrappers th
 [`@polar-sh/sdk`](https://www.npmjs.com/package/@polar-sh/sdk) package for integrating
 your Astro site with Polar.
 
+See [`astro-example`](https://github.com/polarsource/polar/tree/main/clients/examples/astro-example) for a fully working
+example of how to integrate `@polar-sh/astro` with your Astro app.
+
 ## Usage
 
 Install the SDK with your favourite package manager (ours is PNPM!):
@@ -61,7 +64,6 @@ const posts = await getCollection('blog');
 const polar = new Polar({ accessToken });
 
 const { data, error } = await polar.upload(posts, {
-  organizationId,
   organizationName,
 });
 ```
@@ -100,7 +102,6 @@ deduplicated by slug.
 ```typescript
 const { data, error } = await polar
   .upload(posts, {
-    organizationId,
     organizationName,
   })
   .filter(({ exists }) => !exists);
@@ -113,7 +114,6 @@ This assumes you have a title in your content collection frontmatter.
 ```typescript
 const { data, error } = await polar
   .upload(posts, {
-    organizationId,
     organizationName,
   })
   .transform(
@@ -161,7 +161,6 @@ the properties exist under a `polar` key in your frontmatter.
 ```typescript
 const { data, error } = await polar
   .upload(posts, {
-    organizationId,
     organizationName,
   })
   .filter(({ exists }) => exists)

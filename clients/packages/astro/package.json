@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/astro",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "exports": {
     ".": "./index.ts"
@@ -29,7 +29,7 @@
     "zod": "^3.22.4"
   },
   "peerDependencies": {
-    "@polar-sh/sdk": "^0.4.5",
+    "@polar-sh/sdk": "^0.4.6",
     "astro": "^4.0.0",
     "zod": "^3.0.0"
   },

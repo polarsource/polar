@@ -1,13 +1,14 @@
-name: Publish Polar SDK to NPM
+name: "Publish to NPM - @polar-sh/sdk"
 on:
   release:
     types: [published]
 
 jobs:
   build:
-      name: "SDK: Publish"
+      name: "Publish"
       timeout-minutes: 15
       runs-on: ubuntu-22.04
+      if: ${{ startsWith(env.GITHUB_REF, "refs/tags/jssdk/") }}
 
       steps:
         - name: Check out code
@@ -29,7 +30,7 @@ jobs:
           working-directory: ./clients
           run: pnpm install
 
-        - name: Publish SDK
+        - name: Publish
           working-directory: ./clients/packages/sdk
           run: pnpm publish --no-git-checks
           env:

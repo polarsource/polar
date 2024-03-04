@@ -25,6 +25,7 @@
     "eslint-plugin-astro": "^0.31.4",
     "prettier": "^3.1.1",
     "prettier-plugin-astro": "^0.13.0",
+    "tsconfig": "workspace:*",
     "zod": "^3.22.4"
   },
   "peerDependencies": {
@@ -34,7 +35,6 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.5.4",
-    "tsconfig": "workspace:*",
     "tsup": "^7.2.0",
     "typescript": "5.3.3"
   },

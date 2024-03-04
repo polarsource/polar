@@ -17,6 +17,10 @@ jobs:
       contents: write
       pull-requests: write
 
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3

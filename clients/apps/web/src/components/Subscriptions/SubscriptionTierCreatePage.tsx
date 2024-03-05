@@ -15,6 +15,7 @@ import { Form } from 'polarkit/components/ui/form'
 import {
   useCreateSubscriptionTier,
   useSubscriptionBenefits,
+  useSubscriptionTiers,
   useUpdateSubscriptionTierBenefits,
 } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
@@ -74,11 +75,19 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
     // Pre-select premium articles benefit
   >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
 
+  const highlightedTiers =
+    useSubscriptionTiers(organization.name, 100).data?.items?.filter(
+      (tier) => tier.is_highlighted,
+    ) ?? []
+
+  const shouldBeHighlighted = highlightedTiers.length < 1
+
   const form = useForm<SubscriptionTierCreate>({
     defaultValues: {
       ...(type ? { type } : {}),
       ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
+      is_highlighted: shouldBeHighlighted,
     },
   })
   const { handleSubmit, watch, setError } = form

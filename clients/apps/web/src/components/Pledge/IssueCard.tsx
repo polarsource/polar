@@ -28,6 +28,7 @@ import {
 import { githubIssueUrl } from 'polarkit/github'
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -141,7 +142,7 @@ const IssueCard = ({
         {/* Name/description */}
         <div className="col-span-1 flex flex-row items-start gap-4 sm:col-span-2">
           <div className="min-w-max">
-            <Link href={`/${organization.name}`}>
+            <Link href={organizationPageLink(organization)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={organization.avatar_url}
@@ -152,11 +153,13 @@ const IssueCard = ({
           </div>
           <div className="dark:text-polar-500 flex flex-col justify-center text-gray-500">
             <div className="flex flex-row items-center">
-              <Link href={`/${organization.name}`}>{organization.name}</Link>
+              <Link href={organizationPageLink(organization)}>
+                {organization.name}
+              </Link>
               &nbsp;/&nbsp;
               <Link
                 className="dark:text-polar-200 font-medium text-gray-600"
-                href={`/${organization.name}/${repository.name}`}
+                href={organizationPageLink(organization, repository.name)}
               >
                 {repository.name}
               </Link>

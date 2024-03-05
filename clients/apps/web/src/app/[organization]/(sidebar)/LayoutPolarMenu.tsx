@@ -37,13 +37,13 @@ export const PolarMenu = ({
   )
 
   const creatorPath = personalOrg
-    ? `/maintainer/${currentUser?.username}/overview`
-    : `/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
+    ? `${CONFIG.FRONTEND_BASE_URL}/maintainer/${currentUser?.username}/overview`
+    : `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
 
   // Login through polar.sh with auth forwarding if on custom domain
   const loginLink = currentOrg.custom_domain
     ? `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${returnTo}&for_organization_id=${currentOrg.id}`
-    : `/login?return_to=${returnTo}`
+    : `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${returnTo}`
 
   return (
     <div className="flex flex-row items-center gap-x-4">

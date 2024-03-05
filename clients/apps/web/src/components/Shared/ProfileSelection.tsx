@@ -12,6 +12,7 @@ import { UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
+import { CONFIG } from 'polarkit/config'
 import { useListAllOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
@@ -239,7 +240,7 @@ export const ProfileMenu = ({
               'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
-            <Link href={'/feed'} className="w-full">
+            <Link href={`${CONFIG.FRONTEND_BASE_URL}/feed`} className="w-full">
               <ListItem current={true}>
                 <Profile
                   name={loggedUser.username}
@@ -253,7 +254,11 @@ export const ProfileMenu = ({
                 backerRoutes()
                   .filter((route) => ('if' in route ? route.if : true))
                   .map((n) => (
-                    <LinkItem href={n.link} icon={n.icon} key={n.link}>
+                    <LinkItem
+                      href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
+                      icon={n.icon}
+                      key={n.link}
+                    >
                       <span className="mx-2 text-sm">{n.title}</span>
                     </LinkItem>
                   ))}
@@ -269,7 +274,11 @@ export const ProfileMenu = ({
                 .filter((route) => ('if' in route ? route.if : true))
                 .map((n) => {
                   return (
-                    <LinkItem href={n.link} icon={n.icon} key={n.link}>
+                    <LinkItem
+                      href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
+                      icon={n.icon}
+                      key={n.link}
+                    >
                       <span className="mx-2 text-sm">{n.title}</span>
                     </LinkItem>
                   )

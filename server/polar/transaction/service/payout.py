@@ -6,6 +6,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
+from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -61,6 +62,23 @@ class UnmatchingTransfersAmount(PayoutTransactionError):
         message = (
             "Can't split the balance transactions into transfers "
             "equal to the payout amount."
+        )
+        super().__init__(message)
+
+
+class StripePayoutNotPaid(PayoutTransactionError):
+    def __init__(self, payout_id: str) -> None:
+        self.payout_id = payout_id
+        message = "This Stripe payout is not paid, can't write it to transactions."
+        super().__init__(message)
+
+
+class UnknownAccount(PayoutTransactionError):
+    def __init__(self, stripe_account_id: str) -> None:
+        self.stripe_account_id = stripe_account_id
+        message = (
+            "Received a payout event for an "
+            f"unknown Stripe account {stripe_account_id}"
         )
         super().__init__(message)
 
@@ -206,6 +224,85 @@ class PayoutTransactionService(BaseTransactionService):
             session.add(payout)
             await session.commit()
 
+    async def create_payout_from_stripe(
+        self,
+        session: AsyncSession,
+        *,
+        payout: stripe_lib.Payout,
+        stripe_account_id: str,
+    ) -> Transaction:
+        """
+        Legacy behavior from the time when Stripe issued payouts automatically.
+
+        It should be safe to remove this and the associated task in the future.
+        """
+        bound_logger = log.bind(
+            stripe_account_id=stripe_account_id, payout_id=payout.id
+        )
+
+        if payout.status != "paid":
+            raise StripePayoutNotPaid(payout.id)
+
+        account = await account_service.get_by_stripe_id(session, stripe_account_id)
+        if account is None:
+            raise UnknownAccount(stripe_account_id)
+
+        existing_payout_transaction = await self._get_payout_transaction(
+            session, payout.id
+        )
+        if existing_payout_transaction is not None:
+            return existing_payout_transaction
+
+        transaction = Transaction(
+            type=TransactionType.payout,
+            processor=PaymentProcessor.stripe,
+            currency="usd",  # FIXME: Main Polar currency
+            amount=0,
+            account_currency=payout.currency,
+            account_amount=-payout.amount,  # Subtract the amount from the balance
+            tax_amount=0,
+            payout_id=payout.id,
+            account=account,
+        )
+
+        # Retrieve and mark all transactions paid by this payout
+        balance_transactions = stripe_service.list_balance_transactions(
+            account_id=account.stripe_id, payout=payout.id
+        )
+        for balance_transaction in balance_transactions:
+            source = balance_transaction.source
+            if source is not None:
+                source_transfer: str | None = getattr(source, "source_transfer", None)
+                if source_transfer is not None:
+                    paid_transaction = await self.get_by(
+                        session,
+                        account_id=account.id,
+                        transfer_id=source_transfer,
+                    )
+                    if paid_transaction is not None:
+                        paid_transaction.payout_transaction = transaction
+                        session.add(paid_transaction)
+
+                        # Compute the amount in our main currency
+                        transaction.currency = paid_transaction.currency
+                        transaction.amount -= paid_transaction.amount
+                    else:
+                        bound_logger.warning(
+                            "An unknown transaction was paid out",
+                            source_id=get_expandable_id(source),
+                            transfer_id=source_transfer,
+                        )
+                else:
+                    bound_logger.warning(
+                        "An unknown type of transaction was paid out",
+                        source_id=get_expandable_id(source),
+                    )
+
+        session.add(transaction)
+        await session.commit()
+
+        return transaction
+
     async def _prepare_stripe_payout(
         self,
         *,
@@ -324,6 +421,16 @@ class PayoutTransactionService(BaseTransactionService):
         )
         result = await session.execute(statement)
         return result.scalars().all()
+
+    async def _get_payout_transaction(
+        self, session: AsyncSession, payout_id: str
+    ) -> Transaction | None:
+        statement = select(Transaction).where(
+            Transaction.type == TransactionType.payout,
+            Transaction.payout_id == payout_id,
+        )
+        result = await session.execute(statement)
+        return result.scalar()
 
 
 payout_transaction = PayoutTransactionService(Transaction)

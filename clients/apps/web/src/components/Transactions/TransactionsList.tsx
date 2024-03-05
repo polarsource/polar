@@ -6,9 +6,6 @@ import {
   PlatformFeeType,
   Transaction,
   TransactionEmbedded,
-  TransactionIssueReward,
-  TransactionPledge,
-  TransactionSubscription,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -24,6 +21,7 @@ import {
   DataTableSortingState,
 } from 'polarkit/datatable'
 import { formatCurrencyAndAmount } from 'polarkit/money'
+import { useMemo } from 'react'
 
 const getTransactionMeta = (transaction: Transaction) => {
   if (transaction.subscription) {
@@ -52,28 +50,60 @@ const getTransactionMeta = (transaction: Transaction) => {
   }
 }
 
-const resolveTransactionMeta = (
-  meta: TransactionSubscription | TransactionPledge | TransactionIssueReward,
-) => {
-  if ('subscription_tier' in meta) {
-    return (
-      <Link
-        className=" text-blue-500 dark:text-blue-400"
-        href={`/${meta.subscription_tier.organization?.name}/subscriptions`}
-      >
-        {meta.subscription_tier.name}
-      </Link>
-    )
-  } else if ('issue' in meta) {
-    return (
-      <Link
-        className=" text-blue-500 dark:text-blue-400"
-        href={`/${meta.issue.organization?.name}/${meta.issue.repository.name}/issues/${meta.issue.number}`}
-      >
-        {meta.issue.title}
-      </Link>
-    )
-  }
+interface TransactionMetaProps {
+  transaction: Transaction
+}
+
+const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
+  const transactionMeta = useMemo(
+    () => getTransactionMeta(transaction),
+    [transaction],
+  )
+
+  return (
+    <div className="flex items-center gap-2">
+      {transactionMeta.organization && (
+        <Link
+          className="hidden flex-shrink-0 md:block"
+          href={`/${transactionMeta.organization.name}`}
+        >
+          <Avatar
+            className="h-6 w-6"
+            name={transactionMeta.organization?.name}
+            avatar_url={transactionMeta.organization?.avatar_url}
+          />
+        </Link>
+      )}
+      <div className="flex flex-row gap-2">
+        <div className="text-sm">{transactionMeta.type}</div>
+        {transactionMeta.meta && (
+          <>
+            <div>—</div>
+            {'subscription_tier' in transactionMeta.meta && (
+              <div>
+                <Link
+                  className=" text-blue-500 dark:text-blue-400"
+                  href={`/${transactionMeta.meta.subscription_tier.organization?.name}/subscriptions`}
+                >
+                  {transactionMeta.meta.subscription_tier.name}
+                </Link>
+              </div>
+            )}
+            {'issue' in transactionMeta.meta && (
+              <div>
+                <Link
+                  className=" text-blue-500 dark:text-blue-400"
+                  href={`/${transactionMeta.meta.issue.organization?.name}/${transactionMeta.meta.issue.repository.name}/issues/${transactionMeta.meta.issue.number}`}
+                >
+                  {transactionMeta.meta.issue.title}
+                </Link>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export const platformFeesDisplayNames: {
@@ -154,32 +184,7 @@ const TransactionsList = ({
       cell: (props) => {
         const transaction = props.row.original
         if (isTransaction(transaction)) {
-          const transactionMeta = getTransactionMeta(transaction)
-          return (
-            <div className="flex items-center gap-2">
-              {transactionMeta.organization && (
-                <Link
-                  className="hidden flex-shrink-0 md:block"
-                  href={`/${transactionMeta.organization.name}`}
-                >
-                  <Avatar
-                    className="h-6 w-6"
-                    name={transactionMeta.organization?.name}
-                    avatar_url={transactionMeta.organization?.avatar_url}
-                  />
-                </Link>
-              )}
-              <div className="flex flex-row gap-2">
-                <div className="text-sm">{transactionMeta.type}</div>
-                {transactionMeta.meta && (
-                  <>
-                    <div>—</div>
-                    <div>{resolveTransactionMeta(transactionMeta.meta)}</div>
-                  </>
-                )}
-              </div>
-            </div>
-          )
+          return <TransactionMeta transaction={transaction} />
         } else if (transaction.platform_fee_type) {
           return (
             <div className="flex gap-x-4">

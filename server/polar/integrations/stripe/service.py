@@ -210,6 +210,7 @@ class StripeService:
         amount: int,
         *,
         source_transaction: str | None = None,
+        transfer_group: str | None = None,
         metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Transfer:
         create_params: stripe_lib.Transfer.CreateParams = {
@@ -220,6 +221,8 @@ class StripeService:
         }
         if source_transaction is not None:
             create_params["source_transaction"] = source_transaction
+        if transfer_group is not None:
+            create_params["transfer_group"] = transfer_group
         return stripe_lib.Transfer.create(**create_params)
 
     def reverse_transfer(

@@ -70,7 +70,7 @@ export default function ClientPage() {
         />
         <img
           alt="Subscription Tiers on Polar"
-          src={`/tiers.svg?org=${org?.name}`}
+          src={`/embed/tiers.svg?org=${org?.name}`}
         />
       </picture>
     ),

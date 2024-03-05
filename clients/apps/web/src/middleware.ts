@@ -22,6 +22,10 @@ export async function middleware(request: NextRequest) {
     return
   }
 
+  if (url.pathname.startsWith('/og')) {
+    return
+  }
+
   // Trailing slash handling (we've disabled the default NextJS trailing slash handler)
   // This handling needs to happen _after_ the proxy handler above.
   if (request.nextUrl.pathname !== '/' && request.url.endsWith('/')) {

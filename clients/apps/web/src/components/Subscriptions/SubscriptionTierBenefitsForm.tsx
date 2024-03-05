@@ -71,8 +71,8 @@ import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Benefit } from '../Benefit/Benefit'
 import { Modal } from '../Modal'
+import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
-import { ConfirmModal } from '../Shared/ConfirmModal'
 import {
   CreatableSubscriptionBenefit,
   SubscriptionBenefit,

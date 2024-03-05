@@ -3,8 +3,8 @@
 import { Benefit } from '@/components/Benefit/Benefit'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
-import { ConfirmModal } from '@/components/Shared/ConfirmModal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import {
   NewSubscriptionTierBenefitModalContent,

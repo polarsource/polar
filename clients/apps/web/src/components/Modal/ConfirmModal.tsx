@@ -1,6 +1,6 @@
 import { Button } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
-import { Modal, ModalProps } from '../Modal'
+import { Modal, ModalProps } from '.'
 
 export interface ConfirmModalProps extends Omit<ModalProps, 'modalContent'> {
   title: string

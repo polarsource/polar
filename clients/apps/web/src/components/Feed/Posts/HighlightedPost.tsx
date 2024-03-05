@@ -1,9 +1,9 @@
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import { organizationPageLink } from '@/utils/nav'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 import PreviewText from '../Markdown/preview'
 

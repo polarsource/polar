@@ -73,19 +73,19 @@ const ClientPage = ({
 
   return (
     <div className="flex w-full flex-col gap-y-6">
+      {highlightedPost || (restPosts.length ?? 0) > 0 ? (
+        <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
+          <h2 className="text-lg">Pinned & Latest Posts</h2>
+          <Link
+            className="text-sm text-blue-500 dark:text-blue-400"
+            href={organizationPageLink(organization, 'posts')}
+          >
+            <span>View all posts</span>
+            <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+          </Link>
+        </div>
+      ) : null}
       <div className="flex w-full flex-col gap-y-24">
-        {highlightedPost || (restPosts.length ?? 0) > 0 ? (
-          <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
-            <h2 className="text-lg">Pinned & Latest Posts</h2>
-            <Link
-              className="text-sm text-blue-500 dark:text-blue-400"
-              href={organizationPageLink(organization, 'posts')}
-            >
-              <span>View all posts</span>
-              <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
-            </Link>
-          </div>
-        ) : null}
         {highlightedPost && <HighlightedPost post={highlightedPost} />}
         {(restPosts.length ?? 0) > 0 ? (
           <div className="flex flex-col gap-y-8">

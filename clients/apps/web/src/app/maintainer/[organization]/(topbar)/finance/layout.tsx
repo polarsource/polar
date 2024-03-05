@@ -18,10 +18,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isOrgAdmin = useIsOrganizationAdmin(currentOrgFromURL)
   const isPersonal = currentOrgFromURL?.name === personalOrg?.name
 
-  const getRoutes = (
-    pathname: string | null,
-    currentOrg?: Organization,
-  ): Route[] => {
+  const getRoutes = (currentOrg?: Organization): Route[] => {
     return [
       ...(currentOrg ? dashboardRoutes(currentOrg) : []),
       ...dashboardRoutes(
@@ -32,7 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ]
   }
 
-  const routes = getRoutes(pathname, currentOrgFromURL)
+  const routes = getRoutes(currentOrgFromURL)
 
   const [currentRoute] = routes.filter(
     (route) => pathname?.startsWith(route.link),

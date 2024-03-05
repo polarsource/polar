@@ -1,6 +1,6 @@
 'use client'
 
-import GithubLoginButton from '@/components/Shared/GithubLoginButton'
+import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { useAuth } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import {

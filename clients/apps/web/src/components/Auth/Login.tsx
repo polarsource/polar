@@ -1,7 +1,7 @@
 import { LogoType70 } from 'polarkit/components/brand'
 import { LabeledSeparator } from 'polarkit/components/ui/atoms'
-import GithubLoginButton from '../Shared/GithubLoginButton'
-import MagicLinkLoginForm from '../Shared/MagicLinkLoginForm'
+import GithubLoginButton from '../Auth/GithubLoginButton'
+import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'
 
 const Login = ({ returnTo }: { returnTo?: string }) => {
   return (

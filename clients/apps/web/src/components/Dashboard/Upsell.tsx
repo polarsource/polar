@@ -9,7 +9,7 @@ import { Button } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useMaintainerUpgrade } from 'polarkit/hooks'
 import { PropsWithChildren } from 'react'
-import GithubLoginButton from '../Shared/GithubLoginButton'
+import GithubLoginButton from '../Auth/GithubLoginButton'
 
 export const GitHubAuthUpsell = () => {
   const pathname = usePathname()

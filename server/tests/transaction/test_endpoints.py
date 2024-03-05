@@ -132,7 +132,6 @@ class TestGetSummary:
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.skip
 class TestCreatePayout:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(

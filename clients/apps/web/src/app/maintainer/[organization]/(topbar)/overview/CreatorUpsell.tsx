@@ -1,5 +1,7 @@
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
+import { DiscordIcon } from '@/components/Subscriptions/utils'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { organizationPageLink } from '@/utils/nav'
 import {
   CloseOutlined,
   DonutLargeOutlined,
@@ -20,6 +22,7 @@ interface OnboardingMap {
   subscriptionTierCreated: boolean
   polarPageShared: boolean
   fundingInYaml: boolean
+  joinDiscord: boolean
 }
 
 const useUpsellSteps = () => {
@@ -50,6 +53,10 @@ const useUpsellSteps = () => {
 
   useEffect(() => {
     const steps: UpsellStepProps[] = []
+
+    if (!currentOrg) {
+      return
+    }
 
     if (posts?.items?.length === 0 && !onboardingCompletedMap.postCreated) {
       steps.push({
@@ -89,7 +96,7 @@ const useUpsellSteps = () => {
         title: 'Review & Share your Polar page',
         description:
           'Promote it on social media & GitHub to build free- and paid subscribers',
-        href: `/${currentOrg?.name}`,
+        href: organizationPageLink(currentOrg),
         onboardingKey: 'polarPageShared',
         onDismiss: handleDismiss,
       })
@@ -101,8 +108,20 @@ const useUpsellSteps = () => {
           <LogoIcon className="-mr-2 h-8 w-8 text-blue-500 dark:text-blue-400" />
         ),
         title: 'Add Polar to your FUNDING.yml',
-        description: `Add 'polar: ${currentOrg?.name}' to your .github/FUNDING.yml to link your Polar page with your GitHub repository`,
-        href: `https://github.com/${currentOrg?.name}`,
+        description: `Add 'polar: ${currentOrg?.name}' to your FUNDING.yml to link your Polar page with your GitHub repository`,
+        href: `/maintainer/${currentOrg?.name}/promote`,
+        onboardingKey: 'fundingInYaml',
+        onDismiss: handleDismiss,
+      })
+    }
+
+    if (!onboardingCompletedMap.joinDiscord) {
+      steps.push({
+        icon: <DiscordIcon className="text-[#5765f2]" size={26} />,
+        title: 'Join the Polar Discord community',
+        description: `Receive help, share feedback & connect with other creators`,
+        href: `https://discord.com/invite/STfRufb32V`,
+        newTab: true,
         onboardingKey: 'fundingInYaml',
         onDismiss: handleDismiss,
       })
@@ -153,6 +172,7 @@ export interface UpsellStepProps {
   title: string
   description: string
   href: string
+  newTab?: boolean
   onboardingKey: keyof OnboardingMap
   onDismiss: (onboardingKey: keyof OnboardingMap) => void
 }
@@ -163,6 +183,7 @@ const UpsellStep = ({
   description,
   href,
   onboardingKey,
+  newTab,
   onDismiss,
 }: UpsellStepProps) => {
   const ref = useRef<HTMLAnchorElement>(null)
@@ -191,7 +212,12 @@ const UpsellStep = ({
   }
 
   return (
-    <Link ref={ref} href={href} className="relative">
+    <Link
+      ref={ref}
+      href={href}
+      className="relative"
+      target={newTab ? '_blank' : '_self'}
+    >
       <ShadowBox className="dark:hover:bg-polar-800 relative flex h-full flex-row items-end justify-between transition-colors hover:bg-blue-50">
         <div className="flex w-3/4 flex-row gap-x-6">
           <div>{icon}</div>

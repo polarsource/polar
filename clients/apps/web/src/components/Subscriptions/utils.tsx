@@ -88,13 +88,21 @@ export const resolveBenefitIcon = (
   }
 }
 
-export const DiscordIcon = () => (
+export const DiscordIcon = ({
+  className,
+  size = 16,
+}: {
+  className?: string
+  size?: number
+}) => (
   <svg
-    className="h-4 w-4"
+    className={className}
     viewBox="0 -28.5 256 256"
     version="1.1"
     preserveAspectRatio="xMidYMid"
     fill="currentColor"
+    width={size}
+    height={size}
   >
     <g>
       <path

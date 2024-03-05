@@ -13,7 +13,7 @@ import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import GithubLoginButton from '../Shared/GithubLoginButton'
+import GithubLoginButton from '../Auth/GithubLoginButton'
 import OrganizationSelect from './OrganizationSelect'
 
 const PledgeCheckoutFundOnCompletion = ({

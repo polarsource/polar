@@ -1,8 +1,8 @@
 'use client'
 
+import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import Popover from '@/components/Notifications/Popover'
-import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import { UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'

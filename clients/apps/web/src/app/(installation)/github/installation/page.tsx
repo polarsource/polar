@@ -1,9 +1,9 @@
 'use client'
 
+import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
-import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import {
   InstallationCreatePlatformEnum,
   Organization,

@@ -1,6 +1,6 @@
 'use client'
 
-import GithubLoginButton from '@/components/Shared/GithubLoginButton'
+import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { UserSignupType } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 

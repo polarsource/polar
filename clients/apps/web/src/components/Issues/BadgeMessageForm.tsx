@@ -1,5 +1,5 @@
 import { CurrencyAmount, Funding, Organization } from '@polar-sh/sdk'
-import { Marked } from '@ts-stack/markdown'
+import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import { Badge } from 'polarkit/components/badge'
 import {
@@ -8,7 +8,7 @@ import {
   MoneyInput,
   TextArea,
 } from 'polarkit/components/ui/atoms'
-import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
+import React, { ChangeEvent, MouseEvent, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const BadgeMessageForm = (props: {
@@ -31,17 +31,9 @@ const BadgeMessageForm = (props: {
 
   const [descriptionMode, setDescirptionMode] = useState('View')
 
-  const ref = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     setMessage(props.value)
   }, [props.value])
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.innerHTML = Marked.parse(message)
-    }
-  }, [ref, message, descriptionMode])
 
   const [canSave, setCanSave] = useState(false)
 
@@ -116,7 +108,16 @@ const BadgeMessageForm = (props: {
       >
         {descriptionMode === 'View' && (
           <>
-            <div className="prose dark:prose-invert" ref={ref} />
+            <div className="prose dark:prose-invert">
+              <Markdown
+                options={{
+                  wrapper: React.Fragment,
+                }}
+              >
+                {message}
+              </Markdown>
+            </div>
+
             <Badge
               orgName={props.org.name}
               showAmountRaised={props.showAmountRaised}

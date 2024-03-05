@@ -8,6 +8,7 @@ import {
 } from 'polarkit/components/Issue'
 import { Button, Card } from 'polarkit/components/ui/atoms'
 import { useSearchFunding } from 'polarkit/hooks'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { Fragment } from 'react'
 
 export interface OrganizationIssueSummaryListProps {
@@ -37,7 +38,7 @@ export const OrganizationIssueSummaryList = ({
             </p>
           </div>
           <Link
-            href={`/${organization.name}/issues`}
+            href={organizationPageLink(organization, 'issues')}
             className="font-medium text-blue-500"
           >
             <Button size="sm">
@@ -52,7 +53,10 @@ export const OrganizationIssueSummaryList = ({
                 issue={i.issue}
                 right={
                   <Link
-                    href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
+                    href={organizationPageLink(
+                      organization,
+                      `${i.issue.repository.name}/issues/${i.issue.number}`,
+                    )}
                     className="font-medium text-blue-500"
                   >
                     <Button size="sm" variant="secondary" asChild>

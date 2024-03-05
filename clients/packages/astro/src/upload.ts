@@ -316,7 +316,7 @@ export class PolarUploadBuilder<
 			| ((value: PolarUploadResult) => TResult1 | PromiseLike<TResult1>)
 			| null
 			| undefined,
-		onrejected?:
+		_onrejected?:
 			| ((reason: PolarUploadResult) => TResult2 | PromiseLike<TResult2>)
 			| null
 			| undefined
@@ -324,20 +324,20 @@ export class PolarUploadBuilder<
 		// Find organization
 		const orgResult = await this.getOrganization();
 		if (orgResult.error) {
-			if (onrejected) {
-				return onrejected(orgResult);
+			if (onfulfilled) {
+				return onfulfilled(orgResult);
 			}
-			return Promise.reject(orgResult);
+			return orgResult as TResult1;
 		}
 		const org = orgResult.data;
 
 		// Fetch articles
 		const articlesResult = await this.getArticles();
 		if (articlesResult.error) {
-			if (onrejected) {
-				return onrejected(articlesResult);
+			if (onfulfilled) {
+				return onfulfilled(articlesResult);
 			}
-			return Promise.reject(articlesResult);
+			return articlesResult as TResult1;
 		}
 		const articles = articlesResult.data;
 
@@ -385,10 +385,10 @@ export class PolarUploadBuilder<
 			}
 		}
 		if (errors.length > 0) {
-			if (onrejected) {
-				return onrejected({ data: null, error: new ErrorGroup(errors) });
+			if (onfulfilled) {
+				return onfulfilled({ data: null, error: new ErrorGroup(errors) });
 			}
-			return Promise.reject({ data: null, error: new ErrorGroup(errors) });
+			return { data: null, error: new ErrorGroup(errors) } as TResult1;
 		}
 
 		const created: Article[] = [];

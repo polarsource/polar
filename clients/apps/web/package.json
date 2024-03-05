@@ -69,8 +69,7 @@
     "sass": "^1.59.3",
     "satori": "^0.10.11",
     "tailwind-merge": "^1.14.0",
-    "tailwindcss-radix": "^2.8.0",
-    "unist-util-visit": "^5.0.0"
+    "tailwindcss-radix": "^2.8.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

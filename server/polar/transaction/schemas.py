@@ -1,4 +1,4 @@
-from pydantic import UUID4, computed_field
+from pydantic import UUID4
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
@@ -93,24 +93,9 @@ class Transaction(TransactionEmbedded):
 
     account_incurred_transactions: list[TransactionEmbedded]
 
-    @computed_field  # type: ignore[misc]
-    @property
-    def incurred_amount(self) -> int:
-        return sum(
-            transaction.amount for transaction in self.account_incurred_transactions
-        )
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def gross_amount(self) -> int:
-        inclusive = 0 if self.type == TransactionType.balance else 1
-        return self.amount + inclusive * self.incurred_amount
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def net_amount(self) -> int:
-        inclusive = 1 if self.type == TransactionType.balance else -1
-        return self.gross_amount + inclusive * self.incurred_amount
+    incurred_amount: int
+    gross_amount: int
+    net_amount: int
 
 
 class TransactionDetails(Transaction):

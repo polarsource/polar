@@ -4,6 +4,7 @@ from typing import cast
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -51,6 +52,15 @@ class NotReadyAccount(PayoutTransactionError):
         message = (
             f"The account {account.id} is not ready."
             f"The owner should go through the onboarding on {account.account_type}"
+        )
+        super().__init__(message)
+
+
+class UnmatchingTransfersAmount(PayoutTransactionError):
+    def __init__(self) -> None:
+        message = (
+            "Can't split the balance transactions into transfers "
+            "equal to the payout amount."
         )
         super().__init__(message)
 
@@ -125,16 +135,22 @@ class PayoutTransactionService(BaseTransactionService):
             account_incurred_transactions=[],
         )
 
+        unpaid_balance_transactions = await self._get_unpaid_balance_transactions(
+            session, account
+        )
+        payout_fees = balance_amount - balance_amount_after_fees
+
         if account.account_type == AccountType.stripe:
-            transaction = await self._create_stripe_payout(
-                transaction=transaction, account=account
+            transaction = await self._prepare_stripe_payout(
+                transaction=transaction,
+                account=account,
+                unpaid_balance_transactions=unpaid_balance_transactions,
+                payout_fees=payout_fees,
             )
         elif account.account_type == AccountType.open_collective:
             transaction.processor = PaymentProcessor.open_collective
 
-        for balance_transaction in await self.get_unpaid_balance_transactions(
-            session, account
-        ):
+        for balance_transaction in unpaid_balance_transactions:
             transaction.paid_transactions.append(balance_transaction)
 
         for outgoing, incoming in payout_fees_balances:
@@ -147,67 +163,164 @@ class PayoutTransactionService(BaseTransactionService):
 
         return transaction
 
-    async def _create_stripe_payout(
-        self, *, transaction: Transaction, account: Account
-    ) -> Transaction:
-        transaction.processor = PaymentProcessor.stripe
+    async def trigger_stripe_payouts(self, session: AsyncSession) -> None:
+        """
+        The Stripe payout is a two-steps process:
 
-        # Let's first make a transfer to the Stripe Connect account
-        assert account.stripe_id is not None
-        stripe_transfer = stripe_service.transfer(
-            account.stripe_id,
-            -transaction.amount,
-            metadata={"payout_transaction_id": str(transaction.id)},
-        )
-        transaction.transfer_id = stripe_transfer.id
+        1. Transfer the balance transactions to the Stripe Connect account.
+        2. Trigger a payout on the Stripe Connect account,
+        but later once the balance is actually available.
 
-        # Different source and destination currencies: get the converted amount
-        if transaction.currency != transaction.account_currency:
-            assert stripe_transfer.destination_payment is not None
-            stripe_destination_charge = stripe_service.get_charge(
-                get_expandable_id(stripe_transfer.destination_payment),
+        This function performs the second step and tries to trigger pending payouts,
+        if balance is available.
+        """
+        for payout in await self._get_pending_stripe_payouts(session):
+            account = payout.account
+            assert account is not None
+            assert account.stripe_id is not None
+            _, balance = stripe_service.retrieve_balance(account.stripe_id)
+
+            if balance < -payout.account_amount:
+                log.info(
+                    (
+                        "The Stripe Connect account doesn't have enough balance "
+                        "to make the payout yet"
+                    ),
+                    account_id=str(account.id),
+                    balance=balance,
+                    payout_amount=-payout.account_amount,
+                )
+                continue
+
+            # Trigger a payout on the Stripe Connect account
+            stripe_payout = stripe_service.create_payout(
                 stripe_account=account.stripe_id,
-                expand=["balance_transaction"],
+                amount=-payout.account_amount,
+                currency=payout.account_currency,
+                metadata={
+                    "payout_transaction_id": str(payout.id),
+                },
             )
-            stripe_destination_balance_transaction = cast(
-                stripe_lib.BalanceTransaction,
-                stripe_destination_charge.balance_transaction,
-            )
-            transaction.account_amount = -stripe_destination_balance_transaction.amount
-            log.info(
-                (
-                    "Source and destination currency don't match. "
-                    "A conversion has been done by Stripe."
-                ),
-                source_currency=transaction.currency,
-                destination_currency=transaction.account_currency,
-                source_amount=transaction.amount,
-                destination_amount=transaction.account_amount,
-                exchange_rate=stripe_destination_balance_transaction.exchange_rate,
-                account_id=str(account.id),
-            )
+            payout.payout_id = stripe_payout.id
 
-        # Trigger a payout on the Stripe Connect account
-        stripe_payout = stripe_service.create_payout(
-            stripe_account=account.stripe_id,
-            amount=-transaction.account_amount,
-            currency=transaction.account_currency,
-            metadata={
-                "stripe_transfer_id": stripe_transfer.id,
-                "payout_transaction_id": str(transaction.id),
-            },
-        )
-        transaction.payout_id = stripe_payout.id
+            session.add(payout)
+            await session.commit()
+
+    async def _prepare_stripe_payout(
+        self,
+        *,
+        transaction: Transaction,
+        account: Account,
+        unpaid_balance_transactions: Sequence[Transaction],
+        payout_fees: int,
+    ) -> Transaction:
+        """
+        The Stripe payout is a two-steps process:
+
+        1. Transfer the balance transactions to the Stripe Connect account.
+        2. Trigger a payout on the Stripe Connect account,
+        but later once the balance is actually available.
+
+        This function performs the first step and returns the transaction
+        with an empty payout_id.
+        """
+        transaction.processor = PaymentProcessor.stripe
+        transfer_group = str(transaction.id)
+
+        transfers: list[tuple[str, int, Transaction]] = []
+        for balance_transaction in unpaid_balance_transactions:
+            if (
+                balance_transaction.payment_transaction is not None
+                and balance_transaction.payment_transaction.charge_id is not None
+            ):
+                source_transaction = balance_transaction.payment_transaction.charge_id
+                transfer_amount = max(balance_transaction.net_amount - payout_fees, 0)
+                if transfer_amount > 0:
+                    transfers.append(
+                        (source_transaction, transfer_amount, balance_transaction)
+                    )
+                payout_fees -= balance_transaction.net_amount - transfer_amount
+
+        transfers_sum = sum(amount for _, amount, _ in transfers)
+        if transfers_sum != -transaction.amount:
+            raise UnmatchingTransfersAmount()
+
+        # If the account currency is different from the transaction currency,
+        # Set the account amount to 0 and get the converted amount when making transfers
+        if transaction.currency != transaction.account_currency:
+            transaction.account_amount = 0
+
+        # Make individual transfers with the payment transaction as source
+        assert account.stripe_id is not None
+        for source_transaction, amount, balance_transaction in transfers:
+            stripe_transfer = stripe_service.transfer(
+                account.stripe_id,
+                amount,
+                source_transaction=source_transaction,
+                transfer_group=transfer_group,
+                metadata={"payout_transaction_id": str(transaction.id)},
+            )
+            balance_transaction.transfer_id = stripe_transfer.id
+
+            # Different source and destination currencies: get the converted amount
+            if transaction.currency != transaction.account_currency:
+                assert stripe_transfer.destination_payment is not None
+                stripe_destination_charge = stripe_service.get_charge(
+                    get_expandable_id(stripe_transfer.destination_payment),
+                    stripe_account=account.stripe_id,
+                    expand=["balance_transaction"],
+                )
+                stripe_destination_balance_transaction = cast(
+                    stripe_lib.BalanceTransaction,
+                    stripe_destination_charge.balance_transaction,
+                )
+                transaction.account_amount -= (
+                    stripe_destination_balance_transaction.amount
+                )
+                log.info(
+                    (
+                        "Source and destination currency don't match. "
+                        "A conversion has been done by Stripe."
+                    ),
+                    source_currency=transaction.currency,
+                    destination_currency=transaction.account_currency,
+                    source_amount=amount,
+                    destination_amount=stripe_destination_balance_transaction.amount,
+                    exchange_rate=stripe_destination_balance_transaction.exchange_rate,
+                    account_id=str(account.id),
+                )
 
         return transaction
 
-    async def get_unpaid_balance_transactions(
+    async def _get_unpaid_balance_transactions(
         self, session: AsyncSession, account: Account
     ) -> Sequence[Transaction]:
-        statement = select(Transaction).where(
-            Transaction.type == TransactionType.balance,
-            Transaction.account_id == account.id,
-            Transaction.payout_transaction_id.is_(None),
+        statement = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.balance,
+                Transaction.account_id == account.id,
+                Transaction.payout_transaction_id.is_(None),
+            )
+            .options(
+                selectinload(Transaction.account_incurred_transactions),
+                selectinload(Transaction.payment_transaction),
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalars().all()
+
+    async def _get_pending_stripe_payouts(
+        self, session: AsyncSession
+    ) -> Sequence[Transaction]:
+        statement = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.payout,
+                Transaction.processor == PaymentProcessor.stripe,
+                Transaction.payout_id.is_(None),
+            )
+            .options(joinedload(Transaction.account))
         )
         result = await session.execute(statement)
         return result.scalars().all()

@@ -464,3 +464,19 @@ class Transaction(RecordModel):
             ),
             viewonly=True,
         )
+
+    @property
+    def incurred_amount(self) -> int:
+        return sum(
+            transaction.amount for transaction in self.account_incurred_transactions
+        )
+
+    @property
+    def gross_amount(self) -> int:
+        inclusive = 0 if self.type == TransactionType.balance else 1
+        return self.amount + inclusive * self.incurred_amount
+
+    @property
+    def net_amount(self) -> int:
+        inclusive = 1 if self.type == TransactionType.balance else -1
+        return self.gross_amount + inclusive * self.incurred_amount

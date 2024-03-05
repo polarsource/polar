@@ -1,8 +1,8 @@
 'use client'
 
 import ImageUpload from '@/components/Form/ImageUpload'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
-import { ConfirmModal } from '@/components/Shared/ConfirmModal'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'

@@ -24,7 +24,7 @@ import {
 import { getCentsInDollarString } from 'polarkit/money'
 import { useCallback, useMemo, useState } from 'react'
 import { SelectTriggerBase } from '../../../../../packages/polarkit/src/components/ui/atoms/Select'
-import { ConfirmModal } from '../Shared/ConfirmModal'
+import { ConfirmModal } from '../Modal/ConfirmModal'
 
 const buttonClasses =
   'grow transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]'

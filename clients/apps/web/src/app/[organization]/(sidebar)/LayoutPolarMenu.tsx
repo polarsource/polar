@@ -1,6 +1,6 @@
 'use client'
 
-import { ProfileMenu } from '@/components/Shared/ProfileSelection'
+import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserRead } from '@polar-sh/sdk'
@@ -62,7 +62,7 @@ export const PolarMenu = ({
                 </Button>
               </Link>
             )}
-            <ProfileMenu
+            <PublicProfileDropdown
               authenticatedUser={authenticatedUser}
               className="flex-shrink-0"
               allBackerRoutes

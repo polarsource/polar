@@ -1,4 +1,4 @@
-import { ProfileMenu } from '@/components/Shared/ProfileSelection'
+import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { UserRead } from '@polar-sh/sdk'
 import LayoutTopbarGitHubLogin from './LayoutTopbarGitHubLogin'
 
@@ -7,7 +7,7 @@ const LayoutTopbarAuth = (props: {
 }) => {
   if (props.authenticatedUser) {
     return (
-      <ProfileMenu
+      <PublicProfileDropdown
         className="z-50"
         authenticatedUser={props.authenticatedUser}
       />

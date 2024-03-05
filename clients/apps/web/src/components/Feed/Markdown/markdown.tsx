@@ -135,6 +135,8 @@ export const wrapStrictCreateElement = (args: {
       'tr',
       'ul',
       'br',
+      'figure',
+      'figcaption',
     ]
 
     // clean up props, only pass down a limited set of safe props

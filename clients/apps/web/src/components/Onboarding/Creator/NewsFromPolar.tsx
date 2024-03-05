@@ -1,12 +1,7 @@
 import { ArrowForward } from '@mui/icons-material'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from 'polarkit/components/ui/atoms'
+import { Card, CardContent, CardFooter } from 'polarkit/components/ui/atoms'
 
 export const NewsFromPolar = () => {
   return (
@@ -21,12 +16,7 @@ export const NewsFromPolar = () => {
       </div>
       <div className="col-span-2 flex flex-col gap-y-8">
         <Card>
-          <CardHeader>
-            <div className="text-lg font-medium">
-              Introducing GitHub Repository Benefit
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col">
+          <CardContent className="flex flex-col py-8">
             <iframe
               className="aspect-video"
               width="100%"
@@ -38,6 +28,9 @@ export const NewsFromPolar = () => {
             ></iframe>
           </CardContent>
           <CardFooter className="flex flex-col items-start gap-y-4">
+            <h2 className="text-lg font-medium">
+              Introducing GitHub Repository Benefit
+            </h2>
             <p className="dark:text-polar-400 leading-relaxed text-gray-600">
               You can now seamlessly offer subscribers on Polar access to one,
               two, three... or countless private GitHub repositories. This opens

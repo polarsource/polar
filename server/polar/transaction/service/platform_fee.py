@@ -128,7 +128,9 @@ class PlatformFeeTransactionService(BaseTransactionService):
         balance_transactions: tuple[Transaction, Transaction],
     ) -> tuple[Transaction, Transaction]:
         outgoing, incoming = balance_transactions
-        account = incoming.account
+        account_id = incoming.account_id
+        assert account_id is not None
+        account = await account_service.get_by_id(session, account_id)
         assert account is not None
 
         if incoming.pledge_id is not None and incoming.issue_reward_id is not None:

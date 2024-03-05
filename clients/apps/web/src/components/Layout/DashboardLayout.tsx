@@ -25,7 +25,7 @@ import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
-import ProfileSelection from '../Shared/ProfileSelection'
+import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import DashboardLayoutContext, {
   useDashboardLayoutContext,
 } from './DashboardLayoutContext'
@@ -81,7 +81,10 @@ const DashboardSidebar = () => {
           </div>
           <div className="mb-4 mt-8 flex px-4">
             {currentUser && (
-              <ProfileSelection useOrgFromURL={true} className="shadow-xl" />
+              <DashboardProfileDropdown
+                useOrgFromURL={true}
+                className="shadow-xl"
+              />
             )}
           </div>
         </div>

@@ -154,11 +154,32 @@ export class PolarUploadBuilder<
 		});
 	}
 
-	private async getOrganization(): Promise<Organization> {
-		return this.client.organizations.lookup({
-			organizationName: this.options.organizationName,
-			platform: this.options.platform ?? 'github',
-		});
+	private async getOrganization(): Promise<PolarResult<Organization, PolarUploadError>> {
+		try {
+			const response = await this.client.organizations.lookup({
+				organizationName: this.options.organizationName,
+				platform: this.options.platform ?? 'github',
+			});
+			return { data: response, error: null };
+		} catch (error) {
+			if (error instanceof Error) {
+				return {
+					data: null,
+					error: new PolarUploadError(error.message, 500, { cause: error }),
+				};
+			} else {
+				return {
+					data: null,
+					error: new PolarUploadError(
+						'An unknown error occurred while fetching the organization. Does it exist?',
+						500,
+						{
+							cause: error,
+						}
+					),
+				};
+			}
+		}
 	}
 
 	/**
@@ -301,9 +322,14 @@ export class PolarUploadBuilder<
 			| undefined
 	): Promise<TResult1 | TResult2> {
 		// Find organization
-		const org = await this.getOrganization().catch(() => {
-			throw Error(`Organization '${this.options.organizationName}' not found.`);
-		});
+		const orgResult = await this.getOrganization();
+		if (orgResult.error) {
+			if (onrejected) {
+				return onrejected(orgResult);
+			}
+			return Promise.reject(orgResult);
+		}
+		const org = orgResult.data;
 
 		// Fetch articles
 		const articlesResult = await this.getArticles();

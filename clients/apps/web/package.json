@@ -38,7 +38,6 @@
     "@tanstack/react-query-devtools": "^5.18.0",
     "@tanstack/react-query-next-experimental": "^5.18.0",
     "@tanstack/react-query-persist-client": "^5.18.0",
-    "@ts-stack/markdown": "^1.4.0",
     "@types/web": "^0.0.125",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",

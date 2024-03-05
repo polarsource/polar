@@ -223,9 +223,6 @@ importers:
       '@tanstack/react-query-persist-client':
         specifier: ^5.18.0
         version: 5.18.0(@tanstack/react-query@5.18.0)(react@18.2.0)
-      '@ts-stack/markdown':
-        specifier: ^1.4.0
-        version: 1.4.0
       '@types/web':
         specifier: ^0.0.125
         version: 0.0.125
@@ -9175,12 +9172,6 @@ packages:
   /@tootallnate/once@2.0.0:
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
     engines: {node: '>= 10'}
-
-  /@ts-stack/markdown@1.4.0:
-    resolution: {integrity: sha512-z3fkD8wGSyqTCp+axZVlr9hFKyM18XKPHEyC8vmohyTcqf5sRRy9Sd0omYBJ85IDW57DLEcfvVatXfUt1unEew==}
-    dependencies:
-      tslib: 2.5.0
-    dev: false
 
   /@tsconfig/node10@1.0.9:
     resolution: {integrity: sha512-jNsYVVxU8v5g43Erja32laIDHXeoNvFEpX33OK4d6hljo3jDhCBDhx5dhCCTMWUojscpAagGiRkBKxpdl9fxqA==}

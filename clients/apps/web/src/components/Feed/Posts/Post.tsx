@@ -1,6 +1,5 @@
 'use client'
 
-import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { ArrowForward } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import { motion, useSpring, useTransform } from 'framer-motion'
@@ -12,12 +11,11 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
-import PreviewText from '../Markdown/preview'
+import { AbbreviatedBrowserRender } from '../Markdown/BrowserRender'
 
 type FeedPost = {
   article: Article
   highlightPinned?: boolean
-  className?: string
 }
 
 const articleHref = (art: Article): string => {
@@ -36,10 +34,9 @@ export const Post = (props: FeedPost) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full flex-col justify-start gap-6 rounded-3xl border border-gray-100 bg-white p-10 shadow-sm transition-all duration-100',
+        'dark:border-polar-800 hover:dark:bg-polar-800/60 dark:bg-polar-900 flex w-full flex-col justify-start gap-6 rounded-3xl border border-gray-100 bg-white px-8 pb-8 pt-10 shadow-sm transition-all duration-100 md:flex-row',
         props.article.paid_subscribers_only &&
           'border border-blue-50 bg-gradient-to-b from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
-        props.className,
       )}
       ref={ref}
       onClick={onClick}
@@ -51,8 +48,15 @@ export const Post = (props: FeedPost) => {
         ;(e.target as HTMLDivElement).classList.remove('cursor-pointer')
       }}
     >
-      <PostHeader {...props} isHovered={isHovered} />
-      <PostBody {...props} isHovered={isHovered} />
+      <Avatar
+        className="hidden h-12 w-12 md:block"
+        avatar_url={props.article.byline.avatar_url}
+        name={props.article.byline.name}
+      />
+      <div className="flex w-full min-w-0 flex-col">
+        <PostHeader {...props} isHovered={isHovered} />
+        <PostBody {...props} isHovered={isHovered} />
+      </div>
     </div>
   )
 }
@@ -60,67 +64,62 @@ export const Post = (props: FeedPost) => {
 const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
   return (
     <div className="flex w-full flex-row items-center gap-x-4 text-sm md:justify-between">
-      <div className="flex w-full flex-row items-center gap-x-4 text-sm">
-        <Avatar
-          className="block h-12 w-12"
-          avatar_url={props.article.byline.avatar_url}
-          name={props.article.byline.name}
-        />
-        <div className="flex flex-col gap-y-1 pt-1">
-          <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
-            <Link
-              className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
-              href={organizationPageLink(props.article.organization)}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:dark:text-blue-500">
-                {props.article.organization.pretty_name ||
-                  props.article.organization.name}
-              </h3>
-            </Link>
-          </div>
-          <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
-            {props.article.published_at ? (
-              <>
-                <div className="min-w-0 flex-shrink flex-nowrap truncate text-xs">
-                  {new Date(props.article.published_at).toLocaleString(
-                    'en-US',
-                    {
-                      year:
-                        new Date(props.article.published_at).getFullYear() ===
-                        new Date().getFullYear()
-                          ? undefined
-                          : 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    },
-                  )}
-                </div>
-              </>
-            ) : null}
+      <Avatar
+        className="block h-12 w-12 md:hidden"
+        avatar_url={props.article.byline.avatar_url}
+        name={props.article.byline.name}
+      />
+      <div className="flex flex-col gap-y-1 pt-1">
+        <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
+          <Link
+            className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
+            href={organizationPageLink(props.article.organization)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:dark:text-blue-500">
+              {props.article.organization.pretty_name ||
+                props.article.organization.name}
+            </h3>
+          </Link>
+        </div>
+        <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
+          {props.article.published_at ? (
+            <>
+              <div className="min-w-0 flex-shrink flex-nowrap truncate text-xs">
+                {new Date(props.article.published_at).toLocaleString('en-US', {
+                  year:
+                    new Date(props.article.published_at).getFullYear() ===
+                    new Date().getFullYear()
+                      ? undefined
+                      : 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </div>
+            </>
+          ) : null}
 
-            {props.article.paid_subscribers_only ? (
-              <>
-                &middot;
-                <div className="flex flex-row items-center rounded-full bg-blue-50 bg-gradient-to-l px-2 dark:bg-blue-950">
-                  <span className="text-[.6rem] text-blue-300 dark:text-blue-300">
-                    Premium
-                  </span>
-                </div>
-              </>
-            ) : null}
+          {props.article.paid_subscribers_only ? (
+            <>
+              &middot;
+              <div className="flex flex-row items-center rounded-full bg-blue-50 bg-gradient-to-l px-2 dark:bg-blue-950">
+                <span className="text-[.6rem] text-blue-300 dark:text-blue-300">
+                  Premium
+                </span>
+              </div>
+            </>
+          ) : null}
 
-            {props.highlightPinned && props.article.is_pinned ? (
-              <>
-                &middot;
-                <div className="flex flex-row items-center rounded-full bg-gradient-to-l from-teal-50 to-teal-100 px-2 dark:from-teal-950 dark:to-teal-900">
-                  <span className="text-[.6rem] text-teal-500 dark:text-teal-400">
-                    Pinned
-                  </span>
-                </div>
-              </>
-            ) : null}
-          </div>
+          {props.highlightPinned && props.article.is_pinned ? (
+            <>
+              &middot;
+              <div className="flex flex-row items-center rounded-full bg-gradient-to-l from-teal-50 to-teal-100 px-2 dark:from-teal-950 dark:to-teal-900">
+                <span className="text-[.6rem] text-teal-500 dark:text-teal-400">
+                  Pinned
+                </span>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
       <AnimatedIconButton
@@ -136,15 +135,10 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
 }
 
 const PostBody = (props: FeedPost & { isHovered: boolean }) => {
-  const image =
-    props.article.og_image_url ??
-    firstImageUrlFromMarkdown(props.article.body) ??
-    `/og?articleId=${props.article.id}`
-
   return (
     <div
       className={twMerge(
-        'flex w-full flex-col gap-y-6 pb-5 pt-4 text-[15px] leading-relaxed md:pt-2',
+        'flex w-full flex-col gap-y-4 pb-5 pt-4 text-[15px] leading-relaxed md:pt-2',
       )}
     >
       <Link
@@ -153,16 +147,10 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
       >
         {props.article.title}
       </Link>
-      {image && (
-        <img
-          className="aspect-auto w-full rounded-2xl object-cover"
-          src={image}
-        />
-      )}
       <div className="flex flex-col flex-wrap">
-        <p className="dark:text-polar-200 line-clamp-3 w-full leading-loose text-gray-700">
-          <PreviewText article={props.article} />
-        </p>
+        <div className="prose dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 dark:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1 w-full max-w-none text-gray-600">
+          <AbbreviatedBrowserRender article={props.article} />
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import UUID4
 
 from polar.account.service import account as account_service
@@ -116,7 +116,6 @@ async def create_payout(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> TransactionModel:
-    raise HTTPException(status_code=503, detail="Blocked until further notice.")
     account_id = payout_create.account_id
     account = await account_service.get(session, account_id)
     if account is None:

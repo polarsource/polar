@@ -28,8 +28,8 @@ export const requestHost = (
 ): { protocol: string; host: string; hostname: string } => {
   // Get hostname from request or x-forwarded-host header(s)
   let hostname = request.nextUrl.hostname
-  let host = request.nextUrl.host.replaceAll(':', '')
-  let protocol = request.nextUrl.protocol
+  let host = request.nextUrl.host
+  let protocol = request.nextUrl.protocol.replaceAll(':', '')
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     const forwardedHost = request.headers.get('x-forwarded-host')

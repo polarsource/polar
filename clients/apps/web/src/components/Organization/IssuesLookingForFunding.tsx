@@ -40,7 +40,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Pagination, { usePagination } from '../Shared/Pagination'
+import Pagination, { usePagination } from '../Pagination/Pagination'
 import Spinner from '../Shared/Spinner'
 import {
   FundingFilters,

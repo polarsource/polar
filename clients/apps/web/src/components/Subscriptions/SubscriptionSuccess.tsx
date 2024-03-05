@@ -42,7 +42,7 @@ export const SubscriptionSuccess = (props: {
 
     setEmailSigninLoading(true)
     try {
-      sendMagicLink(email)
+      sendMagicLink(email, `/${organizationName}`)
     } catch (err) {
       // TODO: error handling
     } finally {

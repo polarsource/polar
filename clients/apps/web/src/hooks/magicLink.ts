@@ -12,6 +12,13 @@ export const useSendMagicLink = () => {
 
   const org = useContext(PublicPageOrganizationContext)
 
+  if (!org) {
+    // TODO: once custom domains are out: make this throw
+    console.error(
+      'useSendMagicLink used outside of a PublicPageOrganizationContext',
+    )
+  }
+
   const func = useCallback(
     async (email: string, return_to?: string) => {
       if (!return_to) {

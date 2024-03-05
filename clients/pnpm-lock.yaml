@@ -295,9 +295,6 @@ importers:
       react-is:
         specifier: ^18.2.0
         version: 18.2.0
-      react-markdown:
-        specifier: ^9.0.1
-        version: 9.0.1(@types/react@18.2.21)(react@18.2.0)
       react-timeago:
         specifier: ^7.1.0
         version: 7.1.0(react@18.2.0)

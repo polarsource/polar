@@ -1,7 +1,7 @@
 'use client'
 
 import { PostEditor } from '@/components/Feed/PostEditor'
-import DashboardTopbar from '@/components/Shared/DashboardTopbar'
+import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { captureEvent } from '@/utils/posthog'
 import { ArticleCreate } from '@polar-sh/sdk'

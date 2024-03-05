@@ -2,8 +2,8 @@
 
 import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
-import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import {
   CopyToClipboardInput,

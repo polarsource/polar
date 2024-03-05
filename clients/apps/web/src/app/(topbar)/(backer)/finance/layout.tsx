@@ -1,7 +1,7 @@
 'use client'
 
 import { dashboardRoutes } from '@/components/Dashboard/navigation'
-import { SubNav } from '@/components/Shared/DashboardTopbar'
+import { SubNav } from '@/components/Navigation/DashboardTopbar'
 import { usePathname } from 'next/navigation'
 
 export default function Layout({ children }: { children: React.ReactNode }) {

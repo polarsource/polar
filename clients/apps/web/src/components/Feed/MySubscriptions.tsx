@@ -11,7 +11,7 @@ import {
 } from 'polarkit/components/ui/dropdown-menu'
 import { useOrganization } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
-import { ConfirmModal } from '../Shared/ConfirmModal'
+import { ConfirmModal } from '../Modal/ConfirmModal'
 
 export interface MySubscriptionsProps {
   subscriptions: SubscriptionSubscriber[]

@@ -19,7 +19,14 @@
  * This is inspired by the [Supabase Client](https://supabase.com/docs/reference/javascript/select),
  * which uses a similar pattern for building queries.
  */
-import type { Article, ArticleCreate, ArticleUpdate, Organization, PolarAPI } from '@polar-sh/sdk';
+import {
+	ResponseError,
+	type Article,
+	type ArticleCreate,
+	type ArticleUpdate,
+	type Organization,
+	type PolarAPI,
+} from '@polar-sh/sdk';
 import { ErrorGroup, PolarUploadError, type AstroCollectionEntry, type PolarResult } from './types';
 
 /**
@@ -162,23 +169,30 @@ export class PolarUploadBuilder<
 			});
 			return { data: response, error: null };
 		} catch (error) {
+			if (error instanceof ResponseError) {
+				return {
+					data: null,
+					error: new PolarUploadError(await error.response.text(), error.response.status, {
+						cause: error,
+					}),
+				};
+			}
 			if (error instanceof Error) {
 				return {
 					data: null,
 					error: new PolarUploadError(error.message, 500, { cause: error }),
 				};
-			} else {
-				return {
-					data: null,
-					error: new PolarUploadError(
-						'An unknown error occurred while fetching the organization. Does it exist?',
-						500,
-						{
-							cause: error,
-						}
-					),
-				};
 			}
+			return {
+				data: null,
+				error: new PolarUploadError(
+					`An unknown error occurred while fetching organization: ${this.options.organizationName}`,
+					500,
+					{
+						cause: error,
+					}
+				),
+			};
 		}
 	}
 
@@ -260,19 +274,30 @@ export class PolarUploadBuilder<
 			});
 			return { data: response, error: null };
 		} catch (error) {
+			if (error instanceof ResponseError) {
+				return {
+					data: null,
+					error: new PolarUploadError(await error.response.text(), error.response.status, {
+						cause: error,
+					}),
+				};
+			}
 			if (error instanceof Error) {
 				return {
 					data: null,
 					error: new PolarUploadError(error.message, 500, { cause: error }),
 				};
-			} else {
-				return {
-					data: null,
-					error: new PolarUploadError('An unknown error occurred.', 500, {
-						cause: error,
-					}),
-				};
 			}
+			return {
+				data: null,
+				error: new PolarUploadError(
+					`An unknown error occurred while creating article with slug: ${article.slug}`,
+					500,
+					{
+						cause: error,
+					}
+				),
+			};
 		}
 	}
 
@@ -290,19 +315,30 @@ export class PolarUploadBuilder<
 			});
 			return { data: response, error: null };
 		} catch (error) {
+			if (error instanceof ResponseError) {
+				return {
+					data: null,
+					error: new PolarUploadError(await error.response.text(), error.response.status, {
+						cause: error,
+					}),
+				};
+			}
 			if (error instanceof Error) {
 				return {
 					data: null,
 					error: new PolarUploadError(error.message, 500, { cause: error }),
 				};
-			} else {
-				return {
-					data: null,
-					error: new PolarUploadError('An unknown error occurred.', 500, {
-						cause: error,
-					}),
-				};
 			}
+			return {
+				data: null,
+				error: new PolarUploadError(
+					`An unknown error occurred while updating article with ID: ${articleId}`,
+					500,
+					{
+						cause: error,
+					}
+				),
+			};
 		}
 	}
 

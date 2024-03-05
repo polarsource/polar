@@ -573,9 +573,6 @@ importers:
       '@heroicons/react':
         specifier: ^2.0.16
         version: 2.0.16(react@18.2.0)
-      '@hookform/resolvers':
-        specifier: ^3.3.2
-        version: 3.3.2(react-hook-form@7.50.1)
       '@mui/icons-material':
         specifier: ^5.15.4
         version: 5.15.4(@mui/material@5.15.4)(@types/react@18.2.21)(react@18.2.0)
@@ -675,9 +672,6 @@ importers:
       tailwind-merge:
         specifier: ^1.14.0
         version: 1.14.0
-      zod:
-        specifier: ^3.22.4
-        version: 3.22.4
       zustand:
         specifier: ^4.3.3
         version: 4.3.3(react@18.2.0)
@@ -3508,14 +3502,6 @@ packages:
       react: '>= 16'
     dependencies:
       react: 18.2.0
-    dev: false
-
-  /@hookform/resolvers@3.3.2(react-hook-form@7.50.1):
-    resolution: {integrity: sha512-Tw+GGPnBp+5DOsSg4ek3LCPgkBOuOgS5DsDV7qsWNH9LZc433kgsWICjlsh2J9p04H2K66hsXPPb9qn9ILdUtA==}
-    peerDependencies:
-      react-hook-form: ^7.0.0
-    dependencies:
-      react-hook-form: 7.50.1(react@18.2.0)
     dev: false
 
   /@humanwhocodes/config-array@0.11.13:

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSideAPI } from './utils/api'
 import { defaultApiUrl, defaultFrontendHostname } from './utils/domain'
+import { requestHost } from './utils/nav'
 
 // Custom domain name handlings
 export async function middleware(request: NextRequest) {
@@ -27,12 +28,7 @@ export async function middleware(request: NextRequest) {
     return webPagesTrailingSlashRedirect(request)
   }
 
-  // Get hostname from request or x-forwarded-host header
-  let hostname = url.hostname
-  const forwardedHost = request.headers.get('x-forwarded-host')
-  if (forwardedHost) {
-    hostname = forwardedHost.split(':')[0]
-  }
+  const { hostname } = requestHost(request)
 
   // Skip dynamic lookup for polar.sh
   if (hostname === defaultFrontendHostname) {
@@ -49,7 +45,7 @@ export async function middleware(request: NextRequest) {
 
   const orgname = org.name
 
-  const strictMatches = ['/']
+  const strictMatches = ['/', '/subscribe']
 
   const allowedPrefixes = [
     '/posts',
@@ -57,6 +53,15 @@ export async function middleware(request: NextRequest) {
     '/issues',
     '/repositories',
   ]
+
+  const noRedirectPrefixes = ['/subscribe/success']
+
+  // No redirect prefixes
+  for (const prefix of noRedirectPrefixes) {
+    if (url.pathname.startsWith(prefix)) {
+      return
+    }
+  }
 
   // Rewrite strict matches
   if (strictMatches.includes(url.pathname)) {

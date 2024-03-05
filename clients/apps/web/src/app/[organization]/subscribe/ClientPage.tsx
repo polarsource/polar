@@ -93,7 +93,7 @@ export default function ClientPage({
             <SubscriptionTierSubscribeButton
               organization={organization}
               subscriptionTier={selectedTier}
-              subscribePath="/subscribe"
+              subscribePath="/api/subscribe"
               variant="default"
             />
           ))}

@@ -5,7 +5,6 @@ import {
   useGitHubAccount,
   useLogout,
 } from '@/hooks'
-import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
@@ -15,6 +14,7 @@ import { Avatar } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useListAllOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import React, { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useAuth, usePersonalOrganization } from '../../hooks'

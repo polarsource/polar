@@ -2,18 +2,7 @@ import { Organization } from '@polar-sh/sdk'
 import { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers'
 import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
-import { CONFIG } from 'polarkit/config'
-
-export const organizationPageLink = (
-  org: Organization,
-  path?: string,
-): string => {
-  if (org.custom_domain) {
-    return `https://${org.custom_domain}/${path ?? ''}`
-  }
-
-  return `${CONFIG.FRONTEND_BASE_URL}/${org.name}/${path ?? ''}`
-}
+import { organizationPageLink } from 'polarkit/utils/nav'
 
 export const redirectToCustomDomain = (
   org: Organization,

@@ -43,57 +43,18 @@ export async function middleware(request: NextRequest) {
     return
   }
 
-  const orgname = org.name
-
-  const strictMatches = ['/', '/subscribe']
-
-  const allowedPrefixes = [
-    '/posts',
-    '/subscriptions',
-    '/issues',
-    '/repositories',
-  ]
-
-  const noRedirectPrefixes = ['/subscribe/success']
+  const noRewrirePrefixes = ['/subscribe/success']
 
   // No redirect prefixes
-  for (const prefix of noRedirectPrefixes) {
+  for (const prefix of noRewrirePrefixes) {
     if (url.pathname.startsWith(prefix)) {
       return
     }
   }
 
-  // Rewrite strict matches
-  if (strictMatches.includes(url.pathname)) {
-    return NextResponse.rewrite(
-      new URL(`/${orgname}${url.pathname}`, request.url),
-    )
-  }
-
-  // Rewrite prefix matches
-  for (const prefix of allowedPrefixes) {
-    if (url.pathname.startsWith(prefix)) {
-      return NextResponse.rewrite(
-        new URL(`/${orgname}${url.pathname}`, request.url),
-      )
-    }
-  }
-
-  // This page falls outside of the scope of this custom domain.
-  // For example if trying to access /faq or /ORGNAME
-  // Redirect to the polar.sh version
-  const to = new URL(
-    url.pathname,
-    process.env.NEXT_PUBLIC_FRONTEND_BASE_URL ?? 'https://polar.sh',
+  return NextResponse.rewrite(
+    new URL(`/${org.name}${url.pathname}`, request.url),
   )
-
-  if (url.searchParams) {
-    url.searchParams.forEach((val, key) => {
-      to.searchParams.set(key, val)
-    })
-  }
-
-  return NextResponse.redirect(to)
 }
 
 async function customDomainApiProxy(

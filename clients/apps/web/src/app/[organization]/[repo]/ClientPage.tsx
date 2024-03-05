@@ -1,7 +1,6 @@
 'use client'
 
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
-import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
@@ -13,6 +12,7 @@ import {
 import Link from 'next/link'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
+import { organizationPageLink } from 'polarkit/utils/nav'
 
 const ClientPage = ({
   organization,

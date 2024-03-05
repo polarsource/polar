@@ -5,7 +5,6 @@ import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
-import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { StarIcon } from '@heroicons/react/20/solid'
 import {
@@ -31,6 +30,7 @@ import {
   Pill,
 } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 
 const ClientPage = ({
@@ -180,7 +180,7 @@ const ClientPage = ({
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {repositories.map((repository) => (
                 <Link
-                  href={`/${organization.name}/${repository.name}`}
+                  href={organizationPageLink(organization, repository.name)}
                   key={repository.id}
                 >
                   <Card className="dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600">

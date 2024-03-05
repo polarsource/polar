@@ -1,6 +1,6 @@
-import { organizationPageLink } from '@/utils/nav'
 import { LinkedIn } from '@mui/icons-material'
 import XIcon from '@mui/icons-material/X'
+import { organizationPageLink } from 'polarkit/utils/nav'
 
 import { Article } from '@polar-sh/sdk'
 

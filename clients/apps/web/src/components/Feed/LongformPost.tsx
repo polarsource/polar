@@ -1,10 +1,10 @@
 'use client'
 
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscribeNowWithModal from '../Subscriptions/SubscribeNowWithModal'

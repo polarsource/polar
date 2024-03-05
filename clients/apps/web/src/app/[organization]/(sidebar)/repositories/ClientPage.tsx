@@ -12,6 +12,7 @@ import {
   CardHeader,
   Pill,
 } from 'polarkit/components/ui/atoms'
+import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 
 interface RepositoriesOverviewProps {
@@ -74,7 +75,9 @@ export const ClientPage = ({
                     ) : null}
                     <span className="flex flex-row items-center gap-x-1 text-sm">
                       <StarIcon className="h-4 w-4" />
-                      <span className="pt-.5">{repository.stars}</span>
+                      <span className="pt-.5">
+                        {formatStarsNumber(repository.stars ?? 0)}
+                      </span>
                     </span>
                   </CardFooter>
                 </Card>

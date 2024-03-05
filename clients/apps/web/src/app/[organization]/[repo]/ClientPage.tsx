@@ -12,6 +12,7 @@ import {
 import Link from 'next/link'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
+import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 
 const ClientPage = ({
@@ -48,12 +49,7 @@ const ClientPage = ({
             </div>
             <div className="flex flex-col gap-y-1">
               <span className="dark:text-polar-400 text-gray-600">Stars</span>
-              <span>
-                {Intl.NumberFormat('en-US', {
-                  notation: 'compact',
-                  compactDisplay: 'short',
-                }).format(repository.stars ?? 0)}
-              </span>
+              <span>{formatStarsNumber(repository.stars ?? 0)}</span>
             </div>
             <div className="flex flex-col gap-y-1">
               <span className="dark:text-polar-400 text-gray-600">License</span>

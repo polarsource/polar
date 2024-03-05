@@ -85,7 +85,6 @@
     "clsx": "^1.2.1",
     "cmdk": "^0.2.0",
     "countries-list": "^2.6.1",
-    "date-fns": "^2.30.0",
     "eventemitter3": "^5.0.0",
     "lucide-react": "^0.272.0",
     "react": "^18.2.0",

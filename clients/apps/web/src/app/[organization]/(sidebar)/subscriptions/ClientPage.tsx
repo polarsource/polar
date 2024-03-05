@@ -52,7 +52,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
                 <SubscriptionTierSubscribeButton
                   organization={organization}
                   subscriptionTier={tier}
-                  subscribePath="/subscribe"
+                  subscribePath="/api/subscribe"
                 />
               ))}
           </SubscriptionTierCard>

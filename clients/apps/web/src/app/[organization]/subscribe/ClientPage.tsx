@@ -2,12 +2,12 @@
 
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
-import { organizationPageLink } from '@/utils/nav'
 import { ListResourceSubscriptionTier, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { useListAdminOrganizations } from 'polarkit/hooks'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

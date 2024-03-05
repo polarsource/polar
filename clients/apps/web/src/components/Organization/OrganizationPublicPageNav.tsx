@@ -1,6 +1,5 @@
 'use client'
 
-import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -20,6 +19,7 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
 import { Tabs } from 'polarkit/components/ui/tabs'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 

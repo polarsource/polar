@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { useSearchFunding } from 'polarkit/hooks'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import {
   ChangeEvent,
   Dispatch,
@@ -78,7 +79,6 @@ const IssuesLookingForFunding = ({
     limit: pageSize,
   })
 
-  // const listIssues = issues.data?.items ?? []
   const listIssues =
     (clientIssues.isFetched ? clientIssues.data?.items : issues.items) ?? []
 
@@ -105,7 +105,10 @@ const IssuesLookingForFunding = ({
                   issue={i.issue}
                   right={
                     <Link
-                      href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
+                      href={organizationPageLink(
+                        i.issue.repository.organization,
+                        `${i.issue.repository.name}/issues/${i.issue.number}`,
+                      )}
                       className="font-medium text-blue-500"
                     >
                       <Button size="sm" variant="secondary" asChild>

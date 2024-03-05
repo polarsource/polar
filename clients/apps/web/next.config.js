@@ -247,7 +247,7 @@ const nextConfig = {
         source: '/issues(.*)',
         destination: '/maintainer',
         permanent: false,
-        missing: [
+        has: [
           {
             type: 'host',
             value: defaultFrontendHostname,

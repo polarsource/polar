@@ -2,9 +2,9 @@
 
 import LongformPost from '@/components/Feed/LongformPost'
 import { useAuth } from '@/hooks/auth'
-import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowBackOutlined } from '@mui/icons-material'
+import { organizationPageLink } from 'polarkit/utils/nav'
 
 import { Article, BenefitsInner, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'

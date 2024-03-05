@@ -1,11 +1,11 @@
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
 import { getServerSideAPI } from '@/utils/api'
-import { organizationPageLink } from '@/utils/nav'
 import { Organization, Platforms, Repository, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { LogoIcon } from 'polarkit/components/brand'
 import { Avatar } from 'polarkit/components/ui/atoms'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import React from 'react'
 import { PolarMenu } from '../(sidebar)/LayoutPolarMenu'
 

@@ -12,6 +12,7 @@ import {
   CardHeader,
   Pill,
 } from 'polarkit/components/ui/atoms'
+import { organizationPageLink } from 'polarkit/utils/nav'
 
 interface RepositoriesOverviewProps {
   organization: Organization
@@ -37,7 +38,7 @@ export const ClientPage = ({
           <div className="relative flex w-full flex-col justify-stretch gap-6 md:grid md:grid-cols-2">
             {repositoriesAsCards.map((repository) => (
               <Link
-                href={`/${organization.name}/${repository.name}`}
+                href={organizationPageLink(organization, repository.name)}
                 key={repository.id}
               >
                 <Card className="dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-2xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600">
@@ -86,7 +87,7 @@ export const ClientPage = ({
                 <Link
                   className="dark:hover:bg-polar-800 transition-colors duration-100 hover:bg-gray-50"
                   key={repository.id}
-                  href={`/${organization.name}/${repository.name}`}
+                  href={organizationPageLink(organization, repository.name)}
                 >
                   <div className="flex flex-col gap-y-2 p-6">
                     <span className="flex flex-row gap-x-4">

@@ -17,6 +17,7 @@
     "./store": "./src/store/index.ts",
     "./hooks": "./src/hooks/index.ts",
     "./utils": "./src/utils/index.ts",
+    "./utils/nav": "./src/utils/nav.ts",
     "./github": "./src/github/index.ts",
     "./money": "./src/money/index.ts",
     "./datatable": "./src/datatable.ts",

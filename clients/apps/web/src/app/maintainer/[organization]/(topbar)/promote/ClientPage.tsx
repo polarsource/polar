@@ -1,9 +1,6 @@
 'use client'
 
 import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
-import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
-import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
-import { Subscribe } from '@/components/Embed/Subscribe'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
@@ -66,39 +63,38 @@ export default function ClientPage() {
 
   const previews: Record<string, ReactElement> = {
     Tiers: (
-      <>
-        <picture>
-          <source
-            media="(prefers-color-scheme: dark)"
-            srcSet={`/embed/tiers.svg?org=${org?.name}&darkmode`}
-          />
-          <img
-            alt="Subscription Tiers on Polar"
-            src={`/tiers.svg?org=${org?.name}`}
-          />
-        </picture>
-      </>
+      <picture>
+        <source
+          media="(prefers-color-scheme: dark)"
+          srcSet={`/embed/tiers.svg?org=${org?.name}&darkmode`}
+        />
+        <img
+          alt="Subscription Tiers on Polar"
+          src={`/tiers.svg?org=${org?.name}`}
+        />
+      </picture>
     ),
     Subscribe: (
-      <Subscribe
-        subscriptions={subscriptionsSummary.data?.items || []}
-        totalSubscriptions={
-          subscriptionsSummary.data?.pagination.total_count ?? 0
-        }
-        label="Subscribe"
-        darkmode={false}
-      />
+      <picture>
+        <source
+          media="(prefers-color-scheme: dark)"
+          srcSet={`https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode`}
+        />
+        <img
+          alt="Subscribe on Polar"
+          src={`https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe`}
+        />
+      </picture>
     ),
     Issues: (
-      <FundOurBacklog
-        issues={issues.data?.items || []}
-        issueCount={issues.data?.items?.length || 0}
+      <img
+        src={`https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}`}
       />
     ),
     Shield: (
-      <div className="w-fit">
-        <SeeksFundingShield count={issues.data?.items?.length || 0} />
-      </div>
+      <img
+        src={`https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}`}
+      />
     ),
   }
 

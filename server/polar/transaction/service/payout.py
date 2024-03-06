@@ -274,24 +274,20 @@ class PayoutTransactionService(BaseTransactionService):
             if source is not None:
                 source_transfer: str | None = getattr(source, "source_transfer", None)
                 if source_transfer is not None:
-                    paid_transaction = await self.get_by(
-                        session,
-                        account_id=account.id,
-                        transfer_id=source_transfer,
+                    paid_transactions_statement = select(Transaction).where(
+                        Transaction.transfer_id == source_transfer,
+                        Transaction.account_id == account.id,
                     )
-                    if paid_transaction is not None:
+                    paid_transactions = await session.stream_scalars(
+                        paid_transactions_statement
+                    )
+                    async for paid_transaction in paid_transactions:
                         paid_transaction.payout_transaction = transaction
                         session.add(paid_transaction)
 
                         # Compute the amount in our main currency
                         transaction.currency = paid_transaction.currency
                         transaction.amount -= paid_transaction.amount
-                    else:
-                        bound_logger.warning(
-                            "An unknown transaction was paid out",
-                            source_id=get_expandable_id(source),
-                            transfer_id=source_transfer,
-                        )
                 else:
                     bound_logger.warning(
                         "An unknown type of transaction was paid out",

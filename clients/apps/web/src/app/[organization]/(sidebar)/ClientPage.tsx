@@ -1,8 +1,10 @@
 'use client'
 
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
+import { Modal } from '@/components/Modal'
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
+import { ProfileEditor } from '@/components/Profile/ProfileEditor'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { useTrafficRecordPageView } from '@/utils/traffic'
@@ -237,6 +239,7 @@ const ClientPage = ({
         organization={organization}
         issues={issues}
       />
+      <Modal isShown={true} modalContent={<ProfileEditor />} hide={() => {}} />
     </div>
   )
 }

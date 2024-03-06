@@ -4,7 +4,7 @@ import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
 import { usePathname, useRouter } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DataTablePaginationState,
   DataTableSortingState,

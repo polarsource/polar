@@ -10,7 +10,7 @@ import {
 import { Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
-import { ShadowBox } from 'polarkit/components/ui/atoms'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useOrganizationArticles, useSubscriptionTiers } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useEffect, useRef, useState } from 'react'

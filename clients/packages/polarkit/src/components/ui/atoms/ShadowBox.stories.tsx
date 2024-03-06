@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { ShadowBox } from '.'
+import ShadowBox from './ShadowBox'
 
 const meta: Meta<typeof ShadowBox> = {
   title: 'Atoms/ShadowBox',

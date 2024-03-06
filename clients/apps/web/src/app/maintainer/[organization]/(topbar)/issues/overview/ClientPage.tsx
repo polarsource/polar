@@ -17,7 +17,7 @@ import {
   Repository,
 } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useDashboard, useListRepositories, useSSE } from 'polarkit/hooks'
 import {

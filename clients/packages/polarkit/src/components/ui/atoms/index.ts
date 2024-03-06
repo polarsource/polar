@@ -25,7 +25,6 @@ import ShadowBox from './ShadowBox'
 import ShadowBoxOnMd from './ShadowBoxOnMd'
 import ShadowListGroup from './ShadowListGroup'
 import Switch from './Switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs'
 import TextArea from './TextArea'
 
 // HEY! You!
@@ -58,9 +57,5 @@ export {
   ShadowBoxOnMd,
   ShadowListGroup,
   Switch,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   TextArea,
 }

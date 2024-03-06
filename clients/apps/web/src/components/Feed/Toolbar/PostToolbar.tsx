@@ -3,7 +3,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/tabs'
 import { PreviewToolbar } from './PreviewToolbar'
 
 interface PostToolbarProps {

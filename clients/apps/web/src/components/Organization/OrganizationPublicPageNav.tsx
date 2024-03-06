@@ -3,8 +3,7 @@
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
-import { TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
-import { Tabs } from 'polarkit/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 

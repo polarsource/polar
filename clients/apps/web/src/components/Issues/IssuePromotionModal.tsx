@@ -9,12 +9,14 @@ import {
   Button,
   CopyToClipboardInput,
   MoneyInput,
+  TextArea,
+} from 'polarkit/components/ui/atoms'
+import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  TextArea,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/tabs'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
   useBadgeWithComment,

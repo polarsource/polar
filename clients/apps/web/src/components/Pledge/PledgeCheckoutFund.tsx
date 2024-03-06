@@ -11,7 +11,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/tabs'
 import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 import PledgeCheckoutFundToday from './PledgeCheckoutFundToday'

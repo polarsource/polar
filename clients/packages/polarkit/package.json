@@ -24,6 +24,7 @@
     "./components": "./src/components/index.ts",
     "./components/ui/atoms": "./src/components/ui/atoms/index.ts",
     "./components/ui/atoms/select": "./src/components/ui/atoms/Select.tsx",
+    "./components/ui/atoms/tabs": "./src/components/ui/atoms/Tabs.tsx",
     "./components/ui/atoms/datatable": "./src/components/ui/atoms/datatable/index.ts",
     "./components/ui/molecules": "./src/components/ui/molecules/index.ts",
     "./components/ui/dropdown-menu": "./src/components/ui/dropdown-menu.tsx",

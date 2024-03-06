@@ -224,12 +224,12 @@ export interface ProjectsEditorProps {
 
 export const ProjectsEditor = ({
   organization,
-  repositories: initialRepositories,
+  repositories,
   disabled,
 }: ProjectsEditorProps) => {
-  const [repositories, setRepositories] = useState<Repository[]>(
-    initialRepositories.slice(0, 4),
-  )
+  const [selectedRepositories, setSelectedRepositories] = useState<
+    Repository[]
+  >(repositories.slice(0, 4))
 
   const { show, isShown, hide } = useModal()
 
@@ -262,7 +262,7 @@ export const ProjectsEditor = ({
   }
 
   const moveCard = useCallback((dragIndex: number, hoverIndex: number) => {
-    setRepositories((prev) => {
+    setSelectedRepositories((prev) => {
       let sections = [...prev] // create a copy of previous
       const dragged = sections[dragIndex]
       sections.splice(dragIndex, 1) // remove the dragged from its original position
@@ -291,7 +291,7 @@ export const ProjectsEditor = ({
           )}
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {repositories.map((repository, i) => (
+          {selectedRepositories.map((repository, i) => (
             <Draggable
               key={repository.id}
               index={i}
@@ -309,9 +309,10 @@ export const ProjectsEditor = ({
         hide={hide}
         modalContent={
           <ProjectsModal
-            repositories={initialRepositories}
+            repositories={repositories}
+            selectedRepositories={selectedRepositories}
             organization={organization}
-            setRepositories={setRepositories}
+            setRepositories={setSelectedRepositories}
             hideModal={hide}
           />
         }

@@ -2,6 +2,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { redirectToCustomDomain } from '@/utils/nav'
 import {
   ListResourceArticle,
+  ListResourceOrganization,
   ListResourceRepository,
   ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
@@ -106,6 +107,7 @@ export default async function Page({
   let subscriptionTiers: ListResourceSubscriptionTier | undefined
   let repositories: ListResourceRepository | undefined
   let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
+  let listAdminOrganizations: ListResourceOrganization | undefined
 
   try {
     const [
@@ -115,6 +117,7 @@ export default async function Page({
       loadSubscriptionTiers,
       loadRepositories,
       loadSubscriptionsSummary,
+      loadListAdminOrganizations,
     ] = await Promise.all([
       api.organizations.lookup(
         {
@@ -163,6 +166,17 @@ export default async function Page({
         },
         cacheConfig,
       ),
+      api.organizations
+        .list(
+          {
+            isAdminOnly: true,
+          },
+          cacheConfig,
+        )
+        .catch(() => {
+          // Handle unauthenticated
+          return undefined
+        }),
     ])
 
     organization = loadOrganization
@@ -171,6 +185,7 @@ export default async function Page({
     subscriptionTiers = loadSubscriptionTiers
     repositories = loadRepositories
     subscriptionsSummary = loadSubscriptionsSummary
+    listAdminOrganizations = loadListAdminOrganizations
   } catch (e) {
     notFound()
   }
@@ -194,6 +209,7 @@ export default async function Page({
       repositories={sortedRepositories}
       subscriptionTiers={subscriptionTiers}
       subscriptionsSummary={subscriptionsSummary}
+      adminOrganizations={listAdminOrganizations?.items ?? []}
     />
   )
 }

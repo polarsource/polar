@@ -7,6 +7,7 @@ import {
   CreatePersonalAccessTokenResponse,
   ListResourceSubscriptionSummary,
   Organization,
+  SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -17,8 +18,7 @@ import {
   Button,
   CopyToClipboardInput,
 } from 'polarkit/components/ui/atoms'
-import { useListAdminOrganizations, useSubscriptionTiers } from 'polarkit/hooks'
-import { PropsWithChildren, useEffect, useMemo, useState } from 'react'
+import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
@@ -30,36 +30,29 @@ import { FreeTierSubscribe } from './FreeTierSubscribe'
 interface OrganizationPublicSidebarProps {
   organization: Organization
   subscriptionsSummary: ListResourceSubscriptionSummary
+  userAdminOrganizations: Organization[]
+  subscriptionTiers: SubscriptionTier[]
 }
 
 export const OrganizationPublicSidebar = ({
   organization,
   subscriptionsSummary,
+  userAdminOrganizations,
+  subscriptionTiers,
 }: OrganizationPublicSidebarProps) => {
   const pathname = usePathname()
+
   const {
     isShown: rssModalIsShown,
     hide: hideRssModal,
     show: showRssModal,
   } = useModal()
 
-  const { data: { items: subscriptionTiers } = { items: [] } } =
-    useSubscriptionTiers(organization.name, 100)
-
-  const freeSubscriptionTier = useMemo(
-    () =>
-      subscriptionTiers?.find(
-        (tier) => tier.type === SubscriptionTierType.FREE,
-      ),
-    [subscriptionTiers],
+  const freeSubscriptionTier = subscriptionTiers.find(
+    (tier) => tier.type === SubscriptionTierType.FREE,
   )
 
-  const adminOrgs = useListAdminOrganizations()
-  const isAdmin = useMemo(
-    () =>
-      adminOrgs?.data?.items?.some((org) => org.name === organization?.name),
-    [adminOrgs, organization],
-  )
+  const isAdmin = userAdminOrganizations.some((o) => o.id === organization.id)
 
   const isPostView = pathname.includes('/posts/')
 

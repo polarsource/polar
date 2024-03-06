@@ -53,10 +53,12 @@ export const ClientPage = ({
                       </h3>
                     </div>
                   </CardHeader>
-                  {repository.description && (
+                  {repository.description ? (
                     <CardContent className="flex grow flex-col flex-wrap px-6 py-0 ">
                       <p>{repository.description}</p>
                     </CardContent>
+                  ) : (
+                    <div className="grow"></div>
                   )}
                   <CardFooter className="flex flex-row items-center gap-x-4 p-6">
                     {repository.license ? (

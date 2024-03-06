@@ -1,16 +1,5 @@
-import { Pledge, ResponseError, type UserRead } from '@polar-sh/sdk'
+import { Pledge } from '@polar-sh/sdk'
 import { StateCreator } from 'zustand'
-import { api } from '../api'
-
-export interface UserState {
-  authenticated: boolean
-  currentUser: UserRead | undefined
-  login: (callback?: (authenticated: boolean) => void) => {
-    request: Promise<UserRead>
-    controller: AbortController
-  }
-  logout: () => Promise<any>
-}
 
 export interface OnboardingState {
   onboardingDashboardSkip: boolean
@@ -35,7 +24,7 @@ export interface LastPledgeState {
   setLatestPledgeShown: (shown: boolean) => void
 }
 
-export interface UserSlice extends UserState, OnboardingState, LastPledgeState {
+export interface UserSlice extends OnboardingState, LastPledgeState {
   resetState: () => void
 }
 
@@ -51,38 +40,6 @@ const emptyState = {
 
 export const createUserSlice: StateCreator<UserSlice> = (set, get) => ({
   ...emptyState,
-  login: (
-    callback?: (authenticated: boolean) => void,
-  ): { request: Promise<UserRead>; controller: AbortController } => {
-    const controller = new AbortController()
-    const request = api.users.getAuthenticated({ signal: controller.signal })
-    request
-      .then((user) => {
-        set({ authenticated: true, currentUser: user })
-        if (callback) {
-          callback(true)
-        }
-      })
-      .catch((err) => {
-        if (err instanceof ResponseError) {
-          if (err.response.status === 401) {
-            set({ authenticated: false, currentUser: undefined })
-            if (callback) {
-              callback(false)
-            }
-          }
-        }
-      })
-
-    return { request, controller }
-  },
-  logout: (): Promise<any> => {
-    const request = api.users.logout()
-    request.finally(() => {
-      get().resetState()
-    })
-    return request
-  },
   setOnboardingDashboardSkip: (skip: boolean) => {
     set({
       onboardingDashboardSkip: skip,

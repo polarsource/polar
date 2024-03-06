@@ -4,17 +4,12 @@ import { useEffect, useState } from 'react'
 import { useAuth } from './auth'
 
 export const useListTeams = () => {
-  const { currentUser, hydrated } = useAuth()
+  const { currentUser } = useAuth()
   const allOrganizations = useListAllOrganizations()
 
   const [teams, setTeams] = useState<Organization[]>([])
 
   useEffect(() => {
-    if (!hydrated) {
-      setTeams([])
-      return
-    }
-
     // Kind of a hack.
     // Filter out the users own organization if it exists.
     // This organiztaion can not have extra members, and can not be a "Team".
@@ -23,7 +18,7 @@ export const useListTeams = () => {
       .filter((o) => o.is_teams_enabled)
 
     setTeams(allTeams)
-  }, [allOrganizations.data, currentUser, hydrated])
+  }, [allOrganizations.data, currentUser])
 
   return teams
 }

@@ -105,13 +105,7 @@ const DashboardSidebar = () => {
 }
 
 const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
-  const { hydrated } = useAuth()
-
   const layoutContext = useDashboardLayoutContext()
-
-  if (!hydrated) {
-    return <></>
-  }
 
   const marginTop = layoutContext.isMD ? layoutContext.topbarHeight || 80 : 0
 

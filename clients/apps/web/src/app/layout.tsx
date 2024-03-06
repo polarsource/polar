@@ -1,6 +1,8 @@
 import { Inter } from 'next/font/google'
 import '../styles/globals.scss'
 
+import { UserContextProvider } from '@/providers/auth'
+import { getServerSideAPI } from '@/utils/api'
 import { Metadata } from 'next'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -43,13 +45,21 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://polar.sh/'),
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   // Layouts must accept a children prop.
   // This will be populated with nested layouts or pages
   children,
 }: {
   children: React.ReactNode
 }) {
+  const api = getServerSideAPI()
+  const authenticatedUser = await api.users
+    .getAuthenticated({ cache: 'no-store' })
+    .catch(() => {
+      // Handle unauthenticated
+      return undefined
+    })
+
   return (
     <html lang="en">
       <head>
@@ -68,13 +78,15 @@ export default function RootLayout({
           inter.className,
         )}
       >
-        <PolarPostHogProvider>
-          <PolarThemeProvider>
-            <PolarQueryClientProvider>
-              <>{children}</>
-            </PolarQueryClientProvider>
-          </PolarThemeProvider>
-        </PolarPostHogProvider>
+        <UserContextProvider user={{ user: authenticatedUser }}>
+          <PolarPostHogProvider>
+            <PolarThemeProvider>
+              <PolarQueryClientProvider>
+                <>{children}</>
+              </PolarQueryClientProvider>
+            </PolarThemeProvider>
+          </PolarPostHogProvider>
+        </UserContextProvider>
       </body>
     </html>
   )

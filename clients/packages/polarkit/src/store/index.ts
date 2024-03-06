@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { CONFIG } from '../config'
 import { FormDraftSlice, createFormDraftSlice } from './formDraftSlice'
-import { UserSlice, UserState, createUserSlice } from './userContext'
+import { UserSlice, createUserSlice } from './userContext'
 
 // https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
 const useStore = create<UserSlice & FormDraftSlice>()(
@@ -17,8 +17,6 @@ const useStore = create<UserSlice & FormDraftSlice>()(
         version: CONFIG.LOCALSTORAGE_PERSIST_VERSION,
         partialize: (state) => ({
           // From UserSlice
-          authenticated: state.authenticated,
-          currentUser: state.currentUser,
           onboardingDashboardSkip: state.onboardingDashboardSkip,
           onboardingDashboardInstallChromeExtensionSkip:
             state.onboardingDashboardInstallChromeExtensionSkip,
@@ -32,4 +30,4 @@ const useStore = create<UserSlice & FormDraftSlice>()(
 )
 
 export { useStore }
-export type { UserSlice, UserState }
+export type { UserSlice }

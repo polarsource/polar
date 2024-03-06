@@ -80,7 +80,6 @@ const DashboardTopbar = ({
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
   const personalOrg = usePersonalOrganization()
 
-  const { hydrated } = useAuth()
   const isOrgAdmin = useIsOrganizationAdmin(currentOrgFromURL)
   const isPersonal = currentOrgFromURL?.name === personalOrg?.name
 
@@ -146,10 +145,6 @@ const DashboardTopbar = ({
     setDomNode(target)
     propagateHeight(target)
   }, [])
-
-  if (!hydrated) {
-    return <></>
-  }
 
   return (
     <>

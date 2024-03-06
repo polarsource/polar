@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import { Input } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 import HowItWorks from './HowItWorks'

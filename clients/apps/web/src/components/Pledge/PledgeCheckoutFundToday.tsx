@@ -14,7 +14,8 @@ import { loadStripe } from '@stripe/stripe-js/pure'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { Button, Input, MoneyInput } from 'polarkit/components/ui/atoms'
+import { Input, MoneyInput } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
   SelectContent,

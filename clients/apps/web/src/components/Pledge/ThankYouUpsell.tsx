@@ -5,7 +5,7 @@ import {
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import GitHubIcon from '../Icons/GitHubIcon'
 import screenshot from './dashboard.png'
 

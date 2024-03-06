@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 
 export default function GlobalError({
   error,

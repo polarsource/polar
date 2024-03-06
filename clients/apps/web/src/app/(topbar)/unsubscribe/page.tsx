@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { Button, ShadowBox } from 'polarkit/components/ui/atoms'
+import { ShadowBox } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useState } from 'react'
 

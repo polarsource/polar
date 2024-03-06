@@ -8,7 +8,7 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 
 import { Article, BenefitsInner, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useListAllOrganizations, useUserSubscriptions } from 'polarkit/hooks'
 
 interface PostPageProps {

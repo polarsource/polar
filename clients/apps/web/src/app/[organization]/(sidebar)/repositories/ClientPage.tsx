@@ -5,13 +5,13 @@ import { StarIcon } from '@heroicons/react/24/solid'
 import { HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository, Visibility } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { Pill } from 'polarkit/components/ui/atoms'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-  Pill,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/card'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 

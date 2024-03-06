@@ -1,5 +1,6 @@
 import { Account, Status } from '@polar-sh/sdk'
-import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useTransactionsSummary } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import React, { useCallback, useState } from 'react'

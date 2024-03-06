@@ -14,12 +14,9 @@ import { SubscriptionSubscriber } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import {
-  Avatar,
-  Button,
-  FormattedDateTime,
-  ShadowBoxOnMd,
-} from 'polarkit/components/ui/atoms'
+import { FormattedDateTime, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   DropdownMenu,
   DropdownMenuContent,

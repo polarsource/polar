@@ -1,6 +1,6 @@
 import { ChevronLeftRounded, ChevronRightRounded } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback, useState } from 'react'
 
 const variants = {

@@ -20,7 +20,8 @@ import {
   IssueFundingDetails,
   IssueSummary,
 } from 'polarkit/components/Issue'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import { Input } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

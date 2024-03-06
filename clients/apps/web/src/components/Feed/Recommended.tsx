@@ -2,7 +2,8 @@
 
 import { FavoriteBorderOutlined } from '@mui/icons-material'
 import Link from 'next/link'
-import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useListForYouIssues } from 'polarkit/hooks'
 import IssueListItem from '../Issues/IssueListItem'
 

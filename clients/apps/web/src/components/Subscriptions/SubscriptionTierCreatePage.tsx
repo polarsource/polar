@@ -10,7 +10,8 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { setValidationErrors } from 'polarkit/api/errors'
-import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import {
   useCreateSubscriptionTier,

@@ -1,7 +1,11 @@
 import { ArrowForward } from '@mui/icons-material'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
-import { Card, CardContent, CardFooter } from 'polarkit/components/ui/atoms'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+} from 'polarkit/components/ui/atoms/card'
 
 export const NewsFromPolar = () => {
   return (

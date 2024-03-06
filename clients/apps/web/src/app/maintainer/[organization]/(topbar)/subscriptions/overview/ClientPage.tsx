@@ -16,13 +16,13 @@ import { getSubscriptionTiersByType } from '@/components/Subscriptions/utils'
 import { Organization, Subscription, SubscriptionTierType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
+import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
-  Avatar,
   Card,
   CardContent,
   CardHeader,
-  FormattedDateTime,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/card'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'

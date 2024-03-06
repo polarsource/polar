@@ -2,7 +2,7 @@ import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { Column } from '@tanstack/react-table'
 
 import { cn } from '@polarkit/lib/utils'
-import { Button } from '..'
+import Button from '../Button'
 
 interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {

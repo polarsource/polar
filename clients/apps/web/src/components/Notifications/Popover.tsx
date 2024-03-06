@@ -22,7 +22,8 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { GitMergeIcon } from 'polarkit/components/icons'
-import { Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   useGetPledge,
   useIssueMarkConfirmed,

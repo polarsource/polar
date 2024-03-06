@@ -1,7 +1,7 @@
 import { Edit } from '@mui/icons-material'
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 
 interface FreeSubscriptionGroupProps {

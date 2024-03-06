@@ -4,10 +4,10 @@ import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { getGitHubAuthorizeURL } from 'polarkit/auth'
 import {
-  Button,
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 
 interface AuthenticationMethodProps {
   icon: React.ReactNode

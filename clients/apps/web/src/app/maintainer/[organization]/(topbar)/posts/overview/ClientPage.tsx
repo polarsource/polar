@@ -21,7 +21,9 @@ import {
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Button, Card, PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
+import { Card } from 'polarkit/components/ui/atoms/card'
 import {
   useOrganizationArticles,
   useTrafficStatistics,

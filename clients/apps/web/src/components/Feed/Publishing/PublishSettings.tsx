@@ -6,7 +6,8 @@ import { useModal } from '@/components/Modal/useModal'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   Form,

@@ -19,12 +19,9 @@ import {
   GitPullRequestClosedIcon,
   GitPullRequestIcon,
 } from 'polarkit/components/icons'
-import {
-  Alert,
-  Avatar,
-  IssueBodyRenderer,
-  PolarTimeAgo,
-} from 'polarkit/components/ui/atoms'
+import { IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import Alert from 'polarkit/components/ui/atoms/alert'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { githubIssueUrl } from 'polarkit/github'
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'

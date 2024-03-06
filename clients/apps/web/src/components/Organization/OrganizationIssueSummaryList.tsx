@@ -6,7 +6,8 @@ import {
   IssueFundingDetails,
   IssueSummary,
 } from 'polarkit/components/Issue'
-import { Button, Card } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
+import { Card } from 'polarkit/components/ui/atoms/card'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { Fragment } from 'react'
 

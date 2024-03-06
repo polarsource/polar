@@ -1,5 +1,5 @@
 import { ContentPasteOutlined } from '@mui/icons-material'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 
 import { useTheme } from 'next-themes'
 import { firstChild } from '../markdown'

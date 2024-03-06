@@ -10,7 +10,8 @@ import {
 } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { Button, MoneyInput } from 'polarkit/components/ui/atoms'
+import { MoneyInput } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   useOrganizationBadgeSettings,
   useSSE,

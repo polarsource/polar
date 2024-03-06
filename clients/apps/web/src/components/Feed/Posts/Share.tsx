@@ -4,7 +4,7 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 
 import { Article } from '@polar-sh/sdk'
 
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

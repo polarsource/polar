@@ -3,7 +3,7 @@
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from './SubscriptionTierSubscribeButton'
 

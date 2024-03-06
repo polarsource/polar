@@ -10,7 +10,7 @@ import {
 import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   useBackofficePledgeCreateInvoice,
   useBackofficeRewardsPending,

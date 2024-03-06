@@ -15,7 +15,8 @@ import {
   IssueListItemDecoration,
   IssueSummary,
 } from 'polarkit/components/Issue'
-import { Button, TextArea } from 'polarkit/components/ui/atoms'
+import { TextArea } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import SplitRewardModal from '../Finance/SplitRewardModal'

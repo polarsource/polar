@@ -5,7 +5,8 @@ import {
   EditAdvertisementCampaign,
   SubscriptionSubscriber,
 } from '@polar-sh/sdk'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import { Input } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   Form,
   FormControl,

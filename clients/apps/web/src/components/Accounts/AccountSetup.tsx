@@ -4,7 +4,8 @@ import AccountAssociations from '@/components/Accounts/AccountAssociations'
 import { Account, Organization, Status } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
-import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
   SelectTrigger,

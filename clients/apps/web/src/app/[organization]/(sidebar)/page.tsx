@@ -228,7 +228,9 @@ export default async function Page({
   ].slice(0, 3)
 
   const sortedRepositories =
-    repositories.items?.sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)) ?? []
+    repositories.items
+      ?.filter((repo) => repo.visibility === 'public')
+      .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)) ?? []
 
   // Build JSON-LD for this page
   let jsonLd: WithContext<JSONLDProfilePage> | undefined

@@ -60,10 +60,10 @@ export const OrganizationPublicSidebar = ({
     (subscriptionsSummary.items?.length ?? 0) > 0
 
   return (
-    <div className="flex h-full w-full flex-col items-start gap-y-6">
+    <div className="flex h-full max-w-[15rem] flex-col items-start gap-y-6 lg:w-full">
       <div className="flex w-full flex-row items-center gap-x-4 gap-y-6 md:flex-col md:items-start md:gap-x-0">
         <Avatar
-          className="h-16 w-16 md:mb-6 md:h-60 md:w-60"
+          className="h-16 w-16 md:mb-6 md:h-32 md:w-32 lg:h-60 lg:w-60"
           name={organization.name}
           avatar_url={organization.avatar_url}
         />
@@ -83,7 +83,7 @@ export const OrganizationPublicSidebar = ({
       </div>
       <div
         className={twMerge(
-          'flex flex-col items-start gap-y-6 md:w-60',
+          'flex max-w-[15rem] flex-col items-start gap-y-6 lg:w-60',
           isPostView ? 'hidden  md:flex' : 'flex',
         )}
       >
@@ -93,7 +93,7 @@ export const OrganizationPublicSidebar = ({
               {organization.bio}
             </p>
           ) : null}
-          <div className="flex flex-row items-center gap-x-3 text-lg">
+          <div className="flex flex-row flex-wrap items-center gap-2.5 text-lg">
             <SocialLink href={`https://github.com/${organization.name}`}>
               <GitHubIcon width={20} height={20} />
             </SocialLink>
@@ -145,7 +145,7 @@ export const OrganizationPublicSidebar = ({
           ) : null}
           {shouldRenderSubscriberCount && (
             <div className="flex flex-row items-center gap-x-4">
-              <div className="flex w-fit flex-shrink-0 flex-row items-center">
+              <div className="flex w-fit flex-shrink-0 flex-row items-center md:hidden lg:flex">
                 {subscriptionsSummary.items?.map((subscriber, i, array) => (
                   <Avatar
                     className={twMerge(

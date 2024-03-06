@@ -101,7 +101,7 @@ export default async function Layout({
   return (
     <PublicPageOrganizationContextProvider organization={organization}>
       <div className="flex flex-col">
-        <div className="mx-auto flex w-full max-w-[1580px] flex-col items-start px-4 md:h-full md:flex-row md:gap-16 md:space-y-0 md:px-24 lg:gap-32">
+        <div className="mx-auto flex w-full max-w-[1580px] flex-col items-start px-4 md:h-full md:flex-row md:gap-8 md:space-y-0 md:px-12 lg:px-24 xl:gap-32">
           <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
             <a href="/">
               <LogoIcon

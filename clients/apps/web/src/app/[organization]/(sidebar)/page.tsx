@@ -2,6 +2,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { redirectToCustomDomain } from '@/utils/nav'
 import {
   ListResourceArticle,
+  ListResourceIssueFunding,
   ListResourceOrganization,
   ListResourceRepository,
   ListResourceSubscriptionSummary,
@@ -108,6 +109,7 @@ export default async function Page({
   let repositories: ListResourceRepository | undefined
   let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
   let listAdminOrganizations: ListResourceOrganization | undefined
+  let listIssueFunding: ListResourceIssueFunding | undefined
 
   try {
     const [
@@ -118,6 +120,7 @@ export default async function Page({
       loadRepositories,
       loadSubscriptionsSummary,
       loadListAdminOrganizations,
+      loadListIssueFunding,
     ] = await Promise.all([
       api.organizations.lookup(
         {
@@ -177,6 +180,22 @@ export default async function Page({
           // Handle unauthenticated
           return undefined
         }),
+      api.funding.search(
+        {
+          organizationName: params.organization,
+          platform: Platforms.GITHUB,
+          limit: 8,
+          page: 1,
+          closed: false,
+          sorting: [
+            'most_funded',
+            'most_recently_funded',
+            'most_engagement',
+            'newest',
+          ],
+        },
+        cacheConfig,
+      ),
     ])
 
     organization = loadOrganization
@@ -186,6 +205,7 @@ export default async function Page({
     repositories = loadRepositories
     subscriptionsSummary = loadSubscriptionsSummary
     listAdminOrganizations = loadListAdminOrganizations
+    listIssueFunding = loadListIssueFunding
   } catch (e) {
     notFound()
   }
@@ -210,6 +230,7 @@ export default async function Page({
       subscriptionTiers={subscriptionTiers}
       subscriptionsSummary={subscriptionsSummary}
       adminOrganizations={listAdminOrganizations?.items ?? []}
+      issues={listIssueFunding?.items ?? []}
     />
   )
 }

@@ -14,6 +14,7 @@ import {
 } from '@mui/icons-material'
 import {
   Article,
+  IssueFunding,
   ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
   Organization,
@@ -39,6 +40,7 @@ const ClientPage = ({
   repositories,
   subscriptionsSummary,
   adminOrganizations,
+  issues,
 }: {
   organization: Organization
   posts: Article[]
@@ -46,6 +48,7 @@ const ClientPage = ({
   repositories: Repository[]
   subscriptionsSummary: ListResourceSubscriptionSummary
   adminOrganizations: Organization[]
+  issues: IssueFunding[]
 }) => {
   useTrafficRecordPageView({ organization })
 
@@ -228,7 +231,10 @@ const ClientPage = ({
         </div>
       )}
 
-      <OrganizationIssueSummaryList organization={organization} />
+      <OrganizationIssueSummaryList
+        organization={organization}
+        issues={issues}
+      />
     </div>
   )
 }

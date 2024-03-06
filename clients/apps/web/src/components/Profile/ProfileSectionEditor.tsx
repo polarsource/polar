@@ -1,14 +1,6 @@
+import { DragIndicatorOutlined } from '@mui/icons-material'
 import { useCallback, useRef, useState } from 'react'
-import { DndProvider, DragSourceMonitor, XYCoord, useDrag } from 'react-dnd'
-import { TouchBackend, TouchBackendOptions } from 'react-dnd-touch-backend'
-
-const style = {
-  border: '1px dashed gray',
-  padding: '0.5rem 1rem',
-  marginBottom: '.5rem',
-  backgroundColor: 'white',
-  cursor: 'move',
-}
+import { DropTargetMonitor, XYCoord, useDrag, useDrop } from 'react-dnd'
 
 export interface DraggableProps {
   id: any
@@ -26,67 +18,67 @@ interface DragItem {
 const Draggable = ({ id, text, index, moveCard }: DraggableProps) => {
   const ref = useRef<HTMLDivElement>(null)
 
-  const [{ handlerId }, drop] = useDrag(
-    () => ({
-      type: 'card',
-      item: { text },
-      accept: 'card',
-      collect(monitor) {
-        return {
-          handlerId: monitor.getHandlerId(),
-        }
-      },
-      hover(item: DragItem, monitor: DragSourceMonitor) {
-        if (!ref.current) {
-          return
-        }
-        const dragIndex = item.index
-        const hoverIndex = index
+  const [{ handlerId }, drop] = useDrop<
+    DragItem,
+    void,
+    { handlerId: any | null }
+  >({
+    accept: 'card',
+    collect(monitor: DropTargetMonitor<DragItem, void>) {
+      return {
+        handlerId: monitor.getHandlerId(),
+      }
+    },
+    hover(item: DragItem, monitor) {
+      if (!ref.current) {
+        return
+      }
 
-        // Don't replace items with themselves
-        if (dragIndex === hoverIndex) {
-          return
-        }
+      const dragIndex = item.index
+      const hoverIndex = index
 
-        // Determine rectangle on screen
-        const hoverBoundingRect = ref.current?.getBoundingClientRect()
+      // Don't replace items with themselves
+      if (dragIndex === hoverIndex) {
+        return
+      }
 
-        // Get vertical middle
-        const hoverMiddleY =
-          (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+      // Determine rectangle on screen
+      const hoverBoundingRect = ref.current?.getBoundingClientRect()
 
-        // Determine mouse position
-        const clientOffset = monitor.getClientOffset()
+      // Get vertical middle
+      const hoverMiddleY =
+        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
 
-        // Get pixels to the top
-        const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
+      // Determine mouse position
+      const clientOffset = monitor.getClientOffset()
 
-        // Only perform the move when the mouse has crossed half of the items height
-        // When dragging downwards, only move when the cursor is below 50%
-        // When dragging upwards, only move when the cursor is above 50%
+      // Get pixels to the top
+      const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
 
-        // Dragging downwards
-        if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-          return
-        }
+      // Only perform the move when the mouse has crossed half of the items height
+      // When dragging downwards, only move when the cursor is below 50%
+      // When dragging upwards, only move when the cursor is above 50%
 
-        // Dragging upwards
-        if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-          return
-        }
+      // Dragging downwards
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return
+      }
 
-        // Time to actually perform the action
-        moveCard(dragIndex, hoverIndex)
+      // Dragging upwards
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return
+      }
 
-        // Note: we're mutating the monitor item here!
-        // Generally it's better to avoid mutations,
-        // but it's good here for the sake of performance
-        // to avoid expensive index searches.
-        item.index = hoverIndex
-      },
-    }),
-    [],
-  )
+      // Time to actually perform the action
+      moveCard(dragIndex, hoverIndex)
+
+      // Note: we're mutating the monitor item here!
+      // Generally it's better to avoid mutations,
+      // but it's good here for the sake of performance
+      // to avoid expensive index searches.
+      item.index = hoverIndex
+    },
+  })
 
   const [{ isDragging }, drag] = useDrag({
     type: 'card',
@@ -103,8 +95,17 @@ const Draggable = ({ id, text, index, moveCard }: DraggableProps) => {
   drag(drop(ref))
 
   return (
-    <div ref={ref} style={{ ...style, opacity }} data-handler-id={handlerId}>
-      {text}
+    <div
+      ref={ref}
+      className="dark:hover:bg-polar-700 hover:bg-gray-75 group flex w-full cursor-grab flex-row items-center justify-between gap-x-6 rounded-xl px-4 py-2 text-sm transition-colors"
+      style={{ opacity }}
+      data-handler-id={handlerId}
+    >
+      <span>{text}</span>
+      <DragIndicatorOutlined
+        className="dark:text-polar-600 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100"
+        fontSize="small"
+      />
     </div>
   )
 }
@@ -114,42 +115,32 @@ export interface Section {
   text: string
 }
 
-export interface ContainerState {
+export interface ProfileSectionEditorProps {
   sections: Section[]
 }
 
-export const ProfileSectionEditor = () => {
-  const [sections, setSections] = useState<Section[]>([
-    {
-      id: 1,
-      text: 'Posts',
-    },
-    {
-      id: 2,
-      text: 'Subscription Tiers',
-    },
-    {
-      id: 3,
-      text: 'Repositories',
-    },
-    {
-      id: 4,
-      text: 'Issues',
-    },
-  ])
+export const ProfileSectionEditor = ({
+  sections: initialSections,
+}: ProfileSectionEditorProps) => {
+  const [sections, setSections] = useState<Section[]>(initialSections)
 
   const moveCard = useCallback((dragIndex: number, hoverIndex: number) => {
-    setSections((prev) =>
-      prev.splice(dragIndex, 1, prev[hoverIndex], prev[dragIndex] as Section),
-    )
+    setSections((prev) => {
+      let sections = [...prev] // create a copy of previous
+      const dragged = sections[dragIndex]
+      sections.splice(dragIndex, 1) // remove the dragged from its original position
+      sections.splice(hoverIndex, 0, dragged) // insert the dragged at the new position
+      return sections
+    })
   }, [])
 
   return (
-    <DndProvider backend={TouchBackend} options={{} as TouchBackendOptions}>
-      <div style={style}>
+    <div className="flex w-fit flex-col gap-y-6">
+      <h3 className="px-4 text-xl">Profile</h3>
+      <div>
         {sections.map((card, i) => (
           <Draggable
-            key={card.id}
+            key={card.text}
             index={i}
             id={card.id}
             text={card.text}
@@ -157,6 +148,6 @@ export const ProfileSectionEditor = () => {
           />
         ))}
       </div>
-    </DndProvider>
+    </div>
   )
 }

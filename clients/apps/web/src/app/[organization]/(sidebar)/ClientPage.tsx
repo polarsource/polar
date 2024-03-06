@@ -53,7 +53,7 @@ const ClientPage = ({
     (o) => o.id === organization.id,
   )
 
-  const shouldRenderSubscribeButton = !!userIsAdminOfOrg
+  const shouldRenderSubscribeButton = !userIsAdminOfOrg
 
   const tiers = subscriptionTiers?.items ?? []
 
@@ -136,19 +136,22 @@ const ClientPage = ({
                 subscriptionTier={tier}
                 variant="small"
               >
-                {shouldRenderSubscribeButton &&
-                  (tier.type === 'free' ? (
-                    <FreeTierSubscribe
-                      subscriptionTier={tier}
-                      organization={organization}
-                    />
-                  ) : (
-                    <SubscriptionTierSubscribeButton
-                      organization={organization}
-                      subscriptionTier={tier}
-                      subscribePath="/api/subscribe"
-                    />
-                  ))}
+                {shouldRenderSubscribeButton ? (
+                  <>
+                    {tier.type === 'free' ? (
+                      <FreeTierSubscribe
+                        subscriptionTier={tier}
+                        organization={organization}
+                      />
+                    ) : (
+                      <SubscriptionTierSubscribeButton
+                        organization={organization}
+                        subscriptionTier={tier}
+                        subscribePath="/api/subscribe"
+                      />
+                    )}
+                  </>
+                ) : null}
               </SubscriptionTierCard>
             ))}
           </div>

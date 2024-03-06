@@ -202,6 +202,16 @@ export const abbreviatedContent = ({
     }
   }
 
+  // Support for more than three dashes in a row, "-----\n" is also a boundary
+  if (firstAt && firstBoundary === '---\n') {
+    let newFirstAt = firstAt
+    while (body.at(newFirstAt - 1) === '-') {
+      newFirstAt--
+    }
+    firstBoundary = body.substring(newFirstAt, firstAt + firstBoundary.length)
+    firstAt = newFirstAt
+  }
+
   if (firstAt !== undefined && firstBoundary !== undefined && firstAt < 1000) {
     let retbod = body.substring(0, firstAt).trimEnd()
     if (includeBoundaryInBody) {

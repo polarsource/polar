@@ -135,7 +135,7 @@ class TestGetSummary:
 class TestCreatePayout:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/transactions/payout", json={"account_id": str(uuid.uuid4())}
+            "/api/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 401
@@ -143,7 +143,7 @@ class TestCreatePayout:
     @pytest.mark.authenticated
     async def test_not_existing_account(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/transactions/payout", json={"account_id": str(uuid.uuid4())}
+            "/api/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 404
@@ -158,7 +158,7 @@ class TestCreatePayout:
     ) -> None:
         account = await create_account(session, organization, user_second)
         response = await client.post(
-            "/api/v1/transactions/payout", json={"account_id": str(account.id)}
+            "/api/v1/transactions/payouts", json={"account_id": str(account.id)}
         )
 
         # then
@@ -202,7 +202,7 @@ class TestCreatePayout:
         session.expunge_all()
 
         response = await client.post(
-            "/api/v1/transactions/payout", json={"account_id": str(account.id)}
+            "/api/v1/transactions/payouts", json={"account_id": str(account.id)}
         )
 
         assert response.status_code == 201

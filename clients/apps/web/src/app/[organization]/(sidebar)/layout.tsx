@@ -5,6 +5,7 @@ import { getServerSideAPI } from '@/utils/api'
 import {
   ListResourceOrganization,
   ListResourceSubscriptionSummary,
+  ListResourceSubscriptionTier,
   Organization,
   Platforms,
   UserRead,
@@ -33,6 +34,7 @@ export default async function Layout({
   let organization: Organization | undefined
   let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
   let userAdminOrganizations: ListResourceOrganization | undefined
+  let subscriptionTiers: ListResourceSubscriptionTier | undefined
 
   try {
     const [
@@ -40,6 +42,7 @@ export default async function Layout({
       loadOrganization,
       loadSubscriptionsSummary,
       loadUserAdminOrganizations,
+      loadSubscriptionTiers,
     ] = await Promise.all([
       api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
         // Handle unauthenticated
@@ -67,12 +70,26 @@ export default async function Layout({
           // Handle unauthenticated
           return undefined
         }),
+      api.subscriptions
+        .searchSubscriptionTiers(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+          },
+          cacheConfig,
+        )
+        .catch(() => {
+          // Handle unauthenticated
+          return undefined
+        }),
+      ,
     ])
 
     authenticatedUser = loadAuthenticatedUser
     organization = loadOrganization
     subscriptionsSummary = loadSubscriptionsSummary
     userAdminOrganizations = loadUserAdminOrganizations
+    subscriptionTiers = loadSubscriptionTiers
   } catch (e) {
     notFound()
   }
@@ -102,6 +119,8 @@ export default async function Layout({
             <OrganizationPublicSidebar
               subscriptionsSummary={subscriptionsSummary}
               organization={organization}
+              userAdminOrganizations={userAdminOrganizations?.items ?? []}
+              subscriptionTiers={subscriptionTiers?.items ?? []}
             />
           </div>
           <div className="flex h-full w-full flex-col gap-y-8 md:gap-y-16 md:py-12">

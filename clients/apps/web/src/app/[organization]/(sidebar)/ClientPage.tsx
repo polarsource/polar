@@ -29,10 +29,8 @@ import {
   CardHeader,
   Pill,
 } from 'polarkit/components/ui/atoms'
-import { useListAdminOrganizations } from 'polarkit/hooks'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useMemo } from 'react'
 
 const ClientPage = ({
   organization,
@@ -40,34 +38,31 @@ const ClientPage = ({
   subscriptionTiers,
   repositories,
   subscriptionsSummary,
+  adminOrganizations,
 }: {
   organization: Organization
   posts: Article[]
   subscriptionTiers: ListResourceSubscriptionTier
   repositories: Repository[]
   subscriptionsSummary: ListResourceSubscriptionSummary
+  adminOrganizations: Organization[]
 }) => {
   useTrafficRecordPageView({ organization })
 
-  const orgs = useListAdminOrganizations()
-
-  const shouldRenderSubscribeButton = useMemo(
-    () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
-    [organization, orgs],
+  const userIsAdminOfOrg = adminOrganizations.some(
+    (o) => o.id === organization.id,
   )
 
-  const highlightedTiers = useMemo(
-    () =>
-      subscriptionTiers.items?.filter(
-        ({ type, is_highlighted }) => type === 'free' || is_highlighted,
-      ) ?? [],
-    [subscriptionTiers.items],
+  const shouldRenderSubscribeButton = !!userIsAdminOfOrg
+
+  const tiers = subscriptionTiers?.items ?? []
+
+  const highlightedTiers = tiers.filter(
+    ({ type, is_highlighted }) => type === 'free' || is_highlighted,
   )
 
-  const shouldRenderSubscriberCount = useMemo(
-    () => (subscriptionsSummary.items?.length ?? 0) > 0,
-    [subscriptionsSummary],
-  )
+  const shouldRenderSubscriberCount =
+    (subscriptionsSummary.items?.length ?? 0) > 0
 
   return (
     <div className="flex w-full flex-col gap-y-24">

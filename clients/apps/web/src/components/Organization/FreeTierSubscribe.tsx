@@ -33,7 +33,7 @@ export const AuthenticatedFreeTierSubscribe = ({
   user,
   upsellSubscriptions,
 }: AuthenticatedFreeTierSubscribeProps) => {
-  const { data } = useUserSubscriptions(
+  const { data, isFetched } = useUserSubscriptions(
     user.id,
     organization.name,
     10,
@@ -59,29 +59,36 @@ export const AuthenticatedFreeTierSubscribe = ({
 
   return (
     <div className="flex w-full">
-      {!isSubscribed && (
-        <Button
-          fullWidth
-          onClick={onSubscribeFree}
-          loading={createFreeSubscription.isPending}
-        >
+      {isFetched ? (
+        <>
+          {isSubscribed ? (
+            <Link href="/subscriptions" className="w-full">
+              <Button
+                loading={createFreeSubscription.isPending}
+                fullWidth
+                variant="outline"
+              >
+                <SubscriptionGroupIcon
+                  type={subscription?.subscription_tier.type}
+                  className="mr-2"
+                />
+                Subscribed to {subscription.subscription_tier.name}
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              fullWidth
+              onClick={onSubscribeFree}
+              loading={createFreeSubscription.isPending}
+            >
+              Subscribe
+            </Button>
+          )}
+        </>
+      ) : (
+        <Button fullWidth disabled={true} loading={true}>
           Subscribe
         </Button>
-      )}
-      {isSubscribed && (
-        <Link href="/subscriptions" className="w-full">
-          <Button
-            loading={createFreeSubscription.isPending}
-            fullWidth
-            variant="outline"
-          >
-            <SubscriptionGroupIcon
-              type={subscription?.subscription_tier.type}
-              className="mr-2"
-            />
-            Subscribed to {subscription.subscription_tier.name}
-          </Button>
-        </Link>
       )}
     </div>
   )

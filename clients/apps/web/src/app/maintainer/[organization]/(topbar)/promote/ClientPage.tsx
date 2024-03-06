@@ -5,18 +5,9 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import {
-  CopyToClipboardInput,
-  ShadowBox,
-  Tabs,
-  TabsTrigger,
-} from 'polarkit/components/ui/atoms'
-import { TabsList } from 'polarkit/components/ui/tabs'
-import {
-  useListRepositories,
-  useSearchIssues,
-  useSubscriptionSummary,
-} from 'polarkit/hooks'
+import { CopyToClipboardInput, ShadowBox } from 'polarkit/components/ui/atoms'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+import { useListRepositories } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 
 export default function ClientPage() {
@@ -32,12 +23,6 @@ export default function ClientPage() {
 
   const fundingYAML = `polar: ${org?.name}`
 
-  const issues = useSearchIssues({
-    organizationName: org?.name,
-    haveBadge: true,
-    repositoryName: currentRepo?.name,
-  })
-
   // Get all repositories
   const listRepositoriesQuery = useListRepositories()
   const allRepositories = listRepositoriesQuery?.data?.items
@@ -45,8 +30,6 @@ export default function ClientPage() {
   // Filter repos by current org & normalize for our select
   const allOrgRepositories =
     allRepositories?.filter((r) => r?.organization?.id === org?.id) || []
-
-  const subscriptionsSummary = useSubscriptionSummary(org?.name ?? '', 3)
 
   const [currentEmbedTab, setCurrentEmbedTab] = useState('Tiers')
 

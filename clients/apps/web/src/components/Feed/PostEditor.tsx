@@ -1,12 +1,7 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
-import {
-  Button,
-  Input,
-  ShadowBoxOnMd,
-  TabsContent,
-} from 'polarkit/components/ui/atoms'
+import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import {
   Select,
   SelectContent,
@@ -14,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import { TabsContent } from 'polarkit/components/ui/atoms/tabs'
 import { useSubscriptionBenefits } from 'polarkit/hooks'
 import React, { PropsWithChildren, useContext, useState } from 'react'
 import { DashboardBody } from '../Layout/DashboardLayout'

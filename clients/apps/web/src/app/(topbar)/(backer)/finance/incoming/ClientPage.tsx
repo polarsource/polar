@@ -6,13 +6,13 @@ import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
 import { TransactionType } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import {
-  ShadowBoxOnMd,
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/atoms'
-import { TabsContent } from 'polarkit/components/ui/tabs'
+} from 'polarkit/components/ui/atoms/tabs'
 import {
   DataTablePaginationState,
   DataTableSortingState,

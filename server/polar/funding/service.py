@@ -138,7 +138,9 @@ class FundingService:
             .join(Issue.repository)
             .join(Repository.organization)
             .where(
+                Issue.deleted_at.is_(None),
                 Repository.deleted_at.is_(None),
+                Organization.deleted_at.is_(None),
             )
         )
 

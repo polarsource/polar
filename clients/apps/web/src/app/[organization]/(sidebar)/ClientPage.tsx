@@ -18,7 +18,6 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { useListAdminOrganizations } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 
@@ -41,10 +40,9 @@ const ClientPage = ({
 }) => {
   useTrafficRecordPageView({ organization })
 
-  const orgs = useListAdminOrganizations()
   const isAdmin = useMemo(
-    () => orgs.data?.items?.some((org) => org.id === organization.id),
-    [organization, orgs],
+    () => adminOrganizations?.some((org) => org.id === organization.id),
+    [organization, adminOrganizations],
   )
 
   const shouldRenderSubscribeButton = !isAdmin

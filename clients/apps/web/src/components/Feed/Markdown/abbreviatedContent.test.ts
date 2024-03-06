@@ -82,8 +82,28 @@ Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac tu
 Aliquam mollis hendrerit sapien id viverra.`
 
     expect(
-      abbreviatedContent({ body: t, includeBoundaryInBody: false }).body,
-    ).toBe(`Lorem ipsum dolor sit amet, consectetur adipiscing elit.`)
+      abbreviatedContent({ body: t, includeBoundaryInBody: false }),
+    ).toStrictEqual({
+      body: `Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
+      manualBoundary: true,
+      matchedBoundary: '---\n',
+    })
+  })
+
+  test('custom-<hr>-early-multi-dash', () => {
+    const t = `Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+------
+
+Aliquam mollis hendrerit sapien id viverra.`
+
+    expect(
+      abbreviatedContent({ body: t, includeBoundaryInBody: false }),
+    ).toStrictEqual({
+      body: `Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
+      manualBoundary: true,
+      matchedBoundary: '------\n',
+    })
   })
 
   test('custom-<hr>-early-include', () => {

@@ -7,14 +7,14 @@ import {
 } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { Pill } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
-  Button,
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-  Pill,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/card'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useRef, useState } from 'react'

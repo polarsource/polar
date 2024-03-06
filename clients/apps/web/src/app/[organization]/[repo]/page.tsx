@@ -66,11 +66,14 @@ export async function generateMetadata(
     notFound()
   }
 
+  const orgrepo = `${organization.name}/${repo.name}`
+
   return {
-    title: `${organization.name}/${repo.name}`, // " | Polar is added by the template"
+    title: `${orgrepo}`, // " | Polar is added by the template"
+    description: repo.description || `${orgrepo} on Polar`,
     openGraph: {
-      title: `${organization.name}/${repo.name} seeks funding for issues`,
-      description: `${organization.name}/${repo.name} seeks funding for issues on Polar`,
+      title: `${orgrepo} seeks funding for issues`,
+      description: `${orgrepo} seeks funding for issues on Polar`,
       images: [
         {
           url: `https://polar.sh/og?org=${organization.name}&repo=${repo.name}`,
@@ -85,12 +88,12 @@ export async function generateMetadata(
           url: `https://polar.sh/og?org=${organization.name}&repo=${repo.name}`,
           width: 1200,
           height: 630,
-          alt: `${organization.name}/${repo.name} seeks funding for issues`,
+          alt: `${orgrepo} seeks funding for issues`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.name}/${repo.name} seeks funding for issues`,
-      description: `${organization.name}/${repo.name} seeks funding for issues on Polar`,
+      title: `${orgrepo} seeks funding for issues`,
+      description: `${orgrepo} seeks funding for issues on Polar`,
     },
   }
 }

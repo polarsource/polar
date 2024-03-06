@@ -55,6 +55,9 @@ export async function generateMetadata(
 
   return {
     title: `${organization.pretty_name || organization.name}`, // " | Polar is added by the template"
+    description:
+      organization.bio ||
+      `${organization.pretty_name || organization.name} on Polar`,
     openGraph: {
       title: `${organization.pretty_name || organization.name} on Polar`,
       description: `${organization.pretty_name || organization.name} on Polar`,

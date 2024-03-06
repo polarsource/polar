@@ -25,7 +25,7 @@ import {
   getBotDiscordAuthorizeURL,
   getGitHubOrganizationInstallationURL,
 } from 'polarkit/auth'
-import { Switch, TextArea } from 'polarkit/components/ui/atoms'
+import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   DropdownMenu,

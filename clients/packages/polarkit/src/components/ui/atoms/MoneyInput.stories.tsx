@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { MoneyInput } from '.'
+import MoneyInput from './MoneyInput'
 
 const meta: Meta<typeof MoneyInput> = {
   title: 'Atoms/MoneyInput',

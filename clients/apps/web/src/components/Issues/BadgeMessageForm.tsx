@@ -2,12 +2,10 @@ import { CurrencyAmount, Funding, Organization } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import { Badge } from 'polarkit/components/badge'
-import {
-  LabeledRadioButton,
-  MoneyInput,
-  TextArea,
-} from 'polarkit/components/ui/atoms'
+import { LabeledRadioButton } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
 import React, { ChangeEvent, MouseEvent, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

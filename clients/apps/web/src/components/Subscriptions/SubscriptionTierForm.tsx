@@ -5,8 +5,8 @@ import {
   SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
-import { MoneyInput, TextArea } from 'polarkit/components/ui/atoms'
 import Input from 'polarkit/components/ui/atoms/input'
+import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import {
   Select,
   SelectContent,
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,

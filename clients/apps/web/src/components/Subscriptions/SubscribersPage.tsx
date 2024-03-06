@@ -15,14 +15,12 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { getServerURL } from 'polarkit/api'
+import { Avatar, Button, FormattedDateTime } from 'polarkit/components/ui/atoms'
 import {
-  Avatar,
-  Button,
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-  FormattedDateTime,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/datatable'
 import {
   DataTablePaginationState,
   DataTableSortingState,

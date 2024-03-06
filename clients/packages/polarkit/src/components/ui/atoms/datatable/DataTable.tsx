@@ -19,7 +19,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../table'
+} from '../../table'
 import { DataTablePagination } from './DataTablePagination'
 
 interface DataTableProps<TData, TValue> {

@@ -13,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '.'
+} from '..'
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>

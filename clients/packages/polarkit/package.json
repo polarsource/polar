@@ -23,6 +23,7 @@
     "./datatable": "./src/datatable.ts",
     "./components": "./src/components/index.ts",
     "./components/ui/atoms": "./src/components/ui/atoms/index.ts",
+    "./components/ui/atoms/datatable": "./src/components/ui/atoms/datatable/index.ts",
     "./components/ui/molecules": "./src/components/ui/molecules/index.ts",
     "./components/ui/dropdown-menu": "./src/components/ui/dropdown-menu.tsx",
     "./components/ui/button": "./src/components/ui/button.tsx",

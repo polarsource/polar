@@ -5,12 +5,12 @@ import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { Organization, TrafficReferrer } from '@polar-sh/sdk'
+import { Card } from 'polarkit/components/ui/atoms'
 import {
-  Card,
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/datatable'
 import { useTrafficStatistics, useTrafficTopReferrers } from 'polarkit/hooks'
 import { useState } from 'react'
 

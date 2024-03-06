@@ -85,8 +85,16 @@ async def articles_send_to_user(
         from_name = ""
         if article.byline == Article.Byline.organization:
             from_name = article.organization.pretty_name or article.organization.name
+            if article.organization.email:
+                email_headers[
+                    "Reply-To"
+                ] = f"{from_name} <{article.organization.email}>"
         else:
             from_name = article.created_by_user.username
+            if article.created_by_user.email:
+                email_headers[
+                    "Reply-To"
+                ] = f"{from_name} <{article.created_by_user.email}>"
 
         email_sender = get_email_sender("article")
 

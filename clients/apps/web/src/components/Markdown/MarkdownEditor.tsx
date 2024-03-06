@@ -1,4 +1,4 @@
-import { TextArea } from 'polarkit/components/ui/atoms'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
   Tooltip,
   TooltipContent,

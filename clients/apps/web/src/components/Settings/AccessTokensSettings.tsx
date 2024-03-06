@@ -5,12 +5,12 @@ import {
   PersonalAccessToken,
 } from '@polar-sh/sdk'
 import {
-  CopyToClipboardInput,
   FormattedDateTime,
-  Input,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import Input from 'polarkit/components/ui/atoms/input'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
   useCreatePersonalAccessToken,

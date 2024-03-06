@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { CopyToClipboardInput } from '.'
+import { CopyToClipboardInput } from './CopyToClipboardInput'
 
 const meta: Meta<typeof CopyToClipboardInput> = {
   title: 'Atoms/CopyToClipboardInput',

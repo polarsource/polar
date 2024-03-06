@@ -26,6 +26,7 @@
     "./components/ui/atoms/alert": "./src/components/ui/atoms/Alert.tsx",
     "./components/ui/atoms/avatar": "./src/components/ui/atoms/Avatar.tsx",
     "./components/ui/atoms/button": "./src/components/ui/atoms/Button.tsx",
+    "./components/ui/atoms/shadowbox": "./src/components/ui/atoms/ShadowBox.tsx",
     "./components/ui/atoms/card": "./src/components/ui/atoms/Card.tsx",
     "./components/ui/atoms/select": "./src/components/ui/atoms/Select.tsx",
     "./components/ui/atoms/tabs": "./src/components/ui/atoms/Tabs.tsx",

@@ -1,4 +1,5 @@
 import { twMerge } from 'tailwind-merge'
+import ShadowBoxOnMd from './ShadowBoxOnMd'
 
 const ShadowBox = (props: {
   className?: string
@@ -15,3 +16,5 @@ const ShadowBox = (props: {
 )
 
 export default ShadowBox
+
+export { ShadowBoxOnMd }

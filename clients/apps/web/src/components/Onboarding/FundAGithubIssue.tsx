@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation'
-import { Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { Input } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 

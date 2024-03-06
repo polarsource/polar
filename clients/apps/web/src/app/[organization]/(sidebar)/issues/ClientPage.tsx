@@ -3,7 +3,7 @@
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ListResourceIssueFunding, Organization } from '@polar-sh/sdk'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 
 const ClientPage = ({
   organization,

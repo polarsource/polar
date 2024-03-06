@@ -10,8 +10,6 @@ import Paginator from './Paginator'
 import Pill from './Pill'
 import PolarTimeAgo from './PolarTimeAgo'
 
-import ShadowBox from './ShadowBox'
-import ShadowBoxOnMd from './ShadowBoxOnMd'
 import ShadowListGroup from './ShadowListGroup'
 import Switch from './Switch'
 import TextArea from './TextArea'
@@ -33,8 +31,6 @@ export {
   Paginator,
   Pill,
   PolarTimeAgo,
-  ShadowBox,
-  ShadowBoxOnMd,
   ShadowListGroup,
   Switch,
   TextArea,

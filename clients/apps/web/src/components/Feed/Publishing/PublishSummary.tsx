@@ -1,6 +1,6 @@
 import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useArticleReceivers } from 'polarkit/hooks'
 import { useFormContext } from 'react-hook-form'
 

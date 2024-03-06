@@ -1,4 +1,5 @@
 import { StarIcon } from '@heroicons/react/20/solid'
+import { StarIcon as StarIconOutlined } from '@heroicons/react/24/outline'
 import {
   ArrowForwardOutlined,
   DragIndicatorOutlined,
@@ -189,27 +190,41 @@ const Draggable = ({
         <CardContent className="flex h-full grow flex-col flex-wrap px-6 py-0">
           {repository.description && <p>{repository.description}</p>}
         </CardContent>
-        <CardFooter className="flex flex-row items-center gap-x-4 p-6">
-          {repository.license ? (
-            <Pill className="px-3" color="blue">
-              {repository.license}
-            </Pill>
-          ) : (
-            <Pill className="grow-0 px-3" color="gray">
-              Unlicensed
-            </Pill>
-          )}
-          {repository.visibility === Visibility.PRIVATE ? (
-            <Pill className="grow-0 px-3" color="gray">
-              Private
-            </Pill>
-          ) : null}
-          <span className="flex flex-row items-center gap-x-1 text-sm">
-            <StarIcon className="h-4 w-4" />
-            <span className="pt-.5">
-              {formatStarsNumber(repository.stars ?? 0)}
+        <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
+          <div className="flex-items flex items-center gap-x-4">
+            {repository.license ? (
+              <Pill className="px-3 py-1.5" color="blue">
+                {repository.license}
+              </Pill>
+            ) : (
+              <Pill className="grow-0 px-3 py-1.5" color="gray">
+                Unlicensed
+              </Pill>
+            )}
+            {repository.visibility === Visibility.PRIVATE ? (
+              <Pill className="grow-0 px-3 py-1.5" color="gray">
+                Private
+              </Pill>
+            ) : null}
+            <span className="flex flex-row items-center gap-x-1 text-sm">
+              <StarIcon className="h-4 w-4" />
+              <span className="pt-.5">
+                {formatStarsNumber(repository.stars ?? 0)}
+              </span>
             </span>
-          </span>
+          </div>
+          <Link
+            href={`https://github.com/${repository.organization.name}/${repository.name}`}
+            target="_blank"
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+          >
+            <Button className="rounded-lg px-2.5" variant="secondary" size="sm">
+              <StarIconOutlined className="mr-2 h-4 w-4" />
+              <span>Star on GitHub</span>
+            </Button>
+          </Link>
         </CardFooter>
       </Card>
     </Link>

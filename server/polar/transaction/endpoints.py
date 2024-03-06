@@ -90,7 +90,7 @@ async def get_summary(
     return await transaction_service.get_summary(session, auth.subject, account, authz)
 
 
-@router.get("/payout", response_model=PayoutEstimate, tags=[Tags.PUBLIC])
+@router.get("/payouts", response_model=PayoutEstimate, tags=[Tags.PUBLIC])
 async def get_payout_estimate(
     auth: UserRequiredAuth,
     account_id: UUID4,
@@ -109,7 +109,9 @@ async def get_payout_estimate(
     )
 
 
-@router.post("/payout", response_model=Transaction, status_code=201, tags=[Tags.PUBLIC])
+@router.post(
+    "/payouts", response_model=Transaction, status_code=201, tags=[Tags.PUBLIC]
+)
 async def create_payout(
     auth: UserRequiredAuth,
     payout_create: PayoutCreate,

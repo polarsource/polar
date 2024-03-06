@@ -5,7 +5,7 @@ import {
   DragIndicatorOutlined,
   HiveOutlined,
 } from '@mui/icons-material'
-import { Organization, Repository, Visibility } from '@polar-sh/sdk'
+import { Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
   Button,
@@ -192,20 +192,11 @@ const Draggable = ({
         </CardContent>
         <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
           <div className="flex-items flex items-center gap-x-4">
-            {repository.license ? (
+            {repository.license && (
               <Pill className="px-3 py-1.5" color="blue">
                 {repository.license}
               </Pill>
-            ) : (
-              <Pill className="grow-0 px-3 py-1.5" color="gray">
-                Unlicensed
-              </Pill>
             )}
-            {repository.visibility === Visibility.PRIVATE ? (
-              <Pill className="grow-0 px-3 py-1.5" color="gray">
-                Private
-              </Pill>
-            ) : null}
             <span className="flex flex-row items-center gap-x-1 text-sm">
               <StarIcon className="h-4 w-4" />
               <span className="pt-.5">

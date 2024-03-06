@@ -4,8 +4,8 @@ import { useSendMagicLink } from '@/hooks/magicLink'
 import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/sdk'
 import { setValidationErrors } from 'polarkit/api/errors'
-import { Input } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import {
   Form,
   FormField,

@@ -1,6 +1,7 @@
 import { UserIcon } from '@heroicons/react/24/outline'
 import { Organization } from '@polar-sh/sdk'
-import { Input, Switch } from 'polarkit/components/ui/atoms'
+import { Switch } from 'polarkit/components/ui/atoms'
+import Input from 'polarkit/components/ui/atoms/input'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useMemo, useRef, useState } from 'react'
 

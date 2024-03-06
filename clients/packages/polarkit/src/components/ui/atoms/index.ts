@@ -1,6 +1,5 @@
 import CopyToClipboardInput from './CopyToClipboardInput'
 import FormattedDateTime from './FormattedDateTime'
-import Input from './Input'
 import IssueBodyRenderer from './IssueBodyRenderer'
 import LabeledRadioButton from './LabeledRadioButton'
 import LabeledSeparator from './LabeledSeparator'
@@ -21,7 +20,6 @@ import TextArea from './TextArea'
 export {
   CopyToClipboardInput,
   FormattedDateTime,
-  Input,
   IssueBodyRenderer,
   LabeledRadioButton,
   LabeledSeparator,

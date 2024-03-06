@@ -8,13 +8,12 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
+import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import {
-  Avatar,
-  Button,
   Select,
   SelectContent,
   SelectItem,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/select'
 import { ButtonProps } from 'polarkit/components/ui/button'
 import {
   useListAllOrganizations,

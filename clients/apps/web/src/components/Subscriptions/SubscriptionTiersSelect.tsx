@@ -7,7 +7,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/select'
 import { getCentsInDollarString } from 'polarkit/money'
 import React from 'react'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'

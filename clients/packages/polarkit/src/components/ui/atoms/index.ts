@@ -20,22 +20,18 @@ import MoneyInput from './MoneyInput'
 import Paginator from './Paginator'
 import Pill from './Pill'
 import PolarTimeAgo from './PolarTimeAgo'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from './Select'
+
 import ShadowBox from './ShadowBox'
 import ShadowBoxOnMd from './ShadowBoxOnMd'
 import ShadowListGroup from './ShadowListGroup'
 import Switch from './Switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs'
 import TextArea from './TextArea'
+
+// HEY! You!
+// Do not add more things here.
+// It's better to expose each component individually as separate "packages"
+// See datatable, Select.tsx, etc, for examples.
 
 export {
   Alert,
@@ -58,14 +54,6 @@ export {
   Paginator,
   Pill,
   PolarTimeAgo,
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
   ShadowBox,
   ShadowBoxOnMd,
   ShadowListGroup,

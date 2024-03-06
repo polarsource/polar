@@ -14,16 +14,14 @@ import { loadStripe } from '@stripe/stripe-js/pure'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
+import { Button, Input, MoneyInput } from 'polarkit/components/ui/atoms'
 import {
-  Button,
-  Input,
-  MoneyInput,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/select'
 import { useListPaymentMethods } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import posthog from 'posthog-js'

@@ -11,8 +11,6 @@ import {
 } from './Card'
 import CopyToClipboardInput from './CopyToClipboardInput'
 import CountryPicker from './CountryPicker'
-import { DataTable, DataTableColumnDef } from './DataTable'
-import { DataTableColumnHeader } from './DataTableColumnHeader'
 import FormattedDateTime from './FormattedDateTime'
 import Input from './Input'
 import IssueBodyRenderer from './IssueBodyRenderer'
@@ -51,8 +49,6 @@ export {
   CardTitle,
   CopyToClipboardInput,
   CountryPicker,
-  DataTable,
-  DataTableColumnHeader,
   FormattedDateTime,
   Input,
   IssueBodyRenderer,
@@ -80,4 +76,3 @@ export {
   TabsTrigger,
   TextArea,
 }
-export type { DataTableColumnDef }

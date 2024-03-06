@@ -1,7 +1,7 @@
 'use client'
 
 import { api } from 'polarkit/api'
-import { Input } from 'polarkit/components/ui/atoms'
+import Input from 'polarkit/components/ui/atoms/input'
 import { Button } from 'polarkit/components/ui/button'
 import {
   Form,

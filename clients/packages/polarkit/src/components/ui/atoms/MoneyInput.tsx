@@ -1,7 +1,7 @@
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, FocusEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Input } from '.'
+import { Input } from './Input'
 
 interface Props {
   id: string

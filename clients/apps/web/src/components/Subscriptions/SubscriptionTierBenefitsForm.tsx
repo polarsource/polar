@@ -25,8 +25,9 @@ import {
   getBotDiscordAuthorizeURL,
   getGitHubOrganizationInstallationURL,
 } from 'polarkit/auth'
-import { Input, Switch, TextArea } from 'polarkit/components/ui/atoms'
+import { Switch, TextArea } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import {
   Select,
   SelectContent,

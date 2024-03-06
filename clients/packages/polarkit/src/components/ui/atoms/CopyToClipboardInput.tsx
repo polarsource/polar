@@ -1,4 +1,4 @@
-import { Input } from './'
+import { Input } from './Input'
 
 const CopyToClipboardInput = (props: {
   id: string

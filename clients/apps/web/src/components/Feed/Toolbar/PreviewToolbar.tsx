@@ -7,8 +7,8 @@ import {
 } from '@heroicons/react/24/outline'
 import { Article, ArticleUpdateVisibilityEnum } from '@polar-sh/sdk'
 import { DropdownMenuItemIndicator } from '@radix-ui/react-dropdown-menu'
-import { Input } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import {
   DropdownMenu,
   DropdownMenuContent,

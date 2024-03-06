@@ -4,13 +4,13 @@ import AccountAssociations from '@/components/Accounts/AccountAssociations'
 import { Account, Organization, Status } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form, FormField } from 'polarkit/components/ui/form'
 import { SelectContent, SelectItem } from 'polarkit/components/ui/select'
 import { Separator } from 'polarkit/components/ui/separator'

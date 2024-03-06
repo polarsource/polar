@@ -1,11 +1,13 @@
 import { StarIcon } from '@heroicons/react/20/solid'
 import { HiveOutlined } from '@mui/icons-material'
-import { Organization, Repository } from '@polar-sh/sdk'
+import { Organization, Platforms, Repository } from '@polar-sh/sdk'
+import { api } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { Separator } from 'polarkit/components/ui/separator'
 import { formatStarsNumber } from 'polarkit/utils'
+import { useCallback, useState } from 'react'
 
 export interface ProfileEditorProps {
   repositories: Repository[]
@@ -16,12 +18,36 @@ export interface ProfileEditorProps {
 }
 
 export const ProjectsModal = ({
-  organization,
   repositories,
+  organization,
   selectedRepositories,
   hideModal,
   setRepositories,
 }: ProfileEditorProps) => {
+  const [orgAndRepo, setOrgAndRepo] = useState('')
+
+  const uniqueRepos = new Map([
+    ...selectedRepositories.map((repo) => [repo.id, repo] as const),
+    ...repositories.map((repo) => [repo.id, repo] as const),
+  ])
+
+  const addRepository = useCallback(
+    async (namespaceAndRepo: string) => {
+      const [orgName, repo] = namespaceAndRepo.split('/')
+
+      const repository = await api.repositories.lookup({
+        organizationName: orgName,
+        repositoryName: repo,
+        platform: Platforms.GITHUB,
+      })
+
+      if (repository) {
+        setRepositories([repository, ...selectedRepositories])
+      }
+    },
+    [selectedRepositories, setRepositories],
+  )
+
   return (
     <div className="flex flex-col gap-y-8 p-8">
       <div className="flex flex-col gap-y-2">
@@ -31,12 +57,16 @@ export const ProjectsModal = ({
         </p>
       </div>
       <div className="flex flex-row items-center gap-x-4">
-        <Input placeholder="Link to GitHub Repository" />
-        <Button>Add</Button>
+        <Input
+          value={orgAndRepo}
+          onChange={(e) => setOrgAndRepo(e.target.value)}
+          placeholder="organization/repo"
+        />
+        <Button onClick={(e) => addRepository(orgAndRepo)}>Add</Button>
       </div>
       <div className="flex w-full flex-col gap-y-8">
         <div className="flex max-h-[300px] w-full flex-col overflow-y-auto">
-          {repositories.map((repository) => (
+          {[...uniqueRepos.values()].map((repository) => (
             <div
               key={repository.id}
               className="dark:hover:bg-polar-700 dark:text-polar-50 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100"

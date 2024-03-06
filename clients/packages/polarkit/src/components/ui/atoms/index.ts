@@ -1,5 +1,4 @@
 import CopyToClipboardInput from './CopyToClipboardInput'
-import CountryPicker from './CountryPicker'
 import FormattedDateTime from './FormattedDateTime'
 import Input from './Input'
 import IssueBodyRenderer from './IssueBodyRenderer'
@@ -21,7 +20,6 @@ import TextArea from './TextArea'
 
 export {
   CopyToClipboardInput,
-  CountryPicker,
   FormattedDateTime,
   Input,
   IssueBodyRenderer,

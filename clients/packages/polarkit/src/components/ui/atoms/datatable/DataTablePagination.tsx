@@ -6,14 +6,15 @@ import {
 } from '@mui/icons-material'
 import { Table } from '@tanstack/react-table'
 
+import { Button } from '..'
+
 import {
-  Button,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '..'
+} from '../Select'
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>

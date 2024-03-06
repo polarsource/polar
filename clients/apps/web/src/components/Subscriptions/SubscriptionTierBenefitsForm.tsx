@@ -25,9 +25,8 @@ import {
   getBotDiscordAuthorizeURL,
   getGitHubOrganizationInstallationURL,
 } from 'polarkit/auth'
+import { Button, Input, Switch, TextArea } from 'polarkit/components/ui/atoms'
 import {
-  Button,
-  Input,
   Select,
   SelectContent,
   SelectGroup,
@@ -35,9 +34,8 @@ import {
   SelectLabel,
   SelectSeparator,
   SelectTrigger,
-  Switch,
-  TextArea,
-} from 'polarkit/components/ui/atoms'
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   DropdownMenu,
@@ -54,7 +52,6 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { SelectValue } from 'polarkit/components/ui/select'
 import {
   useCheckOrganizationPermissions,
   useCreateSubscriptionBenefit,

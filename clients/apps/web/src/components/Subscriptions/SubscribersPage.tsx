@@ -15,7 +15,9 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { getServerURL } from 'polarkit/api'
-import { Avatar, Button, FormattedDateTime } from 'polarkit/components/ui/atoms'
+import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,

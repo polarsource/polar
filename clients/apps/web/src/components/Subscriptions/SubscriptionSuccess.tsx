@@ -5,14 +5,14 @@ import { useSendMagicLink } from '@/hooks/magicLink'
 import { SubscribeSession } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
-  Button,
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/card'
 import { useCallback, useState } from 'react'
 import SubscriptionTierCelebration from './SubscriptionTierCelebration'
 import { resolveBenefitIcon } from './utils'

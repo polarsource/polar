@@ -3,7 +3,7 @@
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import { BackofficePledge } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useBackofficeAllPledges } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'

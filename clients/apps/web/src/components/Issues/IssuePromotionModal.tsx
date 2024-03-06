@@ -6,11 +6,11 @@ import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Image from 'next/image'
 import { api, queryClient } from 'polarkit/api'
 import {
-  Button,
   CopyToClipboardInput,
   MoneyInput,
   TextArea,
 } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   Tabs,
   TabsContent,

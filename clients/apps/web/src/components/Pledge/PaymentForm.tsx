@@ -13,7 +13,7 @@ import {
   PaymentIntent,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'

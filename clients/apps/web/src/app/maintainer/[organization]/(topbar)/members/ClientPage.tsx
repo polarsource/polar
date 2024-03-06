@@ -4,7 +4,9 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
-import { Avatar, Button, Pill } from 'polarkit/components/ui/atoms'
+import { Pill } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Button from 'polarkit/components/ui/atoms/button'
 
 import {
   Table,

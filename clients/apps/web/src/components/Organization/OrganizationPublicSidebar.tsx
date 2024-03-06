@@ -13,11 +13,9 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { api } from 'polarkit'
-import {
-  Avatar,
-  Button,
-  CopyToClipboardInput,
-} from 'polarkit/components/ui/atoms'
+import { CopyToClipboardInput } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Button from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL } from '.'

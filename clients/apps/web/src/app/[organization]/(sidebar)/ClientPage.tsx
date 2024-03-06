@@ -22,14 +22,14 @@ import {
   Visibility,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { Pill } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
-  Avatar,
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-  Pill,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/card'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 

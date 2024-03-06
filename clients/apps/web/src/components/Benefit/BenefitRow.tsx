@@ -5,7 +5,7 @@ import {
   getGitHubAuthorizeURL,
   getUserDiscordAuthorizeURL,
 } from 'polarkit/auth'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {

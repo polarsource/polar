@@ -12,7 +12,7 @@ import {
 } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useEffect, useState } from 'react'
 
 export default function Page() {

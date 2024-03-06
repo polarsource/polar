@@ -5,9 +5,7 @@ import {
   LastPage,
 } from '@mui/icons-material'
 import { Table } from '@tanstack/react-table'
-
-import { Button } from '..'
-
+import Button from '../Button'
 import {
   Select,
   SelectContent,

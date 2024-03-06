@@ -1,6 +1,7 @@
 import { CalendarIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import { Input } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Calendar } from 'polarkit/components/ui/calendar'
 import {
   Popover,

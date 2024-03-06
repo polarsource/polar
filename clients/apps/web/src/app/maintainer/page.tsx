@@ -8,7 +8,7 @@ import { useAuth, usePersonalOrganization } from '@/hooks'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit'
-import { Button } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useCallback, useEffect } from 'react'
 

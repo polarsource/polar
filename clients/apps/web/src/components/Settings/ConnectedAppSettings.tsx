@@ -3,10 +3,10 @@ import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { getUserDiscordAuthorizeURL } from 'polarkit/auth'
 import {
-  Button,
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useEffect } from 'react'
 
 interface ConnectedAppProps {

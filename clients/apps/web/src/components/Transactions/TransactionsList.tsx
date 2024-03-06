@@ -8,7 +8,8 @@ import {
   TransactionEmbedded,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Avatar, FormattedDateTime } from 'polarkit/components/ui/atoms'
+import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   DataTable,
   DataTableColumnDef,

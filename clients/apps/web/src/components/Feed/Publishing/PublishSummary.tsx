@@ -1,5 +1,6 @@
 import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
-import { Button, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useArticleReceivers } from 'polarkit/hooks'
 import { useFormContext } from 'react-hook-form'
 
@@ -159,13 +160,7 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
       ) : null}
 
       <div className="flex flex-col gap-y-2">
-        <Button
-          type="submit"
-          loading={isSaving}
-          variant={'default'}
-          fullWidth
-          // onClick={() => alert('hey')}
-        >
+        <Button type="submit" loading={isSaving} variant={'default'} fullWidth>
           {publishVerb()}
         </Button>
       </div>

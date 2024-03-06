@@ -1,7 +1,8 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Button, Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import { Input, ShadowBoxOnMd } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
   SelectContent,

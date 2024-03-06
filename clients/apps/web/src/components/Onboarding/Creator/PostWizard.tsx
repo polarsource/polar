@@ -14,7 +14,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/card'
 import { useOrganizationArticles } from 'polarkit/hooks'
 import { useRef } from 'react'
 import { useHoverDirty } from 'react-use'

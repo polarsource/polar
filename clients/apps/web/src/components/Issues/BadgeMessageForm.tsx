@@ -3,11 +3,11 @@ import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import { Badge } from 'polarkit/components/badge'
 import {
-  Button,
   LabeledRadioButton,
   MoneyInput,
   TextArea,
 } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import React, { ChangeEvent, MouseEvent, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

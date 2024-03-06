@@ -6,7 +6,8 @@ import {
 } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import { setValidationErrors } from 'polarkit/api/errors'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import { Input } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   Form,
   FormControl,

@@ -12,7 +12,11 @@ import {
 import { FlagOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { api } from 'polarkit'
-import { Card, CardContent, CardHeader } from 'polarkit/components/ui/atoms'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from 'polarkit/components/ui/atoms/card'
 import React, { useEffect, useMemo, useState } from 'react'
 import { CreatorUpsell } from './CreatorUpsell'
 

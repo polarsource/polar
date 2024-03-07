@@ -8,7 +8,7 @@ import { queryClient } from 'polarkit/api'
 import { CONFIG } from 'polarkit/config'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
-import { useEffect } from 'react'
+import { PropsWithChildren, useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 
@@ -62,10 +62,6 @@ export function PolarQueryClientProvider({
   )
 }
 
-export function PolarDndProvider({
-  children,
-}: {
-  children: React.ReactElement
-}) {
+export function PolarDndProvider({ children }: PropsWithChildren) {
   return <DndProvider backend={HTML5Backend}>{children}</DndProvider>
 }

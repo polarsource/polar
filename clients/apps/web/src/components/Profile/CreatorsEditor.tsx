@@ -11,6 +11,7 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { useGetOrganization, useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -33,16 +34,7 @@ const CreatorCard = <T,>({
 
   const organization = useGetOrganization(organizationId).data
 
-  if (!organization) {
-    return (
-      <Card
-        ref={previewRef}
-        className={twMerge(
-          'dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600',
-        )}
-      ></Card>
-    )
-  }
+  if (!organization) return null
 
   return (
     <Link href={organizationPageLink(organization)} data-handler-id={handlerId}>
@@ -107,15 +99,24 @@ export const CreatorsEditor = ({
   profile,
   disabled,
 }: CreatorsEditorProps) => {
+  const [featuredCreators, setFeaturedCreators] = useState(
+    profile.featured_organizations,
+  )
+
   const { show, isShown, hide } = useModal()
+
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateFeaturedCreators = (creators: string[]) => {
+  const updateFeaturedCreators = (producer: (prev: string[]) => string[]) => {
+    const newCreators = producer(featuredCreators)
+
+    setFeaturedCreators(newCreators)
+
     updateOrganizationMutation.mutateAsync({
       id: organization.id,
       settings: {
         profile_settings: {
-          featured_organizations: creators,
+          featured_organizations: newCreators,
         },
       },
     })
@@ -133,14 +134,14 @@ export const CreatorsEditor = ({
           )}
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {profile.featured_organizations.map((creator, i) => (
+          {featuredCreators.map((creator, i) => (
             <CreatorCard
               key={creator}
               index={i}
               id={creator}
               organizationId={creator}
               disabled={disabled}
-              setItems={(prev) => updateFeaturedCreators}
+              setItems={updateFeaturedCreators}
             />
           ))}
         </div>

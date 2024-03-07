@@ -5,13 +5,13 @@ import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useGetOrganization } from 'polarkit/hooks'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 
 export interface CreatorsModalProps {
   creators: string[]
   organization: Organization
   hideModal: () => void
-  setCreators: (creators: string[]) => void
+  setCreators: (producer: (creators: string[]) => string[]) => void
 }
 
 export const CreatorsModal = ({
@@ -22,19 +22,20 @@ export const CreatorsModal = ({
 }: CreatorsModalProps) => {
   const [username, setUsername] = useState('')
 
-  const addCreator = useCallback(
-    async (organizationName: string) => {
-      const creator = await api.organizations.lookup({
-        platform: Platforms.GITHUB,
+  const addCreator = (organizationName: string) => {
+    api.organizations
+      .lookup({
         organizationName,
+        platform: Platforms.GITHUB,
       })
+      .then((org) => {
+        setCreators((creators) => [...creators, org.id])
+      })
+  }
 
-      if (creator) {
-        setCreators([creator.id, ...creators])
-      }
-    },
-    [creators, setCreators],
-  )
+  const removeRepository = (creator: string) => {
+    setCreators((creators) => creators.filter((c) => c !== creator))
+  }
 
   return (
     <div className="flex flex-col gap-y-8 p-8">

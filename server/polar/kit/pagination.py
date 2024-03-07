@@ -64,7 +64,8 @@ async def paginate(
     results: list[Any] = []
     count = 0
     for row in result.unique().all():
-        (*queried_data, count) = row._tuple()
+        (*queried_data, c) = row._tuple()
+        count = int(c)
         if len(queried_data) == 1:
             results.append(queried_data[0])
         else:

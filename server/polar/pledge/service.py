@@ -962,12 +962,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
         issue_id: UUID,
     ) -> None:
         pledges = await self.get_by_issue_ids(session, issue_ids=[issue_id])
-
+        last_pledged_at = max(p.created_at for p in pledges) if pledges else None
         summed = sum(p.amount for p in pledges) if pledges else 0
         stmt = (
             sql.update(Issue)
             .where(Issue.id == issue_id)
-            .values(pledged_amount_sum=summed)
+            .values(
+                pledged_amount_sum=summed,
+                last_pledged_at=last_pledged_at,
+            )
         )
 
         await session.execute(stmt)

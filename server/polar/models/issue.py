@@ -216,6 +216,10 @@ class Issue(IssueFields, RecordModel):
         BigInteger, nullable=False, default=0
     )
 
+    last_pledged_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+
     issue_has_in_progress_relationship: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )

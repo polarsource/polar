@@ -29,6 +29,10 @@ export interface TransactionsApiCreatePayoutRequest {
     payoutCreate: PayoutCreate;
 }
 
+export interface TransactionsApiGetPayoutCsvRequest {
+    id: string;
+}
+
 export interface TransactionsApiGetPayoutEstimateRequest {
     accountId: string;
 }
@@ -80,7 +84,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/payout`,
+            path: `/api/v1/transactions/payouts`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -95,6 +99,48 @@ export class TransactionsApi extends runtime.BaseAPI {
      */
     async createPayout(requestParameters: TransactionsApiCreatePayoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Transaction> {
         const response = await this.createPayoutRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get Payout Csv
+     */
+    async getPayoutCsvRaw(requestParameters: TransactionsApiGetPayoutCsvRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getPayoutCsv.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/transactions/payouts/{id}/csv`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Get Payout Csv
+     */
+    async getPayoutCsv(requestParameters: TransactionsApiGetPayoutCsvRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.getPayoutCsvRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -123,7 +169,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/payout`,
+            path: `/api/v1/transactions/payouts`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from uuid import UUID
+from typing import Any
 
 from citext import CIText
 from sqlalchemy import (
@@ -11,14 +11,17 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    UUID
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.config import settings
 from polar.enums import Platforms
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.extensions.sqlalchemy.types import PostgresUUID
 
 from .account import Account
 
@@ -143,6 +146,10 @@ class Organization(RecordModel):
 
     custom_domain: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=True
+    )
+
+    profile_settings: Mapped[dict[str, Any]] = mapped_column(
+        "profile_settings", JSONB, nullable=False, default=dict
     )
 
     #

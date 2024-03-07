@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 from uuid import UUID
 
 from pydantic import UUID4, Field
@@ -14,6 +14,13 @@ from polar.models.organization import Organization as OrganizationModel
 if TYPE_CHECKING:
     from polar.integrations.github import types
 
+class OrganizationProfileSettings(Schema):
+    featured_projects: list[UUID4] | None = Field(
+        description="A list of featured projects"
+    )
+    featured_organizations: list[UUID4] | None = Field(
+        description="A list of featured organizations"
+    )
 
 # Public API
 class Organization(Schema):
@@ -43,6 +50,10 @@ class Organization(Schema):
     )
 
     custom_domain: str | None = None
+
+    profile_settings: OrganizationProfileSettings | None = Field(
+        description="Settings for the organization profile"
+    )
 
     # Team fields
     billing_email: str | None = Field(
@@ -86,6 +97,7 @@ class Organization(Schema):
             account_id=o.account_id,
             has_app_installed=o.installation_id is not None,
             custom_domain=o.custom_domain,
+            profile_settings=o.profile_settings,
             #
             billing_email=o.billing_email if include_member_fields else None,
             #
@@ -100,6 +112,10 @@ class Organization(Schema):
         )
 
 
+class OrganizationProfileSettingsUpdate(Schema):
+    featured_projects: list[UUID4] | None = None
+    featured_organizations: list[UUID4] | None = None
+    
 class OrganizationUpdate(Schema):
     set_default_upfront_split_to_contributors: bool | None = None
     default_upfront_split_to_contributors: int | None = Field(
@@ -119,6 +135,8 @@ class OrganizationUpdate(Schema):
 
     set_per_user_monthly_spending_limit: bool | None = None
     per_user_monthly_spending_limit: int | None = None
+
+    profile_settings: OrganizationProfileSettingsUpdate | None = None
 
 
 class OrganizationSetAccount(Schema):

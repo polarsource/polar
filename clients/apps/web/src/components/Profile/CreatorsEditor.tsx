@@ -1,5 +1,5 @@
 import { DragIndicatorOutlined } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization, OrganizationProfileSettings } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -9,8 +9,8 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
+import { useGetOrganization, useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -19,17 +19,30 @@ import { DraggableProps, useDraggable } from './useDraggable'
 
 const CreatorCard = <T,>({
   id,
-  organization,
+  organizationId,
   index,
   setItems,
   disabled,
-}: DraggableProps<T> & { organization: Organization }) => {
+}: DraggableProps<T> & { organizationId: string }) => {
   const { dragRef, previewRef, handlerId, isDragging } = useDraggable({
     id,
     index,
     setItems,
     disabled,
   })
+
+  const organization = useGetOrganization(organizationId).data
+
+  if (!organization) {
+    return (
+      <Card
+        ref={previewRef}
+        className={twMerge(
+          'dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600',
+        )}
+      ></Card>
+    )
+  }
 
   return (
     <Link href={organizationPageLink(organization)} data-handler-id={handlerId}>
@@ -43,7 +56,7 @@ const CreatorCard = <T,>({
         <CardHeader className="flex flex-row justify-between p-6">
           <div className="flex flex-col gap-y-4">
             <Avatar
-              className="h-12 w-12"
+              className="h-16 w-16"
               avatar_url={organization.avatar_url}
               name={organization.name}
             />
@@ -73,7 +86,7 @@ const CreatorCard = <T,>({
           )}
         </CardContent>
         <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
-          <div className="flex-items flex items-center gap-x-4">
+          <div className="flex-items flex items-center gap-x-2">
             <Button size="sm">Subscribe</Button>
             <Button size="sm" variant="ghost">
               GitHub Profile
@@ -87,19 +100,29 @@ const CreatorCard = <T,>({
 
 export interface CreatorsEditorProps {
   organization: Organization
-  creators: Organization[]
+  profile: OrganizationProfileSettings
   disabled?: boolean
 }
 
 export const CreatorsEditor = ({
   organization,
-  creators,
+  profile,
   disabled,
 }: CreatorsEditorProps) => {
-  const [selectedCreators, setSelectedCreators] =
-    useState<Organization[]>(creators)
-
   const { show, isShown, hide } = useModal()
+  const updateOrganizationMutation = useUpdateOrganization()
+
+  const updateFeaturedCreators = async (creators: string[]) => {
+    await updateOrganizationMutation.mutateAsync({
+      id: organization.id,
+      settings: {
+        profile_settings: {
+          ...profile,
+          featured_organizations: creators,
+        },
+      },
+    })
+  }
 
   return (
     <>
@@ -113,14 +136,14 @@ export const CreatorsEditor = ({
           )}
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {selectedCreators.map((creator, i) => (
+          {profile.featured_organizations.map((creator, i) => (
             <CreatorCard
-              key={creator.id}
+              key={creator}
               index={i}
-              id={creator.id}
-              organization={creator}
+              id={creator}
+              organizationId={creator}
               disabled={disabled}
-              setItems={setSelectedCreators}
+              setItems={(prev) => updateCreators}
             />
           ))}
         </div>
@@ -131,10 +154,9 @@ export const CreatorsEditor = ({
         hide={hide}
         modalContent={
           <CreatorsModal
-            creators={creators}
-            selectedCreators={selectedCreators}
+            creators={profile.featured_organizations}
             organization={organization}
-            setCreators={setSelectedCreators}
+            setCreators={updateFeaturedCreators}
             hideModal={hide}
           />
         }

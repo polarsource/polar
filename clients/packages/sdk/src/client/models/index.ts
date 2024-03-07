@@ -2033,6 +2033,12 @@ export interface CustomDomainExchangeRequest {
      * @memberof CustomDomainExchangeRequest
      */
     token: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomDomainExchangeRequest
+     */
+    secret: string;
 }
 /**
  * 

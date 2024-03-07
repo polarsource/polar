@@ -10,7 +10,7 @@ from polar.auth.schemas import (
     CustomDomainForwardResponse,
 )
 from polar.config import settings
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit import jwt
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -42,7 +42,7 @@ async def custom_domain_forward(
             "user_id": str(auth.subject.id),
             "domain": org.custom_domain,
         },
-        secret=settings.SECRET_CUSTOM_DOMAIN_EXCHANGE,
+        secret=settings.CUSTOM_DOMAIN_JWT_KEY,
         expires_in=5 * 60,  # 5 minutes
     )
 
@@ -58,9 +58,12 @@ async def custom_domain_exchange(
     request: CustomDomainExchangeRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomDomainExchangeResponse:
+    if request.secret != settings.CUSTOM_DOMAIN_FORWARD_SECRET:
+        raise Unauthorized()
+
     decoded = jwt.decode(
         token=request.token,
-        secret=settings.SECRET_CUSTOM_DOMAIN_EXCHANGE,
+        secret=settings.CUSTOM_DOMAIN_JWT_KEY,
         type="custom_domain_forward",
     )
 

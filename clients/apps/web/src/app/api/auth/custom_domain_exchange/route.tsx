@@ -13,11 +13,17 @@ export async function GET(request: Request) {
 
   const api = getServerSideAPI()
 
+  const secret = process.env.POLAR_CUSTOM_DOMAIN_FORWARD_SECRET
+  if (!secret) {
+    throw new Error('POLAR_CUSTOM_DOMAIN_FORWARD_SECRET not set')
+  }
+
   // exchange the token for a auth token
 
   const auth = await api.auth.customDomainExchange({
     customDomainExchangeRequest: {
-      token: token,
+      token,
+      secret,
     },
   })
 

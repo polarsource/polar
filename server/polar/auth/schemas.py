@@ -9,6 +9,7 @@ class CustomDomainForwardResponse(Schema):
 
 class CustomDomainExchangeRequest(Schema):
     token: str
+    secret: str
 
 
 class CustomDomainExchangeResponse(Schema):

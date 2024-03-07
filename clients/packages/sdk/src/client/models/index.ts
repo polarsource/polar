@@ -4337,6 +4337,12 @@ export interface Organization {
      */
     custom_domain?: string;
     /**
+     * 
+     * @type {OrganizationProfileSettings}
+     * @memberof Organization
+     */
+    profile_settings: OrganizationProfileSettings;
+    /**
      * Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization
      * @type {string}
      * @memberof Organization
@@ -4495,6 +4501,44 @@ export interface OrganizationMember {
 /**
  * 
  * @export
+ * @interface OrganizationProfileSettings
+ */
+export interface OrganizationProfileSettings {
+    /**
+     * A list of featured projects
+     * @type {Array<string>}
+     * @memberof OrganizationProfileSettings
+     */
+    featured_projects: Array<string>;
+    /**
+     * A list of featured organizations
+     * @type {Array<string>}
+     * @memberof OrganizationProfileSettings
+     */
+    featured_organizations: Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationProfileSettingsUpdate
+ */
+export interface OrganizationProfileSettingsUpdate {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OrganizationProfileSettingsUpdate
+     */
+    featured_projects: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OrganizationProfileSettingsUpdate
+     */
+    featured_organizations: Array<string>;
+}
+/**
+ * 
+ * @export
  * @interface OrganizationSetAccount
  */
 export interface OrganizationSetAccount {
@@ -4590,6 +4634,12 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     per_user_monthly_spending_limit?: number;
+    /**
+     * 
+     * @type {OrganizationProfileSettingsUpdate}
+     * @memberof OrganizationUpdate
+     */
+    profile_settings?: OrganizationProfileSettingsUpdate;
 }
 /**
  * 

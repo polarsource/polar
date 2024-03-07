@@ -3,44 +3,37 @@ import { api } from 'polarkit'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { Separator } from 'polarkit/components/ui/separator'
+import { useGetOrganization } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 
 export interface CreatorsModalProps {
-  creators: Organization[]
-  selectedCreators: Organization[]
+  creators: string[]
   organization: Organization
   hideModal: () => void
-  setCreators: (creators: Organization[]) => void
+  setCreators: (creators: string[]) => void
 }
 
 export const CreatorsModal = ({
   creators,
   organization,
-  selectedCreators,
   hideModal,
   setCreators,
 }: CreatorsModalProps) => {
   const [username, setUsername] = useState('')
 
-  const uniqueCreators = new Map([
-    ...selectedCreators.map((repo) => [repo.id, repo] as const),
-    ...creators.map((repo) => [repo.id, repo] as const),
-  ])
-
   const addCreator = useCallback(
     async (organizationName: string) => {
       const creator = await api.organizations.lookup({
-        organizationName,
         platform: Platforms.GITHUB,
+        organizationName,
       })
 
       if (creator) {
-        setCreators([creator, ...selectedCreators])
+        setCreators([creator.id, ...creators])
       }
     },
-    [selectedCreators, setCreators],
+    [creators, setCreators],
   )
 
   return (
@@ -61,42 +54,35 @@ export const CreatorsModal = ({
       </div>
       <div className="flex w-full flex-col gap-y-8">
         <div className="flex max-h-[300px] w-full flex-col overflow-y-auto">
-          {[...uniqueCreators.values()].map((creator) => (
-            <div
-              key={creator.id}
-              className="dark:hover:bg-polar-700 dark:text-polar-50 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100"
-            >
-              <div className="flex flex-row items-center gap-x-2">
-                <Avatar
-                  className="h-8 w-8"
-                  avatar_url={creator.avatar_url}
-                  name={creator.name}
-                />
-                <span>{creator.name}</span>
-              </div>
-              <div className="flex flex-row items-center gap-x-4">
-                <Checkbox
-                  checked={selectedCreators.some(
-                    (org) => org.id === creator.id,
-                  )}
-                  onCheckedChange={(v) => {
-                    if (Boolean(v)) {
-                      setCreators([...selectedCreators, creator])
-                    } else {
-                      setCreators(
-                        selectedCreators.filter((org) => org.id !== creator.id),
-                      )
-                    }
-                  }}
-                />
-              </div>
-            </div>
+          {creators.map((creator) => (
+            <CreatorRow key={creator} organizationId={creator} />
           ))}
         </div>
         <Separator className="dark:bg-polar-600" />
         <div className="flex flex-row items-center justify-end gap-x-2">
           <Button onClick={hideModal}>Save</Button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+const CreatorRow = ({ organizationId }: { organizationId: string }) => {
+  const creator = useGetOrganization(organizationId).data
+
+  if (!creator) {
+    return null
+  }
+
+  return (
+    <div className="dark:hover:bg-polar-700 dark:text-polar-50 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100">
+      <div className="flex flex-row items-center gap-x-2">
+        <Avatar
+          className="h-8 w-8"
+          avatar_url={creator.avatar_url}
+          name={creator.name}
+        />
+        <span>{creator.name}</span>
       </div>
     </div>
   )

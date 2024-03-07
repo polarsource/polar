@@ -36,6 +36,16 @@ export const useOrganizationLookup: (
     retry: defaultRetry,
   })
 
+export const useGetOrganization: (
+  id: string,
+) => UseQueryResult<Organization> = (id) =>
+  useQuery({
+    queryKey: ['organizations', id],
+    queryFn: () => api.organizations.get({ id }),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
 export const useListAllOrganizations = (isAdminOnly = false) =>
   useQuery({
     queryKey: ['user', 'allOrganizations', isAdminOnly],
@@ -170,6 +180,10 @@ export const useUpdateOrganization = () =>
     },
     onSuccess: (result, variables, ctx) => {
       updateOrgsCache(result)
+
+      queryClient.invalidateQueries({
+        queryKey: ['organizations', variables.id],
+      })
     },
   })
 

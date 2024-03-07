@@ -64,6 +64,7 @@
     "rss": "^1.2.2",
     "sass": "^1.59.3",
     "satori": "^0.10.11",
+    "schema-dts": "^1.1.2",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-radix": "^2.8.0"
   },

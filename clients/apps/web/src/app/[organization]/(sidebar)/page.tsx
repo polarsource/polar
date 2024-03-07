@@ -16,6 +16,13 @@ import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
+import { externalURL } from '@/components/Organization'
+import {
+  Organization as JSONLDOrganization,
+  Person as JSONLDPerson,
+  WithContext,
+} from 'schema-dts'
+
 const cacheConfig = {
   next: {
     revalidate: 30, // 30 seconds
@@ -229,15 +236,51 @@ export default async function Page({
       ?.sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0))
       .slice(0, 2) ?? []
 
+  let jsonLd:
+    | WithContext<JSONLDOrganization>
+    | WithContext<JSONLDPerson>
+    | undefined
+
+  const sameAs = [`https://github.com/${organization.name}`]
+
+  if (organization.blog) {
+    sameAs.push(externalURL(organization.blog))
+  }
+  if (organization.twitter_username) {
+    sameAs.push(`https://twitter.com/${organization.twitter_username}`)
+  }
+
+  if (organization.is_personal) {
+    jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: organization.pretty_name || organization.name,
+      sameAs,
+    } as WithContext<JSONLDPerson>
+  } else {
+    jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: organization.pretty_name || organization.name,
+      sameAs,
+    } as WithContext<JSONLDOrganization>
+  }
+
   return (
-    <ClientPage
-      organization={organization}
-      posts={posts}
-      repositories={sortedRepositories}
-      subscriptionTiers={subscriptionTiers}
-      subscriptionsSummary={subscriptionsSummary}
-      adminOrganizations={listAdminOrganizations?.items ?? []}
-      issues={listIssueFunding?.items ?? []}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ClientPage
+        organization={organization}
+        posts={posts}
+        repositories={sortedRepositories}
+        subscriptionTiers={subscriptionTiers}
+        subscriptionsSummary={subscriptionsSummary}
+        adminOrganizations={listAdminOrganizations?.items ?? []}
+        issues={listIssueFunding?.items ?? []}
+      />
+    </>
   )
 }

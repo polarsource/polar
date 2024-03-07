@@ -75,6 +75,9 @@ const CreatorCard = <T,>({
         <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
           <div className="flex-items flex items-center gap-x-4">
             <Button size="sm">Subscribe</Button>
+            <Button size="sm" variant="ghost">
+              GitHub Profile
+            </Button>
           </div>
         </CardFooter>
       </Card>

@@ -17,11 +17,7 @@ import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 import { externalURL } from '@/components/Organization'
-import {
-  Organization as JSONLDOrganization,
-  Person as JSONLDPerson,
-  WithContext,
-} from 'schema-dts'
+import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
 const cacheConfig = {
   next: {
@@ -236,13 +232,9 @@ export default async function Page({
       ?.sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0))
       .slice(0, 2) ?? []
 
-  let jsonLd:
-    | WithContext<JSONLDOrganization>
-    | WithContext<JSONLDPerson>
-    | undefined
-
+  // Build JSON-LD for this page
+  let jsonLd: WithContext<JSONLDProfilePage> | undefined
   const sameAs = [`https://github.com/${organization.name}`]
-
   if (organization.blog) {
     sameAs.push(externalURL(organization.blog))
   }
@@ -251,19 +243,35 @@ export default async function Page({
   }
 
   if (organization.is_personal) {
-    jsonLd = {
+    const person: WithContext<JSONLDProfilePage> = {
       '@context': 'https://schema.org',
-      '@type': 'Person',
+      '@type': 'ProfilePage',
       name: organization.pretty_name || organization.name,
+      image: organization.avatar_url,
       sameAs,
-    } as WithContext<JSONLDPerson>
+      mainEntity: {
+        '@type': 'Person',
+        name: organization.pretty_name || organization.name,
+        alternateName: organization.name,
+        image: organization.avatar_url,
+      },
+    }
+    jsonLd = person
   } else {
-    jsonLd = {
+    const org: WithContext<JSONLDProfilePage> = {
       '@context': 'https://schema.org',
-      '@type': 'Organization',
+      '@type': 'ProfilePage',
       name: organization.pretty_name || organization.name,
+      image: organization.avatar_url,
       sameAs,
-    } as WithContext<JSONLDOrganization>
+      mainEntity: {
+        '@type': 'Organization',
+        name: organization.pretty_name || organization.name,
+        alternateName: organization.name,
+        image: organization.avatar_url,
+      },
+    }
+    jsonLd = org
   }
 
   return (

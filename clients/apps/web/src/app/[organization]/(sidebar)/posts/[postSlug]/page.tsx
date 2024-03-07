@@ -1,7 +1,7 @@
 import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import { redirectToCustomDomain } from '@/utils/nav'
+import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Article,
   ListResourceSubscriptionTier,
@@ -168,11 +168,12 @@ export default async function Page({
     notFound()
   }
 
-  redirectToCustomDomain(
-    article.organization,
-    headers(),
-    `/posts/${article.slug}`,
-  )
+  redirectToCanonicalDomain({
+    organization: article.organization,
+    paramOrganizationName: params.organization,
+    headers: headers(),
+    subPath: `/posts/${article.slug}`,
+  })
 
   return (
     <ClientPage

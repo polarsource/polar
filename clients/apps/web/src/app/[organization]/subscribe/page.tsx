@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api'
-import { redirectToCustomDomain } from '@/utils/nav'
+import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   ListResourceSubscriptionTier,
   Organization,
@@ -126,7 +126,12 @@ export default async function Page({
     notFound()
   }
 
-  redirectToCustomDomain(organization, headers())
+  redirectToCanonicalDomain({
+    organization,
+    paramOrganizationName: params.organization,
+    headers: headers(),
+    subPath: `/subscribe`,
+  })
 
   return (
     <ClientPage

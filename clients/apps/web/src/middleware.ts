@@ -11,6 +11,9 @@ export async function middleware(request: NextRequest) {
   if (url.pathname.startsWith('/_next/')) {
     return
   }
+  if (url.pathname.startsWith('/favicon.ico')) {
+    return
+  }
 
   // Proxy API requests to the Python API
   // Used on custom domains

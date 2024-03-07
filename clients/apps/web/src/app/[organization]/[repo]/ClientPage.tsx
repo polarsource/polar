@@ -4,7 +4,6 @@ import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForF
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
-  ListResourceArticle,
   ListResourceIssueFunding,
   Organization,
   Repository,
@@ -23,8 +22,6 @@ const ClientPage = ({
   organization: Organization
   repository: Repository
   issuesFunding: ListResourceIssueFunding
-  articles: ListResourceArticle
-  pinnedArticles: ListResourceArticle
 }) => {
   useTrafficRecordPageView({ organization })
 

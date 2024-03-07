@@ -12,7 +12,7 @@
     "dist/*"
   ],
   "scripts": {
-    "download": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json",
+    "download": "node scripts/generate-schema.cjs http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json",
     "generate": "pnpm download && ./generate",
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "prepublishOnly": "pnpm run build"

@@ -148,19 +148,18 @@ class BalanceTransactionService(BaseTransactionService):
         session: AsyncSession,
         *,
         balance_transactions: tuple[Transaction, Transaction],
-        destination_currency: str,
         amount: int,
         platform_fee_type: PlatformFeeType | None = None,
         outgoing_incurred_by: Transaction | None = None,
         incoming_incurred_by: Transaction | None = None,
     ) -> tuple[Transaction, Transaction]:
+        currency = "usd"  # FIXME: Main Polar currency
+
         outgoing, incoming = balance_transactions
         source_account_id = incoming.account_id
         assert source_account_id is not None
         source_account = await account_service.get(session, source_account_id)
         assert source_account is not None
-
-        source_currency = source_account.currency
 
         balance_correlation_key = str(uuid.uuid4())
 
@@ -168,9 +167,9 @@ class BalanceTransactionService(BaseTransactionService):
             id=generate_uuid(),
             account=source_account,  # User account
             type=TransactionType.balance,
-            currency=destination_currency,
+            currency=currency,
             amount=-amount,  # Subtract the amount
-            account_currency=source_currency,
+            account_currency=currency,
             account_amount=-amount,
             tax_amount=0,
             balance_correlation_key=balance_correlation_key,
@@ -185,9 +184,9 @@ class BalanceTransactionService(BaseTransactionService):
             id=generate_uuid(),
             account=None,  # Polar account
             type=TransactionType.balance,
-            currency=destination_currency,
+            currency=currency,
             amount=amount,  # Add the amount
-            account_currency=destination_currency,
+            account_currency=currency,
             account_amount=amount,
             tax_amount=0,
             balance_correlation_key=balance_correlation_key,

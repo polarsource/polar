@@ -276,10 +276,7 @@ class TestCreateReversalBalance:
             outgoing,
             incoming,
         ) = await balance_transaction_service.create_reversal_balance(
-            session,
-            balance_transactions=balance_transactions,
-            destination_currency="usd",
-            amount=1000,
+            session, balance_transactions=balance_transactions, amount=1000
         )
 
         assert outgoing.account_id == account.id

@@ -2,6 +2,7 @@
 
 import AccountBalance from '@/components/Transactions/AccountBalance'
 import AccountBanner from '@/components/Transactions/AccountBanner'
+import PayoutTransactionsList from '@/components/Transactions/PayoutTransactionsList'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
 import { TransactionType } from '@polar-sh/sdk'
@@ -146,7 +147,7 @@ export default function ClientPage({
             />
           </TabsContent>
           <TabsContent value="payouts">
-            <TransactionsList
+            <PayoutTransactionsList
               transactions={payouts}
               pageCount={payoutsCount}
               pagination={pagination}

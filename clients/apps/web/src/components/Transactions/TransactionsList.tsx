@@ -6,6 +6,7 @@ import {
   PlatformFeeType,
   Transaction,
   TransactionEmbedded,
+  TransactionType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -42,11 +43,15 @@ const getTransactionMeta = (transaction: Transaction) => {
       organization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
-  } else {
+  } else if (transaction.type === TransactionType.PAYOUT) {
     return {
-      type: transaction.type,
+      type: 'Payout',
       meta: undefined,
     }
+  }
+  return {
+    type: transaction.type,
+    meta: undefined,
   }
 }
 
@@ -127,9 +132,10 @@ interface TransactionsListProps {
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
   sorting: DataTableSortingState
   onSortingChange?: DataTableOnChangeFn<DataTableSortingState>
+  extraColumns?: DataTableColumnDef<Transaction | TransactionEmbedded>[]
 }
 
-const isTransaction = (
+export const isTransaction = (
   t: Transaction | TransactionEmbedded,
 ): t is Transaction => t.hasOwnProperty('account_incurred_transactions')
 
@@ -140,6 +146,7 @@ const TransactionsList = ({
   onPaginationChange,
   sorting,
   onSortingChange,
+  extraColumns,
 }: TransactionsListProps) => {
   const columns: DataTableColumnDef<Transaction | TransactionEmbedded>[] = [
     {
@@ -274,6 +281,7 @@ const TransactionsList = ({
         )
       },
     },
+    ...(extraColumns || []),
   ]
 
   return (

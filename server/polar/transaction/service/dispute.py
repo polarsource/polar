@@ -93,7 +93,6 @@ class DisputeTransactionService(BaseTransactionService):
             await balance_transaction_service.create_reversal_balance(
                 session,
                 balance_transactions=balance_transactions_couple,
-                destination_currency=dispute.currency,
                 amount=balance_refund_amount,
             )
 

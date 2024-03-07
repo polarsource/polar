@@ -145,7 +145,6 @@ class PlatformFeeTransactionService(BaseTransactionService):
         return await balance_transaction_service.create_reversal_balance(
             session,
             balance_transactions=balance_transactions,
-            destination_currency=outgoing.currency,
             amount=fee_amount,
             platform_fee_type=PlatformFeeType.platform,
             outgoing_incurred_by=incoming,
@@ -179,7 +178,6 @@ class PlatformFeeTransactionService(BaseTransactionService):
                     await balance_transaction_service.create_reversal_balance(
                         session,
                         balance_transactions=balance_transactions,
-                        destination_currency=outgoing.currency,
                         amount=-incurred_fee.amount,
                         platform_fee_type=PlatformFeeType.payment,
                         outgoing_incurred_by=incoming,
@@ -195,7 +193,6 @@ class PlatformFeeTransactionService(BaseTransactionService):
             fee_balances = await balance_transaction_service.create_reversal_balance(
                 session,
                 balance_transactions=balance_transactions,
-                destination_currency=outgoing.currency,
                 amount=invoice_fee_amount,
                 platform_fee_type=PlatformFeeType.invoice,
                 outgoing_incurred_by=incoming,
@@ -209,7 +206,6 @@ class PlatformFeeTransactionService(BaseTransactionService):
             fee_balances = await balance_transaction_service.create_reversal_balance(
                 session,
                 balance_transactions=balance_transactions,
-                destination_currency=outgoing.currency,
                 amount=subscription_fee_amount,
                 platform_fee_type=PlatformFeeType.subscription,
                 outgoing_incurred_by=incoming,

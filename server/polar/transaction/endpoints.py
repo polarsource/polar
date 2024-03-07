@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.account.service import account as account_service
@@ -11,7 +12,12 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncSession,
+    AsyncSessionMaker,
+    get_db_session,
+    get_db_sessionmaker,
+)
 from polar.tags.api import Tags
 
 from .schemas import (
@@ -127,3 +133,35 @@ async def create_payout(
         raise NotPermitted()
 
     return await payout_transaction_service.create_payout(session, account=account)
+
+
+@router.get("/payouts/{id}/csv", tags=[Tags.PUBLIC])
+async def get_payout_csv(
+    id: UUID4,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+    authz: Authz = Depends(Authz.authz),
+) -> StreamingResponse:
+    payout = await payout_transaction_service.get(session, id)
+
+    if payout is None:
+        raise ResourceNotFound("Payout not found")
+
+    assert payout.account_id is not None
+    account = await account_service.get(session, payout.account_id)
+    assert account is not None
+
+    if not await authz.can(auth.user, AccessType.write, account):
+        raise NotPermitted()
+
+    content = payout_transaction_service.get_payout_csv(
+        sessionmaker, account=account, payout=payout
+    )
+    filename = f"polar-payout-{payout.created_at.isoformat()}.csv"
+
+    return StreamingResponse(
+        content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

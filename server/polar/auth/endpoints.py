@@ -10,7 +10,7 @@ from polar.auth.schemas import (
     CustomDomainForwardResponse,
 )
 from polar.config import settings
-from polar.exceptions import BadRequest, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit import jwt
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -59,11 +59,10 @@ async def custom_domain_exchange(
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomDomainExchangeResponse:
     decoded = jwt.decode(
-        token=request.token, secret=settings.SECRET_CUSTOM_DOMAIN_EXCHANGE
+        token=request.token,
+        secret=settings.SECRET_CUSTOM_DOMAIN_EXCHANGE,
+        type="custom_domain_forward",
     )
-
-    if decoded["type"] != "custom_domain_forward":
-        raise BadRequest("unexpected jwt type")
 
     # get user
     user = await user_service.get(session, decoded["user_id"])

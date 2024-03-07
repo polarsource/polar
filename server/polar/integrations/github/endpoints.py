@@ -97,10 +97,7 @@ async def github_authorize(
     if auth.user is not None:
         state["user_id"] = str(auth.user.id)
 
-    encoded_state = jwt.encode(
-        data=state,
-        secret=settings.SECRET,
-    )
+    encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="github_oauth")
     authorization_url = await github_oauth_client.get_authorization_url(
         redirect_uri=str(request.url_for("integrations.github.callback")),
         state=encoded_state,
@@ -127,7 +124,9 @@ async def github_callback(
         raise OAuthCallbackError("No state")
 
     try:
-        state_data = jwt.decode(token=state, secret=settings.SECRET)
+        state_data = jwt.decode(
+            token=state, secret=settings.SECRET, type="github_oauth"
+        )
     except jwt.DecodeError as e:
         raise OAuthCallbackError("Invalid state") from e
 

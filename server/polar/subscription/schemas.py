@@ -74,7 +74,11 @@ class SubscriptionBenefitDiscordProperties(Schema):
     @computed_field  # type: ignore[misc]
     @property
     def guild_token(self) -> str:
-        return jwt.encode(data={"guild_id": self.guild_id}, secret=settings.SECRET)
+        return jwt.encode(
+            data={"guild_id": self.guild_id},
+            secret=settings.SECRET,
+            type="discord_guild_token",
+        )
 
 
 class SubscriptionBenefitDiscordCreateProperties(Schema):
@@ -85,7 +89,9 @@ class SubscriptionBenefitDiscordCreateProperties(Schema):
     @classmethod
     def validate_guild_token(cls, v: str) -> str:
         try:
-            guild_token_data = jwt.decode(token=v, secret=settings.SECRET)
+            guild_token_data = jwt.decode(
+                token=v, secret=settings.SECRET, type="discord_guild_token"
+            )
             return guild_token_data["guild_id"]
         except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             raise ValueError(

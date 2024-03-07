@@ -38,7 +38,11 @@ def get_decoded_token_state(
         raise Unauthorized("No state")
 
     try:
-        state_data = jwt.decode(token=state, secret=settings.SECRET)
+        state_data = jwt.decode(
+            token=state,
+            secret=settings.SECRET,
+            type="discord_oauth",
+        )
     except jwt.DecodeError as e:
         raise Unauthorized("Invalid state") from e
 
@@ -64,7 +68,7 @@ async def discord_bot_authorize(
 ) -> RedirectResponse:
     state = {"auth_type": "bot", "user_id": str(auth.user.id), "return_to": return_to}
 
-    encoded_state = jwt.encode(data=state, secret=settings.SECRET)
+    encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="discord_oauth")
 
     authorization_url = await oauth.bot_client.get_authorization_url(
         redirect_uri=str(request.url_for("integrations.discord.bot_callback")),
@@ -96,7 +100,11 @@ async def discord_bot_callback(
     # We need to set this ID on a subsequent API call (e.g. create Discord benefit).
     # To make sure a malicious user won't arbitrarily set guild IDs, we pass it as
     # a signed JWT token.
-    guild_token = jwt.encode(data={"guild_id": guild_id}, secret=settings.SECRET)
+    guild_token = jwt.encode(
+        data={"guild_id": guild_id},
+        secret=settings.SECRET,
+        type="discord_guild_token",
+    )
 
     return_to = state["return_to"]
     redirect_url = get_safe_return_url(
@@ -124,7 +132,11 @@ async def discord_user_authorize(
     return_to: ReturnTo, request: Request, auth: UserRequiredAuth
 ) -> RedirectResponse:
     state = {"auth_type": "user", "user_id": str(auth.user.id), "return_to": return_to}
-    encoded_state = jwt.encode(data=state, secret=settings.SECRET)
+    encoded_state = jwt.encode(
+        data=state,
+        secret=settings.SECRET,
+        type="discord_oauth",
+    )
 
     authorization_url = await oauth.user_client.get_authorization_url(
         redirect_uri=str(request.url_for("integrations.discord.user_callback")),
@@ -172,7 +184,11 @@ async def discord_user_callback(
 )
 async def discord_guild_lookup(guild_token: str) -> DiscordGuild:
     try:
-        guild_token_data = jwt.decode(token=guild_token, secret=settings.SECRET)
+        guild_token_data = jwt.decode(
+            token=guild_token,
+            secret=settings.SECRET,
+            type="discord_guild_token",
+        )
         guild_id = guild_token_data["guild_id"]
     except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError) as e:
         raise Unauthorized() from e

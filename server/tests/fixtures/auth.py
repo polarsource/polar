@@ -16,6 +16,7 @@ async def auth_jwt(
         },
         secret=settings.SECRET,
         expires_at=expires_at,
+        type="auth",
     )
     return token
 
@@ -31,5 +32,6 @@ async def user_second_auth_jwt(
         },
         secret=settings.SECRET,
         expires_at=expires_at,
+        type="auth",
     )
     return token

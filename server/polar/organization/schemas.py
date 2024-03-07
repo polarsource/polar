@@ -78,6 +78,11 @@ class Organization(Schema):
         o: OrganizationModel,
         include_member_fields: bool = False,
     ) -> Self:
+        profile_settings = OrganizationProfileSettings(
+            featured_projects=o.profile_settings.get("featured_projects", []),
+            featured_organizations=o.profile_settings.get("featured_organizations", []),
+        )
+
         return cls(
             id=o.id,
             platform=o.platform,
@@ -97,7 +102,7 @@ class Organization(Schema):
             account_id=o.account_id,
             has_app_installed=o.installation_id is not None,
             custom_domain=o.custom_domain,
-            profile_settings=o.profile_settings,
+            profile_settings=profile_settings,
             #
             billing_email=o.billing_email if include_member_fields else None,
             #

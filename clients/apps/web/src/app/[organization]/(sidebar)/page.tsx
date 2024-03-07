@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api'
-import { redirectToCustomDomain } from '@/utils/nav'
+import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   ListResourceArticle,
   ListResourceIssueFunding,
@@ -213,7 +213,11 @@ export default async function Page({
     notFound()
   }
 
-  redirectToCustomDomain(organization, headers())
+  redirectToCanonicalDomain({
+    organization,
+    paramOrganizationName: params.organization,
+    headers: headers(),
+  })
 
   const posts = [
     ...(pinnedArticles.items ?? []),

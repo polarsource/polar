@@ -5,6 +5,7 @@ import {
 } from '@/components/Organization/filters'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
+import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   ListResourceRepository,
   Organization,
@@ -12,6 +13,7 @@ import {
   ResponseError,
 } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -108,61 +110,47 @@ export default async function Page({
   const api = getServerSideAPI()
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  const [repositories, issuesFunding, pinnedArticles, articles] =
-    await Promise.all([
-      api.repositories.search(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          repositoryName: params.repo,
-        },
-        cacheConfig,
-      ),
-      api.funding.search(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          repositoryName: params.repo,
-          query: filters.q,
-          sorting: filters.sort,
-          badged: filters.badged,
-          limit: 20,
-          closed: filters.closed,
-          page: searchParams.page ? parseInt(searchParams.page) : 1,
-        },
-        cacheConfig,
-      ),
-      api.articles.search({
+  const [repository, issuesFunding] = await Promise.all([
+    api.repositories.lookup(
+      {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
-        isPinned: true,
-        limit: 3,
-      }),
-      api.articles.search({
+        repositoryName: params.repo,
+      },
+      cacheConfig,
+    ),
+    api.funding.search(
+      {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
-        isPinned: false,
-        limit: 3,
-      }),
-    ])
+        repositoryName: params.repo,
+        query: filters.q,
+        sorting: filters.sort,
+        badged: filters.badged,
+        limit: 20,
+        closed: filters.closed,
+        page: searchParams.page ? parseInt(searchParams.page) : 1,
+      },
+      cacheConfig,
+    ),
+  ])
 
-  if (repositories === undefined) {
+  if (repository === undefined) {
     return <PageNotFound />
   }
 
-  const repo = repositories.items?.find((r) => r.name === params.repo)
-
-  if (!repo) {
-    return <PageNotFound />
-  }
+  redirectToCanonicalDomain({
+    organization: repository.organization,
+    paramOrganizationName: params.organization,
+    headers: headers(),
+    subPath: `/${params.repo}`,
+  })
 
   return (
     <ClientPage
-      organization={repo.organization}
-      repository={repo}
+      organization={repository.organization}
+      repository={repository}
       issuesFunding={issuesFunding}
-      pinnedArticles={pinnedArticles}
-      articles={articles}
     />
   )
 }

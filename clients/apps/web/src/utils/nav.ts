@@ -4,22 +4,32 @@ import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
 import { organizationPageLink } from 'polarkit/utils/nav'
 
-export const redirectToCustomDomain = (
-  org: Organization,
-  headers: ReadonlyHeaders,
-  path?: string,
-) => {
-  if (!org.custom_domain) {
-    return
+export const redirectToCanonicalDomain = ({
+  organization,
+  paramOrganizationName,
+  headers,
+  subPath,
+}: {
+  organization: Organization
+  paramOrganizationName: string
+  headers: ReadonlyHeaders
+  subPath?: string
+}) => {
+  // Redirect to custom domain.
+  // Example: polar.sh/zegl -> zegl.se
+  if (organization.custom_domain) {
+    const requestHost = headers.get('host')
+    if (!requestHost) {
+      return
+    }
+    if (requestHost !== organization.custom_domain) {
+      redirect(organizationPageLink(organization, subPath))
+    }
   }
 
-  const requestHost = headers.get('host')
-  if (!requestHost) {
-    return
-  }
-
-  if (requestHost !== org.custom_domain) {
-    redirect(organizationPageLink(org, path))
+  // Redirect to canonical spelling of org name
+  if (paramOrganizationName !== organization.name) {
+    redirect(`/${organization.name}${subPath ?? ''}`)
   }
 }
 

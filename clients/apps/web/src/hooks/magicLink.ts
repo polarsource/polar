@@ -10,14 +10,8 @@ import { useCallback, useContext } from 'react'
 export const useSendMagicLink = () => {
   const router = useRouter()
 
+  // Get org state from context (may or may not be set)
   const org = useContext(PublicPageOrganizationContext)
-
-  if (!org) {
-    // TODO: once custom domains are out: make this throw
-    console.error(
-      'useSendMagicLink used outside of a PublicPageOrganizationContext',
-    )
-  }
 
   const func = useCallback(
     async (email: string, return_to?: string) => {

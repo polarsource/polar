@@ -52,7 +52,7 @@ export const OrganizationPublicSidebar = ({
 
   const isAdmin = userAdminOrganizations.some((o) => o.id === organization.id)
 
-  const isPostView = pathname.includes('/posts/')
+  const isPostView = pathname?.includes('/posts/')
 
   const shouldRenderSubscriberCount =
     (subscriptionsSummary.items?.length ?? 0) > 0

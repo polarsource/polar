@@ -18,9 +18,11 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = () => {
-  const { post: postSlug, organization: organizationName } = useParams()
   const params = useParams()
-  const post = useArticleLookup(organizationName as string, postSlug as string)
+  const post = useArticleLookup(
+    params?.organization as string,
+    params?.post as string,
+  )
   const [animateSaveBanner, setAnimateSaveBanner] = useState(false)
   const [isInSavedState, setIsInSavedState] = useState(false)
   const [tab, setTab] = useState(
@@ -99,7 +101,7 @@ const ClientPage = () => {
     return () => {
       window.removeEventListener('keydown', keyHandler)
     }
-  }, [handleSave, router, organizationName, postSlug])
+  }, [handleSave, router, params])
 
   if (!post.data) {
     return (

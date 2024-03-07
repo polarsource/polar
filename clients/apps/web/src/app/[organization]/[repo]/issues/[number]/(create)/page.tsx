@@ -1,4 +1,5 @@
 import { getServerSideAPI } from '@/utils/api'
+import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Issue,
   Pledger,
@@ -7,6 +8,7 @@ import {
   RewardsSummary,
 } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -81,14 +83,16 @@ export default async function Page({
   let rewards: RewardsSummary | undefined
   let pulls: PullRequest[] = []
 
+  const api = getServerSideAPI()
+
   try {
-    const api = getServerSideAPI()
     issue = await api.issues.lookup(
       {
         externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
       },
       cacheConfig,
     )
+
     const [bodyResponse, pledgeSummary, rewardsSummary, pullRequests] =
       await Promise.all([
         api.issues.getBody({ id: issue.id }, { next: { revalidate: 60 } }), // Cache for 60s
@@ -96,6 +100,7 @@ export default async function Page({
         api.rewards.summary({ issueId: issue.id }, cacheConfig),
         api.pullRequests.search({ referencesIssueId: issue.id }, cacheConfig),
       ])
+
     issueHTMLBody = bodyResponse
     pledgers = pledgeSummary.pledges
       .map(({ pledger }) => pledger)
@@ -111,6 +116,13 @@ export default async function Page({
   if (!issue) {
     notFound()
   }
+
+  redirectToCanonicalDomain({
+    organization: issue.repository.organization,
+    paramOrganizationName: params.organization,
+    headers: headers(),
+    subPath: `/${issue.repository.name}/issues/${issue.number}`,
+  })
 
   return (
     <ClientPage

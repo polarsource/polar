@@ -5,7 +5,11 @@ import {
   DragIndicatorOutlined,
   HiveOutlined,
 } from '@mui/icons-material'
-import { Organization, Repository } from '@polar-sh/sdk'
+import {
+  Organization,
+  OrganizationProfileSettings,
+  Repository,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -15,6 +19,7 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
+import { useUpdateOrganization } from 'polarkit/hooks'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useState } from 'react'
@@ -105,20 +110,43 @@ const RepositoryCard = <T,>({
 
 export interface ProjectsEditorProps {
   organization: Organization
+  profile: OrganizationProfileSettings
   repositories: Repository[]
   disabled?: boolean
 }
 
 export const ProjectsEditor = ({
   organization,
+  profile,
   repositories,
   disabled,
 }: ProjectsEditorProps) => {
-  const [selectedRepositories, setSelectedRepositories] = useState<
-    Repository[]
-  >(repositories.slice(0, 4))
+  const [featuredProjects, setFeaturedProjects] = useState(
+    profile.featured_projects
+      .map((id) => repositories.find((r) => r.id === id))
+      .filter((value): value is Repository => Boolean(value)),
+  )
 
   const { show, isShown, hide } = useModal()
+
+  const updateOrganizationMutation = useUpdateOrganization()
+
+  const updateFeaturedProjects = (
+    producer: (prev: Repository[]) => Repository[],
+  ) => {
+    const newRepos = producer(featuredProjects)
+
+    setFeaturedProjects(newRepos)
+
+    updateOrganizationMutation.mutateAsync({
+      id: organization.id,
+      settings: {
+        profile_settings: {
+          featured_projects: newRepos.map((repo) => repo.id),
+        },
+      },
+    })
+  }
 
   return (
     <>
@@ -140,14 +168,14 @@ export const ProjectsEditor = ({
           )}
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {selectedRepositories.map((repository, i) => (
+          {featuredProjects.map((project, i) => (
             <RepositoryCard
-              key={repository.id}
+              key={project.id}
               index={i}
-              id={repository.id}
-              repository={repository}
+              id={project.id}
+              repository={project}
               disabled={disabled}
-              setItems={setSelectedRepositories}
+              setItems={updateFeaturedProjects}
             />
           ))}
         </div>
@@ -158,10 +186,10 @@ export const ProjectsEditor = ({
         hide={hide}
         modalContent={
           <ProjectsModal
+            featuredRepositories={featuredProjects}
+            setFeaturedProjects={updateFeaturedProjects}
             repositories={repositories}
-            selectedRepositories={selectedRepositories}
             organization={organization}
-            setRepositories={setSelectedRepositories}
             hideModal={hide}
           />
         }

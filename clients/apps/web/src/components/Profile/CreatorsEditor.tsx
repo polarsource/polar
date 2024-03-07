@@ -49,28 +49,16 @@ const CreatorCard = <T,>({
       <Card
         ref={previewRef}
         className={twMerge(
-          'dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600',
+          'dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col gap-y-2 rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600 ',
           isDragging && 'opacity-30',
         )}
       >
         <CardHeader className="flex flex-row justify-between p-6">
-          <div className="flex flex-col gap-y-4">
-            <Avatar
-              className="h-16 w-16"
-              avatar_url={organization.avatar_url}
-              name={organization.name}
-            />
-            <div className="flex flex-row items-baseline gap-x-3">
-              <h3 className="dark:text-polar-50 text-lg text-gray-950">
-                {organization.pretty_name || organization.name}
-              </h3>
-              {organization.pretty_name && (
-                <h3 className="text-blue-500 dark:text-blue-400">
-                  @{organization.name}
-                </h3>
-              )}
-            </div>
-          </div>
+          <Avatar
+            className="h-16 w-16"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
           {!disabled && (
             <span ref={dragRef} className="cursor-grab">
               <DragIndicatorOutlined
@@ -80,7 +68,17 @@ const CreatorCard = <T,>({
             </span>
           )}
         </CardHeader>
-        <CardContent className="flex h-full grow flex-col flex-wrap px-6 py-0">
+        <CardContent className="flex h-full grow flex-col flex-wrap gap-y-4 px-6 py-0">
+          <div className="flex flex-row items-baseline gap-x-3">
+            <h3 className="dark:text-polar-50 text-lg text-gray-950">
+              {organization.pretty_name || organization.name}
+            </h3>
+            {organization.pretty_name && (
+              <h3 className="text-blue-500 dark:text-blue-400">
+                @{organization.name}
+              </h3>
+            )}
+          </div>
           {organization.bio && (
             <p className="[text-wrap:pretty]">{organization.bio}</p>
           )}
@@ -112,12 +110,11 @@ export const CreatorsEditor = ({
   const { show, isShown, hide } = useModal()
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateFeaturedCreators = async (creators: string[]) => {
-    await updateOrganizationMutation.mutateAsync({
+  const updateFeaturedCreators = (creators: string[]) => {
+    updateOrganizationMutation.mutateAsync({
       id: organization.id,
       settings: {
         profile_settings: {
-          ...profile,
           featured_organizations: creators,
         },
       },
@@ -143,7 +140,7 @@ export const CreatorsEditor = ({
               id={creator}
               organizationId={creator}
               disabled={disabled}
-              setItems={(prev) => updateCreators}
+              setItems={(prev) => updateFeaturedCreators}
             />
           ))}
         </div>

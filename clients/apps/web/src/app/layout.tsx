@@ -6,6 +6,7 @@ import { getServerSideAPI } from '@/utils/api'
 import { Metadata } from 'next'
 import { twMerge } from 'tailwind-merge'
 import {
+  PolarDndProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
   PolarThemeProvider,
@@ -82,7 +83,9 @@ export default async function RootLayout({
           <PolarPostHogProvider>
             <PolarThemeProvider>
               <PolarQueryClientProvider>
-                <>{children}</>
+                <PolarDndProvider>
+                  <>{children}</>
+                </PolarDndProvider>
               </PolarQueryClientProvider>
             </PolarThemeProvider>
           </PolarPostHogProvider>

@@ -3,6 +3,7 @@
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
+import { CreatorsEditor } from '@/components/Profile/CreatorsEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectsEditor'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
@@ -166,6 +167,12 @@ const ClientPage = ({
           disabled={!isAdmin}
         />
       )}
+
+      <CreatorsEditor
+        organization={organization}
+        creators={[organization]}
+        disabled={!isAdmin}
+      />
 
       <OrganizationIssueSummaryList
         issues={issues}

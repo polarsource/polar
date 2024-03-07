@@ -9,6 +9,8 @@ import { CONFIG } from 'polarkit/config'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
 import { useEffect } from 'react'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 
 if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
   posthog.init(CONFIG.POSTHOG_TOKEN, {
@@ -58,4 +60,12 @@ export function PolarQueryClientProvider({
       <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
     </QueryClientProvider>
   )
+}
+
+export function PolarDndProvider({
+  children,
+}: {
+  children: React.ReactElement
+}) {
+  return <DndProvider backend={HTML5Backend}>{children}</DndProvider>
 }

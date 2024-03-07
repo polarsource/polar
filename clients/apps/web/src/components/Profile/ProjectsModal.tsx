@@ -9,7 +9,7 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useCallback, useState } from 'react'
 
-export interface ProfileEditorProps {
+export interface ProfileModalProps {
   repositories: Repository[]
   selectedRepositories: Repository[]
   organization: Organization
@@ -23,7 +23,7 @@ export const ProjectsModal = ({
   selectedRepositories,
   hideModal,
   setRepositories,
-}: ProfileEditorProps) => {
+}: ProfileModalProps) => {
   const [orgAndRepo, setOrgAndRepo] = useState('')
 
   const uniqueRepos = new Map([

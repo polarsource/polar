@@ -14,7 +14,11 @@ import {
   Repository,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  ReadonlyURLSearchParams,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation'
 import {
   IssueActivityBox,
   IssueFundingDetails,
@@ -63,7 +67,7 @@ const IssuesLookingForFunding = ({
   pageSize = 20,
   issues,
 }: IssuesLookingForFundingProps) => {
-  const search = useSearchParams()
+  const search = useSearchParams() as ReadonlyURLSearchParams
   const initialFilter = buildFundingFilters(search)
 
   const [filters, setFilters] = useState<FundingFilters>(initialFilter)

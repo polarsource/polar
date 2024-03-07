@@ -13,8 +13,8 @@ export default function Page() {
 
   const search = useSearchParams()
 
-  const id = search.get('id')
-  const org = search.get('org')
+  const id = search?.get('id')
+  const org = search?.get('org')
 
   const [loading, setLoading] = useState(false)
   const [showMessage, setShowMessage] = useState(false)

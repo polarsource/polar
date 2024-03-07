@@ -4528,13 +4528,13 @@ export interface OrganizationProfileSettingsUpdate {
      * @type {Array<string>}
      * @memberof OrganizationProfileSettingsUpdate
      */
-    featured_projects: Array<string>;
+    featured_projects?: Array<string>;
     /**
      * 
      * @type {Array<string>}
      * @memberof OrganizationProfileSettingsUpdate
      */
-    featured_organizations: Array<string>;
+    featured_organizations?: Array<string>;
 }
 /**
  * 

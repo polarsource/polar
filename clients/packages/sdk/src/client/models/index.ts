@@ -8586,19 +8586,19 @@ export interface Transaction {
      * @type {number}
      * @memberof Transaction
      */
-    readonly incurred_amount: number;
+    incurred_amount: number;
     /**
      * 
      * @type {number}
      * @memberof Transaction
      */
-    readonly gross_amount: number;
+    gross_amount: number;
     /**
      * 
      * @type {number}
      * @memberof Transaction
      */
-    readonly net_amount: number;
+    net_amount: number;
 }
 /**
  * 
@@ -8722,28 +8722,28 @@ export interface TransactionDetails {
     account_incurred_transactions: Array<TransactionEmbedded>;
     /**
      * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    incurred_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    gross_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionDetails
+     */
+    net_amount: number;
+    /**
+     * 
      * @type {Array<Transaction>}
      * @memberof TransactionDetails
      */
     paid_transactions: Array<Transaction>;
-    /**
-     * 
-     * @type {number}
-     * @memberof TransactionDetails
-     */
-    readonly incurred_amount: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof TransactionDetails
-     */
-    readonly gross_amount: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof TransactionDetails
-     */
-    readonly net_amount: number;
 }
 /**
  * 

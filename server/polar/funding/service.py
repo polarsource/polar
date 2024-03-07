@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any, cast
+from typing import Any, TypeVar, cast
 from uuid import UUID
 
 from sqlalchemy import (
@@ -12,14 +12,13 @@ from sqlalchemy import (
     nulls_last,
     or_,
     select,
-    text,
 )
 from sqlalchemy.orm import contains_eager
 
 from polar.authz.service import Anonymous, Subject
 from polar.funding.schemas import FundingResultType
 from polar.issue.search import search_query
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, Repository, UserOrganization
 from polar.models.pledge import PledgeState, PledgeType
 from polar.postgres import AsyncSession
@@ -31,6 +30,9 @@ class ListFundingSortBy(StrEnum):
     most_funded = "most_funded"
     most_recently_funded = "most_recently_funded"
     most_engagement = "most_engagement"
+
+
+T = TypeVar("T", bound=tuple[Any])
 
 
 class FundingService:
@@ -48,9 +50,9 @@ class FundingService:
         issue_ids: list[UUID] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[FundingResultType], int]:
-        statement = self._apply_pledges_summary_statement(
-            self._get_readable_issues_statement(auth_subject)
-        )
+        # Construct a inner statement that returns a list of Issue.id's
+        # We're applying pagination and sorting to this inner statement
+        inner_statement = self._get_readable_issue_ids_statement(auth_subject)
         count_statement = self._get_readable_issues_statement(
             auth_subject
         ).with_only_columns(func.count(Issue.id))
@@ -60,7 +62,7 @@ class FundingService:
         if query is not None:
             search = search_query(query)
 
-            statement = statement.where(
+            inner_statement = inner_statement.where(
                 Issue.title_tsv.bool_op("@@")(func.to_tsquery(search))
             )
             count_statement = count_statement.where(
@@ -73,25 +75,27 @@ class FundingService:
             )
 
         if organization is not None:
-            statement = statement.where(Organization.id == organization.id)
+            inner_statement = inner_statement.where(Organization.id == organization.id)
             count_statement = count_statement.where(Organization.id == organization.id)
 
         if repository is not None:
-            statement = statement.where(Repository.id == repository.id)
+            inner_statement = inner_statement.where(Repository.id == repository.id)
             count_statement = count_statement.where(Repository.id == repository.id)
 
         if issue_ids is not None:
-            statement = statement.where(Issue.id.in_(issue_ids))
+            inner_statement = inner_statement.where(Issue.id.in_(issue_ids))
             count_statement = count_statement.where(Issue.id.in_(issue_ids))
 
         if badged is not None:
-            statement = statement.where(Issue.pledge_badge_currently_embedded == badged)
+            inner_statement = inner_statement.where(
+                Issue.pledge_badge_currently_embedded == badged
+            )
             count_statement = count_statement.where(
                 Issue.pledge_badge_currently_embedded == badged
             )
 
         if closed is not None:
-            statement = statement.where(Issue.closed == closed)
+            inner_statement = inner_statement.where(Issue.closed == closed)
             count_statement = count_statement.where(Issue.closed == closed)
 
         for criterion in sorting:
@@ -100,19 +104,38 @@ class FundingService:
             elif criterion == ListFundingSortBy.newest:
                 order_by_clauses.append(Issue.created_at.desc())
             elif criterion == ListFundingSortBy.most_funded:
-                order_by_clauses.append(desc(text("total")))
+                order_by_clauses.append(nulls_last(desc(Issue.pledged_amount_sum)))
             elif criterion == ListFundingSortBy.most_recently_funded:
-                order_by_clauses.append(nulls_last(desc(text("last_pledged_at"))))
+                order_by_clauses.append(nulls_last(desc(Issue.last_pledged_at)))
             elif criterion == ListFundingSortBy.most_engagement:
                 order_by_clauses.append(Issue.total_engagement_count.desc())
-        statement = statement.order_by(*order_by_clauses)
+        inner_statement = inner_statement.order_by(*order_by_clauses)
 
-        results, count = await paginate(
-            session,
-            statement,
-            pagination=pagination,
-            count_clause=count_statement.scalar_subquery(),
-        )
+        # paginate on inner query (issue listing)
+        page, limit = pagination
+        offset = limit * (page - 1)
+        inner_statement = inner_statement.offset(offset).limit(limit)
+
+        # Given a list of issues, join in the pledges
+        outer_statement = self._apply_pledges_summary_statement(
+            self._get_readable_issues_statement(auth_subject).where(
+                Issue.id.in_(inner_statement)
+            )
+        ).order_by(*order_by_clauses)
+
+        outer_statement = outer_statement.add_columns(count_statement.scalar_subquery())
+
+        result = await session.execute(outer_statement)
+
+        results: list[Any] = []
+        count: int = 0
+        for row in result.unique().all():
+            (*queried_data, c) = row._tuple()
+            count = int(c)
+            if len(queried_data) == 1:
+                results.append(queried_data[0])
+            else:
+                results.append(queried_data)
 
         return results, count
 
@@ -130,12 +153,21 @@ class FundingService:
             return row._tuple() if row is not None else None
         return row
 
+    def _get_readable_issue_ids_statement(
+        self, auth_subject: Subject
+    ) -> Select[tuple[int]]:
+        return self._apply_readable_issues_statement(select(Issue.id), auth_subject)
+
     def _get_readable_issues_statement(
         self, auth_subject: Subject
     ) -> Select[tuple[Issue]]:
+        return self._apply_readable_issues_statement(select(Issue), auth_subject)
+
+    def _apply_readable_issues_statement(
+        self, selector: Select[T], auth_subject: Subject
+    ) -> Select[T]:
         statement = (
-            select(Issue)
-            .join(Issue.repository)
+            selector.join(Issue.repository)
             .join(Repository.organization)
             .where(
                 Issue.deleted_at.is_(None),

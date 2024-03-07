@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 
 from polar.authz.service import Scope, ScopedSubject
 from polar.config import settings
+from polar.exceptions import BadRequest
 from polar.kit import jwt
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
@@ -58,6 +59,7 @@ class AuthService:
                 },
                 secret=settings.SECRET,
                 expires_at=expires_at,
+                type="auth",
             ),
             expires_at,
         )
@@ -73,6 +75,7 @@ class AuthService:
             },
             secret=settings.SECRET,
             expires_at=expires_at,
+            type="auth",
         )
 
     @classmethod
@@ -103,7 +106,12 @@ class AuthService:
         cls, session: AsyncSession, *, cookie: str
     ) -> User | None:
         try:
-            decoded = jwt.decode(token=cookie, secret=settings.SECRET)
+            decoded = jwt.decode_unsafe(token=cookie, secret=settings.SECRET)
+
+            # TODO: once all tokens have been rotated, replace decode_unsafe above with decode
+            if decoded.get("type", "auth") != "auth":
+                raise BadRequest("unexpected jwt type")
+
             return await user_service.get(session, id=decoded["user_id"])
         except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):
             return None
@@ -113,7 +121,11 @@ class AuthService:
         cls, session: AsyncSession, *, token: str
     ) -> ScopedSubject | None:
         try:
-            decoded = jwt.decode(token=token, secret=settings.SECRET)
+            decoded = jwt.decode_unsafe(token=token, secret=settings.SECRET)
+
+            # TODO: once all tokens have been rotated, replace decode_unsafe above with decode
+            if decoded.get("type", "auth") != "auth":
+                raise BadRequest("unexpected jwt type")
 
             # Authorization headers as when forwarded by NextJS serverside and edge.
             # We're passing Cookie contents in the Authorization header.

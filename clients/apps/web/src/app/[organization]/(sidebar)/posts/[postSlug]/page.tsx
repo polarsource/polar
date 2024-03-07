@@ -127,6 +127,8 @@ export async function generateMetadata(
   }
 }
 
+import { Article as JSONLDArticle, WithContext } from 'schema-dts'
+
 export default async function Page({
   params,
 }: {
@@ -175,10 +177,41 @@ export default async function Page({
     subPath: `/posts/${article.slug}`,
   })
 
+  const jsonLd: WithContext<JSONLDArticle> = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: article.title,
+    articleBody: article.body,
+    author: {
+      '@type': 'Organization',
+      name: article.byline.name,
+      url: article.organization.custom_domain
+        ? `https://${article.organization.custom_domain}`
+        : `https://polar.sh/${article.organization.name}`,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: article.byline.name,
+      url: article.organization.custom_domain
+        ? `https://${article.organization.custom_domain}`
+        : `https://polar.sh/${article.organization.name}`,
+    },
+  }
+
+  if (article.published_at) {
+    jsonLd.datePublished = new Date(article.published_at).toISOString()
+  }
+
   return (
-    <ClientPage
-      article={article}
-      subscriptionTiers={subscriptionTiers.items || []}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ClientPage
+        article={article}
+        subscriptionTiers={subscriptionTiers.items || []}
+      />
+    </>
   )
 }

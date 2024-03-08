@@ -67,7 +67,8 @@ async def list_issues_for_extension(
             version = parts[1]
             auth.user.last_version_extension = version
 
-    await auth.user.save(session=session)
+    session.add(auth.user)
+
     posthog.user_event_raw(
         auth.user,
         "Extension GitHub Issues Load",

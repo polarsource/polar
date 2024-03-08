@@ -23,7 +23,7 @@ const Banner = ({
           ? 'bg-gray-75 dark:bg-polar-800 dark:border-polar-700 border text-gray-500'
           : '',
         color === 'red'
-          ? 'border bg-red-100 text-red-600  dark:border-red-800 dark:bg-red-900 dark:text-red-600'
+          ? 'border bg-red-100 text-red-600 dark:border-red-900 dark:bg-red-950/50 dark:text-red-600'
           : '',
         color === 'green'
           ? 'border bg-green-100 text-green-600 dark:border-green-800 dark:bg-green-900 dark:text-green-200'

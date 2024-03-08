@@ -26,6 +26,7 @@ const ClientPage = ({
   organization,
   posts,
   subscriptionTiers,
+  featuredOrganizations,
   repositories,
   subscriptionsSummary,
   adminOrganizations,
@@ -34,6 +35,7 @@ const ClientPage = ({
   organization: Organization
   posts: Article[]
   subscriptionTiers: ListResourceSubscriptionTier
+  featuredOrganizations: Organization[]
   repositories: Repository[]
   subscriptionsSummary: ListResourceSubscriptionSummary
   adminOrganizations: Organization[]
@@ -171,7 +173,7 @@ const ClientPage = ({
 
       <CreatorsEditor
         organization={organization}
-        profile={organization.profile_settings}
+        featuredOrganizations={featuredOrganizations}
         disabled={!isAdmin}
       />
 

@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined, GitHub } from '@mui/icons-material'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -10,23 +11,18 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { useGetOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 
 export const CreatorCard = ({
-  organizationId,
+  organization,
   disabled,
   sortable,
 }: {
-  organizationId: string
+  organization: Organization
   disabled?: boolean
   sortable?: ReturnType<typeof useSortable>
 }) => {
-  const organization = useGetOrganization(organizationId).data
-
-  if (!organization) return null
-
   return (
     <Card
       ref={sortable ? sortable.setNodeRef : undefined}
@@ -83,7 +79,7 @@ export const CreatorCard = ({
         </CardContent>
       </Link>
       <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
-        <div className="flex w-full flex-row items-center justify-between gap-x-2">
+        <div className="flex w-full flex-row items-center gap-x-4">
           <Link href={organizationPageLink(organization, 'subscriptions')}>
             <Button size="sm">Subscribe</Button>
           </Link>
@@ -102,17 +98,17 @@ export const CreatorCard = ({
 }
 
 export const DraggableCreatorCard = ({
-  organizationId,
+  organization,
   disabled,
 }: {
-  organizationId: string
+  organization: Organization
   disabled?: boolean
 }) => {
-  const sortable = useSortable({ id: organizationId })
+  const sortable = useSortable({ id: organization.id })
 
   return (
     <CreatorCard
-      organizationId={organizationId}
+      organization={organization}
       disabled={disabled}
       sortable={sortable}
     />

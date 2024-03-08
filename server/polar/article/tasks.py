@@ -90,7 +90,7 @@ async def articles_send_to_user(
                     "Reply-To"
                 ] = f"{from_name} <{article.organization.email}>"
         else:
-            from_name = article.created_by_user.username
+            from_name = article.created_by_user.public_name
             if article.created_by_user.email:
                 email_headers[
                     "Reply-To"

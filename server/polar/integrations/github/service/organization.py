@@ -11,7 +11,11 @@ from githubkit.exception import RequestFailed
 from pydantic import BaseModel
 
 from polar.enums import Platforms
-from polar.exceptions import ResourceAlreadyExists, ResourceNotFound
+from polar.exceptions import (
+    InternalServerError,
+    ResourceAlreadyExists,
+    ResourceNotFound,
+)
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -155,6 +159,14 @@ class GithubOrganizationService(OrganizationService):
             )
             raise ResourceNotFound()
 
+        if not oauth.account_username:
+            log.error(
+                "user.create_github_org",
+                error="oauth account has no username",
+                user_id=user.id,
+            )
+            raise InternalServerError()
+
         # GitHub users cannot have an empty avatar_url, but needed for typing
         avatar_url = user.avatar_url
         if not avatar_url:
@@ -162,7 +174,7 @@ class GithubOrganizationService(OrganizationService):
 
         new = OrganizationCreate(
             platform=Platforms.github,
-            name=user.username,
+            name=oauth.account_username,
             avatar_url=avatar_url,
             # Cast to GitHub ID (int)
             external_id=int(oauth.account_id),

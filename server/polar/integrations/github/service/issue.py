@@ -724,9 +724,11 @@ class GithubIssueService(IssueService):
         # concurrently crawl each repository
         jobs: list[Awaitable[list[Issue]]] = []
 
+        self_github_username = user.github_username
+
         for r in starred.parsed_data:
             # skip self owned repos
-            if r.owner.login == user.username:
+            if r.owner.login == self_github_username:
                 continue
             if r.private:
                 continue

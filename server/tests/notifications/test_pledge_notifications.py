@@ -9,7 +9,7 @@ from polar.models.notification import Notification
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.repository import Repository
-from polar.models.user import User
+from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
 from polar.notifications.notification import (
     MaintainerPledgeCreatedNotificationPayload,
@@ -132,7 +132,71 @@ async def test_create_pledge_from_created_by_user(
             type=NotificationType.maintainer_pledge_created,
             payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
-                pledger_name=user.username,
+                pledger_name=user.email,
+                pledge_amount="123",
+                issue_url=f"https://github.com/{organization.name}/{repository.name}/issues/{issue.number}",
+                issue_title=issue.title,
+                issue_org_name=organization.name,
+                issue_repo_name=repository.name,
+                issue_number=issue.number,
+                maintainer_has_stripe_account=False,
+                pledge_type=PledgeType.pay_upfront,
+            ),
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_pledge_from_created_by_user_with_github(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    mocker: MockerFixture,
+    user: User,
+    user_github_oauth: OAuthAccount,
+) -> None:
+    m = mocker.patch(
+        "polar.notifications.service.NotificationsService.send_to_org_admins"
+    )
+
+    payment_id = "xxx-1"
+
+    pledge = Pledge(
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=12300,
+        fee=123,
+        by_user_id=user.id,
+        state=PledgeState.initiated,
+        payment_id=payment_id,
+    )
+    await save_fixture(pledge)
+
+    # then
+    session.expunge_all()
+
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        payment_id,
+        pledge.amount,
+        "trx-id",
+    )
+
+    # Check notifictions
+    assert m.call_count == 1
+    m.assert_called_once_with(
+        session=ANY,
+        org_id=organization.id,
+        notif=PartialNotification(
+            issue_id=issue.id,
+            pledge_id=pledge.id,
+            type=NotificationType.maintainer_pledge_created,
+            payload=MaintainerPledgeCreatedNotificationPayload(
+                pledge_id=pledge.id,
+                pledger_name=user_github_oauth.account_username,
                 pledge_amount="123",
                 issue_url=f"https://github.com/{organization.name}/{repository.name}/issues/{issue.number}",
                 issue_title=issue.title,

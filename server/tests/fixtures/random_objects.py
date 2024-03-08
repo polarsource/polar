@@ -138,13 +138,16 @@ async def create_issue(
     return issue
 
 
-@pytest_asyncio.fixture(scope="function")
-async def user_github_oauth(save_fixture: SaveFixture, user: User) -> OAuthAccount:
+async def create_user_github_oauth(
+    save_fixture: SaveFixture,
+    user: User,
+) -> OAuthAccount:
     oauth_account = OAuthAccount(
         platform=Platforms.github,
         access_token="xxyyzz",
         account_id="xxyyzz",
         account_email="foo@bar.com",
+        account_username=rstr("gh_username"),
         user_id=user.id,
     )
     await save_fixture(oauth_account)
@@ -152,14 +155,24 @@ async def user_github_oauth(save_fixture: SaveFixture, user: User) -> OAuthAccou
 
 
 @pytest_asyncio.fixture(scope="function")
-async def user(save_fixture: SaveFixture) -> User:
+async def user_github_oauth(
+    save_fixture: SaveFixture,
+    user: User,
+) -> OAuthAccount:
+    return await create_user_github_oauth(save_fixture, user)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def user(
+    save_fixture: SaveFixture,
+) -> User:
     return await create_user(save_fixture)
 
 
 async def create_user(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
-        username=rstr("testuser"),
+        username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
     )
@@ -171,7 +184,7 @@ async def create_user(save_fixture: SaveFixture) -> User:
 async def user_second(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
-        username=rstr("testuser"),
+        username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
     )

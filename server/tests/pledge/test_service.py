@@ -594,6 +594,7 @@ async def test_create_issue_rewards_associate_username(
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
+        account_username="test_gh_user",
     )
     await save_fixture(oauth)
 

@@ -18,6 +18,7 @@ from tests.fixtures.random_objects import (
     create_organization,
     create_pledge,
     create_user,
+    create_user_github_oauth,
 )
 
 
@@ -98,7 +99,57 @@ async def test_get_pledge_member_sending_org(
     res: PledgeSchema = PledgeSchema.model_validate(response.json())
     assert res.id == pledge.id
     assert res.created_by is not None
-    assert res.created_by.name == pledge_created_by_user.username
+    assert res.created_by.name == pledge_created_by_user.email
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_get_pledge_member_sending_org_user_has_github(
+    organization: Organization,
+    repository: Repository,
+    pledge: Pledge,
+    issue: Issue,
+    auth_jwt: str,
+    save_fixture: SaveFixture,
+    client: AsyncClient,
+    user: User,
+) -> None:
+    pledging_organization = await create_organization(save_fixture)
+
+    pledge_created_by_user = await create_user(save_fixture)
+    pledge_created_by_gh = await create_user_github_oauth(
+        save_fixture, pledge_created_by_user
+    )
+
+    pledge = await create_pledge(
+        save_fixture,
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        pledging_organization=pledging_organization,
+    )
+    pledge.created_by_user_id = pledge_created_by_user.id
+    await save_fixture(pledge)
+
+    # make user member of the pledging organization
+    user_organization = UserOrganization(
+        user_id=user.id,
+        organization_id=pledging_organization.id,
+    )
+    await save_fixture(user_organization)
+
+    response = await client.get(
+        f"/api/v1/pledges/{pledge.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+
+    assert response.json()["id"] == str(pledge.id)
+    res: PledgeSchema = PledgeSchema.model_validate(response.json())
+    assert res.id == pledge.id
+    assert res.created_by is not None
+    assert res.created_by.name == pledge_created_by_gh.account_username
 
 
 @pytest.mark.asyncio

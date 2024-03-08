@@ -155,7 +155,8 @@ class Auth:
         if Scope.web_default not in scoped_subject.scopes:
             raise Unauthorized("This endpoint does not support scoped auth tokens")
 
-        if scoped_subject.subject.username not in allowed:
+        username = scoped_subject.subject.github_username
+        if not username or username not in allowed:
             raise HTTPException(
                 status_code=404,
                 detail="Not Found",

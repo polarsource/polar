@@ -84,7 +84,7 @@ class GithubUserService(UserService):
             .join(OAuthAccount, User.id == OAuthAccount.user_id)
             .where(
                 OAuthAccount.platform == OAuthPlatform.github,
-                User.username == username,
+                OAuthAccount.account_username == username,
             )
         )
         res = await session.execute(stmt)

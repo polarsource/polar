@@ -45,7 +45,9 @@ export const ProjectsModal = ({
             <ProjectRow
               key={repository.id}
               repository={repository}
-              selected={featuredRepositories.includes(repository)}
+              selected={featuredRepositories.some(
+                (repo) => repo.id === repository.id,
+              )}
               selectRepository={addRepository}
               deselectRepository={removeRepository}
             />

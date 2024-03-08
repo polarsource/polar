@@ -50,16 +50,16 @@ export const CreatorsEditor = ({
 
     setFeaturedCreators(newCreators)
 
-    updateOrganizationMutation.mutateAsync({
-      id: organization.id,
-      settings: {
-        profile_settings: {
-          featured_organizations: newCreators.map((c) => c.id),
+    updateOrganizationMutation
+      .mutateAsync({
+        id: organization.id,
+        settings: {
+          profile_settings: {
+            featured_organizations: newCreators.map((c) => c.id),
+          },
         },
-      },
-    })
-
-    revalidate(`organization:${organization.name}`)
+      })
+      .then(() => revalidate(`organization:${organization.name}`))
   }
 
   function handleDragStart(event: DragStartEvent) {

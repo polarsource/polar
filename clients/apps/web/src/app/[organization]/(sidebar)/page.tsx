@@ -133,7 +133,14 @@ export default async function Page({
           platform: Platforms.GITHUB,
           organizationName: params.organization,
         },
-        cacheConfig,
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            // Make it possible to revalidate the page when the organization is updated from client
+            tags: ['organization'],
+          },
+        },
       ),
       api.articles.search(
         {

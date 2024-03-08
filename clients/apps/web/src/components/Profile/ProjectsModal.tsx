@@ -36,7 +36,7 @@ export const ProjectsModal = ({
       <div className="flex flex-col gap-y-2">
         <h3>Featured Projects</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Select which projects you'd like to highlight
+          Select which projects you&apos;d like to highlight
         </p>
       </div>
       <div className="flex w-full flex-col gap-y-8">

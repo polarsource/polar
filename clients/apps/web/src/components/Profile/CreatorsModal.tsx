@@ -28,6 +28,11 @@ export const CreatorsModal = ({
 
   const addCreator = (organizationName: string) => {
     toggleOrgNotFound(false)
+
+    if (creators.find((c) => c.name === organizationName)) {
+      return
+    }
+
     api.organizations
       .lookup({
         organizationName,
@@ -35,16 +40,16 @@ export const CreatorsModal = ({
       })
       .then((org) => {
         setCreators((creators) => [...creators, org])
-        revalidate('organization')
+        revalidate(`organization:${organization.name}`)
       })
       .catch((e) => {
         toggleOrgNotFound(true)
       })
   }
 
-  const removeCreator = (creator: { id: string }) => {
+  const removeCreator = (creator: Organization) => {
     setCreators((creators) => creators.filter((c) => c.id !== creator.id))
-    revalidate('organization')
+    revalidate(`organization:${organization.name}`)
   }
 
   return (
@@ -95,7 +100,7 @@ const CreatorRow = ({
   onRemove,
 }: {
   organizationId: string
-  onRemove: (creator: { id: string }) => void
+  onRemove: (creator: Organization) => void
 }) => {
   const creator = useGetOrganization(organizationId).data
 
@@ -115,7 +120,7 @@ const CreatorRow = ({
       </div>
       <Button
         className="h-6 w-6"
-        onClick={(e) => onRemove({ id: creator.id })}
+        onClick={(e) => onRemove(creator)}
         variant="secondary"
         size="icon"
       >

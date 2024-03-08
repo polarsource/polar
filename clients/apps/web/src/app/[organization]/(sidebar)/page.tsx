@@ -138,7 +138,7 @@ export default async function Page({
           next: {
             ...cacheConfig.next,
             // Make it possible to revalidate the page when the organization is updated from client
-            tags: ['organization'],
+            tags: [`organization:${params.organization}`],
           },
         },
       ),

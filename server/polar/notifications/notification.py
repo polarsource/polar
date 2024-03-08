@@ -10,7 +10,6 @@ from polar.email.renderer import get_email_renderer
 from polar.kit.money import get_cents_in_dollar_string
 from polar.kit.schemas import Schema
 from polar.models.pledge import PledgeType
-from polar.models.user import User
 
 
 class NotificationType(StrEnum):

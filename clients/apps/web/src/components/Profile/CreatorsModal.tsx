@@ -1,3 +1,4 @@
+import { CloseOutlined } from '@mui/icons-material'
 import { Organization, Platforms } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -35,7 +36,7 @@ export const CreatorsModal = ({
       })
   }
 
-  const removeRepository = (creator: { id: string }) => {
+  const removeCreator = (creator: { id: string }) => {
     setCreators((creators) => creators.filter((c) => c.id !== creator.id))
   }
 
@@ -44,7 +45,8 @@ export const CreatorsModal = ({
       <div className="flex flex-col gap-y-2">
         <h3>Featured Creators</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Select creators that you want to feature on your profile
+          Select developers that you want to feature on your profile. The
+          developer must be on Polar.
         </p>
       </div>
       <div className="flex flex-row items-center gap-x-4">
@@ -58,19 +60,31 @@ export const CreatorsModal = ({
       <div className="flex w-full flex-col gap-y-8">
         <div className="flex max-h-[300px] w-full flex-col overflow-y-auto">
           {creators.map((creator) => (
-            <CreatorRow key={creator.id} organizationId={creator.id} />
+            <CreatorRow
+              key={creator.id}
+              organizationId={creator.id}
+              onRemove={removeCreator}
+            />
           ))}
         </div>
         <Separator className="dark:bg-polar-600" />
         <div className="flex flex-row items-center justify-end gap-x-2">
-          <Button onClick={hideModal}>Save</Button>
+          <Button size="sm" variant="secondary" onClick={hideModal}>
+            Close
+          </Button>
         </div>
       </div>
     </div>
   )
 }
 
-const CreatorRow = ({ organizationId }: { organizationId: string }) => {
+const CreatorRow = ({
+  organizationId,
+  onRemove,
+}: {
+  organizationId: string
+  onRemove: (creator: { id: string }) => void
+}) => {
   const creator = useGetOrganization(organizationId).data
 
   if (!creator) {
@@ -87,6 +101,14 @@ const CreatorRow = ({ organizationId }: { organizationId: string }) => {
         />
         <span>{creator.name}</span>
       </div>
+      <Button
+        className="h-6 w-6"
+        onClick={(e) => onRemove({ id: creator.id })}
+        variant="secondary"
+        size="icon"
+      >
+        <CloseOutlined fontSize="inherit" />
+      </Button>
     </div>
   )
 }

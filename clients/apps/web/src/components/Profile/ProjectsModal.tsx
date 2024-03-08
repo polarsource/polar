@@ -53,7 +53,9 @@ export const ProjectsModal = ({
         </div>
         <Separator className="dark:bg-polar-600" />
         <div className="flex flex-row items-center justify-end gap-x-2">
-          <Button onClick={hideModal}>Save</Button>
+          <Button size="sm" variant="secondary" onClick={hideModal}>
+            Close
+          </Button>
         </div>
       </div>
     </div>

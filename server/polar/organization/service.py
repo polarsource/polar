@@ -229,7 +229,7 @@ class OrganizationService(
                 **settings.profile_settings.model_dump(mode="json", exclude_unset=True),
             }
 
-        updated = await organization.save(session)
+        session.add(organization)
 
         log.info(
             "organization.update_settings",
@@ -237,7 +237,7 @@ class OrganizationService(
             settings=settings.model_dump(mode="json"),
         )
 
-        return updated
+        return organization
 
     async def set_account(
         self,

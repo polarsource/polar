@@ -6,24 +6,22 @@ import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Pledge } from '@polar-sh/sdk'
-import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { GrayCard } from 'polarkit/components/ui/Cards'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import { useStore } from 'polarkit/store'
+import Button from 'polarkit/components/ui/atoms/button'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const Status = (props: {
   pledge: Pledge
   email: string | undefined
 }) => {
-  const search = useSearchParams()
-
   const pledge = props.pledge
-
   const { currentUser, reloadUser } = useAuth()
   const didReloadUser = useRef(false)
   const router = useRouter()
-  const setLatestPledge = useStore((store) => store.setLatestPledge)
 
   useEffect(() => {
     if (currentUser && !didReloadUser.current) {
@@ -33,18 +31,6 @@ export const Status = (props: {
       reloadUser()
     }
   }, [currentUser, reloadUser])
-
-  const gotoUrl = search?.get('goto_url')
-
-  const redirectToFeed = () => {
-    if (!gotoUrl || !gotoUrl.startsWith('/feed')) {
-      throw new Error('Invalid goto_url')
-    }
-
-    const redirectURL = new URL(window.location.origin + gotoUrl)
-    setLatestPledge(pledge, search?.get('redirect_status') || '')
-    router.replace(redirectURL.toString())
-  }
 
   const email = props.email
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)
@@ -65,11 +51,6 @@ export const Status = (props: {
     }
   }, [email, router])
 
-  if (currentUser && gotoUrl && gotoUrl.startsWith('/feed')) {
-    redirectToFeed()
-    return <></>
-  }
-
   // TODO: Handle different statuses than success... #happy-path-alpha-programming
   return (
     <>
@@ -84,6 +65,18 @@ export const Status = (props: {
           </p>
         </div>
 
+        {currentUser ? (
+          <div className=" my-8 flex w-full justify-center">
+            <Link
+              href={organizationPageLink(pledge.issue.repository.organization)}
+            >
+              <Button>
+                Continue to {pledge.issue.repository.organization.name}
+              </Button>
+            </Link>
+          </div>
+        ) : null}
+
         <GrayCard className="mt-6">
           <IssueListItem
             issue={pledge.issue}
@@ -95,12 +88,12 @@ export const Status = (props: {
           />
         </GrayCard>
 
-        {!currentUser && (
+        {!currentUser ? (
           <ThankYouUpsell
             onEmailSignin={onEmailSignin}
             emailSigninLoading={emailSigninLoading}
           />
-        )}
+        ) : null}
       </div>
     </>
   )

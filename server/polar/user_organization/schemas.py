@@ -13,8 +13,8 @@ class OrganizationMember(Schema):
     @classmethod
     def from_db(cls, o: UserOrganizationModel) -> Self:
         return cls(
-            name=o.user.username,
-            github_username=o.user.username,
+            name=o.user.username_or_email,
+            github_username=o.user.github_username,
             avatar_url=o.user.avatar_url,
             is_admin=o.is_admin,
         )

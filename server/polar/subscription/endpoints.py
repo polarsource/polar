@@ -843,7 +843,7 @@ async def subscriptions_export(
         for sub in subscribers:
             fields = [
                 sub.user.email,
-                sub.user.username,
+                sub.user.username_or_email,
                 sub.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "true" if sub.active else "false",
                 sub.subscription_tier.name,

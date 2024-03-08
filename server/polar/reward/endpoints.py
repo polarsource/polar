@@ -153,7 +153,7 @@ async def summary(
             rewarded_users_orgs.add(reward.user_id)
             res.append(
                 RewardsSummaryReceiver(
-                    name=reward.user.username,
+                    name=reward.user.username_or_email,
                     avatar_url=reward.user.avatar_url,
                 )
             )

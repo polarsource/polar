@@ -293,8 +293,15 @@ class GithubUserService(UserService):
         account_id = str(github_user.id)
 
         # Ensure username doesn't already exists
+        # TODO: we can remove this when User.username is dropped
         existing_user = await self.get_by_username(session, github_user.login)
         if existing_user is not None and existing_user.id != user.id:
+            raise AccountLinkedToAnotherUserError()
+
+        existing_oauth = await oauth_account_service.get_by_platform_and_username(
+            session, OAuthPlatform.github, github_user.login
+        )
+        if existing_oauth is not None and existing_oauth.user_id != user.id:
             raise AccountLinkedToAnotherUserError()
 
         # Create or update OAuthAccount

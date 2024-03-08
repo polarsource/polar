@@ -45,11 +45,7 @@ async def account_payout_schedule() -> None:
     async with engine.connect() as connection:
         async with connection.begin():
             session = AsyncSession(
-                bind=connection,
-                expire_on_commit=False,
-                autocommit=False,
-                autoflush=False,
-                join_transaction_mode="create_savepoint",
+                bind=connection, join_transaction_mode="create_savepoint"
             )
 
             accounts_statement = select(Account).where(

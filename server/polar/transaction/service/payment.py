@@ -138,7 +138,7 @@ class PaymentTransactionService(BaseTransactionService):
         transaction.incurred_transactions = transaction_fees
 
         session.add(transaction)
-        await session.commit()
+        await session.flush()
 
         return transaction
 

@@ -80,7 +80,7 @@ class BalanceTransactionService(BaseTransactionService):
 
         session.add(outgoing_transaction)
         session.add(incoming_transaction)
-        await session.commit()
+        await session.flush()
 
         if destination_account is not None:
             await account_service.check_review_threshold(session, destination_account)
@@ -200,7 +200,7 @@ class BalanceTransactionService(BaseTransactionService):
 
         session.add(outgoing_reversal)
         session.add(incoming_reversal)
-        await session.commit()
+        await session.flush()
 
         return (outgoing_reversal, incoming_reversal)
 

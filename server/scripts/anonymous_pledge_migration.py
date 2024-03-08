@@ -52,8 +52,6 @@ async def anonymous_pledge_migration(
             session = AsyncSession(
                 bind=connection,
                 expire_on_commit=False,
-                autocommit=False,
-                autoflush=False,
                 join_transaction_mode="create_savepoint",
             )
 

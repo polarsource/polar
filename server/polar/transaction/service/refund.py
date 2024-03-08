@@ -110,7 +110,7 @@ class RefundTransactionService(BaseTransactionService):
                     amount=balance_refund_amount,
                 )
 
-        await session.commit()
+        await session.flush()
 
         return refund_transactions
 

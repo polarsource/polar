@@ -24,7 +24,10 @@ def upgrade() -> None:
     op.add_column(
         "organizations",
         sa.Column(
-            "profile_settings", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="{}"
+            "profile_settings",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default="{}",
         ),
     )
     # ### end Alembic commands ###

@@ -5,16 +5,16 @@ from typing import Any
 from citext import CIText
 from sqlalchemy import (
     TIMESTAMP,
+    UUID,
     BigInteger,
     Boolean,
     ForeignKey,
     Integer,
     String,
     UniqueConstraint,
-    UUID
 )
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import Platforms

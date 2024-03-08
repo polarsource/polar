@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
+from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.postgres import AsyncSession
@@ -379,3 +380,62 @@ async def test_list_members_not_member(
     )
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_update_organization_profile_settings(
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    repository: Repository,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        json={
+            "profile_settings": {
+                "featured_projects": [
+                    str(repository.id),
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["featured_projects"] == [
+        str(repository.id)
+    ]
+    assert (
+        response.json()["profile_settings"]["featured_organizations"] is not None
+    )  # untouched
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        json={
+            "profile_settings": {
+                "featured_organizations": [
+                    str(organization.id),
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["featured_projects"] == [
+        str(repository.id)
+    ]  # untouched
+    assert response.json()["profile_settings"]["featured_organizations"] == [
+        str(organization.id)
+    ]

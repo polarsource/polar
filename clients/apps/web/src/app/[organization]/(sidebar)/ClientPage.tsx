@@ -166,7 +166,10 @@ const ClientPage = ({
         <ProjectsEditor
           organization={organization}
           repositories={repositories}
-          profile={organization.profile_settings}
+          featuredRepositories={
+            organization.profile_settings.featured_projects ??
+            repositories.slice(0, 2).map((repo) => repo.id)
+          }
           disabled={!isAdmin}
         />
       )}

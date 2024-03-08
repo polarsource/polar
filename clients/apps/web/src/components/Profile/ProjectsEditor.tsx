@@ -1,3 +1,4 @@
+import revalidate from '@/app/actions'
 import {
   DndContext,
   DragEndEvent,
@@ -19,11 +20,7 @@ import {
   HiveOutlined,
   TuneOutlined,
 } from '@mui/icons-material'
-import {
-  Organization,
-  OrganizationProfileSettings,
-  Repository,
-} from '@polar-sh/sdk'
+import { Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
@@ -35,19 +32,19 @@ import { ProjectsModal } from './ProjectsModal'
 
 export interface ProjectsEditorProps {
   organization: Organization
-  profile: OrganizationProfileSettings
+  featuredRepositories: string[]
   repositories: Repository[]
   disabled?: boolean
 }
 
 export const ProjectsEditor = ({
   organization,
-  profile,
+  featuredRepositories,
   repositories,
   disabled,
 }: ProjectsEditorProps) => {
   const [featuredProjects, setFeaturedProjects] = useState(
-    profile.featured_projects
+    featuredRepositories
       .map((id) => repositories.find((r) => r.id === id))
       .filter((value): value is Repository => Boolean(value)),
   )
@@ -74,6 +71,8 @@ export const ProjectsEditor = ({
         },
       },
     })
+
+    revalidate(`organization:${organization.name}`)
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -82,7 +81,6 @@ export const ProjectsEditor = ({
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
-    console.log(active, over)
     if (active.id !== over?.id) {
       updateFeaturedProjects((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id)

@@ -1,4 +1,3 @@
-import revalidate from '@/app/actions'
 import { CloseOutlined } from '@mui/icons-material'
 import { Organization, Platforms } from '@polar-sh/sdk'
 import { api } from 'polarkit'
@@ -40,7 +39,6 @@ export const CreatorsModal = ({
       })
       .then((org) => {
         setCreators((creators) => [...creators, org])
-        revalidate(`organization:${organization.name}`)
       })
       .catch((e) => {
         toggleOrgNotFound(true)
@@ -49,7 +47,6 @@ export const CreatorsModal = ({
 
   const removeCreator = (creator: Organization) => {
     setCreators((creators) => creators.filter((c) => c.id !== creator.id))
-    revalidate(`organization:${organization.name}`)
   }
 
   return (

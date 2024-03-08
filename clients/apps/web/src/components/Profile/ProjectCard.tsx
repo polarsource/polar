@@ -75,7 +75,7 @@ export const ProjectCard = ({
           {repository.description && <p>{repository.description}</p>}
         </CardContent>
       </Link>
-      <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
+      <CardFooter className="flex flex-row flex-wrap items-center justify-between gap-4 p-6">
         <div className="flex-items flex items-center gap-x-4">
           {repository.license && (
             <Pill className="px-3 py-1.5" color="blue">
@@ -92,9 +92,6 @@ export const ProjectCard = ({
         <Link
           href={`https://github.com/${repository.organization.name}/${repository.name}`}
           target="_blank"
-          onClick={(e) => {
-            e.stopPropagation()
-          }}
         >
           <Button className="rounded-lg px-2.5" variant="secondary" size="sm">
             <StarIconOutlined className="mr-2 h-4 w-4" />

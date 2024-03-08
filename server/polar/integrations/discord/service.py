@@ -84,8 +84,7 @@ class DiscordUserService:
         oauth_account.account_email = account_email
         oauth_account.account_username = account_username
 
-        await oauth_account.save(session)
-        await session.commit()
+        session.add(oauth_account)
 
         return oauth_account
 

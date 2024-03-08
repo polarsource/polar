@@ -30,19 +30,6 @@ class InvalidMagicLink(MagicLinkError):
 
 
 class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpdate]):
-    async def create(
-        self,
-        session: AsyncSession,
-        create_schema: MagicLinkCreate,
-        autocommit: bool = True,
-    ) -> MagicLink:
-        return await MagicLink(
-            token_hash=create_schema.token_hash,
-            user_email=create_schema.user_email,
-            user_id=create_schema.user_id,
-            expires_at=create_schema.expires_at,
-        ).save(session, autocommit=autocommit)
-
     async def request(
         self,
         session: AsyncSession,
@@ -61,7 +48,9 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
             source=source,
             expires_at=expires_at,
         )
-        magic_link = await self.create(session, magic_link_create)
+        magic_link = MagicLink(**magic_link_create.model_dump())
+        session.add(magic_link)
+        await session.commit()
 
         return magic_link, token
 

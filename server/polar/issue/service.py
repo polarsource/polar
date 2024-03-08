@@ -39,13 +39,8 @@ log = structlog.get_logger()
 
 
 class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
-    async def create(
-        self,
-        session: AsyncSession,
-        create_schema: IssueCreate,
-        autocommit: bool = True,
-    ) -> Issue:
-        return await Issue(
+    async def create(self, session: AsyncSession, create_schema: IssueCreate) -> Issue:
+        issue = Issue(
             platform=create_schema.platform,
             external_id=create_schema.external_id,
             organization_id=create_schema.organization_id,
@@ -75,7 +70,10 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             #
             issue_has_in_progress_relationship=False,
             issue_has_pull_request_relationship=False,
-        ).save(session, autocommit=autocommit)
+        )
+        session.add(issue)
+        await session.flush()
+        return issue
 
     async def get_loaded(
         self,

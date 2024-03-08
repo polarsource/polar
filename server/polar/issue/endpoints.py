@@ -360,7 +360,7 @@ async def update(
         updated = True
 
     if updated:
-        await issue.save(session)
+        session.add(issue)
 
     return IssueSchema.from_db(issue)
 

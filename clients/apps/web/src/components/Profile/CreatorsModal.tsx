@@ -8,10 +8,12 @@ import { useGetOrganization } from 'polarkit/hooks'
 import { useState } from 'react'
 
 export interface CreatorsModalProps {
-  creators: string[]
+  creators: { id: string }[]
   organization: Organization
   hideModal: () => void
-  setCreators: (producer: (creators: string[]) => string[]) => void
+  setCreators: (
+    producer: (creators: { id: string }[]) => { id: string }[],
+  ) => void
 }
 
 export const CreatorsModal = ({
@@ -29,12 +31,12 @@ export const CreatorsModal = ({
         platform: Platforms.GITHUB,
       })
       .then((org) => {
-        setCreators((creators) => [...creators, org.id])
+        setCreators((creators) => [...creators, { id: org.id }])
       })
   }
 
-  const removeRepository = (creator: string) => {
-    setCreators((creators) => creators.filter((c) => c !== creator))
+  const removeRepository = (creator: { id: string }) => {
+    setCreators((creators) => creators.filter((c) => c.id !== creator.id))
   }
 
   return (
@@ -56,7 +58,7 @@ export const CreatorsModal = ({
       <div className="flex w-full flex-col gap-y-8">
         <div className="flex max-h-[300px] w-full flex-col overflow-y-auto">
           {creators.map((creator) => (
-            <CreatorRow key={creator} organizationId={creator} />
+            <CreatorRow key={creator.id} organizationId={creator.id} />
           ))}
         </div>
         <Separator className="dark:bg-polar-600" />

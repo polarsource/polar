@@ -6,6 +6,7 @@ from polar.models import Organization
 from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_repository
 
 from .conftest import IssuesPledgesFixture, create_issues_pledges
@@ -49,10 +50,10 @@ class TestSearch:
         client: AsyncClient,
         organization: Organization,
         repository: Repository,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
     ) -> None:
         repository.is_private = False
-        await repository.save(session)
+        await save_fixture(repository)
 
         response = await client.get(
             "/api/v1/funding/search",
@@ -73,10 +74,10 @@ class TestSearch:
         client: AsyncClient,
         organization: Organization,
         repository: Repository,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
     ) -> None:
         repository.is_private = False
-        await repository.save(session)
+        await save_fixture(repository)
 
         response = await client.get(
             "/api/v1/funding/search",
@@ -97,14 +98,15 @@ class TestSearch:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,  # makes User a member of Organization
+        save_fixture: SaveFixture,
         session: AsyncSession,
         auth_jwt: str,
     ) -> None:
         private_repository = await create_repository(
-            session, organization, is_private=True
+            save_fixture, organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            session, organization, private_repository
+            save_fixture, organization, private_repository
         )
 
         # then

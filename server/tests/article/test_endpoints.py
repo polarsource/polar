@@ -7,6 +7,7 @@ from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_user
 
 
@@ -18,10 +19,10 @@ async def test_create(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.post(
         "/api/v1/articles",
@@ -47,10 +48,10 @@ async def test_create_with_slug(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.post(
         "/api/v1/articles",
@@ -77,10 +78,10 @@ async def test_create_with_slug_slugify(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.post(
         "/api/v1/articles",
@@ -102,11 +103,7 @@ async def test_create_with_slug_slugify(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 async def test_create_non_member(
-    user: User,
-    organization: Organization,
-    auth_jwt: str,
-    client: AsyncClient,
-    session: AsyncSession,
+    user: User, organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:
     response = await client.post(
         "/api/v1/articles",
@@ -129,7 +126,6 @@ async def test_create_non_admin(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
 ) -> None:
     response = await client.post(
         "/api/v1/articles",
@@ -152,9 +148,10 @@ async def test_get_public(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -204,9 +201,10 @@ async def test_get_hidden(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -246,9 +244,10 @@ async def test_get_private(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -308,9 +307,10 @@ async def test_byline_default(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -338,9 +338,10 @@ async def test_byline_user(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -369,9 +370,10 @@ async def test_byline_org(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -400,9 +402,10 @@ async def test_list(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -511,19 +514,17 @@ async def test_list(
         organization_id=organization.id,
         paid_subscriber=False,
     )
-    session.add(sub)
+    await save_fixture(sub)
 
     # create other subscribers
     for _ in range(5):
-        u = await create_user(session)
+        u = await create_user(save_fixture)
         s2 = ArticlesSubscription(
             user_id=u.id,
             organization_id=organization.id,
             paid_subscriber=False,
         )
-        session.add(s2)
-
-    await session.commit()
+        await save_fixture(s2)
 
     # authed and is subscribed
     get_show_unpublished = await client.get(
@@ -547,7 +548,6 @@ async def test_list(
 
     # authed and is premium subscribed and want to see unpublished
     sub.paid_subscriber = True
-    await session.commit()
 
     get_show_unpublished = await client.get(
         f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true",
@@ -567,9 +567,10 @@ async def test_slug_collision(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -622,9 +623,10 @@ async def test_update(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -671,9 +673,10 @@ async def test_view_counter(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -721,10 +724,10 @@ async def test_pinned(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response_pinned = await client.post(
         "/api/v1/articles",
@@ -818,10 +821,10 @@ async def test_og_image_url(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.post(
         "/api/v1/articles",
@@ -886,10 +889,10 @@ async def test_og_description(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.post(
         "/api/v1/articles",

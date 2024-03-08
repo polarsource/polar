@@ -17,11 +17,13 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.reward.endpoints import to_resource
 from polar.reward.service import reward_service
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
 async def test_list_rewards(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     organization: Organization,
     user: User,
@@ -33,7 +35,7 @@ async def test_list_rewards(
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
-    await got.save(session)
+    await save_fixture(got)
 
     account = Account(
         account_type=AccountType.stripe,
@@ -46,10 +48,9 @@ async def test_list_rewards(
         country="SE",
         currency="USD",
     )
-    session.add(account)
     organization.account = account
-    session.add(organization)
-    await session.commit()
+    await save_fixture(account)
+    await save_fixture(organization)
 
     # then
     session.expunge_all()
@@ -108,6 +109,7 @@ async def test_list_rewards(
 @pytest.mark.asyncio
 async def test_list_rewards_to_user(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     pledging_organization: Organization,
     issue: Issue,
@@ -115,18 +117,19 @@ async def test_list_rewards_to_user(
     user: User,
 ) -> None:
     user.username = "test_gh_user"
-    await user.save(session)
+    await save_fixture(user)
 
-    oauth = await OAuthAccount(
+    oauth = OAuthAccount(
         platform=Platforms.github,
         user_id=user.id,
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
-    ).save(session)
+    )
+    await save_fixture(oauth)
 
     # create two pledges
-    pledge_1 = await Pledge(
+    pledge_1 = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
@@ -137,9 +140,10 @@ async def test_list_rewards_to_user(
         state=PledgeState.created,
         scheduled_payout_at=utc_now() - timedelta(days=2),
         payment_id="test_transfer_payment_id",
-    ).save(session)
+    )
+    await save_fixture(pledge_1)
 
-    pledge_2 = await Pledge(
+    pledge_2 = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
@@ -150,7 +154,8 @@ async def test_list_rewards_to_user(
         state=PledgeState.created,
         scheduled_payout_at=utc_now() - timedelta(days=2),
         payment_id="test_transfer_payment_id",
-    ).save(session)
+    )
+    await save_fixture(pledge_2)
 
     account = Account(
         account_type=AccountType.stripe,
@@ -163,10 +168,9 @@ async def test_list_rewards_to_user(
         currency="SEK",
         country="SE",
     )
-    session.add(account)
     user.account = account
-    session.add(user)
-    await session.commit()
+    await save_fixture(account)
+    await save_fixture(user)
 
     # then
     session.expunge_all()

@@ -10,6 +10,7 @@ from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_issue
 
 BADGED_BODY = """Hello my issue
@@ -53,12 +54,13 @@ async def test_add_badge_custom_content(
     predictable_repository: Repository,
     predictable_issue: Issue,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     predictable_issue.badge_custom_content = "Hello, please sponsor me."
-    await predictable_issue.save(session)
+    await save_fixture(predictable_issue)
 
     predictable_organization.default_badge_custom_content = None
-    await predictable_organization.save(session)
+    await save_fixture(predictable_organization)
 
     # then
     session.expunge_all()
@@ -93,14 +95,15 @@ async def test_add_badge_custom_organization_content(
     predictable_repository: Repository,
     predictable_issue: Issue,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     predictable_issue.badge_custom_content = None
-    await predictable_issue.save(session)
+    await save_fixture(predictable_issue)
 
     predictable_organization.default_badge_custom_content = (
         "Default message from organization."
     )
-    await predictable_organization.save(session)
+    await save_fixture(predictable_organization)
 
     # then
     session.expunge_all()
@@ -220,15 +223,16 @@ async def test_should_add_badge_app_config_disabled(
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_org_not_installed(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
 ) -> None:
     repository.pledge_badge_auto_embed = True
-    await repository.save(session)
+    await save_fixture(repository)
 
     organization.installation_id = None
-    await organization.save(session)
+    await save_fixture(organization)
 
     res = GithubBadge.should_add_badge(
         organization=organization,
@@ -244,15 +248,15 @@ async def test_should_add_badge_org_not_installed(
 @pytest.mark.skip_db_asserts
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_no_badge_with_auto(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
 ) -> None:
     repository.pledge_badge_auto_embed = True
-    await repository.save(session)
+    await save_fixture(repository)
     organization.onboarded_at = utc_now()
-    await organization.save(session)
+    await save_fixture(organization)
 
     res = GithubBadge.should_add_badge(
         organization=organization,
@@ -268,14 +272,15 @@ async def test_should_add_badge_no_badge_with_auto(
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_no_badge_without_auto(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
 ) -> None:
     repository.pledge_badge_auto_embed = False
-    await repository.save(session)
+    await save_fixture(repository)
     organization.onboarded_at = utc_now()
-    await organization.save(session)
+    await save_fixture(organization)
 
     # then
     session.expunge_all()
@@ -294,16 +299,17 @@ async def test_should_add_badge_no_badge_without_auto(
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_issue_previousy_embedded(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
 ) -> None:
     repository.pledge_badge_auto_embed = False
-    await repository.save(session)
+    await save_fixture(repository)
     organization.onboarded_at = utc_now()
-    await organization.save(session)
+    await save_fixture(organization)
     issue.pledge_badge_ever_embedded = True
-    await issue.save(session)
+    await save_fixture(issue)
 
     # then
     session.expunge_all()
@@ -322,16 +328,17 @@ async def test_should_add_badge_issue_previousy_embedded(
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_issue_previousy_embedded_label(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
 ) -> None:
     repository.pledge_badge_auto_embed = False
-    await repository.save(session)
+    await save_fixture(repository)
     organization.onboarded_at = utc_now()
-    await organization.save(session)
+    await save_fixture(organization)
     issue.pledge_badge_ever_embedded = True
-    await issue.save(session)
+    await save_fixture(issue)
 
     # then
     session.expunge_all()
@@ -350,26 +357,27 @@ async def test_should_add_badge_issue_previousy_embedded_label(
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_list_issues_to_add_badge_to_auto(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
 ) -> None:
-    i1 = await create_issue(session, organization, repository)
-    i2 = await create_issue(session, organization, repository)
-    i3 = await create_issue(session, organization, repository)
-    i4 = await create_issue(session, organization, repository)
+    i1 = await create_issue(save_fixture, organization, repository)
+    i2 = await create_issue(save_fixture, organization, repository)
+    i3 = await create_issue(save_fixture, organization, repository)
+    i4 = await create_issue(save_fixture, organization, repository)
 
     repository.pledge_badge_auto_embed = True
     organization.onboarded_at = utc_now()
-    await organization.save(session)
+    await save_fixture(organization)
 
     # Do not add, as badge has been manually removed
     i2.pledge_badge_ever_embedded = True
-    await i2.save(session)
+    await save_fixture(i2)
 
     # Do not add
     i3.pledge_badge_ever_embedded = True
     i3.pledge_badge_embedded_at = datetime.now(UTC)
-    await i3.save(session)
+    await save_fixture(i3)
 
     # then
     session.expunge_all()
@@ -385,26 +393,27 @@ async def test_list_issues_to_add_badge_to_auto(
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_list_issues_to_remove_badge_from_auto(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
 ) -> None:
-    i1 = await create_issue(session, organization, repository)
-    i2 = await create_issue(session, organization, repository)
-    i3 = await create_issue(session, organization, repository)
-    i4 = await create_issue(session, organization, repository)
+    i1 = await create_issue(save_fixture, organization, repository)
+    i2 = await create_issue(save_fixture, organization, repository)
+    i3 = await create_issue(save_fixture, organization, repository)
+    i4 = await create_issue(save_fixture, organization, repository)
 
     repository.pledge_badge_auto_embed = False
     organization.onboarded_at = utc_now()
-    await organization.save(session)
+    await save_fixture(organization)
 
     i2.pledge_badge_ever_embedded = True
-    await i2.save(session)
+    await save_fixture(i2)
 
     # Do not remove, as issue has label
     i3.has_pledge_badge_label = True
     i3.pledge_badge_embedded_at = datetime.now(UTC)
     i3.pledge_badge_ever_embedded = True
-    await i3.save(session)
+    await save_fixture(i3)
 
     # then
     session.expunge_all()

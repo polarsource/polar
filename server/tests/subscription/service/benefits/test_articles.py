@@ -17,6 +17,7 @@ from polar.subscription.service.benefits.articles import (
 from polar.subscription.service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
 )
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_subscription,
     create_subscription_benefit,
@@ -29,34 +30,35 @@ from tests.fixtures.random_objects import (
 async def test_concurrent_subscription_upgrade(
     repeat: int,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     user: User,
     organization: Organization,
     subscription_tier_organization: SubscriptionTier,
 ) -> None:
     previous_subscription = await create_subscription(
-        session,
+        save_fixture,
         subscription_tier=subscription_tier_organization,
         user=user,
         status=SubscriptionStatus.canceled,
     )
     previous_benefit = await create_subscription_benefit(
-        session,
+        save_fixture,
         type=SubscriptionBenefitType.articles,
         organization=organization,
         properties={"paid_articles": False},
     )
     await create_subscription_benefit_grant(
-        session, user, previous_subscription, previous_benefit
+        save_fixture, user, previous_subscription, previous_benefit
     )
 
     new_subscription = await create_subscription(
-        session,
+        save_fixture,
         subscription_tier=subscription_tier_organization,
         user=user,
         status=SubscriptionStatus.active,
     )
     new_benefit = await create_subscription_benefit(
-        session,
+        save_fixture,
         type=SubscriptionBenefitType.articles,
         organization=organization,
         properties={"paid_articles": True},

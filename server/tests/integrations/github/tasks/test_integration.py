@@ -17,6 +17,7 @@ from polar.organization.service import organization
 from polar.postgres import AsyncSession
 from polar.user_organization.service import user_organization
 from polar.worker import JobContext, PolarWorkerContext
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -24,6 +25,7 @@ from polar.worker import JobContext, PolarWorkerContext
 async def test_installation_no_notifications(
     job_context: JobContext,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     mocker: MockerFixture,
 ) -> None:
     """
@@ -72,15 +74,14 @@ async def test_installation_no_notifications(
     mocker.patch("polar.worker._enqueue_job", new=in_process_enqueue_job)
 
     # Create user to match requesting user
-    user = await User(
+    user = User(
         username=cassette["sender"]["login"],
         email="test_installation_no_notifications@test.polar.se",
         accepted_terms_of_service=True,
-    ).save(
-        session=session,
     )
+    await save_fixture(user)
 
-    await OAuthAccount(
+    oauth_account = OAuthAccount(
         platform=Platforms.github,
         access_token=os.environ.get("POLAR_TEST_GITHUB_ACCESS_TOKEN", "ghu_xxx"),
         expires_at=round(time.time() + 60 * 60 * 24),
@@ -88,12 +89,8 @@ async def test_installation_no_notifications(
         account_id=str(cassette["sender"]["id"]),
         account_email="test_installation_no_notifications@test.polar.se",
         user_id=user.id,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
-    await session.flush()
+    await save_fixture(oauth_account)
 
     # then
     session.expunge_all()

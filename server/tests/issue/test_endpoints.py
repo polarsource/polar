@@ -12,6 +12,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -21,11 +22,11 @@ async def test_get_issue(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = False
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/issues/{issue.id}",
@@ -45,11 +46,11 @@ async def test_get_issue_reactions(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = False
-    await repository.save(session)
+    await save_fixture(repository)
 
     issue.reactions = Reactions(
         total_count=3,
@@ -62,7 +63,7 @@ async def test_get_issue_reactions(
         rocket=0,
         eyes=0,
     ).model_dump(mode="json")
-    await issue.save(session)
+    await save_fixture(issue)
 
     response = await client.get(
         f"/api/v1/issues/{issue.id}",
@@ -81,11 +82,11 @@ async def test_get_not_found_private_repo(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = True
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/issues/{issue.id}",
@@ -102,12 +103,12 @@ async def test_get_private_repo_member(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
     repository.is_private = True
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/issues/{issue.id}",
@@ -125,12 +126,12 @@ async def test_issue_search_public_repo(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = False
     repository.is_archived = False
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
@@ -153,12 +154,12 @@ async def test_issue_search_public_repo_without_repo_selector(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = False
     repository.is_archived = False
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
@@ -177,12 +178,12 @@ async def test_issue_search_private_repo(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = True
     repository.is_archived = False
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
@@ -200,12 +201,12 @@ async def test_issue_search_private_repo_without_repo_selector(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = True
     repository.is_archived = False
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
@@ -223,11 +224,12 @@ async def test_update_funding_goal(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -278,6 +280,7 @@ async def test_confirm_solved(
     auth_jwt: str,
     pledge: Pledge,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
     mocker: MockerFixture,
     client: AsyncClient,
@@ -286,7 +289,7 @@ async def test_confirm_solved(
     mocker.patch("polar.worker._enqueue_job")
 
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()

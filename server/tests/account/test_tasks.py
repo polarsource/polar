@@ -16,6 +16,7 @@ from polar.notifications.service import NotificationsService
 from polar.notifications.service import notifications as notification_service
 from polar.worker import JobContext, PolarWorkerContext
 from tests.account.conftest import create_account
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -38,10 +39,11 @@ class TestAccountUnderReview:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
     ) -> None:
         account = await create_account(
-            session, admin=user, status=Account.Status.UNDER_REVIEW
+            save_fixture, admin=user, status=Account.Status.UNDER_REVIEW
         )
 
         # then
@@ -82,10 +84,11 @@ class TestAccountReviewed:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
     ) -> None:
         account = await create_account(
-            session, admin=user, status=Account.Status.ACTIVE
+            save_fixture, admin=user, status=Account.Status.ACTIVE
         )
 
         release_account_mock = mocker.patch.object(

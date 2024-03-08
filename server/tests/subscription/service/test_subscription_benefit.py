@@ -37,6 +37,7 @@ from polar.subscription.service.subscription_benefit import (
 from polar.subscription.service.subscription_benefit_grant import (
     SubscriptionBenefitGrantService,
 )
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription_benefit
 
 
@@ -83,12 +84,13 @@ class TestSearch:
     async def test_filter_type(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         plain_subscription_benefit = await create_subscription_benefit(
-            session, type=SubscriptionBenefitType.custom, organization=organization
+            save_fixture, type=SubscriptionBenefitType.custom, organization=organization
         )
 
         # then
@@ -516,13 +518,14 @@ class TestUserDelete:
     async def test_not_deletable_subscription_benefit(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
         subscription_benefit = await create_subscription_benefit(
-            session,
+            save_fixture,
             type=SubscriptionBenefitType.articles,
             is_tax_applicable=True,
             organization=organization,

@@ -10,6 +10,7 @@ from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.postgres import AsyncSession
 from polar.user_organization.schemas import OrganizationMember
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -32,13 +33,13 @@ async def test_get_organization(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 async def test_get_organization_member_only_fields_no_member(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     organization.billing_email = "billing@polar.sh"
-    await organization.save(session)
+    await save_fixture(organization)
 
     response = await client.get(
         f"/api/v1/organizations/{organization.id}",
@@ -56,14 +57,14 @@ async def test_get_organization_member_only_fields_no_member(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 async def test_get_organization_member_only_fields_is_member(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
 ) -> None:
     organization.billing_email = "billing@polar.sh"
-    await organization.save(session)
+    await save_fixture(organization)
 
     response = await client.get(
         f"/api/v1/organizations/{organization.id}",
@@ -81,13 +82,14 @@ async def test_get_organization_member_only_fields_is_member(
 @pytest.mark.asyncio
 async def test_update_organization_billing_email(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -170,9 +172,10 @@ async def test_list_organization_member_admin(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.get(
         "/api/v1/organizations",
@@ -241,7 +244,7 @@ async def test_organization_search_no_matches(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 async def test_get_organization_deleted(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
@@ -249,7 +252,7 @@ async def test_get_organization_deleted(
 ) -> None:
     # soft-delete the organization
     organization.deleted_at = utc_now()
-    await organization.save(session)
+    await save_fixture(organization)
 
     response = await client.get(
         f"/api/v1/organizations/{organization.id}",
@@ -285,9 +288,10 @@ async def test_update_organization(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()

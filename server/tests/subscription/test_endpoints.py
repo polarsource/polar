@@ -23,6 +23,7 @@ from polar.postgres import AsyncSession
 from polar.subscription.service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
 )
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
@@ -158,13 +159,14 @@ class TestSearchSubscriptionTiers:
     async def test_with_benefits(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
         )
@@ -224,12 +226,13 @@ class TestLookupSubscriptionTier:
     async def test_valid_with_benefits(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
         )
@@ -960,13 +963,13 @@ class TestUpdateSubscriptionBenefit:
     @pytest.mark.authenticated
     async def test_cant_update_articles_properties(
         self,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
         benefit = await create_subscription_benefit(
-            session,
+            save_fixture,
             type=SubscriptionBenefitType.articles,
             organization=organization,
             properties={"paid_articles": False},
@@ -990,13 +993,13 @@ class TestUpdateSubscriptionBenefit:
     @pytest.mark.authenticated
     async def test_can_update_custom_properties(
         self,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
         benefit = await create_subscription_benefit(
-            session,
+            save_fixture,
             type=SubscriptionBenefitType.custom,
             organization=organization,
             properties={"note": "NOTE"},
@@ -1257,7 +1260,7 @@ class TestSearchSubscriptions:
     @pytest.mark.authenticated
     async def test_valid_organization(
         self,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user: User,
@@ -1265,7 +1268,7 @@ class TestSearchSubscriptions:
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             user=user,
             started_at=datetime(2023, 1, 1),
@@ -1326,12 +1329,13 @@ class TestSearchSubscribedSubscriptions:
     async def test_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         user: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             user=user,
             started_at=datetime(2023, 1, 1),
@@ -1350,14 +1354,14 @@ class TestSearchSubscribedSubscriptions:
     @pytest.mark.authenticated
     async def test_with_multiple_subscriptions(
         self,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         user: User,
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             user=user,
             started_at=datetime(2023, 1, 1),
@@ -1366,10 +1370,10 @@ class TestSearchSubscribedSubscriptions:
 
         # subscribe to multiple orgs
         for _ in range(3):
-            org1 = await create_organization(session)
-            sub1 = await create_subscription_tier(session, organization=org1)
+            org1 = await create_organization(save_fixture)
+            sub1 = await create_subscription_tier(save_fixture, organization=org1)
             await create_active_subscription(
-                session,
+                save_fixture,
                 subscription_tier=sub1,
                 user=user,
                 started_at=datetime(2023, 1, 1),
@@ -1492,11 +1496,14 @@ class TestCancelSubscription:
 
     @pytest.mark.authenticated
     async def test_valid(
-        self, session: AsyncSession, client: AsyncClient, subscription: Subscription
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        subscription: Subscription,
     ) -> None:
         subscription.status = SubscriptionStatus.active
-        session.add(subscription)
-        await session.commit()
+        await save_fixture(subscription)
 
         # then
         session.expunge_all()
@@ -1540,13 +1547,14 @@ class TestSearchSubscriptionsSummary:
     async def test_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             user=user,
             started_at=datetime(2023, 1, 1),

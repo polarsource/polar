@@ -1,4 +1,3 @@
-import uuid
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -22,6 +21,7 @@ from polar.transaction.service.payout import (
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.fixture(autouse=True)
@@ -32,7 +32,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 async def create_payment_transaction(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     amount: int = 1000,
     charge_id: str = "STRIPE_CHARGE_ID",
@@ -48,18 +48,17 @@ async def create_payment_transaction(
         tax_amount=0,
         charge_id=charge_id,
     )
-    session.add(transaction)
-    await session.commit()
+    await save_fixture(transaction)
     return transaction
 
 
 async def create_balance_transaction(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     account: Account,
     currency: str = "usd",
     amount: int = 1000,
-    payment_transaction_id: uuid.UUID | None = None,
+    payment_transaction: Transaction | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.balance,
@@ -70,17 +69,16 @@ async def create_balance_transaction(
         account_currency=currency,
         account_amount=amount,
         tax_amount=0,
-        payment_transaction_id=payment_transaction_id,
+        payment_transaction=payment_transaction,
     )
-    session.add(transaction)
-    await session.commit()
+    await save_fixture(transaction)
     return transaction
 
 
 @pytest.mark.asyncio
 class TestCreatePayout:
     async def test_insufficient_balance(
-        self, session: AsyncSession, user: User
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -93,10 +91,9 @@ class TestCreatePayout:
             is_payouts_enabled=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
-        await session.commit()
+        await save_fixture(account)
 
-        await create_balance_transaction(session, account=account, amount=-1000)
+        await create_balance_transaction(save_fixture, account=account, amount=-1000)
 
         # then
         session.expunge_all()
@@ -137,7 +134,11 @@ class TestCreatePayout:
             await payout_transaction_service.create_payout(session, account=account)
 
     async def test_stripe(
-        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -151,17 +152,16 @@ class TestCreatePayout:
             processor_fees_applicable=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
-        await session.commit()
+        await save_fixture(account)
 
-        payment_transaction_1 = await create_payment_transaction(session)
+        payment_transaction_1 = await create_payment_transaction(save_fixture)
         balance_transaction_1 = await create_balance_transaction(
-            session, account=account, payment_transaction_id=payment_transaction_1.id
+            save_fixture, account=account, payment_transaction=payment_transaction_1
         )
 
-        payment_transaction_2 = await create_payment_transaction(session)
+        payment_transaction_2 = await create_payment_transaction(save_fixture)
         balance_transaction_2 = await create_balance_transaction(
-            session, account=account, payment_transaction_id=payment_transaction_2.id
+            save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
         stripe_service_mock.transfer.return_value = SimpleNamespace(
@@ -175,7 +175,7 @@ class TestCreatePayout:
             session, account=account
         )
 
-        assert payout.account_id == account.id
+        assert payout.account == account
         assert payout.processor == PaymentProcessor.stripe
         assert payout.payout_id is None
         assert payout.currency == "usd"
@@ -184,11 +184,7 @@ class TestCreatePayout:
         assert payout.account_amount < 0
 
         assert len(payout.paid_transactions) == 2 + len(
-            [
-                t
-                for t in payout.incurred_transactions
-                if t.account_id == payout.account_id
-            ]
+            payout.account_incurred_transactions
         )
         assert payout.paid_transactions[0].id == balance_transaction_1.id
         assert payout.paid_transactions[1].id == balance_transaction_2.id
@@ -213,7 +209,11 @@ class TestCreatePayout:
         stripe_service_mock.create_payout.assert_not_called()
 
     async def test_stripe_different_currencies(
-        self, session: AsyncSession, user: User, stripe_service_mock: MagicMock
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -227,17 +227,16 @@ class TestCreatePayout:
             processor_fees_applicable=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
-        await session.commit()
+        await save_fixture(account)
 
-        payment_transaction_1 = await create_payment_transaction(session)
+        payment_transaction_1 = await create_payment_transaction(save_fixture)
         balance_transaction_1 = await create_balance_transaction(
-            session, account=account, payment_transaction_id=payment_transaction_1.id
+            save_fixture, account=account, payment_transaction=payment_transaction_1
         )
 
-        payment_transaction_2 = await create_payment_transaction(session)
+        payment_transaction_2 = await create_payment_transaction(save_fixture)
         balance_transaction_2 = await create_balance_transaction(
-            session, account=account, payment_transaction_id=payment_transaction_2.id
+            save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
         stripe_service_mock.transfer.return_value = SimpleNamespace(
@@ -262,7 +261,7 @@ class TestCreatePayout:
             session, account=account
         )
 
-        assert payout.account_id == account.id
+        assert payout.account == account
         assert payout.processor == PaymentProcessor.stripe
         assert payout.payout_id is None
         assert payout.currency == "usd"
@@ -271,18 +270,16 @@ class TestCreatePayout:
         assert payout.account_amount < 0
 
         assert len(payout.paid_transactions) == 2 + len(
-            [
-                t
-                for t in payout.incurred_transactions
-                if t.account_id == payout.account_id
-            ]
+            payout.account_incurred_transactions
         )
         assert payout.paid_transactions[0].id == balance_transaction_1.id
         assert payout.paid_transactions[1].id == balance_transaction_2.id
 
         stripe_service_mock.create_payout.assert_not_called()
 
-    async def test_open_collective(self, session: AsyncSession, user: User) -> None:
+    async def test_open_collective(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
             account_type=AccountType.open_collective,
@@ -295,10 +292,11 @@ class TestCreatePayout:
             processor_fees_applicable=True,
             open_collective_slug="polarsource",
         )
-        session.add(account)
-        await session.commit()
+        await save_fixture(account)
 
-        balance_transaction = await create_balance_transaction(session, account=account)
+        balance_transaction = await create_balance_transaction(
+            save_fixture, account=account
+        )
 
         # then
         session.expunge_all()
@@ -307,7 +305,7 @@ class TestCreatePayout:
             session, account=account
         )
 
-        assert payout.account_id == account.id
+        assert payout.account == account
         assert payout.processor == PaymentProcessor.open_collective
         assert payout.currency == "usd"
         assert payout.amount == -balance_transaction.amount
@@ -315,11 +313,7 @@ class TestCreatePayout:
         assert payout.account_amount == -balance_transaction.amount
 
         assert len(payout.paid_transactions) == 1 + len(
-            [
-                t
-                for t in payout.incurred_transactions
-                if t.account_id == payout.account_id
-            ]
+            payout.account_incurred_transactions
         )
         assert payout.paid_transactions[0].id == balance_transaction.id
 
@@ -388,6 +382,7 @@ class TestCreatePayoutFromStripe:
     async def test_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -403,8 +398,7 @@ class TestCreatePayoutFromStripe:
             processor_fees_applicable=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
-        await session.commit()
+        await save_fixture(account)
 
         transaction_params = {
             "type": TransactionType.balance,
@@ -425,10 +419,9 @@ class TestCreatePayoutFromStripe:
                 source_transfer=transfer_id
             )
 
-            session.add(transaction)
+            await save_fixture(transaction)
             transactions.append(transaction)
             balance_transactions.append(balance_transaction)
-        await session.commit()
 
         stripe_service_mock.list_balance_transactions.return_value = (
             balance_transactions
@@ -451,7 +444,7 @@ class TestCreatePayoutFromStripe:
         assert transaction.amount == -stripe_payout.amount
         assert transaction.tax_amount == 0
         assert transaction.payout_id == stripe_payout.id
-        assert transaction.account_id == account.id
+        assert transaction.account == account
 
         paid_transactions_statement = select(Transaction).where(
             Transaction.payout_transaction_id == transaction.id
@@ -463,6 +456,7 @@ class TestCreatePayoutFromStripe:
     async def test_valid_different_currencies(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -478,8 +472,7 @@ class TestCreatePayoutFromStripe:
             processor_fees_applicable=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
-        await session.commit()
+        await save_fixture(account)
 
         transaction_params = {
             "type": TransactionType.balance,
@@ -500,10 +493,9 @@ class TestCreatePayoutFromStripe:
                 source_transfer=transfer_id
             )
 
-            session.add(transaction)
+            await save_fixture(transaction)
             transactions.append(transaction)
             balance_transactions.append(balance_transaction)
-        await session.commit()
 
         stripe_service_mock.list_balance_transactions.return_value = (
             balance_transactions
@@ -531,7 +523,7 @@ class TestCreatePayoutFromStripe:
         assert transaction.account_amount == -stripe_payout.amount
         assert transaction.tax_amount == 0
         assert transaction.payout_id == stripe_payout.id
-        assert transaction.account_id == account.id
+        assert transaction.account == account
 
         paid_transactions_statement = select(Transaction).where(
             Transaction.payout_transaction_id == transaction.id

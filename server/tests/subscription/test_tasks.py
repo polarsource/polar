@@ -35,6 +35,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     subscription_update_subscription_tier_benefits_grants,
 )
 from polar.worker import JobContext, PolarWorkerContext
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -379,6 +380,7 @@ class TestSubscriptionBenefitUpdate:
     async def test_existing_grant(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
@@ -392,8 +394,7 @@ class TestSubscriptionBenefitUpdate:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         update_benefit_grant_mock = mocker.patch.object(
             subscription_benefit_grant_service,
@@ -411,6 +412,7 @@ class TestSubscriptionBenefitUpdate:
     async def test_retry(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
@@ -424,8 +426,7 @@ class TestSubscriptionBenefitUpdate:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         update_benefit_grant_mock = mocker.patch.object(
             subscription_benefit_grant_service,
@@ -463,6 +464,7 @@ class TestSubscriptionBenefitDelete:
     async def test_existing_grant(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
@@ -476,8 +478,7 @@ class TestSubscriptionBenefitDelete:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         delete_benefit_grant_mock = mocker.patch.object(
             subscription_benefit_grant_service,
@@ -495,6 +496,7 @@ class TestSubscriptionBenefitDelete:
     async def test_retry(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
@@ -508,8 +510,7 @@ class TestSubscriptionBenefitDelete:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         delete_benefit_grant_mock = mocker.patch.object(
             subscription_benefit_grant_service,

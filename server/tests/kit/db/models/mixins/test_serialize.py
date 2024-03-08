@@ -1,8 +1,7 @@
 import pytest
 
 from polar.kit.db.models.mixins import SerializeMixin
-from polar.postgres import AsyncSession
-from tests.fixtures.database import TestModel
+from tests.fixtures.database import SaveFixture, TestModel
 
 
 class SerializeModel(TestModel, SerializeMixin):
@@ -11,10 +10,9 @@ class SerializeModel(TestModel, SerializeMixin):
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-async def test_to_dict(session: AsyncSession) -> None:
+async def test_to_dict(save_fixture: SaveFixture) -> None:
     created = SerializeModel(int_column=1, str_column="Dict")
-    session.add(created)
-    await session.commit()
+    await save_fixture(created)
 
     assert created.id is not None
     as_dict = created.to_dict()

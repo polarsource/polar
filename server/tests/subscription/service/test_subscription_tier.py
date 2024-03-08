@@ -31,6 +31,7 @@ from polar.subscription.service.subscription_tier import (
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_subscription_benefit,
@@ -105,14 +106,17 @@ class TestSearch:
     async def test_filter_type(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         organization: Organization,
     ) -> None:
         individual_subscription_tier = await create_subscription_tier(
-            session, type=SubscriptionTierType.individual, organization=organization
+            save_fixture,
+            type=SubscriptionTierType.individual,
+            organization=organization,
         )
         await create_subscription_tier(
-            session, type=SubscriptionTierType.business, organization=organization
+            save_fixture, type=SubscriptionTierType.business, organization=organization
         )
 
         # then
@@ -197,12 +201,13 @@ class TestSearch:
     async def test_filter_include_archived(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         archived_subscription_tier = await create_subscription_tier(
-            session, organization=organization, is_archived=True
+            save_fixture, organization=organization, is_archived=True
         )
 
         # then
@@ -518,6 +523,7 @@ class TestUserCreate:
     async def test_valid_highlighted(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         user: User,
         organization: Organization,
@@ -525,10 +531,10 @@ class TestUserCreate:
         stripe_service_mock: MagicMock,
     ) -> None:
         highlighted_subscription_tier = await create_subscription_tier(
-            session, organization=organization, is_highlighted=True
+            save_fixture, organization=organization, is_highlighted=True
         )
         await create_subscription_tier(
-            session, organization=organization, is_highlighted=False
+            save_fixture, organization=organization, is_highlighted=False
         )
         create_product_with_price_mock: (
             MagicMock
@@ -756,6 +762,7 @@ class TestUserUpdate:
     async def test_valid_highlighted(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         user: User,
         organization: Organization,
@@ -764,7 +771,7 @@ class TestUserUpdate:
         stripe_service_mock: MagicMock,
     ) -> None:
         highlighted_subscription_tier = await create_subscription_tier(
-            session, organization=organization, is_highlighted=True
+            save_fixture, organization=organization, is_highlighted=True
         )
 
         create_price_for_product_mock: (
@@ -875,6 +882,7 @@ class TestUpdateBenefits:
     async def test_not_existing_benefit(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -882,7 +890,7 @@ class TestUpdateBenefits:
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
         )
@@ -1018,6 +1026,7 @@ class TestUpdateBenefits:
     async def test_deleted(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
@@ -1026,7 +1035,7 @@ class TestUpdateBenefits:
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
         )
@@ -1060,6 +1069,7 @@ class TestUpdateBenefits:
     async def test_reordering(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
@@ -1068,7 +1078,7 @@ class TestUpdateBenefits:
         subscription_benefits: list[SubscriptionBenefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=subscription_benefits,
         )
@@ -1118,6 +1128,7 @@ class TestUpdateBenefits:
     async def test_add_not_selectable(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -1125,7 +1136,7 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         not_selectable_benefit = await create_subscription_benefit(
-            session,
+            save_fixture,
             type=SubscriptionBenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
@@ -1153,6 +1164,7 @@ class TestUpdateBenefits:
     async def test_remove_not_selectable(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
@@ -1160,7 +1172,7 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         not_selectable_benefit = await create_subscription_benefit(
-            session,
+            save_fixture,
             type=SubscriptionBenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
@@ -1168,7 +1180,7 @@ class TestUpdateBenefits:
         )
 
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=[not_selectable_benefit],
         )
@@ -1194,6 +1206,7 @@ class TestUpdateBenefits:
     async def test_add_with_existing_not_selectable(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         user: User,
@@ -1202,21 +1215,21 @@ class TestUpdateBenefits:
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         not_selectable_benefit = await create_subscription_benefit(
-            session,
+            save_fixture,
             type=SubscriptionBenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
         )
         selectable_benefit = await create_subscription_benefit(
-            session,
+            save_fixture,
             type=SubscriptionBenefitType.custom,
             is_tax_applicable=True,
             organization=organization,
             description="SELECTABLE",
         )
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=[not_selectable_benefit],
         )

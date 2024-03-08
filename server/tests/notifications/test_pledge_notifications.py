@@ -18,11 +18,13 @@ from polar.notifications.notification import (
 from polar.notifications.service import NotificationsService, PartialNotification
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
 async def test_create_pledge_from_created(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -34,8 +36,7 @@ async def test_create_pledge_from_created(
 
     payment_id = "xxx-1"
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -45,6 +46,7 @@ async def test_create_pledge_from_created(
         state=PledgeState.initiated,
         payment_id=payment_id,
     )
+    await save_fixture(pledge)
 
     # then
     session.expunge_all()
@@ -84,6 +86,7 @@ async def test_create_pledge_from_created(
 @pytest.mark.asyncio
 async def test_create_pledge_from_created_by_user(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -96,8 +99,7 @@ async def test_create_pledge_from_created_by_user(
 
     payment_id = "xxx-1"
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -107,6 +109,7 @@ async def test_create_pledge_from_created_by_user(
         state=PledgeState.initiated,
         payment_id=payment_id,
     )
+    await save_fixture(pledge)
 
     # then
     session.expunge_all()
@@ -146,6 +149,7 @@ async def test_create_pledge_from_created_by_user(
 @pytest.mark.asyncio
 async def test_create_pledge_from_created_on_behalf_of(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -158,8 +162,7 @@ async def test_create_pledge_from_created_on_behalf_of(
 
     payment_id = "xxx-1"
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -170,6 +173,7 @@ async def test_create_pledge_from_created_on_behalf_of(
         state=PledgeState.initiated,
         payment_id=payment_id,
     )
+    await save_fixture(pledge)
 
     # then
     session.expunge_all()
@@ -209,6 +213,7 @@ async def test_create_pledge_from_created_on_behalf_of(
 @pytest.mark.asyncio
 async def test_deduplicate(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -217,16 +222,15 @@ async def test_deduplicate(
     mocker: MockerFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     user_organization_second.is_admin = True
-    await user_organization_second.save(session)
+    await save_fixture(user_organization_second)
 
     spy = mocker.spy(NotificationsService, "send_to_org_admins")
     mocker.patch("polar.worker._enqueue_job")
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -236,6 +240,7 @@ async def test_deduplicate(
         state=PledgeState.initiated,
         payment_id="xxx-2",
     )
+    await save_fixture(pledge)
 
     # Check notifictions
     assert spy.call_count == 0

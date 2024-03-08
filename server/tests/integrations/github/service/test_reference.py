@@ -13,6 +13,7 @@ from polar.models.organization import Organization
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.vcr import read_cassette
 
 
@@ -27,6 +28,7 @@ async def test_parse_repository_issues() -> None:
 @pytest.mark.asyncio
 async def test_parse_issue_timeline(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -38,17 +40,15 @@ async def test_parse_issue_timeline(
     # Create Org/Repo/Issue (setup to match names and ids in issue_timeline.json)
     organization.name = "zegloforko"
     organization.external_id = 456
-    await organization.save(session)
+    await save_fixture(organization)
 
     repository.name = "polarforkotest"
     repository.external_id = 617059064
-    await repository.save(session)
+    await save_fixture(repository)
 
     pull_request.number = 1
     pull_request.external_id = 1234
-    await pull_request.save(session)
-    await session.commit()
-    await session.flush()
+    await save_fixture(pull_request)
 
     client = github.get_client("fake")
 
@@ -95,6 +95,7 @@ async def test_parse_issue_timeline(
 @pytest.mark.asyncio
 async def test_parse_issue_timeline_rclone(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -105,17 +106,15 @@ async def test_parse_issue_timeline_rclone(
 
     organization.name = "zegloforko"
     organization.external_id = 456
-    await organization.save(session)
+    await save_fixture(organization)
 
     repository.name = "polarforkotest"
     repository.external_id = 617059064
-    await repository.save(session)
+    await save_fixture(repository)
 
     pull_request.number = 1
     pull_request.external_id = 1234
-    await pull_request.save(session)
-    await session.commit()
-    await session.flush()
+    await save_fixture(pull_request)
 
     client = github.get_client("fake")
 

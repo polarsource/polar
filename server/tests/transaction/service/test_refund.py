@@ -18,6 +18,7 @@ from polar.transaction.service.refund import (  # type: ignore[attr-defined]
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
+from tests.fixtures.database import SaveFixture
 
 
 def build_stripe_balance_transaction(
@@ -112,6 +113,7 @@ class TestCreateRefunds:
     async def test_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         pledge: Pledge,
         stripe_service_mock: MagicMock,
@@ -149,7 +151,7 @@ class TestCreateRefunds:
             is_payouts_enabled=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
+        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -162,7 +164,7 @@ class TestCreateRefunds:
             charge_id=charge.id,
             pledge=pledge,
         )
-        session.add(payment_transaction)
+        await save_fixture(payment_transaction)
 
         outgoing_balance_1 = Transaction(
             type=TransactionType.balance,
@@ -191,8 +193,8 @@ class TestCreateRefunds:
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
         )
-        session.add(outgoing_balance_1)
-        session.add(incoming_balance_1)
+        await save_fixture(outgoing_balance_1)
+        await save_fixture(incoming_balance_1)
 
         outgoing_balance_2 = Transaction(
             type=TransactionType.balance,
@@ -221,8 +223,8 @@ class TestCreateRefunds:
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
         )
-        session.add(outgoing_balance_2)
-        session.add(incoming_balance_2)
+        await save_fixture(outgoing_balance_2)
+        await save_fixture(incoming_balance_2)
 
         handled_refund_transaction = Transaction(
             type=TransactionType.refund,
@@ -234,9 +236,7 @@ class TestCreateRefunds:
             tax_amount=0,
             refund_id=handled_refund.id,
         )
-        session.add(handled_refund_transaction)
-
-        await session.commit()
+        await save_fixture(handled_refund_transaction)
 
         # then
         session.expunge_all()

@@ -14,6 +14,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.magic_link.service import InvalidMagicLink
 from polar.magic_link.service import magic_link as magic_link_service
 from polar.models import MagicLink, User
+from tests.fixtures.database import SaveFixture
 
 GenerateMagicLinkToken = Callable[
     [str, UUID | None, datetime | None], Coroutine[None, None, tuple[MagicLink, str]]
@@ -22,7 +23,7 @@ GenerateMagicLinkToken = Callable[
 
 @pytest_asyncio.fixture
 async def generate_magic_link_token(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> GenerateMagicLinkToken:
     async def _generate_magic_link_token(
         user_email: str, user_id: UUID | None, expires_at: datetime | None
@@ -34,8 +35,7 @@ async def generate_magic_link_token(
             user_id=user_id,
             expires_at=expires_at,
         )
-        session.add(magic_link)
-        await session.commit()
+        await save_fixture(magic_link)
 
         return magic_link, token
 
@@ -183,11 +183,12 @@ async def test_send_return_to(
 
 @pytest.mark.asyncio
 async def test_authenticate_existing_user(
-    session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    generate_magic_link_token: GenerateMagicLinkToken,
 ) -> None:
     user = User(username="user@example.com", email="user@example.com")
-    session.add(user)
-    await session.commit()
+    await save_fixture(user)
 
     # then
     session.expunge_all()
@@ -204,11 +205,12 @@ async def test_authenticate_existing_user(
 
 @pytest.mark.asyncio
 async def test_authenticate_existing_user_unlinked_from_magic_token(
-    session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    generate_magic_link_token: GenerateMagicLinkToken,
 ) -> None:
     user = User(username="user@example.com", email="user@example.com")
-    session.add(user)
-    await session.commit()
+    await save_fixture(user)
 
     # then
     session.expunge_all()

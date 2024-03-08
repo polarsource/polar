@@ -12,6 +12,7 @@ from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_issue,
     create_organization,
@@ -29,10 +30,11 @@ async def test_get_pledge(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()
@@ -60,32 +62,30 @@ async def test_get_pledge_member_sending_org(
     pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
 ) -> None:
-    pledging_organization = await create_organization(session=session)
+    pledging_organization = await create_organization(save_fixture)
 
-    pledge_created_by_user = await create_user(session=session)
+    pledge_created_by_user = await create_user(save_fixture)
 
     pledge = await create_pledge(
-        session=session,
+        save_fixture,
         organization=organization,
         repository=repository,
         issue=issue,
         pledging_organization=pledging_organization,
     )
-
     pledge.created_by_user_id = pledge_created_by_user.id
-    await pledge.save(session)
+    await save_fixture(pledge)
 
     # make user member of the pledging organization
-    await UserOrganization(
+    user_organization = UserOrganization(
         user_id=user.id,
         organization_id=pledging_organization.id,
-    ).save(
-        session=session,
     )
+    await save_fixture(user_organization)
 
     response = await client.get(
         f"/api/v1/pledges/{pledge.id}",
@@ -109,32 +109,30 @@ async def test_get_pledge_member_receiving_org(
     pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
 ) -> None:
-    pledging_organization = await create_organization(session=session)
+    pledging_organization = await create_organization(save_fixture)
 
-    pledge_created_by_user = await create_user(session=session)
+    pledge_created_by_user = await create_user(save_fixture)
 
     pledge = await create_pledge(
-        session=session,
+        save_fixture,
         organization=organization,
         repository=repository,
         issue=issue,
         pledging_organization=pledging_organization,
     )
-
     pledge.created_by_user_id = pledge_created_by_user.id
-    await pledge.save(session)
+    await save_fixture(pledge)
 
     # make user member of the receiving organization
-    await UserOrganization(
+    user_organization = UserOrganization(
         user_id=user.id,
         organization_id=organization.id,
-    ).save(
-        session=session,
     )
+    await save_fixture(user_organization)
 
     response = await client.get(
         f"/api/v1/pledges/{pledge.id}",
@@ -159,11 +157,11 @@ async def test_get_pledge_not_admin(
     user: User,
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = False
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.get(
         f"/api/v1/pledges/{pledge.id}",
@@ -199,12 +197,12 @@ async def test_search_pledge(
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     issue: Issue,
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.get(
         f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
@@ -230,11 +228,11 @@ async def test_search_pledge_no_admin(
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = False
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.get(
         f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
@@ -271,19 +269,20 @@ async def test_search_pledge_by_issue_id(
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
     auth_jwt: str,
+    save_fixture: SaveFixture,
     session: AsyncSession,
     issue: Issue,
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # create another issue and another pledge
     other_issue = await create_issue(
-        session, organization=organization, repository=repository
+        save_fixture, organization=organization, repository=repository
     )
 
-    other_pledge = await Pledge(
+    other_pledge = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
@@ -292,11 +291,10 @@ async def test_search_pledge_by_issue_id(
         amount=50000,
         fee=50,
         state=PledgeState.created,
-    ).save(
-        session=session,
     )
+    await save_fixture(other_pledge)
 
-    other_pledge_2 = await Pledge(
+    other_pledge_2 = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
@@ -305,11 +303,8 @@ async def test_search_pledge_by_issue_id(
         amount=50000,
         fee=50,
         state=PledgeState.created,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
+    await save_fixture(other_pledge_2)
 
     # then
     session.expunge_all()
@@ -402,9 +397,10 @@ async def test_summary(
     pledging_organization: Organization,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     repository.is_private = False
-    await repository.save(session)
+    await save_fixture(repository)
 
     expected_github_username = pledging_organization.name
     expected_name = pledging_organization.name
@@ -441,10 +437,10 @@ async def test_summary_private_repo(
     repository: Repository,
     pledge: Pledge,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     repository.is_private = True
-    await repository.save(session)
+    await save_fixture(repository)
 
     response = await client.get(
         f"/api/v1/pledges/summary?issue_id={pledge.issue_id}",
@@ -461,11 +457,12 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     # configure org spending limit
     organization.billing_email = "foo@polar.sh"
     organization.total_monthly_spending_limit = 10000
-    await organization.save(session)
+    await save_fixture(organization)
 
     # then
     session.expunge_all()
@@ -513,11 +510,12 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     # configure org spending limit
     organization.billing_email = "foo@polar.sh"
     organization.per_user_monthly_spending_limit = 10000
-    await organization.save(session)
+    await save_fixture(organization)
 
     # then
     session.expunge_all()
@@ -565,11 +563,11 @@ async def test_no_billing_email(
     issue: Issue,
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     # configure org spending limit
     organization.per_user_monthly_spending_limit = 10000
-    await organization.save(session)
+    await save_fixture(organization)
 
     # not OK, reached spending limit
     create_pledge = await client.post(
@@ -598,11 +596,12 @@ async def test_spending(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     # configure org spending limit
     organization.billing_email = "foo@polar.sh"
     organization.per_user_monthly_spending_limit = 10000
-    await organization.save(session)
+    await save_fixture(organization)
 
     # then
     session.expunge_all()

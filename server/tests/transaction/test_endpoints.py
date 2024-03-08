@@ -18,6 +18,7 @@ from polar.transaction.endpoints import (  # type: ignore[attr-defined]
     payout_transaction_service,
 )
 from polar.transaction.service.payout import PayoutTransactionService
+from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_account, create_transaction
 
 
@@ -59,25 +60,25 @@ class TestLookupTransaction:
     @pytest.mark.authenticated
     async def test_transaction_payout(
         self,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
         account: Account,
         user_organization: UserOrganization,
         pledge: Pledge,
         client: AsyncClient,
     ) -> None:
         transaction = await create_transaction(
-            session, type=TransactionType.payout, account=account, pledge=pledge
+            save_fixture, type=TransactionType.payout, account=account, pledge=pledge
         )
 
         paid_transactions = [
             await create_transaction(
-                session, account=account, payout_transaction=transaction
+                save_fixture, account=account, payout_transaction=transaction
             ),
             await create_transaction(
-                session, account=account, payout_transaction=transaction
+                save_fixture, account=account, payout_transaction=transaction
             ),
             await create_transaction(
-                session, account=account, payout_transaction=transaction
+                save_fixture, account=account, payout_transaction=transaction
             ),
         ]
 
@@ -152,11 +153,12 @@ class TestCreatePayout:
     async def test_not_permitted(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_second: User,
     ) -> None:
-        account = await create_account(session, organization, user_second)
+        account = await create_account(save_fixture, organization, user_second)
         response = await client.post(
             "/api/v1/transactions/payouts", json={"account_id": str(account.id)}
         )
@@ -170,6 +172,7 @@ class TestCreatePayout:
     async def test_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         client: AsyncClient,
         account: Account,
@@ -189,8 +192,8 @@ class TestCreatePayout:
             subscription=None,
             account_incurred_transactions=[],
         )
-        session.add(payout)
-        await session.commit()
+        await save_fixture(payout)
+
         mocker.patch.object(
             payout_transaction_service,
             "create_payout",

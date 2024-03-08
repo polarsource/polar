@@ -6,10 +6,11 @@ from polar.models import Account, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from tests.account.conftest import create_account
+from tests.fixtures.database import SaveFixture
 
 
 async def create_transaction(
-    session: AsyncSession, *, account: Account | None = None, amount: int = 1000
+    save_fixture: SaveFixture, *, account: Account | None = None, amount: int = 1000
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.balance,
@@ -21,9 +22,7 @@ async def create_transaction(
         tax_amount=0,
         account=account,
     )
-    session.add(transaction)
-    await session.commit()
-    session.expunge_all()
+    await save_fixture(transaction)
     return transaction
 
 
@@ -37,25 +36,37 @@ class TestCheckReviewThreshold:
         status: Account.Status,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
 
-        account = await create_account(session, admin=user, status=status)
+        account = await create_account(save_fixture, admin=user, status=status)
+
+        # then
+        session.expunge_all()
+
         updated_account = await account_service.check_review_threshold(session, account)
         assert updated_account.status == status
 
         enqueue_job_mock.assert_not_called()
 
     async def test_below_threshold(
-        self, mocker: MockerFixture, session: AsyncSession, user: User
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
 
         account = await create_account(
-            session, admin=user, status=Account.Status.UNREVIEWED
+            save_fixture, admin=user, status=Account.Status.UNREVIEWED
         )
-        await create_transaction(session, account=account)
+        await create_transaction(save_fixture, account=account)
+
+        # then
+        session.expunge_all()
 
         updated_account = await account_service.check_review_threshold(session, account)
         assert updated_account.status == Account.Status.UNREVIEWED
@@ -63,15 +74,22 @@ class TestCheckReviewThreshold:
         enqueue_job_mock.assert_not_called()
 
     async def test_above_threshold(
-        self, mocker: MockerFixture, session: AsyncSession, user: User
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
 
         account = await create_account(
-            session, admin=user, status=Account.Status.UNREVIEWED
+            save_fixture, admin=user, status=Account.Status.UNREVIEWED
         )
         for _ in range(0, 10):
-            await create_transaction(session, account=account)
+            await create_transaction(save_fixture, account=account)
+
+        # then
+        session.expunge_all()
 
         updated_account = await account_service.check_review_threshold(session, account)
         assert updated_account.status == Account.Status.UNDER_REVIEW
@@ -84,13 +102,20 @@ class TestCheckReviewThreshold:
 @pytest.mark.asyncio
 class TestConfirmAccountReviewed:
     async def test_valid(
-        self, mocker: MockerFixture, session: AsyncSession, user: User
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
     ) -> None:
         account = await create_account(
-            session, admin=user, status=Account.Status.UNDER_REVIEW
+            save_fixture, admin=user, status=Account.Status.UNDER_REVIEW
         )
 
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
+
+        # then
+        session.expunge_all()
 
         updated_account = await account_service.confirm_account_reviewed(
             session, account

@@ -21,6 +21,7 @@ from polar.subscription.service.subscribe_session import (
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
@@ -66,11 +67,12 @@ class TestCreateSubscribeSession:
     async def test_archived_subscription_tier(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         subscription_tier_organization.is_archived = True
-        await session.commit()
+        await save_fixture(subscription_tier_organization)
 
         # then
         session.expunge_all()
@@ -94,12 +96,13 @@ class TestCreateSubscribeSession:
     async def test_not_added_to_stripe_subscription_tier(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         subscription_tier_organization.stripe_product_id = None
         subscription_tier_organization.stripe_price_id = None
-        await session.commit()
+        await save_fixture(subscription_tier_organization)
 
         # then
         session.expunge_all()
@@ -123,12 +126,13 @@ class TestCreateSubscribeSession:
     async def test_already_subscribed(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
-            session, subscription_tier=subscription_tier_organization, user=user
+            save_fixture, subscription_tier=subscription_tier_organization, user=user
         )
 
         # then
@@ -385,6 +389,7 @@ class TestCreateSubscribeSession:
     async def test_valid_tax_applicable(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
@@ -392,10 +397,10 @@ class TestCreateSubscribeSession:
         user: User,
     ) -> None:
         applicable_tax_benefit = await create_subscription_benefit(
-            session, is_tax_applicable=True, organization=organization
+            save_fixture, is_tax_applicable=True, organization=organization
         )
         subscription_tier_organization = await add_subscription_benefits(
-            session,
+            save_fixture,
             subscription_tier=subscription_tier_organization,
             subscription_benefits=[applicable_tax_benefit],
         )
@@ -450,6 +455,7 @@ class TestCreateSubscribeSession:
     async def test_valid_free_subscription_upgrade(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_organization_free: SubscriptionTier,
@@ -457,7 +463,9 @@ class TestCreateSubscribeSession:
         user: User,
     ) -> None:
         free_subscription = await create_active_subscription(
-            session, subscription_tier=subscription_tier_organization_free, user=user
+            save_fixture,
+            subscription_tier=subscription_tier_organization_free,
+            user=user,
         )
 
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
@@ -568,6 +576,7 @@ class TestCreateSubscribeSession:
     async def test_organization_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         authz: Authz,
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
@@ -576,7 +585,7 @@ class TestCreateSubscribeSession:
     ) -> None:
         organization_subscriber.stripe_customer_id = "ORGANIZATION_STRIPE_CUSTOMER_ID"
         organization_subscriber_admin.stripe_customer_id = "STRIPE_CUSTOMER_ID"
-        await session.commit()
+        await save_fixture(organization_subscriber)
 
         create_subscription_checkout_session_mock: (
             MagicMock

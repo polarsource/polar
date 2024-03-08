@@ -10,7 +10,7 @@ from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -141,12 +141,12 @@ async def test_get_with_pledge_initiated(
     pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     # assert that initiated pledges does not appear in the result
     pledge.state = PledgeState.initiated
-    await pledge.save(session)
+    await save_fixture(pledge)
 
     response = await client.get(
         f"/api/v1/dashboard/github/{organization.name}",
@@ -252,11 +252,11 @@ async def test_get_only_badged_is_badged(
     # pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     issue.pledge_badge_embedded_at = datetime.now(UTC)
-    await issue.save(session)
+    await save_fixture(issue)
 
     response = await client.get(
         f"/api/v1/dashboard/github/{organization.name}?only_badged=True",

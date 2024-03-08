@@ -13,6 +13,7 @@ from polar.postgres import AsyncSession
 from polar.transaction.service.processor_fee import (
     processor_fee_transaction as processor_fee_transaction_service,
 )
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.fixture(autouse=True)
@@ -23,7 +24,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 async def create_payment_transaction(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     processor: PaymentProcessor = PaymentProcessor.stripe,
     currency: str = "usd",
@@ -46,13 +47,12 @@ async def create_payment_transaction(
         subscription=subscription,
         issue_reward=issue_reward,
     )
-    session.add(transaction)
-    await session.commit()
+    await save_fixture(transaction)
     return transaction
 
 
 async def create_refund_transaction(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     processor: PaymentProcessor = PaymentProcessor.stripe,
     currency: str = "usd",
@@ -77,13 +77,12 @@ async def create_refund_transaction(
         subscription=subscription,
         issue_reward=issue_reward,
     )
-    session.add(transaction)
-    await session.commit()
+    await save_fixture(transaction)
     return transaction
 
 
 async def create_dispute_transaction(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     processor: PaymentProcessor = PaymentProcessor.stripe,
     currency: str = "usd",
@@ -108,16 +107,17 @@ async def create_dispute_transaction(
         subscription=subscription,
         issue_reward=issue_reward,
     )
-    session.add(transaction)
-    await session.commit()
+    await save_fixture(transaction)
     return transaction
 
 
 @pytest.mark.asyncio
 class TestCreatePaymentFees:
-    async def test_not_stripe(self, session: AsyncSession) -> None:
+    async def test_not_stripe(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
         payment_transaction = await create_payment_transaction(
-            session, processor=PaymentProcessor.open_collective
+            save_fixture, processor=PaymentProcessor.open_collective
         )
 
         # then
@@ -128,8 +128,12 @@ class TestCreatePaymentFees:
         )
         assert len(fee_transactions) == 0
 
-    async def test_stripe_no_charge_id(self, session: AsyncSession) -> None:
-        payment_transaction = await create_payment_transaction(session, charge_id=None)
+    async def test_stripe_no_charge_id(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        payment_transaction = await create_payment_transaction(
+            save_fixture, charge_id=None
+        )
 
         # then
         session.expunge_all()
@@ -140,9 +144,12 @@ class TestCreatePaymentFees:
         assert len(fee_transactions) == 0
 
     async def test_stripe_subscription(
-        self, session: AsyncSession, stripe_service_mock: MagicMock
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        payment_transaction = await create_payment_transaction(session)
+        payment_transaction = await create_payment_transaction(save_fixture)
 
         stripe_service_mock.get_charge.return_value = stripe_lib.Charge.construct_from(
             {
@@ -179,9 +186,11 @@ class TestCreatePaymentFees:
 
 @pytest.mark.asyncio
 class TestCreateRefundFees:
-    async def test_not_stripe(self, session: AsyncSession) -> None:
+    async def test_not_stripe(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
         refund_transaction = await create_refund_transaction(
-            session, processor=PaymentProcessor.open_collective
+            save_fixture, processor=PaymentProcessor.open_collective
         )
 
         # then
@@ -192,8 +201,12 @@ class TestCreateRefundFees:
         )
         assert len(fee_transactions) == 0
 
-    async def test_stripe_no_refund_id(self, session: AsyncSession) -> None:
-        refund_transaction = await create_refund_transaction(session, refund_id=None)
+    async def test_stripe_no_refund_id(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        refund_transaction = await create_refund_transaction(
+            save_fixture, refund_id=None
+        )
 
         # then
         session.expunge_all()
@@ -206,9 +219,10 @@ class TestCreateRefundFees:
     async def test_stripe_refund(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
     ) -> None:
-        refund_transaction = await create_refund_transaction(session)
+        refund_transaction = await create_refund_transaction(save_fixture)
 
         stripe_service_mock.get_refund.return_value = stripe_lib.Refund.construct_from(
             {
@@ -247,9 +261,11 @@ class TestCreateRefundFees:
 
 @pytest.mark.asyncio
 class TestCreateDisputeFees:
-    async def test_not_stripe(self, session: AsyncSession) -> None:
+    async def test_not_stripe(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
         dispute_transaction = await create_dispute_transaction(
-            session, processor=PaymentProcessor.open_collective
+            save_fixture, processor=PaymentProcessor.open_collective
         )
 
         # then
@@ -260,8 +276,12 @@ class TestCreateDisputeFees:
         )
         assert len(fee_transactions) == 0
 
-    async def test_stripe_no_dispute_id(self, session: AsyncSession) -> None:
-        dispute_transaction = await create_dispute_transaction(session, dispute_id=None)
+    async def test_stripe_no_dispute_id(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        dispute_transaction = await create_dispute_transaction(
+            save_fixture, dispute_id=None
+        )
 
         # then
         session.expunge_all()
@@ -276,9 +296,10 @@ class TestCreateDisputeFees:
         self,
         category: Literal["dispute", "dispute_reversal"],
         session: AsyncSession,
+        save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
     ) -> None:
-        dispute_transaction = await create_dispute_transaction(session)
+        dispute_transaction = await create_dispute_transaction(save_fixture)
 
         stripe_service_mock.get_dispute.return_value = (
             stripe_lib.Dispute.construct_from(
@@ -323,6 +344,7 @@ class TestSyncStripeFees:
     async def test_sync_stripe_fees(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
     ) -> None:
         now_timestamp = int(datetime.datetime.now().timestamp())
@@ -445,9 +467,8 @@ class TestSyncStripeFees:
             tax_amount=0,
             fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_8",
         )
-        session.add(fee_transaction_9)
-        session.add(fee_transaction_8)
-        await session.commit()
+        await save_fixture(fee_transaction_9)
+        await save_fixture(fee_transaction_8)
 
         # then
         session.expunge_all()

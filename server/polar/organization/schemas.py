@@ -17,10 +17,10 @@ if TYPE_CHECKING:
 
 class OrganizationProfileSettings(Schema):
     featured_projects: list[UUID4] | None = Field(
-        description="A list of featured projects"
+        None, description="A list of featured projects"
     )
     featured_organizations: list[UUID4] | None = Field(
-        description="A list of featured organizations"
+        None, description="A list of featured organizations"
     )
 
 

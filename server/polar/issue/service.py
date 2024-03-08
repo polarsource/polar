@@ -529,7 +529,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         for property in Issue.TRANSFERRABLE_PROPERTIES:
             value = getattr(old_issue, property)
             setattr(new_issue, property, value)
-        await new_issue.save(session, autocommit=False)
+        session.add(new_issue)
 
         # Transfer Pledges
         statement = (

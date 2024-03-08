@@ -16,7 +16,7 @@ class User(Schema):
     @classmethod
     def from_db(cls, o: UserModel) -> Self:
         return cls(
-            username=o.username,
+            username=o.username_or_email,
             # TODO: remove the nullability in the db?
             avatar_url=o.avatar_url or "",
         )

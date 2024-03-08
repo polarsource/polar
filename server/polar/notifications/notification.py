@@ -45,12 +45,8 @@ class NotificationPayloadBase(BaseModel):
     def body(self) -> str:
         pass
 
-    def render(
-        self,
-        user: User,
-    ) -> tuple[str, str]:
+    def render(self) -> tuple[str, str]:
         m: dict[str, str] = vars(self)
-        m["username"] = user.username
 
         email_renderer = get_email_renderer()
         return email_renderer.render_from_string(self.subject(), self.body(), m)

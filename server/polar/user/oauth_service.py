@@ -22,5 +22,10 @@ class OAuthAccountService(ResourceServiceReader[OAuthAccount]):
     ) -> OAuthAccount | None:
         return await self.get_by(session, platform=platform, user_id=user_id)
 
+    async def get_by_platform_and_username(
+        self, session: AsyncSession, platform: OAuthPlatform, username: str
+    ) -> OAuthAccount | None:
+        return await self.get_by(session, platform=platform, account_username=username)
+
 
 oauth_account_service = OAuthAccountService(OAuthAccount)

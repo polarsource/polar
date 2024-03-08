@@ -99,7 +99,7 @@ class SubscriptionBenefitGitHubRepositoryService(
         permission = benefit.properties["permission"]
 
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
-        if oauth_account is None:
+        if oauth_account is None or oauth_account.account_username is None:
             raise SubscriptionBenefitPreconditionError(
                 "GitHub account not linked",
                 payload=SubscriptionBenefitPreconditionErrorNotificationContextualPayload(
@@ -136,9 +136,9 @@ class SubscriptionBenefitGitHubRepositoryService(
 
         try:
             await client.rest.repos.async_add_collaborator(
-                organization.name,
-                repository.name,
-                user.username,
+                owner=organization.name,
+                repo=repository.name,
+                username=oauth_account.account_username,
                 data={"permission": permission},
             )
         except RateLimitExceeded as e:

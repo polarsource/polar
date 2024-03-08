@@ -137,7 +137,7 @@ class AccountsListScreen(Screen[None]):
                         account.created_at, locale="en_US", tzinfo=system_timezone()
                     ),
                     AccountType.get_display_name(account.account_type),
-                    account.admin.username,
+                    account.admin.username_or_email,
                     ", ".join(account.get_associations_names()),
                     format_currency(balance / 100, "USD", locale="en_US"),
                     Text(

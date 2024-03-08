@@ -142,10 +142,13 @@ class RewardService:
         session: AsyncSession,
         user: User,
     ) -> None:
+        if not user.github_username:
+            return None
+
         stmt = (
             sql.update(IssueReward)
             .where(
-                IssueReward.github_username == user.username,
+                IssueReward.github_username == user.github_username,
                 IssueReward.user_id.is_(None),
             )
             .values(user_id=user.id)

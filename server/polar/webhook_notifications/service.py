@@ -14,16 +14,16 @@ log = structlog.get_logger()
 
 class WebhookNotificationService:
     async def create(
-        self,
-        session: AsyncSession,
-        create_schema: WebhookIntegrationCreate,
-        autocommit: bool = True,
+        self, session: AsyncSession, create_schema: WebhookIntegrationCreate
     ) -> WebhookNotification:
-        return await WebhookNotification(
+        webhook_notification = WebhookNotification(
             integration=create_schema.integration,
             organization_id=create_schema.organization_id,
             url=create_schema.url,
-        ).save(session, autocommit=autocommit)
+        )
+        session.add(webhook_notification)
+        await session.flush()
+        return webhook_notification
 
     async def get(
         self,
@@ -59,7 +59,7 @@ class WebhookNotificationService:
         update: WebhookIntegrationUpdate,
     ) -> WebhookNotification:
         webhook.url = update.url
-        await webhook.save(session)
+        session.add(webhook)
         return webhook
 
     async def delete(
@@ -68,7 +68,7 @@ class WebhookNotificationService:
         webhook: WebhookNotification,
     ) -> WebhookNotification:
         webhook.deleted_at = utc_now()
-        await webhook.save(session)
+        session.add(webhook)
         return webhook
 
 

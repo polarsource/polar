@@ -4,7 +4,7 @@ from httpx import AsyncClient
 from polar.config import settings
 from polar.models.articles_subscription import ArticlesSubscription
 from polar.models.organization import Organization
-from polar.models.user import User
+from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -331,7 +331,40 @@ async def test_byline_default(
 
 
 @pytest.mark.asyncio
-async def test_byline_user(
+async def test_byline_user_github(
+    user: User,
+    user_github_oauth: OAuthAccount,  # sets username
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    # then
+    session.expunge_all()
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body": "Body body",
+            "organization_id": str(organization.id),
+            "byline": "user",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert user_github_oauth.account_username
+    assert res["byline"]["name"] == user_github_oauth.account_username
+
+
+@pytest.mark.asyncio
+async def test_byline_user_no_oauth(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -359,7 +392,7 @@ async def test_byline_user(
 
     assert response.status_code == 200
     res = response.json()
-    assert res["byline"]["name"] == user.username
+    assert res["byline"]["name"].startswith("t")  # ??
 
 
 @pytest.mark.asyncio

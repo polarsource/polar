@@ -115,7 +115,7 @@ class Article(Schema):
             )
         if i.byline == i.Byline.user:
             byline = Byline(
-                name=i.created_by_user.username,
+                name=i.created_by_user.public_name,
                 avatar_url=i.created_by_user.avatar_url,
             )
 

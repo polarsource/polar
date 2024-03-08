@@ -487,7 +487,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_org_name=org.name,
             issue_repo_name=repo.name,
             issue_number=issue.number,
-            team_member_name=created_by_user.username,
+            team_member_name=created_by_user.username_or_email,
             team_name=pledging_org.name,
             pledge_id=pledge.id,
         )

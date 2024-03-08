@@ -116,15 +116,13 @@ async def test_list_rewards_to_user(
     repository: Repository,
     user: User,
 ) -> None:
-    user.username = "test_gh_user"
-    await save_fixture(user)
-
     oauth = OAuthAccount(
         platform=Platforms.github,
         user_id=user.id,
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
+        account_username="test_gh_user",
     )
     await save_fixture(oauth)
 

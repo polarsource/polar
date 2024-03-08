@@ -210,7 +210,7 @@ async def manage_badge(
     log.info(
         "backoffice.badge",
         badge=badge.model_dump(mode="json"),
-        admin=auth.user.username,
+        admin=auth.user.email,
     )
 
     org = await organization_service.get_by_name(

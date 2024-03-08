@@ -157,7 +157,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         await session.refresh(account, {"users", "organizations"})
         associations = []
         for user in account.users:
-            associations.append(f"user/{user.username}")
+            associations.append(f"user/{user.username_or_email}")
         for organization in account.organizations:
             associations.append(f"org/{organization.name}")
         return "·".join(associations)

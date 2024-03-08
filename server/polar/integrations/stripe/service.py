@@ -81,7 +81,7 @@ class StripeService:
             issue_id=pledge_issue.id,
             issue_title=pledge_issue.title,
             user_id=user.id,
-            user_username=user.username,
+            user_username=user.username_or_email,
             user_email=user.email,
         )
 
@@ -110,7 +110,7 @@ class StripeService:
             issue_id=issue.id,
             issue_title=issue.title,
             user_id=user.id,
-            user_username=user.username,
+            user_username=user.username_or_email,
             user_email=user.email,
             organization_id=organization.id,
             organization_name=organization.name,

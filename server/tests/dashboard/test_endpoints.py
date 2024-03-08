@@ -10,7 +10,10 @@ from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from polar.postgres import AsyncSession
+from polar.user.service import user as user_service
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_user_github_oauth
 
 
 @pytest.mark.asyncio
@@ -109,7 +112,12 @@ async def test_get_with_pledge_from_user(
     issue: Issue,
     auth_jwt: str,
     client: AsyncClient,
+    session: AsyncSession,
 ) -> None:
+    assert pledge_by_user.by_user_id
+    pledging_user = await user_service.get(session, pledge_by_user.by_user_id)
+    assert pledging_user
+
     response = await client.get(
         f"/api/v1/dashboard/github/{organization.name}",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
@@ -123,7 +131,50 @@ async def test_get_with_pledge_from_user(
     assert len(res["data"][0]["pledges"]) == 1
     rel_pledge = res["data"][0]["pledges"][0]
 
-    assert str(rel_pledge["pledger"]["name"]).startswith("testuser")
+    assert pledging_user.email
+    assert str(rel_pledge["pledger"]["name"]) == pledging_user.email
+
+    summary = res["data"][0]["pledges_summary"]
+    assert summary["pay_upfront"]["total"]["amount"] == pledge_by_user.amount
+    assert len(summary["pay_upfront"]["pledgers"]) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_get_with_pledge_from_user_github_oauth(
+    user: User,
+    # user_github_oauth: OAuthAccount,
+    organization: Organization,
+    repository: Repository,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    # pledging_organization: Organization,
+    pledge_by_user: Pledge,
+    issue: Issue,
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    assert pledge_by_user.by_user_id
+    pledging_user = await user_service.get(session, pledge_by_user.by_user_id)
+    assert pledging_user
+    pledger_gh = await create_user_github_oauth(save_fixture, pledging_user)
+
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+
+    assert len(res["data"]) == 1
+    assert res["data"][0]["id"] == str(issue.id)
+    assert len(res["data"][0]["pledges"]) == 1
+    rel_pledge = res["data"][0]["pledges"][0]
+
+    assert pledger_gh
+    assert str(rel_pledge["pledger"]["name"]) == pledger_gh.account_username
 
     summary = res["data"][0]["pledges_summary"]
     assert summary["pay_upfront"]["total"]["amount"] == pledge_by_user.amount

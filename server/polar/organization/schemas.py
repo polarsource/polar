@@ -81,8 +81,10 @@ class Organization(Schema):
         include_member_fields: bool = False,
     ) -> Self:
         profile_settings = OrganizationProfileSettings(
-            featured_projects=o.profile_settings.get("featured_projects", []),
-            featured_organizations=o.profile_settings.get("featured_organizations", []),
+            featured_projects=o.profile_settings.get("featured_projects", None),
+            featured_organizations=o.profile_settings.get(
+                "featured_organizations", None
+            ),
         )
 
         return cls(

@@ -1,3 +1,4 @@
+import revalidate from '@/app/actions'
 import {
   DndContext,
   DragEndEvent,
@@ -57,6 +58,8 @@ export const CreatorsEditor = ({
         },
       },
     })
+
+    revalidate(`organization:${organization.name}`)
   }
 
   function handleDragStart(event: DragStartEvent) {

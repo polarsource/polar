@@ -233,8 +233,11 @@ export default async function Page({
 
   try {
     const loadFeaturedOrganizations = await Promise.all(
-      organization.profile_settings.featured_organizations.map((id) =>
-        api.organizations.get({ id }),
+      (organization.profile_settings.featured_organizations ?? []).map((id) =>
+        api.organizations.get(
+          { id },
+          { ...cacheConfig, next: { revalidate: 60 * 60 } },
+        ),
       ),
     )
 

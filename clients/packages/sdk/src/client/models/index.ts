@@ -4509,13 +4509,13 @@ export interface OrganizationProfileSettings {
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
-    featured_projects: Array<string>;
+    featured_projects?: Array<string>;
     /**
      * A list of featured organizations
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
-    featured_organizations: Array<string>;
+    featured_organizations?: Array<string>;
 }
 /**
  * 

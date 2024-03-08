@@ -160,7 +160,7 @@ class RepositoryService(
                 disabled_auto_badge = True
             repository.pledge_badge_auto_embed = settings.badge_auto_embed
 
-        await repository.save(session)
+        session.add(repository)
         log.info(
             "repository.update_badge_settings",
             repository_id=repository.id,

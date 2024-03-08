@@ -165,7 +165,7 @@ class GithubUserService(UserService):
         user.username = github_user.login
         user.avatar_url = github_user.avatar_url
         user.profile = profile
-        await user.save(session)
+        session.add(user)
 
         oauth_account = await oauth_account_service.get_by_platform_and_user_id(
             session, OAuthPlatform.github, user.id
@@ -184,7 +184,7 @@ class GithubUserService(UserService):
         oauth_account.refresh_token = tokens.refresh_token
         oauth_account.account_email = email
         oauth_account.account_username = github_user.login
-        await oauth_account.save(session)
+        session.add(oauth_account)
 
         log.info(
             "github.user.login",
@@ -324,14 +324,14 @@ class GithubUserService(UserService):
         oauth_account.refresh_token = tokens.refresh_token
         oauth_account.account_email = email
         oauth_account.account_username = github_user.login
-        await oauth_account.save(session)
+        session.add(oauth_account)
 
         # Update User profile
         profile = self.generate_profile_json(github_user=github_user)
         user.username = github_user.login
         user.avatar_url = github_user.avatar_url
         user.profile = profile
-        await user.save(session)
+        session.add(user)
 
         posthog.user_event(user, "user", "github_oauth_link_existing_user", "done")
 

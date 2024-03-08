@@ -130,7 +130,7 @@ async def get_refreshed_oauth_client(
                 oauth.refresh_token = r.refresh_token
 
             log.info("github.auth.refresh.succeeded", user=user.id)
-            await oauth.save(session)
+            session.add(oauth)
         else:
             log.error("github.auth.refresh.failed", user=user.id)
 

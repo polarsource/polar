@@ -46,3 +46,9 @@ class RecordModel(TimestampedModel):
     id: MappedColumn[UUID] = mapped_column(
         PostgresUUID, primary_key=True, default=generate_uuid
     )
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, self.__class__) and self.id == __value.id
+
+    def __hash__(self) -> int:
+        return self.id.int

@@ -40,11 +40,11 @@ async def get_db_session(
     async with sessionmaker() as session:
         try:
             yield session
-        except Exception as e:
+        except:
             await session.rollback()
-            raise e
-        finally:
-            await session.close()
+            raise
+        else:
+            await session.commit()
 
 
 __all__ = [

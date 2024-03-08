@@ -271,7 +271,13 @@ def interval(
 async def AsyncSessionMaker(ctx: JobContext) -> AsyncIterator[AsyncSession]:
     """Helper to open an AsyncSession context manager from the job context."""
     async with ctx["sessionmaker"]() as session:
-        yield session
+        try:
+            yield session
+        except:
+            await session.rollback()
+            raise
+        else:
+            await session.commit()
 
 
 __all__ = [

@@ -21,13 +21,7 @@ def create_engine(
 
 
 def create_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
-    return async_sessionmaker(
-        engine,
-        autocommit=False,
-        autoflush=False,
-        expire_on_commit=False,
-        class_=AsyncSession,
-    )
+    return async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
 __all__ = [

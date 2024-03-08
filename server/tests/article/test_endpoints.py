@@ -339,9 +339,10 @@ async def test_byline_user_github(
     auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     # then
     session.expunge_all()

@@ -250,7 +250,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             return None
 
         pledge.by_user_id = backer.id
-        await pledge.save(session)
+        session.add(pledge)
 
     async def transition_by_issue_id(
         self,
@@ -568,14 +568,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not self.validate_splits(splits):
             raise Exception("invalid split configuration")
 
-        nested = await session.begin_nested()
-
         stmt = sql.select(IssueReward).where(IssueReward.issue_id == issue_id)
         res = await session.execute(stmt)
         existing = res.scalars().unique().all()
 
         if len(existing) > 0:
-            await nested.commit()
             raise Exception(f"issue already has splits set: issue_id={issue_id}")
 
         created_splits: list[IssueReward] = []
@@ -590,20 +587,17 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 if user:
                     user_id = user.id
 
-            s = await IssueReward(
+            s = IssueReward(
                 issue_id=issue_id,
                 share_thousands=split.share_thousands,
                 github_username=split.github_username,
                 organization_id=split.organization_id,
                 user_id=user_id,
-            ).save(
-                session=session,
-                autocommit=False,
             )
+            session.add(s)
             created_splits.append(s)
 
-        await nested.commit()
-        await session.commit()
+        await session.flush()
 
         return created_splits
 
@@ -1034,7 +1028,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not issue:
             raise ResourceNotFound("Issue Not Found")
 
-        pledge = await Pledge(
+        pledge = Pledge(
             issue_id=issue.id,
             repository_id=issue.repository_id,
             organization_id=issue.organization_id,
@@ -1046,9 +1040,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
             on_behalf_of_organization_id=on_behalf_of_organization_id,
             by_organization_id=by_organization_id,
             created_by_user_id=authenticated_user.id,
-        ).save(
-            session=session,
         )
+        session.add(pledge)
+        await session.flush()
 
         await loops_service.user_update(authenticated_user, isBacker=True)
 

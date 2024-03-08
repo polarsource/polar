@@ -1,3 +1,21 @@
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
 import { Organization, OrganizationProfileSettings } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -16,35 +34,43 @@ import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { CreatorsModal } from './CreatorsModal'
-import { DraggableProps, useDraggable } from './useDraggable'
 
-const CreatorCard = <T,>({
-  id,
+const CreatorCard = ({
   organizationId,
-  index,
-  setItems,
   disabled,
-}: DraggableProps<T> & { organizationId: string }) => {
-  const { dragRef, previewRef, handlerId, isDragging } = useDraggable({
-    id,
-    index,
-    setItems,
-    disabled,
-  })
+}: {
+  organizationId: string
+  disabled?: boolean
+}) => {
+  const sortable = useSortable({ id: organizationId })
+  const {
+    attributes,
+    listeners,
+    isDragging,
+    setNodeRef,
+    setDraggableNodeRef,
+    transform,
+    transition,
+  } = sortable
 
   const organization = useGetOrganization(organizationId).data
 
   if (!organization) return null
 
   return (
-    <Link href={organizationPageLink(organization)} data-handler-id={handlerId}>
-      <Card
-        ref={previewRef}
-        className={twMerge(
-          'dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col gap-y-2 rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600 ',
-          isDragging && 'opacity-30',
-        )}
-      >
+    <Card
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={twMerge(
+        'dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col gap-y-2 rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600',
+      )}
+      {...attributes}
+      {...listeners}
+    >
+      <Link className="h-full" href={organizationPageLink(organization)}>
         <CardHeader className="flex flex-row justify-between p-6">
           <Avatar
             className="h-16 w-16"
@@ -52,7 +78,7 @@ const CreatorCard = <T,>({
             name={organization.name}
           />
           {!disabled && (
-            <span ref={dragRef} className="cursor-grab">
+            <span ref={setDraggableNodeRef} className="cursor-grab">
               <DragIndicatorOutlined
                 className={twMerge('dark:text-polar-600 text-gray-400')}
                 fontSize="small"
@@ -75,16 +101,23 @@ const CreatorCard = <T,>({
             <p className="[text-wrap:pretty]">{organization.bio}</p>
           )}
         </CardContent>
-        <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
-          <div className="flex-items flex items-center gap-x-2">
+      </Link>
+      <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
+        <div className="flex-items flex items-center gap-x-2">
+          <Link href={organizationPageLink(organization, 'subscriptions')}>
             <Button size="sm">Subscribe</Button>
+          </Link>
+          <Link
+            href={`https://github.com/${organization.name}`}
+            target="_blank"
+          >
             <Button size="sm" variant="ghost">
               GitHub Profile
             </Button>
-          </div>
-        </CardFooter>
-      </Card>
-    </Link>
+          </Link>
+        </div>
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -100,14 +133,16 @@ export const CreatorsEditor = ({
   disabled,
 }: CreatorsEditorProps) => {
   const [featuredCreators, setFeaturedCreators] = useState(
-    profile.featured_organizations,
+    profile.featured_organizations.map((org) => ({ id: org })),
   )
-
+  const [activeId, setActiveId] = useState<string | number | null>(null)
   const { show, isShown, hide } = useModal()
-
+  const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor))
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateFeaturedCreators = (producer: (prev: string[]) => string[]) => {
+  const updateFeaturedCreators = (
+    producer: (prev: { id: string }[]) => { id: string }[],
+  ) => {
     const newCreators = producer(featuredCreators)
 
     setFeaturedCreators(newCreators)
@@ -116,49 +151,82 @@ export const CreatorsEditor = ({
       id: organization.id,
       settings: {
         profile_settings: {
-          featured_organizations: newCreators,
+          featured_organizations: newCreators.map((c) => c.id),
         },
       },
     })
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    console.log(active, over)
+    if (active.id !== over?.id) {
+      updateFeaturedCreators((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over?.id)
+
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+
+    setActiveId(null)
+  }
+
+  function handleDragCancel() {
+    setActiveId(null)
+  }
+
   return (
-    <>
-      <div className="flex flex-col gap-y-8">
-        <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
-          <h3 className="text-lg">Featured Creators</h3>
-          {!disabled && (
-            <Button variant="ghost" onClick={show}>
-              Configure Creators
-            </Button>
-          )}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <SortableContext items={featuredCreators} strategy={rectSortingStrategy}>
+        <div className="flex flex-col gap-y-8">
+          <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
+            <h3 className="text-lg">Featured Creators</h3>
+            {!disabled && (
+              <Button variant="ghost" onClick={show}>
+                Configure Creators
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {featuredCreators.map((creator) => (
+              <CreatorCard
+                key={creator.id}
+                organizationId={creator.id}
+                disabled={disabled}
+              />
+            ))}
+          </div>
+          <DragOverlay adjustScale={true}>
+            {activeId ? (
+              <CreatorCard organizationId={activeId as string} />
+            ) : null}
+          </DragOverlay>
         </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {featuredCreators.map((creator, i) => (
-            <CreatorCard
-              key={creator}
-              index={i}
-              id={creator}
-              organizationId={creator}
-              disabled={disabled}
-              setItems={updateFeaturedCreators}
+        <Modal
+          className="w-full md:max-w-lg lg:max-w-lg"
+          isShown={isShown}
+          hide={hide}
+          modalContent={
+            <CreatorsModal
+              creators={profile.featured_organizations.map((id) => ({ id }))}
+              organization={organization}
+              setCreators={updateFeaturedCreators}
+              hideModal={hide}
             />
-          ))}
-        </div>
-      </div>
-      <Modal
-        className="w-full md:max-w-lg lg:max-w-lg"
-        isShown={isShown}
-        hide={hide}
-        modalContent={
-          <CreatorsModal
-            creators={profile.featured_organizations}
-            organization={organization}
-            setCreators={updateFeaturedCreators}
-            hideModal={hide}
-          />
-        }
-      />
-    </>
+          }
+        />
+      </SortableContext>
+    </DndContext>
   )
 }

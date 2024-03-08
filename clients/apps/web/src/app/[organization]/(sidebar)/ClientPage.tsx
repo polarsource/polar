@@ -15,7 +15,6 @@ import {
   ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
   Organization,
-  OrganizationProfileSettings,
   Repository,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -39,7 +38,6 @@ const ClientPage = ({
   subscriptionsSummary: ListResourceSubscriptionSummary
   adminOrganizations: Organization[]
   issues: IssueFunding[]
-  profile: OrganizationProfileSettings
 }) => {
   useTrafficRecordPageView({ organization })
 
@@ -166,6 +164,7 @@ const ClientPage = ({
         <ProjectsEditor
           organization={organization}
           repositories={repositories}
+          profile={organization.profile_settings}
           disabled={!isAdmin}
         />
       )}

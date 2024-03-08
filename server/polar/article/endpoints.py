@@ -451,7 +451,7 @@ async def delete(
         raise Unauthorized()
 
     art.deleted_at = utc_now()
-    await art.save(session)
+    session.add(art)
 
     posthog.user_event(auth.user, "articles", "api", "delete", {"article_id": art.id})
 

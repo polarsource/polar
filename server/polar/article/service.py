@@ -46,11 +46,7 @@ def polar_slugify(input: str) -> str:
 
 class ArticleService:
     async def create(
-        self,
-        session: AsyncSession,
-        subject: User,
-        create_schema: ArticleCreate,
-        autocommit: bool = True,
+        self, session: AsyncSession, subject: User, create_schema: ArticleCreate
     ) -> Article:
         slug = polar_slugify(
             create_schema.slug if create_schema.slug else create_schema.title
@@ -84,7 +80,7 @@ class ArticleService:
         if create_schema.published_at is not None:
             published_at = create_schema.published_at
 
-        return await Article(
+        article = Article(
             slug=slug,
             title=create_schema.title,
             body=create_schema.body,
@@ -99,7 +95,11 @@ class ArticleService:
             if create_schema.og_image_url
             else None,
             og_description=create_schema.og_description,
-        ).save(session, autocommit=autocommit)
+        )
+        session.add(article)
+        await session.flush()
+
+        return article
 
     async def get_loaded(
         self,
@@ -291,7 +291,8 @@ class ArticleService:
         if update.set_og_description:
             article.og_description = update.og_description
 
-        await article.save(session)
+        session.add(article)
+        await session.flush()
 
         if should_notify_on_discord:
             await self.article_published_discord_notification(article)
@@ -407,8 +408,7 @@ class ArticleService:
             raise BadRequest("article is scheduled to be published in the future")
 
         article.notifications_sent_at = utc_now()
-        await article.save(session)
-        await session.commit()
+        session.add(article)
 
         receivers = await article_service.list_receivers(
             session, article.organization_id, article.paid_subscribers_only
@@ -424,8 +424,8 @@ class ArticleService:
 
         # after scheduling is complete
         article.email_sent_to_count = len(receivers)
-        await article.save(session)
-        await session.commit()
+        session.add(article)
+        await session.flush()
 
     def _get_readable_articles_statement(
         self, auth_subject: Subject

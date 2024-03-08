@@ -62,11 +62,11 @@ class ResourceService(
         self,
         session: AsyncSession,
         create_schema: CreateSchemaType,
-        autocommit: bool = True,
     ) -> ModelType:
-        return await self.model.create(
-            session, **create_schema.model_dump(), autocommit=autocommit
-        )
+        model = self.model(**create_schema.model_dump())
+        session.add(model)
+        await session.flush()
+        return model
 
     # TODO: Investigate new bulk methods in SQLALchemy 2.0 for upsert_many
     async def upsert_many(

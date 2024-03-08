@@ -27,12 +27,9 @@ class RepositoryService(
     ResourceService[Repository, RepositoryCreate, RepositoryGitHubUpdate]
 ):
     async def create(
-        self,
-        session: AsyncSession,
-        create_schema: RepositoryCreate,
-        autocommit: bool = True,
+        self, session: AsyncSession, create_schema: RepositoryCreate
     ) -> Repository:
-        return await Repository(
+        repository = Repository(
             platform=create_schema.platform,
             external_id=create_schema.external_id,
             organization_id=create_schema.organization_id,
@@ -58,7 +55,10 @@ class RepositoryService(
             is_downloads_enabled=create_schema.is_downloads_enabled,
             is_archived=create_schema.is_archived,
             is_disabled=create_schema.is_disabled,
-        ).save(session, autocommit=autocommit)
+        )
+        session.add(repository)
+        await session.flush()
+        return repository
 
     async def get(
         self,

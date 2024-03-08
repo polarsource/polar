@@ -48,9 +48,8 @@ class OrganizationService(
         self,
         session: AsyncSession,
         create_schema: OrganizationCreate,
-        autocommit: bool = True,
     ) -> Organization:
-        return await Organization(
+        organization = Organization(
             platform=create_schema.platform,
             name=create_schema.name,
             avatar_url=create_schema.avatar_url,
@@ -63,7 +62,10 @@ class OrganizationService(
             onboarded_at=create_schema.onboarded_at,
             pledge_minimum_amount=create_schema.pledge_minimum_amount,
             default_badge_custom_content=create_schema.default_badge_custom_content,
-        ).save(session, autocommit=autocommit)
+        )
+        session.add(organization)
+        await session.flush()
+        return organization
 
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(

@@ -15,7 +15,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { FaceOutlined, TuneOutlined } from '@mui/icons-material'
-import { Organization, OrganizationProfileSettings } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/sdk'
 import { useUpdateOrganization } from 'polarkit/hooks'
 import { useState } from 'react'
 import { Modal } from '../Modal'
@@ -25,17 +25,17 @@ import { CreatorsModal } from './CreatorsModal'
 
 export interface CreatorsEditorProps {
   organization: Organization
-  profile: OrganizationProfileSettings
+  featuredOrganizations: Organization[]
   disabled?: boolean
 }
 
 export const CreatorsEditor = ({
   organization,
-  profile,
+  featuredOrganizations,
   disabled,
 }: CreatorsEditorProps) => {
   const [featuredCreators, setFeaturedCreators] = useState(
-    profile.featured_organizations.map((org) => ({ id: org })),
+    featuredOrganizations,
   )
   const [activeId, setActiveId] = useState<string | number | null>(null)
   const { show, isShown, hide } = useModal()
@@ -43,7 +43,7 @@ export const CreatorsEditor = ({
   const updateOrganizationMutation = useUpdateOrganization()
 
   const updateFeaturedCreators = (
-    producer: (prev: { id: string }[]) => { id: string }[],
+    producer: (prev: Organization[]) => Organization[],
   ) => {
     const newCreators = producer(featuredCreators)
 
@@ -104,7 +104,7 @@ export const CreatorsEditor = ({
           hide={hide}
           modalContent={
             <CreatorsModal
-              creators={featuredCreators.map((c) => ({ id: c.id }))}
+              creators={featuredCreators}
               organization={organization}
               setCreators={updateFeaturedCreators}
               hideModal={hide}
@@ -145,14 +145,20 @@ export const CreatorsEditor = ({
             {featuredCreators.map((creator) => (
               <DraggableCreatorCard
                 key={creator.id}
-                organizationId={creator.id}
+                organization={creator}
                 disabled={disabled}
               />
             ))}
           </div>
           <DragOverlay adjustScale={true}>
             {activeId ? (
-              <CreatorCard organizationId={activeId as string} />
+              <CreatorCard
+                organization={
+                  featuredCreators.find(
+                    (c) => c.id === activeId,
+                  ) as Organization
+                }
+              />
             ) : null}
           </DragOverlay>
         </div>
@@ -162,7 +168,7 @@ export const CreatorsEditor = ({
           hide={hide}
           modalContent={
             <CreatorsModal
-              creators={featuredCreators.map((c) => ({ id: c.id }))}
+              creators={featuredCreators}
               organization={organization}
               setCreators={updateFeaturedCreators}
               hideModal={hide}

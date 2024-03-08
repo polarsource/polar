@@ -9,12 +9,10 @@ import { useGetOrganization } from 'polarkit/hooks'
 import { useState } from 'react'
 
 export interface CreatorsModalProps {
-  creators: { id: string }[]
+  creators: Organization[]
   organization: Organization
   hideModal: () => void
-  setCreators: (
-    producer: (creators: { id: string }[]) => { id: string }[],
-  ) => void
+  setCreators: (producer: (creators: Organization[]) => Organization[]) => void
 }
 
 export const CreatorsModal = ({
@@ -32,7 +30,7 @@ export const CreatorsModal = ({
         platform: Platforms.GITHUB,
       })
       .then((org) => {
-        setCreators((creators) => [...creators, { id: org.id }])
+        setCreators((creators) => [...creators, org])
       })
   }
 

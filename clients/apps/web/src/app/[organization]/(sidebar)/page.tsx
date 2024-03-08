@@ -222,6 +222,20 @@ export default async function Page({
     headers: headers(),
   })
 
+  let featuredOrganizations: Organization[] = []
+
+  try {
+    const loadFeaturedOrganizations = await Promise.all(
+      organization.profile_settings.featured_organizations.map((id) =>
+        api.organizations.get({ id }),
+      ),
+    )
+
+    featuredOrganizations = loadFeaturedOrganizations
+  } catch (err) {
+    notFound()
+  }
+
   const posts = [
     ...(pinnedArticles.items ?? []),
     ...(articles.items ?? []),
@@ -284,6 +298,7 @@ export default async function Page({
         organization={organization}
         posts={posts}
         repositories={sortedRepositories}
+        featuredOrganizations={featuredOrganizations}
         subscriptionTiers={subscriptionTiers}
         subscriptionsSummary={subscriptionsSummary}
         adminOrganizations={listAdminOrganizations?.items ?? []}

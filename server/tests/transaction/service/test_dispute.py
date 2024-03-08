@@ -17,6 +17,7 @@ from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
+from tests.fixtures.database import SaveFixture
 
 
 def build_stripe_balance_transaction(
@@ -108,6 +109,7 @@ class TestCreateDispute:
     async def test_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         pledge: Pledge,
         balance_transaction_service_mock: MagicMock,
@@ -131,7 +133,7 @@ class TestCreateDispute:
             is_payouts_enabled=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
+        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -144,7 +146,7 @@ class TestCreateDispute:
             charge_id=charge.id,
             pledge=pledge,
         )
-        session.add(payment_transaction)
+        await save_fixture(payment_transaction)
 
         outgoing_balance_1 = Transaction(
             type=TransactionType.balance,
@@ -173,8 +175,8 @@ class TestCreateDispute:
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
         )
-        session.add(outgoing_balance_1)
-        session.add(incoming_balance_1)
+        await save_fixture(outgoing_balance_1)
+        await save_fixture(incoming_balance_1)
 
         outgoing_balance_2 = Transaction(
             type=TransactionType.balance,
@@ -203,10 +205,8 @@ class TestCreateDispute:
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
         )
-        session.add(outgoing_balance_2)
-        session.add(incoming_balance_2)
-
-        await session.commit()
+        await save_fixture(outgoing_balance_2)
+        await save_fixture(incoming_balance_2)
 
         # then
         session.expunge_all()
@@ -260,6 +260,7 @@ class TestCreateDisputeReversal:
     async def test_valid(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         pledge: Pledge,
         balance_transaction_service_mock: MagicMock,
@@ -288,7 +289,7 @@ class TestCreateDisputeReversal:
             is_payouts_enabled=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
-        session.add(account)
+        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -301,7 +302,7 @@ class TestCreateDisputeReversal:
             charge_id=charge.id,
             pledge=pledge,
         )
-        session.add(payment_transaction)
+        await save_fixture(payment_transaction)
 
         dispute_transaction = Transaction(
             type=TransactionType.dispute,
@@ -314,7 +315,7 @@ class TestCreateDisputeReversal:
             charge_id=charge.id,
             pledge=pledge,
         )
-        session.add(dispute_transaction)
+        await save_fixture(dispute_transaction)
 
         # First balance
         outgoing_balance_1 = Transaction(
@@ -344,8 +345,8 @@ class TestCreateDisputeReversal:
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
         )
-        session.add(outgoing_balance_1)
-        session.add(incoming_balance_1)
+        await save_fixture(outgoing_balance_1)
+        await save_fixture(incoming_balance_1)
 
         # First balance reversal
         outgoing_reversal_balance_1 = Transaction(
@@ -376,8 +377,8 @@ class TestCreateDisputeReversal:
             balance_correlation_key="BALANCE_REVERSAL_1",
             balance_reversal_transaction=outgoing_balance_1,
         )
-        session.add(outgoing_reversal_balance_1)
-        session.add(incoming_reversal_balance_1)
+        await save_fixture(outgoing_reversal_balance_1)
+        await save_fixture(incoming_reversal_balance_1)
 
         # Second balance
         outgoing_balance_2 = Transaction(
@@ -407,8 +408,8 @@ class TestCreateDisputeReversal:
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
         )
-        session.add(outgoing_balance_2)
-        session.add(incoming_balance_2)
+        await save_fixture(outgoing_balance_2)
+        await save_fixture(incoming_balance_2)
 
         # Second balance reversal
         outgoing_reversal_balance_2 = Transaction(
@@ -439,10 +440,8 @@ class TestCreateDisputeReversal:
             balance_correlation_key="BALANCE_REVERSAL_2",
             balance_reversal_transaction=outgoing_balance_2,
         )
-        session.add(outgoing_reversal_balance_2)
-        session.add(incoming_reversal_balance_2)
-
-        await session.commit()
+        await save_fixture(outgoing_reversal_balance_2)
+        await save_fixture(incoming_reversal_balance_2)
 
         # then
         session.expunge_all()

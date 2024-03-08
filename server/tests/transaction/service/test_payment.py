@@ -1,8 +1,10 @@
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
+from sqlalchemy.orm import joinedload
 
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -18,6 +20,7 @@ from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription, create_subscription_tier
 
 
@@ -90,15 +93,15 @@ class TestCreatePayment:
     async def test_customer_user(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         pledge: Pledge,
         user: User,
         stripe_service_mock: MagicMock,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
-        session.add(user)
+        await save_fixture(user)
         pledge.payment_id = "STRIPE_PAYMENT_ID"
-        session.add(pledge)
-        await session.commit()
+        await save_fixture(pledge)
 
         stripe_balance_transaction = build_stripe_balance_transaction()
         stripe_charge = build_stripe_charge(
@@ -120,22 +123,22 @@ class TestCreatePayment:
 
         assert transaction.type == TransactionType.payment
         assert transaction.customer_id == user.stripe_customer_id
-        assert transaction.payment_user_id == user.id
-        assert transaction.payment_organization_id is None
+        assert transaction.payment_user == user
+        assert transaction.payment_organization is None
 
     async def test_customer_organization(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         pledge: Pledge,
         organization: Organization,
         stripe_service_mock: MagicMock,
     ) -> None:
         organization.stripe_customer_id = "STRIPE_CUSTOMER_ID"
-        session.add(organization)
+        await save_fixture(organization)
         pledge.by_organization = organization
         pledge.payment_id = "STRIPE_PAYMENT_ID"
-        session.add(pledge)
-        await session.commit()
+        await save_fixture(pledge)
 
         stripe_balance_transaction = build_stripe_balance_transaction()
         stripe_charge = build_stripe_charge(
@@ -157,8 +160,8 @@ class TestCreatePayment:
 
         assert transaction.type == TransactionType.payment
         assert transaction.customer_id == organization.stripe_customer_id
-        assert transaction.payment_user_id is None
-        assert transaction.payment_organization_id == organization.id
+        assert transaction.payment_user is None
+        assert transaction.payment_organization == organization
 
     async def test_not_existing_subscription(
         self, session: AsyncSession, stripe_service_mock: MagicMock
@@ -179,16 +182,17 @@ class TestCreatePayment:
     async def test_subscription(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
         user: User,
         stripe_service_mock: MagicMock,
         create_payment_fees_mock: AsyncMock,
     ) -> None:
         subscription_tier = await create_subscription_tier(
-            session, organization=organization
+            save_fixture, organization=organization
         )
         subscription = await create_subscription(
-            session, subscription_tier=subscription_tier, user=user
+            save_fixture, subscription_tier=subscription_tier, user=user
         )
         stripe_invoice = build_stripe_invoice(
             subscription=subscription.stripe_subscription_id
@@ -218,8 +222,8 @@ class TestCreatePayment:
         assert transaction.tax_country == "US"
         assert transaction.tax_state == "NY"
         assert transaction.charge_id == stripe_charge.id
-        assert transaction.subscription_id == subscription.id
-        assert transaction.pledge_id is None
+        assert transaction.subscription == subscription
+        assert transaction.pledge is None
 
         create_payment_fees_mock.assert_awaited_once()
 
@@ -248,13 +252,13 @@ class TestCreatePayment:
     async def test_pledge(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         pledge: Pledge,
         stripe_service_mock: MagicMock,
         create_payment_fees_mock: AsyncMock,
     ) -> None:
         pledge.payment_id = "STRIPE_PAYMENT_ID"
-        session.add(pledge)
-        await session.commit()
+        await save_fixture(pledge)
 
         stripe_balance_transaction = build_stripe_balance_transaction()
         stripe_charge = build_stripe_charge(
@@ -279,17 +283,20 @@ class TestCreatePayment:
         assert transaction.currency == stripe_charge.currency
         assert transaction.amount == stripe_charge.amount
         assert transaction.charge_id == stripe_charge.id
-        assert transaction.pledge_id == pledge.id
-        assert transaction.subscription_id is None
+        assert transaction.pledge == pledge
+        assert transaction.subscription is None
 
         create_payment_fees_mock.assert_awaited_once()
 
     async def test_anonymous_pledge(
-        self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        pledge: Pledge,
+        stripe_service_mock: MagicMock,
     ) -> None:
         pledge.payment_id = "STRIPE_PAYMENT_ID"
-        session.add(pledge)
-        await session.commit()
+        await save_fixture(pledge)
 
         stripe_balance_transaction = build_stripe_balance_transaction()
         stripe_charge = build_stripe_charge(
@@ -310,7 +317,16 @@ class TestCreatePayment:
             session, charge=stripe_charge
         )
 
+        pledge = cast(
+            Pledge,
+            await session.get(
+                Pledge,
+                pledge.id,
+                options=(joinedload(Pledge.user), joinedload(Pledge.by_organization)),
+            ),
+        )
+
         assert transaction.type == TransactionType.payment
-        assert transaction.pledge_id == pledge.id
-        assert transaction.payment_user_id == pledge.by_user_id
-        assert transaction.payment_organization_id == pledge.by_organization_id
+        assert transaction.pledge == pledge
+        assert transaction.payment_user == pledge.user
+        assert transaction.payment_organization == pledge.by_organization

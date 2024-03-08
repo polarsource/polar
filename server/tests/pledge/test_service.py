@@ -4,7 +4,7 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from httpx import AsyncClient
@@ -15,6 +15,7 @@ from polar.enums import AccountType, Platforms
 from polar.exceptions import NotPermitted
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import ConfirmIssueSplit
+from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
 from polar.models.account import Account
 from polar.models.issue import Issue
@@ -30,6 +31,7 @@ from polar.notifications.service import PartialNotification
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_issue,
     create_organization,
@@ -56,6 +58,7 @@ class Invoice:
 @pytest.mark.asyncio
 async def test_mark_pending_by_issue_id(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -80,47 +83,43 @@ async def test_mark_pending_by_issue_id(
     fee = 200
 
     # create multiple pledges
-    pledges: list[Pledge] = [
-        await Pledge(
+    pledges: list[Pledge] = []
+    for _ in range(4):
+        pledge = Pledge(
             id=uuid.uuid4(),
-            by_organization_id=pledging_organization.id,
-            issue_id=issue.id,
+            by_organization=pledging_organization,
+            issue=issue,
             repository_id=repository.id,
             organization_id=organization.id,
             amount=amount,
             fee=fee,
             state=PledgeState.created,
             type=PledgeType.pay_upfront,
-        ).save(
-            session=session,
         )
-        for x in range(4)
-    ]
+        await save_fixture(pledge)
+        pledges.append(pledge)
 
     # Mark one of the pledges as refunded
     pledges[0].state = PledgeState.refunded
-    await pledges[0].save(session)
+    await save_fixture(pledges[0])
 
     # ... and one as of the pledges as pending (no notification should be sent!)
     pledges[1].state = PledgeState.pending
-    await pledges[1].save(session)
+    await save_fixture(pledges[1])
 
     # Create a pay on completion pledge
-    await Pledge(
+    pledge = Pledge(
         id=uuid.uuid4(),
-        by_user_id=user.id,
-        issue_id=issue.id,
+        user=user,
+        issue=issue,
         repository_id=repository.id,
         organization_id=organization.id,
         amount=amount,
         fee=fee,
         state=PledgeState.created,
         type=PledgeType.pay_on_completion,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
+    await save_fixture(pledge)
 
     # then
     session.expunge_all()
@@ -152,6 +151,7 @@ async def test_mark_pending_by_issue_id(
 @pytest.mark.asyncio
 async def test_mark_pending_already_pending_no_notification(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -176,28 +176,24 @@ async def test_mark_pending_already_pending_no_notification(
     fee = 200
 
     # create multiple pledges
-    pledges: list[Pledge] = [
-        await Pledge(
-            id=uuid.uuid4(),
-            by_organization_id=pledging_organization.id,
-            issue_id=issue.id,
+    pledges: list[Pledge] = []
+    for x in range(2):
+        pledge = Pledge(
+            by_organization=pledging_organization,
+            issue=issue,
             repository_id=repository.id,
             organization_id=organization.id,
             amount=amount,
             fee=fee,
             state=PledgeState.pending,
             type=PledgeType.pay_upfront,
-        ).save(
-            session=session,
         )
-        for x in range(2)
-    ]
+        await save_fixture(pledge)
+        pledges.append(pledge)
 
     # Mark one of the pledges as refunded
     pledges[0].state = PledgeState.refunded
-    await pledges[0].save(session)
-
-    await session.commit()
+    await save_fixture(pledges[0])
 
     # then
     session.expunge_all()
@@ -226,16 +222,16 @@ async def test_mark_pending_already_pending_no_notification(
 @pytest.mark.asyncio
 async def test_transfer_unexpected_state(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     mocker: MockerFixture,
 ) -> None:
-    reward = await IssueReward(
+    reward = IssueReward(
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
         share_thousands=1000,
-    ).save(
-        session,
     )
+    await save_fixture(reward)
 
     # then
     session.expunge_all()
@@ -247,18 +243,18 @@ async def test_transfer_unexpected_state(
 @pytest.mark.asyncio
 async def test_transfer_early(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     mocker: MockerFixture,
 ) -> None:
     await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
-    reward = await IssueReward(
+    reward = IssueReward(
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
         share_thousands=1000,
-    ).save(
-        session,
     )
+    await save_fixture(reward)
 
     # then
     session.expunge_all()
@@ -273,6 +269,7 @@ async def test_transfer_early(
 @pytest.mark.asyncio
 async def test_transfer_org(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     organization: Organization,
     user: User,
@@ -287,7 +284,7 @@ async def test_transfer_org(
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
-    await got.save(session)
+    await save_fixture(got)
 
     account = Account(
         account_type=AccountType.stripe,
@@ -300,18 +297,16 @@ async def test_transfer_org(
         country="SE",
         currency="USD",
     )
-    session.add(account)
     organization.account = account
-    session.add(organization)
-    await session.commit()
+    await save_fixture(account)
+    await save_fixture(organization)
 
-    reward = await IssueReward(
+    reward = IssueReward(
         issue_id=pledge.issue_id,
         organization_id=organization.id,
         share_thousands=1000,
-    ).save(
-        session,
     )
+    await save_fixture(reward)
 
     balance = mocker.patch(
         "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
@@ -337,6 +332,7 @@ async def test_transfer_org(
 @pytest.mark.asyncio
 async def test_transfer_org_no_account(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     organization: Organization,
     mocker: MockerFixture,
@@ -351,16 +347,14 @@ async def test_transfer_org_no_account(
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
-    await got.save(session)
-    await session.flush()
+    await save_fixture(got)
 
-    reward = await IssueReward(
+    reward = IssueReward(
         issue_id=pledge.issue_id,
         organization_id=organization.id,
         share_thousands=1000,
-    ).save(
-        session,
     )
+    await save_fixture(reward)
 
     balance = mocker.patch(
         "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
@@ -383,6 +377,7 @@ async def test_transfer_org_no_account(
 @pytest.mark.asyncio
 async def test_transfer_user(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     user: User,
     mocker: MockerFixture,
@@ -397,7 +392,7 @@ async def test_transfer_user(
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
-    await got.save(session)
+    await save_fixture(got)
 
     account = Account(
         account_type=AccountType.stripe,
@@ -410,18 +405,16 @@ async def test_transfer_user(
         country="SE",
         currency="USD",
     )
-    session.add(account)
     user.account = account
-    session.add(user)
-    await session.commit()
+    await save_fixture(account)
+    await save_fixture(user)
 
-    reward = await IssueReward(
+    reward = IssueReward(
         issue_id=pledge.issue_id,
         user_id=user.id,
         share_thousands=1000,
-    ).save(
-        session,
     )
+    await save_fixture(reward)
 
     balance = mocker.patch(
         "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
@@ -447,6 +440,7 @@ async def test_transfer_user(
 @pytest.mark.asyncio
 async def test_transfer_user_no_account(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     user: User,
     mocker: MockerFixture,
@@ -461,16 +455,14 @@ async def test_transfer_user_no_account(
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
-    await got.save(session)
-    await session.flush()
+    await save_fixture(got)
 
-    reward = await IssueReward(
+    reward = IssueReward(
         issue_id=pledge.issue_id,
         user_id=user.id,
         share_thousands=1000,
-    ).save(
-        session,
     )
+    await save_fixture(reward)
 
     balance = mocker.patch(
         "polar.transaction.service.balance.BalanceTransactionService.create_balance_from_payment_intent"
@@ -586,21 +578,24 @@ async def test_create_issue_rewards(
 @pytest.mark.asyncio
 async def test_create_issue_rewards_associate_username(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     organization: Organization,
 ) -> None:
     # create user and github auth
-    user = await User(
+    user = User(
         username="test_gh_user",
         email="test_gh_user@polar.sh",
-    ).save(session)
-    oauth = await OAuthAccount(
+    )
+    await save_fixture(user)
+    oauth = OAuthAccount(
         platform=Platforms.github,
         user_id=user.id,
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
-    ).save(session)
+    )
+    await save_fixture(oauth)
 
     # then
     session.expunge_all()
@@ -677,97 +672,105 @@ async def test_create_issue_rewards_twice_fails(
 @pytest.mark.asyncio
 async def test_generate_pledge_testdata(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     user: User,
     # pledge: Pledge,
     # organization: Organization,
 ) -> None:
-    org = await create_organization(session)
-    repo = await create_repository(session, organization=org)
+    org = await create_organization(save_fixture)
+    repo = await create_repository(save_fixture, organization=org)
     issues = [
         await create_issue(
-            session,
+            save_fixture,
             organization=org,
             repository=repo,
         )
         for _ in range(1, 5)
     ]
 
-    pledging_org = await create_organization(session)
+    pledging_org = await create_organization(save_fixture)
 
     # create pledges to each issue
     # for issue in issues:
     # for amount in [2000, 2500]:
     # amount = secrets.randbelow(100000) + 1
     # fee = round(amount * 0.05)
-    pledges = [
-        [
-            await Pledge(
-                id=uuid.uuid4(),
-                # by_organization_id=pledging_organization.id,
-                issue_id=issue.id,
-                repository_id=issue.repository_id,
-                organization_id=issue.organization_id,
-                amount=2000,
-                fee=0,
-                state=PledgeState.created,
-                email="pledger@example.com",
-            ).save(session),
-            await Pledge(
-                id=uuid.uuid4(),
-                by_organization_id=pledging_org.id,
-                issue_id=issue.id,
-                repository_id=issue.repository_id,
-                organization_id=issue.organization_id,
-                amount=2500,
-                fee=500,
-                state=PledgeState.created,
-                # email="pledger@example.com",
-            ).save(session),
-        ]
-        for issue in issues
-    ]
+    pledges: list[list[Pledge]] = []
+    for issue in issues:
+        p1 = Pledge(
+            # by_organization_id=pledging_organization.id,
+            issue=issue,
+            repository_id=issue.repository_id,
+            organization_id=issue.organization_id,
+            amount=2000,
+            fee=0,
+            state=PledgeState.created,
+            email="pledger@example.com",
+        )
+        await save_fixture(p1)
+        p2 = Pledge(
+            by_organization=pledging_org,
+            issue=issue,
+            repository_id=issue.repository_id,
+            organization_id=issue.organization_id,
+            amount=2500,
+            fee=500,
+            state=PledgeState.created,
+            # email="pledger@example.com",
+        )
+        await save_fixture(p2)
+        pledges.append([p1, p2])
 
     for p in pledges[0]:
         p.state = PledgeState.pending
-    await IssueReward(
+        await save_fixture(p)
+
+    reward1 = IssueReward(
         issue_id=pledges[0][0].issue_id,
         organization_id=org.id,
         share_thousands=800,
-    ).save(session)
-    await IssueReward(
+    )
+    await save_fixture(reward1)
+
+    reward2 = IssueReward(
         issue_id=pledges[0][0].issue_id,
         github_username="zegl",
         share_thousands=200,
-    ).save(session)
+    )
+    await save_fixture(reward2)
 
     for p in pledges[1]:
         p.state = PledgeState.pending
-    await IssueReward(
+        await save_fixture(p)
+
+    reward1 = IssueReward(
         issue_id=pledges[1][0].issue_id,
         organization_id=org.id,
         share_thousands=800,
-    ).save(session)
-    reward = await IssueReward(
+    )
+    await save_fixture(reward1)
+
+    reward = IssueReward(
         issue_id=pledges[1][0].issue_id,
         github_username="zegl",
         share_thousands=200,  # 20%
-    ).save(session)
+    )
+    await save_fixture(reward)
 
-    await PledgeTransaction(
+    pledge_transaction = PledgeTransaction(
         pledge_id=pledges[1][0].id,
         type=PledgeTransactionType.transfer,
         amount=5000,  # ?
         transaction_id="text_123",
         issue_reward_id=reward.id,
-    ).save(session)
+    )
+    await save_fixture(pledge_transaction)
 
     pledges[3][0].state = PledgeState.disputed
     pledges[3][0].dispute_reason = "I've been fooled."
     pledges[3][0].disputed_at = utc_now()
     pledges[3][0].disputed_by_user_id = user.id
     pledges[3][1].state = PledgeState.charge_disputed
-
-    await session.commit()
 
     # then?
     session.expunge_all()
@@ -776,6 +779,7 @@ async def test_generate_pledge_testdata(
 @pytest.mark.asyncio
 async def test_mark_created_by_payment_id(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -783,16 +787,17 @@ async def test_mark_created_by_payment_id(
 ) -> None:
     mocker.patch("polar.worker._enqueue_job")
 
-    pledge = await Pledge(
-        issue_id=issue.id,
+    pledge = Pledge(
+        issue=issue,
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12300,
         fee=123,
-        by_organization_id=organization.id,
+        by_organization=organization,
         state=PledgeState.initiated,
         payment_id="xxx-2",
-    ).save(session)
+    )
+    await save_fixture(pledge)
 
     assert pledge.payment_id
 
@@ -821,44 +826,48 @@ async def test_mark_created_by_payment_id(
 @pytest.mark.asyncio
 async def test_sum_pledges_period(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
     user: User,
 ) -> None:
-    p1 = await Pledge(
-        issue_id=issue.id,
+    p1 = Pledge(
+        issue=issue,
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12300,
         fee=123,
-        by_organization_id=organization.id,
+        by_organization=organization,
         state=PledgeState.created,
         created_at=utc_now(),
-    ).save(session)
+    )
+    await save_fixture(p1)
 
-    p2 = await Pledge(
-        issue_id=issue.id,
+    p2 = Pledge(
+        issue=issue,
         repository_id=repository.id,
         organization_id=organization.id,
         amount=800,
         fee=123,
-        by_organization_id=organization.id,
+        by_organization=organization,
         state=PledgeState.created,
         created_at=utc_now(),
-        created_by_user_id=user.id,
-    ).save(session)
+        created_by_user=user,
+    )
+    await save_fixture(p2)
 
-    p3 = await Pledge(
-        issue_id=issue.id,
+    p3 = Pledge(
+        issue=issue,
         repository_id=repository.id,
         organization_id=organization.id,
         amount=800,
         fee=123,
-        by_organization_id=organization.id,
+        by_organization=organization,
         state=PledgeState.created,
         created_at=utc_now() + timedelta(days=60),  # not in current period
-    ).save(session)
+    )
+    await save_fixture(p3)
 
     # then
     session.expunge_all()
@@ -946,6 +955,7 @@ async def test_month_range() -> None:
 @pytest.mark.asyncio
 async def test_pledge_states(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     subtests: Any,
     mocker: MockerFixture,
     client: AsyncClient,
@@ -1147,17 +1157,17 @@ async def test_pledge_states(
             notifications_sent = {}
             create_invoice.reset_mock()
 
-            org = await create_organization(session)
-            repo = await create_repository(session, org)
-            issue = await create_issue(session, org, repo)
-            pledging_user = await create_user(session)
+            org = await create_organization(save_fixture)
+            repo = await create_repository(save_fixture, org)
+            issue = await create_issue(save_fixture, org, repo)
+            pledging_user = await create_user(save_fixture)
 
-            await UserOrganization(
+            user_organization = UserOrganization(
                 user_id=user.id,
                 organization_id=org.id,
                 is_admin=True,
-            ).save(session)
-            await session.commit()
+            )
+            await save_fixture(user_organization)
 
             if tc.other_pledged_first:
                 await pledge_service.create_pay_on_completion(
@@ -1170,10 +1180,12 @@ async def test_pledge_states(
                     authenticated_user=pledging_user,
                 )
 
+            session.expunge_all()
+
             if tc.issue_closed_before_test_peldge:
                 # this is not 100% realistic, but it's good enough
                 issue.state = Issue.State.CLOSED
-                await issue.save(session)
+                await save_fixture(issue)
                 await issue_upserted.call(IssueHook(session, issue))
 
             async def confirm_solved() -> None:
@@ -1200,6 +1212,10 @@ async def test_pledge_states(
                 assert notifications_sent == tc.expected_pre_pledge_close_notifications
             notifications_sent = {}
 
+            session.expunge_all()
+
+            issue = cast(Issue, await issue_service.get(session, issue.id))
+
             if tc.pay_on_completion:
                 pledge = await pledge_service.create_pay_on_completion(
                     session,
@@ -1211,7 +1227,7 @@ async def test_pledge_states(
                     authenticated_user=pledging_user,
                 )
             else:
-                pledge = await Pledge(
+                pledge = Pledge(
                     issue_id=issue.id,
                     repository_id=repo.id,
                     organization_id=org.id,
@@ -1219,10 +1235,11 @@ async def test_pledge_states(
                     fee=0,
                     state=PledgeState.created,
                     type=PledgeType.pay_upfront,
-                    by_user_id=pledging_user.id,
-                    by_organization_id=None,
-                    on_behalf_of_organization_id=None,
-                ).save(session)
+                    user=pledging_user,
+                    by_organization=None,
+                    on_behalf_of_organization=None,
+                )
+                await save_fixture(pledge)
                 # TODO: this should be in a service somewhere
                 await pledge_created.call(PledgeHook(session, pledge))
                 await pledge_service.after_pledge_created(session, pledge, issue, None)
@@ -1230,13 +1247,15 @@ async def test_pledge_states(
             assert pledge is not None
             assert notifications_sent == tc.expected_post_pledge_notifications
 
+            session.expunge_all()
+
             # reset
             notifications_sent = {}
 
             if tc.close_issue_after_test_pledge:
                 # this is not 100% realistic, but it's good enough
                 issue.state = Issue.State.CLOSED
-                await issue.save(session)
+                await save_fixture(issue)
                 await issue_upserted.call(IssueHook(session, issue))
 
             assert notifications_sent == tc.expected_post_close_notifications

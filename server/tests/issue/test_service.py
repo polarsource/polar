@@ -17,16 +17,18 @@ from polar.models.user import User
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from tests.fixtures import random_objects
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
 async def test_list_by_repository_type_and_status_sorting(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     repository: Repository,
     organization: Organization,
 ) -> None:
     # create testdata
-    issue_1 = await Issue(
+    issue_1 = Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -39,9 +41,10 @@ async def test_list_by_repository_type_and_status_sorting(
         issue_modified_at=datetime(2023, 1, 10),
         issue_has_in_progress_relationship=False,
         issue_has_pull_request_relationship=False,
-    ).save(session)
+    )
+    await save_fixture(issue_1)
 
-    issue_2 = await Issue(
+    issue_2 = Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -56,9 +59,10 @@ async def test_list_by_repository_type_and_status_sorting(
         total_engagement_count=3,
         issue_has_in_progress_relationship=False,
         issue_has_pull_request_relationship=False,
-    ).save(session)
+    )
+    await save_fixture(issue_2)
 
-    issue_3 = await Issue(
+    issue_3 = Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -73,9 +77,10 @@ async def test_list_by_repository_type_and_status_sorting(
         total_engagement_count=10,
         issue_has_in_progress_relationship=False,
         issue_has_pull_request_relationship=False,
-    ).save(session)
+    )
+    await save_fixture(issue_3)
 
-    issue_4 = await Issue(
+    issue_4 = Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -90,7 +95,8 @@ async def test_list_by_repository_type_and_status_sorting(
         pledged_amount_sum=5000,
         issue_has_in_progress_relationship=False,
         issue_has_pull_request_relationship=False,
-    ).save(session)
+    )
+    await save_fixture(issue_4)
 
     # then
     session.expunge_all()
@@ -159,34 +165,37 @@ async def test_list_by_repository_type_and_status_sorting(
 @pytest.mark.asyncio
 async def test_list_by_repository_type_and_status_dependencies_pledge(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     repository: Repository,
     organization: Organization,
     user: User,
 ) -> None:
     # Third party issue
 
-    third_party_org = await random_objects.create_organization(session)
-    third_party_repo = await random_objects.create_repository(session, third_party_org)
+    third_party_org = await random_objects.create_organization(save_fixture)
+    third_party_repo = await random_objects.create_repository(
+        save_fixture, third_party_org
+    )
     third_party_issue = await random_objects.create_issue(
-        session, third_party_org, third_party_repo
+        save_fixture, third_party_org, third_party_repo
     )
     third_party_issue.title = "pledged_towards"
-    await third_party_issue.save(session)
+    await save_fixture(third_party_issue)
 
     # this issue should not be in the result
     third_party_issue_2 = await random_objects.create_issue(
-        session, third_party_org, third_party_repo
+        save_fixture, third_party_org, third_party_repo
     )
 
     # the org and the user both have made pledges towards this issue
     third_party_issue_3 = await random_objects.create_issue(
-        session, third_party_org, third_party_repo
+        save_fixture, third_party_org, third_party_repo
     )
     third_party_issue_3.title = "double_pledge_towards"
-    await third_party_issue_3.save(session)
+    await save_fixture(third_party_issue_3)
 
     # Create pledge
-    pledge = await Pledge(
+    pledge = Pledge(
         id=uuid.uuid4(),
         by_organization_id=organization.id,
         issue_id=third_party_issue.id,
@@ -195,10 +204,11 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         amount=2000,
         fee=200,
         state=PledgeState.created,
-    ).save(session)
+    )
+    await save_fixture(pledge)
 
     # Create other pledge to this issue (not by the org)
-    pledge_other = await Pledge(
+    pledge_other = Pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
@@ -206,10 +216,11 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         amount=2100,
         fee=200,
         state=PledgeState.created,
-    ).save(session)
+    )
+    await save_fixture(pledge_other)
 
     # pledges to issue 3
-    pledge_issue_3_user = await Pledge(
+    pledge_issue_3_user = Pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
@@ -218,9 +229,10 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         fee=200,
         state=PledgeState.created,
         by_user_id=user.id,
-    ).save(session)
+    )
+    await save_fixture(pledge_issue_3_user)
 
-    pledge_issue_3_org = await Pledge(
+    pledge_issue_3_org = Pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
@@ -229,7 +241,8 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         fee=200,
         state=PledgeState.created,
         by_organization_id=organization.id,
-    ).save(session)
+    )
+    await save_fixture(pledge_issue_3_org)
 
     # then
     session.expunge_all()
@@ -271,14 +284,17 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
 @pytest.mark.asyncio
 async def test_list_by_repository_type_and_status_dependencies_pledge_state(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     repository: Repository,
     organization: Organization,
     user: User,
 ) -> None:
     # Third party issue
 
-    third_party_org = await random_objects.create_organization(session)
-    third_party_repo = await random_objects.create_repository(session, third_party_org)
+    third_party_org = await random_objects.create_organization(save_fixture)
+    third_party_repo = await random_objects.create_repository(
+        save_fixture, third_party_org
+    )
 
     for state in [
         PledgeState.initiated,  # does not appear in result
@@ -287,13 +303,13 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
         PledgeState.refunded,  # does not appear in result
     ]:
         third_party_issue = await random_objects.create_issue(
-            session, third_party_org, third_party_repo
+            save_fixture, third_party_org, third_party_repo
         )
         third_party_issue.title = "pledged_towards_" + state
-        await third_party_issue.save(session)
+        await save_fixture(third_party_issue)
 
         # Create pledge
-        pledge = await Pledge(
+        pledge = Pledge(
             id=uuid.uuid4(),
             by_organization_id=organization.id,
             issue_id=third_party_issue.id,
@@ -302,7 +318,8 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
             amount=2000,
             fee=200,
             state=state,
-        ).save(session)
+        )
+        await save_fixture(pledge)
 
     # then
     session.expunge_all()
@@ -323,6 +340,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
 @pytest.mark.asyncio
 async def test_list_by_github_milestone_number(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     repository: Repository,
     organization: Organization,
     # issue: Issue,
@@ -330,7 +348,7 @@ async def test_list_by_github_milestone_number(
 ) -> None:
     async def issue_with_milestone(number: int) -> Issue:
         issue = await random_objects.create_issue(
-            session,
+            save_fixture,
             organization,
             repository,
         )
@@ -356,7 +374,7 @@ async def test_list_by_github_milestone_number(
 
         issue.title = f"issue_in_{number}"
         issue.milestone = ms.model_dump(mode="json")
-        await issue.save(session)
+        await save_fixture(issue)
         return issue
 
     issue_1 = await issue_with_milestone(14)
@@ -385,26 +403,31 @@ async def test_list_by_github_milestone_number(
 @pytest.mark.asyncio
 async def test_transfer(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     pledging_organization: Organization,
 ) -> None:
     old_repository = await random_objects.create_repository(
-        session, organization, is_private=False
+        save_fixture, organization, is_private=False
     )
-    old_issue = await random_objects.create_issue(session, organization, old_repository)
+    old_issue = await random_objects.create_issue(
+        save_fixture, organization, old_repository
+    )
     old_issue.funding_goal = 10_000
 
     pledges = [
         await random_objects.create_pledge(
-            session, organization, old_repository, old_issue, pledging_organization
+            save_fixture, organization, old_repository, old_issue, pledging_organization
         )
         for _ in range(2)
     ]
 
     new_repository = await random_objects.create_repository(
-        session, organization, is_private=False
+        save_fixture, organization, is_private=False
     )
-    new_issue = await random_objects.create_issue(session, organization, new_repository)
+    new_issue = await random_objects.create_issue(
+        save_fixture, organization, new_repository
+    )
 
     # then
     session.expunge_all()

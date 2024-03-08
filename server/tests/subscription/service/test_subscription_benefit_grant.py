@@ -25,6 +25,7 @@ from polar.subscription.service.subscription_benefit_grant import (  # type: ign
 from polar.subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.fixture(autouse=True)
@@ -69,6 +70,7 @@ class TestGrantBenefit:
     async def test_existing_grant_not_granted(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -79,8 +81,7 @@ class TestGrantBenefit:
             user_id=user.id,
             subscription_benefit_id=subscription_benefit_organization.id,
         )
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         # then
         session.expunge_all()
@@ -96,6 +97,7 @@ class TestGrantBenefit:
     async def test_existing_grant_already_granted(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -107,8 +109,7 @@ class TestGrantBenefit:
             subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         # then
         session.expunge_all()
@@ -168,6 +169,7 @@ class TestRevokeBenefit:
     async def test_existing_grant_not_revoked(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -184,8 +186,7 @@ class TestRevokeBenefit:
             subscription_benefit_id=subscription_benefit_organization.id,
             properties={"external_id": "abc"},
         )
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         updated_grant = await subscription_benefit_grant_service.revoke_benefit(
             session, subscription, user, subscription_benefit_organization
@@ -199,6 +200,7 @@ class TestRevokeBenefit:
     async def test_existing_grant_already_revoked(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -210,8 +212,7 @@ class TestRevokeBenefit:
             subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_revoked()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         # then
         session.expunge_all()
@@ -252,6 +253,7 @@ class TestEnqueueBenefitGrantUpdates:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -264,7 +266,7 @@ class TestEnqueueBenefitGrantUpdates:
             subscription_benefit=subscription_benefit_organization,
         )
         granted_grant.set_granted()
-        session.add(granted_grant)
+        await save_fixture(granted_grant)
 
         revoked_grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -272,7 +274,7 @@ class TestEnqueueBenefitGrantUpdates:
             subscription_benefit=subscription_benefit_organization,
         )
         revoked_grant.set_revoked()
-        session.add(revoked_grant)
+        await save_fixture(revoked_grant)
 
         other_benefit_grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -280,9 +282,7 @@ class TestEnqueueBenefitGrantUpdates:
             subscription_benefit=subscription_benefit_repository,
         )
         other_benefit_grant.set_granted()
-        session.add(other_benefit_grant)
-
-        await session.commit()
+        await save_fixture(other_benefit_grant)
 
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription_benefit_grant.enqueue_job"
@@ -307,6 +307,7 @@ class TestUpdateBenefitGrant:
     async def test_revoked_grant(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -318,8 +319,7 @@ class TestUpdateBenefitGrant:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_revoked()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         # then
         session.expunge_all()
@@ -334,6 +334,7 @@ class TestUpdateBenefitGrant:
     async def test_granted_grant(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -348,8 +349,7 @@ class TestUpdateBenefitGrant:
             properties={"external_id": "abc"},
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         # then
         session.expunge_all()
@@ -371,6 +371,7 @@ class TestUpdateBenefitGrant:
     async def test_precondition_error(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -382,8 +383,7 @@ class TestUpdateBenefitGrant:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         subscription_benefit_service_mock.grant.side_effect = (
             SubscriptionBenefitPreconditionError("Error")
@@ -409,6 +409,7 @@ class TestEnqueueBenefitGrantDeletions:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -420,7 +421,7 @@ class TestEnqueueBenefitGrantDeletions:
             subscription_benefit=subscription_benefit_organization,
         )
         granted_grant.set_granted()
-        session.add(granted_grant)
+        await save_fixture(granted_grant)
 
         revoked_grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -428,7 +429,7 @@ class TestEnqueueBenefitGrantDeletions:
             subscription_benefit=subscription_benefit_organization,
         )
         revoked_grant.set_revoked()
-        session.add(revoked_grant)
+        await save_fixture(revoked_grant)
 
         other_benefit_grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -436,9 +437,7 @@ class TestEnqueueBenefitGrantDeletions:
             subscription_benefit=subscription_benefit_repository,
         )
         other_benefit_grant.set_granted()
-        session.add(other_benefit_grant)
-
-        await session.commit()
+        await save_fixture(other_benefit_grant)
 
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription_benefit_grant.enqueue_job"
@@ -462,6 +461,7 @@ class TestDeleteBenefitGrant:
     async def test_revoked_grant(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -473,8 +473,7 @@ class TestDeleteBenefitGrant:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_revoked()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         # then
         session.expunge_all()
@@ -489,6 +488,7 @@ class TestDeleteBenefitGrant:
     async def test_granted_grant(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
@@ -500,8 +500,7 @@ class TestDeleteBenefitGrant:
             subscription_benefit=subscription_benefit_organization,
         )
         grant.set_granted()
-        session.add(grant)
-        await session.commit()
+        await save_fixture(grant)
 
         # then
         session.expunge_all()
@@ -584,6 +583,7 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
         user_second: User,
@@ -594,7 +594,7 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
             user=user,
             subscription_benefit=subscription_benefit_organization,
         )
-        session.add(pending_grant)
+        await save_fixture(pending_grant)
 
         granted_grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -602,7 +602,7 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
             subscription_benefit=subscription_benefit_organization,
         )
         granted_grant.set_granted()
-        session.add(granted_grant)
+        await save_fixture(granted_grant)
 
         revoked_grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -610,16 +610,14 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
             subscription_benefit=subscription_benefit_organization,
         )
         revoked_grant.set_revoked()
-        session.add(revoked_grant)
+        await save_fixture(revoked_grant)
 
         other_user_grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user_second,
             subscription_benefit=subscription_benefit_organization,
         )
-        session.add(other_user_grant)
-
-        await session.commit()
+        await save_fixture(other_user_grant)
 
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription_benefit_grant.enqueue_job"

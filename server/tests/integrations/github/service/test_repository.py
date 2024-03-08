@@ -4,6 +4,7 @@ from polar.integrations.github.service.repository import github_repository
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
+from tests.fixtures.database import SaveFixture
 from tests.integrations.github.repository import create_github_repository
 
 
@@ -34,6 +35,7 @@ async def test_create_or_update_from_github(
 @pytest.mark.asyncio
 async def test_create_or_update_from_github_deleted_repo(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
 ) -> None:
     # then
@@ -47,7 +49,7 @@ async def test_create_or_update_from_github_deleted_repo(
 
     # repo is deleted
     first_repo.deleted_at = utc_now()
-    await first_repo.save(session)
+    await save_fixture(first_repo)
 
     # a new repo with the same name, but different id is created
 

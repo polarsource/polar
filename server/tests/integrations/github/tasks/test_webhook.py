@@ -20,6 +20,7 @@ from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures import random_objects
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 from tests.integrations.github.repository import (
     create_github_repository,
@@ -86,7 +87,7 @@ async def create_org(
 
     org.status = status
     session.add(org)
-    await session.commit()
+    await session.flush()
     return org
 
 
@@ -115,7 +116,7 @@ async def create_repositories(
             .on_conflict_do_nothing()
         )
         await session.execute(stmt)
-        await session.commit()
+        await session.flush()
     return org
 
 
@@ -217,6 +218,7 @@ async def test_webhook_installation_unsuspend(
 async def test_webhook_installation_delete(
     job_context: JobContext,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
@@ -251,7 +253,7 @@ async def test_webhook_installation_delete(
 
     # un-delete (fixes other tests)
     fetched.deleted_at = None
-    await fetched.save(session)
+    await save_fixture(fetched)
 
 
 def hook_as_obj(
@@ -327,6 +329,7 @@ async def test_webhook_repositories_added_duplicate_name(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
@@ -339,14 +342,15 @@ async def test_webhook_repositories_added_duplicate_name(
     new_repo = hook["repositories_added"][0]
 
     # A _deleted_ repository with the same name already exists in new_organization
-    deleted_repo = await Repository(
+    deleted_repo = Repository(
         external_id=58585,  # different external ID than the repo being transferred
         name=new_repo["name"],
         platform="github",
         is_private=True,
         organization_id=organization.id,
         deleted_at=utils.utc_now(),
-    ).save(session)
+    )
+    await save_fixture(deleted_repo)
 
     parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
     if not isinstance(parsed, types.WebhookInstallationRepositoriesAdded):
@@ -711,6 +715,7 @@ async def test_webhook_opened_with_label(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
     # Capture and prevent any calls to enqueue_job
@@ -722,7 +727,7 @@ async def test_webhook_opened_with_label(
 
     org = await create_repositories(session, github_webhook)
     org.onboarded_at = utils.utc_now()
-    await org.save(session)
+    await save_fixture(org)
 
     # first create an issue
     hook = github_webhook.create("issues.opened_with_polar_label")
@@ -767,6 +772,7 @@ async def test_webhook_labeled_remove_badge_body(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
     async def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
@@ -787,7 +793,7 @@ async def test_webhook_labeled_remove_badge_body(
 
     org = await create_repositories(session, github_webhook)
     org.onboarded_at = utils.utc_now()
-    await org.save(session)
+    await save_fixture(org)
 
     # first create an issue labeled with "polar" label
     hook = github_webhook.create("issues.opened_with_polar_label")
@@ -895,13 +901,14 @@ async def test_webhook_repository_transferred(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
     repository: Repository,
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("polar.worker._enqueue_job")
 
-    new_organization = await random_objects.create_organization(session)
+    new_organization = await random_objects.create_organization(save_fixture)
 
     hook = github_webhook.create("repository.transferred")
     hook["repository"]["id"] = repository.external_id
@@ -931,13 +938,14 @@ async def test_webhook_repository_transferred_duplicate_name(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
     repository: Repository,
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("polar.worker._enqueue_job")
 
-    new_organization = await random_objects.create_organization(session)
+    new_organization = await random_objects.create_organization(save_fixture)
 
     hook = github_webhook.create("repository.transferred")
     hook["repository"]["id"] = repository.external_id
@@ -945,14 +953,15 @@ async def test_webhook_repository_transferred_duplicate_name(
     hook["repository"]["owner"]["id"] = new_organization.external_id
 
     # A _deleted_ repository with the same name already exists in new_organization
-    deleted_repo = await Repository(
+    deleted_repo = Repository(
         external_id=58585,  # different external ID than the repo being transferred
         name=repository.name,
         platform=repository.platform,
         is_private=True,
         organization_id=new_organization.id,
         deleted_at=utils.utc_now(),
-    ).save(session)
+    )
+    await save_fixture(deleted_repo)
 
     # then
     session.expunge_all()
@@ -977,22 +986,29 @@ async def test_webhook_issue_transferred(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
     organization: Organization,
+    polar_worker_context: PolarWorkerContext,
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("polar.worker._enqueue_job")
 
     old_repository = await random_objects.create_repository(
-        session, organization, is_private=False
+        save_fixture, organization, is_private=False
     )
-    old_issue = await random_objects.create_issue(session, organization, old_repository)
+    old_issue = await random_objects.create_issue(
+        save_fixture, organization, old_repository
+    )
     old_issue.funding_goal = 10_000
+    await save_fixture(old_issue)
 
     new_repository = await random_objects.create_repository(
-        session, organization, is_private=False
+        save_fixture, organization, is_private=False
     )
-    new_issue = await random_objects.create_issue(session, organization, new_repository)
+    new_issue = await random_objects.create_issue(
+        save_fixture, organization, new_repository
+    )
 
     hook = github_webhook.create("issues.transferred")
     hook["issue"]["id"] = old_issue.external_id
@@ -1008,7 +1024,7 @@ async def test_webhook_issue_transferred(
         "issues",
         "transferred",
         hook.json,
-        polar_context=PolarWorkerContext(),
+        polar_context=polar_worker_context,
     )
 
     updated_new_issue = await service.github_issue.get_by_external_id(

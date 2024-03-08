@@ -13,6 +13,7 @@ from polar.models import Issue, Organization, Pledge, User, UserOrganization
 from polar.models.pledge import PledgeState, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_issue,
     create_pledge,
@@ -161,12 +162,13 @@ class TestListBy:
         organization: Organization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
+        save_fixture: SaveFixture,
     ) -> None:
         private_repository = await create_repository(
-            session, organization, is_private=True
+            save_fixture, organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            session, organization, private_repository
+            save_fixture, organization, private_repository
         )
 
         # then
@@ -196,12 +198,13 @@ class TestListBy:
     async def test_limit(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
     ) -> None:
         repository = await create_repository(
-            session,
+            save_fixture,
             organization,
             is_private=False,
         )
@@ -210,13 +213,13 @@ class TestListBy:
 
         # create 20 issues
         for n in range(20):
-            issue = await create_issue(session, organization, repository)
+            issue = await create_issue(save_fixture, organization, repository)
             issues.append(issue)
 
         # add pledges
         for n in range(3):
             await create_pledge(
-                session,
+                save_fixture,
                 organization,
                 repository,
                 issues[0],
@@ -226,7 +229,7 @@ class TestListBy:
 
         for n in range(3):
             await create_pledge(
-                session,
+                save_fixture,
                 organization,
                 repository,
                 issues[4],
@@ -281,23 +284,23 @@ class TestListBy:
         user: User,
         session: AsyncSession,
         organization: Organization,
+        save_fixture: SaveFixture,
     ) -> None:
         await run_calculate_sort_columns(session)
 
-        user2 = await create_user(session)
-        await UserOrganization(
+        user2 = await create_user(save_fixture)
+        user2_organization = UserOrganization(
             user_id=user2.id,
             organization_id=organization.id,
-        ).save(
-            session=session,
         )
-        user3 = await create_user(session)
-        await UserOrganization(
+        await save_fixture(user2_organization)
+
+        user3 = await create_user(save_fixture)
+        user3_organization = UserOrganization(
             user_id=user3.id,
             organization_id=organization.id,
-        ).save(
-            session=session,
         )
+        await save_fixture(user3_organization)
 
         # then
         session.expunge_all()
@@ -313,7 +316,10 @@ class TestListBy:
             await issue_row_assertions(session, result, issue, pledges)
 
     async def test_query(
-        self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
+        self,
+        issues_pledges: IssuesPledgesFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
     ) -> None:
         titles = [
             "Bug during request",
@@ -322,8 +328,7 @@ class TestListBy:
         ]
         for i, issue_pledge in enumerate(issues_pledges):
             issue_pledge[0].title = titles[i]
-            session.add(issue_pledge[0])
-        await session.commit()
+            await save_fixture(issue_pledge[0])
 
         # then
         session.expunge_all()
@@ -372,12 +377,13 @@ class TestGetByIssueId:
         organization: Organization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
+        save_fixture: SaveFixture,
     ) -> None:
         private_repository = await create_repository(
-            session, organization, is_private=True
+            save_fixture, organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            session, organization, private_repository
+            save_fixture, organization, private_repository
         )
         issue, pledges = issues_pledges[0]
 

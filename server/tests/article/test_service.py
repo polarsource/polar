@@ -19,6 +19,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_organization, create_user
 
 
@@ -27,7 +28,7 @@ def random_string(length: int = 32) -> str:
 
 
 async def create_article(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     created_by_user: User,
     organization: Organization,
@@ -45,13 +46,12 @@ async def create_article(
         visibility=visibility,
         paid_subscribers_only=paid_subscribers_only,
     )
-    session.add(article)
-    await session.commit()
+    await save_fixture(article)
     return article
 
 
 async def create_articles_subscription(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     user: User,
     organization: Organization,
@@ -62,8 +62,7 @@ async def create_articles_subscription(
         organization=organization,
         user=user,
     )
-    session.add(articles_subscription)
-    await session.commit()
+    await save_fixture(articles_subscription)
     return articles_subscription
 
 
@@ -73,10 +72,10 @@ def get_articles_ids(results: Sequence[tuple[Article, bool]]) -> list[uuid.UUID]
 
 @pytest_asyncio.fixture
 async def article_public_free_published(
-    session: AsyncSession, user: User, organization: Organization
+    save_fixture: SaveFixture, user: User, organization: Organization
 ) -> Article:
     return await create_article(
-        session,
+        save_fixture,
         created_by_user=user,
         organization=organization,
         visibility=Article.Visibility.public,
@@ -87,10 +86,10 @@ async def article_public_free_published(
 
 @pytest_asyncio.fixture
 async def article_public_paid_published(
-    session: AsyncSession, user: User, organization: Organization
+    save_fixture: SaveFixture, user: User, organization: Organization
 ) -> Article:
     return await create_article(
-        session,
+        save_fixture,
         created_by_user=user,
         organization=organization,
         visibility=Article.Visibility.public,
@@ -101,10 +100,10 @@ async def article_public_paid_published(
 
 @pytest_asyncio.fixture
 async def article_hidden_free_published(
-    session: AsyncSession, user: User, organization: Organization
+    save_fixture: SaveFixture, user: User, organization: Organization
 ) -> Article:
     return await create_article(
-        session,
+        save_fixture,
         created_by_user=user,
         organization=organization,
         visibility=Article.Visibility.hidden,
@@ -115,10 +114,10 @@ async def article_hidden_free_published(
 
 @pytest_asyncio.fixture
 async def article_hidden_paid_published(
-    session: AsyncSession, user: User, organization: Organization
+    save_fixture: SaveFixture, user: User, organization: Organization
 ) -> Article:
     return await create_article(
-        session,
+        save_fixture,
         created_by_user=user,
         organization=organization,
         visibility=Article.Visibility.hidden,
@@ -129,10 +128,10 @@ async def article_hidden_paid_published(
 
 @pytest_asyncio.fixture
 async def article_private_published(
-    session: AsyncSession, user: User, organization: Organization
+    save_fixture: SaveFixture, user: User, organization: Organization
 ) -> Article:
     return await create_article(
-        session,
+        save_fixture,
         created_by_user=user,
         organization=organization,
         visibility=Article.Visibility.private,
@@ -143,10 +142,10 @@ async def article_private_published(
 
 @pytest_asyncio.fixture
 async def article_unpublished(
-    session: AsyncSession, user: User, organization: Organization
+    save_fixture: SaveFixture, user: User, organization: Organization
 ) -> Article:
     return await create_article(
-        session,
+        save_fixture,
         created_by_user=user,
         organization=organization,
         visibility=Article.Visibility.public,
@@ -176,12 +175,12 @@ async def articles(
 
 @pytest_asyncio.fixture
 async def other_subscriptions(
-    session: AsyncSession, organization: Organization
+    save_fixture: SaveFixture, organization: Organization
 ) -> None:
     for _ in range(5):
-        user = await create_user(session)
+        user = await create_user(save_fixture)
         await create_articles_subscription(
-            session, user=user, organization=organization, paid_subscriber=False
+            save_fixture, user=user, organization=organization, paid_subscriber=False
         )
 
 
@@ -229,6 +228,7 @@ class TestList:
     async def test_free_subscription(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         articles: list[Article],
         article_public_free_published: Article,
         article_public_paid_published: Article,
@@ -236,7 +236,10 @@ class TestList:
         user_second: User,
     ) -> None:
         await create_articles_subscription(
-            session, user=user_second, organization=organization, paid_subscriber=False
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=False,
         )
 
         # then
@@ -258,6 +261,7 @@ class TestList:
     async def test_paid_subscription(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         articles: list[Article],
         article_public_free_published: Article,
         article_public_paid_published: Article,
@@ -265,7 +269,10 @@ class TestList:
         user_second: User,
     ) -> None:
         await create_articles_subscription(
-            session, user=user_second, organization=organization, paid_subscriber=True
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=True,
         )
 
         # then
@@ -430,6 +437,7 @@ class TestSearch:
     async def test_paid_subscription(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         articles: list[Article],
         article_public_free_published: Article,
         article_public_paid_published: Article,
@@ -437,7 +445,10 @@ class TestSearch:
         user_second: User,
     ) -> None:
         await create_articles_subscription(
-            session, user=user_second, organization=organization, paid_subscriber=True
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=True,
         )
 
         # then
@@ -569,6 +580,7 @@ class TestGetReadableBy:
         self,
         getter: GetterType,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         article_public_free_published: Article,
         article_public_paid_published: Article,
         article_hidden_free_published: Article,
@@ -578,7 +590,10 @@ class TestGetReadableBy:
         organization: Organization,
     ) -> None:
         await create_articles_subscription(
-            session, user=user_second, organization=organization, paid_subscriber=False
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=False,
         )
 
         # then
@@ -607,6 +622,7 @@ class TestGetReadableBy:
         self,
         getter: GetterType,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         article_public_free_published: Article,
         article_public_paid_published: Article,
         article_hidden_free_published: Article,
@@ -616,7 +632,10 @@ class TestGetReadableBy:
         organization: Organization,
     ) -> None:
         await create_articles_subscription(
-            session, user=user_second, organization=organization, paid_subscriber=True
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=True,
         )
 
         # then
@@ -676,10 +695,17 @@ class TestListReceivers:
         assert receivers[0] == (user.id, False, True)
 
     async def test_free_subscription(
-        self, session: AsyncSession, user_second: User, organization: Organization
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_second: User,
+        organization: Organization,
     ) -> None:
         await create_articles_subscription(
-            session, user=user_second, organization=organization, paid_subscriber=False
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=False,
         )
 
         # then
@@ -695,10 +721,17 @@ class TestListReceivers:
         assert len(receivers) == 0
 
     async def test_paid_subscription(
-        self, session: AsyncSession, user_second: User, organization: Organization
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_second: User,
+        organization: Organization,
     ) -> None:
         await create_articles_subscription(
-            session, user=user_second, organization=organization, paid_subscriber=True
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=True,
         )
 
         # then
@@ -711,12 +744,13 @@ class TestListReceivers:
     async def test_paid_subscription_and_member(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         await create_articles_subscription(
-            session, user=user, organization=organization, paid_subscriber=True
+            save_fixture, user=user, organization=organization, paid_subscriber=True
         )
 
         # then
@@ -729,23 +763,23 @@ class TestListReceivers:
     async def test_paid_subscription_and_member_member_other_orgs(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         # make user member of other orgs
         # this test checks that list_receivers doesn't have a bad join
-        other_org = await create_organization(session)
-        a = await UserOrganization(
+        other_org = await create_organization(save_fixture)
+        user_organization = UserOrganization(
             user_id=user.id,
             organization_id=other_org.id,
             is_admin=True,
-        ).save(
-            session=session,
         )
+        await save_fixture(user_organization)
 
         await create_articles_subscription(
-            session, user=user, organization=organization, paid_subscriber=True
+            save_fixture, user=user, organization=organization, paid_subscriber=True
         )
 
         # then

@@ -6,6 +6,7 @@ from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.pledge.service import pledge
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -16,6 +17,7 @@ from polar.postgres import AsyncSession
 )
 async def test_pledge(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     test_amount: str,
     organization: Organization,
     repository: Repository,
@@ -23,21 +25,17 @@ async def test_pledge(
 ) -> None:
     email = "alice@polar.sh"
 
-    created = await Pledge(
+    created = Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
         email=email,
         amount=int(test_amount),
         fee=0,
-    ).save(
-        session,
     )
+    await save_fixture(created)
 
     assert created.id is not None
-
-    await session.commit()
-    await session.refresh(created)
 
     got = await pledge.get(session, created.id)
     assert got is not None

@@ -1,10 +1,10 @@
 from polar.enums import AccountType
 from polar.models import Account, User
-from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 async def create_account(
-    session: AsyncSession, *, admin: User, status: Account.Status
+    save_fixture: SaveFixture, *, admin: User, status: Account.Status
 ) -> Account:
     account = Account(
         account_type=AccountType.stripe,
@@ -16,7 +16,5 @@ async def create_account(
         is_charges_enabled=True,
         is_payouts_enabled=True,
     )
-    session.add(account)
-    await session.commit()
-    session.expunge_all()
+    await save_fixture(account)
     return account

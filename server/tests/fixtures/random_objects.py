@@ -8,11 +8,6 @@ from typing import Any
 import pytest_asyncio
 
 from polar.enums import AccountType, Platforms
-from polar.integrations.github.service import (
-    github_organization,
-    github_repository,
-)
-from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -36,8 +31,7 @@ from polar.models.subscription_benefit import (
 from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.user import OAuthAccount
-from polar.organization.schemas import OrganizationCreate
-from polar.repository.schemas import RepositoryCreate
+from tests.fixtures.database import SaveFixture
 
 
 def rstr(prefix: str) -> str:
@@ -45,17 +39,17 @@ def rstr(prefix: str) -> str:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def organization(session: AsyncSession) -> Organization:
-    return await create_organization(session)
+async def organization(save_fixture: SaveFixture) -> Organization:
+    return await create_organization(save_fixture)
 
 
 @pytest_asyncio.fixture(scope="function")
-async def second_organization(session: AsyncSession) -> Organization:
-    return await create_organization(session)
+async def second_organization(save_fixture: SaveFixture) -> Organization:
+    return await create_organization(save_fixture)
 
 
-async def create_organization(session: AsyncSession) -> Organization:
-    create_schema = OrganizationCreate(
+async def create_organization(save_fixture: SaveFixture) -> Organization:
+    organization = Organization(
         platform=Platforms.github,
         name=rstr("testorg"),
         external_id=secrets.randbelow(100000),
@@ -66,16 +60,13 @@ async def create_organization(session: AsyncSession) -> Organization:
         installation_updated_at=datetime.now(),
         installation_suspended_at=None,
     )
-
-    org = await github_organization.create(session, create_schema)
-    session.add(org)
-    await session.commit()
-    return org
+    await save_fixture(organization)
+    return organization
 
 
 @pytest_asyncio.fixture(scope="function")
-async def pledging_organization(session: AsyncSession) -> Organization:
-    create_schema = OrganizationCreate(
+async def pledging_organization(save_fixture: SaveFixture) -> Organization:
+    organization = Organization(
         platform=Platforms.github,
         name=rstr("pledging_org"),
         external_id=secrets.randbelow(100000),
@@ -86,52 +77,49 @@ async def pledging_organization(session: AsyncSession) -> Organization:
         installation_updated_at=datetime.now(),
         installation_suspended_at=None,
     )
-
-    org = await github_organization.create(session, create_schema)
-    session.add(org)
-    await session.commit()
-    return org
+    await save_fixture(organization)
+    return organization
 
 
 @pytest_asyncio.fixture(scope="function")
-async def repository(session: AsyncSession, organization: Organization) -> Repository:
-    return await create_repository(session, organization, is_private=True)
+async def repository(
+    save_fixture: SaveFixture, organization: Organization
+) -> Repository:
+    return await create_repository(save_fixture, organization, is_private=True)
 
 
 @pytest_asyncio.fixture(scope="function")
 async def public_repository(
-    session: AsyncSession, organization: Organization
+    save_fixture: SaveFixture, organization: Organization
 ) -> Repository:
-    return await create_repository(session, organization, is_private=False)
+    return await create_repository(save_fixture, organization, is_private=False)
 
 
 async def create_repository(
-    session: AsyncSession, organization: Organization, is_private: bool = True
+    save_fixture: SaveFixture, organization: Organization, is_private: bool = True
 ) -> Repository:
-    create_schema = RepositoryCreate(
+    repository = Repository(
         platform=Platforms.github,
         name=rstr("testrepo"),
         organization_id=organization.id,
         external_id=secrets.randbelow(100000),
         is_private=is_private,
     )
-    repo = await github_repository.create(session, create_schema)
-    session.add(repo)
-    await session.commit()
-    return repo
+    await save_fixture(repository)
+    return repository
 
 
 @pytest_asyncio.fixture(scope="function")
 async def issue(
-    session: AsyncSession, organization: Organization, repository: Repository
+    save_fixture: SaveFixture, organization: Organization, repository: Repository
 ) -> Issue:
-    return await create_issue(session, organization, repository)
+    return await create_issue(save_fixture, organization, repository)
 
 
 async def create_issue(
-    session: AsyncSession, organization: Organization, repository: Repository
+    save_fixture: SaveFixture, organization: Organization, repository: Repository
 ) -> Issue:
-    issue = await Issue(
+    issue = Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -145,71 +133,54 @@ async def create_issue(
         external_lookup_key=str(uuid.uuid4()),  # not realistic
         issue_has_in_progress_relationship=False,
         issue_has_pull_request_relationship=False,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
+    await save_fixture(issue)
     return issue
 
 
 @pytest_asyncio.fixture(scope="function")
-async def user_github_oauth(
-    session: AsyncSession,
-    user: User,
-) -> OAuthAccount:
-    a = await OAuthAccount(
+async def user_github_oauth(save_fixture: SaveFixture, user: User) -> OAuthAccount:
+    oauth_account = OAuthAccount(
         platform=Platforms.github,
         access_token="xxyyzz",
         account_id="xxyyzz",
         account_email="foo@bar.com",
         user_id=user.id,
-    ).save(session)
-
-    await session.commit()
-    return a
+    )
+    await save_fixture(oauth_account)
+    return oauth_account
 
 
 @pytest_asyncio.fixture(scope="function")
-async def user(
-    session: AsyncSession,
-) -> User:
-    return await create_user(session)
+async def user(save_fixture: SaveFixture) -> User:
+    return await create_user(save_fixture)
 
 
-async def create_user(
-    session: AsyncSession,
-) -> User:
-    user = await User(
+async def create_user(save_fixture: SaveFixture) -> User:
+    user = User(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-    ).save(session=session)
-
-    await session.commit()
+    )
+    await save_fixture(user)
     return user
 
 
 @pytest_asyncio.fixture(scope="function")
-async def user_second(
-    session: AsyncSession,
-) -> User:
-    user = await User(
+async def user_second(save_fixture: SaveFixture) -> User:
+    user = User(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-    ).save(
-        session=session,
     )
-
-    await session.commit()
+    await save_fixture(user)
     return user
 
 
 async def create_pledge(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -220,7 +191,7 @@ async def create_pledge(
 ) -> Pledge:
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
-    pledge = await Pledge(
+    pledge = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
@@ -231,37 +202,36 @@ async def create_pledge(
         state=state,
         type=type,
         invoice_id="INVOICE_ID" if type == PledgeType.pay_on_completion else None,
-    ).save(session=session)
-
-    await session.commit()
+    )
+    await save_fixture(pledge)
     return pledge
 
 
 @pytest_asyncio.fixture(scope="function")
 async def pledge(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
     pledging_organization: Organization,
 ) -> Pledge:
     return await create_pledge(
-        session, organization, repository, issue, pledging_organization
+        save_fixture, organization, repository, issue, pledging_organization
     )
 
 
 @pytest_asyncio.fixture(scope="function")
 async def pledge_by_user(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
     issue: Issue,
 ) -> Pledge:
-    user = await create_user(session)
+    user = await create_user(save_fixture)
 
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
-    pledge = await Pledge(
+    pledge = Pledge(
         id=uuid.uuid4(),
         issue_id=issue.id,
         repository_id=repository.id,
@@ -271,21 +241,18 @@ async def pledge_by_user(
         fee=fee,
         state=PledgeState.created,
         type=PledgeType.pay_upfront,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
+    await save_fixture(pledge)
     return pledge
 
 
 @pytest_asyncio.fixture(scope="function")
 async def pull_request(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     repository: Repository,
 ) -> PullRequest:
-    pr = await PullRequest(
+    pr = PullRequest(
         id=uuid.uuid4(),
         repository_id=repository.id,
         organization_id=organization.id,
@@ -315,68 +282,56 @@ async def pull_request(
         merged_at=None,
         merge_commit_sha=None,
         body="x",
-    ).save(
-        session=session,
     )
-
-    await session.commit()
+    await save_fixture(pr)
     return pr
 
 
 @pytest_asyncio.fixture(scope="function")
 async def user_organization(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    a = await UserOrganization(
+    user_organization = UserOrganization(
         user_id=user.id,
         organization_id=organization.id,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
-    return a
+    await save_fixture(user_organization)
+    return user_organization
 
 
 @pytest_asyncio.fixture(scope="function")
 async def user_organization_admin(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    a = await UserOrganization(
+    user_organization = UserOrganization(
         user_id=user.id,
         organization_id=organization.id,
         is_admin=True,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
-    return a
+    await save_fixture(user_organization)
+    return user_organization
 
 
 @pytest_asyncio.fixture(scope="function")
 async def user_organization_second(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     user_second: User,
 ) -> UserOrganization:
-    a = await UserOrganization(
+    user_organization = UserOrganization(
         user_id=user_second.id,
         organization_id=organization.id,
-    ).save(
-        session=session,
     )
-
-    await session.commit()
-    return a
+    await save_fixture(user_organization)
+    return user_organization
 
 
 @pytest_asyncio.fixture
-async def open_collective_account(session: AsyncSession, user: User) -> Account:
+async def open_collective_account(save_fixture: SaveFixture, user: User) -> Account:
     account = Account(
         account_type=AccountType.open_collective,
         admin_id=user.id,
@@ -388,13 +343,12 @@ async def open_collective_account(session: AsyncSession, user: User) -> Account:
         is_payouts_enabled=True,
         business_type="fiscal_host",
     )
-    await account.save(session)
-    await session.commit()
+    await save_fixture(account)
     return account
 
 
 async def create_subscription_tier(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     type: SubscriptionTierType = SubscriptionTierType.individual,
     organization: Organization | None = None,
@@ -419,13 +373,12 @@ async def create_subscription_tier(
         stripe_price_id=rstr("PRICE_ID"),
         subscription_tier_benefits=[],
     )
-    session.add(subscription_tier)
-    await session.commit()
+    await save_fixture(subscription_tier)
     return subscription_tier
 
 
 async def create_subscription_benefit(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     type: SubscriptionBenefitType = SubscriptionBenefitType.custom,
     is_tax_applicable: bool | None = None,
@@ -447,13 +400,12 @@ async def create_subscription_benefit(
         deletable=deletable,
         properties=properties,
     )
-    session.add(subscription_benefit)
-    await session.commit()
+    await save_fixture(subscription_benefit)
     return subscription_benefit
 
 
 async def add_subscription_benefits(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     subscription_tier: SubscriptionTier,
     subscription_benefits: list[SubscriptionBenefit],
@@ -467,13 +419,12 @@ async def add_subscription_benefits(
         )
 
         subscription_tier.subscription_tier_benefits.append(benefit)
-    session.add(subscription_tier)
-    await session.commit()
+    await save_fixture(subscription_tier)
     return subscription_tier
 
 
 async def create_subscription(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     subscription_tier: SubscriptionTier,
     user: User,
@@ -498,13 +449,12 @@ async def create_subscription(
         organization_id=organization.id if organization is not None else None,
         subscription_tier_id=subscription_tier.id,
     )
-    session.add(subscription)
-    await session.commit()
+    await save_fixture(subscription)
     return subscription
 
 
 async def create_active_subscription(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     *,
     subscription_tier: SubscriptionTier,
     user: User,
@@ -514,7 +464,7 @@ async def create_active_subscription(
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
 ) -> Subscription:
     return await create_subscription(
-        session,
+        save_fixture,
         subscription_tier=subscription_tier,
         user=user,
         organization=organization,
@@ -527,10 +477,10 @@ async def create_active_subscription(
 
 @pytest_asyncio.fixture
 async def subscription_tier_organization_free(
-    session: AsyncSession, organization: Organization
+    save_fixture: SaveFixture, organization: Organization
 ) -> SubscriptionTier:
     return await create_subscription_tier(
-        session,
+        save_fixture,
         type=SubscriptionTierType.free,
         price_amount=0,
         organization=organization,
@@ -539,31 +489,31 @@ async def subscription_tier_organization_free(
 
 @pytest_asyncio.fixture
 async def subscription_tier_organization(
-    session: AsyncSession, organization: Organization
+    save_fixture: SaveFixture, organization: Organization
 ) -> SubscriptionTier:
-    return await create_subscription_tier(session, organization=organization)
+    return await create_subscription_tier(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
 async def subscription_tier_organization_second(
-    session: AsyncSession, organization: Organization
+    save_fixture: SaveFixture, organization: Organization
 ) -> SubscriptionTier:
-    return await create_subscription_tier(session, organization=organization)
+    return await create_subscription_tier(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
 async def subscription_tier_repository(
-    session: AsyncSession, public_repository: Repository
+    save_fixture: SaveFixture, public_repository: Repository
 ) -> SubscriptionTier:
-    return await create_subscription_tier(session, repository=public_repository)
+    return await create_subscription_tier(save_fixture, repository=public_repository)
 
 
 @pytest_asyncio.fixture
 async def subscription_tier_private_repository(
-    session: AsyncSession, repository: Repository
+    save_fixture: SaveFixture, repository: Repository
 ) -> SubscriptionTier:
     return await create_subscription_tier(
-        session, type=SubscriptionTierType.business, repository=repository
+        save_fixture, type=SubscriptionTierType.business, repository=repository
     )
 
 
@@ -586,24 +536,24 @@ async def subscription_tiers(
 
 @pytest_asyncio.fixture
 async def subscription_benefit_organization(
-    session: AsyncSession, organization: Organization
+    save_fixture: SaveFixture, organization: Organization
 ) -> SubscriptionBenefit:
-    return await create_subscription_benefit(session, organization=organization)
+    return await create_subscription_benefit(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
 async def subscription_benefit_repository(
-    session: AsyncSession, public_repository: Repository
+    save_fixture: SaveFixture, public_repository: Repository
 ) -> SubscriptionBenefit:
-    return await create_subscription_benefit(session, repository=public_repository)
+    return await create_subscription_benefit(save_fixture, repository=public_repository)
 
 
 @pytest_asyncio.fixture
 async def subscription_benefit_private_repository(
-    session: AsyncSession, repository: Repository
+    save_fixture: SaveFixture, repository: Repository
 ) -> SubscriptionBenefit:
     return await create_subscription_benefit(
-        session, type=SubscriptionBenefitType.custom, repository=repository
+        save_fixture, type=SubscriptionBenefitType.custom, repository=repository
     )
 
 
@@ -622,7 +572,7 @@ async def subscription_benefits(
 
 @pytest_asyncio.fixture
 async def organization_account(
-    session: AsyncSession, organization: Organization, user: User
+    save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Account:
     account = Account(
         account_type=AccountType.stripe,
@@ -634,68 +584,67 @@ async def organization_account(
         is_payouts_enabled=True,
         stripe_id="STRIPE_ACCOUNT_ID",
     )
-    session.add(account)
+    await save_fixture(account)
     organization.account = account
-    session.add(organization)
-    await session.commit()
+    await save_fixture(organization)
     return account
 
 
 @pytest_asyncio.fixture
-async def organization_subscriber(session: AsyncSession) -> Organization:
-    return await create_organization(session)
+async def organization_subscriber(save_fixture: SaveFixture) -> Organization:
+    return await create_organization(save_fixture)
 
 
 @pytest_asyncio.fixture
 async def organization_subscriber_admin(
-    session: AsyncSession, organization_subscriber: Organization, user_second: User
+    save_fixture: SaveFixture, organization_subscriber: Organization, user_second: User
 ) -> User:
     user_organization = UserOrganization(
         user_id=user_second.id,
         organization_id=organization_subscriber.id,
         is_admin=True,
     )
-    session.add(user_organization)
-    await session.commit()
+    await save_fixture(user_organization)
     return user_second
 
 
 @pytest_asyncio.fixture
 async def organization_subscriber_members(
-    session: AsyncSession, organization_subscriber: Organization
+    save_fixture: SaveFixture, organization_subscriber: Organization
 ) -> list[User]:
     users: list[User] = []
     for _ in range(5):
-        user = await create_user(session)
+        user = await create_user(save_fixture)
         user_organization = UserOrganization(
             user_id=user.id,
             organization_id=organization_subscriber.id,
             is_admin=False,
         )
-        session.add(user_organization)
+        await save_fixture(user_organization)
         users.append(user)
-    await session.commit()
     return users
 
 
 @pytest_asyncio.fixture
 async def subscription(
-    session: AsyncSession, subscription_tier_organization: SubscriptionTier, user: User
+    save_fixture: SaveFixture,
+    subscription_tier_organization: SubscriptionTier,
+    user: User,
 ) -> Subscription:
     return await create_subscription(
-        session, subscription_tier=subscription_tier_organization, user=user
+        save_fixture, subscription_tier=subscription_tier_organization, user=user
     )
 
 
 @pytest_asyncio.fixture
 async def subscription_organization(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     subscription_tier_organization: SubscriptionTier,
     organization_subscriber: Organization,
     user_second: User,
 ) -> Subscription:
     return await create_subscription(
-        session,
+        save_fixture,
         subscription_tier=subscription_tier_organization,
         user=user_second,
         organization=organization_subscriber,
@@ -703,7 +652,7 @@ async def subscription_organization(
 
 
 async def create_subscription_benefit_grant(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     user: User,
     subscription: Subscription,
     subscription_benefit: SubscriptionBenefit,
@@ -713,25 +662,23 @@ async def create_subscription_benefit_grant(
         subscription_benefit=subscription_benefit,
         user=user,
     )
-    session.add(grant)
-    await session.commit()
+    await save_fixture(grant)
     return grant
 
 
 @pytest_asyncio.fixture(scope="function")
 async def article(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     organization: Organization,
     user: User,
 ) -> Article:
-    article = await Article(
+    article = Article(
         id=uuid.uuid4(),
         organization_id=organization.id,
         slug="test",
         title="test",
         body="test!",
         created_by=user.id,
-    ).save(session=session)
-
-    await session.commit()
+    )
+    await save_fixture(article)
     return article

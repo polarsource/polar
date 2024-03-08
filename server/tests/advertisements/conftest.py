@@ -1,16 +1,16 @@
 import pytest_asyncio
 
-from polar.kit.db.postgres import AsyncSession
 from polar.models import (
     Subscription,
     SubscriptionBenefit,
 )
 from polar.models.advertisement_campaign import AdvertisementCampaign
+from tests.fixtures.database import SaveFixture
 
 
 @pytest_asyncio.fixture
 async def advertisement_campaign(
-    session: AsyncSession,
+    save_fixture: SaveFixture,
     subscription: Subscription,
     subscription_benefit_organization: SubscriptionBenefit,
 ) -> AdvertisementCampaign:
@@ -21,6 +21,5 @@ async def advertisement_campaign(
         text="",
         link_url="https://example.com",
     )
-    session.add(ad)
-    await session.commit()
+    await save_fixture(ad)
     return ad

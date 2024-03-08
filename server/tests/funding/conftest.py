@@ -2,19 +2,19 @@ import pytest_asyncio
 
 from polar.models import Issue, Organization, Pledge, Repository
 from polar.models.pledge import PledgeState, PledgeType
-from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_issue, create_pledge
 
 IssuesPledgesFixture = list[tuple[Issue, list[Pledge]]]
 
 
 async def create_issues_pledges(
-    session: AsyncSession, organization: Organization, repository: Repository
+    save_fixture: SaveFixture, organization: Organization, repository: Repository
 ) -> IssuesPledgesFixture:
-    issue_1 = await create_issue(session, organization, repository)
+    issue_1 = await create_issue(save_fixture, organization, repository)
     issue_1_pledges = [
         await create_pledge(
-            session,
+            save_fixture,
             organization,
             repository,
             issue_1,
@@ -22,7 +22,7 @@ async def create_issues_pledges(
             type=PledgeType.pay_upfront,
         ),
         await create_pledge(
-            session,
+            save_fixture,
             organization,
             repository,
             issue_1,
@@ -30,7 +30,7 @@ async def create_issues_pledges(
             type=PledgeType.pay_upfront,
         ),
         await create_pledge(
-            session,
+            save_fixture,
             organization,
             repository,
             issue_1,
@@ -39,13 +39,13 @@ async def create_issues_pledges(
         ),
     ]
 
-    issue_2 = await create_issue(session, organization, repository)
+    issue_2 = await create_issue(save_fixture, organization, repository)
     issue_2_pledges: list[Pledge] = []
 
-    issue_3 = await create_issue(session, organization, repository)
+    issue_3 = await create_issue(save_fixture, organization, repository)
     issue_3_pledges: list[Pledge] = [
         await create_pledge(
-            session,
+            save_fixture,
             organization,
             repository,
             issue_3,
@@ -64,6 +64,6 @@ async def create_issues_pledges(
 
 @pytest_asyncio.fixture
 async def issues_pledges(
-    session: AsyncSession, organization: Organization, public_repository: Repository
+    save_fixture: SaveFixture, organization: Organization, public_repository: Repository
 ) -> IssuesPledgesFixture:
-    return await create_issues_pledges(session, organization, public_repository)
+    return await create_issues_pledges(save_fixture, organization, public_repository)

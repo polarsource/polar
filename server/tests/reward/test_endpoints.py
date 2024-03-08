@@ -16,11 +16,13 @@ from polar.models.user_organization import UserOrganization
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.reward.service import reward_service
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
 async def test_search(
     session: AsyncSession,
+    save_fixture: SaveFixture,
     pledge: Pledge,
     organization: Organization,
     user_organization: UserOrganization,
@@ -32,7 +34,7 @@ async def test_search(
     mocker.patch("polar.worker._enqueue_job")
 
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
@@ -40,7 +42,7 @@ async def test_search(
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
-    await got.save(session)
+    await save_fixture(got)
 
     account = Account(
         account_type=AccountType.stripe,
@@ -53,10 +55,7 @@ async def test_search(
         country="SE",
         currency="USD",
     )
-    session.add(account)
-    organization.account = account
-    session.add(organization)
-    await session.commit()
+    await save_fixture(account)
 
     # then
     session.expunge_all()

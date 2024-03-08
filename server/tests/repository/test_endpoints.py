@@ -5,7 +5,7 @@ from polar.config import settings
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
-from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -103,10 +103,10 @@ async def test_list_repositories_admin(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     client: AsyncClient,
-    session: AsyncSession,
+    save_fixture: SaveFixture,
 ) -> None:
     user_organization.is_admin = True
-    await user_organization.save(session)
+    await save_fixture(user_organization)
 
     response = await client.get(
         "/api/v1/repositories",

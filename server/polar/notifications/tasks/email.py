@@ -39,7 +39,7 @@ async def notifications_send(
 
             notification_type = notifications.parse_payload(notif)
 
-            (subject, body) = notification_type.render(user)
+            (subject, body) = notification_type.render()
             if not subject or not body:
                 log.error(
                     "notifications.send.could_not_render",

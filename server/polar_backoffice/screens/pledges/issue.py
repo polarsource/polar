@@ -59,7 +59,7 @@ class PledgeReward(Widget):
         if isinstance(rewarded, Organization):
             rewarded_name = rewarded.name
         elif isinstance(rewarded, User):
-            rewarded_name = rewarded.username
+            rewarded_name = rewarded.username_or_email
         self.rewarded_name = rewarded_name
 
         super().__init__(name=name, id=id, classes=classes, disabled=disabled)

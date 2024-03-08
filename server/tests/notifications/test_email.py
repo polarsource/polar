@@ -57,7 +57,7 @@ async def test_MaintainerPledgeCreatedNotification_no_stripe(
         pledge_type=PledgeType.pay_directly,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -77,7 +77,7 @@ async def test_MaintainerPledgeCreatedNotification_with_stripe(
         pledge_type=PledgeType.pay_directly,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -97,7 +97,7 @@ async def test_MaintainerPledgeCreatedNotification_anonymous(
         pledge_type=PledgeType.pay_directly,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -117,7 +117,7 @@ async def test_MaintainerPledgeCreatedNotification_pay_on_completion(
         pledge_type=PledgeType.pay_on_completion,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -136,7 +136,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_no_stripe(
         maintainer_has_stripe_account=False,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -155,7 +155,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_with_stripe(
         maintainer_has_stripe_account=True,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -175,7 +175,7 @@ async def test_MaintainerPledgePendingdNotification_no_stripe(
         pledge_id=None,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -195,7 +195,7 @@ async def test_MaintainerPledgePendingdNotification_with_stripe(
         pledge_id=None,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -215,7 +215,7 @@ async def test_PledgerPledgePendingNotification(
         pledge_type=PledgeType.pay_upfront,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -235,7 +235,7 @@ async def test_PledgerPledgePendingNotification_pay_on_completion(
         pledge_type=PledgeType.pay_on_completion,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -253,7 +253,7 @@ async def test_MaintainerPledgePaidNotification(
         pledge_id=None,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -272,7 +272,7 @@ async def test_RewardPaidNotification(
         issue_id=uuid.uuid4(),
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -291,7 +291,7 @@ async def test_MaintainerPledgedIssueConfirmationPendingNotification(
         maintainer_has_account=False,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -310,7 +310,7 @@ async def test_MaintainerPledgedIssueConfirmationPendingNotification_with_accoun
         maintainer_has_account=True,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -329,7 +329,7 @@ async def test_MaintainerPledgedIssuePendingNotification(
         maintainer_has_account=False,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -348,7 +348,7 @@ async def test_MaintainerPledgedIssuePendingNotification_with_account(
         maintainer_has_account=True,
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -369,7 +369,7 @@ async def test_TeamAdminMemberPledgedNotification(
         pledge_id=uuid.uuid4(),
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())
 
 
 @pytest.mark.asyncio
@@ -384,4 +384,4 @@ async def test_MaintainerNewPaidSubscriptionNotification(
         tier_organization_name="myorg",
     )
 
-    await check_diff(n.render(predictable_user))
+    await check_diff(n.render())

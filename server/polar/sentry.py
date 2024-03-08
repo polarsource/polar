@@ -138,7 +138,6 @@ async def set_sentry_user(
             {
                 "id": str(auth.user.id),
                 "email": auth.user.email,
-                "username": auth.user.username,
             }
         )
         sentry_sdk.set_tag(POSTHOG_ID_TAG, auth.user.posthog_distinct_id)

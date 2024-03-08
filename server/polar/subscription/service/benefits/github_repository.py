@@ -182,7 +182,7 @@ class SubscriptionBenefitGitHubRepositoryService(
         assert installation_id is not None
 
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
-        if oauth_account is None:
+        if oauth_account is None or oauth_account.account_username is None:
             raise
 
         client = github.get_app_installation_client(installation_id)
@@ -198,7 +198,7 @@ class SubscriptionBenefitGitHubRepositoryService(
         else:
             bound_logger.debug("Invitation not found, removing the user")
             revoke_request = client.rest.repos.async_remove_collaborator(
-                organization.name, repository.name, user.username
+                organization.name, repository.name, oauth_account.account_username
             )
 
         try:

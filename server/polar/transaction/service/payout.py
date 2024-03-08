@@ -179,7 +179,7 @@ class PayoutTransactionService(BaseTransactionService):
             transaction.incurred_transactions.append(incoming)
 
         session.add(transaction)
-        await session.commit()
+        await session.flush()
 
         return transaction
 
@@ -224,7 +224,7 @@ class PayoutTransactionService(BaseTransactionService):
             payout.payout_id = stripe_payout.id
 
             session.add(payout)
-            await session.commit()
+            await session.flush()
 
     async def create_payout_from_stripe(
         self,
@@ -297,7 +297,7 @@ class PayoutTransactionService(BaseTransactionService):
                     )
 
         session.add(transaction)
-        await session.commit()
+        await session.flush()
 
         return transaction
 

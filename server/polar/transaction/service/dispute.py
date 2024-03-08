@@ -96,7 +96,7 @@ class DisputeTransactionService(BaseTransactionService):
                 amount=balance_refund_amount,
             )
 
-        await session.commit()
+        await session.flush()
 
         return dispute_transaction
 
@@ -169,7 +169,7 @@ class DisputeTransactionService(BaseTransactionService):
                 issue_reward=outgoing.issue_reward,
             )
 
-        await session.commit()
+        await session.flush()
 
         return dispute_transaction
 

@@ -56,8 +56,6 @@ async def pledge_invoice_payment_fix(
             session = AsyncSession(
                 bind=connection,
                 expire_on_commit=False,
-                autocommit=False,
-                autoflush=False,
                 join_transaction_mode="create_savepoint",
             )
 

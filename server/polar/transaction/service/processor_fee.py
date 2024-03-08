@@ -71,7 +71,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
             session.add(payment_fee_transaction)
             fee_transactions.append(payment_fee_transaction)
 
-        await session.commit()
+        await session.flush()
 
         return fee_transactions
 
@@ -113,7 +113,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         session.add(refund_fee_transaction)
         fee_transactions.append(refund_fee_transaction)
 
-        await session.commit()
+        await session.flush()
 
         return fee_transactions
 
@@ -154,7 +154,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         session.add(dispute_fee_transaction)
         fee_transactions.append(dispute_fee_transaction)
 
-        await session.commit()
+        await session.flush()
 
         return fee_transactions
 
@@ -193,7 +193,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
             session.add(transaction)
             transactions.append(transaction)
 
-        await session.commit()
+        await session.flush()
 
         return transactions
 

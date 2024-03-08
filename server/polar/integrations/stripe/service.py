@@ -250,7 +250,7 @@ class StripeService:
             return self.get_customer(user.stripe_customer_id)
 
         customer = stripe_lib.Customer.create(
-            name=user.username,
+            name=user.username_or_email,
             email=user.email,
             metadata={
                 "user_id": str(user.id),

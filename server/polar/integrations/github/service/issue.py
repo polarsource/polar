@@ -321,8 +321,7 @@ class GithubIssueService(IssueService):
             if e.response.status_code == 404:
                 log.info("github.sync_issue.404.marking_as_crawled")
                 issue.github_issue_fetched_at = utc_now()
-                await issue.save(session)
-                return
+                session.add(issue)
             elif e.response.status_code == 410:  # 410 Gone, i.e. deleted
                 log.info("github.sync_issue.410.soft_deleting")
                 await self.soft_delete(session, issue.id)
@@ -377,7 +376,7 @@ class GithubIssueService(IssueService):
             # Save etag
             issue.github_issue_fetched_at = utc_now()
             issue.github_issue_etag = res.headers.get("etag", None)
-            await issue.save(session)
+            session.add(issue)
 
     async def list_issues_to_crawl_issue(
         self,

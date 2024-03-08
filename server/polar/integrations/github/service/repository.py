@@ -63,7 +63,7 @@ class GithubRepositoryService(RepositoryService):
             # un-delete if previously deleted
             if inst.deleted_at is not None:
                 inst.deleted_at = None
-                await inst.save(session, autocommit=False)
+                session.add(inst)
 
             instances.append(inst)
 
@@ -146,8 +146,8 @@ class GithubRepositoryService(RepositoryService):
                 "renaming previously deleted repository with the same name",
                 repository_id=same_name_repo.id,
             )
-            await same_name_repo.save(session, autocommit=False)
-            await session.commit()
+            session.add(same_name_repo)
+            await session.flush()
 
 
 github_repository = GithubRepositoryService(Repository)

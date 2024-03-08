@@ -229,7 +229,7 @@ class GitHubIssueReferencesService:
             except RequestFailed as e:
                 if e.response.status_code == 404:
                     issue.github_timeline_fetched_at = utils.utc_now()
-                    await issue.save(session)
+                    session.add(issue)
                     log.info("github.sync_issue_references.404.marking_as_crawled")
                     return
                 else:
@@ -250,7 +250,7 @@ class GitHubIssueReferencesService:
 
                 issue.github_timeline_fetched_at = utils.utc_now()
                 issue.github_timeline_etag = res.headers.get("etag", None)
-                await issue.save(session)
+                session.add(issue)
 
             try:
                 for event in res.parsed_data:

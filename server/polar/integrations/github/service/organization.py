@@ -222,7 +222,7 @@ class GithubOrganizationService(OrganizationService):
         org.status = Organization.Status.SUSPENDED
         org.installation_suspended_by = suspended_by
 
-        await org.save(session)
+        session.add(org)
 
         return True
 
@@ -240,7 +240,7 @@ class GithubOrganizationService(OrganizationService):
         org.status = Organization.Status.ACTIVE
         org.installation_suspended_by = None
 
-        await org.save(session)
+        session.add(org)
 
         return True
 
@@ -325,7 +325,7 @@ class GithubOrganizationService(OrganizationService):
         org.email = gh.email if gh.email else None
         org.twitter_username = gh.twitter_username if gh.twitter_username else None
 
-        await org.save(session=session)
+        session.add(org)
 
     async def _populate_github_user_metadata(
         self,
@@ -352,7 +352,7 @@ class GithubOrganizationService(OrganizationService):
         org.email = gh.email
         org.twitter_username = gh.twitter_username if gh.twitter_username else None
 
-        await org.save(session=session)
+        session.add(org)
 
     async def fetch_members(
         self,

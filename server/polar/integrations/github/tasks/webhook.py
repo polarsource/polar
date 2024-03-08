@@ -103,7 +103,7 @@ async def organization_updated(
         organization.name = event.organization.login
         organization.avatar_url = event.organization.avatar_url
 
-        await organization.save(session)
+        session.add(organization)
 
         return dict(success=True)
 
@@ -240,7 +240,7 @@ async def create_from_installation(
     )
     # Un-delete if previously deleted
     organization.deleted_at = None
-    await organization.save(session)
+    session.add(organization)
 
     if removed:
         await remove_repositories(session, removed)
@@ -427,7 +427,7 @@ async def repository_updated(
         repository.name = event.repository.name
         repository.is_archived = event.repository.archived
 
-        await repository.save(session)
+        session.add(repository)
 
         return dict(success=True)
 
@@ -449,7 +449,7 @@ async def repository_deleted(
         if not repository.deleted_at:
             repository.deleted_at = utc_now()
 
-        await repository.save(session)
+        session.add(repository)
 
         return dict(success=True)
 
@@ -490,7 +490,7 @@ async def repository_transferred(
         # GitHub triggers the `installation_repositories.removed` event
         # from the source installation, so make sure it's not deleted
         repository.deleted_at = None
-        await repository.save(session)
+        session.add(repository)
 
         return dict(success=True)
 

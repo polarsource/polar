@@ -203,6 +203,17 @@ async def update(
     if not await authz.can(auth.subject, AccessType.write, org):
         raise Unauthorized()
 
+    # validate featured organizations and featured projects
+    if update.profile_settings is not None:
+        if update.profile_settings.featured_organizations is not None:
+            for org_id in update.profile_settings.featured_organizations:
+                if not await organization.get(session, id=org_id):
+                    raise ResourceNotFound()
+        if update.profile_settings.featured_projects is not None:
+            for repo_id in update.profile_settings.featured_projects:
+                if not await repository_service.get(session, id=repo_id):
+                    raise ResourceNotFound()
+
     org = await organization.update_settings(session, org, update)
 
     return await to_schema(session, auth.subject, org)

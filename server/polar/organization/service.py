@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
-import json
 from uuid import UUID
 
 import structlog
@@ -221,7 +220,7 @@ class OrganizationService(
             organization.per_user_monthly_spending_limit = (
                 settings.per_user_monthly_spending_limit
             )
-        
+
         if settings.profile_settings is not None:
             organization.profile_settings = {
                 **organization.profile_settings,

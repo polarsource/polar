@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
 from pydantic import UUID4, Field
@@ -14,6 +14,7 @@ from polar.models.organization import Organization as OrganizationModel
 if TYPE_CHECKING:
     from polar.integrations.github import types
 
+
 class OrganizationProfileSettings(Schema):
     featured_projects: list[UUID4] | None = Field(
         description="A list of featured projects"
@@ -21,6 +22,7 @@ class OrganizationProfileSettings(Schema):
     featured_organizations: list[UUID4] | None = Field(
         description="A list of featured organizations"
     )
+
 
 # Public API
 class Organization(Schema):
@@ -120,7 +122,8 @@ class Organization(Schema):
 class OrganizationProfileSettingsUpdate(Schema):
     featured_projects: list[UUID4] | None = None
     featured_organizations: list[UUID4] | None = None
-    
+
+
 class OrganizationUpdate(Schema):
     set_default_upfront_split_to_contributors: bool | None = None
     default_upfront_split_to_contributors: int | None = Field(

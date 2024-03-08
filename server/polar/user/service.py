@@ -111,7 +111,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
             changed = True
 
         if changed:
-            await user.save(session)
+            session.add(user)
 
         return user
 

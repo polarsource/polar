@@ -22,7 +22,7 @@ import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 const ClientPage = ({
   organization,
@@ -43,9 +43,6 @@ const ClientPage = ({
   adminOrganizations: Organization[]
   issues: IssueFunding[]
 }) => {
-  const [featuredCreators, setFeaturedCreators] = useState(
-    featuredOrganizations,
-  )
   useTrafficRecordPageView({ organization })
 
   const isAdmin = useMemo(
@@ -68,19 +65,13 @@ const ClientPage = ({
 
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateFeaturedCreators = (
-    producer: (prev: Organization[]) => Organization[],
-  ) => {
-    const newCreators = producer(featuredCreators)
-
-    setFeaturedCreators(newCreators)
-
+  const updateFeaturedCreators = (organizations: Organization[]) => {
     updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
         settings: {
           profile_settings: {
-            featured_organizations: newCreators.map((c) => c.id),
+            featured_organizations: organizations.map((c) => c.id),
           },
         },
       })
@@ -203,7 +194,7 @@ const ClientPage = ({
       <CreatorsEditor
         organization={organization}
         featuredOrganizations={featuredOrganizations}
-        updateFeaturedCreators={updateFeaturedCreators}
+        onChange={updateFeaturedCreators}
         disabled={!isAdmin}
       />
 

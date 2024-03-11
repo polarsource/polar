@@ -25,18 +25,19 @@ import { CreatorsModal } from './CreatorsModal'
 export interface CreatorsEditorProps {
   organization: Organization
   featuredOrganizations: Organization[]
-  updateFeaturedCreators: (
-    producer: (prev: Organization[]) => Organization[],
-  ) => void
+  onChange: (organizations: Organization[]) => void
   disabled?: boolean
 }
 
 export const CreatorsEditor = ({
   organization,
   featuredOrganizations,
-  updateFeaturedCreators,
+  onChange,
   disabled,
 }: CreatorsEditorProps) => {
+  const [featuredCreators, setFeaturedCreators] = useState(
+    featuredOrganizations,
+  )
   const [activeId, setActiveId] = useState<string | number | null>(null)
   const { show, isShown, hide } = useModal()
   const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor))
@@ -64,6 +65,16 @@ export const CreatorsEditor = ({
     setActiveId(null)
   }
 
+  const updateFeaturedCreators = (
+    producer: (prev: Organization[]) => Organization[],
+  ) => {
+    const newCreators = producer(featuredCreators)
+
+    setFeaturedCreators(newCreators)
+
+    onChange(newCreators)
+  }
+
   const EditorEmptyState = () => {
     return (
       <div className="flex flex-col gap-y-8">
@@ -86,7 +97,7 @@ export const CreatorsEditor = ({
           hide={hide}
           modalContent={
             <CreatorsModal
-              creators={featuredOrganizations}
+              creators={featuredCreators}
               organization={organization}
               setCreators={updateFeaturedCreators}
               hideModal={hide}
@@ -97,11 +108,11 @@ export const CreatorsEditor = ({
     )
   }
 
-  if (featuredOrganizations.length === 0 && !disabled) {
+  if (featuredCreators.length === 0 && !disabled) {
     return <EditorEmptyState />
   }
 
-  return featuredOrganizations.length > 0 ? (
+  return featuredCreators.length > 0 ? (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
@@ -109,10 +120,7 @@ export const CreatorsEditor = ({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <SortableContext
-        items={featuredOrganizations}
-        strategy={rectSortingStrategy}
-      >
+      <SortableContext items={featuredCreators} strategy={rectSortingStrategy}>
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-col items-start gap-y-2 md:flex-row md:justify-between">
             <h3 className="text-lg">Featured Developers</h3>
@@ -127,7 +135,7 @@ export const CreatorsEditor = ({
             )}
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {featuredOrganizations.map((creator) => (
+            {featuredCreators.map((creator) => (
               <DraggableCreatorCard
                 key={creator.id}
                 organization={creator}
@@ -139,7 +147,7 @@ export const CreatorsEditor = ({
             {activeId ? (
               <CreatorCard
                 organization={
-                  featuredOrganizations.find(
+                  featuredCreators.find(
                     (c) => c.id === activeId,
                   ) as Organization
                 }
@@ -153,7 +161,7 @@ export const CreatorsEditor = ({
           hide={hide}
           modalContent={
             <CreatorsModal
-              creators={featuredOrganizations}
+              creators={featuredCreators}
               organization={organization}
               setCreators={updateFeaturedCreators}
               hideModal={hide}

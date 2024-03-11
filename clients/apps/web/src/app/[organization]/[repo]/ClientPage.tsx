@@ -16,7 +16,7 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { useUpdateProject } from 'polarkit/hooks'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 const ClientPage = ({
   organization,
@@ -31,10 +31,6 @@ const ClientPage = ({
   featuredOrganizations: Organization[]
   adminOrganizations: Organization[]
 }) => {
-  const [featuredCreators, setFeaturedCreators] = useState(
-    featuredOrganizations,
-  )
-
   const isAdmin = useMemo(
     () => adminOrganizations?.some((org) => org.id === organization.id),
     [organization, adminOrganizations],
@@ -44,19 +40,13 @@ const ClientPage = ({
 
   const updateProjectMutation = useUpdateProject()
 
-  const updateFeaturedCreators = (
-    producer: (prev: Organization[]) => Organization[],
-  ) => {
-    const newCreators = producer(featuredCreators)
-
-    setFeaturedCreators(newCreators)
-
+  const updateFeaturedCreators = (organizations: Organization[]) => {
     updateProjectMutation
       .mutateAsync({
         id: repository.id,
         repositoryUpdate: {
           profile_settings: {
-            featured_organizations: newCreators.map((c) => c.id),
+            featured_organizations: organizations.map((c) => c.id),
           },
         },
       })
@@ -128,7 +118,7 @@ const ClientPage = ({
         <CreatorsEditor
           organization={organization}
           featuredOrganizations={featuredOrganizations}
-          updateFeaturedCreators={updateFeaturedCreators}
+          onChange={updateFeaturedCreators}
           disabled={!isAdmin}
         />
 

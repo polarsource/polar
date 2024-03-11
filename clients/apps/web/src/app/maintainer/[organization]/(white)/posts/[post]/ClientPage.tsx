@@ -106,7 +106,11 @@ const ClientPage = () => {
         if (e.key === 'p') {
           e.preventDefault()
           captureEvent('posts:edit_cmd_p:view')
-          setTab('preview')
+          if (tab === 'preview') {
+            setTab('edit')
+          } else {
+            setTab('preview')
+          }
         }
       }
     }

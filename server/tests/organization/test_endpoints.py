@@ -416,7 +416,7 @@ async def test_update_organization_profile_settings(
         str(repository.id)
     ]
     assert (
-        response.json()["profile_settings"]["featured_organizations"] is not None
+        response.json()["profile_settings"]["featured_organizations"] is None
     )  # untouched
 
     response = await client.patch(

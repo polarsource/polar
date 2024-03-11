@@ -58,7 +58,7 @@ def session_commit_spy(
 
         polar_call: tuple[str, int] | None = None
         tests_call: tuple[str, int] | None = None
-        for outerframe in outerframes:
+        for outerframe in outerframes[::-1]:
             file = outerframe.filename
             if polar_directory in Path(file).parents:
                 polar_call = (file, outerframe.lineno)

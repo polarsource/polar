@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Self
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import UUID4, Field
 
 from polar.enums import Platforms
 from polar.integrations.github import types
@@ -10,6 +10,12 @@ from polar.kit.schemas import Schema
 from polar.models import Repository as RepositoryModel
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.visibility import Visibility
+
+
+class RepositoryProfileSettings(Schema):
+    featured_organizations: list[UUID4] | None = Field(
+        None, description="A list of featured organizations"
+    )
 
 
 class Repository(Schema):
@@ -22,10 +28,20 @@ class Repository(Schema):
     license: str | None = None
     homepage: str | None = None
 
+    profile_settings: RepositoryProfileSettings | None = Field(
+        description="Settings for the repository profile"
+    )
+
     organization: OrganizationSchema
 
     @classmethod
     def from_db(cls, r: RepositoryModel) -> Self:
+        profile_settings = RepositoryProfileSettings(
+            featured_organizations=r.profile_settings.get(
+                "featured_organizations", None
+            )
+        )
+
         return cls(
             id=r.id,
             platform=r.platform,
@@ -36,7 +52,16 @@ class Repository(Schema):
             license=r.license,
             homepage=r.homepage,
             organization=OrganizationSchema.from_db(r.organization),
+            profile_settings=profile_settings,
         )
+
+
+class RepositoryProfileSettingsUpdate(Schema):
+    featured_organizations: list[UUID4] | None = None
+
+
+class RepositoryUpdateProfile(Schema):
+    profile_settings: RepositoryProfileSettingsUpdate | None = None
 
 
 #

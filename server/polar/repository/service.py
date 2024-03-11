@@ -14,7 +14,7 @@ from polar.organization.schemas import RepositoryBadgeSettingsUpdate
 from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
 
-from .schemas import RepositoryCreate, RepositoryUpdate
+from .schemas import RepositoryCreate, RepositoryUpdate, RepositoryUpdateProfile
 
 log = structlog.get_logger()
 
@@ -179,6 +179,28 @@ class RepositoryService(
             )
 
         return settings
+
+    async def update_settings(
+        self,
+        session: AsyncSession,
+        repository: Repository,
+        settings: RepositoryUpdateProfile,
+    ) -> Repository:
+        if settings.profile_settings is not None:
+            repository.profile_settings = {
+                **repository.profile_settings,
+                **settings.profile_settings.model_dump(mode="json", exclude_unset=True),
+            }
+
+        updated = await repository.save(session)
+
+        log.info(
+            "repository.update_settings",
+            repository_id=repository.id,
+            settings=settings.model_dump(mode="json"),
+        )
+
+        return updated
 
     async def get_repositories_synced_count(
         self,

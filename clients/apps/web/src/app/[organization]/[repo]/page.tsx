@@ -7,9 +7,9 @@ import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
-  ListResourceRepository,
   Organization,
   Platforms,
+  Repository,
   ResponseError,
 } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
@@ -32,7 +32,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
   let organization: Organization | undefined
-  let repositories: ListResourceRepository | undefined
+  let repository: Repository | undefined
 
   const api = getServerSideAPI()
 
@@ -44,11 +44,11 @@ export async function generateMetadata(
       },
       cacheConfig,
     )
-
-    repositories = await api.repositories.search(
+    repository = await api.repositories.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
+        repositoryName: params.repo,
       },
       cacheConfig,
     )
@@ -58,27 +58,25 @@ export async function generateMetadata(
     }
   }
 
-  if (!organization || !repositories) {
+  if (!organization) {
     notFound()
   }
 
-  const repo = repositories.items?.find((r) => r.name === params.repo)
-
-  if (!repo) {
+  if (!repository) {
     notFound()
   }
 
-  const orgrepo = `${organization.name}/${repo.name}`
+  const orgrepo = `${organization.name}/${repository.name}`
 
   return {
     title: `${orgrepo}`, // " | Polar is added by the template"
-    description: repo.description || `${orgrepo} on Polar`,
+    description: repository.description || `${orgrepo} on Polar`,
     openGraph: {
       title: `${orgrepo} seeks funding for issues`,
       description: `${orgrepo} seeks funding for issues on Polar`,
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}&repo=${repo.name}`,
+          url: `https://polar.sh/og?org=${organization.name}&repo=${repository.name}`,
           width: 1200,
           height: 630,
         },
@@ -87,7 +85,7 @@ export async function generateMetadata(
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}&repo=${repo.name}`,
+          url: `https://polar.sh/og?org=${organization.name}&repo=${repository.name}`,
           width: 1200,
           height: 630,
           alt: `${orgrepo} seeks funding for issues`,
@@ -110,14 +108,21 @@ export default async function Page({
   const api = getServerSideAPI()
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  const [repository, issuesFunding] = await Promise.all([
+  const [repository, issuesFunding, adminOrganizations] = await Promise.all([
     api.repositories.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
         repositoryName: params.repo,
       },
-      cacheConfig,
+      {
+        ...cacheConfig,
+        next: {
+          ...cacheConfig.next,
+          // Make it possible to revalidate the page when the repository is updated from client
+          tags: [`repository:${params.organization}/${params.repo}`],
+        },
+      },
     ),
     api.funding.search(
       {
@@ -133,6 +138,17 @@ export default async function Page({
       },
       cacheConfig,
     ),
+    api.organizations
+      .list(
+        {
+          isAdminOnly: true,
+        },
+        cacheConfig,
+      )
+      .catch(() => {
+        // Handle unauthenticated
+        return undefined
+      }),
   ])
 
   if (repository === undefined) {
@@ -146,11 +162,27 @@ export default async function Page({
     subPath: `/${params.repo}`,
   })
 
+  let featuredOrganizations: Organization[] = []
+
+  try {
+    const loadFeaturedOrganizations = await Promise.all(
+      (repository.profile_settings.featured_organizations ?? []).map((id) =>
+        api.organizations.get({ id }, cacheConfig),
+      ),
+    )
+
+    featuredOrganizations = loadFeaturedOrganizations
+  } catch (err) {
+    notFound()
+  }
+
   return (
     <ClientPage
       organization={repository.organization}
       repository={repository}
       issuesFunding={issuesFunding}
+      featuredOrganizations={featuredOrganizations}
+      adminOrganizations={adminOrganizations?.items ?? []}
     />
   )
 }

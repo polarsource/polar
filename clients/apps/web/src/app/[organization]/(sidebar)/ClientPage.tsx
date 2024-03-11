@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
@@ -19,8 +20,9 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
+import { useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 const ClientPage = ({
   organization,
@@ -41,6 +43,9 @@ const ClientPage = ({
   adminOrganizations: Organization[]
   issues: IssueFunding[]
 }) => {
+  const [featuredCreators, setFeaturedCreators] = useState(
+    featuredOrganizations,
+  )
   useTrafficRecordPageView({ organization })
 
   const isAdmin = useMemo(
@@ -60,6 +65,27 @@ const ClientPage = ({
 
   const shouldRenderSubscriberCount =
     (subscriptionsSummary.items?.length ?? 0) > 0
+
+  const updateOrganizationMutation = useUpdateOrganization()
+
+  const updateFeaturedCreators = (
+    producer: (prev: Organization[]) => Organization[],
+  ) => {
+    const newCreators = producer(featuredCreators)
+
+    setFeaturedCreators(newCreators)
+
+    updateOrganizationMutation
+      .mutateAsync({
+        id: organization.id,
+        settings: {
+          profile_settings: {
+            featured_organizations: newCreators.map((c) => c.id),
+          },
+        },
+      })
+      .then(() => revalidate(`organization:${organization.name}`))
+  }
 
   return (
     <div className="flex w-full flex-col gap-y-24">
@@ -177,6 +203,7 @@ const ClientPage = ({
       <CreatorsEditor
         organization={organization}
         featuredOrganizations={featuredOrganizations}
+        updateFeaturedCreators={updateFeaturedCreators}
         disabled={!isAdmin}
       />
 

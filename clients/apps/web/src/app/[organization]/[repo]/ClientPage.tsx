@@ -1,6 +1,8 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
+import { CreatorsEditor } from '@/components/Profile/CreatorsEditor'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
@@ -11,19 +13,57 @@ import {
 import Link from 'next/link'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Separator } from 'polarkit/components/ui/separator'
+import { useUpdateProject } from 'polarkit/hooks'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
+import { useMemo, useState } from 'react'
 
 const ClientPage = ({
   organization,
   repository,
   issuesFunding,
+  featuredOrganizations,
+  adminOrganizations,
 }: {
   organization: Organization
   repository: Repository
   issuesFunding: ListResourceIssueFunding
+  featuredOrganizations: Organization[]
+  adminOrganizations: Organization[]
 }) => {
+  const [featuredCreators, setFeaturedCreators] = useState(
+    featuredOrganizations,
+  )
+
+  const isAdmin = useMemo(
+    () => adminOrganizations?.some((org) => org.id === organization.id),
+    [organization, adminOrganizations],
+  )
+
   useTrafficRecordPageView({ organization })
+
+  const updateProjectMutation = useUpdateProject()
+
+  const updateFeaturedCreators = (
+    producer: (prev: Organization[]) => Organization[],
+  ) => {
+    const newCreators = producer(featuredCreators)
+
+    setFeaturedCreators(newCreators)
+
+    updateProjectMutation
+      .mutateAsync({
+        id: repository.id,
+        repositoryUpdate: {
+          profile_settings: {
+            featured_organizations: newCreators.map((c) => c.id),
+          },
+        },
+      })
+      .then(() =>
+        revalidate(`repository:${organization.name}/${repository.name}`),
+      )
+  }
 
   return (
     <div className="flex w-full flex-col gap-y-12">
@@ -84,6 +124,13 @@ const ClientPage = ({
             )}
           </div>
         </div>
+
+        <CreatorsEditor
+          organization={organization}
+          featuredOrganizations={featuredOrganizations}
+          updateFeaturedCreators={updateFeaturedCreators}
+          disabled={!isAdmin}
+        />
 
         <ShadowBoxOnMd>
           <div className="p-4">

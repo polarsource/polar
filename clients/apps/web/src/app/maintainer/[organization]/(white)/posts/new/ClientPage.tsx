@@ -143,7 +143,6 @@ const ClientPage = () => {
           },
           isSubscriber: true,
           showPaywalledContent: true,
-          animation: false,
           showShare: false,
           hasPaidArticlesBenefit: true,
           isAuthor: true,

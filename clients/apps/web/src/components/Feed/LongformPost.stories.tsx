@@ -28,7 +28,6 @@ export const Default: Story = {
     showPaywalledContent: false,
     isSubscriber: false,
     hasPaidArticlesBenefit: true,
-    animation: false,
     showShare: false,
     paidArticlesBenefitName: 'ProTier200',
   },

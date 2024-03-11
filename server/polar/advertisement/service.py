@@ -47,7 +47,6 @@ class AdvertisementCampaignService:
             link_url=str(create.link_url),
         )
         session.add(campaign)
-        await session.commit()
         return campaign
 
     async def edit(
@@ -62,7 +61,7 @@ class AdvertisementCampaignService:
         )
         campaign.link_url = str(edit.link_url)
         campaign.text = edit.text
-        await session.commit()
+        session.add(campaign)
         return campaign
 
     async def track_view(
@@ -77,7 +76,6 @@ class AdvertisementCampaignService:
         )
 
         await session.execute(stmt)
-        await session.commit()
 
     async def delete(
         self,
@@ -85,7 +83,7 @@ class AdvertisementCampaignService:
         campaign: AdvertisementCampaign,
     ) -> AdvertisementCampaign:
         campaign.deleted_at = utc_now()
-        await session.commit()
+        session.add(campaign)
         return campaign
 
     async def search(

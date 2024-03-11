@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -13,6 +14,10 @@ from polar.tags.api import Tags
 
 from .schemas import (
     Repository as RepositorySchema,
+)
+from .schemas import (
+    RepositoryUpdate,
+    RepositoryUpdateProfile,
 )
 from .service import repository
 
@@ -173,3 +178,38 @@ async def get(
         status_code=404,
         detail="Repository not found",
     )
+
+
+@router.patch(
+    "/repositories/{id}",
+    response_model=RepositorySchema,
+    tags=[Tags.PUBLIC],
+    description="Update repository",
+    status_code=200,
+    summary="Update a repository (Public API)",
+    responses={404: {}},
+)
+async def update(
+    id: UUID,
+    update: RepositoryUpdateProfile,
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> RepositorySchema:
+    repo = await repository.get(session, id=id, load_organization=True)
+    if not repo:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, repo):
+        raise Unauthorized()
+
+    # validate featured organizations
+    if update.profile_settings is not None:
+        if update.profile_settings.featured_organizations is not None:
+            for org_id in update.profile_settings.featured_organizations:
+                if not await organization_service.get(session, id=org_id):
+                    raise ResourceNotFound()
+
+    repo = await repository.update_settings(session, repo, update)
+
+    return RepositorySchema.from_db(repo)

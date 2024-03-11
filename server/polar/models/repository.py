@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from citext import CIText
@@ -66,6 +67,10 @@ class Repository(RecordModel):
     )
     issues_references_synced_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
+    profile_settings: Mapped[dict[str, Any]] = mapped_column(
+        "profile_settings", JSONB, nullable=False, default=dict
     )
 
     # Automatically badge all new issues

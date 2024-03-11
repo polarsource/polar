@@ -16,7 +16,6 @@ import { useSubscriptionBenefits } from 'polarkit/hooks'
 import React, { PropsWithChildren, useContext, useState } from 'react'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
-import { StaggerReveal } from '../Shared/StaggerReveal'
 import LongformPost from './LongformPost'
 import { PublishSettings } from './Publishing/PublishSettings'
 import { PostToolbar } from './Toolbar/PostToolbar'
@@ -108,19 +107,16 @@ export const PostEditor = ({
                 />
               </TabsContent>
               <TabsContent value="preview">
-                <StaggerReveal className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 dark:ring-1 md:bg-white md:p-12 md:shadow-sm dark:md:border">
+                <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 dark:ring-1 md:bg-white md:p-12 md:shadow-sm dark:md:border">
                   <LongformPost
                     {...previewProps}
-                    animation={false}
-                    revealTransition={{ duration: 0 }}
-                    staggerTransition={{ staggerChildren: 0 }}
                     showPaywalledContent={previewAs === 'premium'}
                     isSubscriber={previewAs === 'premium'}
                     hasPaidArticlesBenefit={previewAs === 'premium'}
                     showShare={false}
                     isAuthor={true}
                   />
-                </StaggerReveal>
+                </div>
               </TabsContent>
               <TabsContent
                 value="settings"

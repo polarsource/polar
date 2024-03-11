@@ -1,6 +1,5 @@
 'use client'
 
-import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -14,36 +13,22 @@ import { RenderArticle } from './Markdown/markdown'
 import PostPaywall from './PostPaywall'
 import Share from './Posts/Share'
 
-const defaultStaggerTransition = {
-  staggerChildren: 0.2,
-}
-
-const defaultRevealTransition = {
-  duration: 1,
-}
-
 interface LongformPostProps {
   article: RenderArticle
-  staggerTransition?: typeof defaultStaggerTransition
-  revealTransition?: typeof defaultRevealTransition
   showPaywalledContent: boolean
   isSubscriber: boolean
   hasPaidArticlesBenefit: boolean
   paidArticlesBenefitName?: string
-  animation: boolean
   showShare: boolean
   isAuthor: boolean
 }
 
 export default function LongformPost({
   article,
-  staggerTransition,
-  revealTransition,
   showPaywalledContent,
   isSubscriber,
   hasPaidArticlesBenefit,
   paidArticlesBenefitName,
-  animation,
   showShare,
   isAuthor,
 }: LongformPostProps) {
@@ -58,22 +43,6 @@ export default function LongformPost({
     !hasPaidArticlesBenefit &&
     !showNonSubscriberUpsell &&
     !shouldRenderPaywall
-
-  staggerTransition = staggerTransition ?? defaultStaggerTransition
-  revealTransition = revealTransition ?? defaultRevealTransition
-
-  const noAnimationVariants = {
-    hidden: { opacity: 1 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0,
-      },
-    },
-  }
-
-  // Use downstream defaults if animation is enabled
-  const animationVariants = animation ? {} : noAnimationVariants
 
   const publishedDate = useMemo(
     () => (article.published_at ? new Date(article.published_at) : undefined),
@@ -98,44 +67,25 @@ export default function LongformPost({
   )
 
   return (
-    <StaggerReveal
-      as="article"
-      className="w-full max-w-2xl"
-      transition={staggerTransition}
-      variants={animationVariants}
-    >
+    <article className="w-full max-w-2xl">
       <header className="flex flex-col items-center gap-y-8 pb-4 md:pb-16 md:pt-4">
-        <StaggerReveal.Child
-          transition={revealTransition}
-          variants={animationVariants}
-          className="hidden md:flex"
-        >
+        <div className="hidden md:flex">
           <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
-        </StaggerReveal.Child>
-        <StaggerReveal.Child
-          transition={revealTransition}
-          variants={animationVariants}
-        >
+        </div>
+        <div>
           <time
             className="dark:text-polar-500 text-gray-500"
             dateTime={publishedDate?.toISOString()}
           >
             {publishedDateText}
           </time>
-        </StaggerReveal.Child>
-        <StaggerReveal.Child
-          transition={revealTransition}
-          variants={animationVariants}
-        >
+        </div>
+        <div>
           <h1 className="text-center text-2xl !font-semibold !leading-relaxed [text-wrap:balance] md:text-3xl lg:text-4xl">
             {article.title}
           </h1>
-        </StaggerReveal.Child>
-        <StaggerReveal.Child
-          transition={revealTransition}
-          variants={animationVariants}
-          className="flex flex-col items-center gap-1"
-        >
+        </div>
+        <div className="flex flex-col items-center gap-1">
           <div className="flex flex-row items-center gap-x-3">
             <Avatar
               className="h-8 w-8"
@@ -146,13 +96,10 @@ export default function LongformPost({
               {article.byline.name}
             </h3>
           </div>
-        </StaggerReveal.Child>
+        </div>
       </header>
 
-      <StaggerReveal.Child
-        transition={revealTransition}
-        variants={animationVariants}
-      >
+      <div>
         <div
           className={twMerge(
             'prose dark:prose-invert',
@@ -171,16 +118,13 @@ export default function LongformPost({
             paidArticlesBenefitName={paidArticlesBenefitName}
           />
         </div>
-      </StaggerReveal.Child>
+      </div>
 
       <footer>
         {shouldRenderPaywall && (
-          <StaggerReveal.Child
-            transition={revealTransition}
-            variants={animationVariants}
-          >
+          <div>
             <PostPaywall article={article} isSubscriber={isSubscriber} />
-          </StaggerReveal.Child>
+          </div>
         )}
 
         {showNonSubscriberUpsell ? (
@@ -193,7 +137,7 @@ export default function LongformPost({
 
         {showShare ? <Share className="my-8 flex" article={article} /> : null}
       </footer>
-    </StaggerReveal>
+    </article>
   )
 }
 

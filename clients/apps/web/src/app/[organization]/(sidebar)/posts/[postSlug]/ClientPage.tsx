@@ -82,7 +82,6 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
         isSubscriber={isSubscriber}
         hasPaidArticlesBenefit={hasPaidArticlesBenefit}
         showPaywalledContent={true} // Can safely be true. If the user doesn't have permissions to see the paywalled content it will already be stripped out.
-        animation={false}
         showShare={true}
         paidArticlesBenefitName={paidArticlesBenefit?.description}
         isAuthor={isAuthor}

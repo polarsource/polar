@@ -25,11 +25,19 @@ const ClientPage = () => {
   )
   const [animateSaveBanner, setAnimateSaveBanner] = useState(false)
   const [tab, setTab] = useState(
-    window && window.location.hash === '#settings' ? 'settings' : 'edit',
+    typeof window !== 'undefined' &&
+      window &&
+      window.location.hash === '#settings'
+      ? 'settings'
+      : 'edit',
   )
 
   useEffect(() => {
-    if (window && window.location.hash === '#settings') {
+    if (
+      typeof window !== 'undefined' &&
+      window &&
+      window.location.hash === '#settings'
+    ) {
       setTab('settings')
     }
   }, [params])

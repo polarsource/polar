@@ -432,14 +432,22 @@ class PayoutTransactionService(BaseTransactionService):
         # Make individual transfers with the payment transaction as source
         assert account.stripe_id is not None
         for source_transaction, amount, balance_transaction in transfers:
-            stripe_transfer = stripe_service.transfer(
-                account.stripe_id,
-                amount,
-                source_transaction=source_transaction,
-                transfer_group=transfer_group,
-                metadata={"payout_transaction_id": str(transaction.id)},
-            )
-            balance_transaction.transfer_id = stripe_transfer.id
+            if balance_transaction.transfer_id is None:
+                stripe_transfer = stripe_service.transfer(
+                    account.stripe_id,
+                    amount,
+                    source_transaction=source_transaction,
+                    transfer_group=transfer_group,
+                    metadata={"payout_transaction_id": str(transaction.id)},
+                )
+                balance_transaction.transfer_id = stripe_transfer.id
+            # Case where the transfer has already been made
+            # Legacy behavior from the time when we automatically
+            # transferred each balance
+            else:
+                stripe_transfer = stripe_service.get_transfer(
+                    balance_transaction.transfer_id
+                )
 
             # Different source and destination currencies: get the converted amount
             if transaction.currency != transaction.account_currency:

@@ -238,6 +238,9 @@ class StripeService:
         }
         return stripe_lib.Transfer.create_reversal(transfer_id, **create_params)
 
+    def get_transfer(self, id: str) -> stripe_lib.Transfer:
+        return stripe_lib.Transfer.retrieve(id)
+
     def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return stripe_lib.Customer.retrieve(customer_id)
 

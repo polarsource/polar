@@ -102,7 +102,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         user.email_verified = True
         session.add(user)
 
-        await magic_link.delete(session)
+        await session.delete(magic_link)
 
         return user
 

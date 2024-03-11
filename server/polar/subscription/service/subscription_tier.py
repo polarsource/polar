@@ -292,9 +292,13 @@ class SubscriptionTierService(
                 repository_id=subscription_tier.repository_id,
             )
 
-        return await subscription_tier.update(
-            session, **update_schema.model_dump(exclude_unset=True, exclude_none=True)
-        )
+        for attr, value in update_schema.model_dump(
+            exclude_unset=True, exclude_none=True
+        ).items():
+            setattr(subscription_tier, attr, value)
+
+        session.add(subscription_tier)
+        return subscription_tier
 
     async def create_free(
         self,
@@ -419,7 +423,9 @@ class SubscriptionTierService(
         if subscription_tier.stripe_product_id is not None:
             stripe_service.archive_product(subscription_tier.stripe_product_id)
 
-        return await subscription_tier.update(session, is_archived=True)
+        subscription_tier.is_archived = True
+        session.add(subscription_tier)
+        return subscription_tier
 
     async def with_organization_or_repository(
         self, session: AsyncSession, subscription_tier: SubscriptionTier

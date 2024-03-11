@@ -143,21 +143,3 @@ class ResourceService(
             autocommit=autocommit,
         )
         return upserted[0]
-
-    async def update(
-        self,
-        session: AsyncSession,
-        source: ModelType,
-        update_schema: UpdateSchemaType,
-        include: set[str] | None = None,
-        exclude: set[str] | None = None,
-        exclude_unset: bool = False,
-        autocommit: bool = True,
-    ) -> ModelType:
-        return await source.update(
-            session,
-            autocommit=autocommit,
-            **update_schema.model_dump(
-                include=include, exclude=exclude, exclude_unset=exclude_unset
-            ),
-        )

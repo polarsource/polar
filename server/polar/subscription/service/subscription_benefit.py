@@ -230,15 +230,15 @@ class SubscriptionBenefitService(
 
         previous_properties = subscription_benefit.properties
 
-        updated_subscription_benefit = await subscription_benefit.update(
-            session, **update_dict
-        )
+        for key, value in update_dict.items():
+            setattr(subscription_benefit, key, value)
+        session.add(subscription_benefit)
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
-            session, updated_subscription_benefit, previous_properties
+            session, subscription_benefit, previous_properties
         )
 
-        return updated_subscription_benefit
+        return subscription_benefit
 
     async def user_delete(
         self,

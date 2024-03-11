@@ -4,7 +4,6 @@ import { PostEditor } from '@/components/Feed/PostEditor'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { captureEvent } from '@/utils/posthog'
-import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
@@ -15,9 +14,10 @@ const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
   const [tab, setTab] = useState('edit')
 
-  const [article, setArticle] = useState<
-    Omit<ArticleCreate, 'organization_id'>
-  >({
+  const [localArticle, setLocalArticle] = useState<{
+    title: string
+    body: string
+  }>({
     title: '',
     body: '',
   })
@@ -25,7 +25,7 @@ const ClientPage = () => {
   const router = useRouter()
   const create = useCreateArticle()
 
-  const canCreate = org && article.title.length > 0
+  const canCreate = org && localArticle.title.length > 0
 
   const handleContinue = async () => {
     if (!canCreate) {
@@ -33,7 +33,7 @@ const ClientPage = () => {
     }
 
     const created = await create.mutateAsync({
-      ...article,
+      ...localArticle,
       organization_id: org.id,
     })
 
@@ -76,7 +76,7 @@ const ClientPage = () => {
       captureEvent('posts:create_publish_tab:create')
 
       const created = await create.mutateAsync({
-        ...article,
+        ...localArticle,
         organization_id: org.id,
       })
 
@@ -102,7 +102,7 @@ const ClientPage = () => {
             captureEvent('posts:create_save_button:create')
             handleContinue()
           }}
-          disabled={article.title.length < 1}
+          disabled={localArticle.title.length < 1}
           loading={create.isPending}
         >
           Save
@@ -111,13 +111,13 @@ const ClientPage = () => {
       <PostEditor
         disabled={create.isPending}
         canCreate={canCreate}
-        title={article.title}
-        body={article.body}
-        onTitleChange={(title) => setArticle((a) => ({ ...a, title }))}
-        onBodyChange={(body) => setArticle((a) => ({ ...a, body }))}
+        title={localArticle.title}
+        body={localArticle.body}
+        onTitleChange={(title) => setLocalArticle((a) => ({ ...a, title }))}
+        onBodyChange={(body) => setLocalArticle((a) => ({ ...a, body }))}
         previewProps={{
           article: {
-            ...article,
+            ...localArticle,
             organization: org,
             byline: org,
             slug: 'preview',

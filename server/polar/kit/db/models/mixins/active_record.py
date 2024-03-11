@@ -11,18 +11,6 @@ from polar.postgres import AsyncSession
 class ActiveRecordMixin:
     __table__: ClassVar[FromClause]
 
-    @classmethod
-    async def create(
-        cls,
-        session: AsyncSession,
-        autocommit: bool = True,
-        **values: Any,
-    ) -> Self:
-        instance = cls()
-        instance.fill(**values)
-
-        return await instance.save(session, autocommit=autocommit)
-
     def fill(self, **values: Any) -> Self:
         for col, value in values.items():
             if not hasattr(self, col):

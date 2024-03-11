@@ -83,6 +83,7 @@ export const repo: Repository = {
   homepage: 'https://docs.pydantic.dev/latest/',
   organization: org,
   stars: 26000,
+  profile_settings: {},
 }
 
 export const reactions: Reactions = {

@@ -206,7 +206,7 @@ class PaymentIntentService:
             else PledgeState.initiated
         )
 
-        pledge = await Pledge.create(
+        pledge = Pledge(
             session=session,
             payment_id=payment_intent_id,
             issue_id=issue.id,
@@ -221,6 +221,8 @@ class PaymentIntentService:
             by_organization_id=None,
             on_behalf_of_organization_id=metadata.on_behalf_of_organization_id,
         )
+        session.add(pledge)
+        await session.commit()
 
         if state == PledgeState.created:
             await pledge_created.call(PledgeHook(session, pledge))

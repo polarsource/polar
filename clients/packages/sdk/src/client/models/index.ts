@@ -5587,6 +5587,12 @@ export interface Repository {
     homepage?: string;
     /**
      * 
+     * @type {RepositoryProfileSettings}
+     * @memberof Repository
+     */
+    profile_settings: RepositoryProfileSettings;
+    /**
+     * 
      * @type {Organization}
      * @memberof Repository
      */
@@ -5695,6 +5701,45 @@ export interface RepositoryBadgeSettingsUpdate {
      * @memberof RepositoryBadgeSettingsUpdate
      */
     retroactive: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface RepositoryProfileSettings
+ */
+export interface RepositoryProfileSettings {
+    /**
+     * A list of featured organizations
+     * @type {Array<string>}
+     * @memberof RepositoryProfileSettings
+     */
+    featured_organizations?: Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface RepositoryProfileSettingsUpdate
+ */
+export interface RepositoryProfileSettingsUpdate {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof RepositoryProfileSettingsUpdate
+     */
+    featured_organizations?: Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface RepositoryUpdate
+ */
+export interface RepositoryUpdate {
+    /**
+     * 
+     * @type {RepositoryProfileSettingsUpdate}
+     * @memberof RepositoryUpdate
+     */
+    profile_settings?: RepositoryProfileSettingsUpdate;
 }
 /**
  * @type ResponseSubscriptionsCreateSubscriptionBenefit

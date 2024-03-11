@@ -19,6 +19,7 @@ import type {
   ListResourceRepository,
   Platforms,
   Repository,
+  RepositoryUpdate,
 } from '../models/index';
 
 export interface RepositoriesApiGetRequest {
@@ -35,6 +36,11 @@ export interface RepositoriesApiSearchRequest {
     platform: Platforms;
     organizationName: string;
     repositoryName?: string;
+}
+
+export interface RepositoriesApiUpdateRequest {
+    id: string;
+    repositoryUpdate: RepositoryUpdate;
 }
 
 /**
@@ -231,6 +237,53 @@ export class RepositoriesApi extends runtime.BaseAPI {
      */
     async search(requestParameters: RepositoriesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceRepository> {
         const response = await this.searchRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update repository
+     * Update a repository (Public API)
+     */
+    async updateRaw(requestParameters: RepositoriesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        }
+
+        if (requestParameters.repositoryUpdate === null || requestParameters.repositoryUpdate === undefined) {
+            throw new runtime.RequiredError('repositoryUpdate','Required parameter requestParameters.repositoryUpdate was null or undefined when calling update.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.repositoryUpdate,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update repository
+     * Update a repository (Public API)
+     */
+    async update(requestParameters: RepositoriesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Repository> {
+        const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

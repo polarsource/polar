@@ -1,13 +1,17 @@
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unauthorized
 from polar.integrations.github.client import NotFound
 from polar.kit.pagination import ListResource, Pagination
+from polar.kit.routing import APIRouter
+from polar.models.advertisement_campaign import (
+    AdvertisementCampaign as AdvertisementCampaignModel,
+)
 from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
@@ -166,7 +170,7 @@ async def create_campaign(
     create: CreateAdvertisementCampaign,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> AdvertisementCampaign:
+) -> AdvertisementCampaignModel:
     grant = await _get_grant(
         session, auth.user, create.subscription_id, create.subscription_benefit_id
     )
@@ -174,7 +178,7 @@ async def create_campaign(
         raise NotPermitted("This benefit does not exist or has been revoked")
 
     created = await advertisement_campaign_service.create(session, create)
-    return AdvertisementCampaign.model_validate(created)
+    return created
 
 
 @router.get(
@@ -187,7 +191,7 @@ async def get_campaign(
     id: UUID,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> AdvertisementCampaign:
+) -> AdvertisementCampaignModel:
     ad = await advertisement_campaign_service.get(session, id)
     if not ad:
         raise ResourceNotFound()
@@ -198,7 +202,7 @@ async def get_campaign(
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")
 
-    return AdvertisementCampaign.model_validate(ad)
+    return ad
 
 
 @router.post(
@@ -210,14 +214,14 @@ async def get_campaign(
 async def track_view(
     id: UUID,
     session: AsyncSession = Depends(get_db_session),
-) -> AdvertisementCampaignPublic:
+) -> AdvertisementCampaignModel:
     ad = await advertisement_campaign_service.get(session, id)
     if not ad:
         raise ResourceNotFound()
 
     await advertisement_campaign_service.track_view(session, ad)
 
-    return AdvertisementCampaignPublic.model_validate(ad)
+    return ad
 
 
 @router.post(
@@ -231,7 +235,7 @@ async def edit_campaign(
     campaign: EditAdvertisementCampaign,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> AdvertisementCampaign:
+) -> AdvertisementCampaignModel:
     ad = await advertisement_campaign_service.get(session, id)
     if not ad:
         raise ResourceNotFound()
@@ -243,7 +247,7 @@ async def edit_campaign(
         raise NotPermitted("This benefit does not exist or has been revoked")
 
     edited = await advertisement_campaign_service.edit(session, ad, campaign)
-    return AdvertisementCampaign.model_validate(edited)
+    return edited
 
 
 @router.delete(
@@ -256,7 +260,7 @@ async def delete_campaign(
     id: UUID,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> AdvertisementCampaign:
+) -> AdvertisementCampaignModel:
     ad = await advertisement_campaign_service.get(session, id)
     if not ad:
         raise ResourceNotFound()
@@ -285,4 +289,4 @@ async def delete_campaign(
 
     await advertisement_campaign_service.delete(session, ad)
 
-    return AdvertisementCampaign.model_validate(ad)
+    return ad

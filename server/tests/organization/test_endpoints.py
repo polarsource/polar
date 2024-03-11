@@ -383,6 +383,7 @@ async def test_list_members_not_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_update_organization_profile_settings(
     organization: Organization,
     auth_jwt: str,
@@ -398,9 +399,20 @@ async def test_update_organization_profile_settings(
     # then
     session.expunge_all()
 
+    # default
+    response = await client.get(
+        f"/api/v1/organizations/{organization.id}",
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"] == {
+        "featured_projects": None,
+        "featured_organizations": None,
+    }
+
+    # set featured_projects
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         json={
             "profile_settings": {
                 "featured_projects": [
@@ -419,9 +431,9 @@ async def test_update_organization_profile_settings(
         response.json()["profile_settings"]["featured_organizations"] is None
     )  # untouched
 
+    # set featured_organizations
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         json={
             "profile_settings": {
                 "featured_organizations": [
@@ -439,3 +451,103 @@ async def test_update_organization_profile_settings(
     assert response.json()["profile_settings"]["featured_organizations"] == [
         str(organization.id)
     ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_update_organization_profile_settings_featured_projects(
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    repository: Repository,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    # set featured_projects
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "featured_projects": [
+                    str(repository.id),
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["featured_projects"] == [
+        str(repository.id)
+    ]
+
+    # unset featured_projects
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "featured_projects": [],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["featured_projects"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_update_organization_profile_settings_featured_organizations(
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    repository: Repository,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    # set featured_projects
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "featured_organizations": [
+                    str(organization.id),
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["featured_organizations"] == [
+        str(organization.id)
+    ]
+
+    # unset featured_projects
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "featured_organizations": [],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["featured_organizations"] == []

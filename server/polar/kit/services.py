@@ -58,16 +58,6 @@ class ResourceService(
     # no state to retain. Unable to achieve this with mapping the model
     # and schema as class attributes though without breaking typing.
 
-    async def create(
-        self,
-        session: AsyncSession,
-        create_schema: CreateSchemaType,
-    ) -> ModelType:
-        model = self.model(**create_schema.model_dump())
-        session.add(model)
-        await session.flush()
-        return model
-
     # TODO: Investigate new bulk methods in SQLALchemy 2.0 for upsert_many
     async def upsert_many(
         self,

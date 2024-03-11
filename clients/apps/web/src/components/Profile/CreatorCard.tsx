@@ -35,7 +35,7 @@ export const CreatorCard = ({
           : {}
       }
       className={twMerge(
-        'dark:text-polar-500 dark:hover:text-polar-300 transition-color dark:hover:bg-polar-800 flex h-full flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
+        'dark:text-polar-500 dark:hover:text-polar-300 transition-color dark:hover:bg-polar-800 flex flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
         sortable?.isDragging && 'opacity-30',
       )}
     >

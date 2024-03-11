@@ -7,8 +7,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import generate_uuid, utc_now
 
-from .mixins import ActiveRecordMixin, SerializeMixin
-
 my_metadata = MetaData(
     naming_convention={
         "ix": "ix_%(column_0_N_label)s",
@@ -20,7 +18,7 @@ my_metadata = MetaData(
 )
 
 
-class Model(DeclarativeBase, ActiveRecordMixin, SerializeMixin):
+class Model(DeclarativeBase):
     __abstract__ = True
 
     metadata = my_metadata

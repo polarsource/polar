@@ -60,7 +60,7 @@ class RepositoryProfileSettingsUpdate(Schema):
     featured_organizations: list[UUID4] | None = None
 
 
-class RepositoryUpdateProfile(Schema):
+class RepositoryUpdate(Schema):
     profile_settings: RepositoryProfileSettingsUpdate | None = None
 
 
@@ -152,7 +152,7 @@ class RepositoryCreate(Schema):
         )
 
 
-class RepositoryUpdate(RepositoryCreate):
+class RepositoryGitHubUpdate(RepositoryCreate):
     ...
 
 

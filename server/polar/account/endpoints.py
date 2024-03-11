@@ -1,12 +1,13 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.routing import APIRouter
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
@@ -117,4 +118,5 @@ async def create(
         session, admin=auth.user, account_create=account_create
     )
 
+    await session.flush()
     return Account.from_db(created)

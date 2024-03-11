@@ -163,21 +163,22 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return "·".join(associations)
 
     async def _create_stripe_account(
-        self, session: AsyncSession, admin_id: UUID, account: AccountCreate
+        self, session: AsyncSession, admin_id: UUID, account_create: AccountCreate
     ) -> Account:
         try:
-            stripe_account = stripe.create_account(account, name=None)  # TODO: name
+            stripe_account = stripe.create_account(
+                account_create, name=None
+            )  # TODO: name
         except stripe_lib_error.StripeError as e:
             if e.user_message:
                 raise AccountServiceError(e.user_message) from e
             else:
                 raise AccountServiceError("An unexpected Stripe error happened") from e
 
-        return await Account.create(
-            session=session,
+        account = Account(
             status=Account.Status.ONBOARDING_STARTED,
             admin_id=admin_id,
-            account_type=account.account_type,
+            account_type=account_create.account_type,
             stripe_id=stripe_account.id,
             email=stripe_account.email,
             country=stripe_account.country,
@@ -190,14 +191,16 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             users=[],
             organizations=[],
         )
+        session.add(account)
+        return account
 
     async def _create_open_collective_account(
-        self, session: AsyncSession, admin_id: UUID, account: AccountCreate
+        self, session: AsyncSession, admin_id: UUID, account_create: AccountCreate
     ) -> Account:
-        assert account.open_collective_slug is not None
+        assert account_create.open_collective_slug is not None
         try:
             collective = await open_collective.get_collective(
-                account.open_collective_slug
+                account_create.open_collective_slug
             )
         except OpenCollectiveAPIError as e:
             raise AccountServiceError(e.message) from e
@@ -210,14 +213,13 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 "You can use Stripe instead."
             )
 
-        return await Account.create(
-            session=session,
+        account = Account(
             status=Account.Status.UNREVIEWED,
             admin_id=admin_id,
-            account_type=account.account_type,
-            open_collective_slug=account.open_collective_slug,
+            account_type=account_create.account_type,
+            open_collective_slug=account_create.open_collective_slug,
             email=None,
-            country=account.country,
+            country=account_create.country,
             users=[],
             organizations=[],
             # For now, hard-code those values
@@ -228,6 +230,8 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             business_type="fiscal_host",
             data={},
         )
+        session.add(account)
+        return account
 
     async def update_account_from_stripe(
         self, session: AsyncSession, *, stripe_account: stripe_lib.Account

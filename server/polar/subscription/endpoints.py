@@ -3,7 +3,7 @@ from datetime import date
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Body, Depends, Query, Response, UploadFile
+from fastapi import Body, Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
@@ -13,6 +13,7 @@ from polar.enums import UserSignupType
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
+from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Repository, Subscription, SubscriptionBenefit, SubscriptionTier
 from polar.models.organization import Organization

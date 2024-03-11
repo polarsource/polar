@@ -525,8 +525,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         start = utc_now()
-        subscription = await self.model.create(
-            session,
+        subscription = Subscription(
             status=SubscriptionStatus.active,
             current_period_start=start,
             cancel_at_period_end=False,
@@ -537,6 +536,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             organization=None,
             subscription_tier=subscription_tier,
         )
+        session.add(subscription)
+        await session.commit()
 
         await enqueue_job(
             "subscription.subscription.enqueue_benefits_grants", subscription.id

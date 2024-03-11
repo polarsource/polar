@@ -177,8 +177,7 @@ class SubscriptionBenefitService(
         except SubscriptionBenefitPropertiesValidationError as e:
             raise e.to_request_validation_error(("body", create_schema.type))
 
-        return await self.model.create(
-            session,
+        subscription_benefit = SubscriptionBenefit(
             organization=organization,
             repository=repository,
             is_tax_applicable=is_tax_applicable,
@@ -193,6 +192,10 @@ class SubscriptionBenefitService(
                 },
             ),
         )
+        session.add(subscription_benefit)
+        await session.flush()
+
+        return subscription_benefit
 
     async def user_update(
         self,

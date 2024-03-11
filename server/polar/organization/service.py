@@ -67,6 +67,22 @@ class OrganizationService(
         await session.flush()
         return organization
 
+    async def update(
+        self,
+        session: AsyncSession,
+        source: Organization,
+        update_schema: OrganizationGitHubUpdate,
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        exclude_unset: bool = False,
+    ) -> Organization:
+        for k, v in update_schema.model_dump(
+            include=include, exclude=exclude, exclude_unset=exclude_unset
+        ).items():
+            setattr(source, k, v)
+        session.add(source)
+        return source
+
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(
             Organization.deleted_at.is_(None),

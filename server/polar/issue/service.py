@@ -75,6 +75,22 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         await session.flush()
         return issue
 
+    async def update(
+        self,
+        session: AsyncSession,
+        source: Issue,
+        update_schema: IssueUpdate,
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        exclude_unset: bool = False,
+    ) -> Issue:
+        for k, v in update_schema.model_dump(
+            include=include, exclude=exclude, exclude_unset=exclude_unset
+        ).items():
+            setattr(source, k, v)
+        session.add(source)
+        return source
+
     async def get_loaded(
         self,
         session: AsyncSession,

@@ -60,6 +60,22 @@ class RepositoryService(
         await session.flush()
         return repository
 
+    async def update(
+        self,
+        session: AsyncSession,
+        source: Repository,
+        update_schema: RepositoryGitHubUpdate,
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        exclude_unset: bool = False,
+    ) -> Repository:
+        for k, v in update_schema.model_dump(
+            include=include, exclude=exclude, exclude_unset=exclude_unset
+        ).items():
+            setattr(source, k, v)
+        session.add(source)
+        return source
+
     async def get(
         self,
         session: AsyncSession,

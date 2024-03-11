@@ -55,6 +55,7 @@ export const org: Organization = {
   has_app_installed: false,
   pledge_badge_show_amount: true,
   is_teams_enabled: false,
+  profile_settings: {},
 }
 
 export const user: UserRead = {

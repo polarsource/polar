@@ -19,6 +19,7 @@ export const Default: Story = {
     organization: {
       id: '12313',
       platform: 'github',
+      profile_settings: {},
       is_personal: false,
       pledge_minimum_amount: 0,
       pledge_badge_show_amount: false,

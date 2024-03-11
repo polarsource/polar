@@ -16,7 +16,7 @@ from .schemas import (
     Repository as RepositorySchema,
 )
 from .schemas import (
-    RepositoryUpdateProfile,
+    RepositoryUpdate,
 )
 from .service import repository
 
@@ -190,7 +190,7 @@ async def get(
 )
 async def update(
     id: UUID,
-    update: RepositoryUpdateProfile,
+    update: RepositoryUpdate,
     auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),

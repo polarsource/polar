@@ -7,7 +7,7 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.logging import Logger
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
-from polar.repository.schemas import RepositoryCreate, RepositoryUpdate
+from polar.repository.schemas import RepositoryCreate, RepositoryGitHubUpdate
 from polar.repository.service import RepositoryService
 from polar.worker import enqueue_job
 
@@ -108,7 +108,7 @@ class GithubRepositoryService(RepositoryService):
             repository = await self.update(
                 session,
                 repository,
-                RepositoryUpdate.from_github(data, organization.id),
+                RepositoryGitHubUpdate.from_github(data, organization.id),
                 exclude_unset=True,
             )
 

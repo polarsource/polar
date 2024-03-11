@@ -69,6 +69,7 @@ const EmbedIssue = (props: { src: string }) => {
       organization: {
         id: 'embed',
         platform: 'github',
+        profile_settings: {},
         name: m[1],
         avatar_url: '',
         is_personal: false,

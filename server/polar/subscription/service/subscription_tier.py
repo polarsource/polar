@@ -196,14 +196,13 @@ class SubscriptionTierService(
                 repository_id=create_schema.repository_id,
             )
 
-        subscription_tier = await self.model.create(
-            session,
+        subscription_tier = SubscriptionTier(
             organization=organization,
             repository=repository,
             subscription_tier_benefits=[],
             **create_schema.model_dump(exclude={"organization_id", "repository_id"}),
-            autocommit=False,
         )
+        session.add(subscription_tier)
         await session.flush()
         assert subscription_tier.id is not None
 

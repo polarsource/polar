@@ -16,7 +16,6 @@ from .schemas import (
     Repository as RepositorySchema,
 )
 from .schemas import (
-    RepositoryUpdate,
     RepositoryUpdateProfile,
 )
 from .service import repository

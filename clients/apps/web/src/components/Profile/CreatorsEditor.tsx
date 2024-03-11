@@ -88,7 +88,7 @@ export const CreatorsEditor = ({
             className="cursor-pointer text-center text-blue-500 dark:text-blue-400"
             onClick={show}
           >
-            Add featured developers to your profile
+            Add featured developers to the profile
           </p>
         </div>
         <Modal

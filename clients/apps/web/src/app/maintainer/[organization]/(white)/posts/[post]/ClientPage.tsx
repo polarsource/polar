@@ -6,7 +6,7 @@ import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
 import { captureEvent } from '@/utils/posthog'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
-import { ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
+import { ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -15,7 +15,7 @@ import { Tabs } from 'polarkit/components/ui/atoms/tabs'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useArticleLookup, useUpdateArticle } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const ClientPage = () => {
   const params = useParams()
@@ -24,25 +24,9 @@ const ClientPage = () => {
     params?.post as string,
   )
   const [animateSaveBanner, setAnimateSaveBanner] = useState(false)
-  const [isInSavedState, setIsInSavedState] = useState(false)
   const [tab, setTab] = useState(
     window && window.location.hash === '#settings' ? 'settings' : 'edit',
   )
-  const router = useRouter()
-
-  const [updateArticle, setUpdateArticle] = useState<
-    ArticleUpdate & { title: string; body: string }
-  >({
-    title: '',
-    body: '',
-  })
-
-  useEffect(() => {
-    setIsInSavedState(
-      updateArticle.title === post.data?.title &&
-        updateArticle.body === post.data?.body,
-    )
-  }, [post.data, updateArticle])
 
   useEffect(() => {
     if (window && window.location.hash === '#settings') {
@@ -50,13 +34,36 @@ const ClientPage = () => {
     }
   }, [params])
 
+  const router = useRouter()
+
+  const [localArticle, setLocalArticle] = useState<{
+    title: string
+    body: string
+  }>({
+    title: '',
+    body: '',
+  })
+
+  // On data load from server, populate updateArticle
+  // Only do this once. After the first load, the "source of truth" for this page is the data in the browser
+  const didSetPostOnLoad = useRef(false)
   useEffect(() => {
-    setUpdateArticle((a) => ({
-      ...a,
+    if (didSetPostOnLoad.current) {
+      return
+    }
+    if (!post.isFetched) {
+      return
+    }
+    didSetPostOnLoad.current = true
+    setLocalArticle({
       body: post.data?.body || '',
       title: post.data?.title || '',
-    }))
-  }, [post.data])
+    })
+  }, [post.isFetched, post.data])
+
+  const localHasDiff =
+    localArticle.title !== post.data?.title ||
+    localArticle.body !== post.data?.body
 
   const update = useUpdateArticle()
 
@@ -68,7 +75,7 @@ const ClientPage = () => {
     try {
       await update.mutateAsync({
         id: post.data.id,
-        articleUpdate: updateArticle,
+        articleUpdate: localArticle,
       })
 
       setAnimateSaveBanner(true)
@@ -77,7 +84,7 @@ const ClientPage = () => {
         setAnimateSaveBanner(false)
       }, 2000)
     } catch (err) {}
-  }, [post, update, updateArticle])
+  }, [post, update, localArticle])
 
   useEffect(() => {
     const keyHandler = (e: KeyboardEvent) => {
@@ -150,7 +157,7 @@ const ClientPage = () => {
             </Button>
           </Link>
           <Button
-            disabled={isInSavedState}
+            disabled={!localHasDiff}
             onClick={handleSave}
             loading={update.isPending}
           >
@@ -160,15 +167,15 @@ const ClientPage = () => {
       </DashboardTopbar>
       <PostEditor
         article={post.data}
-        title={updateArticle.title}
-        body={updateArticle.body}
-        onTitleChange={(title) => setUpdateArticle((a) => ({ ...a, title }))}
-        onBodyChange={(body) => setUpdateArticle((a) => ({ ...a, body }))}
+        title={localArticle.title}
+        body={localArticle.body}
+        onTitleChange={(title) => setLocalArticle((a) => ({ ...a, title }))}
+        onBodyChange={(body) => setLocalArticle((a) => ({ ...a, body }))}
         previewProps={{
           article: {
             ...post.data,
-            title: updateArticle.title,
-            body: updateArticle.body,
+            title: localArticle.title,
+            body: localArticle.body,
           },
           isSubscriber: true,
           showPaywalledContent: true,

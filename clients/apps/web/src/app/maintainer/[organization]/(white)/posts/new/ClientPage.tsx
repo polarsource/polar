@@ -4,23 +4,39 @@ import { PostEditor } from '@/components/Feed/PostEditor'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { captureEvent } from '@/utils/posthog'
+import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
 import { useCreateArticle } from 'polarkit/hooks'
+import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
   const [tab, setTab] = useState('edit')
 
-  const [localArticle, setLocalArticle] = useState<{
-    title: string
-    body: string
-  }>({
+  const {
+    formDrafts: { ArticleCreate: savedFormValues },
+    saveDraft,
+    clearDraft,
+  } = useStore()
+
+  const [localArticle, setLocalArticle] = useState<
+    Pick<ArticleCreate, 'title' | 'body'>
+  >({
     title: '',
     body: '',
+    ...(savedFormValues ? savedFormValues : {}),
   })
+
+  useEffect(() => {
+    const pagehideListener = () => {
+      saveDraft('ArticleCreate', localArticle)
+    }
+    window.addEventListener('pagehide', pagehideListener)
+    return () => window.removeEventListener('pagehide', pagehideListener)
+  }, [localArticle, saveDraft])
 
   const router = useRouter()
   const create = useCreateArticle()
@@ -36,6 +52,8 @@ const ClientPage = () => {
       ...localArticle,
       organization_id: org.id,
     })
+
+    clearDraft('ArticleCreate')
 
     router.replace(
       `/maintainer/${created.organization.name}/posts/${created.slug}`,

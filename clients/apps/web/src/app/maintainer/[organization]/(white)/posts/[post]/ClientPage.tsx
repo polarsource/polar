@@ -4,6 +4,7 @@ import { PostEditor } from '@/components/Feed/PostEditor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
+import { useAlertIfUnsaved } from '@/hooks/editor'
 import { captureEvent } from '@/utils/posthog'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleVisibilityEnum } from '@polar-sh/sdk'
@@ -74,6 +75,8 @@ const ClientPage = () => {
     localArticle.body !== post.data?.body
 
   const update = useUpdateArticle()
+
+  useAlertIfUnsaved(localHasDiff)
 
   const handleSave = useCallback(async () => {
     if (!post?.data?.id) {

@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -207,10 +208,22 @@ class RepositoryService(
         settings: RepositoryUpdate,
     ) -> Repository:
         if settings.profile_settings is not None:
-            repository.profile_settings = {
-                **repository.profile_settings,
-                **settings.profile_settings.model_dump(mode="json", exclude_unset=True),
-            }
+            update = settings.profile_settings.model_dump(
+                mode="json", exclude_unset=True
+            )
+            profile: dict[str, Any] = {**repository.profile_settings}
+
+            if update.get("set_cover_image_url"):
+                profile["cover_image_url"] = (
+                    update.get("cover_image_url")
+                    if update.get("cover_image_url")
+                    else None
+                )
+
+            if update.get("featured_organizations") is not None:
+                profile["featured_organizations"] = update.get("featured_organizations")
+
+            repository.profile_settings = profile
 
         session.add(repository)
         await session.flush()

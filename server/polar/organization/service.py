@@ -277,7 +277,7 @@ class OrganizationService(
         await session.commit()
 
         if first_account_set:
-            await enqueue_job("organization.account_set", organization.id)
+            enqueue_job("organization.account_set", organization.id)
 
         return organization
 

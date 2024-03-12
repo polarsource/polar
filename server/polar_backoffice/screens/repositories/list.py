@@ -140,7 +140,7 @@ class RepositoriesListScreen(Screen[None]):
                 if not issue.pledge_badge_currently_embedded:
                     continue
 
-                await enqueue_job("github.badge.update_on_issue", issue_id=issue.id)
+                enqueue_job("github.badge.update_on_issue", issue_id=issue.id)
 
                 queued.append(issue.id)
 

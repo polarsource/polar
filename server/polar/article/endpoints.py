@@ -345,7 +345,7 @@ async def send_preview(
         auth.user, "articles", "email_preview", "send", {"article_id": art.id}
     )
 
-    await enqueue_job(
+    enqueue_job(
         "articles.send_to_user",
         article_id=art.id,
         user_id=send_to_user.id,

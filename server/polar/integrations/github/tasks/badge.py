@@ -155,7 +155,7 @@ async def embed_badge_retroactively_on_repository(
                 repository=repository,
                 organization=organization,
             ):
-                await enqueue_job("github.badge.embed_on_issue", i.id)
+                enqueue_job("github.badge.embed_on_issue", i.id)
 
 
 @task("github.badge.remove_on_repository")
@@ -181,4 +181,4 @@ async def remove_badges_on_repository(
                 repository=repository,
                 organization=organization,
             ):
-                await enqueue_job("github.badge.remove_on_issue", i.id)
+                enqueue_job("github.badge.remove_on_issue", i.id)

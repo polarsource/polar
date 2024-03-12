@@ -75,7 +75,7 @@ class NotificationsService:
 
         session.add(notification)
         await session.commit()
-        await enqueue_job("notifications.send", notification_id=notification.id)
+        enqueue_job("notifications.send", notification_id=notification.id)
         return True
 
     async def send_to_org_admins(
@@ -113,7 +113,7 @@ class NotificationsService:
 
         session.add(notification)
         await session.commit()
-        await enqueue_job("notifications.send", notification_id=notification.id)
+        enqueue_job("notifications.send", notification_id=notification.id)
 
     async def send_to_pledger(
         self,

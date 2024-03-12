@@ -537,7 +537,7 @@ async def handle_issue(
         raise Exception(f"failed to save issue external_id={event.issue.id}")
 
     # Trigger references sync job for entire repository
-    await enqueue_job(
+    enqueue_job(
         "github.repo.sync.issue_references", issue.organization_id, issue.repository_id
     )
 

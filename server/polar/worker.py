@@ -107,7 +107,7 @@ async def lifespan() -> AsyncIterator[ArqRedis]:
     await arq_pool.close(True)
 
 
-async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> None:
+def enqueue_job(name: str, *args: Any, **kwargs: Any) -> None:
     ctx = ExecutionContext.current()
     polar_context = PolarWorkerContext(
         is_during_installation=ctx.is_during_installation,

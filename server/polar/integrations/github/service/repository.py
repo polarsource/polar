@@ -31,13 +31,13 @@ class GithubRepositoryService(RepositoryService):
         crawl_with_installation_id: int
         | None = None,  # Override which installation to use when crawling
     ) -> None:
-        await enqueue_job(
+        enqueue_job(
             "github.repo.sync.issues",
             repository.organization_id,
             repository.id,
             crawl_with_installation_id=crawl_with_installation_id,
         )
-        await enqueue_job(
+        enqueue_job(
             "github.repo.sync.pull_requests",
             repository.organization_id,
             repository.id,

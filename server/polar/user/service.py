@@ -91,7 +91,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         posthog.user_event_raw(user, "User Signed Up")
         log.info("user signed up by email", user_id=user.id, email=email)
 
-        await enqueue_job("user.on_after_signup", user_id=user.id)
+        enqueue_job("user.on_after_signup", user_id=user.id)
 
         return user
 

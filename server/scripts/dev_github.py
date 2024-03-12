@@ -75,7 +75,7 @@ async def do_delete_issues(session: AsyncSession, org: Organization) -> None:
 async def trigger_issue_sync(
     session: AsyncSession, org: Organization, repo: Repository, issue: Issue
 ) -> None:
-    await enqueue_job("github.issue.sync", issue.id)
+    enqueue_job("github.issue.sync", issue.id)
     typer.echo(f"Triggered issue sync for {org.name}/{repo.name}/{issue.number}")
 
 
@@ -85,8 +85,8 @@ async def trigger_issues_sync(session: AsyncSession, org: Organization) -> None:
         raise RuntimeError(f"No repositories found for {org.name}")
 
     for repository in repositories:
-        await enqueue_job("github.repo.sync.issues", org.id, repository.id)
-        await enqueue_job("github.repo.sync.pull_requests", org.id, repository.id)
+        enqueue_job("github.repo.sync.issues", org.id, repository.id)
+        enqueue_job("github.repo.sync.pull_requests", org.id, repository.id)
         typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
 
 
@@ -98,12 +98,12 @@ async def trigger_issue_references_sync(
         raise RuntimeError(f"No repositories found for {org.name}")
 
     for repository in repositories:
-        await enqueue_job("github.repo.sync.issue_references", org.id, repository.id)
+        enqueue_job("github.repo.sync.issue_references", org.id, repository.id)
         typer.echo(f"Triggered issue references sync for {org.name}/{repository.name}")
 
 
 async def trigger_repositories_sync(session: AsyncSession, org: Organization) -> None:
-    await enqueue_job("github.repo.sync.repositories", org.id)
+    enqueue_job("github.repo.sync.repositories", org.id)
     typer.echo(f"Triggered repo sync for {org.name}")
 
 
@@ -115,7 +115,7 @@ async def trigger_issue_dependencies_sync(
         raise RuntimeError(f"No issues found for {org.name}")
 
     for issue in issues:
-        await enqueue_job("github.issue.sync.issue_dependencies", issue.id)
+        enqueue_job("github.issue.sync.issue_dependencies", issue.id)
         typer.echo(
             f"Triggered issue dependencies sync for {org.name}/{issue.repository.name}/#{issue.number}"
         )
@@ -240,14 +240,14 @@ async def add_external_repo(
 
         # return
 
-        # await enqueue_job(
+        # enqueue_job(
         #    "github.issue.sync.issue_references",
         #    issue_id="ce38a42c-ca84-4e1c-a730-93218ca812e3",
         #    crawl_with_installation_id=36355936,
         # )
 
         if True:
-            await enqueue_job(
+            enqueue_job(
                 "github.repo.sync.issues",
                 organization.id,
                 repository.id,
@@ -258,7 +258,7 @@ async def add_external_repo(
             )
 
         if False:
-            await enqueue_job(
+            enqueue_job(
                 "github.repo.sync.issue_references",
                 organization.id,
                 repository.id,

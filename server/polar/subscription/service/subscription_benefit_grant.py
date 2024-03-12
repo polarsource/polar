@@ -156,7 +156,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
 
         grants = await self._get_granted_by_benefit(session, subscription_benefit)
         for grant in grants:
-            await enqueue_job(
+            enqueue_job(
                 "subscription.subscription_benefit.update",
                 subscription_benefit_grant_id=grant.id,
             )
@@ -210,7 +210,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
     ) -> None:
         grants = await self._get_granted_by_benefit(session, subscription_benefit)
         for grant in grants:
-            await enqueue_job(
+            enqueue_job(
                 "subscription.subscription_benefit.delete",
                 subscription_benefit_grant_id=grant.id,
             )
@@ -303,7 +303,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         )
         for grant in grants:
             if not grant.is_granted and not grant.is_revoked:
-                await enqueue_job(
+                enqueue_job(
                     "subscription.subscription_benefit.grant",
                     subscription_id=grant.subscription_id,
                     user_id=user.id,

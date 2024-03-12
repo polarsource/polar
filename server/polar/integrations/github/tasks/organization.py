@@ -27,7 +27,7 @@ async def cron_org_members_schedule(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         orgs = await organization_service.list_installed(session)
         for org in orgs:
-            await enqueue_job(
+            enqueue_job(
                 "github.organization.synchronize_members",
                 organization_id=org.id,
             )
@@ -63,7 +63,7 @@ async def cron_org_metadata(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         orgs = await organization_service.list_installed(session)
         for org in orgs:
-            await enqueue_job(
+            enqueue_job(
                 "github.organization.populate_org_metadata",
                 organization_id=org.id,
             )

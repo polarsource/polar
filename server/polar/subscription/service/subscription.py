@@ -539,7 +539,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session.add(subscription)
         await session.commit()
 
-        await enqueue_job(
+        enqueue_job(
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
@@ -664,7 +664,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ),
         )
 
-        await enqueue_job(
+        enqueue_job(
             "subscription.discord_notification", subscription_id=subscription.id
         )
 
@@ -705,7 +705,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     {"subscription_id": subscription.id},
                 )
 
-        await enqueue_job(
+        enqueue_job(
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
@@ -823,7 +823,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # Only enqueue it for the subscriber user.
             # Remove this when we have proper per-seat support
             if benefit.type == SubscriptionBenefitType.github_repository:
-                await enqueue_job(
+                enqueue_job(
                     f"subscription.subscription_benefit.{task}",
                     subscription_id=subscription.id,
                     user_id=subscription.user_id,
@@ -831,7 +831,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
             else:
                 for user_id in users_ids:
-                    await enqueue_job(
+                    enqueue_job(
                         f"subscription.subscription_benefit.{task}",
                         subscription_id=subscription.id,
                         user_id=user_id,
@@ -840,7 +840,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         for user_id in users_ids:
             for outdated_grant in outdated_grants:
-                await enqueue_job(
+                enqueue_job(
                     "subscription.subscription_benefit.revoke",
                     subscription_id=subscription.id,
                     user_id=user_id,
@@ -859,7 +859,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     subscription_tier.organization,
                     subscription_tier.repository,
                 )
-                await enqueue_job(
+                enqueue_job(
                     f"subscription.subscription_benefit.{task}",
                     subscription_id=subscription.id,
                     user_id=user_id,
@@ -875,7 +875,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         subscriptions = await session.stream_scalars(statement)
         async for subscription in subscriptions:
-            await enqueue_job(
+            enqueue_job(
                 "subscription.subscription.enqueue_benefits_grants", subscription.id
             )
 
@@ -888,7 +888,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         subscriptions = await session.stream_scalars(statement)
         async for subscription in subscriptions:
-            await enqueue_job(
+            enqueue_job(
                 "subscription.subscription.enqueue_benefits_grants", subscription.id
             )
 
@@ -978,7 +978,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
             # free subscriptions end immediately (vs at end of billing period)
             # queue removal of grants
-            await enqueue_job(
+            enqueue_job(
                 "subscription.subscription.enqueue_benefits_grants", subscription.id
             )
 

@@ -145,7 +145,7 @@ class GithubUserService(UserService):
 
         log.info("github.user.signup", user_id=new_user.id, username=github_user.login)
 
-        await enqueue_job("user.on_after_signup", user_id=new_user.id)
+        enqueue_job("user.on_after_signup", user_id=new_user.id)
 
         return new_user
 

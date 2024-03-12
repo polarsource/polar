@@ -188,13 +188,13 @@ class RepositoryService(
             return settings
 
         if enabled_auto_badge and settings.retroactive:
-            await enqueue_job(
+            enqueue_job(
                 "github.badge.embed_retroactively_on_repository",
                 organization.id,
                 repository.id,
             )
         elif disabled_auto_badge and settings.retroactive:
-            await enqueue_job(
+            enqueue_job(
                 "github.badge.remove_on_repository", organization.id, repository.id
             )
 

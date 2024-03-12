@@ -339,7 +339,7 @@ class SubscriptionTierService(
         session.add(free_subscription_tier)
         await session.commit()
 
-        await enqueue_job(
+        enqueue_job(
             "subscription.subscription.update_subscription_tier_benefits_grants",
             free_subscription_tier.id,
         )
@@ -397,7 +397,7 @@ class SubscriptionTierService(
         session.add(subscription_tier)
         await session.commit()
 
-        await enqueue_job(
+        enqueue_job(
             "subscription.subscription.update_subscription_tier_benefits_grants",
             subscription_tier.id,
         )

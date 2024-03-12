@@ -217,6 +217,28 @@ exports[`blockquote 1`] = `
 </div>
 `;
 
+exports[`checkbox 1`] = `
+<div>
+  <ul>
+    <li>
+      <input
+        disabled=""
+        type="checkbox"
+      />
+       box
+    </li>
+    <li>
+      <input
+        checked=""
+        disabled=""
+        type="checkbox"
+      />
+       checked
+    </li>
+  </ul>
+</div>
+`;
+
 exports[`code 1`] = `
 <div>
   <div>
@@ -245,6 +267,22 @@ exports[`double-whitespace 1`] = `
       With-doublespace
     </p>
   </div>
+</div>
+`;
+
+exports[`figcaption 1`] = `
+<div>
+  <figure>
+    <img
+      alt="Elephant at sunset"
+      src="https://example.com/image.png"
+      style="max-width: 100%;"
+    />
+    <figcaption>
+      An elephant at sunset
+    </figcaption>
+          
+  </figure>
 </div>
 `;
 
@@ -650,6 +688,18 @@ exports[`polar 1`] = `
       <br />
       Birk, Gustav, Francois & Emil @ Polar
     </p>
+  </div>
+</div>
+`;
+
+exports[`raw inputs 1`] = `
+<div>
+  <div>
+    <input
+      checked=""
+      disabled=""
+      type="checkbox"
+    />
   </div>
 </div>
 `;

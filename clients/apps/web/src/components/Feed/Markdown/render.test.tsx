@@ -337,3 +337,50 @@ test('link-brackets', () => {
   )
   expect(container).toMatchSnapshot()
 })
+
+test('figcaption', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `<figure>
+        <img src="https://example.com/image.png" alt="Elephant at sunset" />
+        <figcaption>An elephant at sunset</figcaption>
+      </figure>
+      `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})
+
+test('checkbox', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+- [ ] box
+- [x] checked
+      `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})
+
+test('raw inputs', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+<input type="checkbox" checked>
+<input type="text" placeholder="what" value="lol">
+<input type="file" placeholder="what" value="lol">
+      `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

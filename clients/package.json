@@ -27,6 +27,9 @@
     "turbo": "^1.12.4"
   },
   "packageManager": "pnpm@8.15.4",
+  "resolutions": {
+    "sharp": "0.33.2"
+  },
   "manypkg": {
     "ignoredRules": [
       "INTERNAL_MISMATCH"

@@ -7,16 +7,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useUser } from 'polarkit/hooks'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Spinner from '../Shared/Spinner'
 
 export type Theme = 'system' | 'light' | 'dark'
 
 const GeneralSettings = () => {
-  const user = useUser()
-  const [theme, setTheme] = useState<Theme>(
-    (localStorage.getItem('theme') as Theme) || 'system',
-  )
+  const [theme, setTheme] = useState<Theme | undefined>()
+
+  const didSetTheme = useRef(false)
+  const onInitialLoad = () => {
+    if (didSetTheme.current) {
+      return
+    }
+    if (typeof localStorage === 'undefined') {
+      return
+    }
+
+    didSetTheme.current = true
+    const t = localStorage.getItem('theme')
+    if (t) {
+      setTheme(t as Theme)
+    }
+  }
+  useEffect(onInitialLoad, [])
 
   const handleThemeChange = useCallback((theme: Theme) => {
     return () => {
@@ -45,17 +59,6 @@ const GeneralSettings = () => {
     }
   }, [])
 
-  const getCurrentThemeLabel = useMemo(() => {
-    switch (theme) {
-      case 'system':
-        return 'System'
-      case 'light':
-        return 'Light'
-      case 'dark':
-        return 'Dark'
-    }
-  }, [theme])
-
   return (
     <ShadowBox>
       <div className="flex flex-row items-start justify-between">
@@ -65,28 +68,32 @@ const GeneralSettings = () => {
             Override your browser&apos;s preferred theme settings
           </p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="justify-between" variant="secondary">
-              <span>{getCurrentThemeLabel}</span>
-              <ExpandMoreOutlined className="ml-2" fontSize="small" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="dark:bg-polar-800 bg-gray-50 shadow-lg"
-            align="end"
-          >
-            <DropdownMenuItem onClick={handleThemeChange('system')}>
-              <span>System</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleThemeChange('light')}>
-              <span>Light</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleThemeChange('dark')}>
-              <span>Dark</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {theme === undefined ? (
+          <Spinner />
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="justify-between" variant="secondary">
+                <span className="capitalize">{theme}</span>
+                <ExpandMoreOutlined className="ml-2" fontSize="small" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+              align="end"
+            >
+              <DropdownMenuItem onClick={handleThemeChange('system')}>
+                <span>System</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleThemeChange('light')}>
+                <span>Light</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleThemeChange('dark')}>
+                <span>Dark</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </ShadowBox>
   )

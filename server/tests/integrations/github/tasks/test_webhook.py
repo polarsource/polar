@@ -159,9 +159,6 @@ async def test_webhook_installation_suspend(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     org = await create_org(session, github_webhook, status=Organization.Status.INACTIVE)
 
     hook = github_webhook.create("installation.suspend")
@@ -189,9 +186,6 @@ async def test_webhook_installation_unsuspend(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     org = await create_org(
         session, github_webhook, status=Organization.Status.SUSPENDED
     )
@@ -222,9 +216,6 @@ async def test_webhook_installation_delete(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     hook = github_webhook.create("installation.deleted")
     org_id = hook["installation"]["account"]["id"]
 
@@ -280,9 +271,6 @@ async def test_webhook_repositories_added(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     hook = github_webhook.create("installation_repositories.added")
     new_repo = hook["repositories_added"][0]
 
@@ -333,9 +321,6 @@ async def test_webhook_repositories_added_duplicate_name(
     organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     hook = github_webhook.create("installation_repositories.added")
     hook["installation"]["account"]["id"] = organization.external_id
     hook["installation"]["account"]["name"] = organization.name
@@ -396,9 +381,6 @@ async def test_webhook_repositories_removed(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     hook = github_webhook.create("installation_repositories.removed")
     delete_repo = hook["repositories_removed"][0]
 
@@ -449,9 +431,6 @@ async def test_webhook_issues_opened(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     await create_repositories(session, github_webhook)
     hook = github_webhook.create("issues.opened")
     issue_id = hook["issue"]["id"]
@@ -481,9 +460,6 @@ async def test_webhook_issues_closed(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     # create issue
     await create_repositories(session, github_webhook)
     hook = github_webhook.create("issues.opened")
@@ -526,9 +502,6 @@ async def test_webhook_issues_labeled(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     await create_repositories(session, github_webhook)
     hook = await create_issue(job_context, session, github_webhook)
 
@@ -563,9 +536,6 @@ async def test_webhook_pull_request_opened(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     hook = github_webhook.create("pull_request.opened")
     pr_id = hook["pull_request"]["id"]
 
@@ -591,9 +561,6 @@ async def test_webhook_pull_request_edited(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     # then
     session.expunge_all()
 
@@ -621,9 +588,6 @@ async def test_webhook_pull_request_synchronize(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     await create_pr(job_context, session, github_webhook)
 
     # then
@@ -656,9 +620,6 @@ async def test_webhook_issues_deleted(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     await create_repositories(session, github_webhook)
 
     # then
@@ -718,9 +679,6 @@ async def test_webhook_opened_with_label(
     save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     embed_mock = mocker.patch(
         "polar.integrations.github.service.github_issue.embed_badge"
     )
@@ -785,7 +743,7 @@ async def test_webhook_labeled_remove_badge_body(
         else:
             raise Exception(f"unexpected job: {name}")
 
-    mocker.patch("polar.worker._enqueue_job", new=in_process_enqueue_job)
+    mocker.patch("polar.worker.enqueue_job", new=in_process_enqueue_job)
 
     embed_mock = mocker.patch(
         "polar.integrations.github.service.github_issue.embed_badge"
@@ -872,9 +830,6 @@ async def test_webhook_organization_renamed(
     github_webhook: TestWebhookFactory,
     organization: Organization,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     hook = github_webhook.create("organization.renamed")
     hook["organization"]["id"] = organization.external_id
 
@@ -905,9 +860,6 @@ async def test_webhook_repository_transferred(
     github_webhook: TestWebhookFactory,
     repository: Repository,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     new_organization = await random_objects.create_organization(save_fixture)
 
     hook = github_webhook.create("repository.transferred")
@@ -942,9 +894,6 @@ async def test_webhook_repository_transferred_duplicate_name(
     github_webhook: TestWebhookFactory,
     repository: Repository,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     new_organization = await random_objects.create_organization(save_fixture)
 
     hook = github_webhook.create("repository.transferred")
@@ -991,9 +940,6 @@ async def test_webhook_issue_transferred(
     organization: Organization,
     polar_worker_context: PolarWorkerContext,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     old_repository = await random_objects.create_repository(
         save_fixture, organization, is_private=False
     )

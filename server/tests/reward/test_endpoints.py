@@ -2,7 +2,6 @@ from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
-from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.enums import AccountType
@@ -27,12 +26,9 @@ async def test_search(
     organization: Organization,
     user_organization: UserOrganization,
     user: User,
-    mocker: MockerFixture,
     auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    mocker.patch("polar.worker._enqueue_job")
-
     user_organization.is_admin = True
     await save_fixture(user_organization)
 

@@ -441,12 +441,10 @@ async def enqueue(request: Request) -> WebhookResponse:
         return not_implemented()
 
     task_name = f"github.webhook.{event_name}"
-    enqueued = await enqueue_job(task_name, event_scope, event_action, json_body)
-    if not enqueued:
-        return WebhookResponse(success=False, message="Failed to enqueue task")
+    await enqueue_job(task_name, event_scope, event_action, json_body)
 
     log.info("github.webhook.queued", task_name=task_name)
-    return WebhookResponse(success=True, job_id=enqueued.job_id)
+    return WebhookResponse(success=True)
 
 
 @router.post("/webhook", response_model=WebhookResponse)

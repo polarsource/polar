@@ -71,7 +71,7 @@ async def test_installation_no_notifications(
     ) as fp:
         cassette: dict[str, Any] = json.loads(fp.read())
 
-    mocker.patch("polar.worker._enqueue_job", new=in_process_enqueue_job)
+    mocker.patch("polar.worker.enqueue_job", new=in_process_enqueue_job)
 
     # Create user to match requesting user
     user = User(

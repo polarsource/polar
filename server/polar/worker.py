@@ -1,22 +1,16 @@
+import contextvars
 import functools
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import (
-    Any,
-    ParamSpec,
-    TypedDict,
-    TypeVar,
-    cast,
-)
+from typing import Any, ParamSpec, TypeAlias, TypedDict, TypeVar, cast
 
 import structlog
 from arq import cron, func
 from arq.connections import ArqRedis, RedisSettings
 from arq.connections import create_pool as arq_create_pool
 from arq.cron import CronJob
-from arq.jobs import Job
 from arq.typing import OptionType, SecondsTimedelta, WeekdayOptionType
 from arq.worker import Function
 from pydantic import BaseModel
@@ -32,26 +26,12 @@ from polar.kit.db.postgres import (
 from polar.logging import generate_correlation_id
 from polar.postgres import create_engine
 
-
-async def create_pool() -> ArqRedis:
-    return await arq_create_pool(WorkerSettings.redis_settings)
-
-
-arq_pool: ArqRedis | None = None
-
-
-@asynccontextmanager
-async def lifespan() -> AsyncIterator[ArqRedis]:
-    global arq_pool
-    arq_pool = await create_pool()
-    yield arq_pool
-    await arq_pool.close(True)
-    arq_pool = None
-
-
 log = structlog.get_logger()
 
-redis_settings = RedisSettings().from_dsn(settings.redis_url)
+JobToEnqueue: TypeAlias = tuple[str, tuple[Any], dict[str, Any]]
+_jobs_to_enqueue = contextvars.ContextVar[list[JobToEnqueue]](
+    "polar_worker_jobs_to_enqueue", default=[]
+)
 
 
 class WorkerContext(TypedDict):
@@ -83,10 +63,6 @@ class WorkerSettings:
     @staticmethod
     async def on_startup(ctx: WorkerContext) -> None:
         log.info("polar.worker.startup")
-        global arq_pool
-        if arq_pool:
-            raise Exception("arq_pool already exists in startup")
-        arq_pool = await create_pool()
 
         engine = create_engine("worker")
         sessionmaker = create_sessionmaker(engine)
@@ -94,13 +70,6 @@ class WorkerSettings:
 
     @staticmethod
     async def on_shutdown(ctx: WorkerContext) -> None:
-        global arq_pool
-        if arq_pool:
-            await arq_pool.close(True)
-            arq_pool = None
-        else:
-            raise Exception("arq_pool not set in shutdown")
-
         engine = ctx["engine"]
         await engine.dispose()
 
@@ -131,7 +100,14 @@ class WorkerSettings:
         """
 
 
-async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
+@asynccontextmanager
+async def lifespan() -> AsyncIterator[ArqRedis]:
+    arq_pool = await arq_create_pool(WorkerSettings.redis_settings)
+    yield arq_pool
+    await arq_pool.close(True)
+
+
+async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> None:
     ctx = ExecutionContext.current()
     polar_context = PolarWorkerContext(
         is_during_installation=ctx.is_during_installation,
@@ -144,21 +120,27 @@ async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
     # Prefix job ID by task name by default
     _job_id = kwargs.pop("_job_id", f"{name}:{uuid.uuid4().hex}")
 
-    return await _enqueue_job(
-        name,
-        *args,
-        request_correlation_id=request_correlation_id,
-        polar_context=polar_context,
+    kwargs = {
+        "request_correlation_id": request_correlation_id,
+        "polar_context": polar_context,
         **kwargs,
-        _job_id=_job_id,
-    )
+        "_job_id": _job_id,
+    }
+
+    _jobs_to_enqueue_list = _jobs_to_enqueue.get([])
+    _jobs_to_enqueue_list.append((name, args, kwargs))
+    _jobs_to_enqueue.set(_jobs_to_enqueue_list)
+
+    log.debug("polar.worker.job_enqueued", name=name, args=args, kwargs=kwargs)
 
 
-async def _enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
-    if not arq_pool:
-        raise Exception("arq_pool is not initialized")
-
-    return await arq_pool.enqueue_job(name, *args, **kwargs)
+async def flush_enqueued_jobs(arq_pool: ArqRedis) -> None:
+    if _jobs_to_enqueue_list := _jobs_to_enqueue.get([]):
+        log.debug("polar.worker.flush_enqueued_jobs")
+        for name, args, kwargs in _jobs_to_enqueue_list:
+            await arq_pool.enqueue_job(name, *args, **kwargs)
+            log.debug("polar.worker.job_flushed", name=name, args=args, kwargs=kwargs)
+        _jobs_to_enqueue.set([])
 
 
 Params = ParamSpec("Params")
@@ -188,6 +170,9 @@ def task_hooks(
         log.info("polar.worker.job_started")
 
         r = await f(*args, **kwargs)
+
+        arq_pool = job_context["redis"]
+        await flush_enqueued_jobs(arq_pool)
 
         log.info("polar.worker.job_ended")
         structlog.contextvars.unbind_contextvars(
@@ -287,4 +272,5 @@ __all__ = [
     "enqueue_job",
     "JobContext",
     "AsyncSessionMaker",
+    "ArqRedis",
 ]

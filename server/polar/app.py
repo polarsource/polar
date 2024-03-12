@@ -30,11 +30,17 @@ from polar.kit.prometheus.http import PrometheusHttpMiddleware
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.metrics.endpoints import router as metrics_router
-from polar.middlewares import LogCorrelationIdMiddleware, XForwardedHostMiddleware
+from polar.middlewares import (
+    FlushEnqueuedWorkerJobsMiddleware,
+    LogCorrelationIdMiddleware,
+    XForwardedHostMiddleware,
+)
 from polar.postgres import create_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
 from polar.tags.api import Tags
+from polar.worker import ArqRedis
+from polar.worker import lifespan as worker_lifespan
 
 log: Logger = structlog.get_logger()
 
@@ -60,17 +66,18 @@ def generate_unique_openapi_id(route: APIRoute) -> str:
 class State(TypedDict):
     engine: AsyncEngine
     sessionmaker: async_sessionmaker[AsyncSession]
+    arq_pool: ArqRedis
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
-    async with worker.lifespan():
+    async with worker_lifespan() as arq_pool:
         engine = create_engine("app")
         sessionmaker = create_sessionmaker(engine)
 
         log.info("Polar API started")
 
-        yield {"engine": engine, "sessionmaker": sessionmaker}
+        yield {"engine": engine, "sessionmaker": sessionmaker, "arq_pool": arq_pool}
 
         await engine.dispose()
 
@@ -85,13 +92,13 @@ def create_app() -> FastAPI:
     )
     configure_cors(app)
 
-    app.add_middleware(LogCorrelationIdMiddleware)
+    app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
     app.add_middleware(
         XForwardedHostMiddleware,
         trusted_hosts=environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"),
     )
-
     app.add_middleware(PrometheusHttpMiddleware)
+    app.add_middleware(LogCorrelationIdMiddleware)
 
     app.add_exception_handler(
         PolarRedirectionError,

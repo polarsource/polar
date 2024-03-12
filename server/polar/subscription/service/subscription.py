@@ -537,7 +537,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription_tier=subscription_tier,
         )
         session.add(subscription)
-        await session.commit()
+        await session.flush()
 
         enqueue_job(
             "subscription.subscription.enqueue_benefits_grants", subscription.id
@@ -639,7 +639,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session.add(user)
 
         session.add(subscription)
-        await session.commit()
+        await session.flush()
 
         posthog.user_event(
             user,
@@ -692,7 +692,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.set_started_at()
 
         session.add(subscription)
-        await session.commit()
 
         if subscription.cancel_at_period_end or subscription.ended_at:
             user = await user_service.get(session, subscription.user_id)
@@ -947,7 +946,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.price_currency = new_subscription_tier.price_currency
         subscription.price_amount = new_subscription_tier.price_amount
         session.add(subscription)
-        await session.commit()
 
         return subscription
 
@@ -983,7 +981,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         session.add(subscription)
-        await session.commit()
 
         return subscription
 

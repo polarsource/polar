@@ -263,7 +263,6 @@ class SubscriptionBenefitService(
             SubscriptionTierBenefit.subscription_benefit_id == subscription_benefit.id
         )
         await session.execute(statement)
-        await session.commit()
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_deletions(
             session, subscription_benefit
@@ -297,8 +296,6 @@ class SubscriptionBenefitService(
             else:
                 public_articles = benefit
 
-        should_commit = False
-
         if public_articles is None:
             public_articles = SubscriptionBenefitArticles(
                 description="Public posts",
@@ -310,7 +307,6 @@ class SubscriptionBenefitService(
                 repository=repository,
             )
             session.add(public_articles)
-            should_commit = True
 
         if premium_articles is None:
             premium_articles = SubscriptionBenefitArticles(
@@ -323,10 +319,6 @@ class SubscriptionBenefitService(
                 repository=repository,
             )
             session.add(premium_articles)
-            should_commit = True
-
-        if should_commit:
-            await session.commit()
 
         return (public_articles, premium_articles)
 

@@ -87,7 +87,7 @@ export const CoverEditor = ({
       />
       <div
         className={twMerge(
-          'dark:bg-polar-800 relative flex aspect-[3/1] w-full flex-col items-center justify-center gap-y-4 overflow-hidden rounded-3xl bg-blue-50',
+          'dark:bg-polar-800 relative flex aspect-video w-full flex-col items-center justify-center gap-y-4 overflow-hidden rounded-3xl bg-blue-50',
           !imagePreviewSrc && 'cursor-pointer',
         )}
         onClick={() => {
@@ -98,7 +98,7 @@ export const CoverEditor = ({
       >
         {imagePreviewSrc && (
           <Image
-            className="aspect-[3/1] h-full w-full object-cover"
+            className="aspect-video h-full w-full object-cover"
             alt={`${organization.name}'s banner image`}
             src={imagePreviewSrc}
             width={960}
@@ -123,7 +123,7 @@ export const CoverEditor = ({
           </div>
         )}
         {!disabled && imagePreviewSrc && !isLoading && (
-          <div className="absolute bottom-4 right-4 flex flex-row gap-x-2">
+          <div className="absolute bottom-4 right-4 hidden flex-row gap-x-2 md:flex">
             <Button
               className="text-white dark:text-white"
               variant="ghost"

@@ -5720,6 +5720,12 @@ export interface RepositoryProfileSettings {
      * @memberof RepositoryProfileSettings
      */
     featured_organizations?: Array<string>;
+    /**
+     * A list of highlighted subscription tiers
+     * @type {Array<string>}
+     * @memberof RepositoryProfileSettings
+     */
+    highlighted_subscription_tiers?: Array<string>;
 }
 /**
  * 
@@ -5745,6 +5751,12 @@ export interface RepositoryProfileSettingsUpdate {
      * @memberof RepositoryProfileSettingsUpdate
      */
     featured_organizations?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof RepositoryProfileSettingsUpdate
+     */
+    highlighted_subscription_tiers?: Array<string>;
 }
 /**
  * 

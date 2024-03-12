@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`firstChild content under fragment 1`] = `
+<span>
+  text
+</span>
+`;
+
+exports[`firstChild different nesting 1`] = `
+<span>
+  t1
+</span>
+`;
+
+exports[`firstChild empty 1`] = `undefined`;
+
+exports[`firstChild empty nested 1`] = `undefined`;
+
+exports[`firstChild sibling content 1`] = `
+<span>
+  t1
+</span>
+`;
+
+exports[`firstChild top 1`] = `
+<span>
+  text
+</span>
+`;

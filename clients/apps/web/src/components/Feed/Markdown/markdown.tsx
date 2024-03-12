@@ -303,15 +303,25 @@ export const hasContent = (node: React.ReactNode): boolean => {
   }
 
   if (node && typeof node === 'object' && 'key' in node) {
-    if ('children' in node.props && Array.isArray(node.props.children)) {
-      for (const ch of node.props.children) {
-        if (hasContent(ch)) {
-          return true
+    if ('children' in node.props) {
+      if (Array.isArray(node.props.children)) {
+        for (const ch of node.props.children) {
+          if (hasContent(ch)) {
+            return true
+          }
         }
-      }
-    } else {
-      if ('children' in node.props) {
-        return true
+      } else {
+        const ch = node.props.children
+
+        if (ReactIs.isFragment(ch)) {
+          if (hasContent(ch)) {
+            return true
+          }
+        } else {
+          if (ReactIs.isElement(ch) || typeof ch === 'string') {
+            return true
+          }
+        }
       }
     }
   }

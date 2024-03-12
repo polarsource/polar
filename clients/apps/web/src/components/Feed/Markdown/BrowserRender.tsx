@@ -159,8 +159,11 @@ export const AbbreviatedBrowserRender = ({
       }}
     >
       {
-        abbreviatedContent({ body: article.body, includeBoundaryInBody: false })
-          .body
+        abbreviatedContent({
+          body: article.body,
+          includeBoundaryInBody: false,
+          includeRefs: true,
+        }).body
       }
     </Markdown>
   )
@@ -174,8 +177,52 @@ export type AbbreviatedContentResult = {
   matchedBoundary?: string
 }
 
+// Regex that matches references, but not footnotes.
+//
+// Examples:
+//
+// [reference]: https://polar.sh
+// [reference]: https://polar.sh
+// [3]: <https://polar.sh> "Polar"
+//
+// Does not matches footnotes:
+//
+// [^4]: footnote
+const referencesMatch = /^\[[^\^](.*)\]: (.*)$/gm
+
+export const getReferences = (body: string): string[] => {
+  const matches = body.matchAll(referencesMatch)
+
+  const res: string[] = []
+
+  for (const m of matches) {
+    res.push(m[0])
+  }
+
+  return res
+}
+
 // must be synced with Article.abbreviated_content on the backend
 export const abbreviatedContent = ({
+  body,
+  includeBoundaryInBody,
+  includeRefs,
+}: {
+  body: string
+  includeBoundaryInBody: boolean
+  includeRefs?: boolean
+}): AbbreviatedContentResult => {
+  const res = parseBoundary({ body, includeBoundaryInBody })
+
+  // Add references that would otherwise end up below the boundary
+  if (includeRefs) {
+    res.body += '\n\n' + getReferences(body).join('\n')
+  }
+
+  return res
+}
+
+const parseBoundary = ({
   body,
   includeBoundaryInBody,
 }: {

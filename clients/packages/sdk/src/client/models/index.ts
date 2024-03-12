@@ -5709,6 +5709,12 @@ export interface RepositoryBadgeSettingsUpdate {
  */
 export interface RepositoryProfileSettings {
     /**
+     * A URL to a cover image
+     * @type {string}
+     * @memberof RepositoryProfileSettings
+     */
+    cover_image_url?: string;
+    /**
      * A list of featured organizations
      * @type {Array<string>}
      * @memberof RepositoryProfileSettings
@@ -5721,6 +5727,18 @@ export interface RepositoryProfileSettings {
  * @interface RepositoryProfileSettingsUpdate
  */
 export interface RepositoryProfileSettingsUpdate {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof RepositoryProfileSettingsUpdate
+     */
+    set_cover_image_url?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof RepositoryProfileSettingsUpdate
+     */
+    cover_image_url?: string;
     /**
      * 
      * @type {Array<string>}

@@ -79,7 +79,7 @@ async def sync_repository_pull_requests(
                 repository=repository,
                 crawl_with_installation_id=crawl_with_installation_id,
             )
-            await enqueue_job(
+            enqueue_job(
                 "github.repo.sync.issue_references",
                 organization.id,
                 repository.id,

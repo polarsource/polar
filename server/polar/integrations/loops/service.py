@@ -35,14 +35,10 @@ class Loops:
             properties["isMaintainer"] = signup_type == UserSignupType.maintainer
             properties["isBacker"] = signup_type == UserSignupType.backer
 
-        await enqueue_job(
-            "loops.send_event", user.email, "User Signed Up", **properties
-        )
+        enqueue_job("loops.send_event", user.email, "User Signed Up", **properties)
 
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
-        await enqueue_job(
-            "loops.update_contact", user.email, str(user.id), **properties
-        )
+        enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
 
     async def organization_installed(
         self, session: AsyncSession, *, user: User
@@ -50,7 +46,7 @@ class Loops:
         organization_users = await user_organization_service.list_by_user_id(
             session, user.id
         )
-        await enqueue_job(
+        enqueue_job(
             "loops.send_event",
             user.email,
             "Organization Installed",
@@ -67,7 +63,7 @@ class Loops:
             session, organization.id
         ):
             user = organization_user.user
-            await enqueue_job(
+            enqueue_job(
                 "loops.send_event",
                 user.email,
                 "Repository Installed",
@@ -82,7 +78,7 @@ class Loops:
             session, issue.organization_id
         ):
             user = organization_user.user
-            await enqueue_job(
+            enqueue_job(
                 "loops.send_event",
                 user.email,
                 "Issue Badged",

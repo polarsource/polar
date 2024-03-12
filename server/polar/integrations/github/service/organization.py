@@ -130,7 +130,7 @@ class GithubOrganizationService(OrganizationService):
             session, organization, installation_id
         )
 
-        await enqueue_job("organization.post_install", organization_id=organization.id)
+        enqueue_job("organization.post_install", organization_id=organization.id)
 
         return organization
 
@@ -200,7 +200,7 @@ class GithubOrganizationService(OrganizationService):
         client = await github.get_refreshed_oauth_client(session, oauth, user)
         await self._populate_github_user_metadata(session, client, org)
 
-        await enqueue_job("organization.post_user_upgrade", organization_id=org.id)
+        enqueue_job("organization.post_user_upgrade", organization_id=org.id)
         return org
 
     async def suspend(

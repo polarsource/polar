@@ -169,7 +169,7 @@ async def github_callback(
     await reward_service.connect_by_username(session, user)
 
     # Make sure potential GitHub benefits are granted
-    await enqueue_job(
+    enqueue_job(
         "subscription.subscription_benefit.precondition_fulfilled",
         user_id=user.id,
         subscription_benefit_type=SubscriptionBenefitType.github_repository,
@@ -441,7 +441,7 @@ async def enqueue(request: Request) -> WebhookResponse:
         return not_implemented()
 
     task_name = f"github.webhook.{event_name}"
-    await enqueue_job(task_name, event_scope, event_action, json_body)
+    enqueue_job(task_name, event_scope, event_action, json_body)
 
     log.info("github.webhook.queued", task_name=task_name)
     return WebhookResponse(success=True)

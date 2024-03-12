@@ -161,7 +161,7 @@ class GitHubIssueReferencesService:
                     )
                     continue
                 # Trigger issue references sync job
-                await enqueue_job(
+                enqueue_job(
                     "github.issue.sync.issue_references",
                     issue.id,
                     crawl_with_installation_id=installation_id,

@@ -135,6 +135,6 @@ class NewTaskModal(ModalScreen[bool]):
                 e.json(), title="Validation errors", severity="error", timeout=30
             )
         else:
-            await enqueue_job(self._selected_task, **job_kwargs.model_dump())
+            enqueue_job(self._selected_task, **job_kwargs.model_dump())
             self.app.notify("Task successfully enqueued")
             self.dismiss(True)

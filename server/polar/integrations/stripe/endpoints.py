@@ -32,7 +32,7 @@ CONNECT_IMPLEMENTED_WEBHOOKS = {"account.updated", "payout.paid"}
 async def enqueue(event: stripe.Event) -> None:
     event_type: str = event["type"]
     task_name = f"stripe.webhook.{event_type}"
-    await enqueue_job(task_name, event)
+    enqueue_job(task_name, event)
     log.info("stripe.webhook.queued", task_name=task_name)
 
 

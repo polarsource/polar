@@ -53,7 +53,7 @@ async def pull_request_find_reverse_references(
             continue
 
         # Schedule sync for this issue
-        await enqueue_job("github.issue.sync.issue_references", linked_issue.id)
+        enqueue_job("github.issue.sync.issue_references", linked_issue.id)
 
 
 pull_request_upserted.add(pull_request_find_reverse_references)

@@ -176,7 +176,7 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
             )
 
             for issue in issues:
-                await enqueue_job(
+                enqueue_job(
                     "github.issue.sync",
                     issue.id,
                     _job_id=f"github.issue.sync:{issue.id}",
@@ -237,7 +237,7 @@ async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
             )
 
             for issue in issues:
-                await enqueue_job(
+                enqueue_job(
                     "github.issue.sync.issue_references",
                     issue.id,
                     _job_id=f"github.issue.sync.issue_references:{issue.id}",

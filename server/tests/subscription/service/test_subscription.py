@@ -293,7 +293,7 @@ class TestCreateFreeSubscription:
         )
         assert subscription.user.email == "backer@example.com"
 
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
@@ -325,7 +325,7 @@ class TestCreateFreeSubscription:
         )
         assert subscription.user_id == user.id
 
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
@@ -381,7 +381,7 @@ class TestCreateArbitrarySubscription:
         )
         assert subscription.user_id == user.id
 
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
@@ -635,7 +635,7 @@ class TestUpdateSubscriptionFromStripe:
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.started_at is not None
 
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants",
             updated_subscription.id,
         )
@@ -816,7 +816,7 @@ class TestEnqueueBenefitsGrants:
 
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
-        enqueue_job_mock.assert_has_awaits(
+        enqueue_job_mock.assert_has_calls(
             [
                 call(
                     "subscription.subscription_benefit.grant",
@@ -862,7 +862,7 @@ class TestEnqueueBenefitsGrants:
 
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
-        enqueue_job_mock.assert_has_awaits(
+        enqueue_job_mock.assert_has_calls(
             [
                 call(
                     "subscription.subscription_benefit.revoke",
@@ -908,7 +908,7 @@ class TestEnqueueBenefitsGrants:
 
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription_benefit.revoke",
             subscription_id=subscription.id,
             user_id=subscription.user_id,
@@ -949,7 +949,7 @@ class TestEnqueueBenefitsGrants:
         assert enqueue_job_mock.call_count == members_count * benefits_count
 
         for benefit in subscription_benefits:
-            enqueue_job_mock.assert_has_awaits(
+            enqueue_job_mock.assert_has_calls(
                 [
                     call(
                         "subscription.subscription_benefit.grant",
@@ -1000,11 +1000,11 @@ class TestUpdateSubscriptionTierBenefitsGrants:
 
         assert enqueue_job_mock.call_count == 2
 
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants",
             subscription_1.id,
         )
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants",
             subscription_2.id,
         )
@@ -1050,11 +1050,11 @@ class TestUpdateOrganizationBenefitsGrants:
 
         assert enqueue_job_mock.call_count == 2
 
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants",
             subscription_1.id,
         )
-        enqueue_job_mock.assert_any_await(
+        enqueue_job_mock.assert_any_call(
             "subscription.subscription.enqueue_benefits_grants",
             subscription_2.id,
         )

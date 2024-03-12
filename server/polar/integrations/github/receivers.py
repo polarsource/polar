@@ -30,14 +30,14 @@ async def schedule_embed_badge_task(
         return
 
     log.info("github.badge.embed_on_issue:scheduled", issue_id=hook.issue.id)
-    await enqueue_job("github.badge.embed_on_issue", hook.issue.id)
+    enqueue_job("github.badge.embed_on_issue", hook.issue.id)
 
 
 async def schedule_fetch_references_and_dependencies(
     hook: IssueHook,
 ) -> None:
-    await enqueue_job("github.issue.sync.issue_references", hook.issue.id)
-    await enqueue_job("github.issue.sync.issue_dependencies", hook.issue.id)
+    enqueue_job("github.issue.sync.issue_references", hook.issue.id)
+    enqueue_job("github.issue.sync.issue_dependencies", hook.issue.id)
 
 
 issue_upserted.add(schedule_fetch_references_and_dependencies)

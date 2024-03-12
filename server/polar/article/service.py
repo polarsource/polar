@@ -415,7 +415,7 @@ class ArticleService:
         )
 
         for receiver_user_id, _, _ in receivers:
-            await enqueue_job(
+            enqueue_job(
                 "articles.send_to_user",
                 article_id=article.id,
                 user_id=receiver_user_id,

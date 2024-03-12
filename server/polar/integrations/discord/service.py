@@ -62,7 +62,7 @@ class DiscordUserService:
         await session.commit()
 
         # Make sure potential Discord benefits are granted
-        await enqueue_job(
+        enqueue_job(
             "subscription.subscription_benefit.precondition_fulfilled",
             user_id=user.id,
             subscription_benefit_type=SubscriptionBenefitType.discord,

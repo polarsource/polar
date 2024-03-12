@@ -294,7 +294,7 @@ async def update_badge_contents(
         if not issue.pledge_badge_currently_embedded:
             continue
 
-        await enqueue_job(
+        enqueue_job(
             "github.badge.update_on_issue",
             issue_id=issue.id,
         )

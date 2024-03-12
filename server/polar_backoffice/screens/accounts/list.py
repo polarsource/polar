@@ -4,7 +4,7 @@ from babel.dates import format_datetime
 from babel.numbers import format_currency
 from rich.text import Text
 from sqlalchemy import case, desc, func, select, text
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 from textual import work
 from textual.app import ComposeResult
 from textual.screen import Screen
@@ -123,9 +123,9 @@ class AccountsListScreen(Screen[None]):
                     Account.created_at.desc(),
                 )
                 .options(
-                    joinedload(Account.admin),
-                    joinedload(Account.users),
-                    joinedload(Account.organizations),
+                    selectinload(Account.admin),
+                    selectinload(Account.users),
+                    selectinload(Account.organizations),
                 )
             )
 

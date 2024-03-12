@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
         with:
-          node-version: v18
+          node-version-file: clients/.node-version
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 

@@ -229,11 +229,7 @@ async def add_external_repo(
             session, user_id=user.id, organization_id=organization.id
         )
         if not uc:
-            uc = UserOrganization(
-                session=session,
-                organization_id=organization.id,
-                user_id=user.id,
-            )
+            uc = UserOrganization(organization_id=organization.id, user_id=user.id)
             session.add(uc)
             await session.commit()
             print("Added user to org", uc)

@@ -207,7 +207,6 @@ class PaymentIntentService:
         )
 
         pledge = Pledge(
-            session=session,
             payment_id=payment_intent_id,
             issue_id=issue.id,
             repository_id=repo.id,

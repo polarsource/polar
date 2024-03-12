@@ -1,24 +1,10 @@
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  MouseSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable'
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { FaceOutlined, TuneOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
-import { useState } from 'react'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
+import { Modal } from '../../Modal'
+import { useModal } from '../../Modal/useModal'
+import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'
 import { CreatorCard, DraggableCreatorCard } from './CreatorCard'
 import { CreatorsModal } from './CreatorsModal'
 
@@ -35,45 +21,17 @@ export const CreatorsEditor = ({
   onChange,
   disabled,
 }: CreatorsEditorProps) => {
-  const [featuredCreators, setFeaturedCreators] = useState(
-    featuredOrganizations,
-  )
-  const [activeId, setActiveId] = useState<string | number | null>(null)
   const { show, isShown, hide } = useModal()
-  const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor))
 
-  function handleDragStart(event: DragStartEvent) {
-    setActiveId(event.active.id)
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-
-    if (active.id !== over?.id) {
-      updateFeaturedCreators((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id)
-        const newIndex = items.findIndex((item) => item.id === over?.id)
-
-        return arrayMove(items, oldIndex, newIndex)
-      })
-    }
-
-    setActiveId(null)
-  }
-
-  function handleDragCancel() {
-    setActiveId(null)
-  }
-
-  const updateFeaturedCreators = (
-    producer: (prev: Organization[]) => Organization[],
-  ) => {
-    const newCreators = producer(featuredCreators)
-
-    setFeaturedCreators(newCreators)
-
-    onChange(newCreators)
-  }
+  const {
+    items: featuredCreators,
+    sensors,
+    activeId,
+    handleDragStart,
+    handleDragEnd,
+    handleDragCancel,
+    updateItems,
+  } = useDraggableEditorCallbacks(featuredOrganizations, onChange)
 
   const EditorEmptyState = () => {
     return (
@@ -99,7 +57,7 @@ export const CreatorsEditor = ({
             <CreatorsModal
               creators={featuredCreators}
               organization={organization}
-              setCreators={updateFeaturedCreators}
+              setCreators={updateItems}
               hideModal={hide}
             />
           }
@@ -163,7 +121,7 @@ export const CreatorsEditor = ({
             <CreatorsModal
               creators={featuredCreators}
               organization={organization}
-              setCreators={updateFeaturedCreators}
+              setCreators={updateItems}
               hideModal={hide}
             />
           }

@@ -1,20 +1,6 @@
 import revalidate from '@/app/actions'
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  MouseSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable'
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import {
   ArrowForwardOutlined,
   HiveOutlined,
@@ -24,9 +10,9 @@ import { Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useState } from 'react'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
+import { Modal } from '../../Modal'
+import { useModal } from '../../Modal/useModal'
+import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'
 import { DraggableProjectCard, ProjectCard } from './ProjectCard'
 import { ProjectsModal } from './ProjectsModal'
 
@@ -43,59 +29,34 @@ export const ProjectsEditor = ({
   repositories,
   disabled,
 }: ProjectsEditorProps) => {
-  const [featuredProjects, setFeaturedProjects] = useState(
-    featuredRepositories
-      .map((id) => repositories.find((r) => r.id === id))
-      .filter((value): value is Repository => Boolean(value)),
-  )
-
-  const [activeId, setActiveId] = useState<string | number | null>(null)
-  const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor))
-
   const { show, isShown, hide } = useModal()
 
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateFeaturedProjects = (
-    producer: (prev: Repository[]) => Repository[],
-  ) => {
-    const newRepos = producer(featuredProjects)
-
-    setFeaturedProjects(newRepos)
-
-    updateOrganizationMutation
-      .mutateAsync({
-        id: organization.id,
-        settings: {
-          profile_settings: {
-            featured_projects: newRepos.map((repo) => repo.id),
+  const {
+    items: featuredProjects,
+    sensors,
+    activeId,
+    handleDragStart,
+    handleDragEnd,
+    handleDragCancel,
+    updateItems,
+  } = useDraggableEditorCallbacks(
+    featuredRepositories
+      .map((id) => repositories.find((r) => r.id === id))
+      .filter((value): value is Repository => Boolean(value)),
+    (newRepos) =>
+      updateOrganizationMutation
+        .mutateAsync({
+          id: organization.id,
+          settings: {
+            profile_settings: {
+              featured_projects: newRepos.map((repo) => repo.id),
+            },
           },
-        },
-      })
-      .then(() => revalidate(`organization:${organization.name}`))
-  }
-
-  function handleDragStart(event: DragStartEvent) {
-    setActiveId(event.active.id)
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (active.id !== over?.id) {
-      updateFeaturedProjects((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id)
-        const newIndex = items.findIndex((item) => item.id === over?.id)
-
-        return arrayMove(items, oldIndex, newIndex)
-      })
-    }
-
-    setActiveId(null)
-  }
-
-  function handleDragCancel() {
-    setActiveId(null)
-  }
+        })
+        .then(() => revalidate(`organization:${organization.name}`)),
+  )
 
   const EditorEmptyState = () => {
     return (
@@ -120,7 +81,7 @@ export const ProjectsEditor = ({
           modalContent={
             <ProjectsModal
               featuredRepositories={featuredProjects}
-              setFeaturedProjects={updateFeaturedProjects}
+              setFeaturedProjects={updateItems}
               repositories={repositories}
               organization={organization}
               hideModal={hide}
@@ -194,7 +155,7 @@ export const ProjectsEditor = ({
           modalContent={
             <ProjectsModal
               featuredRepositories={featuredProjects}
-              setFeaturedProjects={updateFeaturedProjects}
+              setFeaturedProjects={updateItems}
               repositories={repositories}
               organization={organization}
               hideModal={hide}

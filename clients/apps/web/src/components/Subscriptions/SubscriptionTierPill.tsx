@@ -4,7 +4,7 @@ import { getSubscriptionColorByType } from './utils'
 
 interface SubscriptionTierPillProps {
   subscriptionTier: SubscriptionTier
-  amount: number
+  amount?: number
 }
 
 const SubscriptionTierPill: React.FC<SubscriptionTierPillProps> = ({
@@ -20,11 +20,12 @@ const SubscriptionTierPill: React.FC<SubscriptionTierPillProps> = ({
       >
         {subscriptionTier.name}
       </div>
-      {subscriptionTier.type !== SubscriptionTierType.FREE && (
-        <div className="text-sm">
-          ${getCentsInDollarString(amount, undefined, true)}
-        </div>
-      )}
+      {subscriptionTier.type !== SubscriptionTierType.FREE &&
+        typeof amount !== 'undefined' && (
+          <div className="text-sm">
+            ${getCentsInDollarString(amount, undefined, true)}
+          </div>
+        )}
     </div>
   )
 }

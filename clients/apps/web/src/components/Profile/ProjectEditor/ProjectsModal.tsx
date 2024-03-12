@@ -1,9 +1,8 @@
 import { StarIcon } from '@heroicons/react/20/solid'
-import { HiveOutlined } from '@mui/icons-material'
+import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
-import { Separator } from 'polarkit/components/ui/separator'
 import { formatStarsNumber } from 'polarkit/utils'
 
 export interface ProfileModalProps {
@@ -32,7 +31,15 @@ export const ProjectsModal = ({
   }
 
   return (
-    <div className="flex flex-col gap-y-8 p-8">
+    <div className="flex flex-col gap-y-8 p-10">
+      <div className="absolute right-6 top-6">
+        <Button onClick={hideModal} size="icon" variant="ghost">
+          <CloseOutlined
+            className="dark:text-polar-200 text-gray-700"
+            fontSize="small"
+          />
+        </Button>
+      </div>
       <div className="flex flex-col gap-y-2">
         <h3>Featured Projects</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -40,7 +47,7 @@ export const ProjectsModal = ({
         </p>
       </div>
       <div className="flex w-full flex-col gap-y-8">
-        <div className="flex max-h-[300px] w-full flex-col overflow-y-auto">
+        <div className="flex max-h-[420px] w-full flex-col overflow-y-auto">
           {repositories.map((repository) => (
             <ProjectRow
               key={repository.id}
@@ -52,12 +59,6 @@ export const ProjectsModal = ({
               deselectRepository={removeRepository}
             />
           ))}
-        </div>
-        <Separator className="dark:bg-polar-600" />
-        <div className="flex flex-row items-center justify-end gap-x-2">
-          <Button size="sm" variant="secondary" onClick={hideModal}>
-            Close
-          </Button>
         </div>
       </div>
     </div>

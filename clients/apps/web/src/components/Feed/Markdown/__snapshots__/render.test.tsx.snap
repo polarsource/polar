@@ -251,6 +251,54 @@ exports[`double-whitespace 1`] = `
 </div>
 `;
 
+exports[`footnote 1`] = `
+<div>
+  <div>
+    <p>
+      Here's a simple footnote,
+      <a
+        href="#1"
+      >
+        <sup>
+          1
+        </sup>
+      </a>
+       and here's another one
+      <a
+        href="#ref-abc"
+      >
+        <sup>
+          ref-abc
+        </sup>
+      </a>
+      .
+    </p>
+    <footer>
+      <div
+        id="1"
+      >
+        1
+        : This is the 
+        <strong>
+          first
+        </strong>
+         footnote.
+      </div>
+      <div
+        id="ref-abc"
+      >
+        ref-abc
+        : This is 
+        <code>
+          another
+        </code>
+         note!
+      </div>
+    </footer>
+  </div>
+</div>
+`;
+
 exports[`paywall 1`] = `
 <div>
   <div>

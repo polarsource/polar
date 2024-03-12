@@ -278,3 +278,21 @@ block
   )
   expect(container).toMatchSnapshot()
 })
+
+test('footnote', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `
+Here's a simple footnote,[^1] and here's another one[^ref-abc].
+
+[^1]: This is the **first** footnote.
+[^ref-abc]: This is \`another\` note!
+
+`,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})

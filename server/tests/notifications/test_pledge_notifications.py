@@ -292,7 +292,6 @@ async def test_deduplicate(
     await save_fixture(user_organization_second)
 
     spy = mocker.spy(NotificationsService, "send_to_org_admins")
-    mocker.patch("polar.worker._enqueue_job")
 
     pledge = Pledge(
         issue_id=issue.id,

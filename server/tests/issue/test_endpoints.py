@@ -286,8 +286,6 @@ async def test_confirm_solved(
     client: AsyncClient,
     user: User,
 ) -> None:
-    mocker.patch("polar.worker._enqueue_job")
-
     user_organization.is_admin = True
     await save_fixture(user_organization)
 

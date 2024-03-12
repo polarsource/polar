@@ -786,8 +786,6 @@ async def test_mark_created_by_payment_id(
     issue: Issue,
     mocker: MockerFixture,
 ) -> None:
-    mocker.patch("polar.worker._enqueue_job")
-
     pledge = Pledge(
         issue=issue,
         repository_id=repository.id,
@@ -963,9 +961,6 @@ async def test_pledge_states(
     auth_jwt: str,
     user: User,
 ) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("polar.worker._enqueue_job")
-
     notifications_sent: dict[str, int] = {}
 
     async def _mocked_notifications(

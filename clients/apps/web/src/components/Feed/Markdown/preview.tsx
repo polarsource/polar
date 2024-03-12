@@ -1,6 +1,6 @@
 import { Article } from '@polar-sh/sdk'
+import Markdown from '@zegl/markdown-to-jsx'
 import { decode } from 'html-entities'
-import Markdown from 'markdown-to-jsx'
 import { markdownOpts, wrapStrictCreateElement } from './markdown'
 
 export const previewOpts = {

@@ -129,14 +129,13 @@ exports[`basic 1`] = `
       h3
     </h3>
     <p>
-        Hello 
+      Hello 
       <strong>
         world
       </strong>
       !
     </p>
     <p>
-        
       <a
         href="https://polar.sh/"
       >
@@ -160,7 +159,7 @@ exports[`basic 1`] = `
       </p>
     </div>
     <p>
-        This is a normal 
+      This is a normal 
       <strong>
         block
       </strong>
@@ -175,12 +174,12 @@ exports[`basic 1`] = `
         various
       </em>
        formatting.
-  And here it continues in the same block.
+And here it continues in the same block.
     </p>
     <p>
-        This is a different block.
+      This is a different block.
       <br />
-        With a linebreak! (double whitespace)
+      With a linebreak! (double whitespace)
     </p>
     <blockquote>
       <p>
@@ -213,8 +212,6 @@ exports[`blockquote 1`] = `
       <p>
         block
       </p>
-      
-
     </blockquote>
   </div>
 </div>
@@ -296,6 +293,36 @@ exports[`footnote 1`] = `
       </div>
     </footer>
   </div>
+</div>
+`;
+
+exports[`link-brackets 1`] = `
+<div>
+  <p>
+    WOW! 
+    <a
+      href="https://polar.sh"
+    >
+      [wow]
+    </a>
+     :-)
+  </p>
+</div>
+`;
+
+exports[`link-brackets-code 1`] = `
+<div>
+  <p>
+    E.g 
+    <a
+      href="https://pyo3.rs/v0.20.3/class#defining-a-new-class"
+    >
+      <code>
+        [pyclass]
+      </code>
+    </a>
+    .
+  </p>
 </div>
 `;
 

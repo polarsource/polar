@@ -13,6 +13,7 @@ from polar.visibility import Visibility
 
 
 class RepositoryProfileSettings(Schema):
+    cover_image_url: str | None = Field(None, description="A URL to a cover image")
     featured_organizations: list[UUID4] | None = Field(
         None, description="A list of featured organizations"
     )
@@ -37,9 +38,10 @@ class Repository(Schema):
     @classmethod
     def from_db(cls, r: RepositoryModel) -> Self:
         profile_settings = RepositoryProfileSettings(
+            cover_image_url=r.profile_settings.get("cover_image_url", None),
             featured_organizations=r.profile_settings.get(
                 "featured_organizations", None
-            )
+            ),
         )
 
         return cls(
@@ -57,6 +59,9 @@ class Repository(Schema):
 
 
 class RepositoryProfileSettingsUpdate(Schema):
+    set_cover_image_url: bool | None = None
+    cover_image_url: str | None = None
+
     featured_organizations: list[UUID4] | None = None
 
 

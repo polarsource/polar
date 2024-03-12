@@ -196,6 +196,7 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> RepositorySchema:
     repo = await repository.get(session, id=id, load_organization=True)
+
     if not repo:
         raise ResourceNotFound()
 

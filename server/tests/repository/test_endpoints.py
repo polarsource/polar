@@ -268,3 +268,75 @@ async def test_update_repository_profile_settings_featured_organizations(
     assert response.status_code == 200
     assert response.json()["id"] == str(repository.id)
     assert response.json()["profile_settings"]["featured_organizations"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_update_repository_profile_settings_cover_image_url(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    repository: Repository,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    # set cover_image_url
+    response = await client.patch(
+        f"/api/v1/repositories/{repository.id}",
+        json={
+            "profile_settings": {
+                "cover_image_url": "https://example.com/image.jpg",
+                "set_cover_image_url": True,
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(repository.id)
+    assert (
+        response.json()["profile_settings"]["cover_image_url"]
+        == "https://example.com/image.jpg"
+    )
+
+    # setting cover_image_url without set_cover_image_url should not affect cover-image-url
+    response = await client.patch(
+        f"/api/v1/repositories/{repository.id}",
+        json={
+            "profile_settings": {
+                "cover_image_url": "https://example.com/another-image.jpg",
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(repository.id)
+    assert (
+        response.json()["profile_settings"]["cover_image_url"]
+        == "https://example.com/image.jpg"
+    )
+
+    # setting featured_projects should not affect cover-image-url
+    response = await client.patch(
+        f"/api/v1/repositories/{repository.id}",
+        json={
+            "profile_settings": {
+                "featured_organizations": [str(organization.id)],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(repository.id)
+    assert response.json()["profile_settings"]["featured_organizations"] == [
+        str(organization.id)
+    ]
+    assert (
+        response.json()["profile_settings"]["cover_image_url"]
+        == "https://example.com/image.jpg"
+    )

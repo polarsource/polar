@@ -197,7 +197,7 @@ export default async function Page({
         {
           organizationName: params.organization,
           platform: Platforms.GITHUB,
-          limit: 8,
+          limit: 10,
           page: 1,
           closed: false,
           sorting: [

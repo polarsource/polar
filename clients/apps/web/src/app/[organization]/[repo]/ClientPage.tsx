@@ -122,15 +122,17 @@ const ClientPage = ({
           disabled={!isAdmin}
         />
 
-        <ShadowBoxOnMd>
-          <div className="p-4">
-            <IssuesLookingForFunding
-              organization={organization}
-              repository={repository}
-              issues={issuesFunding}
-            />
-          </div>
-        </ShadowBoxOnMd>
+        {(issuesFunding.items?.length ?? 0) > 0 && (
+          <ShadowBoxOnMd>
+            <div className="p-4">
+              <IssuesLookingForFunding
+                organization={organization}
+                repository={repository}
+                issues={issuesFunding}
+              />
+            </div>
+          </ShadowBoxOnMd>
+        )}
       </div>
     </div>
   )

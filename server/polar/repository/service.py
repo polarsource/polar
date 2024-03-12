@@ -222,6 +222,11 @@ class RepositoryService(
                     update.profile_settings.featured_organizations
                 )
 
+            if update.profile_settings.highlighted_subscription_tiers is not None:
+                profile_settings.highlighted_subscription_tiers = (
+                    update.profile_settings.highlighted_subscription_tiers
+                )
+
             repository.profile_settings = profile_settings.model_dump(mode="json")
 
         session.add(repository)

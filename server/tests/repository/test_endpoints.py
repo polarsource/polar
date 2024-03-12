@@ -4,6 +4,7 @@ from httpx import AsyncClient
 from polar.config import settings
 from polar.models.organization import Organization
 from polar.models.repository import Repository
+from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -268,6 +269,55 @@ async def test_update_repository_profile_settings_featured_organizations(
     assert response.status_code == 200
     assert response.json()["id"] == str(repository.id)
     assert response.json()["profile_settings"]["featured_organizations"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_update_repository_profile_settings_highlighted_subscription_tiers(
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    subscription_tier_organization: SubscriptionTier,
+    repository: Repository,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    # set highlighted_subscription_tiers
+    response = await client.patch(
+        f"/api/v1/repositories/{repository.id}",
+        json={
+            "profile_settings": {
+                "highlighted_subscription_tiers": [
+                    str(subscription_tier_organization.id),
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(repository.id)
+    assert response.json()["profile_settings"]["highlighted_subscription_tiers"] == [
+        str(subscription_tier_organization.id)
+    ]
+
+    # unset highlighted_subscription_tiers
+    response = await client.patch(
+        f"/api/v1/repositories/{repository.id}",
+        json={
+            "profile_settings": {
+                "highlighted_subscription_tiers": [],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(repository.id)
+    assert response.json()["profile_settings"]["highlighted_subscription_tiers"] == []
 
 
 @pytest.mark.asyncio

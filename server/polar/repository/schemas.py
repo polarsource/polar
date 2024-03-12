@@ -17,6 +17,9 @@ class RepositoryProfileSettings(Schema):
     featured_organizations: list[UUID4] | None = Field(
         None, description="A list of featured organizations"
     )
+    highlighted_subscription_tiers: list[UUID4] | None = Field(
+        None, description="A list of highlighted subscription tiers"
+    )
 
 
 class Repository(Schema):
@@ -42,6 +45,9 @@ class Repository(Schema):
             featured_organizations=r.profile_settings.get(
                 "featured_organizations", None
             ),
+            highlighted_subscription_tiers=r.profile_settings.get(
+                "highlighted_subscription_tiers", None
+            ),
         )
 
         return cls(
@@ -63,6 +69,7 @@ class RepositoryProfileSettingsUpdate(Schema):
     cover_image_url: str | None = None
 
     featured_organizations: list[UUID4] | None = None
+    highlighted_subscription_tiers: list[UUID4] | None = None
 
 
 class RepositoryUpdate(Schema):

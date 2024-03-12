@@ -2,6 +2,7 @@
 
 import revalidate from '@/app/actions'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
+import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
@@ -47,6 +48,22 @@ const ClientPage = ({
         repositoryUpdate: {
           profile_settings: {
             featured_organizations: organizations.map((c) => c.id),
+          },
+        },
+      })
+      .then(() =>
+        revalidate(`repository:${organization.name}/${repository.name}`),
+      )
+  }
+
+  const updateCoverImage = (coverImageUrl: string | undefined) => {
+    updateProjectMutation
+      .mutateAsync({
+        id: repository.id,
+        repositoryUpdate: {
+          profile_settings: {
+            set_cover_image_url: true,
+            cover_image_url: coverImageUrl,
           },
         },
       })
@@ -114,6 +131,12 @@ const ClientPage = ({
             )}
           </div>
         </div>
+        <CoverEditor
+          organization={organization}
+          onChange={updateCoverImage}
+          coverImageUrl={repository.profile_settings.cover_image_url}
+          disabled={!isAdmin}
+        />
 
         <CreatorsEditor
           organization={organization}

@@ -287,6 +287,7 @@ class TestCreateFreeSubscription:
             auth_subject=Anonymous(),
             auth_method=None,
         )
+        await session.flush()
 
         assert (
             subscription.subscription_tier_id == subscription_tier_organization_free.id
@@ -319,6 +320,7 @@ class TestCreateFreeSubscription:
             auth_subject=user,
             auth_method=AuthMethod.COOKIE,
         )
+        await session.flush()
 
         assert (
             subscription.subscription_tier_id == subscription_tier_organization_free.id
@@ -1335,6 +1337,7 @@ class TestUpgradeSubscription:
             authz=authz,
             user=user,
         )
+        await session.flush()
 
         assert (
             updated_subscription.subscription_tier_id

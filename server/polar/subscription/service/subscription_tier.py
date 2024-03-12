@@ -232,7 +232,6 @@ class SubscriptionTierService(
         assert product.default_price is not None
         subscription_tier.stripe_price_id = get_expandable_id(product.default_price)
 
-        await session.commit()
         return subscription_tier
 
     async def user_update(
@@ -337,7 +336,7 @@ class SubscriptionTierService(
             )
 
         session.add(free_subscription_tier)
-        await session.commit()
+        await session.flush()
 
         enqueue_job(
             "subscription.subscription.update_subscription_tier_benefits_grants",
@@ -395,7 +394,6 @@ class SubscriptionTierService(
                 raise SubscriptionBenefitIsNotSelectable(deleted_benefit.id)
 
         session.add(subscription_tier)
-        await session.commit()
 
         enqueue_job(
             "subscription.subscription.update_subscription_tier_benefits_grants",

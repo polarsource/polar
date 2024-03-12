@@ -57,6 +57,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
                 user=user,
                 subscription_benefit=subscription_benefit,
             )
+            session.add(grant)
         elif grant.is_granted:
             return grant
 
@@ -113,6 +114,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
                 user=user,
                 subscription_benefit=subscription_benefit,
             )
+            session.add(grant)
         elif grant.is_revoked:
             return grant
 
@@ -201,7 +203,6 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             grant.set_granted()
 
         session.add(grant)
-        await session.commit()
 
         return grant
 
@@ -244,7 +245,6 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         grant.set_revoked()
 
         session.add(grant)
-        await session.commit()
 
         return grant
 

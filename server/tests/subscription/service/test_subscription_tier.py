@@ -949,6 +949,7 @@ class TestUpdateBenefits:
             [benefit.id for benefit in subscription_benefits],
             user,
         )
+        await session.flush()
 
         assert len(subscription_tier.subscription_tier_benefits) == len(
             subscription_benefits
@@ -1001,6 +1002,7 @@ class TestUpdateBenefits:
             [benefit.id for benefit in subscription_benefits[::-1]],
             user,
         )
+        await session.flush()
 
         assert len(subscription_tier.subscription_tier_benefits) == len(
             subscription_benefits
@@ -1056,6 +1058,7 @@ class TestUpdateBenefits:
         ) = await subscription_tier_service.update_benefits(
             session, authz, subscription_tier_organization_loaded, [], user
         )
+        await session.flush()
 
         assert len(subscription_tier.subscription_tier_benefits) == 0
         assert len(added) == 0
@@ -1103,6 +1106,7 @@ class TestUpdateBenefits:
             [benefit.id for benefit in subscription_benefits[::-1]],
             user,
         )
+        await session.flush()
 
         assert len(subscription_tier.subscription_tier_benefits) == len(
             subscription_benefits

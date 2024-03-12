@@ -1735,6 +1735,7 @@ class TestBenefitProperties:
         ) = await subscription_benefit_service.get_or_create_articles_benefits(
             session, organization
         )
+        await session.flush()
 
         # then
         session.expunge_all()

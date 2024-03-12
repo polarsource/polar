@@ -2,7 +2,7 @@
 
 import revalidate from '@/app/actions'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
-import { CreatorsEditor } from '@/components/Profile/CreatorsEditor'
+import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {

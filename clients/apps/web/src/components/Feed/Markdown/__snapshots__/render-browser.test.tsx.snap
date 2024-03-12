@@ -49,8 +49,6 @@ exports[`XSS 1`] = `
 exports[`basic 1`] = `
 <DocumentFragment>
   <div>
-     
-
     <h1
       id="h1"
     >
@@ -146,8 +144,6 @@ exports[`blockquote 1`] = `
       <p>
         block
       </p>
-      
-
     </blockquote>
   </div>
 </DocumentFragment>

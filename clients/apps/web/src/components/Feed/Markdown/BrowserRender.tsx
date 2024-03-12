@@ -1,4 +1,4 @@
-import Markdown from 'markdown-to-jsx'
+import Markdown from '@zegl/markdown-to-jsx'
 import dynamic from 'next/dynamic'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { createContext, useContext } from 'react'

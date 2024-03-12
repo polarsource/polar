@@ -2,7 +2,7 @@ import { article } from 'polarkit/testdata'
 
 import '@testing-library/jest-dom'
 import { render } from '@testing-library/react'
-import Markdown from 'markdown-to-jsx'
+import Markdown from '@zegl/markdown-to-jsx'
 import Paywall from './Paywall/Paywall'
 import {
   RenderArticle,
@@ -46,26 +46,25 @@ test('basic', () => {
       article={{
         ...article,
         body: `
-  # h1
+# h1
 
-  ## h2
+## h2
   
-  ### h3
+### h3
 
-  Hello **world**!
+Hello **world**!
 
-  [Polar](https://polar.sh/)
+[Polar](https://polar.sh/)
 
-  <Paywall></Paywall>
+<Paywall></Paywall>
 
-  This is a normal **block** of text [Polar](https://polar.sh/) with _various_ formatting.
-  And here it continues in the same block.
+This is a normal **block** of text [Polar](https://polar.sh/) with _various_ formatting.
+And here it continues in the same block.
 
-  This is a different block.  
-  With a linebreak! (double whitespace)
+This is a different block.  
+With a linebreak! (double whitespace)
 
-  > This is a quoute!
-  
+> This is a quoute!
   `,
       }}
     />,
@@ -309,6 +308,30 @@ eat: it was a [hobbit-hole][1], and that means comfort.
 
 [1]: <https://en.wikipedia.org/wiki/Hobbit#Lifestyle> "Hobbit lifestyles"
 `,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})
+
+test('link-brackets-code', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `E.g [\`[pyclass]\`](https://pyo3.rs/v0.20.3/class#defining-a-new-class).`,
+      }}
+    />,
+  )
+  expect(container).toMatchSnapshot()
+})
+
+test('link-brackets', () => {
+  const { container } = render(
+    <TestRenderer
+      article={{
+        ...article,
+        body: `WOW! [[wow]](https://polar.sh) :-)`,
       }}
     />,
   )

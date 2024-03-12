@@ -18,6 +18,7 @@ from polar.worker import enqueue_job
 from .schemas import (
     RepositoryCreate,
     RepositoryGitHubUpdate,
+    RepositoryProfileSettings,
     RepositoryUpdate,
 )
 
@@ -205,25 +206,24 @@ class RepositoryService(
         self,
         session: AsyncSession,
         repository: Repository,
-        settings: RepositoryUpdate,
+        update: RepositoryUpdate,
     ) -> Repository:
-        if settings.profile_settings is not None:
-            update = settings.profile_settings.model_dump(
-                mode="json", exclude_unset=True
-            )
-            profile: dict[str, Any] = {**repository.profile_settings}
+        profile_settings = RepositoryProfileSettings.model_validate(
+            repository.profile_settings
+        )
 
-            if update.get("set_cover_image_url"):
-                profile["cover_image_url"] = (
-                    update.get("cover_image_url")
-                    if update.get("cover_image_url")
-                    else None
+        if update.profile_settings is not None:
+            if update.profile_settings.set_cover_image_url:
+                profile_settings.cover_image_url = (
+                    update.profile_settings.cover_image_url
                 )
 
-            if update.get("featured_organizations") is not None:
-                profile["featured_organizations"] = update.get("featured_organizations")
+            if update.profile_settings.featured_organizations is not None:
+                profile_settings.featured_organizations = (
+                    update.profile_settings.featured_organizations
+                )
 
-            repository.profile_settings = profile
+            repository.profile_settings = profile_settings.model_dump(mode="json")
 
         session.add(repository)
         await session.flush()
@@ -231,7 +231,7 @@ class RepositoryService(
         log.info(
             "repository.update_settings",
             repository_id=repository.id,
-            settings=settings.model_dump(mode="json"),
+            settings=update.model_dump(mode="json"),
         )
 
         return repository

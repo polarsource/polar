@@ -1,4 +1,4 @@
-import { abbreviatedContent } from './BrowserRender'
+import { abbreviatedContent, getReferences } from './BrowserRender'
 
 describe('abbreviatedContent', () => {
   test('short', () => {
@@ -121,5 +121,56 @@ Aliquam mollis hendrerit sapien id viverra.`
 ---
 `,
     )
+  })
+
+  test('references', () => {
+    const t = `
+It was a [hobbit-hole][1], and that means comfort.
+
+---
+
+Below the boundary!
+
+[1]: <https://en.wikipedia.org/wiki/Hobbit#Lifestyle> "Hobbit lifestyles"
+    `
+
+    expect(
+      abbreviatedContent({
+        body: t,
+        includeBoundaryInBody: false,
+        includeRefs: true,
+      }).body,
+    ).toStrictEqual(`
+It was a [hobbit-hole][1], and that means comfort.
+
+[1]: <https://en.wikipedia.org/wiki/Hobbit#Lifestyle> "Hobbit lifestyles"`)
+  })
+})
+
+describe('getReferences', () => {
+  test('ref', () => {
+    const t = `
+It was a [hobbit-hole][1], and that means comfort.
+
+[1]: <https://en.wikipedia.org/wiki/Hobbit#Lifestyle> "Hobbit lifestyles"
+
+content
+
+[named-ref]: hello!!
+
+[^named-footnote]: footnote :-)
+
+more content
+`
+    expect(getReferences(t)).toStrictEqual([
+      `[1]: <https://en.wikipedia.org/wiki/Hobbit#Lifestyle> "Hobbit lifestyles"`,
+      '[named-ref]: hello!!',
+    ])
+  })
+
+  test('none', () => {
+    const t = `
+It was a [hobbit-hole][1], and that means comfort.`
+    expect(getReferences(t)).toStrictEqual([])
   })
 })

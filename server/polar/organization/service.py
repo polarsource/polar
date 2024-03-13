@@ -10,7 +10,7 @@ from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import BadRequest, PolarError
 from polar.integrations.loops.service import loops as loops_service
-from polar.kit.services import ResourceService
+from polar.kit.services import ResourceServiceReader
 from polar.models import Organization, User, UserOrganization
 from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
@@ -19,8 +19,8 @@ from polar.user_organization.service import (
 from polar.worker import enqueue_job
 
 from .schemas import (
-    OrganizationCreate,
-    OrganizationGitHubUpdate,
+    OrganizationCreateFromGitHubInstallation,
+    OrganizationCreateFromGitHubUser,
     OrganizationUpdate,
 )
 
@@ -41,48 +41,7 @@ class InvalidAccount(OrganizationError):
         super().__init__(message)
 
 
-class OrganizationService(
-    ResourceService[Organization, OrganizationCreate, OrganizationGitHubUpdate]
-):
-    async def create(
-        self,
-        session: AsyncSession,
-        create_schema: OrganizationCreate,
-    ) -> Organization:
-        organization = Organization(
-            platform=create_schema.platform,
-            name=create_schema.name,
-            avatar_url=create_schema.avatar_url,
-            external_id=create_schema.external_id,
-            is_personal=create_schema.is_personal,
-            installation_id=create_schema.installation_id,
-            installation_created_at=create_schema.installation_created_at,
-            installation_updated_at=create_schema.installation_updated_at,
-            installation_suspended_at=create_schema.installation_suspended_at,
-            onboarded_at=create_schema.onboarded_at,
-            pledge_minimum_amount=create_schema.pledge_minimum_amount,
-            default_badge_custom_content=create_schema.default_badge_custom_content,
-        )
-        session.add(organization)
-        await session.flush()
-        return organization
-
-    async def update(
-        self,
-        session: AsyncSession,
-        source: Organization,
-        update_schema: OrganizationGitHubUpdate,
-        include: set[str] | None = None,
-        exclude: set[str] | None = None,
-        exclude_unset: bool = False,
-    ) -> Organization:
-        for k, v in update_schema.model_dump(
-            include=include, exclude=exclude, exclude_unset=exclude_unset
-        ).items():
-            setattr(source, k, v)
-        session.add(source)
-        return source
-
+class OrganizationService(ResourceServiceReader[Organization]):
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(
             Organization.deleted_at.is_(None),
@@ -312,22 +271,11 @@ class OrganizationService(
         return org
 
     async def create_or_update(
-        self, session: AsyncSession, r: OrganizationCreate
+        self,
+        session: AsyncSession,
+        r: OrganizationCreateFromGitHubInstallation | OrganizationCreateFromGitHubUser,
     ) -> Organization:
-        update_keys = {
-            "name",
-            "avatar_url",
-            "is_personal",
-            "installation_id",
-            "installation_created_at",
-            "installation_updated_at",
-            "installation_suspended_at",
-            "installation_permissions",
-            "status",
-            "pledge_badge_show_amount",
-            "pledge_minimum_amount",
-            "deleted_at",
-        }
+        update_keys = r.__annotations__.keys()
 
         insert_stmt = sql.insert(Organization).values(**r.model_dump())
 

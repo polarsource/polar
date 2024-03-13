@@ -23,8 +23,8 @@ from polar.models import Organization, User
 from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import (
-    OrganizationCreate,
-    OrganizationGitHubUpdate,
+    OrganizationCreateFromGitHubInstallation,
+    OrganizationCreateFromGitHubUser,
 )
 from polar.organization.service import OrganizationService
 from polar.organization.service import organization as organization_service
@@ -128,7 +128,10 @@ class GithubOrganizationService(OrganizationService):
 
         organization = await self.create_or_update(
             session,
-            OrganizationCreate.from_github(account, installation=installation),
+            OrganizationCreateFromGitHubInstallation.from_github(
+                user=account,
+                installation=installation,
+            ),
         )
         if not organization:
             raise Exception(
@@ -188,25 +191,14 @@ class GithubOrganizationService(OrganizationService):
         if not user.avatar_url:
             raise InternalServerError("user has no avatar_url")
 
-        new = OrganizationCreate(
+        new = OrganizationCreateFromGitHubUser(
             platform=Platforms.github,
             name=oauth.account_username,
             avatar_url=user.avatar_url,
-            # Cast to GitHub ID (int)
             external_id=int(oauth.account_id),
             is_personal=True,
-            # TODO: Should we really set this here?
-            onboarded_at=utc_now(),
         )
-        # User has no org, but org could potentially exist due to it being
-        # referenced as a dependency issue. So we need to update it in that
-        # case prior to linking.
-        #
-        # The create_or_update action would wipe some existing columns, i.e
-        # `installation_id`. However, that's a good security feature vs. bug.
-        # None should exist without the user already being linked to it.
-        # Or having deleted their account. In both cases, we should wipe any
-        # existing installation to force a new one.
+
         org = await organization_service.create_or_update(session, new)
         await organization_service.add_user(
             session, organization=org, user=user, is_admin=True
@@ -272,37 +264,6 @@ class GithubOrganizationService(OrganizationService):
             organization.deleted_at = utc_now()
             session.add(organization)
             await session.commit()
-
-    async def create_or_update_from_github(
-        self,
-        session: AsyncSession,
-        data: types.SimpleUser,
-        *,
-        installation: types.Installation | None = None,
-    ) -> Organization:
-        organization = await self.get_by_external_id(session, data.id)
-
-        if organization is None:
-            log.debug(
-                "organization not found by external_id, creating it",
-                external_id=data.id,
-            )
-            organization = await self.create(
-                session, OrganizationCreate.from_github(data, installation=installation)
-            )
-        else:
-            log.debug(
-                "organization found by external_id, updating it",
-                external_id=data.id,
-            )
-            organization = await self.update(
-                session,
-                organization,
-                OrganizationGitHubUpdate.from_github(data, installation=installation),
-                exclude_unset=True,
-            )
-
-        return organization
 
     async def populate_org_metadata(
         self, session: AsyncSession, org: Organization

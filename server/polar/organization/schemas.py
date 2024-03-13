@@ -5,7 +5,6 @@ from uuid import UUID
 
 from pydantic import UUID4, Field
 
-from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import types
@@ -166,40 +165,26 @@ class CreditBalance(Schema):
 #
 
 
-# Private model
-class OrganizationCreate(Schema):
+# Internal model
+class OrganizationCreateFromGitHubInstallation(Schema):
     platform: Platforms
     name: str
     avatar_url: str
     external_id: int
     is_personal: bool
-    installation_id: int | None = None
-    installation_created_at: datetime | None = None
-    installation_updated_at: datetime | None = None
+    installation_id: int
+    installation_created_at: datetime
+    installation_updated_at: datetime
     installation_suspended_at: datetime | None = None
-    installation_permissions: types.AppPermissionsType | None = None
-    onboarded_at: datetime | None = None
-    default_badge_custom_content: str | None = None
-    pledge_minimum_amount: int = (
-        settings.MINIMUM_ORG_PLEDGE_AMOUNT
-    )  # TODO: what's this doing here? can we remove it?
+    installation_permissions: types.AppPermissionsType
 
     @classmethod
     def from_github(
         cls,
-        user: "types.SimpleUser",
         *,
-        installation: "types.Installation | None" = None,
+        user: types.SimpleUser,
+        installation: types.Installation,
     ) -> Self:
-        if installation is None:
-            return cls(
-                platform=Platforms.github,
-                name=user.login,
-                external_id=user.id,
-                avatar_url=user.avatar_url,
-                is_personal=user.type.lower() == "user",
-            )
-
         return cls(
             platform=Platforms.github,
             name=user.login,
@@ -217,8 +202,26 @@ class OrganizationCreate(Schema):
 
 
 # Internal model
-class OrganizationGitHubUpdate(OrganizationCreate):
-    ...
+class OrganizationCreateFromGitHubUser(Schema):
+    platform: Platforms
+    name: str
+    avatar_url: str
+    external_id: int
+    is_personal: bool
+
+    @classmethod
+    def from_github(
+        cls,
+        *,
+        user: types.SimpleUser,
+    ) -> Self:
+        return cls(
+            platform=Platforms.github,
+            name=user.login,
+            external_id=user.id,
+            avatar_url=user.avatar_url,
+            is_personal=user.type.lower() == "user",
+        )
 
 
 # Internal model

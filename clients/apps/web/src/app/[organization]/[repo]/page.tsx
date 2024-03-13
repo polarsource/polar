@@ -108,48 +108,56 @@ export default async function Page({
   const api = getServerSideAPI()
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  const [repository, issuesFunding, adminOrganizations] = await Promise.all([
-    api.repositories.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        repositoryName: params.repo,
-      },
-      {
-        ...cacheConfig,
-        next: {
-          ...cacheConfig.next,
-          // Make it possible to revalidate the page when the repository is updated from client
-          tags: [`repository:${params.organization}/${params.repo}`],
-        },
-      },
-    ),
-    api.funding.search(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        repositoryName: params.repo,
-        query: filters.q,
-        sorting: filters.sort,
-        badged: filters.badged,
-        limit: 20,
-        closed: filters.closed,
-        page: searchParams.page ? parseInt(searchParams.page) : 1,
-      },
-      cacheConfig,
-    ),
-    api.organizations
-      .list(
+  const [repository, issuesFunding, adminOrganizations, subscriptionTiers] =
+    await Promise.all([
+      api.repositories.lookup(
         {
-          isAdminOnly: true,
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          repositoryName: params.repo,
+        },
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            // Make it possible to revalidate the page when the repository is updated from client
+            tags: [`repository:${params.organization}/${params.repo}`],
+          },
+        },
+      ),
+      api.funding.search(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          repositoryName: params.repo,
+          query: filters.q,
+          sorting: filters.sort,
+          badged: filters.badged,
+          limit: 20,
+          closed: filters.closed,
+          page: searchParams.page ? parseInt(searchParams.page) : 1,
         },
         cacheConfig,
-      )
-      .catch(() => {
-        // Handle unauthenticated
-        return undefined
-      }),
-  ])
+      ),
+      api.organizations
+        .list(
+          {
+            isAdminOnly: true,
+          },
+          cacheConfig,
+        )
+        .catch(() => {
+          // Handle unauthenticated
+          return undefined
+        }),
+      api.subscriptions.searchSubscriptionTiers(
+        {
+          organizationName: params.organization,
+          platform: Platforms.GITHUB,
+        },
+        cacheConfig,
+      ),
+    ])
 
   if (repository === undefined) {
     return <PageNotFound />
@@ -182,6 +190,7 @@ export default async function Page({
       repository={repository}
       issuesFunding={issuesFunding}
       featuredOrganizations={featuredOrganizations}
+      subscriptionTiers={subscriptionTiers?.items ?? []}
       adminOrganizations={adminOrganizations?.items ?? []}
     />
   )

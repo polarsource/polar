@@ -4,12 +4,14 @@ import revalidate from '@/app/actions'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
+import { SubscriptionTierEditor } from '@/components/Profile/SubscriptionTierEditor/SubscriptionTierEditor'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   ListResourceIssueFunding,
   Organization,
   Repository,
+  SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -25,12 +27,14 @@ const ClientPage = ({
   issuesFunding,
   featuredOrganizations,
   adminOrganizations,
+  subscriptionTiers,
 }: {
   organization: Organization
   repository: Repository
   issuesFunding: ListResourceIssueFunding
   featuredOrganizations: Organization[]
   adminOrganizations: Organization[]
+  subscriptionTiers: SubscriptionTier[]
 }) => {
   const isAdmin = useMemo(
     () => adminOrganizations?.some((org) => org.id === organization.id),
@@ -131,11 +135,18 @@ const ClientPage = ({
             )}
           </div>
         </div>
+
         <CoverEditor
           organization={organization}
           onChange={updateCoverImage}
           coverImageUrl={repository.profile_settings.cover_image_url}
           disabled={!isAdmin}
+        />
+
+        <SubscriptionTierEditor
+          organization={organization}
+          repository={repository}
+          subscriptionTiers={subscriptionTiers}
         />
 
         <CreatorsEditor

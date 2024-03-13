@@ -198,10 +198,12 @@ const ClientPage = ({
         disabled={!isAdmin}
       />
 
-      <OrganizationIssueSummaryList
-        issues={issues}
-        organization={organization}
-      />
+      {issues.length > 0 && (
+        <OrganizationIssueSummaryList
+          issues={issues}
+          organization={organization}
+        />
+      )}
     </div>
   )
 }

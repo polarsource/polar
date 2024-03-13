@@ -18,7 +18,7 @@ class RepositoryProfileSettings(Schema):
         None, description="A list of featured organizations"
     )
     highlighted_subscription_tiers: list[UUID4] | None = Field(
-        None, description="A list of highlighted subscription tiers"
+        None, description="A list of highlighted subscription tiers", max_length=3
     )
 
 

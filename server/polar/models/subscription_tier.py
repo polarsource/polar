@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         Repository,
         SubscriptionBenefit,
         SubscriptionTierBenefit,
+        SubscriptionTierPrice,
     )
 
 
@@ -39,14 +40,11 @@ class SubscriptionTier(RecordModel):
     is_highlighted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, index=True
     )
-    price_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    price_currency: Mapped[str] = mapped_column(String(3), nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     stripe_product_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
-    stripe_price_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
@@ -67,6 +65,28 @@ class SubscriptionTier(RecordModel):
     @declared_attr
     def repository(cls) -> Mapped["Repository | None"]:
         return relationship("Repository", lazy="raise")
+
+    @declared_attr
+    def all_prices(cls) -> Mapped[list["SubscriptionTierPrice"]]:
+        # Prices are almost always needed, so eager loading makes sense
+        return relationship(
+            "SubscriptionTierPrice", lazy="raise", back_populates="subscription_tier"
+        )
+
+    @declared_attr
+    def prices(cls) -> Mapped[list["SubscriptionTierPrice"]]:
+        # Prices are almost always needed, so eager loading makes sense
+        return relationship(
+            "SubscriptionTierPrice",
+            lazy="selectin",
+            primaryjoin=(
+                "and_("
+                "SubscriptionTierPrice.subscription_tier_id == SubscriptionTier.id, "
+                "SubscriptionTierPrice.is_archived.is_(False)"
+                ")"
+            ),
+            viewonly=True,
+        )
 
     subscription_tier_benefits: Mapped[list["SubscriptionTierBenefit"]] = relationship(
         # Benefits are almost always needed, so eager loading makes sense
@@ -89,7 +109,7 @@ class SubscriptionTier(RecordModel):
 
     @property
     def is_tax_applicable(self) -> bool:
-        if self.price_amount == 0:
+        if len(self.prices) == 0:
             return False
 
         for benefit in self.benefits:
@@ -109,4 +129,10 @@ class SubscriptionTier(RecordModel):
         for benefit in self.benefits:
             if benefit.type == SubscriptionBenefitType.articles:
                 return cast(SubscriptionBenefitArticles, benefit)
+        return None
+
+    def get_price(self, id: UUID) -> "SubscriptionTierPrice | None":
+        for price in self.prices:
+            if price.id == id:
+                return price
         return None

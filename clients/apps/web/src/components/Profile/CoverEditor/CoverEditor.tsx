@@ -87,7 +87,7 @@ export const CoverEditor = ({
       />
       <div
         className={twMerge(
-          'dark:bg-polar-800 relative flex aspect-video w-full flex-col items-center justify-center gap-y-4 overflow-hidden rounded-3xl bg-blue-50',
+          'dark:bg-polar-900 relative flex aspect-video w-full flex-col items-center justify-center gap-y-4 overflow-hidden rounded-3xl bg-blue-50',
           !imagePreviewSrc && 'cursor-pointer',
         )}
         onClick={() => {

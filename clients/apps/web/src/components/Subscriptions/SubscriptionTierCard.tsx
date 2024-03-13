@@ -1,5 +1,8 @@
 'use client'
 
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { DragIndicatorOutlined } from '@mui/icons-material'
 import { SubscriptionTier, SubscriptionTierType } from '@polar-sh/sdk'
 import {
   Card,
@@ -21,6 +24,7 @@ interface SubscriptionTierCardProps {
   className?: string
   variant?: 'default' | 'small'
   isEditing?: boolean
+  draggable?: ReturnType<typeof useSortable>
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -39,8 +43,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   className,
   variant = 'default',
   isEditing = false,
+  draggable,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
   const [shineActive, setShineActive] = useState(false)
 
@@ -64,6 +69,12 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     '--var-dark-border-color': hexToRGBA(subscriptionColor, 0.15),
     '--var-dark-muted-color': hexToRGBA(subscriptionColor, 0.5),
     '--var-dark-fg-color': subscriptionColor,
+    ...(draggable
+      ? {
+          transform: CSS.Transform.toString(draggable.transform),
+          transition: draggable.transition,
+        }
+      : {}),
   } as React.CSSProperties
 
   const onMouseMove: MouseEventHandler<HTMLDivElement> = useCallback(
@@ -104,10 +115,17 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
 
   return (
     <Card
-      ref={containerRef}
+      ref={(v) => {
+        if (draggable) {
+          draggable.setNodeRef(v)
+        }
+
+        containerRef.current = v
+      }}
       id={subscriptionTier.name}
       className={twMerge(
         'dark:bg-polar-900 dark:border-polar-800 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-none',
+        draggable?.isDragging && 'opacity-30',
         variantStyles[variant]['card'],
         className,
       )}
@@ -119,9 +137,24 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       <Shine active={shineActive} />
       <CardHeader className="grow gap-y-6 p-0">
         <div className="flex flex-col gap-y-4">
-          <span className="dark:text-polar-500 text-xs text-gray-500">
-            {getSubscriptionTierAudience(subscriptionTier.type)}
-          </span>
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-xs text-gray-500">
+              {getSubscriptionTierAudience(subscriptionTier.type)}
+            </span>
+            {draggable && (
+              <span
+                ref={draggable.setDraggableNodeRef}
+                className="cursor-grab"
+                {...draggable.attributes}
+                {...draggable.listeners}
+              >
+                <DragIndicatorOutlined
+                  className={twMerge('dark:text-polar-600 text-gray-400')}
+                  fontSize="small"
+                />
+              </span>
+            )}
+          </div>
           <div className="flex justify-between">
             <h3
               className={twMerge(

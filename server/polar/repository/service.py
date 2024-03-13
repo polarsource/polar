@@ -215,7 +215,7 @@ class RepositoryService(
             if update.profile_settings.set_description:
                 profile_settings.description = (
                     update.profile_settings.description.strip()
-                    if update.profile_settings.description
+                    if update.profile_settings.description is not None
                     else None
                 )
 

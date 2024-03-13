@@ -4,13 +4,16 @@ import revalidate from '@/app/actions'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
+import { DescriptionEditor } from '@/components/Profile/DescriptionEditor/DescriptionEditor'
 import { SubscriptionTierEditor } from '@/components/Profile/SubscriptionTierEditor/SubscriptionTierEditor'
+import useDebouncedCallback from '@/hooks/utils'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   ListResourceIssueFunding,
   Organization,
   Repository,
+  RepositoryProfileSettingsUpdate,
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -45,14 +48,12 @@ const ClientPage = ({
 
   const updateProjectMutation = useUpdateProject()
 
-  const updateFeaturedCreators = (organizations: Organization[]) => {
+  const updateProfile = (setting: Partial<RepositoryProfileSettingsUpdate>) => {
     updateProjectMutation
       .mutateAsync({
         id: repository.id,
         repositoryUpdate: {
-          profile_settings: {
-            featured_organizations: organizations.map((c) => c.id),
-          },
+          profile_settings: setting,
         },
       })
       .then(() =>
@@ -60,21 +61,23 @@ const ClientPage = ({
       )
   }
 
-  const updateCoverImage = (coverImageUrl: string | undefined) => {
-    updateProjectMutation
-      .mutateAsync({
-        id: repository.id,
-        repositoryUpdate: {
-          profile_settings: {
-            set_cover_image_url: true,
-            cover_image_url: coverImageUrl,
-          },
-        },
-      })
-      .then(() =>
-        revalidate(`repository:${organization.name}/${repository.name}`),
-      )
+  const updateFeaturedCreators = (organizations: Organization[]) => {
+    updateProfile({
+      featured_organizations: organizations.map((c) => c.id),
+    })
   }
+
+  const updateCoverImage = (coverImageUrl: string | undefined) => {
+    updateProfile({ set_cover_image_url: true, cover_image_url: coverImageUrl })
+  }
+
+  const updateDescription = useDebouncedCallback(
+    (description: string | undefined) => {
+      updateProfile({ set_description: true, description })
+    },
+    500,
+    [updateProfile],
+  )
 
   return (
     <div className="flex w-full flex-col gap-y-12">
@@ -82,9 +85,15 @@ const ClientPage = ({
         <div className="flex w-full flex-col gap-y-16">
           {repository.description && (
             <>
-              <p className="dark:text-polar-50 text-3xl !font-normal leading-normal text-gray-950">
-                {repository.description}
-              </p>
+              <DescriptionEditor
+                description={
+                  repository.profile_settings.description ??
+                  repository.description ??
+                  ''
+                }
+                onChange={updateDescription}
+                disabled={!isAdmin}
+              />
               <Separator className="h-0.5 w-12 bg-black dark:bg-white" />
             </>
           )}

@@ -322,6 +322,7 @@ class OrganizationService(
             "installation_created_at",
             "installation_updated_at",
             "installation_suspended_at",
+            "installation_permissions",
             "status",
             "pledge_badge_show_amount",
             "pledge_minimum_amount",

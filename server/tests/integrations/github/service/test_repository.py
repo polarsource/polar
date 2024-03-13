@@ -5,7 +5,8 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
 from tests.fixtures.database import SaveFixture
-from tests.integrations.github.repository import create_github_repository
+
+from ..conftest import create_github_repository
 
 
 @pytest.mark.asyncio

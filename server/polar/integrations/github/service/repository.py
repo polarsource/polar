@@ -48,9 +48,8 @@ class GithubRepositoryService(RepositoryService):
         self,
         session: AsyncSession,
         organization: Organization,
-        installation_id: int,
     ) -> Sequence[Repository] | None:
-        client = github.get_app_installation_client(installation_id)
+        client = github.get_app_installation_client(organization.safe_installation_id)
 
         instances = []
 

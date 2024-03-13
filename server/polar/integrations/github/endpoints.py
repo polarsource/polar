@@ -364,7 +364,7 @@ async def install(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
     with ExecutionContext(is_during_installation=True):
-        organization = await github_organization.install(
+        organization = await github_organization.install_from_user_browser(
             session, auth.user, installation_id=installation.external_id
         )
         if not organization:

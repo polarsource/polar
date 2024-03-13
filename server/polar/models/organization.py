@@ -60,6 +60,9 @@ class Organization(RecordModel):
     def account(cls) -> Mapped[Account | None]:
         return relationship(Account, lazy="raise", back_populates="organizations")
 
+    #
+    # GitHub App Fields
+    #
     installation_id: Mapped[int | None] = mapped_column(
         Integer, nullable=True, unique=True
     )
@@ -88,6 +91,13 @@ class Organization(RecordModel):
     installation_suspender: Mapped[UUID | None] = mapped_column(
         PostgresUUID, nullable=True, default=None
     )
+
+    installation_permissions: Mapped[dict[str, str] | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
+    #
+    # End GitHub App Fields
+    #
 
     # This colunm is never read.
     status: Mapped[Status] = mapped_column(
@@ -149,7 +159,7 @@ class Organization(RecordModel):
     )
 
     profile_settings: Mapped[dict[str, Any]] = mapped_column(
-        "profile_settings", JSONB, nullable=False, default=dict
+        JSONB, nullable=False, default=dict
     )
 
     #

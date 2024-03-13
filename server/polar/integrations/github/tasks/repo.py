@@ -32,7 +32,7 @@ async def sync_repositories(
                 raise Exception("organization not found")
 
             await service.github_repository.install_for_organization(
-                session, organization, organization.safe_installation_id
+                session, organization
             )
 
 

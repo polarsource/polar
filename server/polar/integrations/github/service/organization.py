@@ -58,13 +58,12 @@ class GithubOrganizationService(OrganizationService):
 
     async def fetch_installations(
         self, session: AsyncSession, user: User
-    ) -> list[OrganizationCreate] | None:
+    ) -> list[types.Installation] | None:
         oauth = await oauth_account_service.get_by_platform_and_user_id(
             session, OAuthPlatform.github, user.id
         )
         if not oauth:
-            # TODO Handle
-            return None
+            raise Exception("fetch_installations: no user oauth found")
 
         client = await github.get_user_client(session, user)
         response = (
@@ -80,55 +79,70 @@ class GithubOrganizationService(OrganizationService):
         )
         if not installations:
             return None
+        return installations
 
-        organizations: list[OrganizationCreate] = []
-        for installation in installations:
-            account = installation.account
-            if account is None:
-                log.warning(
-                    "installation without associated account",
-                    installation_id=installation.id,
-                )
-                continue
-            elif not isinstance(account, types.SimpleUser):
-                log.warning(
-                    "unsupported installation with an Enterprise account",
-                    installation=installation.id,
-                )
-                continue
-            organizations.append(
-                OrganizationCreate.from_github(account, installation=installation)
-            )
-
-        return organizations
-
-    async def install(
+    async def install_from_user_browser(
         self, session: AsyncSession, user: User, installation_id: int
     ) -> Organization | None:
         installations = await self.fetch_installations(session, user)
         if not installations:
-            return None
+            raise Exception(f"no user installations found. id={installation_id}")
 
         # Ideally, we could fetch the specific resource with /apps/installation/{id}
         # instead. However, Github only provides the installation_id and no verification
         # token. Therefore, using it would expose us to CSRF risks, e.g malicious user
         # guessing other installation IDs to get connected to them.
-        filtered = [i for i in installations if i.installation_id == installation_id]
+        filtered = [i for i in installations if i.id == installation_id]
         if not filtered:
-            return None
+            raise Exception(
+                f"user installation not found in filter. id={installation_id}"
+            )
 
-        to_create = filtered.pop()
-        organization = await self.create_or_update(session, to_create)
+        org_installation = filtered.pop()
+
+        organization = await self._install(session, org_installation)
+
+        # TODO: Better error handling?
+        # TODO: this is not true! user might not be admin!
+        await self.add_user(session, organization, user, is_admin=True)
+
+        return organization
+
+    async def install_from_webhook(
+        self, session: AsyncSession, installation: types.Installation
+    ) -> Organization:
+        return await self._install(session, installation)
+
+    async def _install(
+        self, session: AsyncSession, installation: types.Installation
+    ) -> Organization:
+        account = installation.account
+        if account is None:
+            raise Exception(
+                f"installation without associated account. id={installation.id}"
+            )
+        elif not isinstance(account, types.SimpleUser):
+            raise Exception(
+                f"unsupported installation with an Enterprise account. id={installation.id}"
+            )
+
+        organization = await self.create_or_update(
+            session,
+            OrganizationCreate.from_github(account, installation=installation),
+        )
         if not organization:
-            return None
+            raise Exception(
+                f"failed to create organization from installation id={installation.id}"
+            )
+
+        # Un-delete if previously deleted
+        if organization.deleted_at:
+            organization.deleted_at = None
+            session.add(organization)
 
         await self.populate_org_metadata(session, organization)
 
-        # TODO: Better error handling?
-        await self.add_user(session, organization, user, is_admin=True)
-        await github_repository.install_for_organization(
-            session, organization, installation_id
-        )
+        await github_repository.install_for_organization(session, organization)
 
         enqueue_job("organization.post_install", organization_id=organization.id)
 

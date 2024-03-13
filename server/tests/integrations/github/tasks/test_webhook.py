@@ -22,8 +22,12 @@ from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures import random_objects
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
-from tests.integrations.github.repository import (
+
+from ..conftest import (
+    create_github_installation,
+    create_github_organization,
     create_github_repository,
+    create_github_user_webhooks,
 )
 
 
@@ -260,12 +264,12 @@ def hook_as_obj(
             )
             for repo in hook.repositories_added
         ],
-        repository_selection="x",
+        repository_selection="selected",
     )
 
 
 @pytest.mark.asyncio
-async def test_webhook_repositories_added(
+async def test_webhook_repositories_added_normal(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
@@ -274,23 +278,53 @@ async def test_webhook_repositories_added(
     hook = github_webhook.create("installation_repositories.added")
     new_repo = hook["repositories_added"][0]
 
-    # def lister(*args: Any, **kwargs: Any) -> httpx.Response:
     parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
     if not isinstance(parsed, types.WebhookInstallationRepositoriesAdded):
         raise Exception("wat")
 
-    # fake it
-    x = hook_as_obj(parsed)
+    def api_response(self: Any, *args: Any, **kwargs: Any) -> httpx.Response:
+        if args == ("/orgs/HubbenCo",):
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=create_github_organization(
+                    id=105373340, name="HubbenCo"
+                ).model_dump_json(),
+            )
+
+        elif args == ("/installation/repositories",):
+            # paginated endpoint, return first page
+            page = kwargs.get("params", {}).get("page", None)
+            if page == 1:
+                return httpx.Response(
+                    200,
+                    request=httpx.Request("GET", args[0]),
+                    content=types.InstallationRepositoriesGetResponse200(
+                        total_count=1,
+                        repositories=[
+                            create_github_repository(
+                                id=537077294, name="testing", private=True
+                            )
+                        ],
+                        repository_selection="selected",
+                    ).model_dump_json(),
+                )
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=types.InstallationRepositoriesGetResponse200(
+                    total_count=1,
+                    repositories=[],
+                    repository_selection="selected",
+                ).model_dump_json(),
+            )
+
+        else:
+            raise Exception("No mock for API")
 
     response_mock = mocker.patch(
         "githubkit.core.GitHubCore._arequest",
-        side_effect=[
-            httpx.Response(
-                200,
-                request=httpx.Request("POST", ""),
-                content=x.model_dump_json(),
-            ),
-        ],
+        side_effect=api_response,
     )
 
     # then
@@ -310,6 +344,19 @@ async def test_webhook_repositories_added(
     await assert_repository_exists(session, new_repo)
 
     response_mock.assert_called()
+    assert 5 == response_mock.call_count
+
+    org = await service.github_organization.get_by_external_id(session, 105373340)
+    assert org
+    assert {
+        "administration": "read",
+        "issues": "write",
+        "members": "read",
+        "metadata": "read",
+        "pull_requests": "write",
+        "repository_hooks": "read",
+        "team_discussions": "write",
+    } == org.installation_permissions
 
 
 @pytest.mark.asyncio
@@ -341,18 +388,49 @@ async def test_webhook_repositories_added_duplicate_name(
     if not isinstance(parsed, types.WebhookInstallationRepositoriesAdded):
         raise Exception("wat")
 
-    # fake it
-    x = hook_as_obj(parsed)
+    def api_response(self: Any, *args: Any, **kwargs: Any) -> httpx.Response:
+        if args == ("/orgs/HubbenCo",):
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=create_github_organization(
+                    id=105373340, name="HubbenCo"
+                ).model_dump_json(),
+            )
+
+        elif args == ("/installation/repositories",):
+            # paginated endpoint, return first page
+            page = kwargs.get("params", {}).get("page", None)
+            if page == 1:
+                return httpx.Response(
+                    200,
+                    request=httpx.Request("GET", args[0]),
+                    content=types.InstallationRepositoriesGetResponse200(
+                        total_count=1,
+                        repositories=[
+                            create_github_repository(
+                                id=537077294, name="testing", private=True
+                            )
+                        ],
+                        repository_selection="selected",
+                    ).model_dump_json(),
+                )
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=types.InstallationRepositoriesGetResponse200(
+                    total_count=1,
+                    repositories=[],
+                    repository_selection="selected",
+                ).model_dump_json(),
+            )
+
+        else:
+            raise Exception("No mock for API")
 
     response_mock = mocker.patch(
         "githubkit.core.GitHubCore._arequest",
-        side_effect=[
-            httpx.Response(
-                200,
-                request=httpx.Request("POST", ""),
-                content=x.model_dump_json(),
-            ),
-        ],
+        side_effect=api_response,
     )
 
     # then
@@ -372,6 +450,7 @@ async def test_webhook_repositories_added_duplicate_name(
     await assert_repository_exists(session, new_repo)
 
     response_mock.assert_called()
+    assert 5 == response_mock.call_count
 
 
 @pytest.mark.asyncio
@@ -387,18 +466,32 @@ async def test_webhook_repositories_removed(
     await create_repositories(session, github_webhook)
     await assert_repository_exists(session, delete_repo)
 
-    # fake it
+    def api_response(self: Any, *args: Any, **kwargs: Any) -> httpx.Response:
+        if args == ("/orgs/HubbenCo",):
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=create_github_organization(
+                    id=105373340, name="HubbenCo"
+                ).model_dump_json(),
+            )
+
+        elif args == ("/installation/repositories",):
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=types.InstallationRepositoriesGetResponse200(
+                    total_count=0,
+                    repositories=[],
+                    repository_selection="selected",
+                ).model_dump_json(),
+            )
+        else:
+            raise Exception("No mock for API")
+
     response_mock = mocker.patch(
         "githubkit.core.GitHubCore._arequest",
-        side_effect=[
-            httpx.Response(
-                200,
-                request=httpx.Request("POST", ""),
-                content=types.InstallationRepositoriesGetResponse200(
-                    total_count=0, repositories=[], repository_selection="x"
-                ).model_dump_json(),
-            ),
-        ],
+        side_effect=api_response,
     )
 
     # then
@@ -984,3 +1077,113 @@ async def test_webhook_issue_transferred(
     )
     assert updated_old_issue is not None
     assert updated_old_issue.deleted_at is not None
+
+
+@pytest.mark.asyncio
+async def test_webhook_installation_new_permissions_accepted(
+    job_context: JobContext,
+    mocker: MockerFixture,
+    session: AsyncSession,
+) -> None:
+    def api_response(self: Any, *args: Any, **kwargs: Any) -> httpx.Response:
+        if args == ("/orgs/HubbenCo",):
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=create_github_organization(
+                    id=105373340, name="HubbenCo"
+                ).model_dump_json(),
+            )
+
+        elif args == ("/installation/repositories",):
+            # paginated endpoint, return first page
+            page = kwargs.get("params", {}).get("page", None)
+            if page == 1:
+                return httpx.Response(
+                    200,
+                    request=httpx.Request("GET", args[0]),
+                    content=types.InstallationRepositoriesGetResponse200(
+                        total_count=1,
+                        repositories=[
+                            create_github_repository(
+                                id=537077294, name="testing", private=True
+                            )
+                        ],
+                        repository_selection="selected",
+                    ).model_dump_json(),
+                )
+            return httpx.Response(
+                200,
+                request=httpx.Request("GET", args[0]),
+                content=types.InstallationRepositoriesGetResponse200(
+                    total_count=1,
+                    repositories=[],
+                    repository_selection="selected",
+                ).model_dump_json(),
+            )
+
+        else:
+            raise Exception("No mock for API")
+
+    response_mock = mocker.patch(
+        "githubkit.core.GitHubCore._arequest",
+        side_effect=api_response,
+    )
+
+    # then
+    session.expunge_all()
+
+    installation = create_github_installation(org_name="HubbenCo", org_id=105373340)
+
+    await webhook_tasks.installation_new_permissions_accepted(
+        job_context,
+        "installation",
+        "new_permissions_accepted",
+        payload=types.WebhookInstallationNewPermissionsAccepted(
+            action="new_permissions_accepted",
+            installation=installation,
+            sender=create_github_user_webhooks(),
+        ).model_dump(),
+        polar_context=PolarWorkerContext(),
+    )
+
+    org = await service.github_organization.get_by_external_id(session, 105373340)
+    assert org
+    assert {
+        "administration": "read",
+        "issues": "write",
+        "members": "read",
+        "metadata": "read",
+        "pull_requests": "write",
+        "repository_hooks": "read",
+        "team_discussions": "write",
+    } == org.installation_permissions
+
+    # updated permissions
+    installation.permissions.git_ssh_keys = "write"
+    installation.permissions.issues = "read"
+
+    await webhook_tasks.installation_new_permissions_accepted(
+        job_context,
+        "installation",
+        "new_permissions_accepted",
+        payload=types.WebhookInstallationNewPermissionsAccepted(
+            action="new_permissions_accepted",
+            installation=installation,
+            sender=create_github_user_webhooks(),
+        ).model_dump(),
+        polar_context=PolarWorkerContext(),
+    )
+
+    org = await service.github_organization.get_by_external_id(session, 105373340)
+    assert org
+    assert {
+        "administration": "read",
+        "issues": "read",
+        "members": "read",
+        "metadata": "read",
+        "pull_requests": "write",
+        "repository_hooks": "read",
+        "team_discussions": "write",
+        "git_ssh_keys": "write",
+    } == org.installation_permissions

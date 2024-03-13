@@ -234,6 +234,9 @@ class RepositoryService(
                     update.profile_settings.highlighted_subscription_tiers
                 )
 
+            if update.profile_settings.links is not None:
+                profile_settings.links = update.profile_settings.links
+
             repository.profile_settings = profile_settings.model_dump(mode="json")
 
         session.add(repository)

@@ -7,7 +7,6 @@ from pytest_mock import MockerFixture
 
 from polar.authz.service import Anonymous, Authz
 from polar.exceptions import NotPermitted
-from polar.integrations.stripe.service import StripeError
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Organization,
@@ -19,8 +18,14 @@ from polar.models import (
 )
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 from polar.postgres import AsyncSession
-from polar.subscription.schemas import SubscriptionTierCreate, SubscriptionTierUpdate
+from polar.subscription.schemas import (
+    ExistingSubscriptionTierPrice,
+    SubscriptionTierCreate,
+    SubscriptionTierPriceCreate,
+    SubscriptionTierUpdate,
+)
 from polar.subscription.service.subscription_tier import (
     FreeTierIsNotArchivable,
     OrganizationDoesNotExist,
@@ -335,9 +340,14 @@ class TestUserCreate:
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
             organization_id=uuid.uuid4(),
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -358,9 +368,14 @@ class TestUserCreate:
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
             organization_id=organization.id,
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -380,19 +395,25 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_with_price_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_product_with_price
-        create_product_with_price_mock.return_value = SimpleNamespace(
-            id="PRODUCT_ID", default_price="PRICE_ID"
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
         )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
             organization_id=organization.id,
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -403,9 +424,12 @@ class TestUserCreate:
         )
         assert subscription_tier.organization_id == organization.id
 
-        create_product_with_price_mock.assert_called_once()
+        create_product_mock.assert_called_once()
+        create_price_for_product_mock.assert_called_once()
         assert subscription_tier.stripe_product_id == "PRODUCT_ID"
-        assert subscription_tier.stripe_price_id == "PRICE_ID"
+
+        assert len(subscription_tier.prices) == 1
+        assert subscription_tier.prices[0].stripe_price_id == "PRICE_ID"
 
     async def test_not_existing_repository(
         self, session: AsyncSession, authz: Authz, user: User
@@ -413,9 +437,14 @@ class TestUserCreate:
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
             repository_id=uuid.uuid4(),
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -436,9 +465,14 @@ class TestUserCreate:
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
             repository_id=repository.id,
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -458,19 +492,25 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_with_price_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_product_with_price
-        create_product_with_price_mock.return_value = SimpleNamespace(
-            id="PRODUCT_ID", default_price="PRICE_ID"
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
         )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
             repository_id=repository.id,
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -481,44 +521,12 @@ class TestUserCreate:
         )
         assert subscription_tier.repository_id == repository.id
 
-        create_product_with_price_mock.assert_called_once()
+        create_product_mock.assert_called_once()
+        create_price_for_product_mock.assert_called_once()
         assert subscription_tier.stripe_product_id == "PRODUCT_ID"
-        assert subscription_tier.stripe_price_id == "PRICE_ID"
 
-    async def test_stripe_error(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        user: User,
-        organization: Organization,
-        user_organization_admin: UserOrganization,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        create_product_with_price_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_product_with_price
-        create_product_with_price_mock.side_effect = StripeError()
-
-        create_schema = SubscriptionTierCreate(
-            type=SubscriptionTierType.individual,
-            name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
-            organization_id=organization.id,
-        )
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(StripeError):
-            await subscription_tier_service.user_create(
-                session, authz, create_schema, user
-            )
-
-        subscription_tier = await subscription_tier_service.get_by(
-            session, name="Subscription Tier"
-        )
-        assert subscription_tier is None
+        assert len(subscription_tier.prices) == 1
+        assert subscription_tier.prices[0].stripe_price_id == "PRICE_ID"
 
     async def test_valid_highlighted(
         self,
@@ -536,20 +544,26 @@ class TestUserCreate:
         await create_subscription_tier(
             save_fixture, organization=organization, is_highlighted=False
         )
-        create_product_with_price_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_product_with_price
-        create_product_with_price_mock.return_value = SimpleNamespace(
-            id="PRODUCT_ID", default_price="PRICE_ID"
+
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
         )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
-            price_amount=1000,
-            price_currency="USD",
             organization_id=organization.id,
             is_highlighted=True,
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -575,20 +589,25 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_with_price_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_product_with_price
-        create_product_with_price_mock.return_value = SimpleNamespace(
-            id="PRODUCT_ID", default_price="PRICE_ID"
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
         )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = SubscriptionTierCreate(
             type=SubscriptionTierType.individual,
             name="Subscription Tier",
             description="",
-            price_amount=1000,
-            price_currency="USD",
             repository_id=repository.id,
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
         )
 
         # then
@@ -722,7 +741,7 @@ class TestUserUpdate:
 
         update_product_mock.assert_not_called()
 
-    async def test_valid_price_change(
+    async def test_valid_price_added(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -731,13 +750,10 @@ class TestUserUpdate:
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        create_price_for_product_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_price_for_product
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
         create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
-        archive_price_mock: MagicMock = stripe_service_mock.archive_price
-
-        old_price_id = subscription_tier_organization.stripe_price_id
 
         # then
         session.expunge_all()
@@ -748,16 +764,80 @@ class TestUserUpdate:
         )
         assert subscription_tier_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(price_amount=1500)
+        update_schema = SubscriptionTierUpdate(
+            prices=[
+                ExistingSubscriptionTierPrice(
+                    id=subscription_tier_organization_loaded.prices[0].id
+                ),
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.year,
+                    price_amount=12000,
+                    price_currency="usd",
+                ),
+            ]
+        )
         updated_subscription_tier = await subscription_tier_service.user_update(
             session, authz, subscription_tier_organization_loaded, update_schema, user
         )
 
         create_price_for_product_mock.assert_called_once()
-        archive_price_mock.assert_called_once_with(old_price_id)
 
-        assert updated_subscription_tier.price_amount == 1500
-        assert updated_subscription_tier.stripe_price_id == "NEW_PRICE_ID"
+        assert len(updated_subscription_tier.prices) == 2
+        assert (
+            updated_subscription_tier.prices[0].id
+            == subscription_tier_organization_loaded.prices[0].id
+        )
+
+        assert updated_subscription_tier.prices[1].recurring_interval == "year"
+        assert updated_subscription_tier.prices[1].price_amount == 12000
+        assert updated_subscription_tier.prices[1].stripe_price_id == "NEW_PRICE_ID"
+
+    async def test_valid_price_deleted(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
+        archive_price_mock: MagicMock = stripe_service_mock.archive_price
+
+        deleted_price_id = subscription_tier_organization.prices[0].stripe_price_id
+
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_organization_loaded = await subscription_tier_service.get(
+            session, subscription_tier_organization.id
+        )
+        assert subscription_tier_organization_loaded
+
+        update_schema = SubscriptionTierUpdate(
+            prices=[
+                SubscriptionTierPriceCreate(
+                    recurring_interval=SubscriptionTierPriceRecurringInterval.year,
+                    price_amount=12000,
+                    price_currency="usd",
+                ),
+            ]
+        )
+        updated_subscription_tier = await subscription_tier_service.user_update(
+            session, authz, subscription_tier_organization_loaded, update_schema, user
+        )
+
+        create_price_for_product_mock.assert_called_once()
+        archive_price_mock.assert_called_once_with(deleted_price_id)
+
+        assert len(updated_subscription_tier.prices) == 1
+        assert updated_subscription_tier.prices[0].recurring_interval == "year"
+        assert updated_subscription_tier.prices[0].price_amount == 12000
+        assert updated_subscription_tier.prices[0].stripe_price_id == "NEW_PRICE_ID"
 
     async def test_valid_highlighted(
         self,
@@ -843,7 +923,7 @@ class TestCreateFree:
 
         assert free_subscription_tier.type == SubscriptionTierType.free
         assert free_subscription_tier.organization_id == organization.id
-        assert free_subscription_tier.price_amount == 0
+        assert free_subscription_tier.prices == []
         assert len(free_subscription_tier.benefits) == 1
         assert (
             free_subscription_tier.benefits[0].id

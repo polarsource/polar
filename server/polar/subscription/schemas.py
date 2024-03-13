@@ -20,6 +20,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 
 TIER_NAME_MIN_LENGTH = 3
 TIER_NAME_MAX_LENGTH = 24
@@ -334,6 +335,12 @@ SubscriptionBenefitPublic = SubscriptionBenefitBase | SubscriptionBenefitArticle
 MAXIMUM_PRICE_AMOUNT = 99999999
 
 
+class SubscriptionTierPriceCreate(Schema):
+    recurring_interval: SubscriptionTierPriceRecurringInterval
+    price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
+    price_currency: str = Field("usd", pattern="usd")
+
+
 class SubscriptionTierCreate(Schema):
     type: Literal[
         SubscriptionTierType.individual,
@@ -346,8 +353,7 @@ class SubscriptionTierCreate(Schema):
         default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
     )
     is_highlighted: bool = False
-    price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
-    price_currency: str = Field("USD", pattern="USD")
+    prices: list[SubscriptionTierPriceCreate] = Field(..., min_length=1)
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
 
@@ -366,6 +372,10 @@ class SubscriptionTierCreate(Schema):
         return self
 
 
+class ExistingSubscriptionTierPrice(Schema):
+    id: UUID4
+
+
 class SubscriptionTierUpdate(Schema):
     name: str | None = Field(
         default=None, min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
@@ -374,8 +384,9 @@ class SubscriptionTierUpdate(Schema):
         default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
     )
     is_highlighted: bool | None = None
-    price_amount: int | None = Field(default=None, gt=0, le=MAXIMUM_PRICE_AMOUNT)
-    price_currency: str | None = Field(default=None, pattern="USD")
+    prices: list[
+        ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate
+    ] | None = Field(default=None, min_length=1)
 
 
 class SubscriptionTierBenefitsUpdate(Schema):
@@ -386,17 +397,24 @@ class SubscriptionTierBenefit(SubscriptionBenefitBase):
     ...
 
 
+class SubscriptionTierPrice(TimestampedSchema):
+    id: UUID4
+    recurring_interval: SubscriptionTierPriceRecurringInterval
+    price_amount: int
+    price_currency: str
+    is_archived: bool
+
+
 class SubscriptionTierBase(TimestampedSchema):
     id: UUID4
     type: SubscriptionTierType
     name: str
     description: str | None = None
     is_highlighted: bool
-    price_amount: int
-    price_currency: str
     is_archived: bool
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
+    prices: list[SubscriptionTierPrice]
 
 
 class SubscriptionTier(SubscriptionTierBase):

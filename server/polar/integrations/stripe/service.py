@@ -28,6 +28,7 @@ StripeError = stripe_lib_error.StripeError
 class ProductUpdateKwargs(TypedDict, total=False):
     name: str
     description: str
+    default_price: str
 
 
 class MissingOrganizationBillingEmail(PolarError):
@@ -457,22 +458,15 @@ Thank you for your support!
             return_url=f"{settings.FRONTEND_BASE_URL}/team/{org.name}/settings",
         )
 
-    def create_product_with_price(
+    def create_product(
         self,
         name: str,
         *,
-        price_amount: int,
-        price_currency: str,
         description: str | None = None,
         metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Product:
         create_params: stripe_lib.Product.CreateParams = {
             "name": name,
-            "default_price_data": {
-                "currency": price_currency,
-                "unit_amount": price_amount,
-                "recurring": {"interval": "month"},
-            },
             "metadata": metadata or {},
         }
         if description is not None:
@@ -484,6 +478,7 @@ Thank you for your support!
         product: str,
         price_amount: int,
         price_currency: str,
+        interval: Literal["day", "month", "week", "year"],
         *,
         set_default: bool = False,
     ) -> stripe_lib.Price:
@@ -491,7 +486,7 @@ Thank you for your support!
             currency=price_currency,
             product=product,
             unit_amount=price_amount,
-            recurring={"interval": "month"},
+            recurring={"interval": interval},
         )
         if set_default:
             stripe_lib.Product.modify(product, default_price=price.id)

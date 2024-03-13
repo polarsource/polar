@@ -9,9 +9,8 @@ from sqlalchemy.orm import aliased, contains_eager
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import NotPermitted, PolarError
-from polar.integrations.stripe.service import ProductUpdateKwargs, StripeError
+from polar.integrations.stripe.service import ProductUpdateKwargs
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -22,6 +21,7 @@ from polar.models import (
     SubscriptionBenefit,
     SubscriptionTier,
     SubscriptionTierBenefit,
+    SubscriptionTierPrice,
     User,
     UserOrganization,
 )
@@ -30,7 +30,11 @@ from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 from polar.worker import enqueue_job
 
-from ..schemas import SubscriptionTierCreate, SubscriptionTierUpdate
+from ..schemas import (
+    ExistingSubscriptionTierPrice,
+    SubscriptionTierCreate,
+    SubscriptionTierUpdate,
+)
 from .subscription_benefit import subscription_benefit as subscription_benefit_service
 
 
@@ -116,7 +120,6 @@ class SubscriptionTierService(
                 (SubscriptionTier.type == SubscriptionTierType.individual, 2),
                 (SubscriptionTier.type == SubscriptionTierType.business, 3),
             ),
-            SubscriptionTier.price_amount,
             SubscriptionTier.created_at,
         )
 
@@ -186,8 +189,6 @@ class SubscriptionTierService(
             ):
                 raise RepositoryDoesNotExist(create_schema.repository_id)
 
-        nested = await session.begin_nested()
-
         if create_schema.is_highlighted:
             await self._disable_other_highlights(
                 session,
@@ -199,38 +200,47 @@ class SubscriptionTierService(
         subscription_tier = SubscriptionTier(
             organization=organization,
             repository=repository,
+            prices=[],
             subscription_tier_benefits=[],
-            **create_schema.model_dump(exclude={"organization_id", "repository_id"}),
+            **create_schema.model_dump(
+                exclude={"organization_id", "repository_id", "prices"}
+            ),
         )
         session.add(subscription_tier)
         await session.flush()
         assert subscription_tier.id is not None
 
-        try:
-            metadata: dict[str, str] = {
-                "subscription_tier_id": str(subscription_tier.id)
-            }
-            if organization is not None:
-                metadata["organization_id"] = str(organization.id)
-                metadata["organization_name"] = organization.name
-            if repository is not None:
-                metadata["repository_id"] = str(repository.id)
-                metadata["repository_name"] = repository.name
+        metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
+        if organization is not None:
+            metadata["organization_id"] = str(organization.id)
+            metadata["organization_name"] = organization.name
+        if repository is not None:
+            metadata["repository_id"] = str(repository.id)
+            metadata["repository_name"] = repository.name
 
-            product = stripe_service.create_product_with_price(
-                subscription_tier.get_stripe_name(),
-                price_amount=subscription_tier.price_amount,
-                price_currency=subscription_tier.price_currency,
-                description=subscription_tier.description,
-                metadata=metadata,
-            )
-        except StripeError:
-            await nested.rollback()
-            raise
-
+        product = stripe_service.create_product(
+            subscription_tier.get_stripe_name(),
+            description=subscription_tier.description,
+            metadata=metadata,
+        )
         subscription_tier.stripe_product_id = product.id
-        assert product.default_price is not None
-        subscription_tier.stripe_price_id = get_expandable_id(product.default_price)
+
+        for price_create in create_schema.prices:
+            stripe_price = stripe_service.create_price_for_product(
+                product.id,
+                price_create.price_amount,
+                price_create.price_currency,
+                price_create.recurring_interval.as_literal(),
+            )
+            price = SubscriptionTierPrice(
+                **price_create.model_dump(),
+                stripe_price_id=stripe_price.id,
+                subscription_tier=subscription_tier,
+            )
+            session.add(price)
+
+        await session.flush()
+        await session.refresh(subscription_tier, {"prices"})
 
         return subscription_tier
 
@@ -268,20 +278,48 @@ class SubscriptionTierService(
                 subscription_tier.stripe_product_id, **product_update
             )
 
+        existing_prices: set[SubscriptionTierPrice] = set()
+        added_prices: list[SubscriptionTierPrice] = []
         if (
-            update_schema.price_amount is not None
-            and subscription_tier.stripe_product_id is not None
-            and subscription_tier.stripe_price_id is not None
-            and update_schema.price_amount != subscription_tier.price_amount
+            subscription_tier.type != SubscriptionTierType.free
+            and update_schema.prices is not None
         ):
-            new_price = stripe_service.create_price_for_product(
-                subscription_tier.stripe_product_id,
-                update_schema.price_amount,
-                subscription_tier.price_currency,
-                set_default=True,
-            )
-            stripe_service.archive_price(subscription_tier.stripe_price_id)
-            subscription_tier.stripe_price_id = new_price.id
+            for price_update in update_schema.prices:
+                if isinstance(price_update, ExistingSubscriptionTierPrice):
+                    existing_price = subscription_tier.get_price(price_update.id)
+                    # TODO: we might want to check if the price actually exists
+                    if existing_price is not None:
+                        existing_prices.add(existing_price)
+                    continue
+
+                assert subscription_tier.stripe_product_id is not None
+                stripe_price = stripe_service.create_price_for_product(
+                    subscription_tier.stripe_product_id,
+                    price_update.price_amount,
+                    price_update.price_currency,
+                    price_update.recurring_interval.as_literal(),
+                )
+                price = SubscriptionTierPrice(
+                    **price_update.model_dump(),
+                    stripe_price_id=stripe_price.id,
+                    subscription_tier=subscription_tier,
+                )
+                session.add(price)
+                added_prices.append(price)
+
+            deleted_prices = set(subscription_tier.prices) - existing_prices
+            updated_prices = list(existing_prices) + added_prices
+            if deleted_prices:
+                # Make sure to set Stripe's default price to the a non-archived price
+                assert subscription_tier.stripe_product_id is not None
+                stripe_service.update_product(
+                    subscription_tier.stripe_product_id,
+                    default_price=updated_prices[0].stripe_price_id,
+                )
+                for deleted_price in deleted_prices:
+                    stripe_service.archive_price(deleted_price.stripe_price_id)
+                    deleted_price.is_archived = True
+                    session.add(deleted_price)
 
         if update_schema.is_highlighted:
             await self._disable_other_highlights(
@@ -292,11 +330,14 @@ class SubscriptionTierService(
             )
 
         for attr, value in update_schema.model_dump(
-            exclude_unset=True, exclude_none=True
+            exclude_unset=True, exclude_none=True, exclude={"prices"}
         ).items():
             setattr(subscription_tier, attr, value)
 
         session.add(subscription_tier)
+        await session.flush()
+        await session.refresh(subscription_tier, {"prices"})
+
         return subscription_tier
 
     async def create_free(
@@ -315,10 +356,9 @@ class SubscriptionTierService(
             free_subscription_tier = SubscriptionTier(
                 type=SubscriptionTierType.free,
                 name="Free",
-                price_amount=0,
-                price_currency="usd",
                 organization_id=organization.id if organization else None,
                 repository_id=repository.id if repository else None,
+                prices=[],
             )
 
         existing_benefits = [

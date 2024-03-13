@@ -322,6 +322,7 @@ class GithubIssueService(IssueService):
                 log.info("github.sync_issue.404.marking_as_crawled")
                 issue.github_issue_fetched_at = utc_now()
                 session.add(issue)
+                return
             elif e.response.status_code == 410:  # 410 Gone, i.e. deleted
                 log.info("github.sync_issue.410.soft_deleting")
                 await self.soft_delete(session, issue.id)

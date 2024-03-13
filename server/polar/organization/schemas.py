@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import TYPE_CHECKING, Self
+from typing import Self
 from uuid import UUID
 
 from pydantic import UUID4, Field
@@ -8,11 +8,9 @@ from pydantic import UUID4, Field
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
+from polar.integrations.github import types
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization as OrganizationModel
-
-if TYPE_CHECKING:
-    from polar.integrations.github import types
 
 
 class OrganizationProfileSettings(Schema):
@@ -179,9 +177,12 @@ class OrganizationCreate(Schema):
     installation_created_at: datetime | None = None
     installation_updated_at: datetime | None = None
     installation_suspended_at: datetime | None = None
+    installation_permissions: types.AppPermissionsType | None = None
     onboarded_at: datetime | None = None
     default_badge_custom_content: str | None = None
-    pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
+    pledge_minimum_amount: int = (
+        settings.MINIMUM_ORG_PLEDGE_AMOUNT
+    )  # TODO: what's this doing here? can we remove it?
 
     @classmethod
     def from_github(
@@ -209,6 +210,9 @@ class OrganizationCreate(Schema):
             installation_created_at=installation.created_at,
             installation_updated_at=installation.updated_at,
             installation_suspended_at=installation.suspended_at,
+            installation_permissions=types.app_permissions_from_github(
+                installation.permissions
+            ),
         )
 
 

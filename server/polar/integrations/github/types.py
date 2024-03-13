@@ -2,6 +2,7 @@ from typing import Literal, TypedDict
 
 from githubkit.versions.latest.models import (
     AddedToProjectIssueEvent,
+    AppPermissions,
     ConvertedNoteToIssueIssueEvent,
     DemilestonedIssueEvent,
     Enterprise,
@@ -17,6 +18,7 @@ from githubkit.versions.latest.models import (
     Milestone,
     MilestonedIssueEvent,
     MovedColumnInProjectIssueEvent,
+    OrganizationFull,
     PrivateUser,
     PublicUser,
     PullRequest,
@@ -31,6 +33,7 @@ from githubkit.versions.latest.models import (
     ReviewRequestedIssueEvent,
     ReviewRequestRemovedIssueEvent,
     SimpleUser,
+    SimpleUserWebhooks,
     StateChangeIssueEvent,
     TimelineAssignedIssueEvent,
     TimelineCommentEvent,
@@ -90,6 +93,7 @@ from githubkit.versions.latest.models import (
     WebhookRepositoryRenamed,
     WebhookRepositoryTransferred,
 )
+from pydantic import TypeAdapter
 
 
 class AppPermissionsType(TypedDict, total=False):
@@ -152,9 +156,27 @@ class AppPermissionsType(TypedDict, total=False):
     starring: Literal["read", "write"]
 
 
+def app_permissions_from_github(permissions: AppPermissions) -> AppPermissionsType:
+    ta = TypeAdapter(AppPermissionsType)
+
+    # future proofing for if the two models fall out of sync
+    supported_keys = AppPermissionsType.__dict__["__annotations__"].keys()
+
+    return ta.validate_python(
+        permissions.model_dump(
+            include=supported_keys,
+            exclude_unset=True,
+            exclude_none=True,
+            exclude_defaults=True,
+        )
+    )
+
+
 __all__ = [
-    "AppPermissionsType",
     "AddedToProjectIssueEvent",
+    "app_permissions_from_github",
+    "AppPermissionsType",
+    "AppPermissions",
     "ConvertedNoteToIssueIssueEvent",
     "DemilestonedIssueEvent",
     "Enterprise",
@@ -170,6 +192,8 @@ __all__ = [
     "Milestone",
     "MilestonedIssueEvent",
     "MovedColumnInProjectIssueEvent",
+    "OrganizationFull",
+    "SimpleUserWebhooks",
     "PrivateUser",
     "PublicUser",
     "PullRequest",

@@ -8,18 +8,12 @@ from sqlalchemy.orm import joinedload
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github import client as github
-from polar.integrations.github import service
 from polar.integrations.github.service import (
     github_organization,
 )
 from polar.kit.db.postgres import create_sessionmaker
 from polar.models import Issue, Organization, Repository
-from polar.models.user_organization import UserOrganization
-from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession, create_engine, sql
-from polar.repository.schemas import RepositoryCreate
-from polar.user.service import user as user_service
-from polar.user_organization.service import user_organization
 from polar.worker import enqueue_job
 from polar.worker import lifespan as worker_lifespan
 
@@ -182,93 +176,17 @@ async def sync_repos(org_name: str) -> None:
 
 @cli.command()
 @typer_async
-async def add_external_repo(
-    org_name: str, repo_name: str, invite_username: str
-) -> None:
+async def get_permissions(org_name: str) -> None:
     async with AsyncSessionLocal() as session:
-        """
-        This command is very much a work in progress. Some tweaks are needed (like
-        adjusting the installation ID) to get it to run.
-        """
-        client = github.get_app_installation_client(36355936)
+        org = await github_organization.get_by_name(session, Platforms.github, org_name)
+        if not org:
+            raise RuntimeError(f"Organization {org_name} not found")
+        if not org.installation_id:
+            raise RuntimeError(f"Organization {org_name} not installed")
 
-        repo_response = await client.rest.repos.async_get(org_name, repo_name)
-        github_repo = repo_response.parsed_data
-
-        owner = github_repo.owner
-
-        is_personal = owner.type.lower() == "user"
-        org_schema = OrganizationCreate(
-            platform=Platforms.github,
-            name=owner.login,
-            external_id=owner.id,
-            avatar_url=owner.avatar_url,
-            is_personal=is_personal,
-        )
-        organization = await service.github_organization.create_or_update(
-            session, org_schema
-        )
-
-        repo_schema = RepositoryCreate(
-            platform=Platforms.github,
-            external_id=github_repo.id,
-            organization_id=organization.id,
-            name=github_repo.name,
-            is_private=github_repo.private,
-        )
-        repository = await service.github_repository.create_or_update(
-            session, repo_schema
-        )
-
-        user = await user_service.get_by(session, username=invite_username)
-        if not user:
-            print("user not found")
-            return
-
-        uc = await user_organization.get_by_user_and_org(
-            session, user_id=user.id, organization_id=organization.id
-        )
-        if not uc:
-            uc = UserOrganization(organization_id=organization.id, user_id=user.id)
-            session.add(uc)
-            await session.commit()
-            print("Added user to org", uc)
-
-        # return
-
-        # enqueue_job(
-        #    "github.issue.sync.issue_references",
-        #    issue_id="ce38a42c-ca84-4e1c-a730-93218ca812e3",
-        #    crawl_with_installation_id=36355936,
-        # )
-
-        if True:
-            enqueue_job(
-                "github.repo.sync.issues",
-                organization.id,
-                repository.id,
-                crawl_with_installation_id=36355936,
-            )
-            typer.echo(
-                f"Triggered issue sync for {organization.name}/{repository.name}"
-            )
-
-        if False:
-            enqueue_job(
-                "github.repo.sync.issue_references",
-                organization.id,
-                repository.id,
-                crawl_with_installation_id=36355936,
-            )
-            typer.echo(
-                f"Triggered issue_references {organization.name}/{repository.name}"
-            )
-
-        return
-
-        # get
-
-        # await trigger_repositories_sync(session, org)
+        client = github.get_app_installation_client(org.installation_id)
+        authed = await client.rest.apps.async_get_authenticated()
+        print(str(authed.content))
 
 
 if __name__ == "__main__":

@@ -202,7 +202,7 @@ async def repositories_changed(
             else event.repositories_removed
         )
 
-        org = await create_from_installation(
+        org = await get_or_create_org_from_installation(
             session,
             event.installation,
             removed,
@@ -220,7 +220,7 @@ async def repositories_changed(
 
 
 @github_rate_limit_retry
-async def create_from_installation(
+async def get_or_create_org_from_installation(
     session: AsyncSession,
     installation: types.Installation,
     removed: Sequence[
@@ -229,25 +229,14 @@ async def create_from_installation(
         | types.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
     ],
 ) -> Organization:
-    account = installation.account
-    if not account:
-        raise Exception("installation has no account")
-    if isinstance(account, types.Enterprise):
-        raise Exception("enterprise accounts is not supported")
-
-    organization = await service.github_organization.create_or_update_from_github(
-        session, account, installation=installation
+    organization = await service.github_organization.install_from_webhook(
+        session, installation
     )
-    # Un-delete if previously deleted
-    organization.deleted_at = None
-    session.add(organization)
 
     if removed:
         await remove_repositories(session, removed)
 
-    await service.github_repository.install_for_organization(
-        session, organization, installation.id
-    )
+    await service.github_repository.install_for_organization(session, organization)
 
     return organization
 
@@ -1055,6 +1044,7 @@ async def installation_created(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
+            # repositories_changed also installs the organization
             await repositories_changed(session, event)
 
 
@@ -1077,19 +1067,20 @@ async def installation_new_permissions_accepted(
             return
 
         async with AsyncSessionMaker(ctx) as session:
-            org = await service.github_organization.get_by_external_id(
-                session, installation_account.id
+            # create/update organization object
+            # this will also update organization.installation_permissions
+            organization = await service.github_organization.install_from_webhook(
+                session,
+                event.installation,
             )
-            if not org:
-                return
 
             await publish_members(
                 session=session,
                 key="organization.updated",
                 payload={
-                    "organization_id": org.id,
+                    "organization_id": organization.id,
                 },
-                organization_id=org.id,
+                organization_id=organization.id,
             )
 
 

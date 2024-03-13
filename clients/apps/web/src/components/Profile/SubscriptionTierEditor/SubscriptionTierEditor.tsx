@@ -101,6 +101,7 @@ export const SubscriptionTierEditor = ({
                 organization={organization}
                 subscriptionTier={tier}
                 subscribeButton={!!disabled}
+                disabled={disabled}
               />
             ))}
             <DragOverlay adjustScale={true}>

@@ -147,6 +147,7 @@ const ClientPage = ({
           organization={organization}
           repository={repository}
           subscriptionTiers={subscriptionTiers}
+          disabled={!isAdmin}
         />
 
         <CreatorsEditor

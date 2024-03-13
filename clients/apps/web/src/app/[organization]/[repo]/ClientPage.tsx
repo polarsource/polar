@@ -22,7 +22,7 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { useUpdateProject } from 'polarkit/hooks'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 const ClientPage = ({
   organization,
@@ -39,6 +39,7 @@ const ClientPage = ({
   adminOrganizations: Organization[]
   subscriptionTiers: SubscriptionTier[]
 }) => {
+  const [descriptionIsLoading, setDescriptionIsLoading] = useState(false)
   const isAdmin = useMemo(
     () => adminOrganizations?.some((org) => org.id === organization.id),
     [organization, adminOrganizations],
@@ -49,7 +50,7 @@ const ClientPage = ({
   const updateProjectMutation = useUpdateProject()
 
   const updateProfile = (setting: Partial<RepositoryProfileSettingsUpdate>) => {
-    updateProjectMutation
+    return updateProjectMutation
       .mutateAsync({
         id: repository.id,
         repositoryUpdate: {
@@ -72,11 +73,16 @@ const ClientPage = ({
   }
 
   const updateDescription = useDebouncedCallback(
-    (description: string | undefined) => {
-      updateProfile({ set_description: true, description })
+    async (description: string | undefined) => {
+      setDescriptionIsLoading(true)
+      try {
+        await updateProfile({ set_description: true, description })
+      } finally {
+        setDescriptionIsLoading(false)
+      }
     },
     500,
-    [updateProfile],
+    [updateProfile, setDescriptionIsLoading],
   )
 
   return (
@@ -93,6 +99,7 @@ const ClientPage = ({
                 }
                 onChange={updateDescription}
                 disabled={!isAdmin}
+                loading={descriptionIsLoading}
               />
               <Separator className="h-0.5 w-12 bg-black dark:bg-white" />
             </>

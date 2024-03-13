@@ -57,7 +57,6 @@ async def get_asserted_org(session: AsyncSession, **clauses: Any) -> Organizatio
 async def create_org(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
-    status: Organization.Status = Organization.Status.ACTIVE,
 ) -> Organization:
     hook = github_webhook.create("installation.created")
     event = github.webhooks.parse_obj("installation", hook.json)
@@ -92,16 +91,13 @@ async def create_org(
     res = await session.execute(stmt)
     org = res.scalars().one()
 
-    org.status = status
-    session.add(org)
-    await session.flush()
     return org
 
 
 async def create_repositories(
     session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> Organization:
-    org = await create_org(session, github_webhook, status=Organization.Status.ACTIVE)
+    org = await create_org(session, github_webhook)
     hook = github_webhook.create("installation_repositories.added")
 
     parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
@@ -166,7 +162,7 @@ async def test_webhook_installation_suspend(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    org = await create_org(session, github_webhook, status=Organization.Status.INACTIVE)
+    org = await create_org(session, github_webhook)
 
     hook = github_webhook.create("installation.suspend")
     org_id = hook["installation"]["account"]["id"]
@@ -183,7 +179,8 @@ async def test_webhook_installation_suspend(
     )
 
     org = await get_asserted_org(session, external_id=org_id)
-    assert org.status == org.Status.SUSPENDED
+    assert org.installation_suspended_at is not None
+    assert org.installation_suspended_by is not None
 
 
 @pytest.mark.asyncio
@@ -193,9 +190,7 @@ async def test_webhook_installation_unsuspend(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    org = await create_org(
-        session, github_webhook, status=Organization.Status.SUSPENDED
-    )
+    org = await create_org(session, github_webhook)
 
     hook = github_webhook.create("installation.unsuspend")
     org_id = hook["installation"]["account"]["id"]
@@ -212,7 +207,8 @@ async def test_webhook_installation_unsuspend(
     )
 
     org = await get_asserted_org(session, external_id=org_id)
-    assert org.status == org.Status.ACTIVE
+    assert org.installation_suspended_at is None
+    assert org.installation_suspended_by is None
 
 
 @pytest.mark.asyncio
@@ -226,7 +222,7 @@ async def test_webhook_installation_delete(
     hook = github_webhook.create("installation.deleted")
     org_id = hook["installation"]["account"]["id"]
 
-    org = await create_org(session, github_webhook, status=Organization.Status.ACTIVE)
+    org = await create_org(session, github_webhook)
     assert org
     assert org.external_id == org_id
 

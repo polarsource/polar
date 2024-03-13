@@ -227,7 +227,6 @@ class GithubOrganizationService(OrganizationService):
             suspended_at = utc_now()
 
         org.installation_suspended_at = suspended_at
-        org.status = Organization.Status.SUSPENDED
         org.installation_suspended_by = suspended_by
 
         session.add(org)
@@ -245,7 +244,6 @@ class GithubOrganizationService(OrganizationService):
             return False
 
         org.installation_suspended_at = None
-        org.status = Organization.Status.ACTIVE
         org.installation_suspended_by = None
 
         session.add(org)

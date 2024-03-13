@@ -7,13 +7,12 @@ import pytest
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Anonymous, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
-from polar.models import Organization, SubscriptionTier, User
+from polar.models import Organization, SubscriptionTier, SubscriptionTierPrice, User
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscribe_session import (
     AlreadySubscribed,
     ArchivedSubscriptionTier,
     FreeSubscriptionTier,
-    NotAddedToStripeSubscriptionTier,
 )
 from polar.subscription.service.subscribe_session import (
     subscribe_session as subscribe_session_service,
@@ -58,6 +57,7 @@ class TestCreateSubscribeSession:
             await subscribe_session_service.create_subscribe_session(
                 session,
                 subscription_tier_organization_free_loaded,
+                SubscriptionTierPrice(),
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -82,41 +82,13 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         with pytest.raises(ArchivedSubscriptionTier):
             await subscribe_session_service.create_subscribe_session(
                 session,
                 subscription_tier_organization_loaded,
-                "SUCCESS_URL",
-                Anonymous(),
-                None,
-                authz,
-            )
-
-    async def test_not_added_to_stripe_subscription_tier(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
-    ) -> None:
-        subscription_tier_organization.stripe_product_id = None
-        subscription_tier_organization.stripe_price_id = None
-        await save_fixture(subscription_tier_organization)
-
-        # then
-        session.expunge_all()
-
-        # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
-        )
-        assert subscription_tier_organization_loaded
-
-        with pytest.raises(NotAddedToStripeSubscriptionTier):
-            await subscribe_session_service.create_subscribe_session(
-                session,
-                subscription_tier_organization_loaded,
+                price,
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -143,11 +115,13 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         with pytest.raises(AlreadySubscribed):
             await subscribe_session_service.create_subscribe_session(
                 session,
                 subscription_tier_organization_loaded,
+                price,
                 "SUCCESS_URL",
                 user,
                 AuthMethod.COOKIE,
@@ -180,10 +154,12 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
+            price,
             "SUCCESS_URL",
             Anonymous(),
             None,
@@ -199,12 +175,16 @@ class TestCreateSubscribeSession:
         )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id,
+            price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
-            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
+            },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id)
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
             },
         )
 
@@ -237,10 +217,12 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
+            price,
             "SUCCESS_URL",
             user,
             AuthMethod.COOKIE,
@@ -256,16 +238,18 @@ class TestCreateSubscribeSession:
         )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id,
+            price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={
                 "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
                 "user_id": str(user.id),
             },
             subscription_metadata={
                 "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
                 "user_id": str(user.id),
             },
         )
@@ -299,10 +283,12 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
+            price,
             "SUCCESS_URL",
             user,
             AuthMethod.PERSONAL_ACCESS_TOKEN,
@@ -318,12 +304,16 @@ class TestCreateSubscribeSession:
         )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id,
+            price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
-            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
+            },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id)
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
             },
         )
 
@@ -356,10 +346,12 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
+            price,
             "SUCCESS_URL",
             user,
             AuthMethod.PERSONAL_ACCESS_TOKEN,
@@ -376,13 +368,17 @@ class TestCreateSubscribeSession:
         )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id,
+            price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
             customer_email="backer@example.com",
-            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
+            },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id)
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
             },
         )
 
@@ -424,10 +420,12 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
+            price,
             "SUCCESS_URL",
             Anonymous(),
             None,
@@ -443,12 +441,16 @@ class TestCreateSubscribeSession:
         )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id,
+            price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=True,
-            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
+            },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id)
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
             },
         )
 
@@ -489,10 +491,12 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
+            price,
             "SUCCESS_URL",
             user,
             AuthMethod.COOKIE,
@@ -500,17 +504,19 @@ class TestCreateSubscribeSession:
         )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id,
+            price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={
                 "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
                 "subscription_id": str(free_subscription.id),
                 "user_id": str(user.id),
             },
             subscription_metadata={
                 "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(price.id),
                 "subscription_id": str(free_subscription.id),
                 "user_id": str(user.id),
             },
@@ -532,11 +538,13 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         with pytest.raises(Unauthorized):
             await subscribe_session_service.create_subscribe_session(
                 session,
                 subscription_tier_organization_loaded,
+                price,
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
@@ -561,11 +569,13 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         with pytest.raises(NotPermitted):
             await subscribe_session_service.create_subscribe_session(
                 session,
                 subscription_tier_organization_loaded,
+                price,
                 "SUCCESS_URL",
                 user,
                 AuthMethod.COOKIE,
@@ -606,11 +616,12 @@ class TestCreateSubscribeSession:
             session, subscription_tier_organization.id
         )
         assert subscription_tier_organization_loaded
-        subscription_tier_organization = subscription_tier_organization_loaded
+        price = subscription_tier_organization_loaded.prices[0]
 
         subscribe_session = await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
+            price,
             "SUCCESS_URL",
             organization_subscriber_admin,
             AuthMethod.COOKIE,
@@ -623,21 +634,24 @@ class TestCreateSubscribeSession:
         assert subscribe_session.customer_email == "backer@example.com"
         assert subscribe_session.customer_name == "Organization"
         assert (
-            subscribe_session.subscription_tier.id == subscription_tier_organization.id
+            subscribe_session.subscription_tier.id
+            == subscription_tier_organization_loaded.id
         )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id,
+            price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
             customer="ORGANIZATION_STRIPE_CUSTOMER_ID",
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier_organization_loaded.id),
+                "subscription_tier_price_id": str(price.id),
                 "organization_subscriber_id": str(organization_subscriber.id),
                 "user_id": str(organization_subscriber_admin.id),
             },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier_organization_loaded.id),
+                "subscription_tier_price_id": str(price.id),
                 "organization_subscriber_id": str(organization_subscriber.id),
                 "user_id": str(organization_subscriber_admin.id),
             },
@@ -682,7 +696,12 @@ class TestGetSubscribeSession:
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},
-            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(
+                    subscription_tier_organization.prices[0].id
+                ),
+            },
         )
 
         # then
@@ -699,3 +718,4 @@ class TestGetSubscribeSession:
         assert (
             subscribe_session.subscription_tier.id == subscription_tier_organization.id
         )
+        assert subscribe_session.price.id == subscription_tier_organization.prices[0].id

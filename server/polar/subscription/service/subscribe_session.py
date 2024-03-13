@@ -7,6 +7,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import (
     SubscriptionTier,
+    SubscriptionTierPrice,
     User,
 )
 from polar.models.organization import Organization
@@ -40,13 +41,6 @@ class ArchivedSubscriptionTier(SubscribeSessionError):
         super().__init__(message, 404)
 
 
-class NotAddedToStripeSubscriptionTier(SubscribeSessionError):
-    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
-        self.subscription_tier_id = subscription_tier_id
-        message = "This subscription tier has not beed synced with Stripe."
-        super().__init__(message, 500)
-
-
 class AlreadySubscribed(SubscribeSessionError):
     def __init__(
         self,
@@ -70,6 +64,7 @@ class SubscribeSessionService:
         self,
         session: AsyncSession,
         subscription_tier: SubscriptionTier,
+        price: SubscriptionTierPrice,
         success_url: str,
         auth_subject: Subject,
         auth_method: AuthMethod | None,
@@ -90,10 +85,10 @@ class SubscribeSessionService:
         if subscription_tier.is_archived:
             raise ArchivedSubscriptionTier(subscription_tier.id)
 
-        if subscription_tier.stripe_price_id is None:
-            raise NotAddedToStripeSubscriptionTier(subscription_tier.id)
-
-        metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
+        metadata: dict[str, str] = {
+            "subscription_tier_id": str(subscription_tier.id),
+            "subscription_tier_price_id": str(price.id),
+        }
 
         organization = (
             await self._get_organization(session, authz, auth_subject, organization_id)
@@ -155,7 +150,7 @@ class SubscribeSessionService:
             customer_options["customer_email"] = customer_email
 
         checkout_session = stripe_service.create_subscription_checkout_session(
-            subscription_tier.stripe_price_id,
+            price.stripe_price_id,
             success_url,
             is_tax_applicable=subscription_tier.is_tax_applicable,
             **customer_options,
@@ -163,7 +158,7 @@ class SubscribeSessionService:
             subscription_metadata=metadata,
         )
 
-        return SubscribeSession.from_db(checkout_session, subscription_tier)
+        return SubscribeSession.from_db(checkout_session, subscription_tier, price)
 
     async def get_subscribe_session(
         self, session: AsyncSession, id: str
@@ -175,6 +170,9 @@ class SubscribeSessionService:
 
         try:
             subscription_tier_id = checkout_session.metadata["subscription_tier_id"]
+            subscription_tier_price_id = checkout_session.metadata[
+                "subscription_tier_price_id"
+            ]
         except KeyError:
             raise ResourceNotFound()
 
@@ -191,7 +189,11 @@ class SubscribeSessionService:
             )
         )
 
-        return SubscribeSession.from_db(checkout_session, subscription_tier)
+        price = subscription_tier.get_price(uuid.UUID(subscription_tier_price_id))
+        if price is None:
+            raise ResourceNotFound()
+
+        return SubscribeSession.from_db(checkout_session, subscription_tier, price)
 
     async def _get_organization(
         self,

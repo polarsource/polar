@@ -45,7 +45,7 @@ export const DescriptionEditor = ({
     return () => {
       window.removeEventListener('resize', resizeTextarea)
     }
-  }, [])
+  }, [resizeTextarea])
 
   return (
     <div

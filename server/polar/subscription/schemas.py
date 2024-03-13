@@ -20,6 +20,9 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.subscription_tier_price import (
+    SubscriptionTierPrice as SubscriptionTierPriceModel,
+)
 from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 
 TIER_NAME_MIN_LENGTH = 3
@@ -433,6 +436,10 @@ class SubscribeSessionCreate(Schema):
         ...,
         description="ID of the Subscription Tier to subscribe to.",
     )
+    price_id: UUID4 = Field(
+        ...,
+        description="ID of the Subscription Tier Price to subscribe to.",
+    )
     success_url: AnyHttpUrl = Field(
         ...,
         description=(
@@ -473,6 +480,7 @@ class SubscribeSession(Schema):
     customer_name: str | None = None
     organization_subscriber_id: UUID4 | None = None
     subscription_tier: SubscriptionTier
+    price: SubscriptionTierPrice
     organization_name: str | None = None
     repository_name: str | None = None
 
@@ -481,6 +489,7 @@ class SubscribeSession(Schema):
         cls,
         checkout_session: stripe_lib.checkout.Session,
         subscription_tier: SubscriptionTierModel,
+        price: SubscriptionTierPriceModel,
     ) -> Self:
         organization_subscriber_id: uuid.UUID | None = None
         if checkout_session.metadata:
@@ -502,6 +511,7 @@ class SubscribeSession(Schema):
             else None,
             organization_subscriber_id=organization_subscriber_id,
             subscription_tier=subscription_tier,  # type: ignore
+            price=price,  # type: ignore
             organization_name=subscription_tier.organization.name
             if subscription_tier.organization is not None
             else None,
@@ -551,6 +561,7 @@ class Subscription(SubscriptionBase):
     user: SubscriptionUser
     organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
+    price: SubscriptionTierPrice
 
 
 class SubscriptionSubscriber(SubscriptionBase):
@@ -574,6 +585,7 @@ class FreeSubscriptionCreate(Schema):
 
 class SubscriptionUpgrade(Schema):
     subscription_tier_id: UUID4
+    price_id: UUID4
 
 
 class SubscriptionCreateEmail(Schema):
@@ -588,6 +600,7 @@ class SubscriptionSummary(Schema):
     user: SubscriptionPublicUser
     organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
+    price: SubscriptionTierPrice
 
 
 class SubscriptionsStatisticsPeriod(Schema):

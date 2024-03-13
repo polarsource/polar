@@ -454,6 +454,7 @@ async def create_subscription(
     save_fixture: SaveFixture,
     *,
     subscription_tier: SubscriptionTier,
+    price: SubscriptionTierPrice | None = None,
     user: User,
     organization: Organization | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
@@ -470,11 +471,10 @@ async def create_subscription(
         cancel_at_period_end=False,
         started_at=started_at,
         ended_at=ended_at,
-        price_amount=0,  # FIXME
-        price_currency="usd",  # FIXME
         user_id=user.id,
         organization_id=organization.id if organization is not None else None,
         subscription_tier_id=subscription_tier.id,
+        price=price,
     )
     await save_fixture(subscription)
     return subscription

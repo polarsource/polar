@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Self
 from uuid import UUID
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, HttpUrl
 
 from polar.enums import Platforms
 from polar.integrations.github import types
@@ -26,6 +26,9 @@ class RepositoryProfileSettings(Schema):
     )
     highlighted_subscription_tiers: list[UUID4] | None = Field(
         None, description="A list of highlighted subscription tiers", max_length=3
+    )
+    links: list[HttpUrl] | None = Field(
+        None, description="A list of links related to the repository"
     )
 
 
@@ -56,6 +59,7 @@ class Repository(Schema):
             highlighted_subscription_tiers=r.profile_settings.get(
                 "highlighted_subscription_tiers", None
             ),
+            links=r.profile_settings.get("links", None),
         )
 
         return cls(
@@ -81,6 +85,7 @@ class RepositoryProfileSettingsUpdate(Schema):
 
     featured_organizations: list[UUID4] | None = None
     highlighted_subscription_tiers: list[UUID4] | None = None
+    links: list[HttpUrl] | None = None
 
 
 class RepositoryUpdate(Schema):

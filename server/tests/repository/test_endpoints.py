@@ -1,5 +1,4 @@
 import pytest
-from fastapi.exceptions import RequestValidationError
 from httpx import AsyncClient
 from pydantic import ValidationError
 

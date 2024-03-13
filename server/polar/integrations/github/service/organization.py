@@ -185,15 +185,13 @@ class GithubOrganizationService(OrganizationService):
             )
             raise InternalServerError()
 
-        # GitHub users cannot have an empty avatar_url, but needed for typing
-        avatar_url = user.avatar_url
-        if not avatar_url:
-            avatar_url = ""
+        if not user.avatar_url:
+            raise InternalServerError("user has no avatar_url")
 
         new = OrganizationCreate(
             platform=Platforms.github,
             name=oauth.account_username,
-            avatar_url=avatar_url,
+            avatar_url=user.avatar_url,
             # Cast to GitHub ID (int)
             external_id=int(oauth.account_id),
             is_personal=True,

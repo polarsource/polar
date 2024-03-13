@@ -212,6 +212,13 @@ class RepositoryService(
         )
 
         if update.profile_settings is not None:
+            if update.profile_settings.set_description:
+                profile_settings.description = (
+                    update.profile_settings.description.strip()
+                    if update.profile_settings.description
+                    else None
+                )
+
             if update.profile_settings.set_cover_image_url:
                 profile_settings.cover_image_url = (
                     update.profile_settings.cover_image_url

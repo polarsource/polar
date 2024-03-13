@@ -5709,6 +5709,12 @@ export interface RepositoryBadgeSettingsUpdate {
  */
 export interface RepositoryProfileSettings {
     /**
+     * A description of the repository
+     * @type {string}
+     * @memberof RepositoryProfileSettings
+     */
+    description?: string;
+    /**
      * A URL to a cover image
      * @type {string}
      * @memberof RepositoryProfileSettings
@@ -5733,6 +5739,18 @@ export interface RepositoryProfileSettings {
  * @interface RepositoryProfileSettingsUpdate
  */
 export interface RepositoryProfileSettingsUpdate {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof RepositoryProfileSettingsUpdate
+     */
+    set_description?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof RepositoryProfileSettingsUpdate
+     */
+    description?: string;
     /**
      * 
      * @type {boolean}

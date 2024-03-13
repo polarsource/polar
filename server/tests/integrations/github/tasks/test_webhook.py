@@ -15,7 +15,9 @@ from polar.kit import utils
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.organization import Organization
 from polar.models.repository import Repository
-from polar.organization.schemas import OrganizationCreate
+from polar.organization.schemas import (
+    OrganizationCreateFromGitHubInstallation,
+)
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 from polar.worker import JobContext, PolarWorkerContext
@@ -65,7 +67,7 @@ async def create_org(
     account = event.installation.account
     assert isinstance(account, types.SimpleUser)
     is_personal = account.type.lower() == "user"
-    create_schema = OrganizationCreate(
+    create_schema = OrganizationCreateFromGitHubInstallation(
         platform=Platforms.github,
         name=account.login,
         external_id=account.id,
@@ -75,6 +77,7 @@ async def create_org(
         installation_created_at=utils.utc_now(),
         installation_updated_at=utils.utc_now(),
         installation_suspended_at=event.installation.suspended_at,
+        installation_permissions={},
     )
     stmt = (
         sql.insert(Organization)

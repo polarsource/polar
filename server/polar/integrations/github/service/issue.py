@@ -26,6 +26,9 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Issue, Organization, Repository
 from polar.models.user import User
+from polar.organization.schemas import (
+    OrganizationCreateFromGitHubUser,
+)
 from polar.postgres import AsyncSessionMaker
 from polar.redis import redis
 from polar.repository.hooks import (
@@ -608,8 +611,11 @@ class GithubIssueService(IssueService):
 
         github_repository_data = github_repository_response.parsed_data
 
-        organization = await github_organization.create_or_update_from_github(
-            session, github_repository_data.owner
+        organization = await github_organization.create_or_update(
+            session,
+            OrganizationCreateFromGitHubUser.from_github(
+                user=github_repository_data.owner
+            ),
         )
 
         repository = await github_repository.create_or_update_from_github(
@@ -790,7 +796,9 @@ async def recommended_in_repo(
 ) -> list[Issue]:
     # this job runs in it's own thread/job, making sure to create our own db session
     async with sessionmaker() as session:
-        org = await github_organization.create_or_update_from_github(session, r.owner)
+        org = await github_organization.create_or_update(
+            session, OrganizationCreateFromGitHubUser.from_github(user=r.owner)
+        )
 
         repo = await github_repository.create_or_update_from_github(
             session,

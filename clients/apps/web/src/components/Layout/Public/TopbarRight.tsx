@@ -24,6 +24,7 @@ const TopbarRight = ({
             <PublicProfileDropdown
               authenticatedUser={authenticatedUser}
               className="flex-shrink-0"
+              allBackerRoutes
             />
           </div>
         </div>

@@ -6,12 +6,12 @@ import {
   useIsOrganizationAdmin,
   usePersonalOrganization,
 } from '@/hooks'
-import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import {
   PropsWithChildren,
   useCallback,
@@ -165,19 +165,17 @@ const DashboardTopbar = ({
           </div>
           <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}
-            <Link href="/feed">
-              <Button variant="ghost" className="pr-0">
-                <div className="flex flex-row items-center gap-x-2">
-                  <span className="hidden whitespace-nowrap text-xs lg:inline-block">
-                    Back to Feed
-                  </span>
-                  <span className="whitespace-nowrap text-xs lg:hidden">
-                    Feed
-                  </span>
-                  <ArrowForwardOutlined fontSize="inherit" />
-                </div>
-              </Button>
-            </Link>
+            {currentOrgFromURL && (
+              <Link href={organizationPageLink(currentOrgFromURL)}>
+                <Button>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <span className="whitespace-nowrap text-xs">
+                      Public Page
+                    </span>
+                  </div>
+                </Button>
+              </Link>
+            )}
             <TopbarRight authenticatedUser={currentUser} />
           </div>
         </div>

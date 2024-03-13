@@ -8,7 +8,6 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
-    Integer,
     String,
     func,
     type_coerce,
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
         Organization,
         SubscriptionBenefitGrant,
         SubscriptionTier,
+        SubscriptionTierPrice,
         User,
     )
 
@@ -65,9 +65,6 @@ class Subscription(RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    price_currency: Mapped[str] = mapped_column(String(3), nullable=False)
-    price_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-
     user_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("users.id", ondelete="cascade"),
@@ -100,6 +97,14 @@ class Subscription(RecordModel):
     @declared_attr
     def subscription_tier(cls) -> Mapped["SubscriptionTier"]:
         return relationship("SubscriptionTier", lazy="raise")
+
+    price_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("subscription_tier_prices.id", ondelete="set null"),
+    )
+
+    @declared_attr
+    def price(cls) -> Mapped["SubscriptionTierPrice | None"]:
+        return relationship("SubscriptionTierPrice", lazy="raise")
 
     @declared_attr
     def grants(cls) -> Mapped[list["SubscriptionBenefitGrant"]]:

@@ -500,6 +500,9 @@ Thank you for your support!
     def archive_product(self, id: str) -> stripe_lib.Product:
         return stripe_lib.Product.modify(id, active=False)
 
+    def get_price(self, id: str) -> stripe_lib.Price:
+        return stripe_lib.Price.retrieve(id)
+
     def archive_price(self, id: str) -> stripe_lib.Price:
         return stripe_lib.Price.modify(id, active=False)
 

@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         Organization,
         Pledge,
         Subscription,
+        SubscriptionTierPrice,
         Transaction,
     )
 
@@ -103,6 +104,23 @@ class HeldBalance(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
+
+    subscription_tier_price_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("subscription_tier_prices.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """
+    ID of the `SubscriptionTierPrice` related to this balance.
+
+    Useful to keep track of the price at the time of the balance creation,
+    which might change if the subscription is upgraded or downgraded.
+    """
+
+    @declared_attr
+    def subscription_tier_price(cls) -> Mapped["SubscriptionTierPrice | None"]:
+        return relationship("SubscriptionTierPrice", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

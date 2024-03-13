@@ -99,11 +99,6 @@ class Organization(RecordModel):
     # End GitHub App Fields
     #
 
-    # This colunm is never read.
-    status: Mapped[Status] = mapped_column(
-        StringEnum(Status), nullable=False, default=Status.ACTIVE
-    )
-
     # Whether to show pledged amount in the badge
     pledge_badge_show_amount: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True

@@ -126,23 +126,43 @@ async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
         return
 
     for wh in webhooks:
-        description = (
-            f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".'
-        )
-
         if wh.integration == "discord":
-            webhook = AsyncDiscordWebhook(url=wh.url, content="New pledge")
+            webhook = AsyncDiscordWebhook(url=wh.url, content="New Pledge Received")
+            _pledge_amount = pledge.amount / 100
+            _issue_polar_url = (
+                f"https://polar.sh/{org.name}/{repo.name}/issues/{issue.number}"
+            )
+            _issue_github_url = (
+                f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}"
+            )
+
+            description = (
+                f"A ${_pledge_amount} pledge has been made towards [{repo.name}#{issue.number}]({_issue_github_url}): "
+                f"\n > `{issue.title}`."
+            )
 
             embed = DiscordEmbed(
-                title="New pledge",
+                title="New pledge Received",
                 description=description,
                 color="65280",
             )
 
+            embed.set_thumbnail(url=settings.THUMBNAIL_URL)
+            embed.set_author(name="Polar.sh", icon_url=settings.FAVICON_URL)
             embed.add_embed_field(
-                name="Polar",
-                value=f"[Open](https://polar.sh/{org.name}/{repo.name}/issues/{issue.number})",
+                name="Polar.sh",
+                value=f"[View on Polar.sh]({_issue_polar_url})",
+                inline=True,
             )
+            embed.add_embed_field(
+                name="Issue",
+                value=f"[View on GitHub]({_issue_github_url})",
+                inline=True,
+            )
+            embed.add_embed_field(
+                name="Amount", value=f"${_pledge_amount}", inline=True
+            )
+            embed.set_footer(text="Powered by Polar.sh")
 
             webhook.add_embed(embed)
             await webhook.execute()

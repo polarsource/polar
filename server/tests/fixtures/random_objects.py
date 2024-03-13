@@ -17,6 +17,7 @@ from polar.models import (
     SubscriptionBenefit,
     SubscriptionTier,
     SubscriptionTierBenefit,
+    SubscriptionTierPrice,
     User,
     UserOrganization,
 )
@@ -30,6 +31,7 @@ from polar.models.subscription_benefit import (
 )
 from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 from polar.models.user import OAuthAccount
 from tests.fixtures.database import SaveFixture
 
@@ -367,25 +369,37 @@ async def create_subscription_tier(
     organization: Organization | None = None,
     repository: Repository | None = None,
     name: str = "Subscription Tier",
-    price_amount: int = 1000,
     is_highlighted: bool = False,
     is_archived: bool = False,
+    prices: list[tuple[int, SubscriptionTierPriceRecurringInterval]] = [
+        (1000, SubscriptionTierPriceRecurringInterval.month)
+    ],
 ) -> SubscriptionTier:
     assert (organization is not None) != (repository is not None)
     subscription_tier = SubscriptionTier(
         type=type,
         name=name,
         description="Description",
-        price_amount=price_amount,
-        price_currency="USD",
         is_highlighted=is_highlighted,
         is_archived=is_archived,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
         stripe_product_id=rstr("PRODUCT_ID"),
-        stripe_price_id=rstr("PRICE_ID"),
+        all_prices=[],
+        prices=[],
         subscription_tier_benefits=[],
     )
+
+    for price, interval in prices:
+        subscription_tier_price = SubscriptionTierPrice(
+            price_amount=price,
+            price_currency="usd",
+            recurring_interval=interval,
+            stripe_price_id=rstr("PRICE_ID"),
+        )
+        subscription_tier.prices.append(subscription_tier_price)
+        subscription_tier.all_prices.append(subscription_tier_price)
+
     await save_fixture(subscription_tier)
     return subscription_tier
 
@@ -456,8 +470,8 @@ async def create_subscription(
         cancel_at_period_end=False,
         started_at=started_at,
         ended_at=ended_at,
-        price_amount=subscription_tier.price_amount,
-        price_currency=subscription_tier.price_currency,
+        price_amount=0,  # FIXME
+        price_currency="usd",  # FIXME
         user_id=user.id,
         organization_id=organization.id if organization is not None else None,
         subscription_tier_id=subscription_tier.id,
@@ -495,8 +509,8 @@ async def subscription_tier_organization_free(
     return await create_subscription_tier(
         save_fixture,
         type=SubscriptionTierType.free,
-        price_amount=0,
         organization=organization,
+        prices=[],
     )
 
 

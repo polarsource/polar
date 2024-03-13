@@ -360,12 +360,13 @@ class TestCreateSubscriptionTier:
         stripe_service_mock: MagicMock,
         session: AsyncSession,
     ) -> None:
-        create_product_with_price_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_product_with_price
-        create_product_with_price_mock.return_value = SimpleNamespace(
-            id="PRODUCT_ID", default_price="PRICE_ID"
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
         )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         # then
         session.expunge_all()
@@ -375,8 +376,14 @@ class TestCreateSubscriptionTier:
             json={
                 "type": "individual",
                 "name": "Subscription Tier",
-                "price_amount": 1000,
                 "organization_id": str(organization.id),
+                "prices": [
+                    {
+                        "recurring_interval": "month",
+                        "price_amount": 1000,
+                        "price_currency": "usd",
+                    }
+                ],
                 **payload,
             },
         )
@@ -392,12 +399,13 @@ class TestCreateSubscriptionTier:
         stripe_service_mock: MagicMock,
         session: AsyncSession,
     ) -> None:
-        create_product_with_price_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_product_with_price
-        create_product_with_price_mock.return_value = SimpleNamespace(
-            id="PRODUCT_ID", default_price="PRICE_ID"
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
         )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         # then
         session.expunge_all()
@@ -409,6 +417,13 @@ class TestCreateSubscriptionTier:
                 "name": "Subscription Tier",
                 "price_amount": 1000,
                 "organization_id": str(organization.id),
+                "prices": [
+                    {
+                        "recurring_interval": "month",
+                        "price_amount": 1000,
+                        "price_currency": "usd",
+                    }
+                ],
             },
         )
 

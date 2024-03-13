@@ -146,6 +146,10 @@ class GithubOrganizationService(OrganizationService):
 
         enqueue_job("organization.post_install", organization_id=organization.id)
 
+        enqueue_job(
+            "github.organization.synchronize_members", organization_id=organization.id
+        )
+
         return organization
 
     async def create_for_user(

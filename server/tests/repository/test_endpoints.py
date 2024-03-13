@@ -1,5 +1,7 @@
 import pytest
+from fastapi.exceptions import RequestValidationError
 from httpx import AsyncClient
+from pydantic import ValidationError
 
 from polar.config import settings
 from polar.models.organization import Organization
@@ -318,6 +320,22 @@ async def test_update_repository_profile_settings_highlighted_subscription_tiers
     assert response.status_code == 200
     assert response.json()["id"] == str(repository.id)
     assert response.json()["profile_settings"]["highlighted_subscription_tiers"] == []
+
+    with pytest.raises(ValidationError):
+        # more than 3 highlighted_subscription_tiers
+        response = await client.patch(
+            f"/api/v1/repositories/{repository.id}",
+            json={
+                "profile_settings": {
+                    "highlighted_subscription_tiers": [
+                        str(subscription_tier_organization.id),
+                        str(subscription_tier_organization.id),
+                        str(subscription_tier_organization.id),
+                        str(subscription_tier_organization.id),
+                    ],
+                }
+            },
+        )
 
 
 @pytest.mark.asyncio

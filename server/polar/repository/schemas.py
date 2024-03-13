@@ -11,8 +11,15 @@ from polar.models import Repository as RepositoryModel
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.visibility import Visibility
 
+REPOSITORY_PROFILE_DESCRIPTION_MAX_LENGTH = 240
+
 
 class RepositoryProfileSettings(Schema):
+    description: str | None = Field(
+        None,
+        description="A description of the repository",
+        max_length=REPOSITORY_PROFILE_DESCRIPTION_MAX_LENGTH,
+    )
     cover_image_url: str | None = Field(None, description="A URL to a cover image")
     featured_organizations: list[UUID4] | None = Field(
         None, description="A list of featured organizations"
@@ -41,6 +48,7 @@ class Repository(Schema):
     @classmethod
     def from_db(cls, r: RepositoryModel) -> Self:
         profile_settings = RepositoryProfileSettings(
+            description=r.profile_settings.get("description", None),
             cover_image_url=r.profile_settings.get("cover_image_url", None),
             featured_organizations=r.profile_settings.get(
                 "featured_organizations", None
@@ -65,6 +73,9 @@ class Repository(Schema):
 
 
 class RepositoryProfileSettingsUpdate(Schema):
+    set_description: bool | None = None
+    description: str | None = None
+
     set_cover_image_url: bool | None = None
     cover_image_url: str | None = None
 

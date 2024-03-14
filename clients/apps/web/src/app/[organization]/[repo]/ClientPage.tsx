@@ -5,6 +5,10 @@ import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForF
 import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
 import { DescriptionEditor } from '@/components/Profile/DescriptionEditor/DescriptionEditor'
+import {
+  Link as LinkItem,
+  LinksEditor,
+} from '@/components/Profile/LinksEditor/LinksEditor'
 import { SubscriptionTierEditor } from '@/components/Profile/SubscriptionTierEditor/SubscriptionTierEditor'
 import useDebouncedCallback from '@/hooks/utils'
 import { useTrafficRecordPageView } from '@/utils/traffic'
@@ -17,6 +21,7 @@ import {
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useUpdateProject } from 'polarkit/hooks'
@@ -31,6 +36,7 @@ const ClientPage = ({
   featuredOrganizations,
   adminOrganizations,
   subscriptionTiers,
+  links,
 }: {
   organization: Organization
   repository: Repository
@@ -38,6 +44,7 @@ const ClientPage = ({
   featuredOrganizations: Organization[]
   adminOrganizations: Organization[]
   subscriptionTiers: SubscriptionTier[]
+  links: { opengraph: OgObject; url: string }[]
 }) => {
   const [descriptionIsLoading, setDescriptionIsLoading] = useState(false)
   const isAdmin = useMemo(
@@ -84,6 +91,10 @@ const ClientPage = ({
     500,
     [updateProfile, setDescriptionIsLoading],
   )
+
+  const updateLinks = (links: LinkItem[]) => {
+    updateProfile({ links: links.map((l) => l.url) })
+  }
 
   return (
     <div className="flex w-full flex-col gap-y-12">
@@ -170,6 +181,13 @@ const ClientPage = ({
           organization={organization}
           featuredOrganizations={featuredOrganizations}
           onChange={updateFeaturedCreators}
+          disabled={!isAdmin}
+        />
+
+        <LinksEditor
+          organization={organization}
+          links={links}
+          onChange={updateLinks}
           disabled={!isAdmin}
         />
 

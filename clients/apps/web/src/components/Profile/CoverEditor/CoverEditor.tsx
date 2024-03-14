@@ -103,6 +103,7 @@ export const CoverEditor = ({
             src={imagePreviewSrc}
             width={960}
             height={320}
+            priority
           />
         )}
         {!imagePreviewSrc && (

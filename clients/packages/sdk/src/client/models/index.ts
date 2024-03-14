@@ -4505,6 +4505,12 @@ export interface OrganizationMember {
  */
 export interface OrganizationProfileSettings {
     /**
+     * A description of the organization
+     * @type {string}
+     * @memberof OrganizationProfileSettings
+     */
+    description?: string;
+    /**
      * A list of featured projects
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
@@ -4523,6 +4529,18 @@ export interface OrganizationProfileSettings {
  * @interface OrganizationProfileSettingsUpdate
  */
 export interface OrganizationProfileSettingsUpdate {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationProfileSettingsUpdate
+     */
+    set_description?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationProfileSettingsUpdate
+     */
+    description?: string;
     /**
      * 
      * @type {Array<string>}

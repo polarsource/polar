@@ -2211,6 +2211,19 @@ export interface Entry {
 /**
  * 
  * @export
+ * @interface ExistingSubscriptionTierPrice
+ */
+export interface ExistingSubscriptionTierPrice {
+    /**
+     * 
+     * @type {string}
+     * @memberof ExistingSubscriptionTierPrice
+     */
+    id: string;
+}
+/**
+ * 
+ * @export
  * @interface ExternalGitHubCommitReference
  */
 export interface ExternalGitHubCommitReference {
@@ -3598,6 +3611,12 @@ export interface MaintainerNewPaidSubscriptionNotificationPayload {
      * @memberof MaintainerNewPaidSubscriptionNotificationPayload
      */
     tier_price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewPaidSubscriptionNotificationPayload
+     */
+    tier_price_recurring_interval: string;
     /**
      * 
      * @type {string}
@@ -5437,6 +5456,12 @@ export interface PostIssueComment {
     append_badge?: boolean;
 }
 /**
+ * @type PricesInner
+ * @export
+ */
+export type PricesInner = ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate;
+
+/**
  * 
  * @export
  * @interface PullRequest
@@ -6159,6 +6184,12 @@ export interface SubscribeSession {
     subscription_tier: SubscriptionTier;
     /**
      * 
+     * @type {SubscriptionTierPrice}
+     * @memberof SubscribeSession
+     */
+    price: SubscriptionTierPrice;
+    /**
+     * 
      * @type {string}
      * @memberof SubscribeSession
      */
@@ -6182,6 +6213,12 @@ export interface SubscribeSessionCreate {
      * @memberof SubscribeSessionCreate
      */
     tier_id: string;
+    /**
+     * ID of the Subscription Tier Price to subscribe to.
+     * @type {string}
+     * @memberof SubscribeSessionCreate
+     */
+    price_id: string;
     /**
      * URL where the backer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the subscribe session id.
      * @type {string}
@@ -6266,18 +6303,6 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    price_currency: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof Subscription
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof Subscription
-     */
     user_id: string;
     /**
      * 
@@ -6291,6 +6316,12 @@ export interface Subscription {
      * @memberof Subscription
      */
     subscription_tier_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    price_id?: string;
     /**
      * 
      * @type {SubscriptionUser}
@@ -6309,6 +6340,12 @@ export interface Subscription {
      * @memberof Subscription
      */
     subscription_tier: SubscriptionTier;
+    /**
+     * 
+     * @type {SubscriptionTierPrice}
+     * @memberof Subscription
+     */
+    price?: SubscriptionTierPrice;
 }
 /**
  * 
@@ -8019,18 +8056,6 @@ export interface SubscriptionSubscriber {
      * @type {string}
      * @memberof SubscriptionSubscriber
      */
-    price_currency: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionSubscriber
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
     user_id: string;
     /**
      * 
@@ -8046,6 +8071,12 @@ export interface SubscriptionSubscriber {
     subscription_tier_id: string;
     /**
      * 
+     * @type {string}
+     * @memberof SubscriptionSubscriber
+     */
+    price_id?: string;
+    /**
+     * 
      * @type {SubscriptionTierSubscriber}
      * @memberof SubscriptionSubscriber
      */
@@ -8056,6 +8087,12 @@ export interface SubscriptionSubscriber {
      * @memberof SubscriptionSubscriber
      */
     organization?: SubscriptionOrganization;
+    /**
+     * 
+     * @type {SubscriptionTierPrice}
+     * @memberof SubscriptionSubscriber
+     */
+    price?: SubscriptionTierPrice;
 }
 /**
  * 
@@ -8081,6 +8118,12 @@ export interface SubscriptionSummary {
      * @memberof SubscriptionSummary
      */
     subscription_tier: SubscriptionTier;
+    /**
+     * 
+     * @type {SubscriptionTierPrice}
+     * @memberof SubscriptionSummary
+     */
+    price?: SubscriptionTierPrice;
 }
 /**
  * 
@@ -8132,18 +8175,6 @@ export interface SubscriptionTier {
     is_highlighted: boolean;
     /**
      * 
-     * @type {number}
-     * @memberof SubscriptionTier
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    price_currency: string;
-    /**
-     * 
      * @type {boolean}
      * @memberof SubscriptionTier
      */
@@ -8160,6 +8191,12 @@ export interface SubscriptionTier {
      * @memberof SubscriptionTier
      */
     repository_id?: string;
+    /**
+     * 
+     * @type {Array<SubscriptionTierPrice>}
+     * @memberof SubscriptionTier
+     */
+    prices: Array<SubscriptionTierPrice>;
     /**
      * 
      * @type {Array<BenefitsInner>}
@@ -8212,16 +8249,10 @@ export interface SubscriptionTierCreate {
     is_highlighted?: boolean;
     /**
      * 
-     * @type {number}
+     * @type {Array<SubscriptionTierPriceCreate>}
      * @memberof SubscriptionTierCreate
      */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierCreate
-     */
-    price_currency?: string;
+    prices: Array<SubscriptionTierPriceCreate>;
     /**
      * 
      * @type {string}
@@ -8245,6 +8276,91 @@ export const SubscriptionTierCreateTypeEnum = {
     BUSINESS: 'business'
 } as const;
 export type SubscriptionTierCreateTypeEnum = typeof SubscriptionTierCreateTypeEnum[keyof typeof SubscriptionTierCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionTierPrice
+ */
+export interface SubscriptionTierPrice {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierPrice
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierPrice
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierPrice
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionTierPriceRecurringInterval}
+     * @memberof SubscriptionTierPrice
+     */
+    recurring_interval: SubscriptionTierPriceRecurringInterval;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionTierPrice
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierPrice
+     */
+    price_currency: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionTierPrice
+     */
+    is_archived: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface SubscriptionTierPriceCreate
+ */
+export interface SubscriptionTierPriceCreate {
+    /**
+     * 
+     * @type {SubscriptionTierPriceRecurringInterval}
+     * @memberof SubscriptionTierPriceCreate
+     */
+    recurring_interval: SubscriptionTierPriceRecurringInterval;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionTierPriceCreate
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierPriceCreate
+     */
+    price_currency?: string;
+}
+
+/**
+ * 
+ * @export
+ */
+export const SubscriptionTierPriceRecurringInterval = {
+    MONTH: 'month',
+    YEAR: 'year'
+} as const;
+export type SubscriptionTierPriceRecurringInterval = typeof SubscriptionTierPriceRecurringInterval[keyof typeof SubscriptionTierPriceRecurringInterval];
 
 /**
  * 
@@ -8296,18 +8412,6 @@ export interface SubscriptionTierSubscriber {
     is_highlighted: boolean;
     /**
      * 
-     * @type {number}
-     * @memberof SubscriptionTierSubscriber
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    price_currency: string;
-    /**
-     * 
      * @type {boolean}
      * @memberof SubscriptionTierSubscriber
      */
@@ -8324,6 +8428,12 @@ export interface SubscriptionTierSubscriber {
      * @memberof SubscriptionTierSubscriber
      */
     repository_id?: string;
+    /**
+     * 
+     * @type {Array<SubscriptionTierPrice>}
+     * @memberof SubscriptionTierSubscriber
+     */
+    prices: Array<SubscriptionTierPrice>;
     /**
      * 
      * @type {Array<BenefitsInner1>}
@@ -8369,16 +8479,10 @@ export interface SubscriptionTierUpdate {
     is_highlighted?: boolean;
     /**
      * 
-     * @type {number}
+     * @type {Array<PricesInner>}
      * @memberof SubscriptionTierUpdate
      */
-    price_amount?: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierUpdate
-     */
-    price_currency?: string;
+    prices?: Array<PricesInner>;
 }
 /**
  * 
@@ -8392,6 +8496,12 @@ export interface SubscriptionUpgrade {
      * @memberof SubscriptionUpgrade
      */
     subscription_tier_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUpgrade
+     */
+    price_id: string;
 }
 /**
  * 
@@ -8479,13 +8589,7 @@ export interface SubscriptionsStatisticsPeriod {
      * @type {number}
      * @memberof SubscriptionsStatisticsPeriod
      */
-    mrr: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionsStatisticsPeriod
-     */
-    cumulative: number;
+    earnings: number;
 }
 /**
  * 
@@ -8817,6 +8921,12 @@ export interface Transaction {
      * @type {string}
      * @memberof Transaction
      */
+    subscription_tier_price_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Transaction
+     */
     payout_transaction_id?: string;
     /**
      * 
@@ -8842,6 +8952,12 @@ export interface Transaction {
      * @memberof Transaction
      */
     subscription?: TransactionSubscription;
+    /**
+     * 
+     * @type {TransactionSubscriptionPrice}
+     * @memberof Transaction
+     */
+    subscription_tier_price?: TransactionSubscriptionPrice;
     /**
      * 
      * @type {Array<TransactionEmbedded>}
@@ -8956,6 +9072,12 @@ export interface TransactionDetails {
      * @type {string}
      * @memberof TransactionDetails
      */
+    subscription_tier_price_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDetails
+     */
     payout_transaction_id?: string;
     /**
      * 
@@ -8981,6 +9103,12 @@ export interface TransactionDetails {
      * @memberof TransactionDetails
      */
     subscription?: TransactionSubscription;
+    /**
+     * 
+     * @type {TransactionSubscriptionPrice}
+     * @memberof TransactionDetails
+     */
+    subscription_tier_price?: TransactionSubscriptionPrice;
     /**
      * 
      * @type {Array<TransactionEmbedded>}
@@ -9096,6 +9224,12 @@ export interface TransactionEmbedded {
      * @memberof TransactionEmbedded
      */
     subscription_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionEmbedded
+     */
+    subscription_tier_price_id?: string;
     /**
      * 
      * @type {string}
@@ -9374,22 +9508,59 @@ export interface TransactionSubscription {
     status: SubscriptionStatus;
     /**
      * 
-     * @type {string}
-     * @memberof TransactionSubscription
-     */
-    price_currency: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof TransactionSubscription
-     */
-    price_amount: number;
-    /**
-     * 
      * @type {TransactionSubscriptionTier}
      * @memberof TransactionSubscription
      */
     subscription_tier: TransactionSubscriptionTier;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionSubscriptionPrice
+ */
+export interface TransactionSubscriptionPrice {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionPrice
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionPrice
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionPrice
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionTierPriceRecurringInterval}
+     * @memberof TransactionSubscriptionPrice
+     */
+    recurring_interval: SubscriptionTierPriceRecurringInterval;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionSubscriptionPrice
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSubscriptionPrice
+     */
+    price_currency: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof TransactionSubscriptionPrice
+     */
+    is_archived: boolean;
 }
 /**
  * 

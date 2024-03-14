@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Self
 from uuid import UUID
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, HttpUrl
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
@@ -25,6 +25,9 @@ class OrganizationProfileSettings(Schema):
     )
     featured_organizations: list[UUID4] | None = Field(
         None, description="A list of featured organizations"
+    )
+    links: list[HttpUrl] | None = Field(
+        None, description="A list of links associated with the organization"
     )
 
 
@@ -90,6 +93,7 @@ class Organization(Schema):
             featured_organizations=o.profile_settings.get(
                 "featured_organizations", None
             ),
+            links=o.profile_settings.get("links", None),
         )
 
         return cls(
@@ -132,6 +136,7 @@ class OrganizationProfileSettingsUpdate(Schema):
 
     featured_projects: list[UUID4] | None = None
     featured_organizations: list[UUID4] | None = None
+    links: list[HttpUrl] | None = None
 
 
 class OrganizationUpdate(Schema):

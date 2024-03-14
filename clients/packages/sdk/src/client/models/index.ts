@@ -4522,6 +4522,12 @@ export interface OrganizationProfileSettings {
      * @memberof OrganizationProfileSettings
      */
     featured_organizations?: Array<string>;
+    /**
+     * A list of links associated with the organization
+     * @type {Array<string>}
+     * @memberof OrganizationProfileSettings
+     */
+    links?: Array<string>;
 }
 /**
  * 
@@ -4553,6 +4559,12 @@ export interface OrganizationProfileSettingsUpdate {
      * @memberof OrganizationProfileSettingsUpdate
      */
     featured_organizations?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OrganizationProfileSettingsUpdate
+     */
+    links?: Array<string>;
 }
 /**
  * 

@@ -17,6 +17,9 @@ import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 import { externalURL } from '@/components/Organization'
+import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
+import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
+import { CONFIG } from 'polarkit'
 import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
 const cacheConfig = {
@@ -230,6 +233,7 @@ export default async function Page({
   })
 
   let featuredOrganizations: Organization[] = []
+  let links: Link[] = []
 
   try {
     const loadFeaturedOrganizations = await Promise.all(
@@ -241,7 +245,18 @@ export default async function Page({
       ),
     )
 
+    const loadLinkOpengraphs = await Promise.all(
+      (organization.profile_settings.links ?? []).map((link) =>
+        fetch(`${CONFIG.FRONTEND_BASE_URL}/link/og?url=${link}`)
+          .then((res) => (res && res.ok ? res.json() : undefined))
+          .then((og) => ({ opengraph: og as OgObject, url: link })),
+      ),
+    )
+
     featuredOrganizations = loadFeaturedOrganizations
+    links = loadLinkOpengraphs.filter(
+      (link): link is Link => link !== undefined,
+    )
   } catch (err) {
     notFound()
   }
@@ -313,6 +328,7 @@ export default async function Page({
         subscriptionsSummary={subscriptionsSummary}
         adminOrganizations={listAdminOrganizations?.items ?? []}
         issues={listIssueFunding?.items ?? []}
+        links={links}
       />
     </>
   )

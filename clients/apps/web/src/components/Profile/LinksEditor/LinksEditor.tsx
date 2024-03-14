@@ -39,7 +39,7 @@ export const LinksEditor = ({
     handleDragCancel,
     updateItems,
   } = useDraggableEditorCallbacks(
-    links.map((link) => ({ id: link.url, ...link })) as Link[],
+    links.map((link, index) => ({ id: link.url + index, ...link })) as Link[],
     onChange,
   )
 

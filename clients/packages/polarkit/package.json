@@ -36,6 +36,7 @@
     "./components/ui/atoms/tabs": "./src/components/ui/atoms/Tabs.tsx",
     "./components/ui/atoms/datatable": "./src/components/ui/atoms/datatable/index.ts",
     "./components/ui/atoms/textarea": "./src/components/ui/atoms/TextArea.tsx",
+    "./components/ui/atoms/switch": "./src/components/ui/atoms/Switch.tsx",
     "./components/ui/molecules": "./src/components/ui/molecules/index.ts",
     "./components/ui/dropdown-menu": "./src/components/ui/dropdown-menu.tsx",
     "./components/ui/button": "./src/components/ui/button.tsx",

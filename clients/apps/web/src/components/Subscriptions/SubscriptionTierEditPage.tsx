@@ -2,10 +2,12 @@
 
 import revalidate from '@/app/actions'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useRecurringInterval } from '@/hooks/subscriptions'
 import {
   Organization,
   ResponseError,
   SubscriptionTier,
+  SubscriptionTierPrice,
   SubscriptionTierType,
   SubscriptionTierUpdate,
   ValidationError,
@@ -31,6 +33,7 @@ import { useModal } from '../Modal/useModal'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
+import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
 import { SubscriptionBenefit, isPremiumArticlesBenefit } from './utils'
 
 interface SubscriptionTierEditPageProps {
@@ -76,6 +79,7 @@ const SubscriptionTierEdit = ({
     subscriptionTier.benefits.map((benefit) => benefit.id) ?? [],
   )
   const isFreeTier = subscriptionTier.type === SubscriptionTierType.FREE
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
 
   const now = useMemo(() => new Date(), [])
   const { data: subscriptionStatistics } = useSubscriptionStatistics(
@@ -294,15 +298,23 @@ const SubscriptionTierEdit = ({
               </Button>
             </div>
           </ShadowBoxOnMd>
-          <SubscriptionTierCard
-            className="w-full md:w-1/4"
-            subscriptionTier={{
-              ...subscriptionTier,
-              ...editingSubscriptionTier,
-              benefits: enabledBenefits,
-            }}
-            isEditing={true}
-          />
+          <div className="flex w-full flex-col items-center gap-2 md:w-1/4">
+            <SubscriptionTierRecurringIntervalSwitch
+              recurringInterval={recurringInterval}
+              onChange={setRecurringInterval}
+            />
+            <SubscriptionTierCard
+              className="w-full"
+              subscriptionTier={{
+                ...subscriptionTier,
+                ...editingSubscriptionTier,
+                benefits: enabledBenefits,
+                prices: subscriptionTier.prices as SubscriptionTierPrice[],
+              }}
+              isEditing={true}
+              recurringInterval={recurringInterval}
+            />
+          </div>
         </div>
       </Form>
     </DashboardBody>

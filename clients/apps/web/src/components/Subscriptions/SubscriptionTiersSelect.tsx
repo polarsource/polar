@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
-import { getCentsInDollarString } from 'polarkit/money'
 import React from 'react'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { SubscriptionTiersByType, tiersTypeDisplayNames } from './utils'
@@ -46,9 +45,7 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
               {type !== SubscriptionTierType.FREE &&
                 tiers.map((tier) => (
                   <SelectItem key={tier.id} value={tier.id}>
-                    {tier.name} ($
-                    {getCentsInDollarString(tier.price_amount, undefined, true)}
-                    )
+                    {tier.name}
                   </SelectItem>
                 ))}
             </SelectGroup>

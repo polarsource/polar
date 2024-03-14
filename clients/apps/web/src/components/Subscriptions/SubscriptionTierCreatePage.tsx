@@ -2,11 +2,13 @@
 
 import revalidate from '@/app/actions'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useRecurringInterval } from '@/hooks/subscriptions'
 import {
   Organization,
   ResponseError,
   SubscriptionTierCreate,
   SubscriptionTierCreateTypeEnum,
+  SubscriptionTierPrice,
   ValidationError,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -27,6 +29,7 @@ import { Benefit } from '../Benefit/Benefit'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
+import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
 import { SubscriptionBenefit, isPremiumArticlesBenefit } from './utils'
 
 interface SubscriptionTierCreatePageProps {
@@ -76,7 +79,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
     Benefit['id'][]
     // Pre-select premium articles benefit
   >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
-
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
   const highlightedTiers =
     useSubscriptionTiers(organization.name, 100).data?.items?.filter(
       (tier) => tier.is_highlighted,
@@ -90,12 +93,20 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
       ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
       is_highlighted: shouldBeHighlighted,
+      prices: [
+        {
+          recurring_interval: 'month',
+          price_amount: undefined,
+          price_currency: 'usd',
+        },
+      ],
     },
   })
   const { handleSubmit, watch, setError } = form
 
   const newSubscriptionTier = watch()
   const selectedSubscriptionTierType = watch('type')
+  const prices = watch('prices')
 
   const createSubscriptionTier = useCreateSubscriptionTier(organization.name)
   const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits(
@@ -213,13 +224,21 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
             </div>
           </ShadowBoxOnMd>
           {selectedSubscriptionTierType && (
-            <SubscriptionTierCard
-              className="w-full md:w-1/4"
-              subscriptionTier={{
-                ...newSubscriptionTier,
-                benefits: enabledBenefits,
-              }}
-            />
+            <div className="flex w-full flex-col items-center gap-2 md:w-1/4">
+              <SubscriptionTierRecurringIntervalSwitch
+                recurringInterval={recurringInterval}
+                onChange={setRecurringInterval}
+              />
+              <SubscriptionTierCard
+                className="w-full"
+                subscriptionTier={{
+                  ...newSubscriptionTier,
+                  benefits: enabledBenefits,
+                  prices: prices as SubscriptionTierPrice[],
+                }}
+                recurringInterval={recurringInterval}
+              />
+            </div>
           )}
         </div>
       </Form>

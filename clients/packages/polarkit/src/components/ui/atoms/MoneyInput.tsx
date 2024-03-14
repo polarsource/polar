@@ -13,6 +13,7 @@ interface Props {
   value?: number
   className?: string
   onAmountChangeInCents?: (cents: number) => void
+  postSlot?: React.ReactNode
 }
 
 const getCents = (event: ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +63,7 @@ const MoneyInput = (props: Props) => {
       onChange={onChanged}
       placeholder={getCentsInDollarString(props.placeholder)}
       preSlot={<span className="text-lg">$</span>}
-      postSlot={<span className="text-sm">USD</span>}
+      postSlot={props.postSlot}
       {...other}
     />
   )

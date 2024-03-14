@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useRecurringInterval } from '@/hooks/subscriptions'
 import { Add, Bolt } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -9,6 +10,7 @@ import { useSubscriptionTiers } from 'polarkit/hooks'
 import React from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
 import SubscriptionTierCard from './SubscriptionTierCard'
+import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
 
 interface TiersPageProps {
   organization: Organization
@@ -16,6 +18,7 @@ interface TiersPageProps {
 
 const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
 
   if (!subscriptionTiers?.items?.length) {
     return (
@@ -58,12 +61,19 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
             </Button>
           </Link>
         </div>
+        <div className="flex justify-center">
+          <SubscriptionTierRecurringIntervalSwitch
+            recurringInterval={recurringInterval}
+            onChange={setRecurringInterval}
+          />
+        </div>
         <div className="flex flex-row flex-wrap gap-6">
           {subscriptionTiers.items.map((tier) => (
             <SubscriptionTierCard
               className="w-full self-stretch md:max-w-[286px]"
               key={tier.id}
               subscriptionTier={tier}
+              recurringInterval={recurringInterval}
             >
               <Link
                 key={tier.id}

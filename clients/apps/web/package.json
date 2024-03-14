@@ -23,6 +23,7 @@
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@heroicons/react": "^2.0.16",
+    "@hookform/error-message": "^2.0.1",
     "@mui/icons-material": "^5.15.4",
     "@mui/material": "^5.15.4",
     "@observablehq/plot": "^0.6.11",

@@ -31,6 +31,14 @@ export const Default: Story = {
   args: {
     subscribeSession: {
       id: 'sub_1J5X2t2eZvKYlo2C2QqQ2Q2Q',
+      price: {
+        id: '123',
+        created_at: '2021-10-01T00:00:00Z',
+        is_archived: false,
+        price_amount: 500,
+        price_currency: 'usd',
+        recurring_interval: 'month',
+      },
       subscription_tier: {
         id: 'sub_tier_1J5X2t2eZvKYlo2C2QqQ2Q2Q',
         name: 'Free',
@@ -45,8 +53,16 @@ export const Default: Story = {
             type: 'custom',
           },
         ],
-        price_amount: 0,
-        price_currency: 'USD',
+        prices: [
+          {
+            id: '123',
+            created_at: '2021-10-01T00:00:00Z',
+            is_archived: false,
+            price_amount: 500,
+            price_currency: 'usd',
+            recurring_interval: 'month',
+          },
+        ],
         description: 'Free',
         created_at: '2021-10-08T11:17:14.000Z',
         is_archived: false,

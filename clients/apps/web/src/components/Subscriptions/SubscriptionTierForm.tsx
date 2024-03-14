@@ -1,10 +1,15 @@
 'use client'
 
+import { ErrorMessage } from '@hookform/error-message'
+import { ClearOutlined } from '@mui/icons-material'
 import {
   SubscriptionTierCreate,
+  SubscriptionTierPriceCreate,
+  SubscriptionTierPriceRecurringInterval,
   SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
+import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import {
@@ -24,8 +29,93 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import React, { useMemo } from 'react'
-import { useFormContext } from 'react-hook-form'
+import {
+  UseFieldArrayReturn,
+  useFieldArray,
+  useFormContext,
+} from 'react-hook-form'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
+
+interface SubscriptionTierPriceItemProps {
+  index: number
+  fieldArray: UseFieldArrayReturn<
+    SubscriptionTierCreate | SubscriptionTierUpdate,
+    'prices',
+    'id'
+  >
+}
+
+const SubscriptionTierPriceItem: React.FC<SubscriptionTierPriceItemProps> = ({
+  index,
+  fieldArray,
+}) => {
+  const { control, register, watch, setValue } = useFormContext<
+    SubscriptionTierCreate | SubscriptionTierUpdate
+  >()
+  const { remove } = fieldArray
+  const recurringInterval = watch(`prices.${index}.recurring_interval`)
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="hidden"
+        {...register(`prices.${index}.recurring_interval`)}
+      />
+      <input type="hidden" {...register(`prices.${index}.id`)} />
+      <FormField
+        control={control}
+        name={`prices.${index}.price_amount`}
+        rules={{ required: 'This field is required', min: 0 }}
+        render={({ field }) => {
+          return (
+            <FormItem className="max-w-[300px] grow">
+              <div className="flex gap-2">
+                <FormControl>
+                  <MoneyInput
+                    id="monthly-price"
+                    name={field.name}
+                    value={field.value}
+                    onAmountChangeInCents={(v) => {
+                      field.onChange(v)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                    placeholder={0}
+                    postSlot={
+                      <>
+                        {recurringInterval ===
+                          SubscriptionTierPriceRecurringInterval.MONTH && (
+                          <span>/mo</span>
+                        )}
+                        {recurringInterval ===
+                          SubscriptionTierPriceRecurringInterval.YEAR && (
+                          <span>/year</span>
+                        )}
+                      </>
+                    }
+                  />
+                </FormControl>
+                <button type="button">
+                  <Button
+                    className={
+                      'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                    }
+                    size="icon"
+                    variant="secondary"
+                    type="button"
+                    onClick={() => remove(index)}
+                  >
+                    <ClearOutlined fontSize="inherit" />
+                  </Button>
+                </button>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </div>
+  )
+}
 
 interface SubscriptionTierFormProps {
   update?: boolean
@@ -36,9 +126,38 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
   update,
   isFreeTier,
 }) => {
-  const { control } = useFormContext<
-    SubscriptionTierCreate | SubscriptionTierUpdate
-  >()
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<SubscriptionTierCreate | SubscriptionTierUpdate>()
+
+  const pricesFieldArray = useFieldArray({
+    control,
+    name: 'prices',
+    rules: {
+      minLength: 1,
+    },
+  })
+  const { fields: prices, append } = pricesFieldArray
+
+  const hasMonthlyPrice = useMemo(
+    () =>
+      (prices as SubscriptionTierPriceCreate[]).some(
+        (price: SubscriptionTierPriceCreate) =>
+          price.recurring_interval ===
+          SubscriptionTierPriceRecurringInterval.MONTH,
+      ),
+    [prices],
+  )
+  const hasYearlyPrice = useMemo(
+    () =>
+      (prices as SubscriptionTierPriceCreate[]).some(
+        (price) =>
+          price.recurring_interval ===
+          SubscriptionTierPriceRecurringInterval.YEAR,
+      ),
+    [prices],
+  )
 
   const subscriptionTierTypes = useMemo(
     () =>
@@ -137,28 +256,65 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
               )
             }}
           />
-          <FormField
-            control={control}
-            name="price_amount"
-            rules={{ required: 'This field is required', min: 0 }}
-            render={({ field }) => {
-              return (
-                <FormItem className="max-w-[300px]">
-                  <FormLabel>Monthly Price</FormLabel>
-                  <FormControl>
-                    <MoneyInput
-                      id="monthly-price"
-                      name={field.name}
-                      value={field.value}
-                      onAmountChangeInCents={field.onChange}
-                      placeholder={0}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
+          <div className="flex flex-col gap-2">
+            <FormLabel>Pricing</FormLabel>
+            {prices.map((price, index) => (
+              <SubscriptionTierPriceItem
+                key={price.id}
+                index={index}
+                fieldArray={pricesFieldArray}
+              />
+            ))}
+            <div className="flex flex-row gap-2">
+              {!hasMonthlyPrice && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="self-start"
+                  type="button"
+                  onClick={() =>
+                    append({
+                      id: '',
+                      recurring_interval:
+                        SubscriptionTierPriceRecurringInterval.MONTH,
+                      price_currency: 'usd',
+                      price_amount: 0,
+                    })
+                  }
+                >
+                  Add monthly pricing
+                </Button>
+              )}
+              {!hasYearlyPrice && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="self-start"
+                  type="button"
+                  onClick={() =>
+                    append({
+                      id: '',
+                      recurring_interval:
+                        SubscriptionTierPriceRecurringInterval.YEAR,
+                      price_currency: 'usd',
+                      price_amount: 0,
+                    })
+                  }
+                >
+                  Add yearly pricing
+                </Button>
+              )}
+            </div>
+            <ErrorMessage
+              errors={errors}
+              name="prices"
+              render={({ message }) => (
+                <p className="text-destructive text-sm font-medium">
+                  {message}
+                </p>
+              )}
+            />
+          </div>
         </>
       )}
       <FormField

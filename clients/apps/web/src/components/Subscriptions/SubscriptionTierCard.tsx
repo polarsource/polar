@@ -3,7 +3,11 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
-import { SubscriptionTier, SubscriptionTierType } from '@polar-sh/sdk'
+import {
+  SubscriptionTier,
+  SubscriptionTierPriceRecurringInterval,
+  SubscriptionTierType,
+} from '@polar-sh/sdk'
 import {
   Card,
   CardContent,
@@ -12,8 +16,14 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import { getCentsInDollarString } from 'polarkit/money'
-import { MouseEventHandler, useCallback, useRef, useState } from 'react'
+import { formatCurrencyAndAmount } from 'polarkit/money'
+import {
+  MouseEventHandler,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType, resolveBenefitIcon } from './utils'
@@ -25,6 +35,7 @@ export interface SubscriptionTierCardProps {
   variant?: 'default' | 'small'
   isEditing?: boolean
   draggable?: ReturnType<typeof useSortable>
+  recurringInterval?: SubscriptionTierPriceRecurringInterval
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -44,10 +55,52 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   variant = 'default',
   isEditing = false,
   draggable,
+  recurringInterval = SubscriptionTierPriceRecurringInterval.MONTH,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
   const [shineActive, setShineActive] = useState(false)
+
+  const price: {
+    price_amount: number
+    price_currency: string
+    recurring_interval: SubscriptionTierPriceRecurringInterval
+  } = useMemo(() => {
+    let price = subscriptionTier.prices?.find(
+      (price) => price.recurring_interval === recurringInterval,
+    )
+    if (!price) {
+      if (subscriptionTier.prices && subscriptionTier.prices?.length > 0) {
+        price = subscriptionTier.prices[0]
+      } else {
+        return {
+          price_amount: 0,
+          price_currency: 'usd',
+          recurring_interval: SubscriptionTierPriceRecurringInterval.MONTH,
+        }
+      }
+    }
+
+    const priceAmount =
+      price.recurring_interval === SubscriptionTierPriceRecurringInterval.YEAR
+        ? price.price_amount / 12
+        : price.price_amount
+
+    return {
+      price_amount: priceAmount || 0,
+      price_currency: price.price_currency,
+      recurring_interval: price.recurring_interval,
+    }
+  }, [subscriptionTier, recurringInterval])
+
+  const recurringBillingLabel = useMemo(() => {
+    switch (price.recurring_interval) {
+      case SubscriptionTierPriceRecurringInterval.MONTH:
+        return 'billed monthly'
+      case SubscriptionTierPriceRecurringInterval.YEAR:
+        return 'billed yearly'
+    }
+  }, [price])
 
   const getSubscriptionTierAudience = (type?: SubscriptionTier['type']) => {
     switch (type) {
@@ -176,19 +229,17 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         </div>
         <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
           <div className={variantStyles[variant]['priceLabel']}>
-            {
-              <>
-                $
-                {getCentsInDollarString(
-                  subscriptionTier.price_amount ?? 0,
-                  false,
-                  true,
-                )}
-              </>
-            }
+            {formatCurrencyAndAmount(
+              price.price_amount,
+              price.price_currency,
+              0,
+            )}
             <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
               /mo
             </span>
+            <div className="dark:text-polar-500 mt-2  text-sm font-normal text-gray-500">
+              {recurringBillingLabel}
+            </div>
           </div>
           {subscriptionTier.description ? (
             <p

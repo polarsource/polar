@@ -5732,6 +5732,12 @@ export interface RepositoryProfileSettings {
      * @memberof RepositoryProfileSettings
      */
     highlighted_subscription_tiers?: Array<string>;
+    /**
+     * A list of links related to the repository
+     * @type {Array<string>}
+     * @memberof RepositoryProfileSettings
+     */
+    links?: Array<string>;
 }
 /**
  * 
@@ -5775,6 +5781,12 @@ export interface RepositoryProfileSettingsUpdate {
      * @memberof RepositoryProfileSettingsUpdate
      */
     highlighted_subscription_tiers?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof RepositoryProfileSettingsUpdate
+     */
+    links?: Array<string>;
 }
 /**
  * 

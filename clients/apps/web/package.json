@@ -52,6 +52,7 @@
     "mermaid": "^10.6.1",
     "next": "^14.1.0",
     "next-themes": "^0.2.1",
+    "open-graph-scraper-lite": "^2.0.0",
     "pako": "^2.1.0",
     "polarkit": "workspace:*",
     "posthog-js": "^1.83.1",

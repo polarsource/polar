@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
+from pydantic import ValidationError
 
 from polar.config import settings
 from polar.kit.utils import utc_now
@@ -408,6 +409,7 @@ async def test_update_organization_profile_settings(
     assert response.json()["profile_settings"] == {
         "featured_projects": None,
         "featured_organizations": None,
+        "description": None,
     }
 
     # set featured_projects
@@ -551,3 +553,75 @@ async def test_update_organization_profile_settings_featured_organizations(
     assert response.status_code == 200
     assert response.json()["id"] == str(organization.id)
     assert response.json()["profile_settings"]["featured_organizations"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_update_organization_profile_settings_description(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    # set description
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "description": "Hello world!",
+                "set_description": True,
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["description"] == "Hello world!"
+
+    # should trim description of leading/trailing whitespace
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "description": "     Hello whitespace!    ",
+                "set_description": True,
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["description"] == "Hello whitespace!"
+
+    # setting description without set_description should not affect description
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "description": "Hello moon!",
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["description"] == "Hello whitespace!"
+
+    # setting a description which exceeds the maximum length should throw a validation error
+    with pytest.raises(ValidationError):
+        response = await client.patch(
+            f"/api/v1/organizations/{organization.id}",
+            json={
+                "profile_settings": {
+                    "description": "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium.",
+                    "set_description": True,
+                }
+            },
+        )

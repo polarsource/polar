@@ -11,8 +11,15 @@ from polar.integrations.github import types
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization as OrganizationModel
 
+ORGANIZATION_DESCRIPTION_MAX_LENGTH = 160
+
 
 class OrganizationProfileSettings(Schema):
+    description: str | None = Field(
+        None,
+        description="A description of the organization",
+        max_length=ORGANIZATION_DESCRIPTION_MAX_LENGTH,
+    )
     featured_projects: list[UUID4] | None = Field(
         None, description="A list of featured projects"
     )
@@ -78,6 +85,7 @@ class Organization(Schema):
         include_member_fields: bool = False,
     ) -> Self:
         profile_settings = OrganizationProfileSettings(
+            description=o.profile_settings.get("description", None),
             featured_projects=o.profile_settings.get("featured_projects", None),
             featured_organizations=o.profile_settings.get(
                 "featured_organizations", None
@@ -119,6 +127,9 @@ class Organization(Schema):
 
 
 class OrganizationProfileSettingsUpdate(Schema):
+    set_description: bool | None = None
+    description: str | None = None
+
     featured_projects: list[UUID4] | None = None
     featured_organizations: list[UUID4] | None = None
 

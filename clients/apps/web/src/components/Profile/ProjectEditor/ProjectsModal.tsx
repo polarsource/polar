@@ -1,6 +1,8 @@
 import { StarIcon } from '@heroicons/react/20/solid'
 import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/sdk'
+import Link from 'next/link'
+import { CONFIG } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { formatStarsNumber } from 'polarkit/utils'
@@ -43,8 +45,21 @@ export const ProjectsModal = ({
       <div className="flex flex-col gap-y-2">
         <h3>Featured Projects</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Select which projects you&apos;d like to highlight
+          Select which projects you&apos;d like to highlight.
         </p>
+
+        {organization.has_app_installed && (
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Make sure to install the{' '}
+            <Link
+              className="text-blue-500 dark:text-blue-400"
+              href={CONFIG.GITHUB_INSTALLATION_URL}
+            >
+              Polar GitHub
+            </Link>{' '}
+            app to see all your repositories.
+          </p>
+        )}
       </div>
       <div className="flex w-full flex-col gap-y-8">
         <div className="flex max-h-[420px] w-full flex-col overflow-y-auto">

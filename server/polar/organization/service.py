@@ -21,6 +21,7 @@ from polar.worker import enqueue_job
 from .schemas import (
     OrganizationCreateFromGitHubInstallation,
     OrganizationCreateFromGitHubUser,
+    OrganizationProfileSettings,
     OrganizationUpdate,
 )
 
@@ -198,11 +199,29 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 settings.per_user_monthly_spending_limit
             )
 
+        profile_settings = OrganizationProfileSettings.model_validate(
+            organization.profile_settings
+        )
+
         if settings.profile_settings is not None:
-            organization.profile_settings = {
-                **organization.profile_settings,
-                **settings.profile_settings.model_dump(mode="json", exclude_unset=True),
-            }
+            if settings.profile_settings.set_description:
+                profile_settings.description = (
+                    settings.profile_settings.description.strip()
+                    if settings.profile_settings.description is not None
+                    else None
+                )
+
+            if settings.profile_settings.featured_projects is not None:
+                profile_settings.featured_projects = (
+                    settings.profile_settings.featured_projects
+                )
+
+            if settings.profile_settings.featured_organizations is not None:
+                profile_settings.featured_organizations = (
+                    settings.profile_settings.featured_organizations
+                )
+
+            organization.profile_settings = profile_settings.model_dump(mode="json")
 
         session.add(organization)
 

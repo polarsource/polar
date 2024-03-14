@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
 import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
@@ -7,6 +8,7 @@ import {
   CreatePersonalAccessTokenResponse,
   ListResourceSubscriptionSummary,
   Organization,
+  OrganizationProfileSettingsUpdate,
   SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
@@ -16,12 +18,14 @@ import { api } from 'polarkit'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import { useUpdateOrganization } from 'polarkit/hooks'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL } from '.'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { Modal, ModalHeader } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import { DescriptionEditor } from '../Profile/DescriptionEditor/DescriptionEditor'
 import Spinner from '../Shared/Spinner'
 import { FreeTierSubscribe } from './FreeTierSubscribe'
 
@@ -57,6 +61,28 @@ export const OrganizationPublicSidebar = ({
   const shouldRenderSubscriberCount =
     (subscriptionsSummary.items?.length ?? 0) > 0
 
+  const updateOrganizationMutation = useUpdateOrganization()
+
+  const updateProfile = (
+    setting: Partial<OrganizationProfileSettingsUpdate>,
+  ) => {
+    return updateOrganizationMutation
+      .mutateAsync({
+        id: organization.id,
+        settings: {
+          profile_settings: setting,
+        },
+      })
+      .then(() => revalidate(`organization:${organization.name}`))
+  }
+
+  const updateDescription = (description: string) => {
+    updateProfile({
+      description,
+      set_description: true,
+    })
+  }
+
   return (
     <div className="flex h-full w-full flex-col items-start gap-y-6 md:max-w-[15rem] lg:w-full">
       <div className="flex w-full flex-row items-center gap-x-4 gap-y-6 md:flex-col md:items-start md:gap-x-0">
@@ -71,7 +97,7 @@ export const OrganizationPublicSidebar = ({
           </h1>
           {organization.pretty_name && (
             <Link
-              className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 md:text-lg"
+              className="text-blue-500 hover:text-blue-400 md:text-lg dark:text-blue-400 dark:hover:text-blue-300"
               href={`/${organization.name}`}
             >
               @{organization.name}
@@ -86,11 +112,17 @@ export const OrganizationPublicSidebar = ({
         )}
       >
         <div className="flex flex-col gap-y-6">
-          {organization.bio ? (
-            <p className="dark:text-polar-500 text-start leading-relaxed text-gray-500 [text-wrap:pretty]">
-              {organization.bio}
-            </p>
-          ) : null}
+          <DescriptionEditor
+            className="dark:text-polar-500 md:text-md text-start text-lg leading-relaxed text-gray-500 [text-wrap:pretty]"
+            description={
+              organization.profile_settings.description ??
+              organization.bio ??
+              ''
+            }
+            onChange={updateDescription}
+            disabled={!isAdmin}
+            size="small"
+          />
           <div className="flex flex-row flex-wrap items-center gap-2.5 text-lg">
             <SocialLink href={`https://github.com/${organization.name}`}>
               <GitHubIcon width={20} height={20} />

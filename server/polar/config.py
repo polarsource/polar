@@ -71,13 +71,20 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
 
     # Github App
-    GITHUB_APP_NAMESPACE: str = ""
+    GITHUB_APP_NAMESPACE: str = ""  # Unused
     GITHUB_APP_IDENTIFIER: str = ""
     GITHUB_APP_WEBHOOK_SECRET: str = ""
     GITHUB_APP_PRIVATE_KEY: str = ""
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
     GITHUB_POLAR_USER_ACCESS_TOKEN: str | None = None
+
+    # GitHub App for repository benefits
+    GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE: str = ""
+    GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER: str = ""
+    GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY: str = ""
+    GITHUB_REPOSITORY_BENEFITS_CLIENT_ID: str = ""
+    GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET: str = ""
 
     # Discord
     DISCORD_CLIENT_ID: str = ""

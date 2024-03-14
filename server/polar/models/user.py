@@ -17,6 +17,7 @@ from .account import Account
 
 class OAuthPlatform(StrEnum):
     github = "github"
+    github_repository_benefit = "github_repository_benefit"
     discord = "discord"
 
 

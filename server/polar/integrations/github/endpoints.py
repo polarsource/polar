@@ -7,7 +7,6 @@ from fastapi import (
     Depends,
     HTTPException,
     Request,
-    Response,
 )
 from fastapi.responses import RedirectResponse
 from githubkit.exception import RequestFailed
@@ -109,7 +108,6 @@ async def github_authorize(
 @router.get("/callback", name="integrations.github.callback", tags=[Tags.INTERNAL])
 async def github_callback(
     request: Request,
-    response: Response,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback

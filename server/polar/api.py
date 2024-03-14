@@ -11,6 +11,9 @@ from polar.extension.endpoints import router as extension_router
 from polar.funding.endpoints import router as funding_router
 from polar.integrations.discord.endpoints import router as discord_router
 from polar.integrations.github.endpoints import router as github_router
+from polar.integrations.github_repository_benefit.endpoints import (
+    router as github_repository_benefit_router,
+)
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
 from polar.magic_link.endpoints import router as magic_link_router
@@ -34,6 +37,8 @@ router = APIRouter(prefix="/api/v1")
 router.include_router(user_router)
 # /integrations/github
 router.include_router(github_router)
+# /integrations/github_repository_benefit
+router.include_router(github_repository_benefit_router)
 # /integrations/stripe
 router.include_router(stripe_router)
 # /integrations/discord

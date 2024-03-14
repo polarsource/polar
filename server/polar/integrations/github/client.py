@@ -96,11 +96,11 @@ async def get_user_client(
     if not oauth:
         raise Exception("no github oauth account found")
 
-    return await get_refreshed_oauth_client(session, oauth, user)
+    return await get_refreshed_oauth_client(session, oauth)
 
 
 async def get_refreshed_oauth_client(
-    session: AsyncSession, oauth: OAuthAccount, user: User
+    session: AsyncSession, oauth: OAuthAccount
 ) -> GitHub[TokenAuthStrategy]:
     # if token expires within 30 minutes, refresh it
     if (
@@ -129,10 +129,18 @@ async def get_refreshed_oauth_client(
             if r.refresh_token:
                 oauth.refresh_token = r.refresh_token
 
-            log.info("github.auth.refresh.succeeded", user=user.id)
+            log.info(
+                "github.auth.refresh.succeeded",
+                user_id=oauth.user_id,
+                platform=oauth.platform,
+            )
             session.add(oauth)
         else:
-            log.error("github.auth.refresh.failed", user=user.id)
+            log.error(
+                "github.auth.refresh.failed",
+                user_id=oauth.user_id,
+                platform=oauth.platform,
+            )
 
     return get_client(oauth.access_token)
 

@@ -34,7 +34,7 @@ from polar.subscription.schemas import FreeSubscriptionCreate, SubscriptionUpgra
 from polar.subscription.service.subscription import (
     AlreadyCanceledSubscription,
     AlreadySubscribed,
-    AssociatedSubscriptionTierDoesNotExist,
+    AssociatedSubscriptionTierPriceDoesNotExist,
     FreeSubscriptionUpgrade,
     InvalidSubscriptionTierUpgrade,
     NotAFreeSubscriptionTier,
@@ -64,7 +64,7 @@ def construct_stripe_subscription(
     user: User | None = None,
     organization: Organization | None = None,
     customer_id: str = "CUSTOMER_ID",
-    product_id: str = "PRODUCT_ID",
+    price_id: str = "PRICE_ID",
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     latest_invoice: stripe_lib.Invoice | None = None,
     metadata: dict[str, str] = {},
@@ -85,13 +85,7 @@ def construct_stripe_subscription(
             "status": status,
             "items": {
                 "data": [
-                    {
-                        "price": {
-                            "product": product_id,
-                            "currency": "USD",
-                            "unit_amount": 1000,
-                        }
-                    }
+                    {"price": {"id": price_id, "currency": "USD", "unit_amount": 1000}}
                 ]
             },
             "current_period_start": now_timestamp,
@@ -396,7 +390,7 @@ class TestCreateSubscriptionFromStripe:
         # then
         session.expunge_all()
 
-        with pytest.raises(AssociatedSubscriptionTierDoesNotExist):
+        with pytest.raises(AssociatedSubscriptionTierPriceDoesNotExist):
             await subscription_service.create_subscription_from_stripe(
                 session, stripe_subscription=stripe_subscription
             )
@@ -413,7 +407,7 @@ class TestCreateSubscriptionFromStripe:
 
         assert subscription_tier_organization.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
-            product_id=subscription_tier_organization.stripe_product_id
+            price_id=subscription_tier_organization.prices[0].stripe_price_id
         )
 
         # then
@@ -444,7 +438,7 @@ class TestCreateSubscriptionFromStripe:
 
         assert subscription_tier_organization.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
-            user=user, product_id=subscription_tier_organization.stripe_product_id
+            user=user, price_id=subscription_tier_organization.prices[0].stripe_price_id
         )
 
         # then
@@ -479,7 +473,7 @@ class TestCreateSubscriptionFromStripe:
         assert subscription_tier_organization.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             user=user,
-            product_id=subscription_tier_organization.stripe_product_id,
+            price_id=subscription_tier_organization.prices[0].stripe_price_id,
             status=SubscriptionStatus.active,
         )
 
@@ -521,7 +515,7 @@ class TestCreateSubscriptionFromStripe:
         assert subscription_tier_organization.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             user=user,
-            product_id=subscription_tier_organization.stripe_product_id,
+            price_id=subscription_tier_organization.prices[0].stripe_price_id,
             status=SubscriptionStatus.active,
             metadata={"subscription_id": str(existing_subscription.id)},
         )
@@ -560,7 +554,7 @@ class TestCreateSubscriptionFromStripe:
         stripe_subscription = construct_stripe_subscription(
             user=user,
             organization=organization,
-            product_id=subscription_tier_organization.stripe_product_id,
+            price_id=subscription_tier_organization.prices[0].stripe_price_id,
         )
 
         # then
@@ -602,6 +596,32 @@ class TestUpdateSubscriptionFromStripe:
                 session, stripe_subscription=stripe_subscription
             )
 
+    async def test_not_existing_price(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        stripe_subscription = construct_stripe_subscription(
+            status=SubscriptionStatus.active, price_id="NOT_EXISTING_PRICE_ID"
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            stripe_subscription_id=stripe_subscription.id,
+        )
+        assert subscription.started_at is None
+
+        # then
+        session.expunge_all()
+
+        with pytest.raises(AssociatedSubscriptionTierPriceDoesNotExist):
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+
     async def test_valid(
         self,
         mocker: MockerFixture,
@@ -614,12 +634,14 @@ class TestUpdateSubscriptionFromStripe:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
+        price = subscription_tier_organization.prices[0]
         stripe_subscription = construct_stripe_subscription(
-            status=SubscriptionStatus.active
+            status=SubscriptionStatus.active, price_id=price.stripe_price_id
         )
         subscription = await create_subscription(
             save_fixture,
             subscription_tier=subscription_tier_organization,
+            price=price,
             user=user,
             stripe_subscription_id=stripe_subscription.id,
         )
@@ -1222,7 +1244,7 @@ class TestUpgradeSubscription:
                 session,
                 subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
-                    subscription_tier_id=uuid.uuid4()
+                    subscription_tier_id=uuid.uuid4(), price_id=uuid.uuid4()
                 ),
                 authz=authz,
                 user=user_second,
@@ -1254,7 +1276,7 @@ class TestUpgradeSubscription:
                 session,
                 subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
-                    subscription_tier_id=uuid.uuid4()
+                    subscription_tier_id=uuid.uuid4(), price_id=uuid.uuid4()
                 ),
                 authz=authz,
                 user=user,
@@ -1279,7 +1301,7 @@ class TestUpgradeSubscription:
                 session,
                 subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
-                    subscription_tier_id=uuid.uuid4()
+                    subscription_tier_id=uuid.uuid4(), price_id=uuid.uuid4()
                 ),
                 authz=authz,
                 user=user,
@@ -1305,7 +1327,8 @@ class TestUpgradeSubscription:
                 session,
                 subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
-                    subscription_tier_id=subscription_tier_repository.id
+                    subscription_tier_id=subscription_tier_repository.id,
+                    price_id=subscription_tier_repository.prices[0].id,
                 ),
                 authz=authz,
                 user=user,
@@ -1332,7 +1355,8 @@ class TestUpgradeSubscription:
             session,
             subscription=subscription_loaded,
             subscription_upgrade=SubscriptionUpgrade(
-                subscription_tier_id=subscription_tier_organization_second.id
+                subscription_tier_id=subscription_tier_organization_second.id,
+                price_id=subscription_tier_organization_second.prices[0].id,
             ),
             authz=authz,
             user=user,
@@ -1344,18 +1368,14 @@ class TestUpgradeSubscription:
             == subscription_tier_organization_second.id
         )
         assert (
-            updated_subscription.price_currency
-            == subscription_tier_organization_second.price_currency
-        )
-        assert (
-            updated_subscription.price_amount
-            == subscription_tier_organization_second.price_amount
+            updated_subscription.price
+            == subscription_tier_organization_second.prices[0]
         )
 
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
-            old_price=subscription_tier_organization.stripe_price_id,
-            new_price=subscription_tier_organization_second.stripe_price_id,
+            old_price=subscription_tier_organization.prices[0].stripe_price_id,
+            new_price=subscription_tier_organization_second.prices[0].stripe_price_id,
         )
 
 
@@ -1598,9 +1618,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price = subscription_tier_organization.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1623,9 +1644,7 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-            )
+            assert result.mrr == get_net_amount(price)
             assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for result in results[6:]:
@@ -1665,9 +1684,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price = subscription_tier_organization.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1690,9 +1710,7 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-            )
+            assert result.mrr == get_net_amount(price)
             assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for result in results[6:]:
@@ -1719,9 +1737,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price_organization = subscription_tier_organization.prices[0].price_amount
         balances_organization = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price_organization,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1734,9 +1753,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price_repository = subscription_tier_repository.prices[0].price_amount
         balances_repository = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price_repository,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1760,10 +1780,7 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 2
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-                + subscription_tier_repository.price_amount
-            )
+            assert result.mrr == get_net_amount(price_organization + price_repository)
             assert result.cumulative == get_balances_sum(
                 balances_organization[0 : i + 1] + balances_repository[0 : i + 1]
             )
@@ -1794,9 +1811,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price_organization = subscription_tier_organization.prices[0].price_amount
         balances_organization = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price_organization,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1809,9 +1827,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price_repository = subscription_tier_repository.prices[0].price_amount
         balances_repository = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price_repository,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1834,9 +1853,7 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(
-                subscription_tier_repository.price_amount
-            )
+            assert result.mrr == get_net_amount(price_repository)
             assert result.cumulative == get_balances_sum(balances_repository[0 : i + 1])
 
         for result in results[6:]:
@@ -1861,9 +1878,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price = subscription_tier_organization.prices[0].price_amount
         await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1906,9 +1924,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price_organization = subscription_tier_organization.prices[0].price_amount
         balances_organization = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price_organization,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1921,9 +1940,10 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        price_repository = subscription_tier_repository.prices[0].price_amount
         balances_repository = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price_repository,
             start_month=1,
             end_month=6,
             organization_account=organization_account,
@@ -1945,9 +1965,7 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-            )
+            assert result.mrr == get_net_amount(price_organization)
             assert result.cumulative == get_balances_sum(
                 balances_organization[0 : i + 1]
             )
@@ -1974,9 +1992,10 @@ class TestGetStatisticsPeriods:
             user=user_second,
             started_at=datetime(2023, 1, 1),
         )
+        price = subscription_tier_organization.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price,
             start_month=1,
             end_month=10,
             organization_account=organization_account,
@@ -1999,19 +2018,15 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:9]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-            )
+            assert result.mrr == get_net_amount(price)
             assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for i, result in enumerate(results[9:]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-            )
+            assert result.mrr == get_net_amount(price)
             assert result.cumulative == get_balances_sum(
                 balances[:-1]
-            ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)
+            ) + get_net_amount(price) * (i + 1)
 
     async def test_free_subscription(
         self,
@@ -2031,9 +2046,10 @@ class TestGetStatisticsPeriods:
             user=user_second,
             started_at=datetime(2023, 1, 1),
         )
+        price = subscription_tier_organization.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
-            gross_amount=subscription_tier_organization.price_amount,
+            gross_amount=price,
             start_month=1,
             end_month=10,
             organization_account=organization_account,
@@ -2062,19 +2078,15 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:9]):
             assert result.subscribers == 2
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-            )
+            assert result.mrr == get_net_amount(price)
             assert result.cumulative == get_balances_sum(balances[0 : i + 1])
 
         for i, result in enumerate(results[9:]):
             assert result.subscribers == 2
-            assert result.mrr == get_net_amount(
-                subscription_tier_organization.price_amount
-            )
+            assert result.mrr == get_net_amount(price)
             assert result.cumulative == get_balances_sum(
                 balances[:-1]
-            ) + get_net_amount(subscription_tier_organization.price_amount) * (i + 1)
+            ) + get_net_amount(price) * (i + 1)
 
     async def test_cancelled_subscriptions(
         self,

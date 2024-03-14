@@ -382,6 +382,7 @@ async def test_MaintainerNewPaidSubscriptionNotification(
         tier_name="My Paid Tier",
         tier_price_amount=500,
         tier_organization_name="myorg",
+        tier_price_recurring_interval="month",
     )
 
     await check_diff(n.render())

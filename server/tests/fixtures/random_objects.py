@@ -474,7 +474,11 @@ async def create_subscription(
         user_id=user.id,
         organization_id=organization.id if organization is not None else None,
         subscription_tier_id=subscription_tier.id,
-        price=price,
+        price=price
+        if price is not None
+        else subscription_tier.prices[0]
+        if subscription_tier.prices
+        else None,
     )
     await save_fixture(subscription)
     return subscription

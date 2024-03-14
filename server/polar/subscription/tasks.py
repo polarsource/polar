@@ -20,6 +20,9 @@ from .service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
 from .service.subscription_tier import subscription_tier as subscription_tier_service
+from .service.subscription_tier_price import (
+    subscription_tier_price as subscription_tier_price_service,
+)
 
 
 class SubscriptionTaskError(PolarError):
@@ -240,6 +243,12 @@ async def subscription_discord_notification(
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
 
+        assert subscription.price_id is not None
+        price = await subscription_tier_price_service.get(
+            session, subscription.price_id
+        )
+        assert price is not None
+
         tier = await subscription_tier_service.get(
             session, subscription.subscription_tier_id
         )
@@ -258,7 +267,7 @@ async def subscription_discord_notification(
 
         embed = DiscordEmbed(
             title=tier.name,
-            description=f"${get_cents_in_dollar_string(tier.price_amount)}",
+            description=f"${get_cents_in_dollar_string(price.price_amount)}/{price.recurring_interval}",
             color="65280",
         )
 

@@ -414,6 +414,10 @@ async def create_subscribe_session(
     if subscription_tier is None:
         raise ResourceNotFound()
 
+    price = subscription_tier.get_price(session_create.price_id)
+    if price is None:
+        raise ResourceNotFound()
+
     if auth.user:
         posthog.user_event(
             auth.user,
@@ -426,6 +430,7 @@ async def create_subscribe_session(
     return await subscribe_session_service.create_subscribe_session(
         session,
         subscription_tier,
+        price,
         str(session_create.success_url),
         auth.subject,
         auth.auth_method,

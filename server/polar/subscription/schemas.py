@@ -549,24 +549,23 @@ class SubscriptionBase(TimestampedSchema):
     started_at: datetime | None = None
     ended_at: datetime | None = None
 
-    price_currency: str
-    price_amount: int
-
     user_id: UUID4
     organization_id: UUID4 | None = None
     subscription_tier_id: UUID4
+    price_id: UUID4 | None = None
 
 
 class Subscription(SubscriptionBase):
     user: SubscriptionUser
     organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
-    price: SubscriptionTierPrice
+    price: SubscriptionTierPrice | None = None
 
 
 class SubscriptionSubscriber(SubscriptionBase):
     subscription_tier: SubscriptionTierSubscriber
     organization: SubscriptionOrganization | None = None
+    price: SubscriptionTierPrice | None = None
 
 
 class FreeSubscriptionCreate(Schema):
@@ -600,7 +599,7 @@ class SubscriptionSummary(Schema):
     user: SubscriptionPublicUser
     organization: SubscriptionOrganization | None = None
     subscription_tier: SubscriptionTier
-    price: SubscriptionTierPrice
+    price: SubscriptionTierPrice | None = None
 
 
 class SubscriptionsStatisticsPeriod(Schema):

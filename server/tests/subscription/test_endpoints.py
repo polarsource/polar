@@ -1077,7 +1077,11 @@ class TestCreateSubscribeSession:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
             "/api/v1/subscriptions/subscribe-sessions/",
-            json={"tier_id": str(uuid.uuid4()), "success_url": "https://polar.sh"},
+            json={
+                "tier_id": str(uuid.uuid4()),
+                "price_id": str(uuid.uuid4()),
+                "success_url": "https://polar.sh",
+            },
         )
 
         assert response.status_code == 404
@@ -1089,7 +1093,10 @@ class TestCreateSubscribeSession:
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        json = {"tier_id": str(subscription_tier_organization.id)}
+        json = {
+            "tier_id": str(subscription_tier_organization.id),
+            "price_id": str(subscription_tier_organization.prices[0].id),
+        }
         if success_url is not None:
             json["success_url"] = success_url
 
@@ -1106,6 +1113,7 @@ class TestCreateSubscribeSession:
             "/api/v1/subscriptions/subscribe-sessions/",
             json={
                 "tier_id": str(subscription_tier_organization.id),
+                "price_id": str(subscription_tier_organization.prices[0].id),
                 "success_url": "https://polar.sh",
                 "customer_email": "INVALID_EMAIL",
             },
@@ -1134,6 +1142,7 @@ class TestCreateSubscribeSession:
             "/api/v1/subscriptions/subscribe-sessions/",
             json={
                 "tier_id": str(subscription_tier_organization.id),
+                "price_id": str(subscription_tier_organization.prices[0].id),
                 "success_url": "https://polar.sh",
             },
         )
@@ -1144,6 +1153,7 @@ class TestCreateSubscribeSession:
         assert json["id"] == "SESSION_ID"
         assert json["url"] == "STRIPE_URL"
         assert json["subscription_tier"]["id"] == str(subscription_tier_organization.id)
+        assert json["price"]["id"] == str(subscription_tier_organization.prices[0].id)
 
     async def test_anonymous_subscription_tier_repository(
         self,
@@ -1166,6 +1176,7 @@ class TestCreateSubscribeSession:
             "/api/v1/subscriptions/subscribe-sessions/",
             json={
                 "tier_id": str(subscription_tier_repository.id),
+                "price_id": str(subscription_tier_repository.prices[0].id),
                 "success_url": "https://polar.sh",
             },
         )
@@ -1176,6 +1187,7 @@ class TestCreateSubscribeSession:
         assert json["id"] == "SESSION_ID"
         assert json["url"] == "STRIPE_URL"
         assert json["subscription_tier"]["id"] == str(subscription_tier_repository.id)
+        assert json["price"]["id"] == str(subscription_tier_repository.prices[0].id)
 
 
 @pytest.mark.asyncio
@@ -1193,7 +1205,12 @@ class TestGetSubscribeSession:
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},
-            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+            metadata={
+                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_price_id": str(
+                    subscription_tier_organization.prices[0].id
+                ),
+            },
         )
 
         response = await client.get(
@@ -1208,6 +1225,7 @@ class TestGetSubscribeSession:
         assert json["customer_name"] == "John"
         assert json["customer_email"] == "backer@example.com"
         assert json["subscription_tier"]["id"] == str(subscription_tier_organization.id)
+        assert json["price"]["id"] == str(subscription_tier_organization.prices[0].id)
 
     async def test_valid_subscription_tier_repository(
         self,
@@ -1221,7 +1239,12 @@ class TestGetSubscribeSession:
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},
-            metadata={"subscription_tier_id": str(subscription_tier_repository.id)},
+            metadata={
+                "subscription_tier_id": str(subscription_tier_repository.id),
+                "subscription_tier_price_id": str(
+                    subscription_tier_repository.prices[0].id
+                ),
+            },
         )
 
         response = await client.get(
@@ -1236,6 +1259,7 @@ class TestGetSubscribeSession:
         assert json["customer_name"] == "John"
         assert json["customer_email"] == "backer@example.com"
         assert json["subscription_tier"]["id"] == str(subscription_tier_repository.id)
+        assert json["price"]["id"] == str(subscription_tier_repository.prices[0].id)
 
 
 @pytest.mark.asyncio
@@ -1447,7 +1471,8 @@ class TestUpgradeSubscription:
         response = await client.post(
             f"/api/v1/subscriptions/subscriptions/{subscription.id}",
             json={
-                "subscription_tier_id": str(subscription_tier_organization_second.id)
+                "subscription_tier_id": str(subscription_tier_organization_second.id),
+                "price_id": str(subscription_tier_organization_second.prices[0].id),
             },
         )
 
@@ -1462,7 +1487,8 @@ class TestUpgradeSubscription:
         response = await client.post(
             f"/api/v1/subscriptions/subscriptions/{uuid.uuid4()}",
             json={
-                "subscription_tier_id": str(subscription_tier_organization_second.id)
+                "subscription_tier_id": str(subscription_tier_organization_second.id),
+                "price_id": str(subscription_tier_organization_second.prices[0].id),
             },
         )
 
@@ -1478,7 +1504,8 @@ class TestUpgradeSubscription:
         response = await client.post(
             f"/api/v1/subscriptions/subscriptions/{subscription.id}",
             json={
-                "subscription_tier_id": str(subscription_tier_organization_second.id)
+                "subscription_tier_id": str(subscription_tier_organization_second.id),
+                "price_id": str(subscription_tier_organization_second.prices[0].id),
             },
         )
 

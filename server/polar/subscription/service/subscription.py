@@ -42,6 +42,7 @@ from polar.models import (
     Repository,
     Subscription,
     SubscriptionTier,
+    SubscriptionTierPrice,
     Transaction,
     User,
     UserOrganization,
@@ -84,20 +85,23 @@ from .subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
 from .subscription_tier import subscription_tier as subscription_tier_service
+from .subscription_tier_price import (
+    subscription_tier_price as subscription_tier_price_service,
+)
 
 
 class SubscriptionError(PolarError):
     ...
 
 
-class AssociatedSubscriptionTierDoesNotExist(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str, stripe_product_id: str) -> None:
+class AssociatedSubscriptionTierPriceDoesNotExist(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str, stripe_price_id: str) -> None:
         self.subscription_id = stripe_subscription_id
-        self.product_id = stripe_product_id
+        self.price_id = stripe_price_id
         message = (
             f"Received the subscription {stripe_subscription_id} from Stripe "
-            f"with product {stripe_product_id}, "
-            "but no associated SubscriptionTier exists."
+            f"with price {stripe_price_id}, "
+            "but no associated SubscriptionTierPrice exists."
         )
         super().__init__(message)
 
@@ -240,7 +244,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             Subscription.started_at.is_not(None)
         )
 
-        statement = statement.join(Subscription.user)
+        statement = statement.join(Subscription.user).join(
+            Subscription.price, isouter=True
+        )
 
         if organization is not None:
             clauses = [SubscriptionTier.organization_id == organization.id]
@@ -288,7 +294,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     clause_function(Subscription.current_period_end)
                 )
             if criterion == SearchSortProperty.price_amount:
-                order_by_clauses.append(clause_function(Subscription.price_amount))
+                order_by_clauses.append(
+                    clause_function(SubscriptionTierPrice.price_amount).nulls_last()
+                )
             if criterion == SearchSortProperty.subscription_tier_type:
                 order_by_clauses.append(clause_function(SubscriptionTier.type))
             if criterion == SearchSortProperty.subscription_tier:
@@ -297,6 +305,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         statement = statement.options(
             contains_eager(Subscription.subscription_tier),
+            contains_eager(Subscription.price),
             contains_eager(Subscription.user),
             joinedload(Subscription.organization),
         )
@@ -326,6 +335,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = (
             self._get_subscribed_subscriptions_statement(user)
             .join(SubscriptionTier)
+            .join(Subscription.price, isouter=True)
             .where(Subscription.started_at.is_not(None))
         )
 
@@ -375,7 +385,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     clause_function(Subscription.current_period_end)
                 )
             if criterion == SearchSortProperty.price_amount:
-                order_by_clauses.append(clause_function(Subscription.price_amount))
+                order_by_clauses.append(
+                    clause_function(SubscriptionTierPrice.price_amount)
+                )
             if criterion == SearchSortProperty.subscription_tier_type:
                 order_by_clauses.append(clause_function(SubscriptionTier.type))
             if criterion == SearchSortProperty.subscription_tier:
@@ -384,6 +396,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         statement = statement.options(
             contains_eager(Subscription.subscription_tier),
+            contains_eager(Subscription.price),
             joinedload(Subscription.organization),
         )
 
@@ -416,6 +429,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     contains_eager(Subscription.user),
                     joinedload(Subscription.organization),
                     contains_eager(Subscription.subscription_tier),
+                    joinedload(Subscription.price),
                 )
             )
             .where(Subscription.active.is_(True))
@@ -509,7 +523,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
     async def create_arbitrary_subscription(
-        self, session: AsyncSession, *, user: User, subscription_tier: SubscriptionTier
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        subscription_tier: SubscriptionTier,
+        price: SubscriptionTierPrice | None = None,
     ) -> Subscription:
         existing_subscriptions = await self.get_active_user_subscriptions(
             session,
@@ -530,11 +549,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             current_period_start=start,
             cancel_at_period_end=False,
             started_at=start,
-            price_currency=subscription_tier.price_currency,
-            price_amount=subscription_tier.price_amount,
             user=user,
             organization=None,
             subscription_tier=subscription_tier,
+            price=price,
         )
         session.add(subscription)
         await session.flush()
@@ -548,23 +566,20 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def create_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
-        price = stripe_subscription["items"].data[0].price
-        product_id = price.product
-        subscription_tier = await subscription_tier_service.get_by_stripe_product_id(
-            session, product_id
+        price_id = stripe_subscription["items"].data[0].price.id
+        price = await subscription_tier_price_service.get_by_stripe_price_id(
+            session, price_id
         )
-        if subscription_tier is None:
-            raise AssociatedSubscriptionTierDoesNotExist(
-                stripe_subscription.id, product_id
+        if price is None:
+            raise AssociatedSubscriptionTierPriceDoesNotExist(
+                stripe_subscription.id, price_id
             )
 
+        subscription_tier = price.subscription_tier
         subscription_tier_org = await organization_service.get(
             session, subscription_tier.managing_organization_id
         )
-        if not subscription_tier_org:
-            raise AssociatedSubscriptionTierDoesNotExist(
-                stripe_subscription.id, product_id
-            )
+        assert subscription_tier_org is not None
 
         subscription: Subscription | None = None
 
@@ -595,9 +610,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
         subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
-        subscription.price_currency = price.currency
-        subscription.price_amount = price.unit_amount
-        subscription.subscription_tier_id = subscription_tier.id
+        subscription.price = price
+        subscription.subscription_tier = subscription_tier
 
         subscription.set_started_at()
 
@@ -658,7 +672,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 payload=MaintainerNewPaidSubscriptionNotificationPayload(
                     subscriber_name=customer_email,
                     tier_name=subscription_tier.name,
-                    tier_price_amount=subscription_tier.price_amount,
+                    tier_price_amount=price.price_amount,
+                    tier_price_recurring_interval=price.recurring_interval,
                     tier_organization_name=subscription_tier_org.name,
                 ),
             ),
@@ -690,6 +705,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
         subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
         subscription.set_started_at()
+
+        price_id = stripe_subscription["items"].data[0].price.id
+        price = await subscription_tier_price_service.get_by_stripe_price_id(
+            session, price_id
+        )
+        if price is None:
+            raise AssociatedSubscriptionTierPriceDoesNotExist(
+                stripe_subscription.id, price_id
+            )
+        subscription.price = price
 
         session.add(subscription)
 
@@ -904,7 +929,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise NotPermitted()
 
         await session.refresh(
-            subscription, {"subscription_tier", "user", "organization"}
+            subscription, {"subscription_tier", "user", "organization", "price"}
         )
 
         if subscription.subscription_tier.type == SubscriptionTierType.free:
@@ -914,10 +939,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, user, subscription_upgrade.subscription_tier_id
         )
 
-        if (
-            new_subscription_tier is None
-            or new_subscription_tier.stripe_price_id is None
-        ):
+        if new_subscription_tier is None:
             raise InvalidSubscriptionTierUpgrade(
                 subscription_upgrade.subscription_tier_id
             )
@@ -935,16 +957,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         ):
             raise InvalidSubscriptionTierUpgrade(new_subscription_tier.id)
 
-        assert old_subscription_tier.stripe_price_id is not None
+        new_price = new_subscription_tier.get_price(subscription_upgrade.price_id)
+        if new_price is None:
+            raise InvalidSubscriptionTierUpgrade(new_subscription_tier.id)
+        assert subscription.price is not None
+
         stripe_service.update_subscription_price(
             subscription.stripe_subscription_id,
-            old_price=old_subscription_tier.stripe_price_id,
-            new_price=new_subscription_tier.stripe_price_id,
+            old_price=subscription.price.stripe_price_id,
+            new_price=new_price.stripe_price_id,
         )
 
         subscription.subscription_tier = new_subscription_tier
-        subscription.price_currency = new_subscription_tier.price_currency
-        subscription.price_amount = new_subscription_tier.price_amount
+        subscription.price = new_price
         session.add(subscription)
 
         return subscription
@@ -958,7 +983,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         user: User,
     ) -> Subscription:
         await session.refresh(
-            subscription, {"subscription_tier", "user", "organization"}
+            subscription, {"subscription_tier", "user", "organization", "price"}
         )
 
         if not await authz.can(user, AccessType.write, subscription):
@@ -1103,6 +1128,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ),
         )
 
+        # FIXME
         future_statement = (
             select(start_date_column)
             .add_columns(

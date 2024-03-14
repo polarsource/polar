@@ -421,6 +421,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     subscriber_name: str
     tier_name: str
     tier_price_amount: int
+    tier_price_recurring_interval: str
     tier_organization_name: str
 
     def subject(self) -> str:
@@ -429,7 +430,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     def body(self) -> str:
         return f"""Congratulations!<br><br>
 
-{self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount)}/month.<br><br>
+{self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount)}/{self.tier_price_recurring_interval}.<br><br>
 """  # noqa: E501
 
 

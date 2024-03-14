@@ -2,7 +2,8 @@ import { CloseOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
-import { useState } from 'react'
+import { Banner } from 'polarkit/components/ui/molecules'
+import { useMemo, useState } from 'react'
 import { Link } from './LinksEditor'
 
 export interface LinksModalProps {
@@ -19,8 +20,16 @@ export const LinksModal = ({
   setLinks,
 }: LinksModalProps) => {
   const [url, setUrl] = useState('')
+  const [urlNotValid, setUrlNotValid] = useState(false)
 
   const addLink = (url: string) => {
+    try {
+      new URL(url)
+    } catch (e) {
+      setUrlNotValid(true)
+      return
+    }
+
     fetch(`/link/og?url=${url}`)
       .then((res) => (res && res.ok ? res.json() : undefined))
       .then((opengraph) => {
@@ -53,11 +62,17 @@ export const LinksModal = ({
         <div className="flex flex-row items-center gap-x-4">
           <Input
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={(e) => {
+              if (urlNotValid) {
+                setUrlNotValid(false)
+              }
+              setUrl(e.target.value)
+            }}
             placeholder="https://..."
           />
           <Button onClick={(e) => addLink(url)}>Add</Button>
         </div>
+        {urlNotValid && <Banner color="red">URL is not valid</Banner>}
       </div>
       <div className="flex w-full flex-col gap-y-8">
         <div className="flex max-h-[420px] w-full flex-col gap-y-6 overflow-y-auto">
@@ -84,16 +99,26 @@ const LinkRow = ({
   link: Link
   onRemove: (link: Link) => void
 }) => {
+  const url = useMemo(() => {
+    try {
+      return new URL(link.url)
+    } catch (e) {
+      return undefined
+    }
+  }, [link])
+
   return (
     <div className="dark:hover:bg-polar-700 dark:text-polar-50 flex flex-row items-center justify-between gap-x-4 rounded-lg px-4 py-3 text-gray-950 hover:bg-gray-100">
       <div className="flex w-full min-w-0 flex-shrink flex-row items-center gap-x-4">
-        <img
-          className="h-4 w-4"
-          width={16}
-          height={16}
-          src={`https://${new URL(link.url).hostname}/favicon.ico`}
-          alt={`Favicon for ${link}`}
-        />
+        {url && (
+          <img
+            className="h-4 w-4"
+            width={16}
+            height={16}
+            src={`https://${url.hostname}/favicon.ico`}
+            alt={`Favicon for ${link}`}
+          />
+        )}
         <span className="truncate text-sm">{link.url}</span>
       </div>
       <div className="flex-shrink-0">

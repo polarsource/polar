@@ -45,6 +45,7 @@ from githubkit.versions.latest.models import (
     TimelineUnassignedIssueEvent,
     UnlabeledIssueEvent,
     UserInstallationsGetResponse200,
+    UserInstallationsInstallationIdRepositoriesGetResponse200,
     WebhookInstallationCreated,
     WebhookInstallationDeleted,
     WebhookInstallationNewPermissionsAccepted,
@@ -266,4 +267,5 @@ __all__ = [
     "WebhookRepositoryEdited",
     "WebhookRepositoryRenamed",
     "WebhookRepositoryTransferred",
+    "UserInstallationsInstallationIdRepositoriesGetResponse200",
 ]

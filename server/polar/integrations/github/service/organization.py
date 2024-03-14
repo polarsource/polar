@@ -205,7 +205,7 @@ class GithubOrganizationService(OrganizationService):
         )
 
         # Invoked from authenticated user
-        client = await github.get_refreshed_oauth_client(session, oauth, user)
+        client = await github.get_refreshed_oauth_client(session, oauth)
         await self._populate_github_user_metadata(session, client, org)
 
         enqueue_job("organization.post_user_upgrade", organization_id=org.id)

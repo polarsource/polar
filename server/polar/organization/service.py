@@ -221,6 +221,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
                     settings.profile_settings.featured_organizations
                 )
 
+            if settings.profile_settings.links is not None:
+                profile_settings.links = settings.profile_settings.links
+
             organization.profile_settings = profile_settings.model_dump(mode="json")
 
         session.add(organization)

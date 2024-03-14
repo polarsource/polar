@@ -410,6 +410,7 @@ async def test_update_organization_profile_settings(
         "featured_projects": None,
         "featured_organizations": None,
         "description": None,
+        "links": None,
     }
 
     # set featured_projects
@@ -625,3 +626,54 @@ async def test_update_organization_profile_settings_description(
                 }
             },
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_update_organization_profile_settings_links(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    # set links
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "links": [
+                    "https://example.com",
+                    "https://example.com/another-link",
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["links"] == [
+        "https://example.com/",
+        "https://example.com/another-link",
+    ]
+
+    # must be a valid URL with tld & hostname
+    # with pytest.raises(ValidationError):
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "links": [
+                    "this is not a link",
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 422  # expect unprocessable entity

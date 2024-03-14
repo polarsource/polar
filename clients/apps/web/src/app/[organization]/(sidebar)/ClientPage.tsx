@@ -5,6 +5,10 @@ import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
+import {
+  Link as LinkItem,
+  LinksEditor,
+} from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
@@ -16,6 +20,7 @@ import {
   ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
   Organization,
+  OrganizationProfileSettingsUpdate,
   Repository,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -33,6 +38,7 @@ const ClientPage = ({
   subscriptionsSummary,
   adminOrganizations,
   issues,
+  links,
 }: {
   organization: Organization
   posts: Article[]
@@ -42,6 +48,7 @@ const ClientPage = ({
   subscriptionsSummary: ListResourceSubscriptionSummary
   adminOrganizations: Organization[]
   issues: IssueFunding[]
+  links: LinkItem[]
 }) => {
   useTrafficRecordPageView({ organization })
 
@@ -65,17 +72,29 @@ const ClientPage = ({
 
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateFeaturedCreators = (organizations: Organization[]) => {
-    updateOrganizationMutation
+  const updateOrganization = (
+    setting: Partial<OrganizationProfileSettingsUpdate>,
+  ) => {
+    return updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
         settings: {
-          profile_settings: {
-            featured_organizations: organizations.map((c) => c.id),
-          },
+          profile_settings: setting,
         },
       })
       .then(() => revalidate(`organization:${organization.name}`))
+  }
+
+  const updateFeaturedCreators = (organizations: Organization[]) => {
+    updateOrganization({
+      featured_organizations: organizations.map((c) => c.id),
+    })
+  }
+
+  const updateLinks = (links: LinkItem[]) => {
+    updateOrganization({
+      links: links.map((l) => l.url),
+    })
   }
 
   return (
@@ -195,6 +214,13 @@ const ClientPage = ({
         organization={organization}
         featuredOrganizations={featuredOrganizations}
         onChange={updateFeaturedCreators}
+        disabled={!isAdmin}
+      />
+
+      <LinksEditor
+        organization={organization}
+        links={links}
+        onChange={updateLinks}
         disabled={!isAdmin}
       />
 

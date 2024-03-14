@@ -16,6 +16,9 @@ from polar.exceptions import (
     PolarRedirectionError,
     ResourceAlreadyExists,
 )
+from polar.integrations.github_repository_benefit.schemas import (
+    GitHubInvitesBenefitRepositories,
+)
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
@@ -99,13 +102,68 @@ async def user_callback(
         )
     except ResourceAlreadyExists:
         existing = await github_repository_benefit_user_service.get_oauth_account(
-            auth.user
+            session, auth.user
         )
         await github_repository_benefit_user_service.update_user_info(session, existing)
 
     return JSONResponse({"ok": True})
 
 
+@router.get(
+    "/user/repositories",
+    name="integrations.github_repository_benefit.user_repositories",
+    description="Lists available repositories for this user",
+    tags=[Tags.INTERNAL],
+)
+async def user_repositories(
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    # access_token_state: tuple[OAuth2Token, str | None] = Depends(
+    #     oauth2_authorize_callback
+    # ),
+) -> GitHubInvitesBenefitRepositories:
+    oauth = await github_repository_benefit_user_service.get_oauth_account(
+        session, auth.user
+    )
+
+    repos = await github_repository_benefit_user_service.list_repositories(
+        oauth,
+    )
+
+    return GitHubInvitesBenefitRepositories(repositories=repos)
+
+
 ###############################################################################
 # Installation
 ###############################################################################
+
+
+@router.get(
+    "/installation/install",
+    name="integrations.github_repository_benefit.installation_install",
+    tags=[Tags.INTERNAL],
+)
+async def installation_install(
+    request: Request,
+    auth: UserRequiredAuth,
+) -> RedirectResponse:
+    return RedirectResponse(
+        f"https://github.com/apps/{settings.GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE}/installations/new",
+        303,
+    )
+
+
+@router.get(
+    "/installation/callback",
+    name="integrations.github_repository_benefit.installation_callback",
+    tags=[Tags.INTERNAL],
+)
+async def installation_callback(
+    request: Request,
+    auth: UserRequiredAuth,
+) -> RedirectResponse:
+    # TODO
+    return RedirectResponse(
+        "https://polar.sh/",
+        303,
+    )

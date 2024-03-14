@@ -102,6 +102,9 @@ async def get_user_client(
 async def get_refreshed_oauth_client(
     session: AsyncSession, oauth: OAuthAccount
 ) -> GitHub[TokenAuthStrategy]:
+    if oauth.platform != OAuthPlatform.github:
+        raise Exception("unexpected platform")
+
     # if token expires within 30 minutes, refresh it
     if (
         oauth.expires_at

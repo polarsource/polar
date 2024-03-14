@@ -22,8 +22,18 @@ export const LinkCard = ({
   sortable?: ReturnType<typeof useSortable>
 }) => {
   const [renderFaviconFallback, setRenderFaviconFallback] = useState(false)
-  const url = useMemo(() => new URL(link.url), [link.url])
+  const url = useMemo(() => {
+    try {
+      return new URL(link.url)
+    } catch (err) {
+      return undefined
+    }
+  }, [link.url])
   const { opengraph } = link
+
+  if (!url) {
+    return null
+  }
 
   return (
     <Card

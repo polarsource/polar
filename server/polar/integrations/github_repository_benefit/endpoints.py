@@ -1,3 +1,5 @@
+from typing import Any
+
 import structlog
 from fastapi import (
     APIRouter,
@@ -15,10 +17,13 @@ from polar.exceptions import (
     NotPermitted,
     PolarRedirectionError,
     ResourceAlreadyExists,
+    Unauthorized,
 )
 from polar.integrations.github_repository_benefit.schemas import (
     GitHubInvitesBenefitRepositories,
 )
+from polar.kit import jwt
+from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
@@ -29,6 +34,30 @@ log = structlog.get_logger()
 router = APIRouter(
     prefix="/integrations/github_repository_benefit", tags=["integrations"]
 )
+
+
+###############################################################################
+# OAUTH2
+###############################################################################
+
+
+def get_decoded_token_state(
+    access_token_state: tuple[OAuth2Token, str | None],
+) -> tuple[OAuth2Token, dict[str, Any]]:
+    token_data, state = access_token_state
+    if not state:
+        raise Unauthorized("No state")
+
+    try:
+        state_data = jwt.decode(
+            token=state,
+            secret=settings.SECRET,
+            type="github_repository_benefit_oauth",
+        )
+    except jwt.DecodeError as e:
+        raise Unauthorized("Invalid state") from e
+
+    return (token_data, state_data)
 
 
 ###############################################################################
@@ -63,12 +92,20 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
 )
 async def user_authorize(
     request: Request,
+    return_to: ReturnTo,
     auth: UserRequiredAuth,
 ) -> RedirectResponse:
+    state = {"return_to": return_to}
+
+    encoded_state = jwt.encode(
+        data=state, secret=settings.SECRET, type="github_repository_benefit_oauth"
+    )
+
     authorization_url = await github_oauth_client.get_authorization_url(
         redirect_uri=str(
             request.url_for("integrations.github_repository_benefit.user_callback")
         ),
+        state=encoded_state,
         scope=["user", "user.email"],
     )
     return RedirectResponse(authorization_url, 303)
@@ -85,8 +122,8 @@ async def user_callback(
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback
     ),
-) -> JSONResponse:
-    token_data, state = access_token_state
+) -> RedirectResponse:
+    token_data, state = get_decoded_token_state(access_token_state)
 
     try:
         await github_repository_benefit_user_service.create_oauth_account(
@@ -100,7 +137,12 @@ async def user_callback(
         )
         await github_repository_benefit_user_service.update_user_info(session, existing)
 
-    return JSONResponse({"ok": True})
+    return_to = state["return_to"]
+    redirect_url = get_safe_return_url(add_query_parameters(return_to))
+
+    return RedirectResponse(redirect_url, 303)
+
+    # return JSONResponse({"ok": True})
 
 
 @router.get(

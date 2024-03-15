@@ -119,7 +119,7 @@ export const benefitsDisplayNames: {
   [SubscriptionBenefitType.ADS]: 'Ad',
   [SubscriptionBenefitType.ARTICLES]: 'Posts',
   [SubscriptionBenefitType.CUSTOM]: 'Custom',
-  [SubscriptionBenefitType.DISCORD]: 'Discord invite',
+  [SubscriptionBenefitType.DISCORD]: 'Discord Invite',
   [SubscriptionBenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
 }
 

@@ -63,3 +63,13 @@ export const getBotDiscordAuthorizeURL = (
   }
   return `${getServerURL()}/api/v1/integrations/discord/bot/authorize?${searchParams}`
 }
+
+export const getGitHubRepositoryBenefitAuthorizeURL = (
+  params: IntegrationsApiIntegrationsDiscordBotAuthorizeRequest,
+): string => {
+  const searchParams = new URLSearchParams()
+  if (params.returnTo !== undefined) {
+    searchParams.set('return_to', params.returnTo)
+  }
+  return `${getServerURL()}/api/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`
+}

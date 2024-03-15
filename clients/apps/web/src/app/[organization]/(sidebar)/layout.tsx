@@ -115,7 +115,7 @@ export default async function Layout({
               userAdminOrganizations={userAdminOrganizations?.items ?? []}
             />
           </div>
-          <div className="relative flex w-fit flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
+          <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
             <OrganizationPublicSidebar
               subscriptionsSummary={subscriptionsSummary}
               organization={organization}

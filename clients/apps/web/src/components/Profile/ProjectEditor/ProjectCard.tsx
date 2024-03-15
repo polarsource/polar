@@ -5,7 +5,6 @@ import { StarIcon as StarIconOutlined } from '@heroicons/react/24/outline'
 import { DragIndicatorOutlined, HiveOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Card,
@@ -76,19 +75,6 @@ export const ProjectCard = ({
         </CardContent>
       </Link>
       <CardFooter className="flex flex-row flex-wrap items-center justify-between gap-4 p-6">
-        <div className="flex-items flex items-center gap-x-4">
-          {repository.license && (
-            <Pill className="px-3 py-1.5" color="blue">
-              {repository.license}
-            </Pill>
-          )}
-          <span className="flex flex-row items-center gap-x-1 text-sm">
-            <StarIcon className="h-4 w-4" />
-            <span className="pt-.5">
-              {formatStarsNumber(repository.stars ?? 0)}
-            </span>
-          </span>
-        </div>
         <Link
           href={`https://github.com/${repository.organization.name}/${repository.name}`}
           target="_blank"
@@ -98,6 +84,12 @@ export const ProjectCard = ({
             <span>Star on GitHub</span>
           </Button>
         </Link>
+        <span className="flex flex-row items-center gap-x-1 text-sm">
+          <StarIcon className="h-4 w-4" />
+          <span className="pt-.5">
+            {formatStarsNumber(repository.stars ?? 0)}
+          </span>
+        </span>
       </CardFooter>
     </Card>
   )

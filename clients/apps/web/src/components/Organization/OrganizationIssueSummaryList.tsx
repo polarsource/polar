@@ -35,8 +35,7 @@ export const OrganizationIssueSummaryList = ({
           className="text-sm text-blue-500 dark:text-blue-400"
           href={organizationPageLink(organization, 'issues')}
         >
-          <span>View all issues</span>
-          <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+          <span>View all</span>
         </Link>
       </div>
       <ShadowBoxOnMd>

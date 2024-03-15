@@ -86,7 +86,7 @@ export const OrganizationPublicSidebar = ({
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-start gap-y-6 md:max-w-[15rem] lg:w-full">
+    <div className="flex h-full w-full flex-col items-start gap-y-6 md:max-w-[18rem]">
       <div className="flex w-full flex-row items-center gap-x-4 gap-y-6 md:flex-col md:items-start md:gap-x-0">
         <Avatar
           className="h-16 w-16 md:mb-6 md:h-32 md:w-32 lg:h-60 lg:w-60"

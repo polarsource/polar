@@ -13,7 +13,6 @@ import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEdito
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { ArrowForwardOutlined, BoltOutlined } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
@@ -62,7 +61,7 @@ const ClientPage = ({
   const highlightedTiers = useMemo(
     () =>
       subscriptionTiers.items?.filter(
-        ({ type, is_highlighted }) => type === 'free' || is_highlighted,
+        ({ type, is_highlighted }) => is_highlighted,
       ) ?? [],
     [subscriptionTiers.items],
   )
@@ -99,137 +98,144 @@ const ClientPage = ({
 
   return (
     <div className="flex w-full flex-col gap-y-24">
-      {(posts.length ?? 0) > 0 ? (
-        <div className="flex w-full flex-col gap-y-6">
-          <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
-            <h2 className="text-lg">Pinned & Latest Posts</h2>
-            <Link
-              className="text-sm text-blue-500 dark:text-blue-400"
-              href={organizationPageLink(organization, 'posts')}
-            >
-              <span>View all posts</span>
-              <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
-            </Link>
-          </div>
-          <div className="flex flex-col gap-y-8">
-            <div className="flex flex-col gap-6">
-              {posts.map((post) => (
-                <PostComponent article={post} key={post.id} highlightPinned />
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {highlightedTiers.length > 1 && (
-        <div className="flex w-full flex-col items-center gap-y-12">
-          <div className="flex flex-col items-center gap-y-6">
-            <div className="flex flex-col items-center gap-y-4">
-              <BoltOutlined
-                className="text-blue-500 dark:text-blue-400"
-                fontSize="large"
-              />
-              <h2 className="text-xl">Subscriptions</h2>
-              <p className="dark:text-polar-500 text-center text-gray-500 [text-wrap:balance]">
-                Support {organization.name} with a subscription & receive unique
-                benefits in return
-              </p>
-            </div>
-            {shouldRenderSubscriberCount && (
-              <div className="flex flex-row items-center gap-x-6">
-                <div className="flex flex-row items-center">
-                  {subscriptionsSummary.items?.map((subscriber, i) => (
-                    <Avatar
-                      className="-mr-3 h-8 w-8"
-                      key={i}
-                      name={subscriber.user.public_name ?? ''}
-                      avatar_url={subscriber.user.avatar_url}
-                      height={40}
-                      width={40}
+      <div className="flex flex-col gap-24 md:flex-row">
+        <div className="flex w-full max-w-2xl flex-col gap-y-16">
+          {(posts.length ?? 0) > 0 ? (
+            <div className="flex w-full flex-col gap-y-6">
+              <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
+                <h2 className="text-lg">Pinned & Latest Posts</h2>
+                <Link
+                  className="text-sm text-blue-500 dark:text-blue-400"
+                  href={organizationPageLink(organization, 'posts')}
+                >
+                  <span>View all</span>
+                </Link>
+              </div>
+              <div className="flex flex-col gap-y-8">
+                <div className="flex flex-col gap-6">
+                  {posts.map((post) => (
+                    <PostComponent
+                      article={post}
+                      key={post.id}
+                      highlightPinned
                     />
                   ))}
                 </div>
-                <span className="text-sm">
-                  {Intl.NumberFormat('en-US', {
-                    notation: 'compact',
-                    compactDisplay: 'short',
-                  }).format(subscriptionsSummary.pagination.total_count)}{' '}
-                  {subscriptionsSummary.pagination.total_count === 1
-                    ? 'Subscriber'
-                    : 'Subscribers'}
-                </span>
               </div>
-            )}
-          </div>
-          <div className="flex w-full flex-row flex-wrap items-center justify-center gap-8">
-            {highlightedTiers.map((tier) => (
-              <SubscriptionTierCard
-                className="w-full self-stretch md:max-w-[260px]"
-                key={tier.id}
-                subscriptionTier={tier}
-                variant="small"
-              >
-                {shouldRenderSubscribeButton ? (
-                  <>
-                    {tier.type === 'free' ? (
-                      <FreeTierSubscribe
-                        subscriptionTier={tier}
-                        organization={organization}
-                      />
-                    ) : (
-                      <SubscriptionTierSubscribeButton
-                        organization={organization}
-                        subscriptionTier={tier}
-                        subscribePath="/api/subscribe"
-                      />
-                    )}
-                  </>
-                ) : null}
-              </SubscriptionTierCard>
-            ))}
-          </div>
-          <Link
-            className="text-sm text-blue-500 dark:text-blue-400"
-            href={organizationPageLink(organization, 'subscriptions')}
-          >
-            <span>View all tiers</span>
-            <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
-          </Link>
+            </div>
+          ) : null}
+
+          {repositories.length > 0 && (
+            <ProjectsEditor
+              organization={organization}
+              repositories={repositories}
+              featuredRepositories={
+                organization.profile_settings.featured_projects ??
+                repositories.slice(0, 2).map((repo) => repo.id)
+              }
+              disabled={!isAdmin}
+            />
+          )}
+
+          <CreatorsEditor
+            organization={organization}
+            featuredOrganizations={featuredOrganizations}
+            onChange={updateFeaturedCreators}
+            disabled={!isAdmin}
+          />
+
+          {issues.length > 0 && (
+            <OrganizationIssueSummaryList
+              issues={issues}
+              organization={organization}
+            />
+          )}
         </div>
-      )}
 
-      {repositories.length > 0 && (
-        <ProjectsEditor
-          organization={organization}
-          repositories={repositories}
-          featuredRepositories={
-            organization.profile_settings.featured_projects ??
-            repositories.slice(0, 2).map((repo) => repo.id)
-          }
-          disabled={!isAdmin}
-        />
-      )}
+        <div className="flex w-full flex-col gap-y-16">
+          {highlightedTiers.length > 1 && (
+            <div className="flex w-full flex-col gap-y-8">
+              <div className="flex flex-col gap-y-4">
+                <div className="flex flex-row items-center justify-between">
+                  <h2>Subscriptions</h2>
+                  <Link
+                    className="text-sm text-blue-500 dark:text-blue-400"
+                    href={organizationPageLink(organization, 'subscriptions')}
+                  >
+                    <span>View all</span>
+                  </Link>
+                </div>
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  Support {organization.name} with a subscription & receive
+                  unique benefits in return
+                </p>
+                {shouldRenderSubscriberCount && (
+                  <div className="flex flex-row items-center gap-x-6">
+                    <div className="flex flex-row items-center">
+                      {subscriptionsSummary.items?.map((subscriber, i) => (
+                        <Avatar
+                          className="-mr-3 h-8 w-8"
+                          key={i}
+                          name={subscriber.user.public_name ?? ''}
+                          avatar_url={subscriber.user.avatar_url}
+                          height={40}
+                          width={40}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm">
+                      {Intl.NumberFormat('en-US', {
+                        notation: 'compact',
+                        compactDisplay: 'short',
+                      }).format(
+                        subscriptionsSummary.pagination.total_count,
+                      )}{' '}
+                      {subscriptionsSummary.pagination.total_count === 1
+                        ? 'Subscriber'
+                        : 'Subscribers'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex w-full flex-col gap-4">
+                {highlightedTiers.map((tier) => (
+                  <SubscriptionTierCard
+                    className="min-h-0 w-full"
+                    key={tier.id}
+                    subscriptionTier={tier}
+                    variant="small"
+                  >
+                    {shouldRenderSubscribeButton ? (
+                      <>
+                        {tier.type === 'free' ? (
+                          <FreeTierSubscribe
+                            subscriptionTier={tier}
+                            organization={organization}
+                          />
+                        ) : (
+                          <SubscriptionTierSubscribeButton
+                            organization={organization}
+                            subscriptionTier={tier}
+                            subscribePath="/api/subscribe"
+                          />
+                        )}
+                      </>
+                    ) : null}
+                  </SubscriptionTierCard>
+                ))}
+              </div>
+            </div>
+          )}
 
-      <CreatorsEditor
-        organization={organization}
-        featuredOrganizations={featuredOrganizations}
-        onChange={updateFeaturedCreators}
-        disabled={!isAdmin}
-      />
-
-      <LinksEditor
-        organization={organization}
-        links={links}
-        onChange={updateLinks}
-        disabled={!isAdmin}
-      />
-
-      {issues.length > 0 && (
-        <OrganizationIssueSummaryList
-          issues={issues}
-          organization={organization}
-        />
-      )}
+          <LinksEditor
+            organization={organization}
+            links={links}
+            onChange={updateLinks}
+            disabled={!isAdmin}
+            variant="column"
+          />
+        </div>
+      </div>
     </div>
   )
 }

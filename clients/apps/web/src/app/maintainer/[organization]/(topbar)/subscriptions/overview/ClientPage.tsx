@@ -362,7 +362,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                     <div>
                       <SubscriptionTierPill
                         subscriptionTier={subscription.subscription_tier}
-                        amount={subscription.price_amount}
+                        price={subscription.price}
                       />
                     </div>
                   </div>

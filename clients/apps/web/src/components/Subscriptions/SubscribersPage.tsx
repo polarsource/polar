@@ -11,6 +11,7 @@ import {
   Subscription,
   SubscriptionStatus,
   SubscriptionTier,
+  SubscriptionTierPrice,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -30,7 +31,6 @@ import {
   serializeSearchParams,
 } from 'polarkit/datatable'
 import { useSearchSubscriptions, useSubscriptionTiers } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
 import React, { useCallback, useMemo } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -38,6 +38,7 @@ import AccountBanner from '../Transactions/AccountBanner'
 import AddSubscriberModal from './AddSubscriberModal'
 import ImportSubscribersModal from './ImportSubscribersModal'
 import SubscriptionStatusSelect from './SubscriptionStatusSelect'
+import SubscriptionTierPriceLabel from './SubscriptionTierPriceLabel'
 import SubscriptionTiersSelect from './SubscriptionTiersSelect'
 import {
   getSubscriptionTiersByType,
@@ -91,10 +92,6 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   }
 
   const router = useRouter()
-  // const [subscriptions, setSubscriptions] = useState<
-  //   Subscription[] | undefined
-  // >()
-  // const [pageCount, setPageCount] = useState<number | undefined>()
 
   const setPagination = (
     updaterOrValue:
@@ -243,18 +240,6 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
       },
     },
     {
-      accessorKey: 'price_amount',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Monthly price" />
-      ),
-      cell: (props) => (
-        <>
-          ${getCentsInDollarString(props.getValue() as number, undefined, true)}
-        </>
-      ),
-    },
-    {
       accessorKey: 'subscription_tier.type',
       id: 'subscription_tier_type',
       enableSorting: true,
@@ -282,6 +267,27 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
               </span>
             )}
           </>
+        )
+      },
+    },
+    {
+      id: 'price_amount',
+      accessorKey: 'price',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Price" />
+      ),
+      cell: (props) => {
+        const price = props.getValue() as SubscriptionTierPrice | null
+
+        if (!price) {
+          return '—'
+        }
+
+        return (
+          <SubscriptionTierPriceLabel
+            price={props.getValue() as SubscriptionTierPrice}
+          />
         )
       },
     },

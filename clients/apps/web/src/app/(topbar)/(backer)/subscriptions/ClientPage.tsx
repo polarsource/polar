@@ -151,8 +151,8 @@ const Subscription = ({
             <div className="dark:text-polar-400 flex flex-row items-center gap-x-3 text-sm text-gray-500">
               <Link href={organizationPageLink(org, 'subscriptions')}>
                 <SubscriptionTierPill
-                  amount={subscription.subscription_tier.price_amount}
                   subscriptionTier={subscription.subscription_tier}
+                  price={subscription.price}
                 />
               </Link>
               {subscription.current_period_end && (

@@ -79,7 +79,7 @@ export const CreatorsEditor = ({
       onDragCancel={handleDragCancel}
     >
       <SortableContext items={featuredCreators} strategy={rectSortingStrategy}>
-        <div className="flex flex-col gap-y-8">
+        <div className="flex flex-col gap-y-6">
           <div className="flex flex-col items-start gap-y-2 md:flex-row md:justify-between">
             <h3 className="text-lg">Featured Developers</h3>
             {!disabled && (

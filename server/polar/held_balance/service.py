@@ -31,8 +31,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
         self, session: AsyncSession, *, held_balance: HeldBalance
     ) -> HeldBalance:
         session.add(held_balance)
-        await session.commit()
-
+        await session.flush()
         return held_balance
 
     async def release_account(
@@ -56,6 +55,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 joinedload(HeldBalance.payment_transaction),
                 joinedload(HeldBalance.pledge),
                 joinedload(HeldBalance.subscription),
+                joinedload(HeldBalance.subscription_tier_price),
                 joinedload(HeldBalance.issue_reward),
             )
         )
@@ -71,6 +71,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 amount=held_balance.amount,
                 pledge=held_balance.pledge,
                 subscription=held_balance.subscription,
+                subscription_tier_price=held_balance.subscription_tier_price,
                 issue_reward=held_balance.issue_reward,
             )
             balance_transactions_list.append(balance_transactions)
@@ -80,8 +81,6 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
             )
 
             await session.delete(held_balance)
-
-        await session.commit()
 
         return balance_transactions_list
 

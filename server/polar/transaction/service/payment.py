@@ -91,6 +91,7 @@ class PaymentTransactionService(BaseTransactionService):
                 # the `customer.subscription.created` event.
                 if subscription is None:
                     raise SubscriptionDoesNotExist(charge.id, stripe_subscription_id)
+                await session.refresh(subscription, {"price"})
 
             if (
                 stripe_invoice.metadata
@@ -129,6 +130,7 @@ class PaymentTransactionService(BaseTransactionService):
             charge_id=charge.id,
             pledge=pledge,
             subscription=subscription,
+            subscription_tier_price=subscription.price if subscription else None,
         )
 
         # Compute and link fees

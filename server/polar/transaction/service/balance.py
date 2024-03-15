@@ -7,7 +7,14 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
-from polar.models import Account, IssueReward, Pledge, Subscription, Transaction
+from polar.models import (
+    Account,
+    IssueReward,
+    Pledge,
+    Subscription,
+    SubscriptionTierPrice,
+    Transaction,
+)
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 
@@ -38,6 +45,7 @@ class BalanceTransactionService(BaseTransactionService):
         payment_transaction: Transaction | None = None,
         pledge: Pledge | None = None,
         subscription: Subscription | None = None,
+        subscription_tier_price: SubscriptionTierPrice | None = None,
         issue_reward: IssueReward | None = None,
         platform_fee_type: PlatformFeeType | None = None,
     ) -> tuple[Transaction, Transaction]:
@@ -58,6 +66,7 @@ class BalanceTransactionService(BaseTransactionService):
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
+            subscription_tier_price=subscription_tier_price,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
         )
@@ -74,6 +83,7 @@ class BalanceTransactionService(BaseTransactionService):
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
+            subscription_tier_price=subscription_tier_price,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
         )
@@ -113,6 +123,9 @@ class BalanceTransactionService(BaseTransactionService):
             amount=amount,
             pledge=pledge,
             subscription=subscription,
+            subscription_tier_price=subscription.price
+            if subscription is not None
+            else None,
             issue_reward=issue_reward,
         )
 

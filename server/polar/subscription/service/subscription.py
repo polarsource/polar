@@ -753,7 +753,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription is None:
             raise SubscriptionDoesNotExist(stripe_subscription_id)
 
-        await session.refresh(subscription, {"subscription_tier"})
+        await session.refresh(subscription, {"subscription_tier", "price"})
         account = await subscription_tier_service.get_managing_organization_account(
             session, subscription.subscription_tier
         )
@@ -773,6 +773,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         held_balance = HeldBalance(
             amount=transfer_amount,
             subscription=subscription,
+            subscription_tier_price=subscription.price,
             payment_transaction=payment_transaction,
         )
 

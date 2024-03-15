@@ -70,6 +70,7 @@ class DisputeTransactionService(BaseTransactionService):
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
             subscription_id=payment_transaction.subscription_id,
+            subscription_tier_price_id=payment_transaction.subscription_tier_price_id,
         )
 
         # Compute and link fees
@@ -137,6 +138,7 @@ class DisputeTransactionService(BaseTransactionService):
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
             subscription_id=payment_transaction.subscription_id,
+            subscription_tier_price_id=payment_transaction.subscription_tier_price_id,
         )
 
         # Compute and link fees
@@ -166,6 +168,7 @@ class DisputeTransactionService(BaseTransactionService):
                 amount=abs(outgoing.amount),
                 pledge=outgoing.pledge,
                 subscription=outgoing.subscription,
+                subscription_tier_price=outgoing.subscription_tier_price,
                 issue_reward=outgoing.issue_reward,
             )
 
@@ -196,6 +199,7 @@ class DisputeTransactionService(BaseTransactionService):
                 joinedload(Transaction.account),
                 joinedload(Transaction.pledge),
                 joinedload(Transaction.subscription),
+                joinedload(Transaction.subscription_tier_price),
                 joinedload(Transaction.issue_reward),
             )
         )

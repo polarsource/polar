@@ -715,6 +715,9 @@ class TestTransferSubscriptionPaidInvoice:
         )
         assert held_balance is not None
 
+        assert held_balance.subscription_id == subscription.id
+        assert held_balance.subscription_tier_price_id == subscription.price_id
+
     async def test_valid(
         self,
         mocker: MockerFixture,

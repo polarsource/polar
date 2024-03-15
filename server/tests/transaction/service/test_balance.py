@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Account, IssueReward, Pledge, Subscription, Transaction, User
+from polar.models.subscription_tier_price import SubscriptionTierPrice
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -33,6 +34,7 @@ async def create_payment_transaction(
     charge_id: str = "STRIPE_CHARGE_ID",
     pledge: Pledge | None = None,
     subscription: Subscription | None = None,
+    subscription_tier_price: SubscriptionTierPrice | None = None,
     issue_reward: IssueReward | None = None,
 ) -> Transaction:
     transaction = Transaction(
@@ -46,6 +48,11 @@ async def create_payment_transaction(
         charge_id=charge_id,
         pledge=pledge,
         subscription=subscription,
+        subscription_tier_price=subscription_tier_price
+        if subscription_tier_price
+        else subscription.price
+        if subscription
+        else None,
         issue_reward=issue_reward,
     )
     await save_fixture(transaction)

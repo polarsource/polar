@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams
   const subscriptionTierId = searchParams.get('tier') as string
+  const priceId = searchParams.get('price') as string
   const organizationId = searchParams.get('organization_id') as
     | string
     | undefined
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
     const { url } = await api.subscriptions.createSubscribeSession({
       subscribeSessionCreate: {
         tier_id: subscriptionTierId,
+        price_id: priceId,
         organization_subscriber_id: organizationId,
         success_url: successURL,
       },

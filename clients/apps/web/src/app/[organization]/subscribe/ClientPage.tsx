@@ -1,7 +1,9 @@
 'use client'
 
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
+import { useRecurringInterval } from '@/hooks/subscriptions'
 import { ListResourceSubscriptionTier, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoIcon } from 'polarkit/components/brand'
@@ -22,6 +24,7 @@ export default function ClientPage({
   email?: string
 }) {
   const [selectedTierIndex, selectTierIndex] = useState(0)
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
 
   const orgs = useListAdminOrganizations()
 
@@ -61,27 +64,34 @@ export default function ClientPage({
           </p>
         </div>
       </div>
-      <div className="flex max-w-5xl flex-row flex-wrap gap-8">
-        {highlightedTiers.map((tier, index) => (
-          <div
-            className={twMerge(
-              'flex w-full cursor-pointer flex-col rounded-3xl transition-shadow md:w-[300px]',
-              selectedTierIndex === index
-                ? 'shadow-2xl grayscale-0'
-                : 'grayscale hover:grayscale-0',
-            )}
-            key={tier.id}
-            onClick={() => selectTierIndex(index)}
-          >
-            <SubscriptionTierCard
+      <div className="flex flex-col items-center justify-center gap-y-12">
+        <SubscriptionTierRecurringIntervalSwitch
+          recurringInterval={recurringInterval}
+          onChange={setRecurringInterval}
+        />
+        <div className="flex max-w-5xl flex-row flex-wrap gap-8">
+          {highlightedTiers.map((tier, index) => (
+            <div
               className={twMerge(
-                'h-full w-full self-stretch',
-                selectedTierIndex === index && 'border-transparent',
+                'flex w-full cursor-pointer flex-col rounded-3xl transition-shadow md:w-[300px]',
+                selectedTierIndex === index
+                  ? 'shadow-2xl grayscale-0'
+                  : 'grayscale hover:grayscale-0',
               )}
-              subscriptionTier={tier}
-            />
-          </div>
-        ))}
+              key={tier.id}
+              onClick={() => selectTierIndex(index)}
+            >
+              <SubscriptionTierCard
+                className={twMerge(
+                  'h-full w-full self-stretch',
+                  selectedTierIndex === index && 'border-transparent',
+                )}
+                subscriptionTier={tier}
+                recurringInterval={recurringInterval}
+              />
+            </div>
+          ))}
+        </div>
       </div>
       <div className="flex w-48 flex-col items-center gap-y-4">
         {selectedTier &&
@@ -94,6 +104,7 @@ export default function ClientPage({
             <SubscriptionTierSubscribeButton
               organization={organization}
               subscriptionTier={selectedTier}
+              recurringInterval={recurringInterval}
               subscribePath="/api/subscribe"
               variant="default"
             />

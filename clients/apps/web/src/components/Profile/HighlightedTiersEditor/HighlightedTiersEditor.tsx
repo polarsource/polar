@@ -2,6 +2,7 @@ import revalidate from '@/app/actions'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import { useRecurringInterval } from '@/hooks/subscriptions'
 import { ArrowForward } from '@mui/icons-material'
 import {
   Organization,
@@ -20,6 +21,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
 import SubscriptionTierSubscribeButton from '../../Subscriptions/SubscriptionTierSubscribeButton'
 import { isPremiumArticlesBenefit } from '../../Subscriptions/utils'
+import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { HighlightedTiersModal } from './HighlightedTiersModal'
 
 export interface HighlightedTiersEditorProps {
@@ -48,6 +50,8 @@ export const HighlightedTiersEditor = ({
       [],
     [subscriptionTiers],
   )
+  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
+    useRecurringInterval(highlightedTiers)
 
   const paidSubscriptionTiers = useMemo(
     () =>
@@ -97,7 +101,14 @@ export const HighlightedTiersEditor = ({
           </p>
         </div>
       )}
-
+      {hasBothIntervals && (
+        <div className="flex justify-center">
+          <SubscriptionTierRecurringIntervalSwitch
+            recurringInterval={recurringInterval}
+            onChange={setRecurringInterval}
+          />
+        </div>
+      )}
       <div className="flex w-full flex-col gap-4">
         {highlightedTiers.length > 0 ? (
           highlightedTiers.map((tier) => (
@@ -118,6 +129,7 @@ export const HighlightedTiersEditor = ({
                     <SubscriptionTierSubscribeButton
                       organization={organization}
                       subscriptionTier={tier}
+                      recurringInterval={recurringInterval}
                       subscribePath="/api/subscribe"
                     />
                   )}
@@ -223,8 +235,6 @@ const useCreateBaselineTier = (
       description:
         'Support my work and get access to premium posts and content in the future.',
       type: 'individual',
-      price_amount: 500,
-      price_currency: 'USD',
       benefits: [
         {
           id: '1',
@@ -234,6 +244,16 @@ const useCreateBaselineTier = (
           deletable: false,
           selectable: true,
           type: 'articles',
+        },
+      ],
+      prices: [
+        {
+          id: '1',
+          created_at: new Date().toISOString(),
+          is_archived: false,
+          price_amount: 500,
+          price_currency: 'usd',
+          recurring_interval: 'month',
         },
       ],
       created_at: new Date().toISOString(),
@@ -262,8 +282,13 @@ const useCreateBaselineTier = (
       name: mockedBaselineTier.name,
       description: mockedBaselineTier.description,
       type: SubscriptionTierType.INDIVIDUAL,
-      price_amount: mockedBaselineTier.price_amount,
-      price_currency: mockedBaselineTier.price_currency,
+      prices: [
+        {
+          price_amount: mockedBaselineTier.prices[0].price_amount,
+          price_currency: mockedBaselineTier.prices[0].price_currency,
+          recurring_interval: mockedBaselineTier.prices[0].recurring_interval,
+        },
+      ],
       is_highlighted: true,
       organization_id: organization.id,
     })

@@ -2,7 +2,9 @@
 
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
+import { useRecurringInterval } from '@/hooks/subscriptions'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
 import { useListAdminOrganizations } from 'polarkit/hooks'
@@ -20,6 +22,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
   useTrafficRecordPageView({ organization })
 
   const orgs = useListAdminOrganizations()
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
 
   const shouldRenderSubscribeButton = useMemo(
     () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
@@ -35,6 +38,12 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
           benefits in return
         </p>
       </div>
+      <div className="flex justify-center">
+        <SubscriptionTierRecurringIntervalSwitch
+          recurringInterval={recurringInterval}
+          onChange={setRecurringInterval}
+        />
+      </div>
       <div className="flex flex-row flex-wrap gap-8">
         {subscriptionTiers.map((tier) => (
           <SubscriptionTierCard
@@ -42,6 +51,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
             key={tier.id}
             subscriptionTier={tier}
             variant="small"
+            recurringInterval={recurringInterval}
           >
             {shouldRenderSubscribeButton &&
               (tier.type === 'free' ? (
@@ -52,6 +62,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
               ) : (
                 <SubscriptionTierSubscribeButton
                   organization={organization}
+                  recurringInterval={recurringInterval}
                   subscriptionTier={tier}
                   subscribePath="/api/subscribe"
                 />

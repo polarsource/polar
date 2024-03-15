@@ -47,7 +47,7 @@ export const SubscriptionTiersModal = ({
         <h3>Highlighted Subscription Tiers</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
           Select subscription tiers that you want to highlight on the project
-          profile. You may only select 3 tiers.
+          profile. You can select up to 3 tiers.
         </p>
       </div>
       <div className="flex w-full flex-col gap-y-8">

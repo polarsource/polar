@@ -2347,6 +2347,38 @@ export interface Funding {
 /**
  * 
  * @export
+ * @interface GitHubInvitesBenefitRepositories
+ */
+export interface GitHubInvitesBenefitRepositories {
+    /**
+     * 
+     * @type {Array<GitHubInvitesBenefitRepository>}
+     * @memberof GitHubInvitesBenefitRepositories
+     */
+    repositories: Array<GitHubInvitesBenefitRepository>;
+}
+/**
+ * 
+ * @export
+ * @interface GitHubInvitesBenefitRepository
+ */
+export interface GitHubInvitesBenefitRepository {
+    /**
+     * 
+     * @type {string}
+     * @memberof GitHubInvitesBenefitRepository
+     */
+    repository_owner: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GitHubInvitesBenefitRepository
+     */
+    repository_name: string;
+}
+/**
+ * 
+ * @export
  * @interface GithubUser
  */
 export interface GithubUser {
@@ -4218,6 +4250,7 @@ export interface OAuthAccountRead {
  */
 export const OAuthPlatform = {
     GITHUB: 'github',
+    GITHUB_REPOSITORY_BENEFIT: 'github_repository_benefit',
     DISCORD: 'discord'
 } as const;
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
@@ -7473,7 +7506,19 @@ export interface SubscriptionBenefitGitHubRepositoryCreateProperties {
      * @type {string}
      * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
      */
-    repository_id: string;
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
+     */
+    repository_owner?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
+     */
+    repository_name?: string;
     /**
      * 
      * @type {string}
@@ -7506,7 +7551,7 @@ export interface SubscriptionBenefitGitHubRepositoryProperties {
      * @type {string}
      * @memberof SubscriptionBenefitGitHubRepositoryProperties
      */
-    repository_id: string;
+    repository_id?: string;
     /**
      * 
      * @type {string}
@@ -7623,12 +7668,6 @@ export type SubscriptionBenefitGitHubRepositorySubscriberTypeEnum = typeof Subsc
  * @interface SubscriptionBenefitGitHubRepositorySubscriberProperties
  */
 export interface SubscriptionBenefitGitHubRepositorySubscriberProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriberProperties
-     */
-    repository_id: string;
     /**
      * 
      * @type {string}

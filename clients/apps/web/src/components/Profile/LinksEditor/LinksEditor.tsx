@@ -4,6 +4,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { LanguageOutlined, TuneOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
+import { twMerge } from 'tailwind-merge'
 import { useModal } from '../../Modal/useModal'
 import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'
 import { DraggableLinkCard, LinkCard } from './LinkCard'
@@ -20,6 +21,7 @@ export interface LinksEditorProps {
   links: { opengraph: OgObject; url: string }[]
   onChange: (organizations: Link[]) => void
   disabled?: boolean
+  variant?: 'grid' | 'column'
 }
 
 export const LinksEditor = ({
@@ -27,6 +29,7 @@ export const LinksEditor = ({
   links,
   onChange,
   disabled,
+  variant = 'grid',
 }: LinksEditorProps) => {
   const { show, isShown, hide } = useModal()
 
@@ -102,7 +105,13 @@ export const LinksEditor = ({
               </div>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={twMerge(
+              variant === 'grid'
+                ? 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'
+                : 'flex flex-col gap-y-4',
+            )}
+          >
             {selectedLinks.map((link) => (
               <DraggableLinkCard
                 key={link.id}

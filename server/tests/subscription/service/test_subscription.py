@@ -27,6 +27,7 @@ from polar.models import (
 from polar.models.repository import Repository
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -54,6 +55,7 @@ from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
     create_subscription,
+    create_subscription_tier_price,
     create_user,
 )
 from tests.transaction.conftest import create_transaction
@@ -1593,15 +1595,13 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
-            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for result in results:
             assert result.subscribers == 0
-            assert result.mrr == 0
-            assert result.cumulative == 0
+            assert result.earnings == 0
 
     async def test_organization_member(
         self,
@@ -1640,20 +1640,17 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
-            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(price)
-            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
+            assert result.earnings == get_balances_sum(balances[i : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
-            assert result.mrr == 0
-            assert result.cumulative == get_balances_sum(balances)
+            assert result.earnings == 0
 
     async def test_multiple_users_organization(
         self,
@@ -1706,20 +1703,17 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
-            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(price)
-            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
+            assert result.earnings == get_balances_sum(balances[i : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
-            assert result.mrr == 0
-            assert result.cumulative == get_balances_sum(balances)
+            assert result.earnings == 0
 
     async def test_filter_indirect_organization(
         self,
@@ -1776,24 +1770,19 @@ class TestGetStatisticsPeriods:
             end_date=date(2023, 12, 31),
             organization=organization,
             direct_organization=False,
-            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 2
-            assert result.mrr == get_net_amount(price_organization + price_repository)
-            assert result.cumulative == get_balances_sum(
-                balances_organization[0 : i + 1] + balances_repository[0 : i + 1]
+            assert result.earnings == get_balances_sum(
+                balances_organization[i : i + 1] + balances_repository[i : i + 1]
             )
 
         for result in results[6:]:
             assert result.subscribers == 0
-            assert result.mrr == 0
-            assert result.cumulative == get_balances_sum(
-                balances_organization + balances_repository
-            )
+            assert result.earnings == 0
 
     async def test_filter_repository(
         self,
@@ -1849,20 +1838,17 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             repository=public_repository,
-            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(price_repository)
-            assert result.cumulative == get_balances_sum(balances_repository[0 : i + 1])
+            assert result.earnings == get_balances_sum(balances_repository[i : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
-            assert result.mrr == 0
-            assert result.cumulative == get_balances_sum(balances_repository)
+            assert result.earnings == 0
 
     async def test_filter_type(
         self,
@@ -1906,8 +1892,7 @@ class TestGetStatisticsPeriods:
 
         for result in results:
             assert result.subscribers == 0
-            assert result.mrr == 0
-            assert result.cumulative == 0
+            assert result.earnings == 0
 
     async def test_filter_subscription_tier_id(
         self,
@@ -1968,68 +1953,11 @@ class TestGetStatisticsPeriods:
 
         for i, result in enumerate(results[0:6]):
             assert result.subscribers == 1
-            assert result.mrr == get_net_amount(price_organization)
-            assert result.cumulative == get_balances_sum(
-                balances_organization[0 : i + 1]
-            )
+            assert result.earnings == get_balances_sum(balances_organization[i : i + 1])
 
         for result in results[6:]:
             assert result.subscribers == 0
-            assert result.mrr == 0
-            assert result.cumulative == get_balances_sum(balances_organization)
-
-    async def test_ongoing_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        organization_account: Account,
-        user: User,
-        user_second: User,
-        user_organization: UserOrganization,
-        subscription_tier_organization: SubscriptionTier,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            subscription_tier=subscription_tier_organization,
-            user=user_second,
-            started_at=datetime(2023, 1, 1),
-        )
-        price = subscription_tier_organization.prices[0].price_amount
-        balances = await create_subscription_balances(
-            save_fixture,
-            gross_amount=price,
-            start_month=1,
-            end_month=10,
-            organization_account=organization_account,
-            subscription=subscription,
-        )
-
-        # then
-        session.expunge_all()
-
-        results = await subscription_service.get_statistics_periods(
-            session,
-            user,
-            start_date=date(2023, 1, 1),
-            end_date=date(2023, 12, 31),
-            organization=organization,
-            current_start_of_month=date(2023, 10, 1),
-        )
-
-        assert len(results) == 12
-
-        for i, result in enumerate(results[0:9]):
-            assert result.subscribers == 1
-            assert result.mrr == get_net_amount(price)
-            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
-
-        for i, result in enumerate(results[9:]):
-            assert result.subscribers == 1
-            assert result.mrr == get_net_amount(price)
-            assert result.cumulative == get_balances_sum(
-                balances[:-1]
-            ) + get_net_amount(price) * (i + 1)
+            assert result.earnings == 0
 
     async def test_free_subscription(
         self,
@@ -2054,7 +1982,7 @@ class TestGetStatisticsPeriods:
             save_fixture,
             gross_amount=price,
             start_month=1,
-            end_month=10,
+            end_month=12,
             organization_account=organization_account,
             subscription=subscription,
         )
@@ -2074,22 +2002,13 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
-            current_start_of_month=date(2023, 10, 1),
         )
 
         assert len(results) == 12
 
-        for i, result in enumerate(results[0:9]):
+        for i, result in enumerate(results):
             assert result.subscribers == 2
-            assert result.mrr == get_net_amount(price)
-            assert result.cumulative == get_balances_sum(balances[0 : i + 1])
-
-        for i, result in enumerate(results[9:]):
-            assert result.subscribers == 2
-            assert result.mrr == get_net_amount(price)
-            assert result.cumulative == get_balances_sum(
-                balances[:-1]
-            ) + get_net_amount(price) * (i + 1)
+            assert result.earnings == get_balances_sum(balances[i : i + 1])
 
     async def test_cancelled_subscriptions(
         self,
@@ -2132,10 +2051,63 @@ class TestGetStatisticsPeriods:
             start_date=date(2023, 1, 1),
             end_date=date(2023, 1, 31),
             organization=organization,
-            current_start_of_month=date(2023, 1, 1),
         )
 
         assert len(results) == 1
 
         result = results[0]
         assert result.subscribers == 1
+
+    async def test_yearly_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_account: Account,
+        user: User,
+        user_second: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        price = await create_subscription_tier_price(
+            save_fixture,
+            subscription_tier=subscription_tier_organization,
+            amount=12000,
+            recurring_interval=SubscriptionTierPriceRecurringInterval.year,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            subscription_tier=subscription_tier_organization,
+            price=price,
+            user=user_second,
+            started_at=datetime(2023, 1, 1, tzinfo=UTC),
+        )
+        balances = await create_subscription_balances(
+            save_fixture,
+            gross_amount=price.price_amount,
+            start_month=1,
+            end_month=1,
+            organization_account=organization_account,
+            subscription=subscription,
+        )
+
+        # then
+        session.expunge_all()
+
+        results = await subscription_service.get_statistics_periods(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:1]):
+            assert result.subscribers == 1
+            assert result.earnings == get_balances_sum(balances[i : i + 1])
+
+        for i, result in enumerate(results[1:]):
+            assert result.subscribers == 1
+            assert result.earnings == 0

@@ -9,9 +9,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import (
-        SubscriptionTier,
-    )
+    from polar.models import Subscription, SubscriptionTier
 
 
 class SubscriptionTierPriceRecurringInterval(StrEnum):
@@ -45,3 +43,7 @@ class SubscriptionTierPrice(RecordModel):
         return relationship(
             "SubscriptionTier", lazy="raise", back_populates="all_prices"
         )
+
+    @declared_attr
+    def subscriptions(cls) -> Mapped[list["Subscription"]]:
+        return relationship("Subscription", lazy="raise", back_populates="price")

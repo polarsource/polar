@@ -23,7 +23,6 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
-from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
 from polar.held_balance.service import held_balance as held_balance_service
@@ -177,6 +176,13 @@ class InvalidSubscriptionTierUpgrade(SubscriptionError):
             "Can't upgrade to this subscription tier: either it doesn't exist "
             "or it doesn't belong to the same organization or repository."
         )
+        super().__init__(message)
+
+
+class EndDateInTheFuture(SubscriptionError):
+    def __init__(self, end_date: date) -> None:
+        self.end_date = end_date
+        message = "Can't generate statistics for a period that ends in the future."
         super().__init__(message)
 
 
@@ -1022,8 +1028,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         direct_organization: bool = True,
         types: list[SubscriptionTierType] | None = None,
         subscription_tier_id: uuid.UUID | None = None,
-        current_start_of_month: date | None = None,
     ) -> list[SubscriptionsStatisticsPeriod]:
+        if end_date > utc_now().date():
+            raise EndDateInTheFuture(end_date)
+
         subscriptions_statement = self._get_readable_subscriptions_statement(user)
 
         if organization is not None:
@@ -1047,10 +1055,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 SubscriptionTier.id == subscription_tier_id
             )
 
-        current_start_of_month = current_start_of_month or utc_now().date().replace(
-            day=1
-        )
-
         # Set the interval to 1 month
         # Supporting dynamic interval is difficult for the cumulative column
         interval = text("interval 'P1M'")
@@ -1060,20 +1064,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         ).column_valued("start_date")
         end_date_column = start_date_column + interval
 
-        past_statement = (
-            select(start_date_column)
-            .add_columns(
+        earnings_statement = (
+            select(
+                start_date_column,
                 end_date_column,
                 func.coalesce(
                     func.sum(Transaction.amount).filter(
-                        Transaction.created_at < end_date_column,
                         Transaction.created_at >= start_date_column,
-                    ),
-                    0,
-                ),
-                func.coalesce(
-                    func.sum(Transaction.amount).filter(
-                        Transaction.created_at < end_date_column
+                        Transaction.created_at < end_date_column,
                     ),
                     0,
                 ),
@@ -1089,13 +1087,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 ),
                 isouter=True,
             )
-            .where(start_date_column < current_start_of_month)
             .group_by(start_date_column)
             .order_by(start_date_column)
         )
 
-        # Estimate based on active subscriptions for future months
-        after_fee_amount_percentage = 1 - settings.SUBSCRIPTION_FEE_PERCENT / 100
         subscriptions_join_clause = and_(
             Subscription.id.in_(
                 subscriptions_statement.with_only_columns(Subscription.id)
@@ -1128,23 +1123,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
             ),
         )
-
-        # FIXME
-        future_statement = (
-            select(start_date_column)
-            .add_columns(
-                end_date_column,
-                func.coalesce(
-                    func.sum(Subscription.price_amount) * after_fee_amount_percentage,
-                    0,
-                ),
-            )
-            .join(Subscription, onclause=subscriptions_join_clause, isouter=True)
-            .where(start_date_column >= current_start_of_month)
-            .group_by(start_date_column)
-            .order_by(start_date_column)
-        )
-
         subscribers_count_statement = (
             select(start_date_column)
             .add_columns(
@@ -1165,44 +1143,22 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             .order_by(start_date_column)
         )
 
-        past_result = await session.execute(past_statement)
-        past_results = past_result.all()
-
-        future_result = await session.execute(future_statement)
-        future_results = future_result.all()
+        earnings_result = await session.execute(earnings_statement)
+        earnings_results = earnings_result.all()
 
         subscribers_count_result = await session.execute(subscribers_count_statement)
         subscribers_counts = list(subscribers_count_result.tuples().all())
 
         statistics_periods: list[SubscriptionsStatisticsPeriod] = []
 
-        for start_date, end_date, mrr, cumulative in past_results:
+        for start_date, end_date, earnings in earnings_results:
             subscribers = subscribers_counts.pop(0)[2]
             statistics_periods.append(
                 SubscriptionsStatisticsPeriod(
                     start_date=start_date,
                     end_date=end_date,
                     subscribers=subscribers,
-                    mrr=mrr,
-                    cumulative=cumulative,
-                )
-            )
-
-        try:
-            last_cumulative = statistics_periods[-1].cumulative
-        except IndexError:
-            last_cumulative = 0
-
-        for start_date, end_date, mrr in future_results:
-            subscribers = subscribers_counts.pop(0)[2]
-            last_cumulative += mrr
-            statistics_periods.append(
-                SubscriptionsStatisticsPeriod(
-                    start_date=start_date,
-                    end_date=end_date,
-                    subscribers=subscribers,
-                    mrr=mrr,
-                    cumulative=last_cumulative,
+                    earnings=earnings,
                 )
             )
 

@@ -145,8 +145,8 @@ const ClientPage = ({
 
   return (
     <div className="flex w-full flex-col gap-y-24">
-      <div className="flex flex-col gap-24 md:flex-row md:gap-12 lg:gap-16">
-        <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:w-fit md:max-w-3xl">
+      <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
+        <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
           {(posts.length ?? 0) > 0 ? (
             <div className="flex w-full flex-col gap-y-6">
               <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
@@ -173,7 +173,7 @@ const ClientPage = ({
           ) : null}
 
           {highlightedTiers.length > 0 && (
-            <div className="flex w-full flex-col md:hidden">
+            <div className="flex w-full flex-col lg:hidden">
               <HighlightedTiersModule />
             </div>
           )}
@@ -197,7 +197,7 @@ const ClientPage = ({
             disabled={!isAdmin}
           />
 
-          <div className="flex w-full flex-col md:hidden">
+          <div className="flex w-full flex-col lg:hidden">
             <LinksEditor
               organization={organization}
               links={links}
@@ -215,7 +215,7 @@ const ClientPage = ({
           )}
         </div>
 
-        <div className="hidden w-full flex-col gap-y-16 md:flex md:max-w-72">
+        <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
           <HighlightedTiersModule />
 
           <LinksEditor

@@ -58,6 +58,20 @@ const useUpsellSteps = () => {
       return
     }
 
+    if (!onboardingCompletedMap.polarPageShared) {
+      steps.push({
+        icon: (
+          <WifiTetheringOutlined className="text-2xl text-blue-500 dark:text-blue-400" />
+        ),
+        title: 'Setup & Share your Polar page',
+        description:
+          'Customize & promote on social media and GitHub to receive free- and paid subscribers',
+        href: organizationPageLink(currentOrg),
+        onboardingKey: 'polarPageShared',
+        onDismiss: handleDismiss,
+      })
+    }
+
     if (posts?.items?.length === 0 && !onboardingCompletedMap.postCreated) {
       steps.push({
         icon: <ViewDayOutlined className="text-blue-500 dark:text-blue-400" />,
@@ -84,20 +98,6 @@ const useUpsellSteps = () => {
           'Offer built-in benefits like premium posts, Discord invites, sponsor ads & private GitHub repository access',
         href: `/maintainer/${currentOrg?.name}/subscriptions/tiers`,
         onboardingKey: 'subscriptionTierCreated',
-        onDismiss: handleDismiss,
-      })
-    }
-
-    if (!onboardingCompletedMap.polarPageShared) {
-      steps.push({
-        icon: (
-          <WifiTetheringOutlined className="text-2xl text-blue-500 dark:text-blue-400" />
-        ),
-        title: 'Review & Share your Polar page',
-        description:
-          'Promote it on social media & GitHub to build free- and paid subscribers',
-        href: organizationPageLink(currentOrg),
-        onboardingKey: 'polarPageShared',
         onDismiss: handleDismiss,
       })
     }
@@ -149,7 +149,7 @@ export const CreatorUpsell = () => {
       <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">
         <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-6 md:py-6 lg:col-span-1">
           <DonutLargeOutlined
-            className="hidden text-blue-500 dark:text-blue-400 md:block"
+            className="hidden text-blue-500 md:block dark:text-blue-400"
             fontSize="large"
           />
           <h2 className="text-2xl font-bold">Next Up</h2>
@@ -158,7 +158,7 @@ export const CreatorUpsell = () => {
           </p>
         </div>
         <div className="col-span-2 flex flex-col gap-y-4">
-          {steps.map((card) => (
+          {steps.slice(0, 3).map((card) => (
             <UpsellStep key={card.title} {...card} />
           ))}
         </div>

@@ -49,17 +49,20 @@ export const LinksEditor = ({
   const EditorEmptyState = () => {
     return (
       <div className="flex flex-col gap-y-8">
-        <div className="dark:border-polar-800 dark:bg-polar-900 flex flex-col items-center gap-y-4 rounded-3xl border-gray-100 bg-white py-16 shadow-sm">
+        <div className="dark:border-polar-800 dark:bg-polar-900 flex flex-col items-center gap-y-4 rounded-3xl border-gray-100 bg-white p-8 py-16 shadow-sm">
           <LanguageOutlined
             fontSize="large"
             className="text-blue-500 dark:text-blue-400"
           />
           <h3 className="text-center text-lg">Links</h3>
           <p
-            className="cursor-pointer text-center text-blue-500 dark:text-blue-400"
+            className={twMerge(
+              'cursor-pointer text-center text-blue-500 dark:text-blue-400',
+              variant === 'column' && 'text-sm',
+            )}
             onClick={show}
           >
-            Add links to READMEs, blog posts or similar to the profile
+            Add links relevant links to the profile
           </p>
         </div>
         <Modal
@@ -92,7 +95,7 @@ export const LinksEditor = ({
       onDragCancel={handleDragCancel}
     >
       <SortableContext items={selectedLinks} strategy={rectSortingStrategy}>
-        <div className="flex flex-col gap-y-8">
+        <div className="flex flex-col gap-y-6">
           <div className="flex flex-col items-start gap-y-2 md:flex-row md:justify-between">
             <h3 className="text-lg">Links</h3>
             {!disabled && (

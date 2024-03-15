@@ -42,7 +42,7 @@ export const CreatorCard = ({
       <Link className="h-full" href={organizationPageLink(organization)}>
         <CardHeader className="relative flex flex-row items-center gap-x-4 space-y-0 p-6">
           <Avatar
-            className="h-12 w-12"
+            className="h-10 w-10"
             avatar_url={organization.avatar_url}
             name={organization.name}
           />

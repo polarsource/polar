@@ -245,8 +245,22 @@ export default async function Page({
       ),
     )
 
+    const fallbackLinks = [
+      `https://github.com/${organization.name}`,
+      ...(organization.blog
+        ? [
+            organization.blog.startsWith('http')
+              ? organization.blog
+              : `https://${organization.blog}`,
+          ]
+        : []),
+      ...(organization.twitter_username
+        ? [`https://twitter.com/${organization.twitter_username}`]
+        : []),
+    ]
+
     const loadLinkOpengraphs = await Promise.all(
-      (organization.profile_settings.links ?? []).map((link) =>
+      (organization.profile_settings.links ?? fallbackLinks).map((link) =>
         fetch(`${CONFIG.FRONTEND_BASE_URL}/link/og?url=${link}`)
           .then((res) => (res && res.ok ? res.json() : undefined))
           .then((og) => ({ opengraph: og as OgObject, url: link })),

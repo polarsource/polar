@@ -115,7 +115,7 @@ export const OrganizationPublicSidebar = ({
       >
         <div className="flex flex-col gap-y-6">
           <DescriptionEditor
-            className="dark:text-polar-500 md:text-md text-start text-lg leading-relaxed text-gray-500 [text-wrap:pretty]"
+            className="dark:text-polar-500 text-md text-start leading-relaxed text-gray-500 [text-wrap:pretty]"
             description={
               organization.profile_settings.description ??
               organization.bio ??

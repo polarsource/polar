@@ -14,6 +14,7 @@ from polar.models import (
 )
 from polar.models.pledge import PledgeType
 from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.subscription.schemas import SubscriptionTierPrice
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_pledge,
@@ -34,6 +35,7 @@ async def create_transaction(
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
     subscription: Subscription | None = None,
+    subscription_tier_price: SubscriptionTierPrice | None = None,
     payout_transaction: Transaction | None = None,
 ) -> Transaction:
     transaction = Transaction(
@@ -50,6 +52,11 @@ async def create_transaction(
         pledge=pledge,
         issue_reward=issue_reward,
         subscription=subscription,
+        subscription_tier_price=subscription_tier_price
+        if subscription_tier_price is not None
+        else subscription.price
+        if subscription is not None
+        else None,
         payout_transaction=payout_transaction,
     )
     await save_fixture(transaction)

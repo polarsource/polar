@@ -150,6 +150,7 @@ class PayoutTransactionService(BaseTransactionService):
             pledge=None,
             issue_reward=None,
             subscription=None,
+            subscription_tier_price=None,
             paid_transactions=[],
             incurred_transactions=[],
             account_incurred_transactions=[],

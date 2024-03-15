@@ -5,6 +5,7 @@ from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 
 
@@ -58,11 +59,17 @@ class TransactionSubscriptionTier(TimestampedSchema):
     repository: TransactionRepository | None = None
 
 
+class TransactionSubscriptionPrice(TimestampedSchema):
+    id: UUID4
+    recurring_interval: SubscriptionTierPriceRecurringInterval
+    price_amount: int
+    price_currency: str
+    is_archived: bool
+
+
 class TransactionSubscription(TimestampedSchema):
     id: UUID4
     status: SubscriptionStatus
-    price_currency: str
-    price_amount: int
     subscription_tier: TransactionSubscriptionTier
 
 
@@ -81,6 +88,7 @@ class TransactionEmbedded(TimestampedSchema):
     pledge_id: UUID4 | None = None
     issue_reward_id: UUID4 | None = None
     subscription_id: UUID4 | None = None
+    subscription_tier_price_id: UUID4 | None = None
 
     payout_transaction_id: UUID4 | None = None
     incurred_by_transaction_id: UUID4 | None = None
@@ -90,6 +98,7 @@ class Transaction(TransactionEmbedded):
     pledge: TransactionPledge | None = None
     issue_reward: TransactionIssueReward | None = None
     subscription: TransactionSubscription | None = None
+    subscription_tier_price: TransactionSubscriptionPrice | None = None
 
     account_incurred_transactions: list[TransactionEmbedded]
 

@@ -75,6 +75,8 @@ class TransactionService(BaseTransactionService):
                     joinedload(SubscriptionTier.repository),
                 ),
             ),
+            # SubscriptionTierPrice
+            subqueryload(Transaction.subscription_tier_price),
         )
 
         if type is not None:
@@ -125,6 +127,8 @@ class TransactionService(BaseTransactionService):
                 subqueryload(Transaction.subscription).options(
                     joinedload(Subscription.subscription_tier),
                 ),
+                # SubscriptionTierPrice
+                subqueryload(Transaction.subscription_tier_price),
                 # Paid transactions (joining on itself)
                 subqueryload(Transaction.paid_transactions)
                 .subqueryload(Transaction.pledge)
@@ -143,6 +147,9 @@ class TransactionService(BaseTransactionService):
                 ),
                 subqueryload(Transaction.paid_transactions).subqueryload(
                     Transaction.account_incurred_transactions
+                ),
+                subqueryload(Transaction.paid_transactions).subqueryload(
+                    Transaction.subscription_tier_price
                 ),
             )
             .where(Transaction.id == id)

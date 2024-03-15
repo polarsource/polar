@@ -223,6 +223,7 @@ class TestCreatePayment:
         assert transaction.tax_state == "NY"
         assert transaction.charge_id == stripe_charge.id
         assert transaction.subscription == subscription
+        assert transaction.subscription_tier_price == subscription.price
         assert transaction.pledge is None
 
         create_payment_fees_mock.assert_awaited_once()

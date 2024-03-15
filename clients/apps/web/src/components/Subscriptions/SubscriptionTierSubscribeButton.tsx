@@ -2,6 +2,8 @@ import { useAuth } from '@/hooks'
 import {
   Organization,
   SubscriptionTier,
+  SubscriptionTierPrice,
+  SubscriptionTierPriceRecurringInterval,
   SubscriptionTierType,
   UserRead,
 } from '@polar-sh/sdk'
@@ -20,7 +22,7 @@ import {
   useOrganizationSubscriptions,
   useUserSubscriptions,
 } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
+import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useCallback, useMemo, useState } from 'react'
 import { SelectTriggerBase } from '../../../../../packages/polarkit/src/components/ui/atoms/Select'
 import { ConfirmModal } from '../Modal/ConfirmModal'
@@ -30,17 +32,18 @@ const buttonClasses =
 
 interface AnonymousSubscriptionTierSubscribeButtonProps {
   subscriptionTier: SubscriptionTier
+  price: SubscriptionTierPrice
   subscribePath: string
   variant?: ButtonProps['variant']
 }
 
 const AnonymousSubscriptionTierSubscribeButton: React.FC<
   AnonymousSubscriptionTierSubscribeButtonProps
-> = ({ subscriptionTier, subscribePath, variant = 'outline' }) => {
+> = ({ subscriptionTier, price, subscribePath, variant = 'outline' }) => {
   return (
     <Link
       className="w-full"
-      href={`${subscribePath}?tier=${subscriptionTier.id}`}
+      href={`${subscribePath}?tier=${subscriptionTier.id}&price=${price.id}`}
     >
       <Button
         className={variant === 'outline' ? buttonClasses : ''}
@@ -56,6 +59,7 @@ const AnonymousSubscriptionTierSubscribeButton: React.FC<
 interface AuthenticatedSubscriptionTierSubscribeButtonProps {
   user: UserRead
   subscriptionTier: SubscriptionTier
+  price: SubscriptionTierPrice
   organization: Organization
   subscribePath: string
   variant?: ButtonProps['variant']
@@ -66,6 +70,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
 > = ({
   user,
   subscriptionTier,
+  price,
   organization,
   subscribePath,
   variant = 'outline',
@@ -152,8 +157,9 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   const isDowngrade = useMemo(
     () =>
       upgradableSubscription &&
-      subscriptionTier.price_amount < upgradableSubscription.price_amount,
-    [upgradableSubscription, subscriptionTier],
+      upgradableSubscription.price &&
+      price.price_amount < upgradableSubscription.price.price_amount,
+    [upgradableSubscription, price],
   )
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -178,6 +184,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
         id: upgradableSubscription.id,
         subscriptionUpgrade: {
           subscription_tier_id: subscriptionTier.id,
+          price_id: price.id,
         },
       })
       refetchUserSubscriptions()
@@ -186,6 +193,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   }, [
     upgradableSubscription,
     subscriptionTier,
+    price,
     refetchUserSubscriptions,
     refetchOrganizationSubscriptions,
     router,
@@ -269,15 +277,15 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
                   }
                   description={
                     isDowngrade
-                      ? `On your next invoice, you'll be billed $${getCentsInDollarString(
-                          subscriptionTier.price_amount,
-                          false,
-                          true,
+                      ? `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
+                          price.price_amount,
+                          price.price_currency,
+                          0,
                         )}, minus a credit of what we already billed for the current month.`
-                      : `On your next invoice, you'll be billed $${getCentsInDollarString(
-                          subscriptionTier.price_amount,
-                          false,
-                          true,
+                      : `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
+                          price.price_amount,
+                          price.price_currency,
+                          0,
                         )}, plus a proration for the current month.`
                   }
                   onConfirm={() => onUpgradeConfirm()}
@@ -286,7 +294,9 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
             )}
             {!upgradableSubscription && !isSubscribed && (
               <Link
-                href={`${subscribePath}?tier=${subscriptionTier.id}${
+                href={`${subscribePath}?tier=${subscriptionTier.id}&price=${
+                  price.id
+                }${
                   !isUserSelected
                     ? `&organization_id=${selectedSubscriber.id}`
                     : ''
@@ -317,6 +327,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
 
 interface SubscriptionTierSubscribeButtonProps {
   subscriptionTier: SubscriptionTier
+  recurringInterval: SubscriptionTierPriceRecurringInterval
   organization: Organization
   subscribePath: string
   variant?: ButtonProps['variant']
@@ -324,8 +335,24 @@ interface SubscriptionTierSubscribeButtonProps {
 
 const SubscriptionTierSubscribeButton: React.FC<
   SubscriptionTierSubscribeButtonProps
-> = ({ subscriptionTier, organization, subscribePath, variant }) => {
+> = ({
+  subscriptionTier,
+  recurringInterval,
+  organization,
+  subscribePath,
+  variant,
+}) => {
   const { currentUser } = useAuth()
+
+  const price = useMemo(() => {
+    const price = subscriptionTier.prices?.find(
+      (price) => price.recurring_interval === recurringInterval,
+    )
+    if (!price) {
+      return subscriptionTier.prices[0]
+    }
+    return price
+  }, [subscriptionTier, recurringInterval])
 
   return (
     <>
@@ -333,6 +360,7 @@ const SubscriptionTierSubscribeButton: React.FC<
         <AuthenticatedSubscriptionTierSubscribeButton
           user={currentUser}
           subscriptionTier={subscriptionTier}
+          price={price}
           organization={organization}
           subscribePath={subscribePath}
           variant={variant}
@@ -340,6 +368,7 @@ const SubscriptionTierSubscribeButton: React.FC<
       ) : (
         <AnonymousSubscriptionTierSubscribeButton
           subscriptionTier={subscriptionTier}
+          price={price}
           subscribePath={subscribePath}
           variant={variant}
         />

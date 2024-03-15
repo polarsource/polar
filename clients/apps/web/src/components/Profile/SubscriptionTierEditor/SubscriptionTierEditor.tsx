@@ -1,6 +1,8 @@
 import revalidate from '@/app/actions'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
+import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
+import { useRecurringInterval } from '@/hooks/subscriptions'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { BoltOutlined } from '@mui/icons-material'
@@ -25,6 +27,7 @@ export const SubscriptionTierEditor = ({
   disabled,
 }: SubscriptionTierEditorProps) => {
   const { show, isShown, hide } = useModal()
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
 
   const updateProjectMutation = useUpdateProject()
 
@@ -82,6 +85,12 @@ export const SubscriptionTierEditor = ({
           )}
         </div>
       </div>
+      <div className="flex justify-center">
+        <SubscriptionTierRecurringIntervalSwitch
+          recurringInterval={recurringInterval}
+          onChange={setRecurringInterval}
+        />
+      </div>
       <div className="flex w-full flex-row flex-wrap items-center justify-center gap-8">
         <DndContext
           sensors={sensors}
@@ -99,6 +108,7 @@ export const SubscriptionTierEditor = ({
                 key={tier.id}
                 organization={organization}
                 subscriptionTier={tier}
+                recurringInterval={recurringInterval}
                 subscribeButton={!!disabled}
                 disabled={disabled}
               />
@@ -114,6 +124,7 @@ export const SubscriptionTierEditor = ({
                       (tier) => tier.id === activeId,
                     ) as SubscriptionTier
                   }
+                  recurringInterval={recurringInterval}
                 />
               ) : null}
             </DragOverlay>

@@ -1,7 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { DragIndicatorOutlined, LanguageOutlined } from '@mui/icons-material'
+import {
+  DragIndicatorOutlined,
+  GitHub,
+  LanguageOutlined,
+  X,
+} from '@mui/icons-material'
 import Link from 'next/link'
+import { LogoIcon } from 'polarkit/components/brand'
 import {
   Card,
   CardContent,
@@ -29,6 +35,21 @@ export const LinkCard = ({
       return undefined
     }
   }, [link.url])
+
+  const customFavicon = useMemo(() => {
+    switch (url?.hostname.replace('www.', '')) {
+      case 'x.com':
+      case 'twitter.com':
+        return <X className="h-6 w-6 text-black dark:text-white" />
+      case 'github.com':
+        return <GitHub className="h-6 w-6 text-black dark:text-white" />
+      case 'polar.sh':
+        return <LogoIcon className="h-8 w-8 text-blue-500 dark:text-blue-400" />
+      default:
+        return undefined
+    }
+  }, [url])
+
   const { opengraph } = link
 
   if (!url) {
@@ -58,7 +79,9 @@ export const LinkCard = ({
         target="_blank"
       >
         <CardHeader className="flex flex-row items-center justify-between p-6">
-          {opengraph && !renderFaviconFallback ? (
+          {customFavicon ? (
+            customFavicon
+          ) : opengraph && !renderFaviconFallback ? (
             <img
               className="h-4 w-4"
               width={16}

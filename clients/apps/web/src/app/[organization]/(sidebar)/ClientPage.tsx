@@ -94,7 +94,7 @@ const ClientPage = ({
 
   const HighlightedTiersModule = () => {
     return (
-      highlightedTiers.length > 1 && (
+      highlightedTiers.length > 0 && (
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex flex-col gap-y-4">
             <div className="flex flex-row items-center justify-between">

@@ -19,21 +19,29 @@ from polar.postgres import AsyncSession
 log: Logger = structlog.get_logger()
 
 
-class DiscordError(PolarError):
+class GitHubError(PolarError):
     ...
 
 
-class GitHubRepositoryBenefitAccountNotConnected(DiscordError):
+class GitHubRepositoryBenefitAccountNotConnected(GitHubError):
     def __init__(self, user: User) -> None:
         self.user = user
         message = "You don't have a GitHubRepositoryBenefit account connected."
         super().__init__(message)
 
 
-class GitHubRepositoryBenefitExpiredAccessToken(DiscordError):
+class GitHubRepositoryBenefitExpiredAccessToken(GitHubError):
     def __init__(self, user: User) -> None:
         self.user = user
         message = "The access token is expired and no refresh token is available."
+        super().__init__(message, 401)
+
+
+class GitHubRepositoryBenefitNoAccess(GitHubError):
+    def __init__(self) -> None:
+        message = (
+            "The user does not have access to this resource, or it's not bee installed"
+        )
         super().__init__(message, 401)
 
 
@@ -131,29 +139,36 @@ class GitHubRepositoryBenefitUserService:
 
         return account
 
-    async def list_repositories(
+    async def list_user_installations(
         self, oauth: OAuthAccount
-    ) -> list[GitHubInvitesBenefitRepository]:
+    ) -> list[types.Installation]:
         client = github.get_client(access_token=oauth.access_token)
-        # await client.rest.apps.async_list_installations_for_authenticated_user()
-
-        """
-        Load user accessible installations from GitHub API
-        Finds the union between app installations and the users user-to-server token.
-        """
 
         def map_installations_func(
             r: github.Response[types.UserInstallationsGetResponse200],
         ) -> list[types.Installation]:
             return r.parsed_data.installations
 
-        # client = await github.get_user_client(session, user)
         installations: list[types.Installation] = []
         async for install in client.paginate(
             client.rest.apps.async_list_installations_for_authenticated_user,
             map_func=map_installations_func,
         ):
             installations.append(install)
+
+        return installations
+
+    async def list_repositories(
+        self, oauth: OAuthAccount
+    ) -> list[GitHubInvitesBenefitRepository]:
+        client = github.get_client(access_token=oauth.access_token)
+
+        """
+        Load user accessible installations from GitHub API
+        Finds the union between app installations and the users user-to-server token.
+        """
+
+        installations = await self.list_user_installations(oauth)
 
         res: list[GitHubInvitesBenefitRepository] = []
 
@@ -176,16 +191,51 @@ class GitHubRepositoryBenefitUserService:
                 map_func=map_repos_func,
                 installation_id=install.id,
             ):
-                # repo: types.Repository = repo
                 res.append(
                     GitHubInvitesBenefitRepository(
-                        organization_name=install.account.login,
+                        repository_owner=install.account.login,
                         repository_name=repo.name,
                     )
                 )
-                # installations.append(install)
 
         return res
+
+    async def get_repository_installation_id(
+        self,
+        *,
+        owner: str,
+        name: str,
+    ) -> int | None:
+        app_client = github.get_app_client(app=github.GitHubApp.repository_benefit)
+
+        repo_install = await app_client.rest.apps.async_get_repo_installation(
+            owner, name
+        )
+        if repo_install.status_code == 200:
+            return repo_install.parsed_data.id
+        return None
+
+    async def user_has_access_to_repository(
+        self,
+        oauth: OAuthAccount,
+        *,
+        owner: str,
+        name: str,
+    ) -> bool:
+        installation_id = await self.get_repository_installation_id(
+            owner=owner, name=name
+        )
+        if not installation_id:
+            raise GitHubRepositoryBenefitNoAccess()
+
+        all_user_installations = await self.list_user_installations(oauth)
+
+        all_installation_ids = [i.id for i in all_user_installations]
+
+        if installation_id in all_installation_ids:
+            return True
+
+        return False
 
 
 github_repository_benefit_user_service = GitHubRepositoryBenefitUserService()

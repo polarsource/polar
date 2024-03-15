@@ -1,4 +1,5 @@
 import time
+from enum import StrEnum
 from typing import Any
 
 import structlog
@@ -44,6 +45,11 @@ class NotFound(UnexpectedStatusCode):
 
 class ValidationFailed(UnexpectedStatusCode):
     ...
+
+
+class GitHubApp(StrEnum):
+    polar = "polar"
+    repository_benefit = "repository_benefit"
 
 
 HTTP_EXCEPTIONS = {
@@ -162,20 +168,34 @@ def get_polar_client() -> GitHub[TokenAuthStrategy]:
     return get_client(settings.GITHUB_POLAR_USER_ACCESS_TOKEN)
 
 
-def get_app_client() -> GitHub[AppAuthStrategy]:
-    return GitHub(
-        AppAuthStrategy(
-            app_id=settings.GITHUB_APP_IDENTIFIER,
-            private_key=settings.GITHUB_APP_PRIVATE_KEY,
-            client_id=settings.GITHUB_CLIENT_ID,
-            client_secret=settings.GITHUB_CLIENT_SECRET,
-            cache=RedisCache(),
+def get_app_client(app: GitHubApp = GitHubApp.polar) -> GitHub[AppAuthStrategy]:
+    if app == GitHubApp.polar:
+        return GitHub(
+            AppAuthStrategy(
+                app_id=settings.GITHUB_APP_IDENTIFIER,
+                private_key=settings.GITHUB_APP_PRIVATE_KEY,
+                client_id=settings.GITHUB_CLIENT_ID,
+                client_secret=settings.GITHUB_CLIENT_SECRET,
+                cache=RedisCache(),
+            )
         )
-    )
+    elif app == GitHubApp.repository_benefit:
+        return GitHub(
+            AppAuthStrategy(
+                app_id=settings.GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER,
+                private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
+                client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
+                client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
+                cache=RedisCache(),
+            )
+        )
 
 
 def get_app_installation_client(
-    installation_id: int, *, permissions: AppPermissionsType | Unset = UNSET
+    installation_id: int,
+    *,
+    permissions: AppPermissionsType | Unset = UNSET,
+    app: GitHubApp = GitHubApp.polar,
 ) -> GitHub[AppInstallationAuthStrategy]:
     if not installation_id:
         raise Exception("unable to create github client: no installation_id provided")
@@ -183,17 +203,31 @@ def get_app_installation_client(
     # Using the RedisCache() below to cache generated JWTs
     # This improves ETag/If-None-Match cache hits over the default in-memory cache, as
     # they can be reused across restarts of the python process and by multiple workers.
-    return GitHub(
-        AppInstallationAuthStrategy(
-            app_id=settings.GITHUB_APP_IDENTIFIER,
-            private_key=settings.GITHUB_APP_PRIVATE_KEY,
-            installation_id=installation_id,
-            client_id=settings.GITHUB_CLIENT_ID,
-            client_secret=settings.GITHUB_CLIENT_SECRET,
-            permissions=permissions,
-            cache=RedisCache(),
+
+    if app == GitHubApp.polar:
+        return GitHub(
+            AppInstallationAuthStrategy(
+                app_id=settings.GITHUB_APP_IDENTIFIER,
+                private_key=settings.GITHUB_APP_PRIVATE_KEY,
+                client_id=settings.GITHUB_CLIENT_ID,
+                client_secret=settings.GITHUB_CLIENT_SECRET,
+                installation_id=installation_id,
+                permissions=permissions,
+                cache=RedisCache(),
+            )
         )
-    )
+    elif app == GitHubApp.repository_benefit:
+        return GitHub(
+            AppInstallationAuthStrategy(
+                app_id=settings.GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER,
+                private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
+                client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
+                client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
+                installation_id=installation_id,
+                permissions=permissions,
+                cache=RedisCache(),
+            )
+        )
 
 
 __all__ = [

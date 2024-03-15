@@ -107,19 +107,24 @@ class SubscriptionBenefitDiscordSubscriberProperties(Schema):
 
 
 class SubscriptionBenefitGitHubRepositoryCreateProperties(Schema):
-    repository_id: UUID4
+    # For benefits created before 2014-13-15 repository_id will be set
+    # no new benefits of this type are allowed to be created
+    repository_id: UUID4 | None = None
+    # For benefits created after 2014-13-15 both repository_owner and repository_name will be set
+    repository_owner: str | None = None
+    repository_name: str | None = None
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
 
 
 class SubscriptionBenefitGitHubRepositoryProperties(Schema):
-    repository_id: UUID4
+    # Is set to None for all benefits created after 2024-03-15
+    repository_id: UUID4 | None = None
     repository_owner: str
     repository_name: str
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
 
 
 class SubscriptionBenefitGitHubRepositorySubscriberProperties(Schema):
-    repository_id: UUID4
     repository_owner: str
     repository_name: str
 

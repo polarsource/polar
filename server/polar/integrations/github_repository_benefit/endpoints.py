@@ -56,12 +56,6 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
         super().__init__(message)
 
 
-# /user/authorize
-# /user/callback
-# /installation/callback
-# /repositories
-
-
 @router.get(
     "/user/authorize",
     name="integrations.github_repository_benefit.user_authorize",
@@ -118,9 +112,6 @@ async def user_callback(
 async def user_repositories(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    # access_token_state: tuple[OAuth2Token, str | None] = Depends(
-    #     oauth2_authorize_callback
-    # ),
 ) -> GitHubInvitesBenefitRepositories:
     oauth = await github_repository_benefit_user_service.get_oauth_account(
         session, auth.user

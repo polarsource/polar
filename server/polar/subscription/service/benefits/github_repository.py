@@ -7,8 +7,11 @@ from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.integrations.github import client as github
 from polar.integrations.github import types
+from polar.integrations.github_repository_benefit.service import (
+    github_repository_benefit_user_service,
+)
 from polar.logging import Logger
-from polar.models import Repository, Subscription, User
+from polar.models import Subscription, User
 from polar.models.subscription_benefit import (
     SubscriptionBenefitGitHubRepository,
     SubscriptionBenefitGitHubRepositoryProperties,
@@ -70,6 +73,38 @@ class SubscriptionBenefitGitHubRepositoryService(
         SubscriptionBenefitGitHubRepositoryProperties,
     ]
 ):
+    async def _get_github_app_client(
+        self,
+        benefit: SubscriptionBenefitGitHubRepository,
+    ):
+        # old style
+        if benefit.properties["repository_id"]:
+            repository_id = benefit.properties["repository_id"]
+            repository = await repository_service.get(
+                self.session, repository_id, load_organization=True
+            )
+            assert repository is not None
+            organization = repository.organization
+            assert organization is not None
+            installation_id = organization.installation_id
+            assert installation_id is not None
+            return github.get_app_installation_client(
+                installation_id, app=github.GitHubApp.polar
+            )
+
+        # new style
+        repository_owner = benefit.properties["repository_owner"]
+        repository_name = benefit.properties["repository_name"]
+        installation_id = (
+            await github_repository_benefit_user_service.get_repository_installation_id(
+                owner=repository_owner, name=repository_name
+            )
+        )
+        assert installation_id is not None
+        return github.get_app_installation_client(
+            installation_id, app=github.GitHubApp.repository_benefit
+        )
+
     async def grant(
         self,
         benefit: SubscriptionBenefitGitHubRepository,
@@ -87,17 +122,24 @@ class SubscriptionBenefitGitHubRepositoryService(
         )
         bound_logger.debug("Grant benefit")
 
-        repository_id = benefit.properties["repository_id"]
-        repository = await repository_service.get(
-            self.session, repository_id, load_organization=True
-        )
-        assert repository is not None
-        organization = repository.organization
-        assert organization is not None
-        installation_id = organization.installation_id
-        assert installation_id is not None
+        # When granting access, use the new specific Repository Benefit App
+        # Integrations that where setup using the old system will continue to use it
+        client = await self._get_github_app_client(benefit)
+
+        # repository_id = benefit.properties["repository_id"]
+        # repository = await repository_service.get(
+        #     self.session, repository_id, load_organization=True
+        # )
+        # assert repository is not None
+        # organization = repository.organization
+        # assert organization is not None
+        # installation_id = organization.installation_id
+        # assert installation_id is not None
+        repository_owner = benefit.properties["repository_owner"]
+        repository_name = benefit.properties["repository_name"]
         permission = benefit.properties["permission"]
 
+        # For inviting users, we're using the oauth for the main polar github app
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
         if oauth_account is None or oauth_account.account_username is None:
             raise SubscriptionBenefitPreconditionError(
@@ -106,24 +148,26 @@ class SubscriptionBenefitGitHubRepositoryService(
                     subject_template=precondition_error_subject_template,
                     body_template=precondition_error_body_template,
                     extra_context={
-                        "repository_owner": organization.name,
-                        "repository_name": repository.name,
+                        "repository_owner": repository_owner,
+                        "repository_name": repository_name,
                         "url": settings.generate_frontend_url("/settings"),
                     },
                 ),
             )
 
-        client = github.get_app_installation_client(installation_id)
-
         # If we already granted this benefit, make sure we revoke the previous config
         if update and grant_properties:
             bound_logger.debug("Grant benefit update")
             invitation = await self._get_invitation(
-                client, repository, int(oauth_account.account_id)
+                client,
+                repository_owner=repository_owner,
+                repository_name=repository_name,
+                user_id=int(oauth_account.account_id),
             )
             # The repository changed, or the invitation is still pending: revoke
             if (
-                repository_id != grant_properties["repository_id"]
+                repository_owner != grant_properties["repository_owner"]
+                or repository_name != grant_properties["repository_name"]
                 or invitation is not None
             ):
                 await self.revoke(
@@ -136,8 +180,8 @@ class SubscriptionBenefitGitHubRepositoryService(
 
         try:
             await client.rest.repos.async_add_collaborator(
-                owner=organization.name,
-                repo=repository.name,
+                owner=repository_owner,
+                repo=repository_name,
                 username=oauth_account.account_username,
                 data={"permission": permission},
             )
@@ -152,7 +196,9 @@ class SubscriptionBenefitGitHubRepositoryService(
 
         # Store repository and permission to compare on update
         return {
-            "repository_id": str(repository_id),
+            # "repository_id": str(repository_id),
+            "repository_owner": repository_owner,
+            "repository_name": repository_name,
             "permission": permission,
         }
 
@@ -171,34 +217,43 @@ class SubscriptionBenefitGitHubRepositoryService(
             user_id=str(user.id),
         )
 
-        repository_id = benefit.properties["repository_id"]
-        repository = await repository_service.get(
-            self.session, repository_id, load_organization=True
-        )
-        assert repository is not None
-        organization = repository.organization
-        assert organization is not None
-        installation_id = organization.installation_id
-        assert installation_id is not None
+        client = await self._get_github_app_client(benefit)
+
+        # repository_id = benefit.properties["repository_id"]
+        # repository = await repository_service.get(
+        #     self.session, repository_id, load_organization=True
+        # )
+        # assert repository is not None
+        # organization = repository.organization
+        # assert organization is not None
+        # installation_id = organization.installation_id
+        # assert installation_id is not None
+
+        repository_owner = benefit.properties["repository_owner"]
+        repository_name = benefit.properties["repository_name"]
+        permission = benefit.properties["permission"]
 
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
         if oauth_account is None or oauth_account.account_username is None:
             raise
 
-        client = github.get_app_installation_client(installation_id)
+        # client = github.get_app_installation_client(installation_id)
 
         invitation = await self._get_invitation(
-            client, repository, int(oauth_account.account_id)
+            client,
+            repository_owner=repository_owner,
+            repository_name=repository_name,
+            user_id=int(oauth_account.account_id),
         )
         if invitation is not None:
             bound_logger.debug("Invitation not yet accepted, removing it")
             revoke_request = client.rest.repos.async_delete_invitation(
-                organization.name, repository.name, invitation.id
+                repository_owner, repository_name, invitation.id
             )
         else:
             bound_logger.debug("Invitation not found, removing the user")
             revoke_request = client.rest.repos.async_remove_collaborator(
-                organization.name, repository.name, oauth_account.account_username
+                repository_owner, repository_name, oauth_account.account_username
             )
 
         try:
@@ -222,10 +277,70 @@ class SubscriptionBenefitGitHubRepositoryService(
         new_properties = benefit.properties
         return (
             new_properties["repository_id"] != previous_properties["repository_id"]
+            or new_properties["repository_owner"]
+            != previous_properties["repository_owner"]
+            or new_properties["repository_name"]
+            != previous_properties["repository_name"]
             or new_properties["permission"] != previous_properties["permission"]
         )
 
     async def validate_properties(
+        self, user: User, properties: dict[str, Any]
+    ) -> SubscriptionBenefitGitHubRepositoryProperties:
+        # old style
+        if properties["repository_id"]:
+            return await self._validate_properties_repository_id(user, properties)
+
+        repository_owner = properties["repository_owner"]
+        repository_name = properties["repository_name"]
+
+        # new style
+        oauth = await github_repository_benefit_user_service.get_oauth_account(
+            self.session, user
+        )
+        if not oauth:
+            raise SubscriptionBenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "invalid_user_auth",
+                        "message": "You have not authenticated with the github_repository_benefit app",
+                        "loc": ("repository_owner",),
+                        "input": repository_owner,  # ?
+                    }
+                ]
+            )
+
+        # check that use has access to the app installed on this repository
+        has_access = (
+            await github_repository_benefit_user_service.user_has_access_to_repository(
+                oauth,
+                owner=repository_owner,
+                name=repository_name,
+            )
+        )
+
+        if not has_access:
+            raise SubscriptionBenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "no_repository_acccess",
+                        "message": "You don't have access to this repository.",
+                        "loc": ("repository_name",),
+                        "input": repository_name,
+                    }
+                ]
+            )
+
+        # TODO: personal org billing check
+
+        return cast(
+            SubscriptionBenefitGitHubRepositoryProperties,
+            {
+                **properties,
+            },
+        )
+
+    async def _validate_properties_repository_id(
         self, user: User, properties: dict[str, Any]
     ) -> SubscriptionBenefitGitHubRepositoryProperties:
         repository_id = properties["repository_id"]
@@ -285,12 +400,17 @@ class SubscriptionBenefitGitHubRepositoryService(
         )
 
     async def _get_invitation(
-        self, client: github.GitHub[Any], repository: Repository, user_id: int
+        self,
+        client: github.GitHub[Any],
+        *,
+        repository_owner: str,
+        repository_name: str,
+        user_id: int,
     ) -> types.RepositoryInvitation | None:
         async for invitation in client.paginate(
             client.rest.repos.async_list_invitations,
-            owner=repository.organization.name,
-            repo=repository.name,
+            owner=repository_owner,
+            repo=repository_name,
         ):
             if invitation.invitee and invitation.invitee.id == user_id:
                 return invitation

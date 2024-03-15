@@ -16,6 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   DiscordGuild,
+  GitHubInvitesBenefitRepositories,
   GithubUser,
   HTTPValidationError,
   InstallationCreate,
@@ -74,6 +75,13 @@ export interface IntegrationsApiIntegrationsGithubAuthorizeRequest {
 }
 
 export interface IntegrationsApiIntegrationsGithubCallbackRequest {
+    code?: string;
+    codeVerifier?: string;
+    state?: string;
+    error?: string;
+}
+
+export interface IntegrationsApiIntegrationsGithubRepositoryBenefitUserCallbackRequest {
     code?: string;
     codeVerifier?: string;
     state?: string;
@@ -560,6 +568,210 @@ export class IntegrationsApi extends runtime.BaseAPI {
      */
     async integrationsGithubCallback(requestParameters: IntegrationsApiIntegrationsGithubCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.integrationsGithubCallbackRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.Installation Callback
+     */
+    async integrationsGithubRepositoryBenefitInstallationCallbackRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github_repository_benefit/installation/callback`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.Installation Callback
+     */
+    async integrationsGithubRepositoryBenefitInstallationCallback(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsGithubRepositoryBenefitInstallationCallbackRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.Installation Install
+     */
+    async integrationsGithubRepositoryBenefitInstallationInstallRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github_repository_benefit/installation/install`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.Installation Install
+     */
+    async integrationsGithubRepositoryBenefitInstallationInstall(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsGithubRepositoryBenefitInstallationInstallRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.User Authorize
+     */
+    async integrationsGithubRepositoryBenefitUserAuthorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github_repository_benefit/user/authorize`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.User Authorize
+     */
+    async integrationsGithubRepositoryBenefitUserAuthorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsGithubRepositoryBenefitUserAuthorizeRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.User Callback
+     */
+    async integrationsGithubRepositoryBenefitUserCallbackRaw(requestParameters: IntegrationsApiIntegrationsGithubRepositoryBenefitUserCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.code !== undefined) {
+            queryParameters['code'] = requestParameters.code;
+        }
+
+        if (requestParameters.codeVerifier !== undefined) {
+            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        }
+
+        if (requestParameters.state !== undefined) {
+            queryParameters['state'] = requestParameters.state;
+        }
+
+        if (requestParameters.error !== undefined) {
+            queryParameters['error'] = requestParameters.error;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github_repository_benefit/user/callback`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Github Repository Benefit.User Callback
+     */
+    async integrationsGithubRepositoryBenefitUserCallback(requestParameters: IntegrationsApiIntegrationsGithubRepositoryBenefitUserCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsGithubRepositoryBenefitUserCallbackRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Lists available repositories for this user
+     * Integrations.Github Repository Benefit.User Repositories
+     */
+    async integrationsGithubRepositoryBenefitUserRepositoriesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GitHubInvitesBenefitRepositories>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github_repository_benefit/user/repositories`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Lists available repositories for this user
+     * Integrations.Github Repository Benefit.User Repositories
+     */
+    async integrationsGithubRepositoryBenefitUserRepositories(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GitHubInvitesBenefitRepositories> {
+        const response = await this.integrationsGithubRepositoryBenefitUserRepositoriesRaw(initOverrides);
         return await response.value();
     }
 

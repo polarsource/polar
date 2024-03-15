@@ -107,7 +107,7 @@ export const PostEditor = ({
                 />
               </TabsContent>
               <TabsContent value="preview">
-                <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 dark:ring-1 md:bg-white md:p-12 md:shadow-sm dark:md:border">
+                <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 md:bg-white md:p-12 md:shadow-sm dark:ring-1 dark:md:border">
                   <LongformPost
                     {...previewProps}
                     showPaywalledContent={previewAs === 'premium'}
@@ -161,7 +161,7 @@ const Editor = ({
     <div className="relative z-[1] flex flex-row md:gap-x-4 lg:gap-x-8">
       <div className="flex flex-1 flex-col gap-y-8 py-8">
         <input
-          className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent text-3xl font-medium shadow-none outline-none"
+          className="transparent dark:placeholder:text-polar-500 min-w-full border-none bg-transparent px-0 text-3xl font-medium shadow-none outline-none focus:ring-0"
           autoFocus
           placeholder="Title"
           value={title}
@@ -197,7 +197,7 @@ const Sidebar = () => {
   return (
     <div>
       <div className="sticky top-24 hidden w-full min-w-[250px] max-w-xs flex-col gap-y-4 lg:flex">
-        <ShadowBoxOnMd className="dark:border-polar-800 w-full !shadow-2xl dark:border md:p-8">
+        <ShadowBoxOnMd className="dark:border-polar-800 w-full !shadow-2xl md:p-8 dark:border">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">
               <div className="flex flex-col gap-y-2">

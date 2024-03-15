@@ -606,8 +606,7 @@ class SubscriptionsStatisticsPeriod(Schema):
     start_date: date
     end_date: date
     subscribers: int
-    mrr: int
-    cumulative: int
+    earnings: int
 
 
 class SubscriptionsStatistics(Schema):

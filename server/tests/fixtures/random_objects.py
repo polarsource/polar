@@ -391,17 +391,35 @@ async def create_subscription_tier(
     )
 
     for price, interval in prices:
-        subscription_tier_price = SubscriptionTierPrice(
-            price_amount=price,
-            price_currency="usd",
+        subscription_tier_price = await create_subscription_tier_price(
+            save_fixture,
+            subscription_tier=subscription_tier,
+            amount=price,
             recurring_interval=interval,
-            stripe_price_id=rstr("PRICE_ID"),
         )
         subscription_tier.prices.append(subscription_tier_price)
         subscription_tier.all_prices.append(subscription_tier_price)
 
     await save_fixture(subscription_tier)
     return subscription_tier
+
+
+async def create_subscription_tier_price(
+    save_fixture: SaveFixture,
+    *,
+    subscription_tier: SubscriptionTier,
+    recurring_interval: SubscriptionTierPriceRecurringInterval = SubscriptionTierPriceRecurringInterval.month,
+    amount: int = 1000,
+) -> SubscriptionTierPrice:
+    price = SubscriptionTierPrice(
+        price_amount=amount,
+        price_currency="usd",
+        recurring_interval=recurring_interval,
+        stripe_price_id=rstr("PRICE_ID"),
+        subscription_tier=subscription_tier,
+    )
+    await save_fixture(price)
+    return price
 
 
 async def create_subscription_benefit(
@@ -488,6 +506,7 @@ async def create_active_subscription(
     save_fixture: SaveFixture,
     *,
     subscription_tier: SubscriptionTier,
+    price: SubscriptionTierPrice | None = None,
     user: User,
     organization: Organization | None = None,
     started_at: datetime | None = None,
@@ -497,6 +516,7 @@ async def create_active_subscription(
     return await create_subscription(
         save_fixture,
         subscription_tier=subscription_tier,
+        price=price,
         user=user,
         organization=organization,
         status=SubscriptionStatus.active,

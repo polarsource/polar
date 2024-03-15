@@ -104,7 +104,9 @@ class Subscription(RecordModel):
 
     @declared_attr
     def price(cls) -> Mapped["SubscriptionTierPrice | None"]:
-        return relationship("SubscriptionTierPrice", lazy="raise")
+        return relationship(
+            "SubscriptionTierPrice", lazy="raise", back_populates="subscriptions"
+        )
 
     @declared_attr
     def grants(cls) -> Mapped[list["SubscriptionBenefitGrant"]]:

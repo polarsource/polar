@@ -6,7 +6,12 @@ from httpx_oauth.oauth2 import OAuth2Token
 
 import polar.integrations.github.client as github
 from polar.config import settings
-from polar.exceptions import BadRequest, PolarError
+from polar.exceptions import (
+    BadRequest,
+    IntegrityError,
+    PolarError,
+    ResourceAlreadyExists,
+)
 from polar.integrations.github import types
 from polar.integrations.github_repository_benefit.schemas import (
     GitHubInvitesBenefitRepository,
@@ -72,8 +77,12 @@ class GitHubRepositoryBenefitUserService:
             account_username=account_username,
             user=user,
         )
-        session.add(oauth_account)
-        await session.commit()
+
+        try:
+            session.add(oauth_account)
+            await session.flush()
+        except IntegrityError as e:
+            raise ResourceAlreadyExists() from e
 
         return oauth_account
 

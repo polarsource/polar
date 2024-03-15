@@ -56,6 +56,7 @@ export class PolarAPI {
   public readonly users: UsersApi
   public readonly webhookNotifications: WebhookNotificationsApi
 
+
   constructor(config: Configuration) {
     this.accounts = new AccountsApi(config)
     this.advertisements = new AdvertisementsApi(config)

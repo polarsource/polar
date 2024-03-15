@@ -23,13 +23,17 @@ import {
 } from 'polarkit/datatable'
 import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useMemo } from 'react'
+import SubscriptionTierPill from '../Subscriptions/SubscriptionTierPill'
 
 const getTransactionMeta = (transaction: Transaction) => {
   if (transaction.subscription) {
     return {
       type: 'Subscription',
       organization: transaction.subscription?.subscription_tier.organization,
-      meta: transaction.subscription,
+      meta: {
+        subscription_tier: transaction.subscription.subscription_tier,
+        price: transaction.subscription_tier_price,
+      },
     }
   } else if (transaction.issue_reward) {
     return {
@@ -85,14 +89,19 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
           <>
             <div>—</div>
             {'subscription_tier' in transactionMeta.meta && (
-              <div>
-                <Link
-                  className=" text-blue-500 dark:text-blue-400"
-                  href={`/${transactionMeta.meta.subscription_tier.organization?.name}/subscriptions`}
-                >
-                  {transactionMeta.meta.subscription_tier.name}
-                </Link>
-              </div>
+              <>
+                <div>
+                  <Link
+                    className=" text-blue-500 dark:text-blue-400"
+                    href={`/${transactionMeta.meta.subscription_tier.organization?.name}/subscriptions`}
+                  >
+                    <SubscriptionTierPill
+                      subscriptionTier={transactionMeta.meta.subscription_tier}
+                      price={transactionMeta.meta.price}
+                    />
+                  </Link>
+                </div>
+              </>
             )}
             {'issue' in transactionMeta.meta && (
               <div>

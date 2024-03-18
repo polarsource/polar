@@ -53,7 +53,7 @@ const Topbar = ({
   const upgradeToMaintainer = useCallback(async () => {
     await maintainerUpgrade.mutateAsync()
     router.push(`/maintainer/${currentUser?.username}/overview`)
-  }, [currentUser])
+  }, [currentUser, maintainerUpgrade, router])
 
   const githubAccount = currentUser?.oauth_accounts.find(
     (o) => o.platform === Platforms.GITHUB,

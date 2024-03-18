@@ -126,7 +126,6 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
         className="hidden md:flex"
         active={props.isHovered}
         variant="secondary"
-        href={articleHref(props.article)}
       >
         <ArrowForward fontSize="inherit" />
       </AnimatedIconButton>
@@ -160,7 +159,6 @@ export const AnimatedIconButton = (
     className?: string
     active?: boolean | undefined
     variant?: ButtonProps['variant']
-    href: string
   }>,
 ) => {
   const x = useSpring(0, { damping: 15, velocity: 5 })
@@ -181,31 +179,29 @@ export const AnimatedIconButton = (
   )
 
   return (
-    <Link href={props.href}>
-      <Button
-        size="icon"
-        variant={props.active ? 'default' : props.variant}
-        className={twMerge(
-          'h-8 w-8 overflow-hidden rounded-full',
-          props.className,
-        )}
-        onMouseEnter={handleMouse(1)}
-        onMouseLeave={handleMouse(0)}
-        asChild
+    <Button
+      size="icon"
+      variant={props.active ? 'default' : props.variant}
+      className={twMerge(
+        'h-8 w-8 overflow-hidden rounded-full',
+        props.className,
+      )}
+      onMouseEnter={handleMouse(1)}
+      onMouseLeave={handleMouse(0)}
+      asChild
+    >
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ x: incomingX }}
       >
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ x: incomingX }}
-        >
-          {props.children}
-        </motion.div>
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ x: outgoingX }}
-        >
-          {props.children}
-        </motion.div>
-      </Button>
-    </Link>
+        {props.children}
+      </motion.div>
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ x: outgoingX }}
+      >
+        {props.children}
+      </motion.div>
+    </Button>
   )
 }

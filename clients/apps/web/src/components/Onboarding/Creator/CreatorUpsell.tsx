@@ -25,7 +25,7 @@ interface OnboardingMap {
   joinDiscord: boolean
 }
 
-const useUpsellSteps = () => {
+export const useUpsellSteps = () => {
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const [upsellSteps, setUpsellSteps] = useState<UpsellStepProps[]>([])
   const [onboardingCompletedMap, setOnboardingCompletedMap] = useState<
@@ -177,7 +177,7 @@ export interface UpsellStepProps {
   onDismiss: (onboardingKey: keyof OnboardingMap) => void
 }
 
-const UpsellStep = ({
+export const UpsellStep = ({
   icon,
   title,
   description,

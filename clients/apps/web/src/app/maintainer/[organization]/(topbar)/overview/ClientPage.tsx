@@ -18,7 +18,7 @@ import {
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import React, { useEffect, useMemo, useState } from 'react'
-import { CreatorUpsell } from './CreatorUpsell'
+import { CreatorUpsell } from '../../../../../components/Onboarding/Creator/CreatorUpsell'
 
 const subscriberGoals = [5, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]
 

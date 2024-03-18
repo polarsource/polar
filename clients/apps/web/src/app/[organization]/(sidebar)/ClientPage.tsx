@@ -2,6 +2,7 @@
 
 import revalidate from '@/app/actions'
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
+import { PublicPagePostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
@@ -147,7 +148,7 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {(posts.length ?? 0) > 0 ? (
+          {isAdmin ? (
             <div className="flex w-full flex-col gap-y-6">
               <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
                 <h2 className="text-lg">Pinned & Latest Posts</h2>
@@ -158,17 +159,21 @@ const ClientPage = ({
                   <span>View all</span>
                 </Link>
               </div>
-              <div className="flex flex-col gap-y-8">
-                <div className="flex flex-col gap-6">
-                  {posts.map((post) => (
-                    <PostComponent
-                      article={post}
-                      key={post.id}
-                      highlightPinned
-                    />
-                  ))}
+              {(posts.length ?? 0) > 0 ? (
+                <div className="flex flex-col gap-y-8">
+                  <div className="flex flex-col gap-6 md:flex-row">
+                    {posts.map((post) => (
+                      <PostComponent
+                        article={post}
+                        key={post.id}
+                        highlightPinned
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <PublicPagePostWizard organization={organization} />
+              )}
             </div>
           ) : null}
 

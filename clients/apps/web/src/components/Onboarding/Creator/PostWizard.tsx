@@ -80,7 +80,7 @@ export const PostWizard = () => {
     <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">
       <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-6 md:py-6 lg:col-span-1">
         <EditNoteOutlined
-          className="hidden text-blue-500 dark:text-blue-400 md:block"
+          className="hidden text-blue-500 md:block dark:text-blue-400"
           fontSize="large"
         />
         <h2 className="text-2xl font-bold">Start Writing</h2>
@@ -91,7 +91,7 @@ export const PostWizard = () => {
       </div>
       {!articlesPending && (
         <div className="col-span-2 flex flex-col gap-y-8">
-          <div className="flex flex-col md:grid grid-cols-2 gap-8">
+          <div className="flex grid-cols-2 flex-col gap-8 md:grid">
             {postTemplates(org, publishedPosts.length < 1).map((template) => (
               <PostCard key={template.title} {...template} />
             ))}
@@ -115,6 +115,20 @@ export const PostWizard = () => {
   )
 }
 
+export const PublicPagePostWizard = ({
+  organization,
+}: {
+  organization: Organization
+}) => {
+  return (
+    <div className="flex flex-col gap-8 xl:flex-row">
+      {postTemplates(organization, true).map((template) => (
+        <PostCard key={template.title} {...template} />
+      ))}
+    </div>
+  )
+}
+
 interface PostCardProps {
   title: string
   description: string
@@ -127,7 +141,7 @@ const PostCard = ({ icon, title, description, link }: PostCardProps) => {
   const isHovered = useHoverDirty(ref)
 
   return (
-    <Link ref={ref} href={link} className="h-full">
+    <Link ref={ref} href={link}>
       <Card className="dark:hover:bg-polar-800 relative flex h-full flex-col transition-colors hover:bg-gray-50">
         <CardHeader className="gap-y-4 pb-4">
           {icon}
@@ -138,7 +152,6 @@ const PostCard = ({ icon, title, description, link }: PostCardProps) => {
         </CardContent>
         <CardFooter>
           <AnimatedIconButton
-            href={link}
             variant={isHovered ? 'default' : 'secondary'}
             active={isHovered}
           >
@@ -175,7 +188,6 @@ const DraftPost = ({
       <AnimatedIconButton
         active={isHovered}
         variant={isHovered ? 'default' : 'secondary'}
-        href={`/maintainer/${organization.name}/posts/${draft.slug}`}
       >
         <ArrowForward fontSize="inherit" />
       </AnimatedIconButton>

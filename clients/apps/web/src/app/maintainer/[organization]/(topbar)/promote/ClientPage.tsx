@@ -58,32 +58,34 @@ export default function ClientPage() {
         />
       </picture>
     ),
+    Posts: (
+      <picture>
+        <source
+          media="(prefers-color-scheme: dark)"
+          srcSet={`/embed/posts.svg?org=${org?.name}&darkmode`}
+        />
+        <img alt="Posts on Polar" src={`/embed/posts.svg?org=${org?.name}`} />
+      </picture>
+    ),
     Subscribe: (
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcSet={`https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode`}
+          srcSet={`/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode`}
         />
         <img
           alt="Subscribe on Polar"
-          src={`https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe`}
+          src={`/embed/subscribe.svg?org=${org?.name}&label=Subscribe`}
         />
       </picture>
     ),
-    Issues: (
-      <img
-        src={`https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}`}
-      />
-    ),
-    Shield: (
-      <img
-        src={`https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}`}
-      />
-    ),
+    Issues: <img src={`/embed/fund-our-backlog.svg?${orgRepoParams}`} />,
+    Shield: <img src={`/embed/seeks-funding-shield.svg?${orgRepoParams}`} />,
   }
 
   const embedCodes: Record<string, string> = {
     Tiers: `<a href="https://polar.sh/${org?.name}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${org?.name}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${org?.name}"></picture></a>`,
+    Posts: `<a href="https://polar.sh/${org?.name}/posts"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/posts.svg?org=${org?.name}&darkmode"><img alt="Posts on Polar" src="https://polar.sh/embed/posts.svg?org=${org?.name}"></picture></a>`,
     Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
@@ -141,7 +143,7 @@ export default function ClientPage() {
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <TabsList className="bg-transparent dark:bg-transparent">
-                      {['Tiers', 'Subscribe', 'Issues', 'Shield'].map(
+                      {['Tiers', 'Posts', 'Subscribe', 'Issues', 'Shield'].map(
                         (item) => (
                           <TabsTrigger
                             key={item}

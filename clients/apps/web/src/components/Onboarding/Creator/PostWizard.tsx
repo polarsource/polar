@@ -91,7 +91,7 @@ export const PostWizard = () => {
       </div>
       {!articlesPending && (
         <div className="col-span-2 flex flex-col gap-y-8">
-          <div className="grid grid-cols-2 gap-x-8">
+          <div className="flex flex-col md:grid grid-cols-2 gap-8">
             {postTemplates(org, publishedPosts.length < 1).map((template) => (
               <PostCard key={template.title} {...template} />
             ))}

@@ -28,7 +28,10 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from 'polarkit/hooks'
+import {
+  useListIntegrationsGithubRepositoryBenefitUserRepositories,
+  useSSE,
+} from 'polarkit/hooks'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 
@@ -133,11 +136,6 @@ const GitHubRepositoryBenefitFormForDeprecatedPolarApp = () => {
 export const GitHubRepositoryBenefitForm = ({
   update = false,
 }: GitHubRepositoryBenefitFormProps) => {
-  const canConfigurePersonalOrg = isFeatureEnabled(
-    'github-benefit-personal-org',
-  )
-  const pathname = usePathname()
-
   const {
     control,
     watch,
@@ -145,20 +143,15 @@ export const GitHubRepositoryBenefitForm = ({
     setValue,
   } = useFormContext<SubscriptionBenefitGitHubRepositoryCreate>()
 
-  if (defaultValues?.properties?.repository_id) {
-    return <GitHubRepositoryBenefitFormForDeprecatedPolarApp />
-  }
+  const canConfigurePersonalOrg = isFeatureEnabled(
+    'github-benefit-personal-org',
+  )
+
+  const pathname = usePathname()
 
   const description = watch('description')
 
-  // TODO: step 1, github oauth
-  // https://polarzegl.eu.ngrok.io/api/v1/integrations/github_repository_benefit/user/authorize
-  // https://polarzegl.eu.ngrok.io/api/v1/integrations/github_repository_benefit/installation/install
-  // Auto close window after install?
-
-  const { currentUser, reloadUser } = useAuth()
-
-  // useEffect
+  const { currentUser } = useAuth()
 
   const {
     data: repositories,
@@ -169,70 +162,6 @@ export const GitHubRepositoryBenefitForm = ({
   const userGitHubBenefitOauth = currentUser?.oauth_accounts.find(
     (o) => o.platform === OAuthPlatform.GITHUB_REPOSITORY_BENEFIT,
   )
-
-  // const {
-  //   data: allOrganizations,
-  //   refetch: refetchOrganizations,
-  //   isFetching: isFetchingOrganizations,
-  // } = useListAdminOrganizations()
-  // const organizations: Organization[] | undefined = useMemo(
-  //   () =>
-  //     canConfigurePersonalOrg
-  //       ? allOrganizations?.items
-  //       : allOrganizations?.items?.filter(
-  //           ({ is_personal }) => is_personal === false,
-  //         ),
-  //   [canConfigurePersonalOrg, allOrganizations],
-  // )
-  // const [selectedOrganization, setSelectedOrganization] = useState<
-  //   Organization | undefined
-  // >(
-  //   defaultValues?.properties && defaultValues?.properties.repository_id
-  //     ? repositories?.items?.find(
-  //         (repository) =>
-  //           repository.id === defaultValues?.properties?.repository_id,
-  //       )?.organization
-  //     : undefined,
-  // )
-  // const onOrganizationChange = useCallback(
-  //   (id: string) => {
-  //     const selected = organizations?.find(
-  //       (organization) => organization.id === id,
-  //     )
-  //     setSelectedOrganization(selected)
-  //   },
-  //   [organizations],
-  // )
-  // const organizationRepositories = useMemo(() => {
-  //   if (!selectedOrganization || !repositories || !repositories.items) {
-  //     return []
-  //   }
-  //   return repositories.items.filter(
-  //     ({ organization: { id } }) => id === selectedOrganization.id,
-  //   )
-  // }, [selectedOrganization, repositories])
-
-  // const {
-  //   data: hasAdminWritePermission,
-  //   refetch,
-  //   isFetching: isFetchingAdminWritePermission,
-  // } = useCheckOrganizationPermissions(
-  //   {
-  //     administration: 'write',
-  //   },
-  //   selectedOrganization?.id,
-  // )
-
-  // const { data: billingPlan, isFetching: isFetchingBillingPlan } =
-  //   useGetOrganizationBillingPlan(selectedOrganization?.id)
-
-  // const returnTo = useMemo(() => {
-  //   const searchParams = new URLSearchParams()
-  //   searchParams.set('create_benefit', 'true')
-  //   searchParams.set('type', SubscriptionBenefitType.GITHUB_REPOSITORY)
-  //   searchParams.set('description', description)
-  //   return `${pathname}?${searchParams}`
-  // }, [description, pathname])
 
   const [installationWindow, setInstallationWindow] = useState<Window | null>(
     null,
@@ -245,73 +174,40 @@ export const GitHubRepositoryBenefitForm = ({
     setInstallationWindow(installationWindow)
   }, [])
 
-  // const openOrganizationInstallationURL = useCallback(() => {
-  //   const url = selectedOrganization
-  //     ? getGitHubOrganizationInstallationURL({
-  //         id: selectedOrganization.id,
-  //         returnTo,
-  //       })
-  //     : CONFIG.GITHUB_INSTALLATION_URL
-  //   const installationWindow = window.open(url, '_blank')
-  //   setInstallationWindow(installationWindow)
-  // }, [selectedOrganization, returnTo])
+  const emitter = useSSE()
 
-  // const emitter = useSSE()
+  useEffect(() => {
+    const onAppInstalled = () => {
+      if (installationWindow) {
+        installationWindow.close()
+        setInstallationWindow(null)
+      }
+      refetchRepositories()
+    }
 
-  // useEffect(() => {
-  //   const onOrganizationUpdated = async () => {
-  //     const organizationsCount = allOrganizations?.pagination.total_count
-  //     const { data: organizations } = await refetchOrganizations()
-  //     if (organizations?.pagination.total_count !== organizationsCount) {
-  //       installationWindow && installationWindow.close()
-  //       setInstallationWindow(null)
-  //     }
-  //   }
-
-  //   if (installationWindow) {
-  //     emitter.on('organization.updated', onOrganizationUpdated)
-  //   }
-  //   return () => {
-  //     emitter.off('organization.updated', onOrganizationUpdated)
-  //   }
-  // }, [emitter, installationWindow, allOrganizations, refetchOrganizations])
-
-  // useEffect(() => {
-  //   const onOrganizationUpdated = async (data: { organization_id: string }) => {
-  //     if (data.organization_id === selectedOrganization?.id) {
-  //       const { data: hasAdminWritePermission } = await refetch()
-  //       if (hasAdminWritePermission) {
-  //         refetchRepositories()
-  //         installationWindow && installationWindow.close()
-  //       }
-  //     }
-  //   }
-
-  //   if (installationWindow && selectedOrganization) {
-  //     emitter.on('organization.updated', onOrganizationUpdated)
-  //   }
-  //   return () => {
-  //     emitter.off('organization.updated', onOrganizationUpdated)
-  //   }
-  // }, [
-  //   emitter,
-  //   selectedOrganization,
-  //   installationWindow,
-  //   refetchRepositories,
-  //   refetch,
-  // ])
-
-  // const hasAppInstalled = selectedOrganization?.has_app_installed
+    emitter.on(
+      'integrations.github_repository_benefit.installed',
+      onAppInstalled,
+    )
+    return () => {
+      emitter.off(
+        'integrations.github_repository_benefit.installed',
+        onAppInstalled,
+      )
+    }
+  }, [emitter, installationWindow])
 
   type GitHubInvitesBenefitRepositoryWithKey =
     GitHubInvitesBenefitRepository & { key: string }
 
-  const repos = (repositories?.repositories ?? []).map((r) => {
-    return {
-      ...r,
-      key: r.repository_owner + '/' + r.repository_name,
-    }
-  })
+  const repos = useMemo(() => {
+    return (repositories?.repositories ?? []).map((r) => {
+      return {
+        ...r,
+        key: r.repository_owner + '/' + r.repository_name,
+      } as GitHubInvitesBenefitRepositoryWithKey
+    })
+  }, [repositories])
 
   const [selectedRepository, setSelectedRepository] = useState<
     GitHubInvitesBenefitRepositoryWithKey | undefined
@@ -341,9 +237,7 @@ export const GitHubRepositoryBenefitForm = ({
         onRepositoryChange(key)
       }
     }
-  }, [repos, repositories, isFetchingRepositories])
-
-  // const authorizeURL = `${defaultApiUrl}/api/v1/`
+  }, [repositories?.repositories, isFetchingRepositories])
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()
@@ -354,9 +248,33 @@ export const GitHubRepositoryBenefitForm = ({
     return getGitHubRepositoryBenefitAuthorizeURL({ returnTo })
   }, [pathname, description])
 
+  // Show configuration for deprecated integration setup
+  // Does not allow edits
+  if (defaultValues?.properties?.repository_id) {
+    return <GitHubRepositoryBenefitFormForDeprecatedPolarApp />
+  }
+
   return (
     <>
-      {true || !userGitHubBenefitOauth ? (
+      {userGitHubBenefitOauth ? (
+        <>
+          <div>
+            Connected as @{userGitHubBenefitOauth?.account_username}.{' '}
+            <Button
+              variant="link"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                window.location.href = authorizeURL
+              }}
+              className="h-fit p-0"
+            >
+              Reconnect
+            </Button>
+          </div>
+        </>
+      ) : (
         <>
           <Button asChild>
             <a href={authorizeURL} className="w-full text-center">
@@ -364,39 +282,51 @@ export const GitHubRepositoryBenefitForm = ({
             </a>
           </Button>
         </>
-      ) : null}
+      )}
 
-      {JSON.stringify(defaultValues?.properties)}
-      {JSON.stringify({ selectedRepository, userGitHubBenefitOauth })}
       <FormItem>
         <div className="flex flex-row items-center justify-between">
           <FormLabel>Repository</FormLabel>
         </div>
         <div className="flex items-center gap-2">
-          <FormControl>
-            <Select
-              onValueChange={onRepositoryChange}
-              value={selectedRepository?.key}
-              disabled={isFetchingRepositories || repos.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    isFetchingRepositories
-                      ? 'Loading repositories'
-                      : 'Select a GitHub repository'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {repos.map((r) => (
-                  <SelectItem key={r.key} value={r.key}>
-                    {r.repository_owner}/{r.repository_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormControl>
+          {(update && selectedRepository?.key === undefined) ||
+          isFetchingRepositories ? (
+            <FormControl>
+              <Select disabled={true}>
+                <SelectTrigger>
+                  <SelectValue placeholder={'Loading repositories'} />
+                </SelectTrigger>
+                <SelectContent></SelectContent>
+              </Select>
+            </FormControl>
+          ) : (
+            <FormControl>
+              <Select
+                onValueChange={onRepositoryChange}
+                defaultValue={selectedRepository?.key}
+                disabled={repos.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      update
+                        ? `${defaultValues?.properties?.repository_owner}/${defaultValues?.properties?.repository_name}`
+                        : isFetchingRepositories
+                          ? 'Loading repositories'
+                          : 'Select a GitHub repository'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {repos.map((r) => (
+                    <SelectItem key={r.key} value={r.key}>
+                      {r.repository_owner}/{r.repository_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormControl>
+          )}
           <Button
             variant="link"
             type="button"
@@ -412,7 +342,7 @@ export const GitHubRepositoryBenefitForm = ({
       </FormItem>
 
       <FormDescription>
-        Not seeing your organization?{' '}
+        Not seeing your repository?{' '}
         <Button
           variant="link"
           type="button"
@@ -486,7 +416,6 @@ export const GitHubRepositoryBenefitForm = ({
   )
 
   // {!selectedOrganization && (
-
   // )}
   // {!selectedOrganization && !canConfigurePersonalOrg && (
   //   <FormDescription>
@@ -494,7 +423,6 @@ export const GitHubRepositoryBenefitForm = ({
   //     a personal organization.
   //   </FormDescription>
   // )}
-
   //   {selectedOrganization && (
   //     <>
   //       {!isFetchingBillingPlan && billingPlan && !billingPlan.is_free && (

@@ -14,6 +14,7 @@ from polar.exceptions import (
 )
 from polar.integrations.github import types
 from polar.integrations.github_repository_benefit.schemas import (
+    GitHubInvitesBenefitOrganization,
     GitHubInvitesBenefitRepository,
 )
 from polar.logging import Logger
@@ -170,8 +171,68 @@ class GitHubRepositoryBenefitUserService:
 
         return installations
 
+    async def list_orgs_with_billing_plans(
+        self,
+        oauth: OAuthAccount,
+        installations: list[types.Installation],
+    ) -> list[GitHubInvitesBenefitOrganization]:
+        res: list[GitHubInvitesBenefitOrganization] = []
+
+        for i in installations:
+            if b := await self._get_billing_plan(oauth, i):
+                res.append(b)
+
+        return res
+
+    async def _get_billing_plan(
+        self, oauth: OAuthAccount, installation: types.Installation
+    ) -> GitHubInvitesBenefitOrganization | None:
+        if installation.account is None:
+            return None
+        if not isinstance(installation.account, types.SimpleUser):
+            return None
+
+        plan: types.PublicUserPropPlan | types.PrivateUserPropPlan | types.OrganizationFullPropPlan | None = None
+
+        if installation.target_type == "User":
+            user_client = github.get_client(access_token=oauth.access_token)
+            user_response = await user_client.rest.users.async_get_authenticated()
+            if user_response.parsed_data and user_response.parsed_data.plan:
+                plan = user_response.parsed_data.plan
+
+        elif installation.target_type == "Organization":
+            try:
+                org_client = github.get_app_installation_client(
+                    installation.id,
+                    app=github.GitHubApp.repository_benefit,
+                )
+                org_response = await org_client.rest.orgs.async_get(
+                    installation.account.login
+                )
+                if (
+                    org_response
+                    and org_response.parsed_data
+                    and org_response.parsed_data.plan
+                ):
+                    plan = org_response.parsed_data.plan
+            except Exception:
+                log.error(
+                    "failed to get github org plan", installation_id=installation.id
+                )
+
+        plan_name = plan.name if plan else ""
+
+        return GitHubInvitesBenefitOrganization(
+            name=installation.account.login,
+            is_personal=installation.target_type == "User",
+            plan_name=plan_name,
+            is_free=plan_name.lower() == "free",
+        )
+
     async def list_repositories(
-        self, oauth: OAuthAccount
+        self,
+        oauth: OAuthAccount,
+        installations: list[types.Installation],
     ) -> list[GitHubInvitesBenefitRepository]:
         client = github.get_client(access_token=oauth.access_token)
 
@@ -179,8 +240,6 @@ class GitHubRepositoryBenefitUserService:
         Load user accessible installations from GitHub API
         Finds the union between app installations and the users user-to-server token.
         """
-
-        installations = await self.list_user_installations(oauth)
 
         res: list[GitHubInvitesBenefitRepository] = []
 

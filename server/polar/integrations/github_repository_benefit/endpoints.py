@@ -159,11 +159,23 @@ async def user_repositories(
         session, auth.user
     )
 
-    repos = await github_repository_benefit_user_service.list_repositories(
-        oauth,
+    installations = (
+        await github_repository_benefit_user_service.list_user_installations(oauth)
     )
 
-    return GitHubInvitesBenefitRepositories(repositories=repos)
+    orgs = await github_repository_benefit_user_service.list_orgs_with_billing_plans(
+        oauth, installations
+    )
+
+    repos = await github_repository_benefit_user_service.list_repositories(
+        oauth,
+        installations,
+    )
+
+    return GitHubInvitesBenefitRepositories(
+        organizations=orgs,
+        repositories=repos,
+    )
 
 
 ###############################################################################

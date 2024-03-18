@@ -122,7 +122,7 @@ export const HighlightedTiers = ({
               <div
                 style={{
                   fontSize: 14,
-                  color: darkmode ? '#4C5069' : '#eee',
+                  color: darkmode ? '#4C5069' : '#78859B',
                   marginTop: 4,
                 }}
               >

@@ -20,7 +20,7 @@ export const SetupSubscriptions = () => {
       <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">
         <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-6 md:py-6 lg:col-span-1">
           <Bolt
-            className="hidden text-blue-500 dark:text-blue-400 md:block"
+            className="hidden text-blue-500 md:block dark:text-blue-400"
             fontSize="large"
           />
           <h2 className="text-2xl font-bold">Subscription Tiers</h2>
@@ -59,7 +59,16 @@ export const SetupSubscriptions = () => {
             subscriptionTier={{
               type: 'individual',
               name: 'Supporter',
-              price_amount: 500,
+              prices: [
+                {
+                  id: '123',
+                  created_at: '2021-10-01T00:00:00Z',
+                  is_archived: false,
+                  price_amount: 500,
+                  price_currency: 'usd',
+                  recurring_interval: 'month',
+                },
+              ],
               description: 'Exclusive insight into my coding endeavours',
               benefits: [
                 {
@@ -86,7 +95,16 @@ export const SetupSubscriptions = () => {
             subscriptionTier={{
               type: 'business',
               name: 'Business',
-              price_amount: 9900,
+              prices: [
+                {
+                  id: '123',
+                  created_at: '2021-10-01T00:00:00Z',
+                  is_archived: false,
+                  price_amount: 9900,
+                  price_currency: 'usd',
+                  recurring_interval: 'month',
+                },
+              ],
               description:
                 'Access to my Premium Posts for all your organization members',
               benefits: [

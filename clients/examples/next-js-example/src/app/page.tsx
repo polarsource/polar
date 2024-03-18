@@ -66,7 +66,7 @@ export default async function Home() {
                 <div className="flex flex-row items-baseline justify-between">
                   <h3 className="font-semibold">{tier.name}</h3>
                   <h3 className="text-lg text-blue-600">
-                    ${tier.price_amount / 100}
+                    ${tier.prices[0].price_amount / 100}
                   </h3>
                 </div>
                 <p className="h-full text-sm text-slate-400">

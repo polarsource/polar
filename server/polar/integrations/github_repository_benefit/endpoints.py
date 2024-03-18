@@ -5,14 +5,16 @@ from fastapi import (
     APIRouter,
     Depends,
     Request,
+    Response,
 )
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.config import settings
+from polar.eventstream.service import publish
 from polar.exceptions import (
     NotPermitted,
     PolarRedirectionError,
@@ -142,8 +144,6 @@ async def user_callback(
 
     return RedirectResponse(redirect_url, 303)
 
-    # return JSONResponse({"ok": True})
-
 
 @router.get(
     "/user/repositories",
@@ -194,9 +194,11 @@ async def installation_install(
 async def installation_callback(
     request: Request,
     auth: UserRequiredAuth,
-) -> RedirectResponse:
-    # TODO
-    return RedirectResponse(
-        "https://polar.sh/",
-        303,
+) -> Response:
+    await publish(
+        "integrations.github_repository_benefit.installed",
+        payload={},
+        user_id=auth.user.id,
     )
+
+    return Response("Installation successful, you can close this page.")

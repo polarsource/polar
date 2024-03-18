@@ -78,10 +78,13 @@ class GitHubRepositoryBenefitUserService:
             user=user,
         )
 
+        nested = await session.begin_nested()
         try:
             session.add(oauth_account)
+            await nested.commit()
             await session.flush()
         except IntegrityError as e:
+            await nested.rollback()
             raise ResourceAlreadyExists() from e
 
         return oauth_account

@@ -372,7 +372,12 @@ export const NewSubscriptionTierBenefitModalContent = ({
           >
             <NewBenefitForm />
             <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button className="self-start" type="submit" loading={isLoading}>
+              <Button
+                className="self-start"
+                type="submit"
+                loading={isLoading}
+                disabled={!form.formState.isValid}
+              >
                 Create
               </Button>
               <Button
@@ -456,7 +461,12 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
           >
             <UpdateBenefitForm type={benefit.type} />
             <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button className="self-start" type="submit" loading={isLoading}>
+              <Button
+                className="self-start"
+                type="submit"
+                loading={isLoading}
+                disabled={!form.formState.isValid}
+              >
                 Update
               </Button>
               <Button
@@ -511,6 +521,7 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
             message: 'Description length must be less than 42 characters long',
             value: 42,
           },
+          required: 'This field is required',
         }}
         render={({ field }) => {
           return (

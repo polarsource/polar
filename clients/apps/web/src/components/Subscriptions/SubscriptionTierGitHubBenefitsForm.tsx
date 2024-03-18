@@ -3,6 +3,7 @@ import { defaultApiUrl } from '@/utils/domain'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RefreshOutlined } from '@mui/icons-material'
 import {
+  GitHubInvitesBenefitOrganization,
   GitHubInvitesBenefitRepository,
   OAuthPlatform,
   SubscriptionBenefitGitHubRepositoryCreate,
@@ -141,6 +142,8 @@ export const GitHubRepositoryBenefitForm = ({
     watch,
     formState: { defaultValues },
     setValue,
+    setError,
+    clearErrors,
   } = useFormContext<SubscriptionBenefitGitHubRepositoryCreate>()
 
   const canConfigurePersonalOrg = isFeatureEnabled(
@@ -198,12 +201,20 @@ export const GitHubRepositoryBenefitForm = ({
   }, [emitter, installationWindow])
 
   type GitHubInvitesBenefitRepositoryWithKey =
-    GitHubInvitesBenefitRepository & { key: string }
+    GitHubInvitesBenefitRepository & {
+      org: GitHubInvitesBenefitOrganization | undefined
+      key: string
+    }
 
   const repos = useMemo(() => {
     return (repositories?.repositories ?? []).map((r) => {
+      const org = repositories?.organizations.find(
+        (o) => o.name === r.repository_owner,
+      )
+
       return {
         ...r,
+        org,
         key: r.repository_owner + '/' + r.repository_name,
       } as GitHubInvitesBenefitRepositoryWithKey
     })
@@ -219,6 +230,23 @@ export const GitHubRepositoryBenefitForm = ({
     setValue('properties.repository_owner', repo?.repository_owner)
     setValue('properties.repository_name', repo?.repository_name)
   }
+
+  const formRepoOwner = watch('properties.repository_owner')
+
+  useEffect(() => {
+    const org = repositories?.organizations.find(
+      (o) => o.name === formRepoOwner,
+    )
+
+    if (org?.is_personal && !canConfigurePersonalOrg) {
+      setError('properties.repository_owner', {
+        message:
+          'For security reasons, we do not support configuring a repository on a personal organization.',
+      })
+    } else {
+      clearErrors('properties.repository_owner')
+    }
+  }, [formRepoOwner, repositories, canConfigurePersonalOrg])
 
   // Set selected on load
   const didSetOnLoad = useRef(false)
@@ -354,9 +382,55 @@ export const GitHubRepositoryBenefitForm = ({
         to install it on Polar.
       </FormDescription>
 
+      {/* For error messages */}
+      <FormField
+        control={control}
+        name="properties.repository_owner"
+        rules={{
+          required: 'This field is required',
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+
+      {selectedRepository ? (
+        <>
+          {selectedRepository?.org?.plan_name ? (
+            <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+              This organization is currently on the{' '}
+              <span className="capitalize">
+                {selectedRepository?.org?.plan_name}
+              </span>
+              &apos;s plan.{' '}
+              <strong>
+                Each subscriber will take a seat and GitHub will bill you for
+                them. Make sure your pricing is covering those fees!
+              </strong>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+              We can&apos;t check the GitHub billing plan for this organization.
+              If you&apos;re on a paid plan{' '}
+              <strong>
+                each subscriber will take a seat and GitHub will bill you for
+                them.
+              </strong>
+            </div>
+          )}
+        </>
+      ) : null}
+
       <FormField
         control={control}
         name="properties.permission"
+        rules={{
+          required: 'This field is required',
+        }}
         render={({ field }) => {
           return (
             <FormItem>
@@ -414,132 +488,4 @@ export const GitHubRepositoryBenefitForm = ({
       />
     </>
   )
-
-  // {!selectedOrganization && (
-  // )}
-  // {!selectedOrganization && !canConfigurePersonalOrg && (
-  //   <FormDescription>
-  //     For security reasons, we do not support configuring a repository on
-  //     a personal organization.
-  //   </FormDescription>
-  // )}
-  //   {selectedOrganization && (
-  //     <>
-  //       {!isFetchingBillingPlan && billingPlan && !billingPlan.is_free && (
-  //         <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-  //           This organization is currently on the{' '}
-  //           <span className="capitalize">{billingPlan.plan_name}</span>&apos;s
-  //           plan.
-  //           <strong>
-  //             Each subscriber will take a seat and GitHub will bill you for
-  //             them. Make sure your pricing is covering those fees!
-  //           </strong>
-  //         </div>
-  //       )}
-  //       {hasAppInstalled && !isFetchingBillingPlan && !billingPlan && (
-  //         <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-  //           We can&apos;t check the GitHub billing plan for this organization.
-  //           If you&apos;re on a paid plan{' '}
-  //           <strong>
-  //             each subscriber will take a seat and GitHub will bill you for
-  //             them.
-  //           </strong>
-  //         </div>
-  //       )}
-  //       {(installationWindow || !isFetchingAdminWritePermission) && (
-  //         <>
-  //           {!hasAdminWritePermission ? (
-  //             <div className="flex items-center justify-between gap-4 rounded-2xl bg-red-50 px-4 py-3 text-sm dark:bg-red-950">
-  //               <div className="text-sm text-red-500">
-  //                 {hasAppInstalled ? (
-  //                   <>
-  //                     You need to re-authenticate your GitHub app installation
-  //                     to accept the new permissions required for this benefit.
-  //                   </>
-  //                 ) : (
-  //                   <>
-  //                     You need to install the Polar GitHub app to use this
-  //                     benefit.
-  //                   </>
-  //                 )}
-  //               </div>
-  //               <div className="flex gap-1">
-  //                 {installationWindow && (
-  //                   <Button
-  //                     type="button"
-  //                     size="sm"
-  //                     className="whitespace-nowrap"
-  //                     onClick={() => refetch()}
-  //                   >
-  //                     Refresh
-  //                   </Button>
-  //                 )}
-  //                 <Button
-  //                   type="button"
-  //                   size="sm"
-  //                   className="whitespace-nowrap"
-  //                   onClick={openOrganizationInstallationURL}
-  //                 >
-  //                   {hasAppInstalled ? 'Re-authorize' : 'Install'}
-  //                 </Button>
-  //               </div>
-  //             </div>
-  //           ) : (
-  //             <>
-  //               <FormField
-  //                 control={control}
-  //                 name="properties.repository_id"
-  //                 render={({ field }) => {
-  //                   return (
-  //                     <FormItem>
-  //                       <div className="flex flex-row items-center justify-between">
-  //                         <FormLabel>Repository</FormLabel>
-  //                       </div>
-  //                       <div className="flex items-center gap-2">
-  //                         <FormControl>
-  //                           <Select
-  //                             onValueChange={field.onChange}
-  //                             defaultValue={field.value}
-  //                           >
-  //                             <SelectTrigger>
-  //                               <SelectValue placeholder="The repository to grant access to the user" />
-  //                             </SelectTrigger>
-  //                             <SelectContent>
-  //                               {organizationRepositories.map(
-  //                                 (repository) => (
-  //                                   <SelectItem
-  //                                     key={repository.id}
-  //                                     value={repository.id}
-  //                                   >
-  //                                     {repository.name}
-  //                                   </SelectItem>
-  //                                 ),
-  //                               )}
-  //                             </SelectContent>
-  //                           </Select>
-  //                         </FormControl>
-  //                         <Button
-  //                           variant="link"
-  //                           type="button"
-  //                           className="px-0 disabled:animate-spin"
-  //                           onClick={() => refetchRepositories()}
-  //                           disabled={isFetchingRepositories}
-  //                         >
-  //                           <RefreshOutlined />
-  //                         </Button>
-  //                       </div>
-  //                       <FormMessage />
-  //                     </FormItem>
-  //                   )
-  //                 }}
-  //               />
-  //
-  //             </>
-  //           )}
-  //         </>
-  //       )}
-  //     </>
-  //   )}
-  // </>
-  // )
 }

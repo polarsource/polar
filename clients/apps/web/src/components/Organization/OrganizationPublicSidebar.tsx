@@ -113,7 +113,7 @@ export const OrganizationPublicSidebar = ({
           isPostView ? 'hidden  md:flex' : 'flex',
         )}
       >
-        <div className="flex flex-col gap-y-6">
+        <div className="flex w-full flex-col gap-y-6">
           <DescriptionEditor
             className="dark:text-polar-500 text-md text-start leading-relaxed text-gray-500 [text-wrap:pretty]"
             description={

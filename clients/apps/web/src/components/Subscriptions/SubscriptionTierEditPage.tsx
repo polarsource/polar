@@ -79,7 +79,7 @@ const SubscriptionTierEdit = ({
     subscriptionTier.benefits.map((benefit) => benefit.id) ?? [],
   )
   const isFreeTier = subscriptionTier.type === SubscriptionTierType.FREE
-  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval([])
 
   const now = useMemo(() => new Date(), [])
   const { data: subscriptionStatistics } = useSubscriptionStatistics(
@@ -101,6 +101,7 @@ const SubscriptionTierEdit = ({
   const { handleSubmit, watch, setError } = form
 
   const editingSubscriptionTier = watch()
+  const prices = watch('prices')
 
   const updateSubscriptionTier = useUpdateSubscriptionTier(organization.name)
   const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits(
@@ -309,7 +310,7 @@ const SubscriptionTierEdit = ({
                 ...subscriptionTier,
                 ...editingSubscriptionTier,
                 benefits: enabledBenefits,
-                prices: subscriptionTier.prices as SubscriptionTierPrice[],
+                prices: prices as SubscriptionTierPrice[],
               }}
               isEditing={true}
               recurringInterval={recurringInterval}

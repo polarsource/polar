@@ -269,9 +269,11 @@ export const GitHubRepositoryBenefitForm = ({
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()
-    searchParams.set('create_benefit', 'true')
-    searchParams.set('type', SubscriptionBenefitType.GITHUB_REPOSITORY)
-    searchParams.set('description', description)
+    if (!update) {
+      searchParams.set('create_benefit', 'true')
+      searchParams.set('type', SubscriptionBenefitType.GITHUB_REPOSITORY)
+      searchParams.set('description', description)
+    }
     const returnTo = `${pathname}?${searchParams}`
     return getGitHubRepositoryBenefitAuthorizeURL({ returnTo })
   }, [pathname, description])
@@ -282,35 +284,44 @@ export const GitHubRepositoryBenefitForm = ({
     return <GitHubRepositoryBenefitFormForDeprecatedPolarApp />
   }
 
+  if (!userGitHubBenefitOauth) {
+    return (
+      <>
+        <Button asChild>
+          <a href={authorizeURL} className="w-full text-center">
+            Connect your GitHub Account
+          </a>
+        </Button>
+
+        {update ? (
+          <FormDescription>
+            Connected to {defaultValues?.properties?.repository_owner}/
+            {defaultValues?.properties?.repository_name}.
+          </FormDescription>
+        ) : null}
+      </>
+    )
+  }
+
   return (
     <>
-      {userGitHubBenefitOauth ? (
-        <>
-          <div>
-            Connected as @{userGitHubBenefitOauth?.account_username}.{' '}
-            <Button
-              variant="link"
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                window.location.href = authorizeURL
-              }}
-              className="h-fit p-0"
-            >
-              Reconnect
-            </Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <Button asChild>
-            <a href={authorizeURL} className="w-full text-center">
-              Connect your GitHub Account
-            </a>
+      <>
+        <FormDescription>
+          Connected as @{userGitHubBenefitOauth?.account_username}.{' '}
+          <Button
+            variant="link"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              window.location.href = authorizeURL
+            }}
+            className="h-fit p-0"
+          >
+            Reconnect
           </Button>
-        </>
-      )}
+        </FormDescription>
+      </>
 
       <FormItem>
         <div className="flex flex-row items-center justify-between">

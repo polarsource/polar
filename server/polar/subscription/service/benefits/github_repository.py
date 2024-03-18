@@ -1,6 +1,7 @@
 from typing import Any, cast
 
 import structlog
+from githubkit import AppInstallationAuthStrategy, GitHub
 from githubkit.exception import RateLimitExceeded, RequestError, RequestTimeout
 
 from polar.authz.service import AccessType, Authz
@@ -75,10 +76,12 @@ class SubscriptionBenefitGitHubRepositoryService(
 ):
     async def _get_github_app_client(
         self,
+        logger: Logger,
         benefit: SubscriptionBenefitGitHubRepository,
-    ):
-        # old style
+    ) -> GitHub[AppInstallationAuthStrategy]:
+        # Old integrations, using the "Polar" GitHub App
         if benefit.properties["repository_id"]:
+            logger.debug("using legacy integration")
             repository_id = benefit.properties["repository_id"]
             repository = await repository_service.get(
                 self.session, repository_id, load_organization=True
@@ -92,17 +95,19 @@ class SubscriptionBenefitGitHubRepositoryService(
                 installation_id, app=github.GitHubApp.polar
             )
 
-        # new style
+        # New integration, using the "Repository Benefit" GitHub App
+        logger.debug("using Repository Benefit app integration")
+
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
-        installation_id = (
-            await github_repository_benefit_user_service.get_repository_installation_id(
+        installation = (
+            await github_repository_benefit_user_service.get_repository_installation(
                 owner=repository_owner, name=repository_name
             )
         )
-        assert installation_id is not None
+        assert installation is not None
         return github.get_app_installation_client(
-            installation_id, app=github.GitHubApp.repository_benefit
+            installation.id, app=github.GitHubApp.repository_benefit
         )
 
     async def grant(
@@ -122,24 +127,13 @@ class SubscriptionBenefitGitHubRepositoryService(
         )
         bound_logger.debug("Grant benefit")
 
-        # When granting access, use the new specific Repository Benefit App
-        # Integrations that where setup using the old system will continue to use it
-        client = await self._get_github_app_client(benefit)
+        client = await self._get_github_app_client(bound_logger, benefit)
 
-        # repository_id = benefit.properties["repository_id"]
-        # repository = await repository_service.get(
-        #     self.session, repository_id, load_organization=True
-        # )
-        # assert repository is not None
-        # organization = repository.organization
-        # assert organization is not None
-        # installation_id = organization.installation_id
-        # assert installation_id is not None
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
         permission = benefit.properties["permission"]
 
-        # For inviting users, we're using the oauth for the main polar github app
+        # When inviting users: Use the users identity from the "main" Polar GitHub App
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
         if oauth_account is None or oauth_account.account_username is None:
             raise SubscriptionBenefitPreconditionError(
@@ -196,7 +190,6 @@ class SubscriptionBenefitGitHubRepositoryService(
 
         # Store repository and permission to compare on update
         return {
-            # "repository_id": str(repository_id),
             "repository_owner": repository_owner,
             "repository_name": repository_name,
             "permission": permission,
@@ -217,27 +210,14 @@ class SubscriptionBenefitGitHubRepositoryService(
             user_id=str(user.id),
         )
 
-        client = await self._get_github_app_client(benefit)
-
-        # repository_id = benefit.properties["repository_id"]
-        # repository = await repository_service.get(
-        #     self.session, repository_id, load_organization=True
-        # )
-        # assert repository is not None
-        # organization = repository.organization
-        # assert organization is not None
-        # installation_id = organization.installation_id
-        # assert installation_id is not None
+        client = await self._get_github_app_client(bound_logger, benefit)
 
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
-        permission = benefit.properties["permission"]
 
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
         if oauth_account is None or oauth_account.account_username is None:
             raise
-
-        # client = github.get_app_installation_client(installation_id)
 
         invitation = await self._get_invitation(
             client,
@@ -276,8 +256,7 @@ class SubscriptionBenefitGitHubRepositoryService(
     ) -> bool:
         new_properties = benefit.properties
         return (
-            new_properties["repository_id"] != previous_properties["repository_id"]
-            or new_properties["repository_owner"]
+            new_properties["repository_owner"]
             != previous_properties["repository_owner"]
             or new_properties["repository_name"]
             != previous_properties["repository_name"]
@@ -331,7 +310,42 @@ class SubscriptionBenefitGitHubRepositoryService(
                 ]
             )
 
-        # TODO: personal org billing check
+        installation = (
+            await github_repository_benefit_user_service.get_repository_installation(
+                owner=repository_owner,
+                name=repository_name,
+            )
+        )
+        if not installation:
+            raise SubscriptionBenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "no_repository_installation_found",
+                        "message": "Could not find a installation for this repository.",
+                        "loc": ("repository_name",),
+                        "input": repository_name,
+                    }
+                ]
+            )
+
+        if posthog.client and not posthog.client.feature_enabled(
+            "github-benefit-personal-org", user.posthog_distinct_id
+        ):
+            plan = await github_repository_benefit_user_service.get_billing_plan(
+                oauth, installation
+            )
+            if not plan or plan.is_personal:
+                raise SubscriptionBenefitPropertiesValidationError(
+                    [
+                        {
+                            "type": "personal_organization_repository",
+                            "message": "For security reasons, "
+                            "repositories on personal organizations are not supported.",
+                            "loc": ("repository_name",),
+                            "input": repository_name,
+                        }
+                    ]
+                )
 
         return cast(
             SubscriptionBenefitGitHubRepositoryProperties,

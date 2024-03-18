@@ -31,6 +31,7 @@ from polar.exceptions import (
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
+from polar.locker import Locker, get_locker
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
@@ -113,6 +114,7 @@ async def github_callback(
         oauth2_authorize_callback
     ),
     auth: Auth = Depends(Auth.optional_user),
+    locker: Locker = Depends(get_locker),
 ) -> RedirectResponse:
     token_data, state = access_token_state
     error_description = token_data.get("error_description")
@@ -151,7 +153,7 @@ async def github_callback(
             )
         else:
             user = await github_user.login_or_signup(
-                session, tokens=tokens, signup_type=state_user_type
+                session, locker, tokens=tokens, signup_type=state_user_type
             )
 
     except GithubUserServiceError as e:
@@ -218,9 +220,10 @@ async def lookup_user(
     body: LookupUserRequest,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> GithubUser:
     try:
-        client = await github.get_user_client(session, auth.user)
+        client = await github.get_user_client(session, locker, auth.user)
         github_user = await client.rest.users.async_get_by_username(
             username=body.username
         )
@@ -312,6 +315,7 @@ async def get_organization_billing_plan(
     auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> OrganizationBillingPlan:
     organization = await github_organization.get(session, id)
 
@@ -322,7 +326,7 @@ async def get_organization_billing_plan(
         raise NotPermitted()
 
     if organization.is_personal:
-        user_client = await github.get_user_client(session, auth.user)
+        user_client = await github.get_user_client(session, locker, auth.user)
         user_response = await user_client.rest.users.async_get_authenticated()
         plan = user_response.parsed_data.plan
     else:
@@ -360,10 +364,11 @@ async def install(
     installation: InstallationCreate,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> OrganizationSchema:
     with ExecutionContext(is_during_installation=True):
         organization = await github_organization.install_from_user_browser(
-            session, auth.user, installation_id=installation.external_id
+            session, locker, auth.user, installation_id=installation.external_id
         )
         if not organization:
             raise ResourceNotFound()

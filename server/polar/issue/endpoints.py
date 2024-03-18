@@ -232,9 +232,10 @@ async def for_you(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+    locker: Locker = Depends(get_locker),
 ) -> ListResource[IssueSchema]:
     issues = await github_issue_service.list_issues_from_starred(
-        session, sessionmaker, auth.user
+        session, locker, sessionmaker, auth.user
     )
 
     # get loaded
@@ -524,6 +525,7 @@ async def add_issue_comment(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
+    locker: Locker = Depends(get_locker),
 ) -> IssueSchema:
     issue = await issue_service.get(session, id)
     if not issue:
@@ -554,6 +556,7 @@ async def add_issue_comment(
 
     await github_issue_service.add_comment_as_user(
         session,
+        locker,
         org,
         repo,
         issue,

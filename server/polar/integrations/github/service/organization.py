@@ -18,6 +18,7 @@ from polar.exceptions import (
 )
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.models.user import OAuthAccount, OAuthPlatform
@@ -57,7 +58,7 @@ class GithubOrganizationService(OrganizationService):
         return await self.get_by_platform(session, Platforms.github, external_id)
 
     async def fetch_installations(
-        self, session: AsyncSession, user: User
+        self, session: AsyncSession, locker: Locker, user: User
     ) -> list[types.Installation] | None:
         oauth = await oauth_account_service.get_by_platform_and_user_id(
             session, OAuthPlatform.github, user.id
@@ -65,7 +66,7 @@ class GithubOrganizationService(OrganizationService):
         if not oauth:
             raise Exception("fetch_installations: no user oauth found")
 
-        client = await github.get_user_client(session, user)
+        client = await github.get_user_client(session, locker, user)
         response = (
             await client.rest.apps.async_list_installations_for_authenticated_user()
         )
@@ -82,9 +83,9 @@ class GithubOrganizationService(OrganizationService):
         return installations
 
     async def install_from_user_browser(
-        self, session: AsyncSession, user: User, installation_id: int
+        self, session: AsyncSession, locker: Locker, user: User, installation_id: int
     ) -> Organization | None:
-        installations = await self.fetch_installations(session, user)
+        installations = await self.fetch_installations(session, locker, user)
         if not installations:
             raise Exception(f"no user installations found. id={installation_id}")
 
@@ -158,6 +159,7 @@ class GithubOrganizationService(OrganizationService):
     async def create_for_user(
         self,
         session: AsyncSession,
+        locker: Locker,
         user: User,
     ) -> Organization:
         current_user_org = await user_organization_service.get_personal_org(
@@ -205,7 +207,7 @@ class GithubOrganizationService(OrganizationService):
         )
 
         # Invoked from authenticated user
-        client = await github.get_refreshed_oauth_client(session, oauth)
+        client = await github.get_refreshed_oauth_client(session, locker, oauth)
         await self._populate_github_user_metadata(session, client, org)
 
         enqueue_job("organization.post_user_upgrade", organization_id=org.id)

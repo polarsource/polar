@@ -9,6 +9,7 @@ from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.locker import Locker, get_locker
 from polar.models import User
 from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
@@ -73,10 +74,11 @@ async def update_preferences(
 async def maintainer_upgrade(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> Organization:
     log.info("user.maintainer_upgrade", user_id=auth.user.id)
     personal_org = await github_organization_service.create_for_user(
-        session, user=auth.user
+        session, locker, user=auth.user
     )
     posthog.user_event(auth.user, "user", "maintainer_upgrade", "submit")
 

@@ -7,6 +7,7 @@ from polar.exceptions import PolarError, ResourceAlreadyExists
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.extensions.sqlalchemy import sql
+from polar.locker import Locker
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.organization.service import organization
@@ -196,6 +197,7 @@ class GithubUserService(UserService):
     async def login_or_signup(
         self,
         session: AsyncSession,
+        locker: Locker,
         *,
         tokens: OAuthAccessToken,
         signup_type: UserSignupType | None = None,
@@ -259,12 +261,15 @@ class GithubUserService(UserService):
                     github_organization as github_organization_service,
                 )
 
-                await github_organization_service.create_for_user(session, user=user)
+                await github_organization_service.create_for_user(
+                    session, locker, user=user
+                )
             except ResourceAlreadyExists:
                 ...
 
         org_count = await self._run_sync_github_orgs(
             session,
+            locker,
             user=user,
             github_user=authenticated,
         )
@@ -337,11 +342,14 @@ class GithubUserService(UserService):
 
         return user
 
-    async def sync_github_orgs(self, session: AsyncSession, *, user: User) -> None:
-        user_client = await github.get_user_client(session, user)
+    async def sync_github_orgs(
+        self, session: AsyncSession, locker: Locker, *, user: User
+    ) -> None:
+        user_client = await github.get_user_client(session, locker, user)
         github_user = await self.fetch_authenticated_user(client=user_client)
         await self._run_sync_github_orgs(
             session,
+            locker,
             user=user,
             github_user=github_user,
         )
@@ -349,13 +357,16 @@ class GithubUserService(UserService):
     async def _run_sync_github_orgs(
         self,
         session: AsyncSession,
+        locker: Locker,
         *,
         user: User,
         github_user: GithubUser,
     ) -> int:
         org_count = 0
 
-        installations = await self.fetch_user_accessible_installations(session, user)
+        installations = await self.fetch_user_accessible_installations(
+            session, locker, user
+        )
         log.info(
             "sync_github_orgs.installations",
             user_id=user.id,
@@ -474,14 +485,14 @@ class GithubUserService(UserService):
         return r.parsed_data.installations
 
     async def fetch_user_accessible_installations(
-        self, session: AsyncSession, user: User
+        self, session: AsyncSession, locker: Locker, user: User
     ) -> list[types.Installation]:
         """
         Load user accessible installations from GitHub API
         Finds the union between app installations and the users user-to-server token.
         """
 
-        client = await github.get_user_client(session, user)
+        client = await github.get_user_client(session, locker, user)
         res = []
         async for install in client.paginate(
             client.rest.apps.async_list_installations_for_authenticated_user,

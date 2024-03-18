@@ -23,6 +23,7 @@ from polar.kit.db.postgres import (
 )
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Issue, Organization, Repository
 from polar.models.user import User
@@ -556,13 +557,14 @@ class GithubIssueService(IssueService):
     async def add_comment_as_user(
         self,
         session: AsyncSession,
+        locker: Locker,
         organization: Organization,
         repository: Repository,
         issue: Issue,
         user: User,
         comment: str,
     ) -> None:
-        client = await github.get_user_client(session, user)
+        client = await github.get_user_client(session, locker, user)
 
         await client.rest.issues.async_create_comment(
             organization.name,
@@ -704,6 +706,7 @@ class GithubIssueService(IssueService):
     async def list_issues_from_starred(
         self,
         session: AsyncSession,
+        locker: Locker,
         sessionmaker: AsyncSessionMaker,
         user: User,
     ) -> list[Issue]:
@@ -718,7 +721,7 @@ class GithubIssueService(IssueService):
                     res_issues.append(issue)
             return res_issues
 
-        client = await github.get_user_client(session, user)
+        client = await github.get_user_client(session, locker, user)
 
         # get the latest starred repos
         starred = (

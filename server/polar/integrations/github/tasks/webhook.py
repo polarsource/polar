@@ -10,10 +10,12 @@ from polar.exceptions import PolarError
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.organization.hooks import OrganizationHook, organization_upserted
 from polar.postgres import AsyncSession
+from polar.redis import redis
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,
@@ -191,6 +193,8 @@ async def repositories_changed(
     | types.WebhookInstallationRepositoriesRemoved
     | types.WebhookInstallationCreated,
 ) -> None:
+    locker = Locker(redis)
+
     with ExecutionContext(is_during_installation=True):
         removed: Sequence[
             types.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
@@ -213,7 +217,7 @@ async def repositories_changed(
             session, event.sender.id
         )
         if sender:
-            await service.github_user.sync_github_orgs(session, user=sender)
+            await service.github_user.sync_github_orgs(session, locker, user=sender)
 
         # send after members have been added
         await organization_upserted.call(OrganizationHook(session, org))

@@ -339,11 +339,7 @@ const PostItem = (post: Article) => {
             </div>
 
             <div className="hidden flex-row items-center gap-x-4 lg:flex">
-              <AnimatedIconButton
-                active={isHovered}
-                variant="secondary"
-                href={href}
-              >
+              <AnimatedIconButton active={isHovered} variant="secondary">
                 <ArrowForward fontSize="inherit" />
               </AnimatedIconButton>
             </div>

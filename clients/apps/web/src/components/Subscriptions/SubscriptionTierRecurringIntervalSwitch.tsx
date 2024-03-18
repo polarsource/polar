@@ -42,4 +42,5 @@ const SubscriptionTierRecurringIntervalSwitch: React.FC<
     </div>
   )
 }
+
 export default SubscriptionTierRecurringIntervalSwitch

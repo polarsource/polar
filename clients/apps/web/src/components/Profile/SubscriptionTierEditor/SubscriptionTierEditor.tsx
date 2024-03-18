@@ -27,8 +27,6 @@ export const SubscriptionTierEditor = ({
   disabled,
 }: SubscriptionTierEditorProps) => {
   const { show, isShown, hide } = useModal()
-  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
-
   const updateProjectMutation = useUpdateProject()
 
   const {
@@ -58,6 +56,9 @@ export const SubscriptionTierEditor = ({
         ),
   )
 
+  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
+    useRecurringInterval(highlightedTiers)
+
   if (disabled && highlightedTiers.length < 1) {
     return null
   }
@@ -85,12 +86,14 @@ export const SubscriptionTierEditor = ({
           )}
         </div>
       </div>
-      <div className="flex justify-center">
-        <SubscriptionTierRecurringIntervalSwitch
-          recurringInterval={recurringInterval}
-          onChange={setRecurringInterval}
-        />
-      </div>
+      {hasBothIntervals && (
+        <div className="flex justify-center">
+          <SubscriptionTierRecurringIntervalSwitch
+            recurringInterval={recurringInterval}
+            onChange={setRecurringInterval}
+          />
+        </div>
+      )}
       <div className="flex w-full flex-row flex-wrap items-center justify-center gap-8">
         <DndContext
           sensors={sensors}

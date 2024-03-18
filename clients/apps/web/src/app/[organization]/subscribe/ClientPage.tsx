@@ -25,7 +25,6 @@ export default function ClientPage({
   email?: string
 }) {
   const [selectedTierIndex, selectTierIndex] = useState(0)
-  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
 
   const orgs = useListAdminOrganizations()
 
@@ -37,6 +36,8 @@ export default function ClientPage({
   const highlightedTiers = useMemo(() => {
     return subscriptionTiers.items?.filter((tier) => tier.is_highlighted) ?? []
   }, [subscriptionTiers])
+  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
+    useRecurringInterval(highlightedTiers)
 
   const selectedTier = useMemo(
     () => highlightedTiers[selectedTierIndex],
@@ -66,10 +67,12 @@ export default function ClientPage({
         </div>
       </div>
       <div className="flex flex-col items-center justify-center gap-y-12">
-        <SubscriptionTierRecurringIntervalSwitch
-          recurringInterval={recurringInterval}
-          onChange={setRecurringInterval}
-        />
+        {hasBothIntervals && (
+          <SubscriptionTierRecurringIntervalSwitch
+            recurringInterval={recurringInterval}
+            onChange={setRecurringInterval}
+          />
+        )}
         <div className="flex max-w-5xl flex-row flex-wrap gap-8">
           {highlightedTiers
             .filter(hasRecurringInterval(recurringInterval))

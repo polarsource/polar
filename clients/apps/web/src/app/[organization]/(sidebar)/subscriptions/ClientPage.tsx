@@ -23,7 +23,8 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
   useTrafficRecordPageView({ organization })
 
   const orgs = useListAdminOrganizations()
-  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
+  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
+    useRecurringInterval(subscriptionTiers)
 
   const shouldRenderSubscribeButton = useMemo(
     () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
@@ -39,12 +40,14 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
           benefits in return
         </p>
       </div>
-      <div className="flex justify-center">
-        <SubscriptionTierRecurringIntervalSwitch
-          recurringInterval={recurringInterval}
-          onChange={setRecurringInterval}
-        />
-      </div>
+      {hasBothIntervals && (
+        <div className="flex justify-center">
+          <SubscriptionTierRecurringIntervalSwitch
+            recurringInterval={recurringInterval}
+            onChange={setRecurringInterval}
+          />
+        </div>
+      )}
       <div className="flex flex-row flex-wrap gap-8">
         {subscriptionTiers
           .filter(hasRecurringInterval(recurringInterval))

@@ -8,12 +8,48 @@ import {
   getSubscriptionTierAudience,
   getSubscriptionTierPrice,
 } from 'polarkit/subscriptions'
-import { useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 
-export const useRecurringInterval = () => {
-  return useState<SubscriptionTierPriceRecurringInterval>(
-    SubscriptionTierPriceRecurringInterval.MONTH,
+export const useRecurringInterval = (
+  tiers: SubscriptionTier[],
+): [
+  SubscriptionTierPriceRecurringInterval,
+  Dispatch<SetStateAction<SubscriptionTierPriceRecurringInterval>>,
+  boolean,
+] => {
+  const hasMonthInterval = useMemo(() => {
+    return tiers.some((tier) =>
+      tier.prices.some(
+        (price) =>
+          price.recurring_interval ===
+          SubscriptionTierPriceRecurringInterval.MONTH,
+      ),
+    )
+  }, [tiers])
+  const hasYearInterval = useMemo(() => {
+    return tiers.some((tier) =>
+      tier.prices.some(
+        (price) =>
+          price.recurring_interval ===
+          SubscriptionTierPriceRecurringInterval.YEAR,
+      ),
+    )
+  }, [tiers])
+  const hasBothIntervals = useMemo(
+    () => hasMonthInterval && hasYearInterval,
+    [hasMonthInterval, hasYearInterval],
   )
+
+  const [recurringInterval, setRecurringInterval] =
+    useState<SubscriptionTierPriceRecurringInterval>(
+      hasBothIntervals
+        ? SubscriptionTierPriceRecurringInterval.MONTH
+        : hasYearInterval
+          ? SubscriptionTierPriceRecurringInterval.YEAR
+          : SubscriptionTierPriceRecurringInterval.MONTH,
+    )
+
+  return [recurringInterval, setRecurringInterval, hasBothIntervals]
 }
 
 export const useSubscriptionTierPrice = (

@@ -18,7 +18,8 @@ interface TiersPageProps {
 
 const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
-  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
+  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
+    useRecurringInterval(subscriptionTiers?.items || [])
 
   if (!subscriptionTiers?.items?.length) {
     return (
@@ -61,12 +62,14 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
             </Button>
           </Link>
         </div>
-        <div className="flex justify-center">
-          <SubscriptionTierRecurringIntervalSwitch
-            recurringInterval={recurringInterval}
-            onChange={setRecurringInterval}
-          />
-        </div>
+        {hasBothIntervals && (
+          <div className="flex justify-center">
+            <SubscriptionTierRecurringIntervalSwitch
+              recurringInterval={recurringInterval}
+              onChange={setRecurringInterval}
+            />
+          </div>
+        )}
         <div className="flex flex-row flex-wrap gap-6">
           {subscriptionTiers.items.map((tier) => (
             <SubscriptionTierCard

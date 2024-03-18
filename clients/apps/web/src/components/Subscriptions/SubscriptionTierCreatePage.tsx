@@ -79,7 +79,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
     Benefit['id'][]
     // Pre-select premium articles benefit
   >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
-  const [recurringInterval, setRecurringInterval] = useRecurringInterval()
+  const [recurringInterval, setRecurringInterval] = useRecurringInterval([])
   const highlightedTiers =
     useSubscriptionTiers(organization.name, 100).data?.items?.filter(
       (tier) => tier.is_highlighted,

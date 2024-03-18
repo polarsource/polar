@@ -3,13 +3,12 @@
 import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import {
-  MRRChart,
+  EarningsChart,
   ParsedSubscriptionsStatisticsPeriod,
   SubscribersChart,
 } from '@/components/Subscriptions/SubscriptionsChart'
 import {
-  CumulativeRevenueMetric,
-  MRRMetric,
+  EarningsMetric,
   SubscribersMetric,
 } from '@/components/Subscriptions/SubscriptionsMetric'
 import { getSubscriptionTiersByType } from '@/components/Subscriptions/utils'
@@ -33,26 +32,20 @@ const generateDemoStats = (
   growthRate: number = 0.8,
   noiseFactor: number = 0.2,
   initialSubscribers: number = 100,
-  initialMRR: number = 150000,
-  initialCumulative: number = 150000,
+  initialEarnings: number = 150000,
 ): ParsedSubscriptionsStatisticsPeriod[] => {
   const data: ParsedSubscriptionsStatisticsPeriod[] = []
-  let cumulative = initialCumulative
-
   for (let i = 0; i < periods.length; i++) {
     const sigmoidValue =
       1 / (1 + Math.exp(-growthRate * (i - periods.length / 2)))
     const randomFactor = 1 + (Math.random() - 0.5) * noiseFactor
-    const mrr = Math.floor(initialMRR * sigmoidValue * randomFactor)
     data.push({
       start_date: periods[i].start_date,
       parsedStartDate: periods[i].parsedStartDate,
       end_date: periods[i].end_date,
       subscribers: Math.floor(initialSubscribers * sigmoidValue * randomFactor),
-      mrr,
-      cumulative,
+      earnings: Math.floor(initialEarnings * sigmoidValue * randomFactor),
     })
-    cumulative += mrr
   }
 
   return data
@@ -160,10 +153,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
         // Empty stats, generate demo data
         if (
           statisticsPeriods.every(
-            (period) =>
-              period.subscribers === 0 &&
-              period.mrr === 0 &&
-              period.cumulative === 0,
+            (period) => period.subscribers === 0 && period.earnings === 0,
           )
         ) {
           setStatisticsPeriods(generateDemoStats(statisticsPeriods))
@@ -202,7 +192,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
       </div>
       <div
         className={twMerge(
-          'grid grid-cols-1 gap-6 lg:grid-cols-3',
+          'grid grid-cols-1 gap-6 lg:grid-cols-2',
           isDemoData ? 'opacity-50' : '',
         )}
       >
@@ -217,21 +207,12 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                   : undefined
               }
             />
-            <MRRMetric
-              data={displayedPeriod.mrr}
+            <EarningsMetric
+              data={displayedPeriod.earnings}
               dataDate={displayedPeriod.parsedStartDate}
               previousData={
                 hoveredPeriodIndex === undefined && previousPeriod
-                  ? previousPeriod.mrr
-                  : undefined
-              }
-            />
-            <CumulativeRevenueMetric
-              data={displayedPeriod.cumulative}
-              dataDate={displayedPeriod.parsedStartDate}
-              previousData={
-                hoveredPeriodIndex === undefined && previousPeriod
-                  ? previousPeriod.cumulative
+                  ? previousPeriod.earnings
                   : undefined
               }
             />
@@ -272,12 +253,10 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
             </Card>
             <Card>
               <CardHeader>
-                <div className="text-lg font-medium">
-                  Monthly recurring revenue
-                </div>
+                <div className="text-lg font-medium">Earnings</div>
               </CardHeader>
               <CardContent>
-                <MRRChart
+                <EarningsChart
                   data={statisticsPeriods}
                   onDataIndexHover={setHoveredPeriodIndex}
                   hoveredIndex={hoveredPeriodIndex}

@@ -6,7 +6,7 @@ import { NewsFromPolar } from '@/components/Onboarding/Creator/NewsFromPolar'
 import { PostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { SetupSubscriptions } from '@/components/Onboarding/Creator/SetupSubscriptions'
 import {
-  MRRMetric,
+  EarningsMetric,
   SubscribersMetric,
 } from '@/components/Subscriptions/SubscriptionsMetric'
 import { FlagOutlined } from '@mui/icons-material'
@@ -48,10 +48,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
         // Empty stats, generate demo data
         if (
           summary.periods.every(
-            (period) =>
-              period.subscribers === 0 &&
-              period.mrr === 0 &&
-              period.cumulative === 0,
+            (period) => period.subscribers === 0 && period.earnings === 0,
           )
         ) {
           return
@@ -73,7 +70,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
     <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
       <div className="grid grid-cols-1 gap-x-8 gap-y-4 lg:grid-cols-3">
         <SubscribersMetric data={statisticsPeriods?.subscribers ?? 0} />
-        <MRRMetric data={statisticsPeriods?.mrr ?? 0} />
+        <EarningsMetric data={statisticsPeriods?.earnings ?? 0} />
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div className="font-medium">Goal</div>

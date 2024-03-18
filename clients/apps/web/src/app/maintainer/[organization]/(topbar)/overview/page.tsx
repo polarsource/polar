@@ -31,6 +31,8 @@ export default async function Page({
   startOfMonth.setUTCHours(0, 0, 0, 0)
   startOfMonth.setUTCDate(1)
 
+  const today = new Date()
+
   const startOfMonthThreeMonthsAgo = new Date()
   startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
   startOfMonthThreeMonthsAgo.setUTCDate(1)
@@ -40,7 +42,7 @@ export default async function Page({
     <ClientPage
       organization={organization}
       startDate={startOfMonthThreeMonthsAgo}
-      endDate={startOfMonth}
+      endDate={today}
     />
   )
 }

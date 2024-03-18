@@ -1,5 +1,9 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
-import { ListResourceSubscriptionTier, SubscriptionTier } from '@polar-sh/sdk'
+import {
+  ListResourceSubscriptionTier,
+  SubscriptionTier,
+  SubscriptionTierPriceRecurringInterval,
+} from '@polar-sh/sdk'
 import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
@@ -24,6 +28,7 @@ const getHighlightedSubscriptions = async (
 const renderBadge = async (
   label: string,
   subscriptionTiers: SubscriptionTier[],
+  recurringInterval: SubscriptionTierPriceRecurringInterval,
   darkmode: boolean,
 ) => {
   const inter500 = await fetch(
@@ -38,6 +43,7 @@ const renderBadge = async (
     <HighlightedTiers
       label={label}
       tiers={subscriptionTiers}
+      recurringInterval={recurringInterval}
       darkmode={darkmode}
     />,
     {
@@ -66,6 +72,8 @@ export async function GET(request: Request) {
   const label =
     searchParams.get('label') ?? `Support ${org} with a subscription`
   const darkmode = searchParams.has('darkmode')
+  const recurringInterval =
+    searchParams.get('interval') || SubscriptionTierPriceRecurringInterval.MONTH
 
   if (!org) {
     return new Response('No org provided', { status: 400 })
@@ -74,7 +82,12 @@ export async function GET(request: Request) {
   try {
     const highlightedTiers = await getHighlightedSubscriptions(org)
 
-    const svg = await renderBadge(label, highlightedTiers, darkmode)
+    const svg = await renderBadge(
+      label,
+      highlightedTiers,
+      recurringInterval as SubscriptionTierPriceRecurringInterval,
+      darkmode,
+    )
 
     return new Response(svg, {
       headers: {

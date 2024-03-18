@@ -1,12 +1,16 @@
 'use client'
 
+import {
+  useRecurringBillingLabel,
+  useSubscriptionTierAudience,
+  useSubscriptionTierPrice,
+} from '@/hooks/subscriptions'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
 import {
   SubscriptionTier,
   SubscriptionTierPriceRecurringInterval,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import {
   Card,
@@ -17,13 +21,7 @@ import {
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { formatCurrencyAndAmount } from 'polarkit/money'
-import {
-  MouseEventHandler,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType, resolveBenefitIcon } from './utils'
@@ -61,57 +59,11 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
   const [shineActive, setShineActive] = useState(false)
 
-  const price: {
-    price_amount: number
-    price_currency: string
-    recurring_interval: SubscriptionTierPriceRecurringInterval
-  } = useMemo(() => {
-    let price = subscriptionTier.prices?.find(
-      (price) => price.recurring_interval === recurringInterval,
-    )
-    if (!price) {
-      if (subscriptionTier.prices && subscriptionTier.prices?.length > 0) {
-        price = subscriptionTier.prices[0]
-      } else {
-        return {
-          price_amount: 0,
-          price_currency: 'usd',
-          recurring_interval: SubscriptionTierPriceRecurringInterval.MONTH,
-        }
-      }
-    }
-
-    const priceAmount =
-      price.recurring_interval === SubscriptionTierPriceRecurringInterval.YEAR
-        ? price.price_amount / 12
-        : price.price_amount
-
-    return {
-      price_amount: priceAmount || 0,
-      price_currency: price.price_currency,
-      recurring_interval: price.recurring_interval,
-    }
-  }, [subscriptionTier, recurringInterval])
-
-  const recurringBillingLabel = useMemo(() => {
-    switch (price.recurring_interval) {
-      case SubscriptionTierPriceRecurringInterval.MONTH:
-        return 'billed monthly'
-      case SubscriptionTierPriceRecurringInterval.YEAR:
-        return 'billed yearly'
-    }
-  }, [price])
-
-  const getSubscriptionTierAudience = (type?: SubscriptionTier['type']) => {
-    switch (type) {
-      case SubscriptionTierType.FREE:
-        return 'For Anyone'
-      case SubscriptionTierType.INDIVIDUAL:
-        return 'For Individuals'
-      case SubscriptionTierType.BUSINESS:
-        return 'For Businesses'
-    }
-  }
+  const audience = useSubscriptionTierAudience(subscriptionTier.type)
+  const price = useSubscriptionTierPrice(subscriptionTier, recurringInterval)
+  const recurringBillingLabel = useRecurringBillingLabel(
+    price.recurring_interval,
+  )
 
   const style = {
     '--var-bg-color': hexToRGBA(subscriptionColor, 0.2),
@@ -192,7 +144,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-xs text-gray-500">
-              {getSubscriptionTierAudience(subscriptionTier.type)}
+              {audience}
             </span>
             {draggable && (
               <span

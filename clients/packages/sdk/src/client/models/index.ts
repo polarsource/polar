@@ -2347,6 +2347,37 @@ export interface Funding {
 /**
  * 
  * @export
+ * @interface GitHubInvitesBenefitOrganization
+ */
+export interface GitHubInvitesBenefitOrganization {
+    /**
+     * 
+     * @type {string}
+     * @memberof GitHubInvitesBenefitOrganization
+     */
+    name: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof GitHubInvitesBenefitOrganization
+     */
+    is_personal: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof GitHubInvitesBenefitOrganization
+     */
+    plan_name: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof GitHubInvitesBenefitOrganization
+     */
+    is_free: boolean;
+}
+/**
+ * 
+ * @export
  * @interface GitHubInvitesBenefitRepositories
  */
 export interface GitHubInvitesBenefitRepositories {
@@ -2356,6 +2387,12 @@ export interface GitHubInvitesBenefitRepositories {
      * @memberof GitHubInvitesBenefitRepositories
      */
     repositories: Array<GitHubInvitesBenefitRepository>;
+    /**
+     * 
+     * @type {Array<GitHubInvitesBenefitOrganization>}
+     * @memberof GitHubInvitesBenefitRepositories
+     */
+    organizations: Array<GitHubInvitesBenefitOrganization>;
 }
 /**
  * 

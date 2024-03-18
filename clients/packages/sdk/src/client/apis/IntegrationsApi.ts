@@ -81,6 +81,10 @@ export interface IntegrationsApiIntegrationsGithubCallbackRequest {
     error?: string;
 }
 
+export interface IntegrationsApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest {
+    returnTo?: string;
+}
+
 export interface IntegrationsApiIntegrationsGithubRepositoryBenefitUserCallbackRequest {
     code?: string;
     codeVerifier?: string;
@@ -650,8 +654,12 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Integrations.Github Repository Benefit.User Authorize
      */
-    async integrationsGithubRepositoryBenefitUserAuthorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async integrationsGithubRepositoryBenefitUserAuthorizeRaw(requestParameters: IntegrationsApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
+
+        if (requestParameters.returnTo !== undefined) {
+            queryParameters['return_to'] = requestParameters.returnTo;
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -680,8 +688,8 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Integrations.Github Repository Benefit.User Authorize
      */
-    async integrationsGithubRepositoryBenefitUserAuthorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.integrationsGithubRepositoryBenefitUserAuthorizeRaw(initOverrides);
+    async integrationsGithubRepositoryBenefitUserAuthorize(requestParameters: IntegrationsApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsGithubRepositoryBenefitUserAuthorizeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

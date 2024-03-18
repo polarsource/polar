@@ -1,6 +1,6 @@
 import * as Plot from '@observablehq/plot'
 import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
-import { getCentsInDollarString } from 'polarkit/money'
+import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useCallback, useEffect, useState } from 'react'
 
 const createAreaGradient = (id: string) => {
@@ -242,13 +242,13 @@ export const SubscribersChart: React.FC<SubscribersChartProps> = ({
   )
 }
 
-interface MRRChartProps {
+interface EarningsChartProps {
   data: ParsedSubscriptionsStatisticsPeriod[]
   onDataIndexHover?: (index: number | undefined) => void
   hoveredIndex?: number | undefined
 }
 
-export const MRRChart: React.FC<MRRChartProps> = ({
+export const EarningsChart: React.FC<EarningsChartProps> = ({
   data,
   onDataIndexHover,
   hoveredIndex,
@@ -256,10 +256,10 @@ export const MRRChart: React.FC<MRRChartProps> = ({
   return (
     <Chart
       data={data}
-      y="mrr"
+      y="earnings"
       axisYOptions={{
         label: null,
-        tickFormat: (t, i) => `$${getCentsInDollarString(t, undefined, true)}`,
+        tickFormat: (t, i) => formatCurrencyAndAmount(t, 'usd'),
       }}
       onDataIndexHover={onDataIndexHover}
       hoveredIndex={hoveredIndex}

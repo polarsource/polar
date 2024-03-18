@@ -1,4 +1,4 @@
-import { AllInclusive, AttachMoney, Face } from '@mui/icons-material'
+import { AttachMoney, Face } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -8,7 +8,7 @@ import {
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { CardFooter } from 'polarkit/components/ui/card'
-import { getCentsInDollarString } from 'polarkit/money'
+import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useMemo } from 'react'
 
 const percentageFormatter = new Intl.NumberFormat('en-US', { style: 'percent' })
@@ -98,13 +98,13 @@ export const SubscribersMetric: React.FC<SubscribersMetricProps> = ({
   )
 }
 
-interface MRRMetricProps {
+interface EarningsMetricProps {
   data: number
   dataDate?: Date
   previousData?: number
 }
 
-export const MRRMetric: React.FC<MRRMetricProps> = ({
+export const EarningsMetric: React.FC<EarningsMetricProps> = ({
   data,
   dataDate,
   previousData,
@@ -114,34 +114,9 @@ export const MRRMetric: React.FC<MRRMetricProps> = ({
       data={data}
       dataDate={dataDate}
       previousData={previousData}
-      title="Monthly Revenue"
-      IconComponent={AllInclusive}
-      dataFormatter={(data) =>
-        `$${getCentsInDollarString(data, undefined, true)}`
-      }
-    />
-  )
-}
-
-interface CumulativeRevenueMetricProps {
-  data: number
-  dataDate: Date
-  previousData?: number
-}
-
-export const CumulativeRevenueMetric: React.FC<
-  CumulativeRevenueMetricProps
-> = ({ data, dataDate, previousData }) => {
-  return (
-    <SubscriptionsMetric
-      data={data}
-      dataDate={dataDate}
-      previousData={previousData}
-      title="Total Revenue"
+      title="Earnings"
       IconComponent={AttachMoney}
-      dataFormatter={(data) =>
-        `$${getCentsInDollarString(data, undefined, true)}`
-      }
+      dataFormatter={(data) => formatCurrencyAndAmount(data, 'usd')}
     />
   )
 }

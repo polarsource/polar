@@ -34,6 +34,8 @@ export default async function Page({
   startOfMonth.setUTCHours(0, 0, 0, 0)
   startOfMonth.setUTCDate(1)
 
+  const today = new Date()
+
   const startOfMonthSixMonthsAgo = new Date()
   startOfMonthSixMonthsAgo.setUTCHours(0, 0, 0, 0)
   startOfMonthSixMonthsAgo.setUTCDate(1)
@@ -44,7 +46,7 @@ export default async function Page({
       <ClientPage
         organization={organization}
         startDate={startOfMonthSixMonthsAgo}
-        endDate={startOfMonth}
+        endDate={today}
         subscriptionTierType={searchParams.type}
         subscriptionTierId={searchParams.subscription_tier_id}
       />

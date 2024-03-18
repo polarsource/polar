@@ -37,10 +37,9 @@ export const SubscriptionTierEditor = ({
     handleDragCancel,
     updateItems,
   } = useDraggableEditorCallbacks(
-    repository.profile_settings.highlighted_subscription_tiers?.map(
-      (id) =>
-        subscriptionTiers.find((tier) => tier.id === id) as SubscriptionTier,
-    ) ?? [],
+    repository.profile_settings.highlighted_subscription_tiers
+      ?.map((id) => subscriptionTiers.find((tier) => tier.id === id))
+      .filter((tier): tier is SubscriptionTier => !!tier) ?? [],
     (tiers) =>
       updateProjectMutation
         .mutateAsync({

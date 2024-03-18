@@ -4,6 +4,20 @@ import {
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 
+export const hasRecurringInterval =
+  (
+    recurringInterval: SubscriptionTierPriceRecurringInterval,
+    hideFree: boolean = false,
+  ) =>
+  (subscriptionTier: SubscriptionTier) => {
+    if (subscriptionTier.type === SubscriptionTierType.FREE) {
+      return !hideFree
+    }
+    return subscriptionTier.prices?.some(
+      (price) => price.recurring_interval === recurringInterval,
+    )
+  }
+
 export const getSubscriptionTierPrice = (
   subscriptionTier: Partial<SubscriptionTier>,
   recurringInterval: SubscriptionTierPriceRecurringInterval,

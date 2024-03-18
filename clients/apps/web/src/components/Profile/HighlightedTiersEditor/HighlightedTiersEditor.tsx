@@ -16,12 +16,13 @@ import {
   useSubscriptionBenefits,
   useUpdateSubscriptionTierBenefits,
 } from 'polarkit/hooks'
+import { hasRecurringInterval } from 'polarkit/subscriptions'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useMemo, useState } from 'react'
 import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
+import SubscriptionTierRecurringIntervalSwitch from '../../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '../../Subscriptions/SubscriptionTierSubscribeButton'
 import { isPremiumArticlesBenefit } from '../../Subscriptions/utils'
-import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { HighlightedTiersModal } from './HighlightedTiersModal'
 
 export interface HighlightedTiersEditorProps {
@@ -111,32 +112,34 @@ export const HighlightedTiersEditor = ({
       )}
       <div className="flex w-full flex-col gap-4">
         {highlightedTiers.length > 0 ? (
-          highlightedTiers.map((tier) => (
-            <SubscriptionTierCard
-              className="min-h-0 w-full"
-              key={tier.id}
-              subscriptionTier={tier}
-              variant="small"
-            >
-              {shouldRenderSubscribeButton ? (
-                <>
-                  {tier.type === 'free' ? (
-                    <FreeTierSubscribe
-                      subscriptionTier={tier}
-                      organization={organization}
-                    />
-                  ) : (
-                    <SubscriptionTierSubscribeButton
-                      organization={organization}
-                      subscriptionTier={tier}
-                      recurringInterval={recurringInterval}
-                      subscribePath="/api/subscribe"
-                    />
-                  )}
-                </>
-              ) : null}
-            </SubscriptionTierCard>
-          ))
+          highlightedTiers
+            .filter(hasRecurringInterval(recurringInterval))
+            .map((tier) => (
+              <SubscriptionTierCard
+                className="min-h-0 w-full"
+                key={tier.id}
+                subscriptionTier={tier}
+                variant="small"
+              >
+                {shouldRenderSubscribeButton ? (
+                  <>
+                    {tier.type === 'free' ? (
+                      <FreeTierSubscribe
+                        subscriptionTier={tier}
+                        organization={organization}
+                      />
+                    ) : (
+                      <SubscriptionTierSubscribeButton
+                        organization={organization}
+                        subscriptionTier={tier}
+                        recurringInterval={recurringInterval}
+                        subscribePath="/api/subscribe"
+                      />
+                    )}
+                  </>
+                ) : null}
+              </SubscriptionTierCard>
+            ))
         ) : isAdmin && paidSubscriptionTiers.length === 0 ? (
           <HighlightedTiersEditorAuthenticatedEmptyState
             organization={organization}

@@ -10,6 +10,7 @@ import { LogoIcon } from 'polarkit/components/brand'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useListAdminOrganizations } from 'polarkit/hooks'
+import { hasRecurringInterval } from 'polarkit/subscriptions'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -70,27 +71,29 @@ export default function ClientPage({
           onChange={setRecurringInterval}
         />
         <div className="flex max-w-5xl flex-row flex-wrap gap-8">
-          {highlightedTiers.map((tier, index) => (
-            <div
-              className={twMerge(
-                'flex w-full cursor-pointer flex-col rounded-3xl transition-shadow md:w-[300px]',
-                selectedTierIndex === index
-                  ? 'shadow-2xl grayscale-0'
-                  : 'grayscale hover:grayscale-0',
-              )}
-              key={tier.id}
-              onClick={() => selectTierIndex(index)}
-            >
-              <SubscriptionTierCard
+          {highlightedTiers
+            .filter(hasRecurringInterval(recurringInterval))
+            .map((tier, index) => (
+              <div
                 className={twMerge(
-                  'h-full w-full self-stretch',
-                  selectedTierIndex === index && 'border-transparent',
+                  'flex w-full cursor-pointer flex-col rounded-3xl transition-shadow md:w-[300px]',
+                  selectedTierIndex === index
+                    ? 'shadow-2xl grayscale-0'
+                    : 'grayscale hover:grayscale-0',
                 )}
-                subscriptionTier={tier}
-                recurringInterval={recurringInterval}
-              />
-            </div>
-          ))}
+                key={tier.id}
+                onClick={() => selectTierIndex(index)}
+              >
+                <SubscriptionTierCard
+                  className={twMerge(
+                    'h-full w-full self-stretch',
+                    selectedTierIndex === index && 'border-transparent',
+                  )}
+                  subscriptionTier={tier}
+                  recurringInterval={recurringInterval}
+                />
+              </div>
+            ))}
         </div>
       </div>
       <div className="flex w-48 flex-col items-center gap-y-4">

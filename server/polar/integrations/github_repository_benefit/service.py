@@ -179,12 +179,12 @@ class GitHubRepositoryBenefitUserService:
         res: list[GitHubInvitesBenefitOrganization] = []
 
         for i in installations:
-            if b := await self._get_billing_plan(oauth, i):
+            if b := await self.get_billing_plan(oauth, i):
                 res.append(b)
 
         return res
 
-    async def _get_billing_plan(
+    async def get_billing_plan(
         self, oauth: OAuthAccount, installation: types.Installation
     ) -> GitHubInvitesBenefitOrganization | None:
         if installation.account is None:
@@ -271,19 +271,19 @@ class GitHubRepositoryBenefitUserService:
 
         return res
 
-    async def get_repository_installation_id(
+    async def get_repository_installation(
         self,
         *,
         owner: str,
         name: str,
-    ) -> int | None:
+    ) -> types.Installation | None:
         app_client = github.get_app_client(app=github.GitHubApp.repository_benefit)
 
         repo_install = await app_client.rest.apps.async_get_repo_installation(
             owner, name
         )
         if repo_install.status_code == 200:
-            return repo_install.parsed_data.id
+            return repo_install.parsed_data
         return None
 
     async def user_has_access_to_repository(
@@ -293,17 +293,15 @@ class GitHubRepositoryBenefitUserService:
         owner: str,
         name: str,
     ) -> bool:
-        installation_id = await self.get_repository_installation_id(
-            owner=owner, name=name
-        )
-        if not installation_id:
+        installation = await self.get_repository_installation(owner=owner, name=name)
+        if not installation:
             raise GitHubRepositoryBenefitNoAccess()
 
         all_user_installations = await self.list_user_installations(oauth)
 
         all_installation_ids = [i.id for i in all_user_installations]
 
-        if installation_id in all_installation_ids:
+        if installation.id in all_installation_ids:
             return True
 
         return False

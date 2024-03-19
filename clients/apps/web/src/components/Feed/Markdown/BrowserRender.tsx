@@ -87,6 +87,12 @@ export const opts = {
       return <></>
     },
     Ad: (args: any) => <BrowserAd {...args} />,
+    footer: (args: any) => (
+      <footer
+        {...args}
+        className="border-t-[1px] border-gray-300 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
+      />
+    ),
   },
 } as const
 

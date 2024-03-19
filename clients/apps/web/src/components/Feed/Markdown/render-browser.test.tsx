@@ -216,3 +216,26 @@ block
   // @ts-ignore
   expect(asFragment()).toMatchSnapshot()
 })
+
+test('footnote', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+Hello[^hello]
+
+[^hello]: i am a footnote
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})

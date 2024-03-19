@@ -248,6 +248,32 @@ exports[`code 1`] = `
 </DocumentFragment>
 `;
 
+exports[`footnote 1`] = `
+<DocumentFragment>
+  <div>
+    <p>
+      Hello
+      <a
+        href="#hello"
+      >
+        <sup>
+          hello
+        </sup>
+      </a>
+    </p>
+    <footer
+      class="border-t-[1px] border-gray-300 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
+    >
+      <div
+        id="hello"
+      >
+        hello: i am a footnote
+      </div>
+    </footer>
+  </div>
+</DocumentFragment>
+`;
+
 exports[`mermaid 1`] = `
 <DocumentFragment>
   <div>

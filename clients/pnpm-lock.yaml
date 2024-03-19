@@ -236,8 +236,8 @@ importers:
         specifier: ^0.14.1
         version: 0.14.1
       '@zegl/markdown-to-jsx':
-        specifier: 7.4.3-1
-        version: 7.4.3-1(react@18.2.0)
+        specifier: 7.4.3-2
+        version: 7.4.3-2(react@18.2.0)
       class-variance-authority:
         specifier: ^0.6.0
         version: 0.6.1
@@ -8632,8 +8632,8 @@ packages:
       tslib: 1.14.1
     dev: true
 
-  /@zegl/markdown-to-jsx@7.4.3-1(react@18.2.0):
-    resolution: {integrity: sha512-Si92W3tVerda6xD2ztFvPlnIDLNQpMnJZIyFYopLaTAP/jrhD+4QILOykC+wufmi9ov4+anBATsp0hyJZpg2CQ==}
+  /@zegl/markdown-to-jsx@7.4.3-2(react@18.2.0):
+    resolution: {integrity: sha512-Ovzo65tJnecy5cLaspTssAzLkro/lNYsvL/JftC07FRDvEXJ/sGXMvID4cMsVDZqnyWmUZWusFmsKWrl4q7K0A==}
     engines: {node: '>= 10'}
     peerDependencies:
       react: '>= 0.14.0'

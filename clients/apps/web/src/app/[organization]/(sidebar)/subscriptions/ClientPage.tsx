@@ -41,6 +41,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
             className="w-full self-stretch md:max-w-[238px]"
             key={tier.id}
             subscriptionTier={tier}
+            variant="small"
           >
             {shouldRenderSubscribeButton &&
               (tier.type === 'free' ? (

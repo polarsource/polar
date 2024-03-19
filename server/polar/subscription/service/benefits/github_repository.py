@@ -210,6 +210,10 @@ class SubscriptionBenefitGitHubRepositoryService(
             user_id=str(user.id),
         )
 
+        if benefit.properties["repository_id"]:
+            bound_logger.info("skipping revoke for old version of this benefit type")
+            return {}
+
         client = await self._get_github_app_client(bound_logger, benefit)
 
         repository_owner = benefit.properties["repository_owner"]

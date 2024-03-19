@@ -1,5 +1,6 @@
 'use client'
 
+import NoPayoutAccountTooltip from '@/components/Subscriptions/NoPayoutAccountTooltip'
 import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import {
@@ -215,6 +216,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                   ? previousPeriod.earnings
                   : undefined
               }
+              hasPayoutAccount={organization.account_id !== null}
             />
           </>
         )}
@@ -241,7 +243,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
           <>
             <Card>
               <CardHeader>
-                <div className="text-lg font-medium">Subscribers</div>
+                <div className="font-medium">Subscribers</div>
               </CardHeader>
               <CardContent>
                 <SubscribersChart
@@ -253,7 +255,12 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
             </Card>
             <Card>
               <CardHeader>
-                <div className="text-lg font-medium">Earnings</div>
+                <div className="inline-flex gap-2">
+                  <div className="font-medium">Earnings</div>
+                  {organization.account_id === null && (
+                    <NoPayoutAccountTooltip />
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <EarningsChart

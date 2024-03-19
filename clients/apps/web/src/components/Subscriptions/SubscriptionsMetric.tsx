@@ -10,6 +10,7 @@ import {
 import { CardFooter } from 'polarkit/components/ui/card'
 import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useMemo } from 'react'
+import NoPayoutAccountTooltip from './NoPayoutAccountTooltip'
 
 const percentageFormatter = new Intl.NumberFormat('en-US', { style: 'percent' })
 const numberFormatter = new Intl.NumberFormat('en-US', { style: 'decimal' })
@@ -25,7 +26,7 @@ const getEvolutionPercentage = (current: number, previous: number): string => {
 }
 
 interface SubscriptionsMetricProps {
-  title: string
+  title: React.ReactNode
   IconComponent: OverridableComponent<SvgIconTypeMap<{}, 'svg'>>
   data: number
   dataDate?: Date
@@ -102,19 +103,26 @@ interface EarningsMetricProps {
   data: number
   dataDate?: Date
   previousData?: number
+  hasPayoutAccount: boolean
 }
 
 export const EarningsMetric: React.FC<EarningsMetricProps> = ({
   data,
   dataDate,
   previousData,
+  hasPayoutAccount,
 }) => {
   return (
     <SubscriptionsMetric
       data={data}
       dataDate={dataDate}
       previousData={previousData}
-      title="Earnings"
+      title={
+        <div className="inline-flex items-center gap-2">
+          <div>Earnings</div>
+          {!hasPayoutAccount && <NoPayoutAccountTooltip />}
+        </div>
+      }
       IconComponent={AttachMoney}
       dataFormatter={(data) => formatCurrencyAndAmount(data, 'usd')}
     />

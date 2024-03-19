@@ -25,12 +25,12 @@ import {
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useUpdateOrganization } from 'polarkit/hooks'
+import { useOrganization, useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 
 const ClientPage = ({
-  organization,
+  organization: serverOrganization,
   posts,
   subscriptionTiers,
   featuredOrganizations,
@@ -50,7 +50,10 @@ const ClientPage = ({
   issues: IssueFunding[]
   links: LinkItem[]
 }) => {
-  useTrafficRecordPageView({ organization })
+  useTrafficRecordPageView({ organization: serverOrganization })
+
+  const clientOrg = useOrganization(serverOrganization.id).data
+  const organization = clientOrg ?? serverOrganization
 
   const isAdmin = useMemo(
     () => adminOrganizations?.some((org) => org.id === organization.id),

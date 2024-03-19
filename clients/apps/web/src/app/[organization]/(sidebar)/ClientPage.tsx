@@ -148,34 +148,32 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {isAdmin ? (
-            <div className="flex w-full flex-col gap-y-6">
-              <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
-                <h2 className="text-lg">Pinned & Latest Posts</h2>
-                <Link
-                  className="text-sm text-blue-500 dark:text-blue-400"
-                  href={organizationPageLink(organization, 'posts')}
-                >
-                  <span>View all</span>
-                </Link>
-              </div>
-              {(posts.length ?? 0) > 0 ? (
-                <div className="flex flex-col gap-y-8">
-                  <div className="flex flex-col gap-6 md:flex-row">
-                    {posts.map((post) => (
-                      <PostComponent
-                        article={post}
-                        key={post.id}
-                        highlightPinned
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <PublicPagePostWizard organization={organization} />
-              )}
+          <div className="flex w-full flex-col gap-y-6">
+            <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
+              <h2 className="text-lg">Pinned & Latest Posts</h2>
+              <Link
+                className="text-sm text-blue-500 dark:text-blue-400"
+                href={organizationPageLink(organization, 'posts')}
+              >
+                <span>View all</span>
+              </Link>
             </div>
-          ) : null}
+            {(posts.length ?? 0) > 0 ? (
+              <div className="flex flex-col gap-y-8">
+                <div className="flex flex-col gap-6">
+                  {posts.map((post) => (
+                    <PostComponent
+                      article={post}
+                      key={post.id}
+                      highlightPinned
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : isAdmin ? (
+              <PublicPagePostWizard organization={organization} />
+            ) : null}
+          </div>
 
           {highlightedTiers.length > 0 && (
             <div className="flex w-full flex-col lg:hidden">

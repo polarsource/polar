@@ -12,7 +12,7 @@ import {
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { ViewDayOutlined } from '@mui/icons-material'
+import { GitHub, ViewDayOutlined } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
@@ -23,6 +23,8 @@ import {
   Repository,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { CONFIG } from 'polarkit'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
@@ -86,6 +88,8 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
+          {isAdmin && !organization.has_app_installed && <GitHubAppUpsell />}
+
           <div className="flex w-full flex-col gap-y-6">
             <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
               <h2 className="text-lg">Pinned & Latest Posts</h2>
@@ -192,3 +196,23 @@ const ClientPage = ({
 }
 
 export default ClientPage
+
+const GitHubAppUpsell = () => {
+  return (
+    <div className="flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-500 p-8 text-white">
+      <div className="flex w-full flex-col gap-y-8">
+        <h3 className="text-4xl leading-normal [text-wrap:balance]">
+          Highlight your projects & enable crowdfunding for issues
+        </h3>
+        <Link href={CONFIG.GITHUB_INSTALLATION_URL}>
+          <Button size="lg">
+            <div className="flex flex-row items-center gap-2">
+              <GitHub fontSize="small" />
+              <span>Install the Polar GitHub App</span>
+            </div>
+          </Button>
+        </Link>
+      </div>
+    </div>
+  )
+}

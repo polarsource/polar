@@ -1,5 +1,6 @@
 import { PolarQueryClientProvider } from '@/app/providers'
 import SubscriptionSuccess from '@/components/Subscriptions/SubscriptionSuccess'
+import { UserContextProvider } from '@/providers/auth'
 import type { Meta, StoryObj } from '@storybook/react'
 
 const meta: Meta<typeof SubscriptionSuccess> = {
@@ -13,9 +14,11 @@ const meta: Meta<typeof SubscriptionSuccess> = {
   },
   render: (args) => {
     return (
-      <PolarQueryClientProvider>
-        <SubscriptionSuccess {...args} />
-      </PolarQueryClientProvider>
+      <UserContextProvider user={{}}>
+        <PolarQueryClientProvider>
+          <SubscriptionSuccess {...args} />
+        </PolarQueryClientProvider>
+      </UserContextProvider>
     )
   },
 }

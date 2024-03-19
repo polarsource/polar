@@ -7,12 +7,12 @@ from httpx_oauth.oauth2 import OAuth2Token
 import polar.integrations.github.client as github
 from polar.config import settings
 from polar.exceptions import (
-    BadRequest,
     IntegrityError,
     PolarError,
     ResourceAlreadyExists,
 )
 from polar.integrations.github import types
+from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.github_repository_benefit.schemas import (
     GitHubInvitesBenefitOrganization,
     GitHubInvitesBenefitRepository,
@@ -61,12 +61,15 @@ class GitHubRepositoryBenefitUserService:
         user_data = await client.rest.users.async_get_authenticated()
         github.ensure_expected_response(user_data)
 
-        if not user_data.parsed_data.email:
-            raise BadRequest("connected github user doesn't have an email address")
-
         account_id = user_data.parsed_data.id
-        account_email = user_data.parsed_data.email
         account_username = user_data.parsed_data.login
+
+        (
+            account_email,
+            email_is_verified,
+        ) = await github_user_service.fetch_authenticated_user_primary_email(
+            client=client
+        )
 
         oauth_account = OAuthAccount(
             platform=OAuthPlatform.github_repository_benefit,
@@ -99,11 +102,16 @@ class GitHubRepositoryBenefitUserService:
         user_data = await client.rest.users.async_get_authenticated()
         github.ensure_expected_response(user_data)
 
-        if not user_data.parsed_data.email:
-            raise BadRequest("connected github user doesn't have an email address")
-
-        oauth_account.account_email = user_data.parsed_data.email
         oauth_account.account_username = user_data.parsed_data.login
+
+        (
+            account_email,
+            email_is_verified,
+        ) = await github_user_service.fetch_authenticated_user_primary_email(
+            client=client
+        )
+
+        oauth_account.account_email = account_email
 
         session.add(oauth_account)
 

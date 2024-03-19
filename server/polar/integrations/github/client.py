@@ -208,7 +208,7 @@ def get_app_client(app: GitHubApp = GitHubApp.polar) -> GitHub[AppAuthStrategy]:
                 private_key=settings.GITHUB_APP_PRIVATE_KEY,
                 client_id=settings.GITHUB_CLIENT_ID,
                 client_secret=settings.GITHUB_CLIENT_SECRET,
-                cache=RedisCache(),
+                cache=RedisCache(app),
             )
         )
     elif app == GitHubApp.repository_benefit:
@@ -218,7 +218,7 @@ def get_app_client(app: GitHubApp = GitHubApp.polar) -> GitHub[AppAuthStrategy]:
                 private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
                 client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
                 client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
-                cache=RedisCache(),
+                cache=RedisCache(app),
             )
         )
 
@@ -245,7 +245,7 @@ def get_app_installation_client(
                 client_secret=settings.GITHUB_CLIENT_SECRET,
                 installation_id=installation_id,
                 permissions=permissions,
-                cache=RedisCache(),
+                cache=RedisCache(app),
             )
         )
     elif app == GitHubApp.repository_benefit:
@@ -257,7 +257,7 @@ def get_app_installation_client(
                 client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
                 installation_id=installation_id,
                 permissions=permissions,
-                cache=RedisCache(),
+                cache=RedisCache(app),
             )
         )
 

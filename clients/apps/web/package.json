@@ -33,7 +33,6 @@
     "@react-email/render": "^0.0.12",
     "@react-email/tailwind": "0.0.14",
     "@sentry/nextjs": "^7.88.0",
-    "@storybook/test": "^8.0.1",
     "@stripe/react-stripe-js": "^2.3.1",
     "@stripe/stripe-js": "^2.1.8",
     "@tailwindcss/forms": "^0.5.3",
@@ -74,6 +73,7 @@
     "tailwindcss-radix": "^2.8.0"
   },
   "devDependencies": {
+    "@chromatic-com/storybook": "^1.2.23",
     "@jest/globals": "^29.7.0",
     "@next/bundle-analyzer": "^14.0.4",
     "@storybook/addon-essentials": "^8.0.1",
@@ -83,6 +83,7 @@
     "@storybook/cli": "^8.0.1",
     "@storybook/nextjs": "^8.0.1",
     "@storybook/react": "^8.0.1",
+    "@storybook/test": "^8.0.1",
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^14.2.0",
     "@types/jest": "^29.5.11",

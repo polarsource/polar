@@ -25,7 +25,7 @@ import {
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useOrganization, useUpdateOrganization } from 'polarkit/hooks'
+import { useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 
@@ -88,7 +88,7 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {isAdmin && <GitHubAppUpsell organization={organization} />}
+          {isAdmin && !organization.has_app_installed && <GitHubAppUpsell />}
 
           <div className="flex w-full flex-col gap-y-6">
             <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
@@ -197,16 +197,7 @@ const ClientPage = ({
 
 export default ClientPage
 
-const GitHubAppUpsell = ({
-  organization: serverOrganization,
-}: {
-  organization: Organization
-}) => {
-  const clientOrg = useOrganization(serverOrganization.id).data
-  const organization = clientOrg ?? serverOrganization
-
-  if (organization.has_app_installed) return null
-
+const GitHubAppUpsell = () => {
   return (
     <div className="flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-500 p-8 text-white">
       <div className="flex w-full flex-col gap-y-8">

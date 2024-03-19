@@ -181,7 +181,13 @@ export default async function Page({
           platform: Platforms.GITHUB,
           organizationName: params.organization,
         },
-        cacheConfig,
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`repositories:${params.organization}`],
+          },
+        },
       ),
       api.subscriptions.searchSubscriptionsSummary(
         {
@@ -216,7 +222,13 @@ export default async function Page({
             'newest',
           ],
         },
-        cacheConfig,
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`funding:${params.organization}`],
+          },
+        },
       ),
     ])
 

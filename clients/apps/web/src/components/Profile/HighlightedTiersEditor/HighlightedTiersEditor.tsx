@@ -1,4 +1,6 @@
 import revalidate from '@/app/actions'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { ArrowForward } from '@mui/icons-material'
 import {
@@ -15,21 +17,24 @@ import {
 } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useMemo, useState } from 'react'
-import SubscriptionTierSubscribeButton from '../Subscriptions/SubscriptionTierSubscribeButton'
-import { isPremiumArticlesBenefit } from '../Subscriptions/utils'
-import { FreeTierSubscribe } from './FreeTierSubscribe'
+import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
+import SubscriptionTierSubscribeButton from '../../Subscriptions/SubscriptionTierSubscribeButton'
+import { isPremiumArticlesBenefit } from '../../Subscriptions/utils'
+import { HighlightedTiersModal } from './HighlightedTiersModal'
 
-export interface OrganizationHighlightedTiersProps {
+export interface HighlightedTiersEditorProps {
   organization: Organization
   adminOrganizations: Organization[]
   subscriptionTiers: SubscriptionTier[]
 }
 
-export const OrganizationHighlightedTiers = ({
+export const HighlightedTiersEditor = ({
   organization,
   adminOrganizations,
   subscriptionTiers,
-}: OrganizationHighlightedTiersProps) => {
+}: HighlightedTiersEditorProps) => {
+  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+
   const isAdmin = useMemo(
     () => adminOrganizations?.some((org) => org.id === organization.id),
     [organization, adminOrganizations],
@@ -64,12 +69,12 @@ export const OrganizationHighlightedTiers = ({
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <h2 className="text-lg">Subscriptions</h2>
-            <Link
-              className="flex flex-row items-center gap-2 text-sm text-blue-500 dark:text-blue-400"
-              href={`/maintainer/${organization.name}/subscriptions/tiers`}
+            <div
+              className="flex cursor-pointer flex-row items-center gap-x-2 text-sm text-blue-500 dark:text-blue-400"
+              onClick={showModal}
             >
               <span>Configure</span>
-            </Link>
+            </div>
           </div>
           <p className="dark:text-polar-500 text-sm text-gray-500">
             Highlight subscription tiers to feature them on your profile
@@ -121,31 +126,41 @@ export const OrganizationHighlightedTiers = ({
             </SubscriptionTierCard>
           ))
         ) : isAdmin && paidSubscriptionTiers.length === 0 ? (
-          <OrganizationHighlightedTiersAuthenticatedEmptyState
+          <HighlightedTiersEditorAuthenticatedEmptyState
             organization={organization}
           />
         ) : isAdmin && paidSubscriptionTiers.length > 0 ? (
-          <Link href={`/maintainer/${organization.name}/subscriptions/tiers`}>
-            <Button size="sm">
-              <div className="flex flex-row items-center gap-2">
-                <span>Highlight a tier</span>
-                <ArrowForward fontSize="inherit" />
-              </div>
-            </Button>
-          </Link>
+          <Button className="self-start" size="sm" onClick={showModal}>
+            <div className="flex flex-row items-center gap-2">
+              <span>Highlight a tier</span>
+              <ArrowForward fontSize="inherit" />
+            </div>
+          </Button>
         ) : null}
       </div>
+      <Modal
+        className="lg:max-w-md"
+        isShown={isModalShown}
+        hide={hideModal}
+        modalContent={
+          <HighlightedTiersModal
+            organization={organization}
+            hideModal={hideModal}
+            subscriptionTiers={paidSubscriptionTiers}
+          />
+        }
+      />
     </div>
   )
 }
 
-interface OrganizationHighlightedTiersAuthenticatedEmptyStateProps {
+interface HighlightedTiersEditorAuthenticatedEmptyStateProps {
   organization: Organization
 }
 
-const OrganizationHighlightedTiersAuthenticatedEmptyState = ({
+const HighlightedTiersEditorAuthenticatedEmptyState = ({
   organization,
-}: OrganizationHighlightedTiersAuthenticatedEmptyStateProps) => {
+}: HighlightedTiersEditorAuthenticatedEmptyStateProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const { subscriptionTier, create } = useCreateBaselineTier(organization)
 

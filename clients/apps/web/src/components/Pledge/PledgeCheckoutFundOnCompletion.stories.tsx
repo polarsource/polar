@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 
+import { UserContextProvider } from '@/providers/auth'
 import { issue } from 'polarkit/testdata'
 
 const meta: Meta<typeof PledgeCheckoutFundOnCompletion> = {
@@ -15,9 +16,11 @@ const meta: Meta<typeof PledgeCheckoutFundOnCompletion> = {
     },
   },
   render: (args) => (
-    <div className="max-w-[400px]">
-      <PledgeCheckoutFundOnCompletion {...args} />
-    </div>
+    <UserContextProvider user={{}}>
+      <div className="max-w-[400px]">
+        <PledgeCheckoutFundOnCompletion {...args} />
+      </div>
+    </UserContextProvider>
   ),
 }
 

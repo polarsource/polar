@@ -1,4 +1,5 @@
 import { PolarQueryClientProvider } from '@/app/providers'
+import { UserContextProvider } from '@/providers/auth'
 import type { Meta, StoryObj } from '@storybook/react'
 import { article } from 'polarkit/testdata'
 import LongformPost from './LongformPost'
@@ -32,9 +33,11 @@ export const Default: Story = {
     paidArticlesBenefitName: 'ProTier200',
   },
   render: (args) => (
-    <PolarQueryClientProvider>
-      <LongformPost {...args} />
-    </PolarQueryClientProvider>
+    <UserContextProvider user={{}}>
+      <PolarQueryClientProvider>
+        <LongformPost {...args} />
+      </PolarQueryClientProvider>
+    </UserContextProvider>
   ),
 }
 

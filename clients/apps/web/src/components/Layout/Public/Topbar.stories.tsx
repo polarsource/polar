@@ -1,4 +1,5 @@
 import { PolarQueryClientProvider } from '@/app/providers'
+import { UserContextProvider } from '@/providers/auth'
 import { Meta, StoryObj } from '@storybook/react'
 import Topbar from './Topbar'
 
@@ -22,8 +23,10 @@ export const Default: Story = {
     chromatic: { viewports: [390, 1200] },
   },
   render: (args) => (
-    <PolarQueryClientProvider>
-      <Topbar {...args} />
-    </PolarQueryClientProvider>
+    <UserContextProvider user={{}}>
+      <PolarQueryClientProvider>
+        <Topbar {...args} />
+      </PolarQueryClientProvider>
+    </UserContextProvider>
   ),
 }

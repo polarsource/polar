@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import LoadingScreen, {
   LoadingScreenError,
@@ -59,6 +60,14 @@ export default function Page() {
     setError(null)
 
     request
+      .then(async (organization) => {
+        await Promise.all([
+          revalidate(`organization:${organization.name}`),
+          revalidate(`funding:${organization.name}`),
+          revalidate(`repositories:${organization.name}`),
+        ])
+        return organization
+      })
       .then((organization) => {
         setInstalled(organization)
         // redirect

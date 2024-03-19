@@ -168,7 +168,13 @@ export default async function Page({
           platform: Platforms.GITHUB,
           organizationName: params.organization,
         },
-        cacheConfig,
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`subscriptionTiers:${params.organization}`],
+          },
+        },
       ),
       api.repositories.search(
         {

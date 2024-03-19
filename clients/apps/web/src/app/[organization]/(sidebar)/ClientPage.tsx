@@ -3,7 +3,7 @@
 import revalidate from '@/app/actions'
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { PublicPagePostWizard } from '@/components/Onboarding/Creator/PostWizard'
-import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
+import { OrganizationHighlightedTiers } from '@/components/Organization/OrganizationHighlightedTiers'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
 import {
@@ -11,8 +11,6 @@ import {
   LinksEditor,
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
-import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ViewDayOutlined } from '@mui/icons-material'
 import {
@@ -57,16 +55,6 @@ const ClientPage = ({
     [organization, adminOrganizations],
   )
 
-  const shouldRenderSubscribeButton = !isAdmin
-
-  const highlightedTiers = useMemo(
-    () =>
-      subscriptionTiers.items?.filter(
-        ({ type, is_highlighted }) => is_highlighted,
-      ) ?? [],
-    [subscriptionTiers.items],
-  )
-
   const updateOrganizationMutation = useUpdateOrganization()
 
   const updateOrganization = (
@@ -92,57 +80,6 @@ const ClientPage = ({
     updateOrganization({
       links: links.map((l) => l.url),
     })
-  }
-
-  const HighlightedTiersModule = () => {
-    return (
-      highlightedTiers.length > 0 && (
-        <div className="flex w-full flex-col gap-y-8">
-          <div className="flex flex-col gap-y-4">
-            <div className="flex flex-row items-center justify-between">
-              <h2>Subscriptions</h2>
-              <Link
-                className="text-sm text-blue-500 dark:text-blue-400"
-                href={organizationPageLink(organization, 'subscriptions')}
-              >
-                <span>View all</span>
-              </Link>
-            </div>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              Support {organization.name} with a subscription & receive unique
-              benefits in return
-            </p>
-          </div>
-          <div className="flex w-full flex-col gap-4">
-            {highlightedTiers.map((tier) => (
-              <SubscriptionTierCard
-                className="min-h-0 w-full"
-                key={tier.id}
-                subscriptionTier={tier}
-                variant="small"
-              >
-                {shouldRenderSubscribeButton ? (
-                  <>
-                    {tier.type === 'free' ? (
-                      <FreeTierSubscribe
-                        subscriptionTier={tier}
-                        organization={organization}
-                      />
-                    ) : (
-                      <SubscriptionTierSubscribeButton
-                        organization={organization}
-                        subscriptionTier={tier}
-                        subscribePath="/api/subscribe"
-                      />
-                    )}
-                  </>
-                ) : null}
-              </SubscriptionTierCard>
-            ))}
-          </div>
-        </div>
-      )
-    )
   }
 
   return (
@@ -189,11 +126,13 @@ const ClientPage = ({
             )}
           </div>
 
-          {highlightedTiers.length > 0 && (
-            <div className="flex w-full flex-col lg:hidden">
-              <HighlightedTiersModule />
-            </div>
-          )}
+          <div className="flex w-full flex-col lg:hidden">
+            <OrganizationHighlightedTiers
+              organization={organization}
+              adminOrganizations={adminOrganizations}
+              subscriptionTiers={subscriptionTiers.items ?? []}
+            />
+          </div>
 
           {repositories.length > 0 && (
             <ProjectsEditor
@@ -233,7 +172,11 @@ const ClientPage = ({
         </div>
 
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
-          <HighlightedTiersModule />
+          <OrganizationHighlightedTiers
+            organization={organization}
+            adminOrganizations={adminOrganizations}
+            subscriptionTiers={subscriptionTiers.items ?? []}
+          />
 
           <LinksEditor
             organization={organization}

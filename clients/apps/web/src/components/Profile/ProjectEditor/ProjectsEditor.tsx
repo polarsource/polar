@@ -1,11 +1,7 @@
 import revalidate from '@/app/actions'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import {
-  ArrowForwardOutlined,
-  HiveOutlined,
-  TuneOutlined,
-} from '@mui/icons-material'
+import { ArrowForwardOutlined, HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useUpdateOrganization } from 'polarkit/hooks'
@@ -121,7 +117,6 @@ export const ProjectsEditor = ({
                 className="flex cursor-pointer flex-row items-center gap-x-2 text-sm text-blue-500 dark:text-blue-400"
                 onClick={show}
               >
-                <TuneOutlined fontSize="small" />
                 <span>Configure</span>
               </div>
             )}

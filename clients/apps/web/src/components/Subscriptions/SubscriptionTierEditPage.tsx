@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
@@ -121,6 +122,9 @@ const SubscriptionTierEdit = ({
             benefits: enabledBenefitIds,
           },
         })
+
+        revalidate(`subscriptionTiers:${organization.name}`)
+
         router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
         router.refresh()
       } catch (e) {
@@ -164,6 +168,8 @@ const SubscriptionTierEdit = ({
 
   const handleArchiveSubscriptionTier = useCallback(async () => {
     await archiveSubscriptionTier.mutateAsync({ id: subscriptionTier.id })
+
+    revalidate(`subscriptionTiers:${organization.name}`)
 
     router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
     router.refresh()

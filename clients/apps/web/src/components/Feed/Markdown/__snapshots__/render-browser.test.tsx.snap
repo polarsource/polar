@@ -262,7 +262,7 @@ exports[`footnote 1`] = `
       </a>
     </p>
     <footer
-      class="border-t-[1px] border-gray-300 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
+      class="space-y-4 whitespace-pre-line border-t-[1px] border-gray-300 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
     >
       <div
         id="hello"
@@ -285,6 +285,88 @@ exports[`mermaid 1`] = `
     >
       Initializing Mermaid Renderer...
     </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`multiline footnote 1`] = `
+<DocumentFragment>
+  <div>
+    <div>
+      <p>
+        Hello
+        <a
+          href="#hello"
+        >
+          <sup>
+            hello
+          </sup>
+        </a>
+      </p>
+      
+
+      <p>
+        this is outside of the footnote
+      </p>
+    </div>
+    <footer
+      class="space-y-4 whitespace-pre-line border-t-[1px] border-gray-300 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
+    >
+      <div
+        id="hello"
+      >
+        hello: i am a footnote
+here is more
+and more
+      </div>
+    </footer>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`multiline indented footnote 1`] = `
+<DocumentFragment>
+  <div>
+    <div>
+      <p>
+        Hello
+        <a
+          href="#hello"
+        >
+          <sup>
+            hello
+          </sup>
+        </a>
+      </p>
+      
+
+      <p>
+        this is outside of the footnote
+      </p>
+    </div>
+    <footer
+      class="space-y-4 whitespace-pre-line border-t-[1px] border-gray-300 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
+    >
+      <div
+        id="hello"
+      >
+        hello: i am a footnote
+    here is more
+    
+        <strong>
+          and more
+        </strong>
+        
+
+    
+        <code>
+          and more
+        </code>
+        
+
+    and more
+      </div>
+    </footer>
   </div>
 </DocumentFragment>
 `;

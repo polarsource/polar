@@ -239,3 +239,61 @@ Hello[^hello]
   // @ts-ignore
   expect(asFragment()).toMatchSnapshot()
 })
+
+test('multiline footnote', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+Hello[^hello]
+
+[^hello]: i am a footnote
+here is more
+and more
+
+this is outside of the footnote
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})
+
+test('multiline indented footnote', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+Hello[^hello]
+
+[^hello]: i am a footnote
+    here is more
+    **and more**
+
+    \`and more\`
+
+    and more
+
+this is outside of the footnote
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})

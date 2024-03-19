@@ -1,6 +1,6 @@
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import { FaceOutlined, TuneOutlined } from '@mui/icons-material'
+import { FaceOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import { Modal } from '../../Modal'
 import { useModal } from '../../Modal/useModal'
@@ -87,7 +87,6 @@ export const CreatorsEditor = ({
                 className="flex cursor-pointer flex-row items-center gap-x-2 text-sm text-blue-500 dark:text-blue-400"
                 onClick={show}
               >
-                <TuneOutlined fontSize="small" />
                 <span>Configure</span>
               </div>
             )}

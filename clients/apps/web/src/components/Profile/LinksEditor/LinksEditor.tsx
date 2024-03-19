@@ -1,7 +1,7 @@
 import { Modal } from '@/components/Modal'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import { LanguageOutlined, TuneOutlined } from '@mui/icons-material'
+import { LanguageOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import { twMerge } from 'tailwind-merge'
@@ -103,7 +103,6 @@ export const LinksEditor = ({
                 className="flex cursor-pointer flex-row items-center gap-x-2 text-sm text-blue-500 dark:text-blue-400"
                 onClick={show}
               >
-                <TuneOutlined fontSize="small" />
                 <span>Configure</span>
               </div>
             )}

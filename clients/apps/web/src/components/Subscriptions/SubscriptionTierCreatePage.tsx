@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
@@ -113,7 +114,11 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
             benefits: enabledBenefitIds,
           },
         })
+
         clearDraft('SubscriptionTierCreate')
+
+        revalidate(`subscriptionTiers:${organization.name}`)
+
         router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
         router.refresh()
       } catch (e) {

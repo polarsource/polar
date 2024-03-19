@@ -18,7 +18,7 @@ import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType, resolveBenefitIcon } from './utils'
 
-interface SubscriptionTierCardProps {
+export interface SubscriptionTierCardProps {
   subscriptionTier: Partial<SubscriptionTier>
   children?: React.ReactNode
   className?: string

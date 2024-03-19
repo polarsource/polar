@@ -38,7 +38,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
       <div className="flex flex-row flex-wrap gap-8">
         {subscriptionTiers.map((tier) => (
           <SubscriptionTierCard
-            className="w-full self-stretch md:max-w-[290px]"
+            className="w-full self-stretch md:max-w-[254px]"
             key={tier.id}
             subscriptionTier={tier}
           >

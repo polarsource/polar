@@ -186,13 +186,18 @@ const HighlightedTiersEditorAuthenticatedEmptyState = ({
           variant="small"
         >
           <div className="flex w-full flex-col gap-2">
-            <Button onClick={handleCreate} loading={isLoading} fullWidth>
+            <Button
+              onClick={handleCreate}
+              loading={isLoading}
+              fullWidth
+              size="sm"
+            >
               Setup Suggested Tier
             </Button>
             <Link
               href={`/maintainer/${organization.name}/subscriptions/tiers/new`}
             >
-              <Button variant="ghost" fullWidth>
+              <Button variant="ghost" fullWidth size="sm">
                 Create Custom
               </Button>
             </Link>

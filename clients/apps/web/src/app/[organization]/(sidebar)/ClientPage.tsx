@@ -113,7 +113,13 @@ const ClientPage = ({
                 </div>
               </div>
             ) : isAdmin ? (
-              <PublicPagePostWizard organization={organization} />
+              <div className="flex flex-col gap-y-6">
+                <p className="dark:text-polar-500 text-gray-500">
+                  Build out an audience by writing posts and share it with your
+                  subscribers
+                </p>
+                <PublicPagePostWizard organization={organization} />
+              </div>
             ) : (
               <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-16 text-gray-600">
                 <ViewDayOutlined fontSize="large" />

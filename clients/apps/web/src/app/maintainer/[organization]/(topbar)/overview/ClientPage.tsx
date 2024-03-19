@@ -70,7 +70,10 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
     <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
       <div className="grid grid-cols-1 gap-x-8 gap-y-4 lg:grid-cols-3">
         <SubscribersMetric data={statisticsPeriods?.subscribers ?? 0} />
-        <EarningsMetric data={statisticsPeriods?.earnings ?? 0} />
+        <EarningsMetric
+          data={statisticsPeriods?.earnings ?? 0}
+          hasPayoutAccount={organization.account_id !== null}
+        />
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div className="font-medium">Goal</div>

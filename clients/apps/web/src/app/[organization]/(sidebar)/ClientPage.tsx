@@ -3,9 +3,9 @@
 import revalidate from '@/app/actions'
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { PublicPagePostWizard } from '@/components/Onboarding/Creator/PostWizard'
-import { OrganizationHighlightedTiers } from '@/components/Organization/OrganizationHighlightedTiers'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
+import { HighlightedTiersEditor } from '@/components/Profile/HighlightedTiersEditor/HighlightedTiersEditor'
 import {
   Link as LinkItem,
   LinksEditor,
@@ -127,7 +127,7 @@ const ClientPage = ({
           </div>
 
           <div className="flex w-full flex-col lg:hidden">
-            <OrganizationHighlightedTiers
+            <HighlightedTiersEditor
               organization={organization}
               adminOrganizations={adminOrganizations}
               subscriptionTiers={subscriptionTiers.items ?? []}
@@ -172,7 +172,7 @@ const ClientPage = ({
         </div>
 
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
-          <OrganizationHighlightedTiers
+          <HighlightedTiersEditor
             organization={organization}
             adminOrganizations={adminOrganizations}
             subscriptionTiers={subscriptionTiers.items ?? []}

@@ -35,7 +35,12 @@ export const ProjectsModal = ({
   return (
     <div className="flex flex-col gap-y-8 p-10">
       <div className="absolute right-6 top-6">
-        <Button onClick={hideModal} size="icon" variant="ghost">
+        <Button
+          className="focus-visible:ring-0"
+          onClick={hideModal}
+          size="icon"
+          variant="ghost"
+        >
           <CloseOutlined
             className="dark:text-polar-200 text-gray-700"
             fontSize="small"

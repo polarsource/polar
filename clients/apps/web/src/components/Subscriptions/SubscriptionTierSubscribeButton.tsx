@@ -147,11 +147,8 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
 
   const upgradableSubscription = useMemo(
     () =>
-      subscriptions?.find(
-        (subscription) =>
-          subscription.subscription_tier_id !== subscriptionTier.id,
-      ),
-    [subscriptions, subscriptionTier],
+      subscriptions?.find((subscription) => subscription.price_id !== price.id),
+    [subscriptions, price],
   )
 
   const isDowngrade = useMemo(
@@ -247,7 +244,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
       <div className="grow">
         {fetched ? (
           <>
-            {isSubscribed && (
+            {isSubscribed && !upgradableSubscription && (
               <Button
                 className={variant === 'outline' ? buttonClasses : ''}
                 fullWidth

@@ -217,6 +217,29 @@ block
   expect(asFragment()).toMatchSnapshot()
 })
 
+test('reference fallback', async () => {
+  let asFragment
+
+  await act(() => {
+    const component = render(
+      <TestRenderer
+        article={{
+          ...article,
+          body: `
+[hello][hello]
+
+![foobar][foobar]
+`,
+        }}
+      />,
+    )
+    asFragment = component.asFragment
+  })
+
+  // @ts-ignore
+  expect(asFragment()).toMatchSnapshot()
+})
+
 test('footnote', async () => {
   let asFragment
 

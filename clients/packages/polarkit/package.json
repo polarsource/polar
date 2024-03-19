@@ -106,7 +106,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
-    "@storybook/react": "^7.6.4",
+    "@storybook/react": "^8.0.1",
     "@types/jest": "^29.5.11",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",

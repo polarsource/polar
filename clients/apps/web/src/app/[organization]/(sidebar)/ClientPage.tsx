@@ -14,6 +14,7 @@ import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEdito
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { useTrafficRecordPageView } from '@/utils/traffic'
+import { ViewDayOutlined } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
@@ -172,7 +173,20 @@ const ClientPage = ({
               </div>
             ) : isAdmin ? (
               <PublicPagePostWizard organization={organization} />
-            ) : null}
+            ) : (
+              <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-16 text-gray-600">
+                <ViewDayOutlined fontSize="large" />
+                <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
+                  <h3 className="p-2 text-lg font-medium">
+                    {organization.name} is typing...
+                  </h3>
+                  <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
+                    Subscribe to {organization.name} to get future posts fresh
+                    out of the press.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {highlightedTiers.length > 0 && (

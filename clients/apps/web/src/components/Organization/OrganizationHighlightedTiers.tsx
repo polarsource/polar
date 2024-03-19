@@ -172,13 +172,13 @@ const OrganizationHighlightedTiersAuthenticatedEmptyState = ({
         >
           <div className="flex w-full flex-col gap-2">
             <Button onClick={handleCreate} loading={isLoading} fullWidth>
-              Create Suggested Tier
+              Setup Suggested Tier
             </Button>
             <Link
               href={`/maintainer/${organization.name}/subscriptions/tiers/new`}
             >
               <Button variant="ghost" fullWidth>
-                Edit
+                Create Custom
               </Button>
             </Link>
           </div>

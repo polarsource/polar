@@ -18,8 +18,10 @@ const TabsList = React.forwardRef<
   <TabsListPrimitive
     ref={ref}
     className={twMerge(
-      'dark:bg-polar-900 bg-gray-75 dark:ring-polar-900 flex h-fit w-fit flex-col items-start gap-2 rounded-xl ring-1 ring-gray-100',
-      vertical ? '' : 'md:flex-row md:items-center md:justify-start',
+      'dark:bg-polar-900 bg-gray-75 dark:ring-polar-900 relative flex h-fit w-fit flex-row flex-col items-start gap-2 rounded-xl ring-1 ring-gray-100 md:flex-row',
+      vertical
+        ? 'flex-col md:flex-col'
+        : 'md:flex-row md:items-center md:justify-start',
       className,
     )}
     {...props}
@@ -36,7 +38,7 @@ const TabsTrigger = React.forwardRef<
   <TabsTriggerPrimitive
     ref={ref}
     className={twMerge(
-      'dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 dark:data-[state=active]:text-polar-50 flex w-full flex-row items-center gap-x-2 px-4 py-2 font-normal hover:text-gray-950 data-[state=active]:font-medium data-[state=active]:text-gray-800 dark:data-[state=active]:text-white',
+      'hover:text-blue-500 data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 data-[state=active]:shadow-none dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300',
       size === 'default' ? 'text-sm' : 'text-xs',
       className,
     )}

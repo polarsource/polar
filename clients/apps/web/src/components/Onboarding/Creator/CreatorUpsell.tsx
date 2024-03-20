@@ -122,7 +122,7 @@ export const useUpsellSteps = () => {
         description: `Receive help, share feedback & connect with other creators`,
         href: `https://discord.com/invite/STfRufb32V`,
         newTab: true,
-        onboardingKey: 'fundingInYaml',
+        onboardingKey: 'joinDiscord',
         onDismiss: handleDismiss,
       })
     }

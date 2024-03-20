@@ -2,7 +2,14 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Boolean, ColumnElement, ForeignKey, type_coerce
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    ColumnElement,
+    ForeignKey,
+    UniqueConstraint,
+    type_coerce,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -16,6 +23,9 @@ if TYPE_CHECKING:
 
 class SubscriptionBenefitGrant(RecordModel):
     __tablename__ = "subscription_benefit_grants"
+    __table_args__ = (
+        UniqueConstraint("subscription_id", "user_id", "subscription_benefit_id"),
+    )
 
     granted_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True

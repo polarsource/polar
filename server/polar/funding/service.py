@@ -13,7 +13,7 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, load_only
 
 from polar.authz.service import Anonymous, Subject
 from polar.funding.schemas import FundingResultType
@@ -21,6 +21,7 @@ from polar.issue.search import search_query
 from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, Repository, UserOrganization
 from polar.models.pledge import PledgeState, PledgeType
+from polar.models.user import OAuthAccount, OAuthPlatform, User
 from polar.postgres import AsyncSession
 
 
@@ -121,8 +122,8 @@ class FundingService:
             self._get_readable_issues_statement(auth_subject).where(
                 Issue.id.in_(inner_statement)
             )
-        ).order_by(*order_by_clauses)
-
+        )
+        outer_statement = outer_statement.order_by(*order_by_clauses)
         outer_statement = outer_statement.add_columns(count_statement.scalar_subquery())
 
         result = await session.execute(outer_statement)
@@ -213,10 +214,36 @@ class FundingService:
                 ),
                 isouter=True,
             )
+            .join(
+                Pledge.user,
+                isouter=True,
+            )
+            .join(
+                OAuthAccount,
+                onclause=and_(
+                    # Only load github oauth accounts:
+                    # This prevents us from returning multiple rows per identity,
+                    # which would lead to over-counting the pledges.
+                    #
+                    # If we want to support showing other identities in the funding API, we'd need to solve this in another way.
+                    OAuthAccount.user_id == User.id,
+                    OAuthAccount.platform == OAuthPlatform.github,
+                ),
+                isouter=True,
+            )
             .options(
                 contains_eager(Issue.repository).contains_eager(Repository.organization)
             )
-            .options(issue_pledges_eager_loading_clause.joinedload(Pledge.user))
+            .options(
+                issue_pledges_eager_loading_clause.contains_eager(Pledge.user).options(
+                    load_only(
+                        User.id,
+                        User.avatar_url,
+                        User.email,
+                    ),
+                    contains_eager(User.oauth_accounts),
+                )
+            )
             .options(
                 issue_pledges_eager_loading_clause.joinedload(Pledge.by_organization)
             )

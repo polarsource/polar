@@ -32,7 +32,7 @@ from polar.models.subscription_benefit import (
 from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
-from polar.models.user import OAuthAccount
+from polar.models.user import OAuthAccount, OAuthPlatform
 from tests.fixtures.database import SaveFixture
 
 
@@ -140,12 +140,29 @@ async def create_issue(
     return issue
 
 
+async def create_oauth_account(
+    save_fixture: SaveFixture,
+    user: User,
+    platform: OAuthPlatform,
+) -> OAuthAccount:
+    oauth_account = OAuthAccount(
+        platform=platform,
+        access_token="xxyyzz",
+        account_id="xxyyzz",
+        account_email="foo@bar.com",
+        account_username=rstr("gh_username"),
+        user_id=user.id,
+    )
+    await save_fixture(oauth_account)
+    return oauth_account
+
+
 async def create_user_github_oauth(
     save_fixture: SaveFixture,
     user: User,
 ) -> OAuthAccount:
     oauth_account = OAuthAccount(
-        platform=Platforms.github,
+        platform=OAuthPlatform.github,
         access_token="xxyyzz",
         account_id="xxyyzz",
         account_email="foo@bar.com",
@@ -209,6 +226,35 @@ async def create_pledge(
     pledge = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=amount,
+        fee=fee,
+        state=state,
+        type=type,
+        invoice_id="INVOICE_ID" if type == PledgeType.pay_on_completion else None,
+    )
+    await save_fixture(pledge)
+    return pledge
+
+
+async def create_user_pledge(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    *,
+    pledging_user: User,
+    state: PledgeState = PledgeState.created,
+    type: PledgeType = PledgeType.pay_upfront,
+    amount: int = secrets.randbelow(100000) + 1,
+) -> Pledge:
+    fee = round(amount * 0.05)
+    pledge = Pledge(
+        id=uuid.uuid4(),
+        by_user_id=pledging_user.id,
+        created_by_user_id=pledging_user.id,
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,

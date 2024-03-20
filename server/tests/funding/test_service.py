@@ -4,21 +4,24 @@ import pytest
 from sqlalchemy import select
 
 from polar.authz.service import Anonymous
-from polar.funding.schemas import FundingResultType
+from polar.funding.schemas import FundingResultType, IssueFunding
 from polar.funding.service import ListFundingSortBy
 from polar.funding.service import funding as funding_service
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, User, UserOrganization
 from polar.models.pledge import PledgeState, PledgeType
+from polar.models.user import OAuthPlatform
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_issue,
+    create_oauth_account,
     create_pledge,
     create_repository,
     create_user,
+    create_user_pledge,
 )
 
 from .conftest import IssuesPledgesFixture, create_issues_pledges
@@ -344,6 +347,179 @@ class TestListBy:
         assert len(results) == 1
         issue, _ = issues_pledges[2]
         assert results[0][0].id == issue.id
+
+    async def test_sum_user_multiple_identities(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,  # makes User a member of Organization
+    ) -> None:
+        repository = await create_repository(
+            save_fixture,
+            organization,
+            is_private=False,
+        )
+
+        pledging_user = await create_user(save_fixture)
+
+        # create multiple identities for pledging user
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.discord)
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.github)
+        await create_oauth_account(
+            save_fixture, pledging_user, OAuthPlatform.github_repository_benefit
+        )
+
+        issue = await create_issue(save_fixture, organization, repository)
+
+        await create_user_pledge(
+            save_fixture,
+            organization,
+            repository,
+            issue,
+            pledging_user=pledging_user,
+            type=PledgeType.pay_upfront,
+            amount=500,
+        )
+
+        # then
+        await run_calculate_sort_columns(session)
+        session.expunge_all()
+
+        results, count = await funding_service.list_by(
+            session,
+            user,
+            sorting=[ListFundingSortBy.most_funded],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert 1 == count
+        assert 1 == len(results)
+
+        r = IssueFunding.from_list_by_result(results[0])
+
+        assert 500 == r.total.amount
+        assert 500 == r.pledges_summaries.pay_upfront.total.amount
+        assert 0 == r.pledges_summaries.pay_on_completion.total.amount
+
+        # name from oauth
+        assert r.pledges_summaries.pay_upfront.pledgers[0].github_username
+        assert r.pledges_summaries.pay_upfront.pledgers[0].github_username.startswith(
+            "gh_username"
+        )
+
+        assert r.pledges_summaries.pay_upfront.pledgers[0].name
+        assert r.pledges_summaries.pay_upfront.pledgers[0].name.startswith(
+            "gh_username"
+        )
+
+    async def test_sum_user_no_oauth(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,  # makes User a member of Organization
+    ) -> None:
+        repository = await create_repository(
+            save_fixture,
+            organization,
+            is_private=False,
+        )
+
+        pledging_user = await create_user(save_fixture)
+
+        issue = await create_issue(save_fixture, organization, repository)
+
+        await create_user_pledge(
+            save_fixture,
+            organization,
+            repository,
+            issue,
+            pledging_user=pledging_user,
+            type=PledgeType.pay_upfront,
+            amount=500,
+        )
+
+        # then
+        await run_calculate_sort_columns(session)
+        session.expunge_all()
+
+        results, count = await funding_service.list_by(
+            session,
+            user,
+            sorting=[ListFundingSortBy.most_funded],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert 1 == count
+        assert 1 == len(results)
+
+        r = IssueFunding.from_list_by_result(results[0])
+
+        assert 500 == r.total.amount
+        assert 500 == r.pledges_summaries.pay_upfront.total.amount
+        assert 0 == r.pledges_summaries.pay_on_completion.total.amount
+
+        # no name from oauth
+        assert r.pledges_summaries.pay_upfront.pledgers[0].github_username is None
+        assert r.pledges_summaries.pay_upfront.pledgers[0].name
+        assert "@example.com" in r.pledges_summaries.pay_upfront.pledgers[0].name
+
+    async def test_sum_user_only_discord_oauth(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,  # makes User a member of Organization
+    ) -> None:
+        repository = await create_repository(
+            save_fixture,
+            organization,
+            is_private=False,
+        )
+
+        pledging_user = await create_user(save_fixture)
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.discord)
+
+        issue = await create_issue(save_fixture, organization, repository)
+
+        await create_user_pledge(
+            save_fixture,
+            organization,
+            repository,
+            issue,
+            pledging_user=pledging_user,
+            type=PledgeType.pay_upfront,
+            amount=500,
+        )
+
+        # then
+        await run_calculate_sort_columns(session)
+        session.expunge_all()
+
+        results, count = await funding_service.list_by(
+            session,
+            user,
+            sorting=[ListFundingSortBy.most_funded],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert 1 == count
+        assert 1 == len(results)
+
+        r = IssueFunding.from_list_by_result(results[0])
+
+        assert 500 == r.total.amount
+        assert 500 == r.pledges_summaries.pay_upfront.total.amount
+        assert 0 == r.pledges_summaries.pay_on_completion.total.amount
+
+        # no name from oauth
+        assert r.pledges_summaries.pay_upfront.pledgers[0].github_username is None
+        assert r.pledges_summaries.pay_upfront.pledgers[0].name
+        assert "@example.com" in r.pledges_summaries.pay_upfront.pledgers[0].name
 
 
 @pytest.mark.asyncio

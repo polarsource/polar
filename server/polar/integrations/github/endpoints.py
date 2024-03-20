@@ -47,6 +47,7 @@ from .schemas import (
     OrganizationBillingPlan,
     OrganizationCheckPermissionsInput,
 )
+from .service.members import github_members_service
 from .service.organization import github_organization
 from .service.user import GithubUserServiceError, github_user
 
@@ -206,7 +207,7 @@ async def synchronize_members(
     if not await authz.can(auth.subject, AccessType.write, org):
         raise Unauthorized()
 
-    await github_organization.synchronize_members(session, org)
+    await github_members_service.synchronize_members(session, org)
 
     return SynchronizeMembersResponse(status=True)
 

@@ -25,6 +25,7 @@ from polar.worker import (
 )
 
 from .. import service, types
+from ..service.members import github_members_service
 from .utils import (
     get_organization_and_repo,
     github_rate_limit_retry,
@@ -126,7 +127,7 @@ async def organization_synchronize_members(
         if not organization:
             return dict(success=False)
 
-        await service.github_organization.synchronize_members(session, organization)
+        await github_members_service.synchronize_members(session, organization)
         return dict(success=True)
 
 

@@ -20,6 +20,7 @@ from polar.worker import enqueue_job
 from .. import client as github
 from .. import types
 from ..schemas import OAuthAccessToken
+from .organization import github_organization as github_organization_service
 
 log = structlog.get_logger()
 
@@ -231,13 +232,6 @@ class GithubUserService(UserService):
 
         if signup and signup_type == UserSignupType.maintainer:
             try:
-                # TODO: Cleaner dependency relationship between org<>user by
-                # moving some to the `user_organization` namespace? Local to
-                # GitHub integration
-                from polar.integrations.github.service.organization import (
-                    github_organization as github_organization_service,
-                )
-
                 await github_organization_service.create_for_user(
                     session, locker, user=user
                 )

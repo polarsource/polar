@@ -13,6 +13,7 @@ from polar.worker import (
     task,
 )
 
+from ..service.members import github_members_service
 from ..service.organization import github_organization
 
 log = structlog.get_logger()
@@ -51,7 +52,7 @@ async def organization_refresh_members(
                 organization_id=organization_id,
             )
 
-            await github_organization.synchronize_members(session, org)
+            await github_members_service.synchronize_members(session, org)
 
 
 @interval(

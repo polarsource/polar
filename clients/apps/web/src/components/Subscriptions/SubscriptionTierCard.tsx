@@ -187,11 +187,8 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
               0,
             )}
             <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
-              /mo
-            </span>
-            <div className="dark:text-polar-500 mt-2  text-sm font-normal text-gray-500">
               {recurringBillingLabel}
-            </div>
+            </span>
           </div>
           {subscriptionTier.description ? (
             <p

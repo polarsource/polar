@@ -36,17 +36,7 @@ export const getSubscriptionTierPrice = (
       }
     }
   }
-
-  const priceAmount =
-    price.recurring_interval === SubscriptionTierPriceRecurringInterval.YEAR
-      ? price.price_amount / 12
-      : price.price_amount
-
-  return {
-    price_amount: priceAmount || 0,
-    price_currency: price.price_currency,
-    recurring_interval: price.recurring_interval,
-  }
+  return price
 }
 
 export const getRecurringBillingLabel = (
@@ -54,9 +44,9 @@ export const getRecurringBillingLabel = (
 ) => {
   switch (recurringInterval) {
     case SubscriptionTierPriceRecurringInterval.MONTH:
-      return 'billed monthly'
+      return '/mo'
     case SubscriptionTierPriceRecurringInterval.YEAR:
-      return 'billed yearly'
+      return '/year'
   }
 }
 

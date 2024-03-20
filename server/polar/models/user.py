@@ -16,6 +16,7 @@ from .account import Account
 
 
 class OAuthPlatform(StrEnum):
+    # maximum allowed length is 32 chars
     github = "github"
     github_repository_benefit = "github_repository_benefit"
     discord = "discord"
@@ -30,7 +31,7 @@ class OAuthAccount(RecordModel):
         ),
     )
 
-    platform: Mapped[OAuthPlatform] = mapped_column(String(24), nullable=False)
+    platform: Mapped[OAuthPlatform] = mapped_column(String(32), nullable=False)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=False)
     expires_at: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     refresh_token: Mapped[str | None] = mapped_column(

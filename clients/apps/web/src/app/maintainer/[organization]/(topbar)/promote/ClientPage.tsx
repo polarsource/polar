@@ -145,12 +145,7 @@ export default function ClientPage() {
                     <TabsList className="bg-transparent dark:bg-transparent">
                       {['Tiers', 'Posts', 'Subscribe', 'Issues', 'Shield'].map(
                         (item) => (
-                          <TabsTrigger
-                            key={item}
-                            className="hover:text-blue-500 data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 data-[state=active]:shadow-none dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300"
-                            value={item}
-                            size="small"
-                          >
+                          <TabsTrigger key={item} value={item} size="small">
                             {item}
                           </TabsTrigger>
                         ),

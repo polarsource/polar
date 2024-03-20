@@ -122,7 +122,7 @@ export default function ClientPage({
               </p>
             </div>
 
-            <TabsList className="flex-row dark:border">
+            <TabsList>
               <TabsTrigger value="transactions">Transactions</TabsTrigger>
               <TabsTrigger value="payouts">Payouts</TabsTrigger>
             </TabsList>

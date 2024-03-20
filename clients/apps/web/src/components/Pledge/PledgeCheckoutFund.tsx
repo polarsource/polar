@@ -6,15 +6,11 @@ import {
 } from '@heroicons/react/24/outline'
 import { Issue } from '@polar-sh/sdk'
 import Link from 'next/link'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from 'polarkit/components/ui/atoms/tabs'
+import { Tabs, TabsContent, TabsList } from 'polarkit/components/ui/atoms/tabs'
 import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 import PledgeCheckoutFundToday from './PledgeCheckoutFundToday'
+import { PledgeTabsTrigger } from './PledgeCheckoutPanel'
 
 const PledgeCheckoutFund = ({
   issue,
@@ -105,7 +101,10 @@ const FundingMethodTab = ({
   title: string
   subtitle: string
 }) => (
-  <TabsTrigger value={value} className="w-full md:flex-col md:items-center">
+  <PledgeTabsTrigger
+    value={value}
+    className="w-full md:flex-col md:items-center"
+  >
     <div className="flex w-full items-center gap-4 px-1 text-left">
       <div className="shrink-0">{icon}</div>
       <div className="w-full">
@@ -115,5 +114,5 @@ const FundingMethodTab = ({
         </div>
       </div>
     </div>
-  </TabsTrigger>
+  </PledgeTabsTrigger>
 )

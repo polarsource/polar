@@ -19,9 +19,6 @@ export const OrganizationPublicPageNav = ({
   const routeSegment = useSelectedLayoutSegment()
   const currentTab = routeSegment ?? 'overview'
 
-  const tabsTriggerClassName =
-    'data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 dark:data-[state=active]:bg-blue-950 hover:text-blue-500 dark:data-[state=active]:text-blue-300 data-[state=active]:shadow-none'
-
   return (
     <Tabs value={currentTab}>
       <TabsList
@@ -31,51 +28,31 @@ export const OrganizationPublicPageNav = ({
         )}
       >
         <Link href={organizationPageLink(organization)}>
-          <TabsTrigger
-            className={tabsTriggerClassName}
-            value="overview"
-            size="small"
-          >
+          <TabsTrigger value="overview" size="small">
             Overview
           </TabsTrigger>
         </Link>
 
         <Link href={organizationPageLink(organization, 'posts')}>
-          <TabsTrigger
-            className={tabsTriggerClassName}
-            value="posts"
-            size="small"
-          >
+          <TabsTrigger value="posts" size="small">
             Posts
           </TabsTrigger>
         </Link>
 
         <Link href={organizationPageLink(organization, 'subscriptions')}>
-          <TabsTrigger
-            className={tabsTriggerClassName}
-            value="subscriptions"
-            size="small"
-          >
+          <TabsTrigger value="subscriptions" size="small">
             Subscriptions
           </TabsTrigger>
         </Link>
 
         <Link href={organizationPageLink(organization, 'issues')}>
-          <TabsTrigger
-            className={tabsTriggerClassName}
-            value="issues"
-            size="small"
-          >
+          <TabsTrigger value="issues" size="small">
             Issues
           </TabsTrigger>
         </Link>
 
         <Link href={organizationPageLink(organization, 'repositories')}>
-          <TabsTrigger
-            className={tabsTriggerClassName}
-            value="repositories"
-            size="small"
-          >
+          <TabsTrigger value="repositories" size="small">
             Repositories
           </TabsTrigger>
         </Link>

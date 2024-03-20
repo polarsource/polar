@@ -45,11 +45,7 @@ export const SubNav = (props: {
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>
-              <TabsTrigger
-                className="hover:text-blue-500 data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 data-[state=active]:shadow-none dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300"
-                value={item.title}
-                size="small"
-              >
+              <TabsTrigger value={item.title} size="small">
                 {item.icon && <div className="text-[17px]">{item.icon}</div>}
                 <div>{item.title}</div>
               </TabsTrigger>

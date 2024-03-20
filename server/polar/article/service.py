@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from collections.abc import Sequence
 from datetime import datetime
 from operator import and_, or_
@@ -74,6 +75,16 @@ class ArticleService:
                 "This slug has been used more than 100 times in this organization."
             )
 
+        body: str | None
+        if create_schema.body is not None and create_schema.body_base64 is not None:
+            raise BadRequest("body and body_base64 are mutually exclusive")
+        if create_schema.body is not None:
+            body = create_schema.body
+        if create_schema.body_base64 is not None:
+            body = base64.b64decode(create_schema.body_base64).decode("utf-8")
+        if body is None:
+            raise BadRequest("No body provided")
+
         published_at: datetime | None = None
         if create_schema.visibility == "public":
             published_at = utc_now()
@@ -83,7 +94,7 @@ class ArticleService:
         article = Article(
             slug=slug,
             title=create_schema.title,
-            body=create_schema.body,
+            body=body,
             created_by=subject.id,
             organization_id=create_schema.organization_id,
             byline=create_schema.byline,
@@ -247,8 +258,12 @@ class ArticleService:
         if update.slug is not None:
             article.slug = polar_slugify(update.slug)
 
+        if update.body is not None and update.body_base64 is not None:
+            raise BadRequest("body and body_base64 are mutually exclusive")
         if update.body is not None:
             article.body = update.body
+        if update.body_base64 is not None:
+            article.body = base64.b64decode(update.body_base64).decode("utf-8")
 
         if update.byline is not None:
             article.byline = (

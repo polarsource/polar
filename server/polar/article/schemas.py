@@ -165,7 +165,16 @@ class ArticleCreate(Schema):
         None,
         description="Slug of the article to be used in URLs. If no slug is provided one will be generated from the title.",
     )
-    body: str
+
+    body: str | None = Field(
+        None,
+        description="Body in string format. Either one of body or body_base64 is required.",
+    )
+    body_base64: str | None = Field(
+        None,
+        description="Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). Either one of body or body_base64 is required.",
+    )
+
     organization_id: UUID
     byline: Literal["user", "organization"] = Field(
         default="organization",
@@ -197,7 +206,16 @@ class ArticleCreate(Schema):
 
 class ArticleUpdate(Schema):
     title: str | None = None
-    body: str | None = None
+
+    body: str | None = Field(
+        None,
+        description="Body in string format. body and body_base64 are mutually exclusive.",
+    )
+    body_base64: str | None = Field(
+        None,
+        description="Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). body and body_base64 are mutually exclusive.",
+    )
+
     slug: str | None = None
     byline: Literal["user", "organization"] | None = Field(
         default=None,

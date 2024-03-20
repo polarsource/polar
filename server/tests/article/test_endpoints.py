@@ -981,3 +981,45 @@ async def test_og_description(
     assert response.status_code == 200
     res = response.json()
     assert res["og_description"] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_body_base64(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    response = await client.post(
+        "/api/v1/articles",
+        json={
+            "title": "Hello World!",
+            "body_base64": "aGVsbG8gaW4gYjY0",
+            "organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["slug"] == "hello-world"
+    assert res["body"] == "hello in b64"
+    article_id = res["id"]
+
+    # update
+    response = await client.put(
+        f"/api/v1/articles/{article_id}",
+        json={
+            "body_base64": "dXBkYXRlZCBiNjQ=",
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+    assert response.status_code == 200
+    res = response.json()
+    assert res["body"] == "updated b64"

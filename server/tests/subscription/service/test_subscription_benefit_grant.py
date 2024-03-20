@@ -249,7 +249,7 @@ class TestEnqueueBenefitGrantUpdates:
 
         enqueue_job_mock.assert_not_called()
 
-    async def test_required_update(
+    async def test_required_update_granted(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -268,6 +268,42 @@ class TestEnqueueBenefitGrantUpdates:
         granted_grant.set_granted()
         await save_fixture(granted_grant)
 
+        other_benefit_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            user=user,
+            subscription_benefit=subscription_benefit_repository,
+        )
+        other_benefit_grant.set_granted()
+        await save_fixture(other_benefit_grant)
+
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription_benefit_grant.enqueue_job"
+        )
+        subscription_benefit_service_mock.requires_update.return_value = True
+
+        # then
+        session.expunge_all()
+
+        await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
+            session, subscription_benefit_organization, {}
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.subscription_benefit.update",
+            subscription_benefit_grant_id=granted_grant.id,
+        )
+
+    async def test_required_update_revoked(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        user: User,
+        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_repository: SubscriptionBenefit,
+        subscription_benefit_service_mock: MagicMock,
+    ) -> None:
         revoked_grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
@@ -296,10 +332,7 @@ class TestEnqueueBenefitGrantUpdates:
             session, subscription_benefit_organization, {}
         )
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription_benefit.update",
-            subscription_benefit_grant_id=granted_grant.id,
-        )
+        enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -422,14 +455,6 @@ class TestEnqueueBenefitGrantDeletions:
         )
         granted_grant.set_granted()
         await save_fixture(granted_grant)
-
-        revoked_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=subscription_benefit_organization,
-        )
-        revoked_grant.set_revoked()
-        await save_fixture(revoked_grant)
 
         other_benefit_grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -595,22 +620,6 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
             subscription_benefit=subscription_benefit_organization,
         )
         await save_fixture(pending_grant)
-
-        granted_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=subscription_benefit_organization,
-        )
-        granted_grant.set_granted()
-        await save_fixture(granted_grant)
-
-        revoked_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=subscription_benefit_organization,
-        )
-        revoked_grant.set_revoked()
-        await save_fixture(revoked_grant)
 
         other_user_grant = SubscriptionBenefitGrant(
             subscription=subscription,

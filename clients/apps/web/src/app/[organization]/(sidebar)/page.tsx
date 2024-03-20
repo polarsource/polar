@@ -9,6 +9,7 @@ import {
   ListResourceSubscriptionTier,
   Organization,
   Platforms,
+  Repository,
   ResponseError,
 } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
@@ -252,6 +253,7 @@ export default async function Page({
 
   let featuredOrganizations: Organization[] = []
   let links: Link[] = []
+  let featuredProjects: Repository[] = []
 
   try {
     const loadFeaturedOrganizations = await Promise.all(
@@ -262,6 +264,14 @@ export default async function Page({
         ),
       ),
     )
+
+    const loadFeaturedProjects = organization.profile_settings.featured_projects
+      ? await Promise.all(
+          organization.profile_settings.featured_projects.map((id) =>
+            api.repositories.get({ id }, cacheConfig),
+          ),
+        )
+      : repositories.items?.slice(0, 2) ?? []
 
     const fallbackLinks = [
       `https://github.com/${organization.name}`,
@@ -286,6 +296,7 @@ export default async function Page({
     )
 
     featuredOrganizations = loadFeaturedOrganizations
+    featuredProjects = loadFeaturedProjects
     links = loadLinkOpengraphs.filter(
       (link): link is Link => link !== undefined,
     )
@@ -355,6 +366,7 @@ export default async function Page({
         organization={organization}
         posts={posts}
         repositories={sortedRepositories}
+        featuredProjects={featuredProjects}
         featuredOrganizations={featuredOrganizations}
         subscriptionTiers={subscriptionTiers}
         subscriptionsSummary={subscriptionsSummary}

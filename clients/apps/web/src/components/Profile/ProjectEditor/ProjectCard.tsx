@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { StarIcon as StarIconOutlined } from '@heroicons/react/24/outline'
 import { DragIndicatorOutlined, HiveOutlined } from '@mui/icons-material'
-import { Repository } from '@polar-sh/sdk'
+import { Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -17,10 +17,12 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 
 export const ProjectCard = ({
+  organization,
   repository,
   disabled,
   sortable,
 }: {
+  organization: Organization
   repository: Repository
   disabled?: boolean
   sortable?: ReturnType<typeof useSortable>
@@ -51,7 +53,17 @@ export const ProjectCard = ({
               <HiveOutlined fontSize="inherit" />
             </span>
             <h3 className="dark:text-polar-50 text-lg text-gray-950">
-              {repository.name}
+              {repository.organization.id !== organization.id ? (
+                <span className="flex flex-row items-baseline gap-x-1">
+                  <span className="dark:text-polar-500 text-gray-500">
+                    {repository.organization.name}
+                  </span>
+                  <span>/</span>
+                  <span>{repository.name}</span>
+                </span>
+              ) : (
+                repository.name
+              )}
             </h3>
           </div>
           {!disabled && (
@@ -96,9 +108,11 @@ export const ProjectCard = ({
 }
 
 export const DraggableProjectCard = ({
+  organization,
   repository,
   disabled,
 }: {
+  organization: Organization
   repository: Repository
   disabled?: boolean
 }) => {
@@ -109,6 +123,7 @@ export const DraggableProjectCard = ({
       sortable={sortable}
       repository={repository}
       disabled={disabled}
+      organization={organization}
     />
   )
 }

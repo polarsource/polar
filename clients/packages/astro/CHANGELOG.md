@@ -1,5 +1,13 @@
 # @polar-sh/astro
 
+## 1.0.0
+
+### Patch Changes
+
+- a369042: ensure client doesn't throw (https://github.com/polarsource/polar/pull/2759)
+- Updated dependencies [2166b03]
+  - @polar-sh/sdk@0.5.0
+
 ## 0.1.3
 
 ### Patch Changes

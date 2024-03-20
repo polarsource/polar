@@ -228,7 +228,7 @@ export const dashboardRoutes = (
     link: isPersonal ? `/settings` : `/maintainer/${org?.name}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    if: isPersonal ? true : org?.is_teams_enabled && isOrgAdmin,
+    if: isPersonal || isOrgAdmin ? true : false,
     subs: undefined,
   },
 ]

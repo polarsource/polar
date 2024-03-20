@@ -41,13 +41,15 @@ export default function ClientPage() {
   return (
     <DashboardBody>
       <div className="dark:divide-polar-700 divide-y divide-gray-200">
-        <Section>
-          <SectionDescription
-            title="Payment"
-            description="Manage organization invoicing, spending limits and payment methods"
-          />
-          <PaymentMethodSettings org={org} credits={credits.data} />
-        </Section>
+        {org.is_teams_enabled ? (
+          <Section>
+            <SectionDescription
+              title="Payment"
+              description="Manage organization invoicing, spending limits and payment methods"
+            />
+            <PaymentMethodSettings org={org} credits={credits.data} />
+          </Section>
+        ) : null}
         <Section>
           <SectionDescription
             title="Discord + Slack Notifications"

@@ -1,6 +1,6 @@
 'use client'
 
-import { Route, dashboardRoutes } from '@/components/Dashboard/navigation'
+import { dashboardRoutes } from '@/components/Dashboard/navigation'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { SubNav } from '@/components/Navigation/DashboardTopbar'
 import {
@@ -8,7 +8,6 @@ import {
   useIsOrganizationAdmin,
   usePersonalOrganization,
 } from '@/hooks'
-import { Organization } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -18,21 +17,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isOrgAdmin = useIsOrganizationAdmin(currentOrgFromURL)
   const isPersonal = currentOrgFromURL?.name === personalOrg?.name
 
-  const getRoutes = (currentOrg?: Organization): Route[] => {
-    return [
-      ...(currentOrg ? dashboardRoutes(currentOrg) : []),
-      ...dashboardRoutes(
-        currentOrg,
-        currentOrg ? isPersonal : true,
-        isOrgAdmin,
-      ),
-    ]
-  }
+  const routes = currentOrgFromURL
+    ? dashboardRoutes(
+        currentOrgFromURL,
+        currentOrgFromURL ? isPersonal : true,
+        isOrgAdmin ?? false,
+      )
+    : []
 
-  const routes = getRoutes(currentOrgFromURL)
-
-  const [currentRoute] = routes.filter(
-    (route) => pathname?.startsWith(route.link),
+  const [currentRoute] = routes.filter((route) =>
+    pathname?.startsWith(route.link),
   )
 
   return (

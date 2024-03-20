@@ -19,11 +19,11 @@ import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
 const PublicProfileDropdown = ({
   className,
   authenticatedUser,
-  allBackerRoutes = false,
+  showAllBackerRoutes = false,
 }: {
   className?: string
   authenticatedUser: UserRead | undefined
-  allBackerRoutes?: boolean
+  showAllBackerRoutes?: boolean
 }) => {
   const classNames = twMerge('relative', className)
   const logout = useLogout()
@@ -42,6 +42,16 @@ const PublicProfileDropdown = ({
   }
 
   const loggedUser = authenticatedUser
+
+  const allBackerRoutes = backerRoutes()
+  const filteredBackerRoutes = showAllBackerRoutes
+    ? allBackerRoutes.filter((r) => r.if)
+    : []
+
+  const allPersonalRoutes = personalOrg
+    ? dashboardRoutes(personalOrg, true, true)
+    : []
+  const personalRoutes = allPersonalRoutes.filter((r) => r.if)
 
   if (!loggedUser) {
     return <></>
@@ -80,18 +90,16 @@ const PublicProfileDropdown = ({
             </Link>
 
             <ul className="mt-2 flex w-full flex-col">
-              {allBackerRoutes &&
-                backerRoutes()
-                  .filter((route) => ('if' in route ? route.if : true))
-                  .map((n) => (
-                    <LinkItem
-                      href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
-                      icon={n.icon}
-                      key={n.link}
-                    >
-                      <span className="mx-2 text-sm">{n.title}</span>
-                    </LinkItem>
-                  ))}
+              {filteredBackerRoutes.map((n) => (
+                <LinkItem
+                  href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
+                  icon={n.icon}
+                  key={n.link}
+                >
+                  <span className="mx-2 text-sm">{n.title}</span>
+                </LinkItem>
+              ))}
+
               {personalOrg && (
                 <LinkItem
                   href={organizationPageLink(personalOrg)}
@@ -100,19 +108,18 @@ const PublicProfileDropdown = ({
                   <span className="mx-2 text-sm">Public Page</span>
                 </LinkItem>
               )}
-              {dashboardRoutes(personalOrg, true, true)
-                .filter((route) => ('if' in route ? route.if : true))
-                .map((n) => {
-                  return (
-                    <LinkItem
-                      href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
-                      icon={n.icon}
-                      key={n.link}
-                    >
-                      <span className="mx-2 text-sm">{n.title}</span>
-                    </LinkItem>
-                  )
-                })}
+
+              {personalRoutes.map((n) => {
+                return (
+                  <LinkItem
+                    href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
+                    icon={n.icon}
+                    key={n.link}
+                  >
+                    <span className="mx-2 text-sm">{n.title}</span>
+                  </LinkItem>
+                )
+              })}
 
               <Separator className="my-2" />
 

@@ -155,13 +155,21 @@ class GithubUserService(UserService):
         session: AsyncSession,
         *,
         github_user: GithubUser,
-        github_email: GithubEmail,
         user: User,
         tokens: OAuthAccessToken,
+        client: GitHub[TokenAuthStrategy],
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
 
-        email, _ = github_email
+        # Fetch primary email from github
+        # Required to succeed for new users signups. For existing users we'll let it fail.
+        github_email: GithubEmail | None = None
+        try:
+            github_email = await self.fetch_authenticated_user_primary_email(
+                client=client
+            )
+        except NoPrimaryEmailError:
+            pass
 
         user.username = github_user.login
         user.avatar_url = github_user.avatar_url
@@ -172,6 +180,11 @@ class GithubUserService(UserService):
             session, OAuthPlatform.github, user.id
         )
         if oauth_account is None:
+            if github_email is None:
+                raise NoPrimaryEmailError()
+
+            email, _ = github_email
+
             oauth_account = OAuthAccount(
                 platform=OAuthPlatform.github,
                 account_id=str(github_user.id),
@@ -180,10 +193,14 @@ class GithubUserService(UserService):
                 user=user,
             )
 
+        # update email if fetch was successful
+        if github_email is not None:
+            email, _ = github_email
+            oauth_account.account_email = email
+
         oauth_account.access_token = tokens.access_token
         oauth_account.expires_at = tokens.expires_at
         oauth_account.refresh_token = tokens.refresh_token
-        oauth_account.account_email = email
         oauth_account.account_username = github_user.login
         session.add(oauth_account)
 
@@ -204,53 +221,13 @@ class GithubUserService(UserService):
     ) -> User:
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
-        github_email = await self.fetch_authenticated_user_primary_email(client=client)
 
-        # Check if existing user with this GitHub account
-        signup = False
-        existing_user_by_id = await self.get_user_by_github_id(
-            session, id=authenticated.id
+        user, event_name, signup = await self._login_or_signup_create_user(
+            session,
+            tokens=tokens,
+            client=client,
+            authenticated=authenticated,
         )
-        if existing_user_by_id:
-            user = await self.login(
-                session,
-                github_user=authenticated,
-                github_email=github_email,
-                user=existing_user_by_id,
-                tokens=tokens,
-            )
-            event_name = "User Logged In"
-            posthog.user_event(user, "user", "github_oauth_logged_in", "done")
-        else:
-            # Check if existing user with this email
-            email, email_verified = github_email
-            existing_user_by_email = await self.get_by_email(session, email)
-            if existing_user_by_email:
-                # Automatically link if email is verified
-                if email_verified:
-                    user = await self.login(
-                        session,
-                        github_user=authenticated,
-                        github_email=github_email,
-                        user=existing_user_by_email,
-                        tokens=tokens,
-                    )
-                    event_name = "User Logged In"
-                    posthog.user_event(user, "user", "github_oauth_logged_in", "done")
-                # For security reasons, don't link if the email is not verified
-                else:
-                    raise CannotLinkUnverifiedEmailError(email)
-            # New user
-            else:
-                user = await self.signup(
-                    session,
-                    github_user=authenticated,
-                    github_email=github_email,
-                    tokens=tokens,
-                )
-                event_name = "User Signed Up"
-                signup = True
-                posthog.user_event(user, "user", "github_oauth_signed_up", "done")
 
         if signup and signup_type == UserSignupType.maintainer:
             try:
@@ -265,7 +242,7 @@ class GithubUserService(UserService):
                     session, locker, user=user
                 )
             except ResourceAlreadyExists:
-                ...
+                pass
 
         org_count = await self._run_sync_github_orgs(
             session,
@@ -273,6 +250,7 @@ class GithubUserService(UserService):
             user=user,
             github_user=authenticated,
         )
+
         posthog.user_event_raw(
             user,
             event_name,
@@ -282,11 +260,69 @@ class GithubUserService(UserService):
                 },
             },
         )
+
         if signup:
             await loops_service.user_signup(user, signup_type, gitHubConnected=True)
         else:
             await loops_service.user_update(user, gitHubConnected=True)
         return user
+
+    async def _login_or_signup_create_user(
+        self,
+        session: AsyncSession,
+        *,
+        tokens: OAuthAccessToken,
+        client: GitHub[TokenAuthStrategy],
+        authenticated: GithubUser,
+    ) -> tuple[User, str, bool]:
+        # Check if we have an existing user with this GitHub account
+        existing_user_by_id = await self.get_user_by_github_id(
+            session, id=authenticated.id
+        )
+        if existing_user_by_id:
+            user = await self.login(
+                session,
+                github_user=authenticated,
+                user=existing_user_by_id,
+                tokens=tokens,
+                client=client,
+            )
+            posthog.user_event(user, "user", "github_oauth_logged_in", "done")
+
+            return (user, "User Logged In", False)
+
+        # Fetch user email
+        github_email = await self.fetch_authenticated_user_primary_email(client=client)
+
+        # Check if existing user with this email
+        email, email_verified = github_email
+        existing_user_by_email = await self.get_by_email(session, email)
+        if existing_user_by_email:
+            # Automatically link if email is verified
+            if email_verified:
+                user = await self.login(
+                    session,
+                    github_user=authenticated,
+                    user=existing_user_by_email,
+                    tokens=tokens,
+                    client=client,
+                )
+                posthog.user_event(user, "user", "github_oauth_logged_in", "done")
+                return (user, "User Logged In", False)
+
+            else:
+                # For security reasons, don't link if the email is not verified
+                raise CannotLinkUnverifiedEmailError(email)
+
+        # New user
+        user = await self.signup(
+            session,
+            github_user=authenticated,
+            github_email=github_email,
+            tokens=tokens,
+        )
+        posthog.user_event(user, "user", "github_oauth_signed_up", "done")
+        return (user, "User Signed Up", True)
 
     async def link_existing_user(
         self, session: AsyncSession, *, user: User, tokens: OAuthAccessToken
@@ -469,7 +505,13 @@ class GithubUserService(UserService):
         email_response = (
             await client.rest.users.async_list_emails_for_authenticated_user()
         )
-        github.ensure_expected_response(email_response)
+
+        try:
+            github.ensure_expected_response(email_response)
+        except Exception as e:
+            log.error("fetch_authenticated_user_primary_email.failed", err=e)
+            raise NoPrimaryEmailError() from e
+
         emails = email_response.parsed_data
 
         for email in emails:

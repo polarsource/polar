@@ -212,6 +212,15 @@ class TestListBy:
             is_private=False,
         )
 
+        pledging_user = await create_user(save_fixture)
+
+        # create multiple identities for pledging user
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.discord)
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.github)
+        await create_oauth_account(
+            save_fixture, pledging_user, OAuthPlatform.github_repository_benefit
+        )
+
         issues = []
 
         # create 20 issues
@@ -231,12 +240,12 @@ class TestListBy:
             )
 
         for n in range(3):
-            await create_pledge(
+            await create_user_pledge(
                 save_fixture,
                 organization,
                 repository,
                 issues[4],
-                pledging_organization=organization,
+                pledging_user=pledging_user,
                 type=PledgeType.pay_upfront,
             )
 

@@ -116,7 +116,15 @@ export const useCreateArticle = (): UseMutationResult<
   useMutation({
     mutationFn: (articleCreate: ArticleCreate) =>
       api.articles.create({
-        articleCreate,
+        articleCreate: {
+          ...articleCreate,
+
+          // Base64 encoded body over the wire. To "bypass" WAF.
+          body: undefined,
+          body_base64: articleCreate.body
+            ? Buffer.from(articleCreate.body).toString('base64')
+            : undefined,
+        },
       }),
     onSuccess: (result, variables, ctx) => {
       queryClient.invalidateQueries({
@@ -133,7 +141,15 @@ export const useUpdateArticle = () =>
     mutationFn: (variables: { id: string; articleUpdate: ArticleUpdate }) =>
       api.articles.update({
         id: variables.id,
-        articleUpdate: variables.articleUpdate,
+        articleUpdate: {
+          ...variables.articleUpdate,
+
+          // Base64 encoded body over the wire. To "bypass" WAF.
+          body: undefined,
+          body_base64: variables.articleUpdate.body
+            ? Buffer.from(variables.articleUpdate.body).toString('base64')
+            : undefined,
+        },
       }),
     onSuccess: (result, variables, ctx) => {
       queryClient.invalidateQueries({

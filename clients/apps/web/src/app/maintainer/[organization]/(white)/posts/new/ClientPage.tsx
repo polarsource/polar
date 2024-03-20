@@ -23,7 +23,7 @@ const ClientPage = () => {
   } = useStore()
 
   const [localArticle, setLocalArticle] = useState<
-    Pick<ArticleCreate, 'title' | 'body'>
+    Pick<ArticleCreate, 'title'> & { body: string }
   >({
     title: '',
     body: '',

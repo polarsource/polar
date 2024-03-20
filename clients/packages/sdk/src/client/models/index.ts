@@ -1130,11 +1130,17 @@ export interface ArticleCreate {
      */
     slug?: string;
     /**
-     * 
+     * Body in string format. Either one of body or body_base64 is required.
      * @type {string}
      * @memberof ArticleCreate
      */
-    body: string;
+    body?: string;
+    /**
+     * Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). Either one of body or body_base64 is required.
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    body_base64?: string;
     /**
      * 
      * @type {string}
@@ -1314,11 +1320,17 @@ export interface ArticleUpdate {
      */
     title?: string;
     /**
-     * 
+     * Body in string format. body and body_base64 are mutually exclusive.
      * @type {string}
      * @memberof ArticleUpdate
      */
     body?: string;
+    /**
+     * Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). body and body_base64 are mutually exclusive.
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    body_base64?: string;
     /**
      * 
      * @type {string}

@@ -1,11 +1,14 @@
+import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
-import { Organization, Repository } from '@polar-sh/sdk'
-import Link from 'next/link'
-import { CONFIG } from 'polarkit'
+import { Organization, Platforms, Repository } from '@polar-sh/sdk'
+import { api } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
+import { Banner } from 'polarkit/components/ui/molecules'
 import { formatStarsNumber } from 'polarkit/utils'
+import { useState } from 'react'
 
 export interface ProfileModalProps {
   repositories: Repository[]
@@ -22,6 +25,28 @@ export const ProjectsModal = ({
   organization,
   hideModal,
 }: ProfileModalProps) => {
+  const [orgAndRepo, setOrgAndRepo] = useState('')
+  const [showOrgNotFound, toggleOrgNotFound] = useState(false)
+  const [repositoryRequestLoading, setRepositoryRequestLoading] =
+    useState(false)
+
+  const handleAddRepository = () => {
+    toggleOrgNotFound(false)
+    setRepositoryRequestLoading(true)
+
+    const [organizationName, repositoryName] = orgAndRepo.split('/')
+
+    api.repositories
+      .lookup({
+        organizationName,
+        repositoryName,
+        platform: Platforms.GITHUB,
+      })
+      .then(addRepository)
+      .catch(() => toggleOrgNotFound(true))
+      .finally(() => setRepositoryRequestLoading(false))
+  }
+
   const addRepository = (repository: Repository) => {
     setFeaturedProjects((repos) => [...repos, repository])
   }
@@ -31,6 +56,10 @@ export const ProjectsModal = ({
       repos.filter((repo) => repo.id !== repository.id),
     )
   }
+
+  const extraRepositories = featuredRepositories.filter(
+    (repo) => !repositories.some((r) => r.id === repo.id),
+  )
 
   return (
     <div className="flex flex-col gap-y-8 p-10">
@@ -50,24 +79,41 @@ export const ProjectsModal = ({
       <div className="flex flex-col gap-y-2">
         <h3>Featured Projects</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Select which projects you&apos;d like to highlight.
+          Select which projects you&apos;d like to highlight. The project must
+          belong to an organization that exists on the Polar platform.
         </p>
-
-        {organization.has_app_installed && (
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            Make sure to install the{' '}
-            <Link
-              className="text-blue-500 dark:text-blue-400"
-              href={CONFIG.GITHUB_INSTALLATION_URL}
-            >
-              Polar GitHub
-            </Link>{' '}
-            app to see all your repositories.
-          </p>
-        )}
       </div>
+      <div className="flex flex-col gap-y-4">
+        <div className="flex flex-row items-center gap-x-4">
+          <Input
+            value={orgAndRepo}
+            onChange={(e) => setOrgAndRepo(e.target.value)}
+            placeholder="organization/repository"
+            postSlot={
+              repositoryRequestLoading && (
+                <SpinnerNoMargin className="h-4 w-4" />
+              )
+            }
+          />
+          <Button onClick={handleAddRepository}>Add</Button>
+        </div>
+        {showOrgNotFound && <Banner color="red">Repository not found</Banner>}
+      </div>
+      {extraRepositories.length > 0 && (
+        <div className="flex flex-col gap-y-4">
+          <div className="flex flex-col">
+            {extraRepositories.map((repository) => (
+              <SearchedProjectRow
+                key={repository.id}
+                repository={repository}
+                onRemove={removeRepository}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex w-full flex-col gap-y-8">
-        <div className="flex max-h-[420px] w-full flex-col overflow-y-auto">
+        <div className="flex max-h-[320px] w-full flex-col overflow-y-auto">
           {repositories.map((repository) => (
             <ProjectRow
               key={repository.id}
@@ -81,6 +127,36 @@ export const ProjectsModal = ({
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+const SearchedProjectRow = ({
+  repository,
+  onRemove,
+}: {
+  repository: Repository
+  onRemove: (repository: Repository) => void
+}) => {
+  return (
+    <div className="dark:hover:bg-polar-700 dark:text-polar-50 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100">
+      <div className="flex flex-row items-center gap-x-2">
+        <HiveOutlined
+          className="text-blue-500 dark:text-blue-400"
+          fontSize="small"
+        />
+        <span>
+          {repository.organization.name}/{repository.name}
+        </span>
+      </div>
+      <Button
+        className="h-6 w-6"
+        onClick={(e) => onRemove(repository)}
+        variant="secondary"
+        size="icon"
+      >
+        <CloseOutlined fontSize="inherit" />
+      </Button>
     </div>
   )
 }

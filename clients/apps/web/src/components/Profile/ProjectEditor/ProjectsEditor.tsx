@@ -14,7 +14,7 @@ import { ProjectsModal } from './ProjectsModal'
 
 export interface ProjectsEditorProps {
   organization: Organization
-  featuredRepositories: string[]
+  featuredRepositories: Repository[]
   repositories: Repository[]
   disabled?: boolean
 }
@@ -37,21 +37,17 @@ export const ProjectsEditor = ({
     handleDragEnd,
     handleDragCancel,
     updateItems,
-  } = useDraggableEditorCallbacks(
-    featuredRepositories
-      .map((id) => repositories.find((r) => r.id === id))
-      .filter((value): value is Repository => Boolean(value)),
-    (newRepos) =>
-      updateOrganizationMutation
-        .mutateAsync({
-          id: organization.id,
-          settings: {
-            profile_settings: {
-              featured_projects: newRepos.map((repo) => repo.id),
-            },
+  } = useDraggableEditorCallbacks(featuredRepositories, (newRepos) =>
+    updateOrganizationMutation
+      .mutateAsync({
+        id: organization.id,
+        settings: {
+          profile_settings: {
+            featured_projects: newRepos.map((repo) => repo.id),
           },
-        })
-        .then(() => revalidate(`organization:${organization.name}`)),
+        },
+      })
+      .then(() => revalidate(`organization:${organization.name}`)),
   )
 
   const EditorEmptyState = () => {
@@ -125,6 +121,7 @@ export const ProjectsEditor = ({
             {featuredProjects.map((project, i) => (
               <DraggableProjectCard
                 key={project.id}
+                organization={organization}
                 repository={project}
                 disabled={disabled}
               />
@@ -134,6 +131,7 @@ export const ProjectsEditor = ({
           <DragOverlay adjustScale={true}>
             {activeId ? (
               <ProjectCard
+                organization={organization}
                 repository={
                   featuredProjects.find(
                     (project) => project.id === activeId,

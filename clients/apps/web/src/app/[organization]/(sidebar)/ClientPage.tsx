@@ -35,6 +35,7 @@ const ClientPage = ({
   subscriptionTiers,
   featuredOrganizations,
   repositories,
+  featuredProjects,
   subscriptionsSummary,
   adminOrganizations,
   issues,
@@ -45,6 +46,7 @@ const ClientPage = ({
   subscriptionTiers: ListResourceSubscriptionTier
   featuredOrganizations: Organization[]
   repositories: Repository[]
+  featuredProjects: Repository[]
   subscriptionsSummary: ListResourceSubscriptionSummary
   adminOrganizations: Organization[]
   issues: IssueFunding[]
@@ -148,10 +150,7 @@ const ClientPage = ({
             <ProjectsEditor
               organization={organization}
               repositories={repositories}
-              featuredRepositories={
-                organization.profile_settings.featured_projects ??
-                repositories.slice(0, 2).map((repo) => repo.id)
-              }
+              featuredRepositories={featuredProjects}
               disabled={!isAdmin}
             />
           )}

@@ -81,24 +81,23 @@ const DashboardTopbar = ({
 
   const pathname = usePathname()
 
-  const getRoutes = (
-    pathname: string | null,
-    currentOrg?: Organization,
-  ): Route[] => {
+  const getRoutes = (currentOrg?: Organization): Route[] => {
     return [
       ...(currentOrg ? maintainerRoutes(currentOrg) : []),
-      ...dashboardRoutes(
-        currentOrg,
-        currentOrg ? isPersonal : true,
-        isOrgAdmin,
-      ),
+      ...(currentOrg
+        ? dashboardRoutes(
+            currentOrg,
+            currentOrg ? isPersonal : true,
+            isOrgAdmin ?? false,
+          )
+        : []),
     ]
   }
 
-  const routes = getRoutes(pathname, currentOrgFromURL)
+  const routes = getRoutes(currentOrgFromURL)
 
-  const [currentRoute] = routes.filter(
-    (route) => pathname?.startsWith(route.link),
+  const [currentRoute] = routes.filter((route) =>
+    pathname?.startsWith(route.link),
   )
 
   const className = twMerge(

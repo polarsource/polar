@@ -17,13 +17,11 @@ const DashboardNavigation = () => {
   const isPersonal = org?.id === personalOrg?.id
 
   // All routes and conditions
-  const navs = org
-    ? dashboardRoutes(org, isPersonal, isOrgAdmin)
-    : dashboardRoutes(personalOrg, true, true)
+  const navs = org ? dashboardRoutes(org, isPersonal, isOrgAdmin ?? false) : []
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs
-    .filter((n) => ('if' in n ? n.if : true))
+    .filter((n) => n.if)
     .map((n) => {
       const isActive = path && path.startsWith(n.link)
       return {

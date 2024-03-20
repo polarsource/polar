@@ -111,7 +111,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   {
     id: 'funding',
     title: 'Funding',
-    link: `/maintainer/${org?.name}/funding`,
+    link: `/maintainer/${org.name}/funding`,
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
@@ -120,10 +120,10 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   {
     id: 'members',
     title: 'Members',
-    link: `/maintainer/${org?.name}/members`,
+    link: `/maintainer/${org.name}/members`,
     icon: <Face fontSize="inherit" />,
     postIcon: undefined,
-    if: org?.is_teams_enabled,
+    if: org.is_teams_enabled,
     subs: undefined,
   },
   {
@@ -176,56 +176,63 @@ export const backerRoutes = (): Route[] => [
   },
 ]
 
+export const personalFinanceSubRoutes = (): SubRoute[] => [
+  {
+    title: 'Incoming',
+    link: `/finance/incoming`,
+  },
+  {
+    title: 'Outgoing',
+    link: `/finance/outgoing`,
+  },
+  {
+    title: 'Issue Rewards',
+    link: `/finance/rewards`,
+  },
+  {
+    title: 'Payout Account',
+    link: `/finance/account`,
+  },
+]
+
+export const orgFinanceSubRoutes = (org: Organization): SubRoute[] => [
+  {
+    title: 'Incoming',
+    link: `/maintainer/${org.name}/finance/incoming`,
+  },
+  {
+    title: 'Outgoing',
+    link: `/maintainer/${org.name}/finance/outgoing`,
+  },
+  {
+    title: 'Issue Funding',
+    link: `/maintainer/${org.name}/finance/issue-funding`,
+  },
+
+  {
+    title: 'Payout Account',
+    link: `/maintainer/${org.name}/finance/account`,
+  },
+]
+
 export const dashboardRoutes = (
-  org?: Organization,
-  isPersonal?: boolean,
-  isOrgAdmin?: boolean,
+  org: Organization,
+  isPersonal: boolean,
+  isOrgAdmin: boolean,
 ): Route[] => [
   {
     id: 'finance',
     title: 'Finance',
-    link: isPersonal ? `/finance` : `/maintainer/${org?.name}/finance`,
+    link: isPersonal ? `/finance` : `/maintainer/${org.name}/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: isOrgAdmin,
-    subs: [
-      {
-        title: 'Incoming',
-        link: isPersonal
-          ? `/finance/incoming`
-          : `/maintainer/${org?.name}/finance/incoming`,
-      },
-      {
-        title: 'Outgoing',
-        link: isPersonal
-          ? `/finance/outgoing`
-          : `/maintainer/${org?.name}/finance/outgoing`,
-      },
-      ...(isPersonal
-        ? [
-            {
-              title: 'Issue Rewards',
-              link: `/finance/rewards`,
-            },
-          ]
-        : [
-            {
-              title: 'Issue Funding',
-              link: `/maintainer/${org?.name}/finance/issue-funding`,
-            },
-          ]),
-      {
-        title: 'Payout Account',
-        link: isPersonal
-          ? `/finance/account`
-          : `/maintainer/${org?.name}/finance/account`,
-      },
-    ],
+    subs: isPersonal ? personalFinanceSubRoutes() : orgFinanceSubRoutes(org),
   },
   {
     id: 'settings',
     title: 'Settings',
-    link: isPersonal ? `/settings` : `/maintainer/${org?.name}/settings`,
+    link: isPersonal ? `/settings` : `/maintainer/${org.name}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: isPersonal || isOrgAdmin ? true : false,

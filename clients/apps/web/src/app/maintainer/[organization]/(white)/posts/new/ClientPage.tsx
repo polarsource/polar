@@ -43,7 +43,7 @@ const ClientPage = () => {
 
   const canCreate = org && localArticle.title.length > 0
 
-  const handleContinue = async () => {
+  const createAndRedirect = async (extraPath?: string) => {
     if (!canCreate) {
       return
     }
@@ -56,8 +56,12 @@ const ClientPage = () => {
     clearDraft('ArticleCreate')
 
     router.replace(
-      `/maintainer/${created.organization.name}/posts/${created.slug}`,
+      `/maintainer/${created.organization.name}/posts/${created.slug}${extraPath ?? ''}`,
     )
+  }
+
+  const handleContinue = async () => {
+    await createAndRedirect()
   }
 
   useEffect(() => {
@@ -93,14 +97,7 @@ const ClientPage = () => {
 
       captureEvent('posts:create_publish_tab:create')
 
-      const created = await create.mutateAsync({
-        ...localArticle,
-        organization_id: org.id,
-      })
-
-      router.replace(
-        `/maintainer/${created.organization.name}/posts/${created.slug}#settings`,
-      )
+      await createAndRedirect('#settings')
     } else if (tab === 'edit') {
       captureEvent('posts:create_tab_edit:view')
     } else if (tab === 'preview') {

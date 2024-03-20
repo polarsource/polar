@@ -84,16 +84,8 @@ const HighlightedTier = ({
               marginBottom: 5,
             }}
           >
-            /mo
+            {recurringBillingLabel}
           </div>
-        </div>
-        <div
-          style={{
-            fontSize: 14,
-            color: darkmode ? '#4C5069' : '#eee',
-          }}
-        >
-          {recurringBillingLabel}
         </div>
       </div>
       {tier.description && (

@@ -120,6 +120,7 @@ export const HighlightedTiersEditor = ({
                 key={tier.id}
                 subscriptionTier={tier}
                 variant="small"
+                recurringInterval={recurringInterval}
               >
                 {shouldRenderSubscribeButton ? (
                   <>

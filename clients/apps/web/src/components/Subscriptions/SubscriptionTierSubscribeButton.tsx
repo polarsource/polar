@@ -175,7 +175,9 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
       upgradableSubscription.subscription_tier.type ===
         SubscriptionTierType.FREE
     ) {
-      router.push(`${subscribePath}?tier=${subscriptionTier.id}`)
+      router.push(
+        `${subscribePath}?tier=${subscriptionTier.id}&price=${price.id}`,
+      )
     } else {
       await api.subscriptions.upgradeSubscription({
         id: upgradableSubscription.id,

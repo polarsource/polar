@@ -1,5 +1,12 @@
 # polarkit
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [2166b03]
+  - @polar-sh/sdk@0.5.0
+
 ## 0.0.2
 
 ### Patch Changes

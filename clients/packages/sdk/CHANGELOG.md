@@ -1,5 +1,11 @@
 # @polar-sh/sdk
 
+## 0.5.0
+
+### Minor Changes
+
+- 2166b03: Updated SDK definitions
+
 ## 0.4.8
 
 ### Patch Changes

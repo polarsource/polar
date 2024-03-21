@@ -29,7 +29,7 @@ from polar.funding.schemas import PledgesTypeSummaries
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
-from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.service_pledge import pledge_stripe_service
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.issue.service import issue as issue_service
 from polar.kit.hook import Hook
@@ -1136,7 +1136,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             if not pledger_user:
                 raise ResourceNotFound()
 
-            invoice = await stripe_service.create_user_pledge_invoice(
+            invoice = await pledge_stripe_service.create_user_pledge_invoice(
                 session=session,
                 user=pledger_user,
                 pledge=pledge,
@@ -1151,7 +1151,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             if not pledger_org:
                 raise ResourceNotFound()
 
-            invoice = await stripe_service.create_organization_pledge_invoice(
+            invoice = await pledge_stripe_service.create_organization_pledge_invoice(
                 session=session,
                 organization=pledger_org,
                 pledge=pledge,

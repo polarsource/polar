@@ -75,7 +75,7 @@ async def test_mark_pending_by_issue_id(
     )
 
     transfer = mocker.patch(
-        "polar.integrations.stripe.service.StripeService.create_user_pledge_invoice"
+        "polar.integrations.stripe.service_pledge.PledgeStripeService.create_user_pledge_invoice"
     )
     transfer.return_value = Invoice()
 
@@ -168,7 +168,7 @@ async def test_mark_pending_already_pending_no_notification(
     )
 
     transfer = mocker.patch(
-        "polar.integrations.stripe.service.StripeService.create_pledge_invoice"
+        "polar.integrations.stripe.service_pledge.PledgeStripeService.create_pledge_invoice"
     )
     transfer.return_value = Invoice()
 
@@ -984,7 +984,7 @@ async def test_pledge_states(
     )
 
     create_invoice = mocker.patch(
-        "polar.integrations.stripe.service.StripeService.create_user_pledge_invoice"
+        "polar.integrations.stripe.service_pledge.PledgeStripeService.create_user_pledge_invoice"
     )
     create_invoice.return_value = Invoice()
 

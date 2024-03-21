@@ -2045,7 +2045,7 @@ export interface CurrencyAmount {
      */
     currency: string;
     /**
-     * Amount in the currencys smallest unit (cents if currency is USD)
+     * Amount in the currencies smallest unit (cents if currency is USD)
      * @type {number}
      * @memberof CurrencyAmount
      */
@@ -2158,6 +2158,150 @@ export interface DiscordGuildRole {
      */
     color: string;
 }
+/**
+ * 
+ * @export
+ * @interface DonationCreateStripePaymentIntent
+ */
+export interface DonationCreateStripePaymentIntent {
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    to_organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    email: string;
+    /**
+     * 
+     * @type {DonationCurrencyAmount}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    amount: DonationCurrencyAmount;
+    /**
+     * If the payment method should be saved for future usage.
+     * @type {string}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    setup_future_usage?: DonationCreateStripePaymentIntentSetupFutureUsageEnum;
+    /**
+     * The organization to give credit to. The pledge will be paid by the authenticated user.
+     * @type {string}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    on_behalf_of_organization_id?: string;
+}
+
+
+/**
+ * @export
+ */
+export const DonationCreateStripePaymentIntentSetupFutureUsageEnum = {
+    ON_SESSION: 'on_session'
+} as const;
+export type DonationCreateStripePaymentIntentSetupFutureUsageEnum = typeof DonationCreateStripePaymentIntentSetupFutureUsageEnum[keyof typeof DonationCreateStripePaymentIntentSetupFutureUsageEnum];
+
+/**
+ * 
+ * @export
+ * @interface DonationCurrencyAmount
+ */
+export interface DonationCurrencyAmount {
+    /**
+     * Three letter currency code (eg: USD)
+     * @type {string}
+     * @memberof DonationCurrencyAmount
+     */
+    currency: string;
+    /**
+     * Amount in the currencies smallest unit (cents if currency is USD)
+     * @type {number}
+     * @memberof DonationCurrencyAmount
+     */
+    amount: number;
+}
+/**
+ * 
+ * @export
+ * @interface DonationStripePaymentIntentMutationResponse
+ */
+export interface DonationStripePaymentIntentMutationResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationStripePaymentIntentMutationResponse
+     */
+    payment_intent_id: string;
+    /**
+     * 
+     * @type {CurrencyAmount}
+     * @memberof DonationStripePaymentIntentMutationResponse
+     */
+    amount: CurrencyAmount;
+    /**
+     * 
+     * @type {CurrencyAmount}
+     * @memberof DonationStripePaymentIntentMutationResponse
+     */
+    fee: CurrencyAmount;
+    /**
+     * 
+     * @type {CurrencyAmount}
+     * @memberof DonationStripePaymentIntentMutationResponse
+     */
+    amount_including_fee: CurrencyAmount;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationStripePaymentIntentMutationResponse
+     */
+    client_secret?: string;
+}
+/**
+ * 
+ * @export
+ * @interface DonationUpdateStripePaymentIntent
+ */
+export interface DonationUpdateStripePaymentIntent {
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationUpdateStripePaymentIntent
+     */
+    email: string;
+    /**
+     * 
+     * @type {DonationCurrencyAmount}
+     * @memberof DonationUpdateStripePaymentIntent
+     */
+    amount: DonationCurrencyAmount;
+    /**
+     * If the payment method should be saved for future usage.
+     * @type {string}
+     * @memberof DonationUpdateStripePaymentIntent
+     */
+    setup_future_usage?: DonationUpdateStripePaymentIntentSetupFutureUsageEnum;
+    /**
+     * The organization to give credit to. The pledge will be paid by the authenticated user.
+     * @type {string}
+     * @memberof DonationUpdateStripePaymentIntent
+     */
+    on_behalf_of_organization_id?: string;
+}
+
+
+/**
+ * @export
+ */
+export const DonationUpdateStripePaymentIntentSetupFutureUsageEnum = {
+    ON_SESSION: 'on_session'
+} as const;
+export type DonationUpdateStripePaymentIntentSetupFutureUsageEnum = typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum[keyof typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum];
+
 /**
  * 
  * @export

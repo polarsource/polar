@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterable, Sequence
+from datetime import timedelta
 from typing import cast
 
 import stripe as stripe_lib
@@ -7,12 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.account.service import account as account_service
+from polar.config import settings
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import async_sessionmaker
-from polar.kit.utils import generate_uuid
+from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
 from polar.models import Account, Issue, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
@@ -190,7 +192,7 @@ class PayoutTransactionService(BaseTransactionService):
 
         1. Transfer the balance transactions to the Stripe Connect account.
         2. Trigger a payout on the Stripe Connect account,
-        but later once the balance is actually available.
+        but later once our safety delay is passed and the balance is actually available.
 
         This function performs the second step and tries to trigger pending payouts,
         if balance is available.
@@ -499,7 +501,7 @@ class PayoutTransactionService(BaseTransactionService):
         return result.scalars().all()
 
     async def _get_pending_stripe_payouts(
-        self, session: AsyncSession
+        self, session: AsyncSession, delay: timedelta = settings.ACCOUNT_PAYOUT_DELAY
     ) -> Sequence[Transaction]:
         statement = (
             select(Transaction)
@@ -507,6 +509,7 @@ class PayoutTransactionService(BaseTransactionService):
                 Transaction.type == TransactionType.payout,
                 Transaction.processor == PaymentProcessor.stripe,
                 Transaction.payout_id.is_(None),
+                Transaction.created_at < utc_now() - delay,
             )
             .options(joinedload(Transaction.account))
         )

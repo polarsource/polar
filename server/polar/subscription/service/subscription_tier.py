@@ -114,12 +114,21 @@ class SubscriptionTierService(
         if not include_archived:
             statement = statement.where(SubscriptionTier.is_archived.is_(False))
 
+        statement = statement.join(
+            SubscriptionTierPrice,
+            onclause=SubscriptionTierPrice.subscription_tier_id == SubscriptionTier.id,
+            isouter=True,
+        ).options(
+            contains_eager(SubscriptionTier.prices),
+        )
+
         statement = statement.order_by(
             case(
                 (SubscriptionTier.type == SubscriptionTierType.free, 1),
                 (SubscriptionTier.type == SubscriptionTierType.individual, 2),
                 (SubscriptionTier.type == SubscriptionTierType.business, 3),
             ),
+            SubscriptionTierPrice.price_amount.asc(),
             SubscriptionTier.created_at,
         )
 

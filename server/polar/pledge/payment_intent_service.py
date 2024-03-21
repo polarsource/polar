@@ -8,7 +8,8 @@ import structlog
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
-from polar.integrations.stripe.service import stripe
+from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.service_pledge import pledge_stripe_service
 from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
 from polar.models.organization import Organization
@@ -76,7 +77,7 @@ class PaymentIntentService:
 
         # Create a payment intent with Stripe
         try:
-            payment_intent = stripe.create_anonymous_intent(
+            payment_intent = pledge_stripe_service.create_anonymous_intent(
                 amount=amount_including_fee,
                 transfer_group=str(intent.issue_id),
                 pledge_issue=pledge_issue,
@@ -110,7 +111,7 @@ class PaymentIntentService:
         amount_including_fee = amount + fee
 
         # Create a payment intent with Stripe
-        payment_intent = await stripe.create_user_intent(
+        payment_intent = await pledge_stripe_service.create_user_intent(
             session=session,
             amount=amount_including_fee,
             transfer_group=str(intent.issue_id),
@@ -136,7 +137,7 @@ class PaymentIntentService:
         fee = self.calculate_fee(updates.amount)
         amount_including_fee = updates.amount + fee
 
-        payment_intent = stripe.modify_intent(
+        payment_intent = pledge_stripe_service.modify_intent(
             payment_intent_id,
             amount=amount_including_fee,
             receipt_email=updates.email,
@@ -165,7 +166,7 @@ class PaymentIntentService:
         if pledge:
             return pledge
 
-        intent = stripe.retrieve_intent(payment_intent_id)
+        intent = stripe_service.retrieve_intent(payment_intent_id)
         if not intent:
             raise ResourceNotFound()
 

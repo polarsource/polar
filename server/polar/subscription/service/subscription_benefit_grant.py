@@ -47,6 +47,12 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         *,
         attempt: int = 1,
     ) -> SubscriptionBenefitGrant:
+        log.info(
+            "Granting subscription benefit",
+            subscription_benefit_id=str(subscription_benefit.id),
+            user_id=str(user.id),
+        )
+
         grant = await self.get_by_subscription_user_and_benefit(
             session, subscription, user, subscription_benefit
         )
@@ -93,6 +99,13 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             user_id=user.id,
         )
 
+        log.info(
+            "Subscription benefit granted",
+            subscription_benefit_id=str(subscription_benefit.id),
+            user_id=str(user.id),
+            grant_id=str(grant.id),
+        )
+
         return grant
 
     async def revoke_benefit(
@@ -104,6 +117,12 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         *,
         attempt: int = 1,
     ) -> SubscriptionBenefitGrant:
+        log.info(
+            "Revoking subscription benefit",
+            subscription_benefit_id=str(subscription_benefit.id),
+            user_id=str(user.id),
+        )
+
         grant = await self.get_by_subscription_user_and_benefit(
             session, subscription, user, subscription_benefit
         )
@@ -138,6 +157,13 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
                 "subscription_benefit_type": subscription_benefit.type,
             },
             user_id=user.id,
+        )
+
+        log.info(
+            "Subscription benefit revoked",
+            subscription_benefit_id=str(subscription_benefit.id),
+            user_id=str(user.id),
+            grant_id=str(grant.id),
         )
 
         return grant
@@ -265,6 +291,12 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             )
             return
 
+        log.info(
+            "Precondition error while granting subscription benefit. User was informed.",
+            subscription_benefit_id=str(subscription_benefit.id),
+            user_id=str(user.id),
+        )
+
         await session.refresh(subscription, {"user", "subscription_tier"})
         subscription_tier = subscription.subscription_tier
 
@@ -298,6 +330,12 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         user: User,
         subscription_benefit_type: SubscriptionBenefitType,
     ) -> None:
+        log.info(
+            "Enqueueing subscription benefit grants after precondition fulfilled",
+            user_id=str(user.id),
+            subscription_benefit_type=subscription_benefit_type,
+        )
+
         grants = await self._get_by_user_and_benefit_type(
             session, user, subscription_benefit_type
         )

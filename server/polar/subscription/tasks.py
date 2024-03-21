@@ -1,11 +1,13 @@
 import uuid
 
+import structlog
 from arq import Retry
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.money import get_cents_in_dollar_string
+from polar.logging import Logger
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.organization.service import organization as organization_service
 from polar.user.service import user as user_service
@@ -23,6 +25,8 @@ from .service.subscription_tier import subscription_tier as subscription_tier_se
 from .service.subscription_tier_price import (
     subscription_tier_price as subscription_tier_price_service,
 )
+
+log: Logger = structlog.get_logger()
 
 
 class SubscriptionTaskError(PolarError):
@@ -132,6 +136,13 @@ async def subscription_benefit_grant(
                 attempt=ctx["job_try"],
             )
         except SubscriptionBenefitRetriableError as e:
+            log.warning(
+                "Retriable error encountered while granting benefit",
+                error=str(e),
+                defer_seconds=e.defer_seconds,
+                subscription_benefit_id=str(subscription_benefit_id),
+                user_id=str(user_id),
+            )
             raise Retry(e.defer_seconds) from e
 
 
@@ -167,6 +178,13 @@ async def subscription_benefit_revoke(
                 attempt=ctx["job_try"],
             )
         except SubscriptionBenefitRetriableError as e:
+            log.warning(
+                "Retriable error encountered while revoking benefit",
+                error=str(e),
+                defer_seconds=e.defer_seconds,
+                subscription_benefit_id=str(subscription_benefit_id),
+                user_id=str(user_id),
+            )
             raise Retry(e.defer_seconds) from e
 
 
@@ -188,6 +206,12 @@ async def subscription_benefit_update(
                 session, subscription_benefit_grant, attempt=ctx["job_try"]
             )
         except SubscriptionBenefitRetriableError as e:
+            log.warning(
+                "Retriable error encountered while updating benefit",
+                error=str(e),
+                defer_seconds=e.defer_seconds,
+                subscription_benefit_grant_id=str(subscription_benefit_grant_id),
+            )
             raise Retry(e.defer_seconds) from e
 
 
@@ -209,6 +233,12 @@ async def subscription_benefit_delete(
                 session, subscription_benefit_grant, attempt=ctx["job_try"]
             )
         except SubscriptionBenefitRetriableError as e:
+            log.warning(
+                "Retriable error encountered while deleting benefit",
+                error=str(e),
+                defer_seconds=e.defer_seconds,
+                subscription_benefit_grant_id=str(subscription_benefit_grant_id),
+            )
             raise Retry(e.defer_seconds) from e
 
 

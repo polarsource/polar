@@ -103,7 +103,7 @@ const ClientPage = ({
   return (
     <div className="flex w-full flex-col gap-y-12">
       <div className="flex w-full flex-col gap-16">
-        <div className="flex flex-col gap-16 md:flex-row">
+        <div className="flex flex-col gap-16 md:flex-row md:gap-24">
           <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16">
             {repository.description && (
               <DescriptionEditor

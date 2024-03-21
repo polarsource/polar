@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from typing import Literal, TypedDict, Unpack, cast
 
 import stripe as stripe_lib
+from sqlalchemy import desc
 from stripe import error as stripe_lib_error
 
 from polar.account.schemas import AccountCreate
@@ -36,6 +37,17 @@ class MissingOrganizationBillingEmail(PolarError):
 
 
 class StripeService:
+    async def _get_customer(
+        self,
+        session: AsyncSession,
+        customer: User | Organization | None = None,
+    ) -> stripe_lib.Customer | None:
+        if isinstance(customer, User):
+            return await self.get_or_create_user_customer(session, customer)
+        if isinstance(customer, Organization):
+            return await self.get_or_create_org_customer(session, customer)
+        return None
+
     async def create_payment_intent(
         self,
         session: AsyncSession,
@@ -47,14 +59,14 @@ class StripeService:
         | None = None,
         receipt_email: str,
         description: str,
-        use_as_customer: User | Organization | None = None,
+        customer: User | Organization | None = None,
     ) -> stripe_lib.PaymentIntent:
-        params = stripe_lib.PaymentIntent.CreateParams(
-            amount=amount.amount,
-            currency=amount.currency,
-            receipt_email=receipt_email,
-            description=description,
-        )
+        params: stripe_lib.PaymentIntent.CreateParams = {
+            "amount": amount.amount,
+            "currency": amount.currency,
+            "receipt_email": receipt_email,
+            "description": description,
+        }
 
         if transfer_group:
             params["transfer_group"] = transfer_group
@@ -62,27 +74,59 @@ class StripeService:
         if metadata is not None:
             params["metadata"] = metadata.model_dump(exclude_none=True)
 
-        if use_as_customer is not None:
-            if isinstance(use_as_customer, User):
-                customer = await self.get_or_create_user_customer(
-                    session, use_as_customer
-                )
-                if not customer:
-                    raise InternalServerError(
-                        "Failed to create Stripe Customer for User"
-                    )
-                params["customer"] = customer.id
-            elif isinstance(use_as_customer, Organization):
-                customer = await self.get_or_create_org_customer(
-                    session, use_as_customer
-                )
-                if not customer:
-                    raise InternalServerError(
-                        "Failed to create Stripe Customer for Organization"
-                    )
-                params["customer"] = customer.id
+        if customer is not None:
+            stripe_customer = await self._get_customer(session, customer)
+            if not stripe_customer:
+                raise InternalServerError("Failed to create Stripe Customer")
+            params["customer"] = stripe_customer.id
 
         return stripe_lib.PaymentIntent.create(**params)
+
+    async def modify_payment_intent(
+        self,
+        session: AsyncSession,
+        id: str,
+        *,
+        amount: CurrencyAmount,
+        transfer_group: str | None = None,
+        metadata: PledgePaymentIntentMetadata
+        | DonationPaymentIntentMetadata
+        | None = None,
+        receipt_email: str | None = None,
+        description: str | None = None,
+        customer: User | Organization | None = None,
+        setup_future_usage: Literal["off_session", "on_session"] | None = None,
+    ) -> stripe_lib.PaymentIntent:
+        params: stripe_lib.PaymentIntent.ModifyParams = {
+            "amount": amount.amount,
+            "currency": amount.currency,
+        }
+
+        if receipt_email is not None:
+            params["receipt_email"] = receipt_email
+
+        if description is not None:
+            params["description"] = description
+
+        if transfer_group:
+            params["transfer_group"] = transfer_group
+
+        if setup_future_usage is not None:
+            params["setup_future_usage"] = setup_future_usage
+
+        if metadata is not None:
+            params["metadata"] = metadata.model_dump(exclude_none=True)
+
+        if customer is not None:
+            stripe_customer = await self._get_customer(session, customer)
+            if not stripe_customer:
+                raise InternalServerError("Failed to create Stripe Customer")
+            params["customer"] = stripe_customer.id
+
+        return stripe_lib.PaymentIntent.modify(
+            id,
+            **params,
+        )
 
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.retrieve(id)

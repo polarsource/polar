@@ -29,6 +29,18 @@ class DonationCreateStripePaymentIntent(Schema):
     )
 
 
+class DonationUpdateStripePaymentIntent(Schema):
+    email: str
+    amount: DonationCurrencyAmount
+    setup_future_usage: Literal["on_session"] | None = Field(
+        None, description="If the payment method should be saved for future usage."
+    )
+    on_behalf_of_organization_id: UUID | None = Field(
+        None,
+        description="The organization to give credit to. The pledge will be paid by the authenticated user.",
+    )
+
+
 class DonationStripePaymentIntentMutationResponse(Schema):
     payment_intent_id: str
     amount: CurrencyAmount

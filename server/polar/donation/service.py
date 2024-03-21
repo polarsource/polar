@@ -44,10 +44,34 @@ class DonationService:
             amount=amount,
             metadata=metadata,
             receipt_email=receipt_email,
-            description=f"Donation to ${to_organization.name}",
-            use_as_customer=on_behalf_of_organization
-            if on_behalf_of_organization
-            else user,
+            description=f"Donation to {to_organization.name}",
+            customer=on_behalf_of_organization if on_behalf_of_organization else user,
+        )
+
+    async def update_payment_intent(
+        self,
+        session: AsyncSession,
+        *,
+        payment_intent_id: str,
+        user: User | None,
+        on_behalf_of_organization: Organization | None,
+        amount: CurrencyAmount,
+        receipt_email: str,
+        setup_future_usage: Literal["off_session", "on_session"] | None = None,
+    ) -> stripe_lib.PaymentIntent:
+        metadata = DonationPaymentIntentMetadata()
+
+        if on_behalf_of_organization:
+            metadata.on_behalf_of_organization_id = on_behalf_of_organization.id
+
+        return await stripe_service.modify_payment_intent(
+            session=session,
+            id=payment_intent_id,
+            amount=amount,
+            metadata=metadata,
+            receipt_email=receipt_email,
+            customer=on_behalf_of_organization if on_behalf_of_organization else user,
+            setup_future_usage=setup_future_usage,
         )
 
 

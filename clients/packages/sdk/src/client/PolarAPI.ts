@@ -6,6 +6,7 @@ import {
   BackofficeApi,
   Configuration,
   DashboardApi,
+  DonationsApi,
   ExtensionApi,
   FundingApi,
   HealthApi,
@@ -59,6 +60,7 @@ export class PolarAPI {
   public readonly transactions: TransactionsApi
   public readonly users: UsersApi
   public readonly webhookNotifications: WebhookNotificationsApi
+  public readonly donations: DonationsApi
 
 
   constructor(config: Configuration) {
@@ -90,5 +92,6 @@ export class PolarAPI {
     this.transactions = new TransactionsApi(config)
     this.users = new UsersApi(config)
     this.webhookNotifications = new WebhookNotificationsApi(config)
+    this.donations = new DonationsApi(config)
   }
 }

@@ -28,12 +28,8 @@ async def create_transaction(
 
 @pytest.mark.asyncio
 class TestCheckReviewThreshold:
-    @pytest.mark.parametrize(
-        "status", [Account.Status.ACTIVE, Account.Status.UNDER_REVIEW]
-    )
-    async def test_not_applicable_account(
+    async def test_under_review(
         self,
-        status: Account.Status,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -41,13 +37,15 @@ class TestCheckReviewThreshold:
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
 
-        account = await create_account(save_fixture, admin=user, status=status)
+        account = await create_account(
+            save_fixture, admin=user, status=Account.Status.UNDER_REVIEW
+        )
 
         # then
         session.expunge_all()
 
         updated_account = await account_service.check_review_threshold(session, account)
-        assert updated_account.status == status
+        assert updated_account.status == Account.Status.UNDER_REVIEW
 
         enqueue_job_mock.assert_not_called()
 
@@ -61,7 +59,10 @@ class TestCheckReviewThreshold:
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
 
         account = await create_account(
-            save_fixture, admin=user, status=Account.Status.UNREVIEWED
+            save_fixture,
+            admin=user,
+            status=Account.Status.ACTIVE,
+            next_review_threshold=10000,
         )
         await create_transaction(save_fixture, account=account)
 
@@ -69,7 +70,7 @@ class TestCheckReviewThreshold:
         session.expunge_all()
 
         updated_account = await account_service.check_review_threshold(session, account)
-        assert updated_account.status == Account.Status.UNREVIEWED
+        assert updated_account.status == Account.Status.ACTIVE
 
         enqueue_job_mock.assert_not_called()
 
@@ -83,7 +84,7 @@ class TestCheckReviewThreshold:
         enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
 
         account = await create_account(
-            save_fixture, admin=user, status=Account.Status.UNREVIEWED
+            save_fixture, admin=user, status=Account.Status.ACTIVE
         )
         for _ in range(0, 10):
             await create_transaction(save_fixture, account=account)
@@ -101,7 +102,7 @@ class TestCheckReviewThreshold:
 
 @pytest.mark.asyncio
 class TestConfirmAccountReviewed:
-    async def test_valid(
+    async def test_valid_next_threshold(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -122,6 +123,37 @@ class TestConfirmAccountReviewed:
         )
 
         assert updated_account.status == Account.Status.ACTIVE
+        assert updated_account.next_review_threshold == 10000
+
+        enqueue_job_mock.assert_called_once_with(
+            "account.reviewed", account_id=account.id
+        )
+
+    async def test_valid_last_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        account = await create_account(
+            save_fixture,
+            admin=user,
+            status=Account.Status.UNDER_REVIEW,
+            next_review_threshold=10000,
+        )
+
+        enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
+
+        # then
+        session.expunge_all()
+
+        updated_account = await account_service.confirm_account_reviewed(
+            session, account
+        )
+
+        assert updated_account.status == Account.Status.ACTIVE
+        assert updated_account.next_review_threshold is None
 
         enqueue_job_mock.assert_called_once_with(
             "account.reviewed", account_id=account.id

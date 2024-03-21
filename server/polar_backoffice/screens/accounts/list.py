@@ -115,10 +115,9 @@ class AccountsListScreen(Screen[None]):
                 .order_by(
                     case(
                         (Account.status == Account.Status.UNDER_REVIEW, 1),
-                        (Account.status == Account.Status.UNREVIEWED, 2),
-                        (Account.status == Account.Status.ACTIVE, 3),
-                        (Account.status == Account.Status.ONBOARDING_STARTED, 4),
-                        (Account.status == Account.Status.CREATED, 5),
+                        (Account.status == Account.Status.ACTIVE, 2),
+                        (Account.status == Account.Status.ONBOARDING_STARTED, 3),
+                        (Account.status == Account.Status.CREATED, 4),
                     ),
                     desc(text("balance")),
                     Account.created_at.desc(),

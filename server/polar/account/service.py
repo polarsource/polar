@@ -123,13 +123,16 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     async def check_review_threshold(
         self, session: AsyncSession, account: Account
     ) -> Account:
-        if account.is_active() or account.is_under_review():
+        if account.is_under_review():
             return account
 
         transfers_sum = await transaction_service.get_transactions_sum(
             session, account.id, type=TransactionType.balance
         )
-        if transfers_sum >= settings.ACCOUNT_BALANCE_REVIEW_THRESHOLD:
+        if (
+            account.next_review_threshold is not None
+            and transfers_sum >= account.next_review_threshold
+        ):
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
             await session.commit()
@@ -142,6 +145,18 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         self, session: AsyncSession, account: Account
     ) -> Account:
         account.status = Account.Status.ACTIVE
+
+        # Increase the next review threshold
+        if account.next_review_threshold is not None:
+            try:
+                account.next_review_threshold = next(
+                    threshold
+                    for threshold in settings.ACCOUNT_PAYOUT_REVIEW_THRESHOLDS
+                    if threshold > account.next_review_threshold
+                )
+            except StopIteration:
+                account.next_review_threshold = None
+
         session.add(account)
         await session.commit()
 
@@ -214,7 +229,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             )
 
         account = Account(
-            status=Account.Status.UNREVIEWED,
+            status=Account.Status.ACTIVE,
             admin_id=admin_id,
             account_type=account_create.account_type,
             open_collective_slug=account_create.open_collective_slug,
@@ -259,7 +274,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 account.is_payouts_enabled,
             )
         ):
-            account.status = Account.Status.UNREVIEWED
+            account.status = Account.Status.ACTIVE
 
         session.add(account)
         await session.commit()

@@ -36,7 +36,7 @@ async def enqueue(event: stripe.Event) -> None:
     log.info("stripe.webhook.queued", task_name=task_name)
 
 
-@router.get("/refresh")
+@router.get("/refresh", name="integrations.stripe.refresh")
 def stripe_connect_refresh(return_path: str | None = Query(None)) -> RedirectResponse:
     if return_path is None:
         raise HTTPException(404)
@@ -61,7 +61,7 @@ class WebhookEventGetter:
             raise HTTPException(status_code=401) from e
 
 
-@router.post("/webhook", status_code=202)
+@router.post("/webhook", status_code=202, name="integrations.stripe.webhook")
 async def webhook(
     event: stripe.Event = Depends(WebhookEventGetter(settings.STRIPE_WEBHOOK_SECRET)),
 ) -> None:
@@ -69,7 +69,9 @@ async def webhook(
         await enqueue(event)
 
 
-@router.post("/webhook-connect", status_code=202)
+@router.post(
+    "/webhook-connect", status_code=202, name="integrations.stripe.webhook_connect"
+)
 async def webhook_connect(
     event: stripe.Event = Depends(
         WebhookEventGetter(settings.STRIPE_CONNECT_WEBHOOK_SECRET)

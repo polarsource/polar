@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import timedelta
 from enum import Enum
 from functools import cached_property
 
@@ -132,6 +133,7 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
 
     ACCOUNT_PAYOUT_REVIEW_THRESHOLDS: list[int] = [0, 10000]
+    ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(days=1)
 
     SUBSCRIPTION_FEE_PERCENT: int = 5
     PLEDGE_FEE_PERCENT: int = 5

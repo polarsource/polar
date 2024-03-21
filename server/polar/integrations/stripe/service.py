@@ -7,7 +7,12 @@ from stripe import error as stripe_lib_error
 
 from polar.account.schemas import AccountCreate
 from polar.config import settings
-from polar.exceptions import PolarError
+from polar.currency.schemas import CurrencyAmount
+from polar.exceptions import InternalServerError, PolarError
+from polar.integrations.stripe.schemas import (
+    DonationPaymentIntentMetadata,
+    PledgePaymentIntentMetadata,
+)
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
@@ -31,6 +36,54 @@ class MissingOrganizationBillingEmail(PolarError):
 
 
 class StripeService:
+    async def create_payment_intent(
+        self,
+        session: AsyncSession,
+        *,
+        amount: CurrencyAmount,
+        transfer_group: str | None = None,
+        metadata: PledgePaymentIntentMetadata
+        | DonationPaymentIntentMetadata
+        | None = None,
+        receipt_email: str,
+        description: str,
+        use_as_customer: User | Organization | None = None,
+    ) -> stripe_lib.PaymentIntent:
+        params = stripe_lib.PaymentIntent.CreateParams(
+            amount=amount.amount,
+            currency=amount.currency,
+            receipt_email=receipt_email,
+            description=description,
+        )
+
+        if transfer_group:
+            params["transfer_group"] = transfer_group
+
+        if metadata is not None:
+            params["metadata"] = metadata.model_dump(exclude_none=True)
+
+        if use_as_customer is not None:
+            if isinstance(use_as_customer, User):
+                customer = await self.get_or_create_user_customer(
+                    session, use_as_customer
+                )
+                if not customer:
+                    raise InternalServerError(
+                        "Failed to create Stripe Customer for User"
+                    )
+                params["customer"] = customer.id
+            elif isinstance(use_as_customer, Organization):
+                customer = await self.get_or_create_org_customer(
+                    session, use_as_customer
+                )
+                if not customer:
+                    raise InternalServerError(
+                        "Failed to create Stripe Customer for Organization"
+                    )
+                params["customer"] = customer.id
+
+        return stripe_lib.PaymentIntent.create(**params)
+
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.retrieve(id)
 

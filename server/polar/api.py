@@ -6,6 +6,7 @@ from polar.article.endpoints import router as articles_router
 from polar.auth.endpoints import router as auth_router
 from polar.backoffice.endpoints import router as backoffice_router
 from polar.dashboard.endpoints import router as dashboard_router
+from polar.donation.endpoints import router as donations_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.extension.endpoints import router as extension_router
 from polar.funding.endpoints import router as funding_router
@@ -91,3 +92,5 @@ router.include_router(advertisements_router)
 router.include_router(traffic_router)
 # /auth
 router.include_router(auth_router)
+# /donations
+router.include_router(donations_router)

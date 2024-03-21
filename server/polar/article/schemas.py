@@ -1,9 +1,10 @@
+import base64
 import datetime
 import re
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import Field, HttpUrl
+from pydantic import Field, HttpUrl, model_validator
 
 from polar.kit.schemas import Schema
 from polar.models.article import Article as ArticleModel
@@ -203,6 +204,22 @@ class ArticleCreate(Schema):
         default=None, description="Custom og:description value"
     )
 
+    @model_validator(mode="after")
+    def check_either_body_or_body_base64(self) -> Self:
+        if self.body is not None and self.body_base64 is not None:
+            raise ValueError(
+                "Only one of body or body_base64 can be provided, not both."
+            )
+        if self.body is None and self.body_base64 is None:
+            raise ValueError("Either body or body_base64 must be provided.")
+        return self
+
+    def get_body(self) -> str:
+        if self.body is not None:
+            return self.body
+        assert self.body_base64 is not None
+        return base64.b64decode(self.body_base64).decode("utf-8")
+
 
 class ArticleUpdate(Schema):
     title: str | None = None
@@ -259,6 +276,21 @@ class ArticleUpdate(Schema):
     og_description: str | None = Field(
         default=None, description="Custom og:description value"
     )
+
+    @model_validator(mode="after")
+    def check_either_body_or_body_base64(self) -> Self:
+        if self.body is not None and self.body_base64 is not None:
+            raise ValueError(
+                "Only one of body or body_base64 can be provided, not both."
+            )
+        return self
+
+    def get_body(self) -> str | None:
+        if self.body is not None:
+            return self.body
+        if self.body_base64 is not None:
+            return base64.b64decode(self.body_base64).decode("utf-8")
+        return None
 
 
 class ArticleViewedResponse(Schema):

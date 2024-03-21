@@ -20,7 +20,6 @@ class Account(RecordModel):
     class Status(str, Enum):
         CREATED = "created"
         ONBOARDING_STARTED = "onboarding_started"
-        UNREVIEWED = "unreviewed"
         UNDER_REVIEW = "under_review"
         ACTIVE = "active"
 
@@ -71,6 +70,9 @@ class Account(RecordModel):
     status: Mapped[Status] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.CREATED
     )
+    next_review_threshold: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=settings.ACCOUNT_PAYOUT_REVIEW_THRESHOLDS[0]
+    )
 
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
@@ -92,11 +94,7 @@ class Account(RecordModel):
         return relationship("Organization", lazy="raise", back_populates="account")
 
     def is_ready(self) -> bool:
-        return self.status in {
-            Account.Status.UNREVIEWED,
-            Account.Status.UNDER_REVIEW,
-            Account.Status.ACTIVE,
-        }
+        return self.status in {Account.Status.UNDER_REVIEW, Account.Status.ACTIVE}
 
     def is_active(self) -> bool:
         return self.status == Account.Status.ACTIVE

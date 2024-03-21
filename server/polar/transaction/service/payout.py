@@ -20,6 +20,7 @@ from polar.models import Account, Issue, Pledge, Subscription, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.schemas import PayoutEstimate
+from polar.worker import enqueue_job
 
 from .base import BaseTransactionService, BaseTransactionServiceError
 from .platform_fee import PayoutAmountTooLow
@@ -183,6 +184,8 @@ class PayoutTransactionService(BaseTransactionService):
 
         session.add(transaction)
         await session.flush()
+
+        enqueue_job("payout.created", payout_id=transaction.id)
 
         return transaction
 

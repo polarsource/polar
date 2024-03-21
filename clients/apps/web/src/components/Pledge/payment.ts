@@ -33,15 +33,13 @@ export const generateRedirectURL = (
     redirectURL.searchParams.append('email', email)
   }
 
-  // Only in case we pass our redirect to Stripe which in turn will add it
+  // Server side redirect
+  // Search params are added by Stripe
   if (!paymentIntent) {
     return redirectURL.toString()
   }
 
-  /*
-   * Same location & query params as the serverside redirect from Stripe if required
-   * by the payment method - easing the implementation.
-   */
+  // Client side redirect
   redirectURL.searchParams.append('payment_intent_id', paymentIntent.id)
   if (paymentIntent.client_secret) {
     redirectURL.searchParams.append(

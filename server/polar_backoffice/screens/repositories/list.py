@@ -10,7 +10,7 @@ from textual.widgets import DataTable, Footer
 from polar.config import settings
 from polar.issue.service import issue as issue_service
 from polar.models import Organization, Repository
-from polar.worker import enqueue_job
+from polar.worker import enqueue_job, flush_enqueued_jobs
 
 from ...db import sessionmaker
 from ...widgets.header import PolarHeader
@@ -149,6 +149,7 @@ class RepositoriesListScreen(Screen[None]):
                 title="Repository issues rebadged",
                 timeout=5,
             )
+        await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
 
     def _set_sub_title(self) -> None:
         self.sub_title = "Repositories"

@@ -29,6 +29,7 @@ from polar.models.pledge import PledgeState, PledgeType
 from polar.pledge.schemas import Pledger
 from polar.pledge.service import pledge as pledge_service
 from polar.reward.service import reward_service
+from polar.worker import flush_enqueued_jobs
 
 from ...db import sessionmaker
 from ...utils import system_timezone
@@ -127,6 +128,7 @@ class PledgeReward(Widget):
                 self.post_message(PledgeReward.Updated())
             finally:
                 self.query_one("Button#create_transfer", Button).disabled = False
+        await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
 
 
 class PledgeRewards(Widget):
@@ -251,6 +253,7 @@ class PledgeContainer(Widget):
             await pledge_service.send_invoice(session, self.pledge.id)
             self.screen.notify("Invoice sent")
             self.post_message(PledgeContainer.Updated())
+        await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
 
 
 class PledgesIssueScreen(Screen[None]):

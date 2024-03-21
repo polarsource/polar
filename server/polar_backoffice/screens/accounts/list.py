@@ -13,6 +13,7 @@ from textual.widgets import DataTable, Footer
 from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.models import Account, Transaction
+from polar.worker import flush_enqueued_jobs
 from polar_backoffice.utils import system_timezone
 
 from ...db import sessionmaker
@@ -154,6 +155,7 @@ class AccountsListScreen(Screen[None]):
     async def confirm_account_reviewed(self, account: Account) -> None:
         async with sessionmaker() as session:
             await account_service.confirm_account_reviewed(session, account)
+        await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
         self.app.notify(
             "The account has been marked as reviewed. Held transfers will resume.",
             title="Account reviewed",

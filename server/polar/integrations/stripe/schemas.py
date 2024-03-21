@@ -17,6 +17,7 @@ class PaymentIntentSuccessWebhook(Schema):
 
 class ProductType(StrEnum):
     pledge = "pledge"
+    donation = "donation"
 
 
 class PaymentIntentMetadata(Schema):
@@ -27,7 +28,7 @@ class PaymentIntentMetadata(Schema):
     Sending a empty metadata object will remove all metadata from Stripe.
 
     This is why we always set polar_not_empty to an empty string, to prevent us from
-    accidentally unsetting all metadata.
+    accidentally un-setting all metadata.
     """
 
     # Safe guards us from accidentally sending an empty metadata object
@@ -53,3 +54,14 @@ class PledgePaymentIntentMetadata(PaymentIntentMetadata):
 
     # Set to empty string to unset the value
     on_behalf_of_organization_id: UUID | Literal[""] | None = None
+
+
+class DonationPaymentIntentMetadata(PaymentIntentMetadata):
+    type: Literal[ProductType.donation] = ProductType.donation
+
+    user_id: UUID | None = None
+    user_username: str | None = None
+    user_email: str | None = None
+
+    organization_id: UUID | None = None
+    organization_name: str | None = None

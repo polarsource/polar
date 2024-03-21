@@ -7,5 +7,5 @@ from polar.kit.schemas import Schema
 class CurrencyAmount(Schema):
     currency: str = Field(description="Three letter currency code (eg: USD)")
     amount: int = Field(
-        description="Amount in the currencys smallest unit (cents if currency is USD)"
+        description="Amount in the currencies smallest unit (cents if currency is USD)"
     )

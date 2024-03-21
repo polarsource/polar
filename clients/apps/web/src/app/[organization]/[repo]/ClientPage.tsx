@@ -205,7 +205,7 @@ const ClientPage = ({
 
             <div className="flex flex-col gap-8">
               <div className="flex flex-row items-center gap-4">
-                <h3>Posts from the creator</h3>
+                <h3>Posts from {organization.name}</h3>
               </div>
               <div className="flex w-full flex-col gap-4">
                 {posts.map((post) => (

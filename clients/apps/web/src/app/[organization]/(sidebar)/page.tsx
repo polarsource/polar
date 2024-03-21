@@ -251,6 +251,11 @@ export default async function Page({
     headers: headers(),
   })
 
+  const sortedRepositories =
+    repositories.items
+      ?.filter((repo) => repo.visibility === 'public')
+      .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)) ?? []
+
   let featuredOrganizations: Organization[] = []
   let links: Link[] = []
   let featuredProjects: Repository[] = []
@@ -271,7 +276,7 @@ export default async function Page({
             api.repositories.get({ id }, cacheConfig),
           ),
         )
-      : repositories.items?.slice(0, 2) ?? []
+      : sortedRepositories.slice(0, 2) ?? []
 
     const fallbackLinks = [
       `https://github.com/${organization.name}`,
@@ -308,11 +313,6 @@ export default async function Page({
     ...(pinnedArticles.items ?? []),
     ...(articles.items ?? []),
   ].slice(0, 3)
-
-  const sortedRepositories =
-    repositories.items
-      ?.filter((repo) => repo.visibility === 'public')
-      .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)) ?? []
 
   // Build JSON-LD for this page
   let jsonLd: WithContext<JSONLDProfilePage> | undefined

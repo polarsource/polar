@@ -98,7 +98,7 @@ export async function GET(request: Request) {
       headers: {
         'Content-Type': 'image/svg+xml',
         // Cache for one hour in user's browser and Vercel cache
-        'Cache-Control': 'max-age=3600, s-maxage=3600',
+        'Cache-Control': 'no-cache',
       },
       status: 200,
     })

@@ -45,6 +45,7 @@ export const DescriptionEditor = ({
           'dark:text-polar-50 w-full text-3xl !font-normal leading-normal text-gray-950 [text-wrap:pretty] focus-visible:outline-0',
           className,
         )}
+        suppressContentEditableWarning={true}
         contentEditable={!disabled}
         onBlur={handleChange}
         onKeyDown={(e) => {

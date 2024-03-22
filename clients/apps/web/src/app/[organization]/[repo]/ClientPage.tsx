@@ -147,6 +147,11 @@ const ClientPage = ({
             {(issuesFunding.items?.length ?? 0) > 0 && (
               <ShadowBoxOnMd>
                 <div className="p-4">
+                  <div className="flex flex-row items-start justify-between pb-8">
+                    <h2 className="text-lg font-medium">
+                      Issues looking for funding
+                    </h2>
+                  </div>
                   <IssuesLookingForFunding
                     organization={organization}
                     repository={repository}

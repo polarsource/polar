@@ -19,8 +19,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     account.id,
   )
   const canWithdraw =
-    (account.status === Status.UNREVIEWED ||
-      account.status === Status.ACTIVE) &&
+    account.status === Status.ACTIVE &&
     summary?.balance?.amount &&
     summary.balance.amount > 0
 

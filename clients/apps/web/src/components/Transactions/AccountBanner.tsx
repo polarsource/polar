@@ -33,9 +33,7 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
     organizationAccount !== undefined &&
     personalAccount !== undefined &&
     organizationAccount.id !== personalAccount.id
-  const isActive =
-    currentAccount?.status === Status.UNREVIEWED ||
-    currentAccount?.status === Status.ACTIVE
+  const isActive = currentAccount?.status === Status.ACTIVE
   const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
 
   if (!currentAccount) {

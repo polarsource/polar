@@ -40,9 +40,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     organizationAccount !== undefined &&
     personalAccount !== undefined &&
     organizationAccount.id !== personalAccount.id
-  const isActive =
-    currentAccount?.status === Status.UNREVIEWED ||
-    currentAccount?.status === Status.ACTIVE
+  const isActive = currentAccount?.status === Status.ACTIVE
   const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
 
   const linkAccountForm = useForm<{ account_id: string }>()
@@ -134,7 +132,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                 {accounts.length === 0 && ' You should create one.'}
               </p>
             )}
-            <div className="min-h-12 flex flex-col items-center gap-4 sm:flex-row">
+            <div className="flex min-h-12 flex-col items-center gap-4 sm:flex-row">
               {accounts.length > 0 && (
                 <Form {...linkAccountForm}>
                   <form

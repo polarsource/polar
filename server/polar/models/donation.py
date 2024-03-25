@@ -80,32 +80,6 @@ class Donation(RecordModel):
         default=None,
     )
 
-    # @declared_attr
-    # def user(cls) -> Mapped[User | None]:
-    #     return relationship(User, primaryjoin=User.id == cls.by_user_id, lazy="raise")
-
-    # @declared_attr
-    # def by_organization(cls) -> Mapped[Organization]:
-    #     return relationship(
-    #         Organization,
-    #         primaryjoin=Organization.id == cls.by_organization_id,
-    #         lazy="raise",
-    #     )
-
-    # @declared_attr
-    # def on_behalf_of_organization(cls) -> Mapped[Organization]:
-    #     return relationship(
-    #         Organization,
-    #         primaryjoin=Organization.id == cls.on_behalf_of_organization_id,
-    #         lazy="raise",
-    #     )
-
-    # @declared_attr
-    # def to_repository(cls) -> Mapped[Repository]:
-    #     return relationship(
-    #         Repository, primaryjoin=Repository.id == cls.repository_id, lazy="raise"
-    #     )
-
     @declared_attr
     def to_organization(cls) -> Mapped[Organization]:
         return relationship(
@@ -113,33 +87,3 @@ class Donation(RecordModel):
             primaryjoin=Organization.id == cls.to_organization_id,
             lazy="raise",
         )
-
-    # @declared_attr
-    # def created_by_user(cls) -> Mapped[User | None]:
-    #     return relationship(
-    #         User, primaryjoin=User.id == cls.created_by_user_id, lazy="raise"
-    #     )
-
-    # @declared_attr
-    # def issue(cls) -> Mapped[Issue]:
-    #     return relationship(Issue, primaryjoin=Issue.id == cls.issue_id, lazy="raise")
-
-    # @hybrid_property
-    # def ready_for_transfer(self) -> bool:
-    #     return self.state == PledgeState.pending and (
-    #         self.scheduled_payout_at is None or self.scheduled_payout_at < utc_now()
-    #     )
-
-    # @ready_for_transfer.inplace.expression
-    # @classmethod
-    # def _ready_for_transfer_expression(cls) -> ColumnElement[bool]:
-    #     return type_coerce(
-    #         and_(
-    #             cls.state == PledgeState.pending,
-    #             or_(
-    #                 cls.scheduled_payout_at.is_(None),
-    #                 cls.scheduled_payout_at < utc_now(),
-    #             ),
-    #         ),
-    #         Boolean,
-    #     )

@@ -7,7 +7,10 @@ apis/DashboardApi.ts
 apis/ExtensionApi.ts
 apis/FundingApi.ts
 apis/HealthApi.ts
-apis/IntegrationsApi.ts
+apis/IntegrationsDiscordApi.ts
+apis/IntegrationsGithubApi.ts
+apis/IntegrationsGithubRepositoryBenefitApi.ts
+apis/IntegrationsStripeApi.ts
 apis/IssuesApi.ts
 apis/MagicLinkApi.ts
 apis/NotificationsApi.ts

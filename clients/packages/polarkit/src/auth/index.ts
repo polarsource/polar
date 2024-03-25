@@ -1,13 +1,15 @@
 import {
-  IntegrationsApiIntegrationsDiscordBotAuthorizeRequest,
-  IntegrationsApiIntegrationsGithubAuthorizeRequest,
-  IntegrationsApiRedirectToOrganizationInstallationRequest,
+  IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest,
+  IntegrationsDiscordApiIntegrationsDiscordUserAuthorizeRequest,
+  IntegrationsGithubApiIntegrationsGithubAuthorizeRequest,
+  IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
+  IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
   MagicLinkApiMagicLinkAuthenticateRequest,
 } from '@polar-sh/sdk'
 import { getServerURL } from '../api'
 
 export const getGitHubAuthorizeURL = (
-  params: IntegrationsApiIntegrationsGithubAuthorizeRequest,
+  params: IntegrationsGithubApiIntegrationsGithubAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.paymentIntentId !== undefined) {
@@ -23,7 +25,7 @@ export const getGitHubAuthorizeURL = (
 }
 
 export const getGitHubOrganizationInstallationURL = (
-  params: IntegrationsApiRedirectToOrganizationInstallationRequest,
+  params: IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.returnTo !== undefined) {
@@ -45,7 +47,7 @@ export const getMagicLinkAuthenticateURL = (
 }
 
 export const getUserDiscordAuthorizeURL = (
-  params: IntegrationsApiIntegrationsGithubAuthorizeRequest,
+  params: IntegrationsDiscordApiIntegrationsDiscordUserAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.returnTo !== undefined) {
@@ -55,7 +57,7 @@ export const getUserDiscordAuthorizeURL = (
 }
 
 export const getBotDiscordAuthorizeURL = (
-  params: IntegrationsApiIntegrationsDiscordBotAuthorizeRequest,
+  params: IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.returnTo !== undefined) {
@@ -65,7 +67,7 @@ export const getBotDiscordAuthorizeURL = (
 }
 
 export const getGitHubRepositoryBenefitAuthorizeURL = (
-  params: IntegrationsApiIntegrationsDiscordBotAuthorizeRequest,
+  params: IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.returnTo !== undefined) {

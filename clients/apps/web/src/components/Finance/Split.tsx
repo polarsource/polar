@@ -200,7 +200,7 @@ const Split = (props: {
     setShowAddUserError(false)
 
     try {
-      const lookup = await api.integrations.lookupUser({
+      const lookup = await api.integrationsGitHub.lookupUser({
         lookupUserRequest: { username: searchGithubUsername },
       })
 

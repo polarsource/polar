@@ -22,7 +22,7 @@ from .service import discord_user as discord_user_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/integrations/discord", tags=["integrations"])
+router = APIRouter(prefix="/integrations/discord", tags=["integrations_discord"])
 
 
 ###############################################################################

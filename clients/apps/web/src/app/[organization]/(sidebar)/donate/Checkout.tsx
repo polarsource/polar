@@ -1,10 +1,11 @@
-import { validateEmail } from '@/components/Pledge/payment'
+import { prettyCardName, validateEmail } from '@/components/Pledge/payment'
 import { useAuth } from '@/hooks'
 import {
   DonationCreateStripePaymentIntent,
   DonationStripePaymentIntentMutationResponse,
   DonationUpdateStripePaymentIntent,
   Organization,
+  PaymentMethod,
   ResponseError,
 } from '@polar-sh/sdk'
 import { Elements } from '@stripe/react-stripe-js'
@@ -17,6 +18,13 @@ import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
+import {
   Form,
   FormControl,
   FormField,
@@ -25,6 +33,8 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
+import { Skeleton } from 'polarkit/components/ui/skeleton'
+import { useListPaymentMethods } from 'polarkit/hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import PaymentForm from './PaymentForm'
@@ -77,17 +87,11 @@ const Checkout = ({ organization }: { organization: Organization }) => {
   )
 
   const shouldSynchronizePledge = (pledgeSync: DonateFormState) => {
-    console.log({
-      pledgeSync: pledgeSync.amount.amount,
-      lastPledgeSync: lastPledgeSync.current?.amount.amount,
-    })
-
     if (!validateEmail(pledgeSync.email)) {
-      console.log('invalid email')
       return false
     }
+
     if (pledgeSync.amount.amount <= 0) {
-      console.log('low amount')
       return false
     }
 
@@ -107,16 +111,12 @@ const Checkout = ({ organization }: { organization: Organization }) => {
       return true
     }
 
-    console.log('not changed')
     return false
   }
 
   const synchronizePledge = useCallback(
     async (pledgeSync: DonateFormState) => {
-      console.log('synchronizePledge')
-
       if (!shouldSynchronizePledge(pledgeSync)) {
-        console.log('should not sync')
         return
       }
 
@@ -136,7 +136,7 @@ const Checkout = ({ organization }: { organization: Organization }) => {
         if (updatedPaymentIntent) {
           setPolarPaymentIntent(updatedPaymentIntent)
         }
-        console.log('set synced')
+
         lastPledgeSync.current = {
           ...pledgeSync,
           amount: { ...pledgeSync.amount },
@@ -209,13 +209,16 @@ const Checkout = ({ organization }: { organization: Organization }) => {
                 isSyncing={isSyncing}
                 polarPaymentIntent={polarPaymentIntent}
               />
-            ) : null}
+            ) : (
+              <div className="flex flex-col space-y-4">
+                <Skeleton className="h-[40px] w-full" />
+                <Skeleton className="h-[40px] w-full" />
 
-            <div className="flex flex-row items-center gap-x-4">
-              <Button fullWidth={false} variant="secondary" loading={false}>
-                <span>Donate</span>
-              </Button>
-            </div>
+                <Button size="lg" disabled={true} fullWidth>
+                  Donate
+                </Button>
+              </div>
+            )}
           </form>
         </Form>
       </div>
@@ -247,7 +250,7 @@ const DonationAmount = () => {
               <FormMessage />
             </div>
             <FormControl>
-              <div className="w-[260px]">
+              <div className="w-full">
                 <MoneyInput
                   id={''}
                   {...field}
@@ -291,7 +294,7 @@ const Email = () => {
               <FormMessage />
             </div>
             <FormControl>
-              <div className="w-[260px]">
+              <div className="w-full">
                 <Input {...field} placeholder="billing@example.com" />
               </div>
             </FormControl>
@@ -329,15 +332,17 @@ const StripeForm = ({
     router.push(location)
   }
 
+  const [paymentMethod, setPaymentMethod] = useState<
+    PaymentMethod | undefined
+  >()
+
   return (
     <>
-      <pre>
-        {JSON.stringify(
-          { formState, valid: formState.isValid, errors: formState.errors },
-          undefined,
-          2,
-        )}
-      </pre>
+      <SelectPaymentMethod
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
+      />
+
       <Elements
         stripe={stripePromise}
         options={{
@@ -388,6 +393,7 @@ const StripeForm = ({
           redirectTo={generateDonationRedirectURL()}
         />
       </Elements>
+
       {errorMessage ? <Banner color="red">{errorMessage}</Banner> : null}
     </>
   )
@@ -421,4 +427,71 @@ export const generateDonationRedirectURL = (
   }
   redirectURL.searchParams.append('redirect_status', paymentIntent.status)
   return redirectURL.toString()
+}
+
+const SelectPaymentMethod = ({
+  paymentMethod,
+  setPaymentMethod,
+}: {
+  paymentMethod?: PaymentMethod
+  setPaymentMethod: (_?: PaymentMethod) => void
+}) => {
+  const savedPaymentMethods = useListPaymentMethods()
+
+  const onPaymentMethodChange = (id: string) => {
+    const pm = savedPaymentMethods.data?.items?.find(
+      (p) => p.stripe_payment_method_id === id,
+    )
+    setPaymentMethod(pm)
+  }
+
+  if (
+    !savedPaymentMethods ||
+    !savedPaymentMethods.data ||
+    !savedPaymentMethods.data.items ||
+    savedPaymentMethods.data.items.length === 0
+  ) {
+    return <></>
+  }
+
+  return (
+    <div>
+      <label
+        htmlFor="payment_method"
+        className="dark:text-polar-400 text-sm font-medium text-gray-500"
+      >
+        Payment method
+      </label>
+
+      <Select onValueChange={onPaymentMethodChange} name="payment_method">
+        <SelectTrigger className="mt-2 w-full">
+          {paymentMethod ? (
+            <SelectValue
+              placeholder={`${prettyCardName(paymentMethod.brand)} (****${
+                paymentMethod.last4
+              })
+                    ${paymentMethod.exp_month.toString().padStart(2, '0')}/${
+                      paymentMethod.exp_year
+                    }`}
+            />
+          ) : (
+            <SelectValue placeholder="new" />
+          )}
+        </SelectTrigger>
+
+        <SelectContent>
+          {savedPaymentMethods.data.items.map((pm) => (
+            <SelectItem
+              value={pm.stripe_payment_method_id}
+              key={pm.stripe_payment_method_id}
+            >
+              {prettyCardName(pm.brand)} (****{pm.last4}){' '}
+              {pm.exp_month.toString().padStart(2, '0')}/{pm.exp_year}
+            </SelectItem>
+          ))}
+          <SelectItem value="new">+ New payment method</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  )
 }

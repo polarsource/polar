@@ -147,20 +147,6 @@ const PaymentForm = ({
 
   return (
     <div className="dark:border-polar-500 flex flex-col gap-4 border-t pt-5">
-      <pre>
-        {JSON.stringify(
-          {
-            isSyncing,
-            stripeSyncing,
-            paymentIntent,
-            havePaymentMethod,
-            isValid,
-          },
-          undefined,
-          2,
-        )}
-      </pre>
-
       {!paymentMethod && (
         <PaymentElement
           onChange={onStripeFormChange}
@@ -199,7 +185,7 @@ const PaymentForm = ({
         <Button
           size="lg"
           disabled={!canSubmit}
-          loading={isSyncing}
+          loading={isSyncing || stripeSyncing}
           onClick={onSubmit}
           fullWidth
         >

@@ -29,15 +29,15 @@ export const DateTimePicker = ({
   const [datePickerDate, setDatePickerDate] = useState<Date>(date || new Date())
 
   const [time, setTime] = useState<Time>({
-    hour: 0,
-    min: 0,
+    hour: undefined,
+    min: undefined,
   })
 
   useEffect(() => {
     setDatePickerDate(date || new Date())
     setTime({
-      hour: date ? date.getHours() : 0,
-      min: date ? date.getMinutes() : 0,
+      hour: date ? date.getHours() : undefined,
+      min: date ? date.getMinutes() : undefined,
     })
   }, [date])
 
@@ -75,7 +75,7 @@ export const DateTimePicker = ({
           <Button
             variant={'outline'}
             className={twMerge(
-              'w-[280px] justify-start text-left font-normal',
+              'dark:bg-polar-800 dark:border-polar-600 dark:placeholder:text-polar-500 dark:text-polar-50 h-10 w-[280px] justify-start rounded-lg border-gray-200 bg-transparent text-left font-normal shadow-sm',
               !date && 'text-muted-foreground',
             )}
           >

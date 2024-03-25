@@ -35,6 +35,10 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
     formValues.paid_subscribers_only ?? false,
   )
 
+  const paidSubscribersOnlyEndsAt = formValues.paid_subscribers_only_ends_at
+    ? new Date(formValues.paid_subscribers_only_ends_at)
+    : undefined
+
   const publishedAtDate = formValues.published_at
     ? new Date(formValues.published_at)
     : undefined
@@ -143,6 +147,26 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
           ) : (
             <li>Premium subscribers on the web</li>
           )}
+
+          {articleReceivers?.free_subscribers !== undefined &&
+          article.paid_subscribers_only &&
+          paidSubscribersOnlyEndsAt ? (
+            <li>
+              {articleReceivers.free_subscribers} free subscriber
+              {plural(articleReceivers.free_subscribers)} starting{' '}
+              {paidSubscribersOnlyEndsAt.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}{' '}
+              at{' '}
+              {paidSubscribersOnlyEndsAt.toLocaleTimeString(undefined, {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short',
+              })}
+            </li>
+          ) : null}
         </ul>
       </div>
 

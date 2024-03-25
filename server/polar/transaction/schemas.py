@@ -42,6 +42,11 @@ class TransactionPledge(TimestampedSchema):
     issue: TransactionIssue
 
 
+class TransactionDonation(TimestampedSchema):
+    id: UUID4
+    to_organization: TransactionOrganization | None = None
+
+
 class TransactionIssueReward(TimestampedSchema):
     id: UUID4
     issue_id: UUID4
@@ -99,6 +104,7 @@ class Transaction(TransactionEmbedded):
     issue_reward: TransactionIssueReward | None = None
     subscription: TransactionSubscription | None = None
     subscription_tier_price: TransactionSubscriptionPrice | None = None
+    donation: TransactionDonation | None = None
 
     account_incurred_transactions: list[TransactionEmbedded]
 

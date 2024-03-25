@@ -63,8 +63,6 @@ async def create_payment_intent(
         if not on_behalf_of_organization:
             raise ResourceNotFound()
 
-    # TODO: fees
-
     pi = await donation_service.create_payment_intent(
         session=session,
         user=auth.user,

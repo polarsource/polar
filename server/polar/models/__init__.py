@@ -4,6 +4,7 @@ from .account import Account
 from .advertisement_campaign import AdvertisementCampaign
 from .article import Article
 from .articles_subscription import ArticlesSubscription
+from .donation import Donation
 from .held_balance import HeldBalance
 from .invites import Invite
 from .issue import Issue
@@ -37,6 +38,7 @@ __all__ = [
     "AdvertisementCampaign",
     "Article",
     "ArticlesSubscription",
+    "Donation",
     "HeldBalance",
     "Invite",
     "Issue",

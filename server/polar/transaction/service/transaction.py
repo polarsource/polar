@@ -20,6 +20,7 @@ from polar.models import (
     Transaction,
     User,
 )
+from polar.models.donation import Donation
 from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
 from polar.models.user_organization import UserOrganization
@@ -77,6 +78,10 @@ class TransactionService(BaseTransactionService):
             ),
             # SubscriptionTierPrice
             subqueryload(Transaction.subscription_tier_price),
+            # Donation
+            subqueryload(Transaction.donation).options(
+                joinedload(Donation.to_organization)
+            ),
         )
 
         if type is not None:

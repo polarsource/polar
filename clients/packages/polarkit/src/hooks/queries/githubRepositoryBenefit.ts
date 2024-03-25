@@ -10,6 +10,6 @@ export const useListIntegrationsGithubRepositoryBenefitUserRepositories: () => U
   useQuery({
     queryKey: ['integrationsGithubRepositoryBenefitUserRepositories'],
     queryFn: () =>
-      api.integrations.integrationsGithubRepositoryBenefitUserRepositories(),
+      api.integrationsGitHubRepositoryBenefit.integrationsGithubRepositoryBenefitUserRepositories(),
     retry: defaultRetry,
   })

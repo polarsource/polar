@@ -34,7 +34,8 @@ from .service import github_repository_benefit_user_service
 log = structlog.get_logger()
 
 router = APIRouter(
-    prefix="/integrations/github_repository_benefit", tags=["integrations"]
+    prefix="/integrations/github_repository_benefit",
+    tags=["integrations_github_repository_benefit"],
 )
 
 

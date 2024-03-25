@@ -15,7 +15,7 @@ export const useCheckOrganizationPermissions: (
     queryKey: ['organization_billing_plan', permissions, id],
     queryFn: async () => {
       try {
-        await api.integrations.checkOrganizationPermissions({
+        await api.integrationsGitHub.checkOrganizationPermissions({
           id: id || '',
           organizationCheckPermissionsInput: { permissions },
         })
@@ -36,7 +36,7 @@ export const useGetOrganizationBillingPlan: (
   useQuery({
     queryKey: ['organization_billing_plan', id],
     queryFn: () =>
-      api.integrations.getOrganizationBillingPlan({
+      api.integrationsGitHub.getOrganizationBillingPlan({
         id: id || '',
       }),
     retry: (failureCount: number, error: ResponseError) =>

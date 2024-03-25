@@ -9,7 +9,9 @@ import {
   ExtensionApi,
   FundingApi,
   HealthApi,
-  IntegrationsApi,
+  IntegrationsDiscordApi,
+  IntegrationsGithubApi,
+  IntegrationsGithubRepositoryBenefitApi,
   IssuesApi,
   MagicLinkApi,
   NotificationsApi,
@@ -38,7 +40,9 @@ export class PolarAPI {
   public readonly extension: ExtensionApi
   public readonly funding: FundingApi
   public readonly health: HealthApi
-  public readonly integrations: IntegrationsApi
+  public readonly integrationsDiscord: IntegrationsDiscordApi;
+  public readonly integrationsGitHub: IntegrationsGithubApi;
+  public readonly integrationsGitHubRepositoryBenefit: IntegrationsGithubRepositoryBenefitApi;
   public readonly issues: IssuesApi
   public readonly magicLink: MagicLinkApi
   public readonly notifications: NotificationsApi
@@ -67,7 +71,9 @@ export class PolarAPI {
     this.extension = new ExtensionApi(config)
     this.funding = new FundingApi(config)
     this.health = new HealthApi(config)
-    this.integrations = new IntegrationsApi(config)
+    this.integrationsDiscord= new IntegrationsDiscordApi(config)
+    this.integrationsGitHub= new IntegrationsGithubApi(config)
+    this.integrationsGitHubRepositoryBenefit= new IntegrationsGithubRepositoryBenefitApi(config)
     this.issues = new IssuesApi(config)
     this.magicLink = new MagicLinkApi(config)
     this.notifications = new NotificationsApi(config)

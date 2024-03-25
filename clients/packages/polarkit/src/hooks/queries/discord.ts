@@ -9,7 +9,7 @@ export const useDiscordGuild: (
   useQuery({
     queryKey: ['discord', 'guild', guildToken],
     queryFn: () =>
-      api.integrations.discordGuildLookup({
+      api.integrationsDiscord.discordGuildLookup({
         guildToken: guildToken || '',
       }),
 

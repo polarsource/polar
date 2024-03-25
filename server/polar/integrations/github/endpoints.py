@@ -53,7 +53,7 @@ from .service.user import GithubUserServiceError, github_user
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/integrations/github", tags=["integrations"])
+router = APIRouter(prefix="/integrations/github", tags=["integrations_github"])
 
 
 ###############################################################################

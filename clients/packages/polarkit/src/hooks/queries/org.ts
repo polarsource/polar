@@ -70,7 +70,7 @@ export const useListOrganizationMembers = (id?: string) =>
 export const useSyncOrganizationMembers = () =>
   useMutation({
     mutationFn: (variables: { id: string }) =>
-      api.integrations.synchronizeMembers({
+      api.integrationsGitHub.synchronizeMembers({
         organizationId: variables.id,
       }),
     retry: defaultRetry,

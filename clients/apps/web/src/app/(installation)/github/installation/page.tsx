@@ -44,7 +44,7 @@ export default function Page() {
     const controller = new AbortController()
     const signal = controller.signal
 
-    const request = api.integrations.install(
+    const request = api.integrationsGitHub.install(
       {
         installationCreate: {
           platform: InstallationCreatePlatformEnum.GITHUB,

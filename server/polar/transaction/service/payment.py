@@ -172,6 +172,12 @@ class PaymentTransactionService(BaseTransactionService):
         session.add(transaction)
         await session.flush()
 
+        # Donation: create balances (or held balances) right away
+        if donation is not None:
+            await donation_service.create_balance(
+                session, donation=donation, payment_transaction=transaction
+            )
+
         return transaction
 
 

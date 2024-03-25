@@ -480,7 +480,7 @@ class MaintainerCreateAccountNotificationPayload(NotificationPayloadBase):
     def body(self) -> str:
         return f"""<h1>Hi,</h1>
 
-<p>Now that you got your first paid subscribers on {self.organization_name}, you should create a payout account in order to receive your funds.</p>
+<p>Now that you got your first payment to {self.organization_name}, you should create a payout account in order to receive your funds.</p>
 
 <p>We support Stripe and Open Collective. This operation only takes a few minutes and allows you to receive your money immediately.</p>
 

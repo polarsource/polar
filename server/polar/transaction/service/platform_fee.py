@@ -32,7 +32,9 @@ class PlatformFeeTransactionError(BaseTransactionServiceError):
 class DanglingBalanceTransactions(PlatformFeeTransactionError):
     def __init__(self, balance_transactions: tuple[Transaction, Transaction]) -> None:
         self.balance_transactions = balance_transactions
-        message = "Balance transactions not linked to a pledge or subscription."
+        message = (
+            "Balance transactions not linked to a pledge, subscription, or donation."
+        )
         super().__init__(message)
 
 
@@ -137,6 +139,9 @@ class PlatformFeeTransactionService(BaseTransactionService):
             fee_percent = account.platform_pledge_fee_percent
             fee_amount = math.floor(incoming.amount * (fee_percent / 100))
         elif incoming.subscription_id is not None:
+            fee_percent = account.platform_subscription_fee_percent
+            fee_amount = math.floor(incoming.amount * (fee_percent / 100))
+        elif incoming.donation_id is not None:
             fee_percent = account.platform_subscription_fee_percent
             fee_amount = math.floor(incoming.amount * (fee_percent / 100))
         else:

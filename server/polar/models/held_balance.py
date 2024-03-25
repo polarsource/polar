@@ -15,6 +15,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 if TYPE_CHECKING:
     from polar.models import (
         Account,
+        Donation,
         IssueReward,
         Organization,
         Pledge,
@@ -35,7 +36,7 @@ class HeldBalance(RecordModel):
 
     __tablename__ = "held_balances"
 
-    organization_id: Mapped[UUID] = mapped_column(
+    organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=True,
@@ -46,7 +47,7 @@ class HeldBalance(RecordModel):
     Set only if the account is not yet created.
     """
 
-    account_id: Mapped[UUID] = mapped_column(
+    account_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("accounts.id", ondelete="cascade"),
         nullable=True,
@@ -133,3 +134,15 @@ class HeldBalance(RecordModel):
     @declared_attr
     def issue_reward(cls) -> Mapped["IssueReward | None"]:
         return relationship("IssueReward", lazy="raise")
+
+    donation_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("donations.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """ID of the `Donation` related to this balance."""
+
+    @declared_attr
+    def donation(cls) -> Mapped["Donation | None"]:
+        return relationship("Donation", lazy="raise")

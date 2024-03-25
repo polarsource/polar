@@ -1,28 +1,15 @@
-from datetime import datetime
-from enum import StrEnum
 from uuid import UUID
 
 from sqlalchemy import (
-    TIMESTAMP,
     BigInteger,
-    Boolean,
-    ColumnElement,
     ForeignKey,
     String,
-    and_,
-    or_,
-    type_coerce,
 )
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.kit.utils import utc_now
-from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.repository import Repository
-from polar.models.user import User
 
 
 class Donation(RecordModel):
@@ -32,10 +19,15 @@ class Donation(RecordModel):
         PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )
 
-    # Stripe Payment Intents (may or may not have been paid)
-    payment_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True, default=None
+    # Stripe Payment Intents
+    payment_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        index=True,
     )
+
+    # Stripe Charge ID
+    charge_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     email: Mapped[str] = mapped_column(String, nullable=True, index=True, default=None)
 

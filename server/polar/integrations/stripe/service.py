@@ -3,7 +3,6 @@ from collections.abc import Iterator
 from typing import Literal, TypedDict, Unpack, cast
 
 import stripe as stripe_lib
-from sqlalchemy import desc
 from stripe import error as stripe_lib_error
 
 from polar.account.schemas import AccountCreate

@@ -2,6 +2,8 @@ import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
 import EmailAd from './Ad/EmailAd'
+import EmailCallout from './Callout/EmailCallout'
+import { calloutRenderRule } from './Callout/renderRule'
 import Embed from './Embed/EmailEmbed'
 import Iframe from './Iframe/EmailIframe'
 import EmailMermaid from './Mermaid/EmailMermaid'
@@ -67,6 +69,7 @@ const EmailRender = (props: {
           extraAllowedCustomComponents: Object.keys(opts.overrides),
           adsContext: props.adsContext,
         }),
+        renderRule: calloutRenderRule(EmailCallout),
       }}
     >
       {props.article.body}

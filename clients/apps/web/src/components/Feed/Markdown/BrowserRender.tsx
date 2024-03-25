@@ -3,6 +3,8 @@ import dynamic from 'next/dynamic'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { createContext, useContext } from 'react'
 import BrowserAd from './Ad/BrowserAd'
+import BrowserCallout from './Callout/BrowserCallout'
+import { calloutRenderRule } from './Callout/renderRule'
 import Embed from './Embed/BrowserEmbed'
 import Iframe from './Iframe/BrowserIframe'
 import { ImageOverlay } from './Img/ImageOverlay'
@@ -138,6 +140,7 @@ const BrowserRender = ({
           paidArticlesBenefitName,
           extraAllowedCustomComponents: Object.keys(opts.overrides),
         }),
+        renderRule: calloutRenderRule(BrowserCallout),
       }}
     >
       {article.body}
@@ -162,6 +165,7 @@ export const AbbreviatedBrowserRender = ({
           isSubscriber: true, // Do not show <SubscribeNow /> in abbreviations
           extraAllowedCustomComponents: Object.keys(previewOpts.overrides),
         }),
+        renderRule: calloutRenderRule(BrowserCallout),
       }}
     >
       {

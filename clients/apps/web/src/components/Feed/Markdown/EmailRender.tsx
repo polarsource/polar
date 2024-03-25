@@ -1,4 +1,4 @@
-import Markdown from '@zegl/markdown-to-jsx'
+import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
 import EmailAd from './Ad/EmailAd'

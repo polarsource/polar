@@ -2,7 +2,7 @@ import { article } from 'polarkit/testdata'
 
 import '@testing-library/jest-dom'
 import { render } from '@testing-library/react'
-import Markdown from '@zegl/markdown-to-jsx'
+import Markdown from 'markdown-to-jsx'
 import Paywall from './Paywall/Paywall'
 import {
   RenderArticle,

@@ -1,5 +1,5 @@
 import { CurrencyAmount, Funding, Organization } from '@polar-sh/sdk'
-import Markdown from '@zegl/markdown-to-jsx'
+import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import { Badge } from 'polarkit/components/badge'
 import { LabeledRadioButton } from 'polarkit/components/ui/atoms'

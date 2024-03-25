@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import Auth

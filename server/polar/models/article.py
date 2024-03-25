@@ -76,6 +76,9 @@ class Article(RecordModel):
     paid_subscribers_only: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
+    paid_subscribers_only_ends_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
 
     notifications_sent_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None

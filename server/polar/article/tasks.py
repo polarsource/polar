@@ -116,3 +116,9 @@ async def articles_send_scheduled(
         articles = await article_service.list_scheduled_unsent_posts(session)
         for article in articles:
             await article_service.send_to_subscribers(session, article)
+
+
+@interval(second=0)
+async def articles_release_paid_subscribers_only(ctx: JobContext) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        await article_service.release_paid_subscribers_only(session)

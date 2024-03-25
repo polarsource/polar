@@ -4,7 +4,7 @@ import re
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import Field, HttpUrl, model_validator
+from pydantic import Field, FutureDatetime, HttpUrl, model_validator
 
 from polar.kit.schemas import Schema
 from polar.models.article import Article as ArticleModel
@@ -32,6 +32,7 @@ class Article(Schema):
 
     published_at: datetime.datetime | None = None
     paid_subscribers_only: bool | None = None
+    paid_subscribers_only_ends_at: datetime.datetime | None = None
     is_preview: bool
     is_pinned: bool
 
@@ -144,6 +145,7 @@ class Article(Schema):
             organization=Organization.from_db(i.organization),
             published_at=i.published_at,
             paid_subscribers_only=i.paid_subscribers_only,
+            paid_subscribers_only_ends_at=i.paid_subscribers_only_ends_at,
             is_preview=i.paid_subscribers_only and not is_paid_subscriber,
             notify_subscribers=i.notify_subscribers if include_admin_fields else None,
             notifications_sent_at=i.notifications_sent_at
@@ -185,6 +187,14 @@ class ArticleCreate(Schema):
     paid_subscribers_only: bool = Field(
         default=False,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
+    )
+    paid_subscribers_only_ends_at: FutureDatetime | None = Field(
+        default=None,
+        description=(
+            "If specified, time at which the article should "
+            "no longer be restricted to paid subscribers. "
+            "Only relevant if `paid_subscribers_only` is true."
+        ),
     )
     published_at: datetime.datetime | None = Field(
         default=None,
@@ -245,6 +255,15 @@ class ArticleUpdate(Schema):
         default=None,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
     )
+    paid_subscribers_only_ends_at: FutureDatetime | None = Field(
+        default=None,
+        description=(
+            "If specified, time at which the article should "
+            "no longer be restricted to paid subscribers. "
+            "Only relevant if `paid_subscribers_only` is true."
+        ),
+    )
+
     published_at: datetime.datetime | None = Field(
         default=None,
         description="Time of publishing. If this date is in the future, the post will be scheduled to publish at this time.",

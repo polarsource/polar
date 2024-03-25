@@ -8,14 +8,7 @@ from uuid import UUID
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from slugify import slugify
-from sqlalchemy import (
-    Select,
-    desc,
-    false,
-    func,
-    nullsfirst,
-    select,
-)
+from sqlalchemy import Select, desc, false, func, nullsfirst, select, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.service import Subject
@@ -89,6 +82,7 @@ class ArticleService:
             byline=create_schema.byline,
             visibility=self._visibility_to_model_visibility(create_schema.visibility),
             paid_subscribers_only=create_schema.paid_subscribers_only,
+            paid_subscribers_only_ends_at=create_schema.paid_subscribers_only_ends_at,
             published_at=published_at,
             is_pinned=True if create_schema.is_pinned is True else False,
             og_image_url=str(create_schema.og_image_url)
@@ -273,6 +267,9 @@ class ArticleService:
         if update.paid_subscribers_only is not None:
             article.paid_subscribers_only = update.paid_subscribers_only
 
+        if update.paid_subscribers_only_ends_at is not None:
+            article.paid_subscribers_only_ends_at = update.paid_subscribers_only_ends_at
+
         if update.is_pinned is not None:
             article.is_pinned = update.is_pinned
 
@@ -426,6 +423,17 @@ class ArticleService:
         article.email_sent_to_count = len(receivers)
         session.add(article)
         await session.flush()
+
+    async def release_paid_subscribers_only(self, session: AsyncSession) -> None:
+        statement = (
+            update(Article)
+            .where(
+                Article.paid_subscribers_only.is_(True),
+                Article.paid_subscribers_only_ends_at <= utc_now(),
+            )
+            .values(paid_subscribers_only=False)
+        )
+        await session.execute(statement)
 
     def _get_readable_articles_statement(
         self, auth_subject: Subject

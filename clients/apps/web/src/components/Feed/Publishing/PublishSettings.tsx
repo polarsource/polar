@@ -4,8 +4,15 @@ import ImageUpload from '@/components/Form/ImageUpload'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
+import {
+  Article,
+  ArticleUpdate,
+  ArticleVisibilityEnum,
+  ResponseError,
+  ValidationError,
+} from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
+import { setValidationErrors } from 'polarkit/api/errors'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -36,6 +43,9 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
   const form = useForm<ArticleUpdate>({
     defaultValues: {
       paid_subscribers_only: article.paid_subscribers_only,
+      paid_subscribers_only_ends_at: article.paid_subscribers_only
+        ? article.paid_subscribers_only_ends_at
+        : undefined,
       notify_subscribers: article.notify_subscribers,
       published_at: article.published_at,
       slug: article.slug,
@@ -44,7 +54,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
       og_image_url: article.og_image_url,
     },
   })
-  const { handleSubmit } = form
+  const { handleSubmit, setError } = form
 
   const router = useRouter()
 
@@ -84,36 +94,46 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
     const slugChanged = article.slug !== form.getValues('slug')
 
-    const updatedArticle = await update.mutateAsync({
-      id: article.id,
-      articleUpdate: {
-        ...form.getValues(),
+    try {
+      const updatedArticle = await update.mutateAsync({
+        id: article.id,
+        articleUpdate: {
+          ...form.getValues(),
 
-        // Always set published at, even if unset.
-        set_published_at: true,
-        published_at: publishedAt ?? new Date().toISOString(),
+          // Always set published at, even if unset.
+          set_published_at: true,
+          published_at: publishedAt ?? new Date().toISOString(),
 
-        visibility: ArticleVisibilityEnum.PUBLIC,
+          visibility: ArticleVisibilityEnum.PUBLIC,
 
-        set_og_description: true,
-        set_og_image_url: true,
-      },
-    })
+          set_og_description: true,
+          set_og_image_url: true,
+        },
+      })
 
-    const isPublishedAfterSave = isPublished(updatedArticle)
+      const isPublishedAfterSave = isPublished(updatedArticle)
 
-    const didPublish = !wasAlreadyPublished && isPublishedAfterSave
+      const didPublish = !wasAlreadyPublished && isPublishedAfterSave
 
-    if (didPublish) {
-      showPublishedShareModal()
-      return
-    }
+      if (didPublish) {
+        showPublishedShareModal()
+        return
+      }
 
-    // Redirect if slug changed
-    if (slugChanged) {
-      router.push(
-        `/maintainer/${article.organization.name}/posts/${updatedArticle.slug}#settings`,
-      )
+      // Redirect if slug changed
+      if (slugChanged) {
+        router.push(
+          `/maintainer/${article.organization.name}/posts/${updatedArticle.slug}#settings`,
+        )
+      }
+    } catch (e) {
+      if (e instanceof ResponseError) {
+        const body = await e.response.json()
+        if (e.response.status === 422) {
+          const validationErrors = body['detail'] as ValidationError[]
+          setValidationErrors(validationErrors, setError)
+        }
+      }
     }
   }
 

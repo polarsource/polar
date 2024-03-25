@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import { PostEditor } from '@/components/Feed/PostEditor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
@@ -88,6 +89,9 @@ const ClientPage = () => {
         id: post.data.id,
         articleUpdate: localArticle,
       })
+
+      // Invalidate cache on public pages
+      revalidate(`articles:${post.data.organization.name}:${post.data.slug}`)
 
       setAnimateSaveBanner(true)
 

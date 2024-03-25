@@ -826,11 +826,7 @@ exports[`reference fallback 1`] = `
         [hello][hello]
       </span>
     </p>
-    <p>
-      <span>
-        ![foobar][foobar]
-      </span>
-    </p>
+    <p />
   </div>
 </DocumentFragment>
 `;

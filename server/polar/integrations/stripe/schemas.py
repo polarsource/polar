@@ -13,6 +13,7 @@ class PaymentIntentSuccessWebhook(Schema):
     invoice: str | None = None  # A invoice ID (in_)
     latest_charge: str  # A charge ID (ch_)
     status: str  # "succeeded"
+    receipt_email: str | None = None
 
 
 class ProductType(StrEnum):
@@ -59,9 +60,12 @@ class PledgePaymentIntentMetadata(PaymentIntentMetadata):
 class DonationPaymentIntentMetadata(PaymentIntentMetadata):
     type: Literal[ProductType.donation] = ProductType.donation
 
-    user_id: UUID | None = None
-    user_username: str | None = None
-    user_email: str | None = None
+    to_organization_id: UUID | None = None
+    to_organization_name: str | None = None
 
-    organization_id: UUID | None = None
-    organization_name: str | None = None
+    by_user_id: UUID | None = None
+    by_user_username: str | None = None
+    by_user_email: str | None = None
+
+    # Set to empty string to unset the value
+    on_behalf_of_organization_id: UUID | Literal[""] | None = None

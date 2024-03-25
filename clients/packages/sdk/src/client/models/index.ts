@@ -9133,6 +9133,12 @@ export interface Transaction {
     subscription_tier_price?: TransactionSubscriptionPrice;
     /**
      * 
+     * @type {TransactionDonation}
+     * @memberof Transaction
+     */
+    donation?: TransactionDonation;
+    /**
+     * 
      * @type {Array<TransactionEmbedded>}
      * @memberof Transaction
      */
@@ -9284,6 +9290,12 @@ export interface TransactionDetails {
     subscription_tier_price?: TransactionSubscriptionPrice;
     /**
      * 
+     * @type {TransactionDonation}
+     * @memberof TransactionDetails
+     */
+    donation?: TransactionDonation;
+    /**
+     * 
      * @type {Array<TransactionEmbedded>}
      * @memberof TransactionDetails
      */
@@ -9312,6 +9324,37 @@ export interface TransactionDetails {
      * @memberof TransactionDetails
      */
     paid_transactions: Array<Transaction>;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionDonation
+ */
+export interface TransactionDonation {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDonation
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDonation
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDonation
+     */
+    id: string;
+    /**
+     * 
+     * @type {TransactionOrganization}
+     * @memberof TransactionDonation
+     */
+    to_organization?: TransactionOrganization;
 }
 /**
  * 

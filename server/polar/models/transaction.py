@@ -16,6 +16,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 if TYPE_CHECKING:
     from polar.models import (
         Account,
+        Donation,
         IssueReward,
         Organization,
         Pledge,
@@ -286,6 +287,18 @@ class Transaction(RecordModel):
     @declared_attr
     def pledge(cls) -> Mapped["Pledge | None"]:
         return relationship("Pledge", lazy="raise")
+
+    donation_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("donations.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """ID of the `Donation` related to this transaction."""
+
+    @declared_attr
+    def donation(cls) -> Mapped["Donation | None"]:
+        return relationship("Donation", lazy="raise")
 
     subscription_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

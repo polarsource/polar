@@ -3,8 +3,10 @@ import structlog
 from arq import Retry
 
 from polar.account.service import account as account_service
+from polar.donation.service import donation_service
 from polar.exceptions import PolarError
 from polar.integrations.stripe.schemas import (
+    DonationPaymentIntentMetadata,
     PaymentIntentSuccessWebhook,
     ProductType,
 )
@@ -17,6 +19,9 @@ from polar.transaction.service.dispute import (
 )
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
+)
+from polar.transaction.service.payment import (
+    DonationDoesNotExist as PaymentTransactionDonationDoesNotExist,
 )
 from polar.transaction.service.payment import (
     PledgeDoesNotExist as PaymentTransactionPledgeDoesNotExist,
@@ -86,6 +91,17 @@ async def payment_intent_succeeded(
                 )
                 return
 
+            if payment_intent.metadata.get("type") == ProductType.donation:
+                metadata = DonationPaymentIntentMetadata.model_validate(
+                    payment_intent.metadata
+                )
+                await donation_service.handle_payment_intent_success(
+                    session=session,
+                    payload=payload,
+                    metadata=metadata,
+                )
+                return
+
             # payment for pay_on_completion
             # metadata is on the invoice, not the payment_intent
             if payload.invoice:
@@ -120,6 +136,7 @@ async def charge_succeeded(
             except (
                 PaymentTransactionPledgeDoesNotExist,
                 PaymentTransactionSubscriptionDoesNotExist,
+                PaymentTransactionDonationDoesNotExist,
             ) as e:
                 # Retry because we might not have been able to handle other events
                 # triggering the creation of Pledge and Subscription

@@ -12,9 +12,11 @@ from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import PolarError
 from polar.integrations.stripe.schemas import (
     DonationPaymentIntentMetadata,
+    PaymentIntentSuccessWebhook,
     PledgePaymentIntentMetadata,
 )
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.models.donation import Donation
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
@@ -32,8 +34,8 @@ class DonationService:
         receipt_email: str,
     ) -> stripe_lib.PaymentIntent:
         metadata = DonationPaymentIntentMetadata(
-            organization_id=to_organization.id,
-            organization_name=to_organization.name,
+            to_organization_id=to_organization.id,
+            to_organization_name=to_organization.name,
         )
 
         if on_behalf_of_organization:
@@ -73,6 +75,32 @@ class DonationService:
             customer=on_behalf_of_organization if on_behalf_of_organization else user,
             setup_future_usage=setup_future_usage,
         )
+
+    async def handle_payment_intent_success(
+        self,
+        session: AsyncSession,
+        payload: PaymentIntentSuccessWebhook,
+        metadata: DonationPaymentIntentMetadata,
+    ) -> None:
+        assert metadata.to_organization_id
+        # assert metadata.by_user_email
+
+        d = Donation(
+            to_organization_id=metadata.to_organization_id,
+            payment_id=payload.id,
+            amount=payload.amount,
+            amount_received=payload.amount_received,
+            email=payload.receipt_email,
+        )
+        session.add(d)
+        return None
+
+    async def get_by_payment_id(
+        self, session: AsyncSession, id: str
+    ) -> Donation | None:
+        stmt = sql.select(Donation).where(Donation.payment_id == id)
+        res = await session.execute(stmt)
+        return res.scalar_one_or_none()
 
 
 donation_service = DonationService()

@@ -2,10 +2,12 @@ from typing import cast
 
 import stripe as stripe_lib
 
+from polar.donation.service import donation_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Pledge, Subscription, Transaction
+from polar.models.donation import Donation
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
@@ -39,8 +41,19 @@ class PledgeDoesNotExist(PaymentTransactionError):
         self.charge_id = charge_id
         self.payment_intent_id = payment_intent_id
         message = (
-            f"Received a ledge charge {charge_id} ({payment_intent_id} from Stripe "
+            f"Received a pledge charge {charge_id} ({payment_intent_id}) from Stripe "
             "but no such Pledge exists."
+        )
+        super().__init__(message)
+
+
+class DonationDoesNotExist(PaymentTransactionError):
+    def __init__(self, charge_id: str, payment_intent_id: str) -> None:
+        self.charge_id = charge_id
+        self.payment_intent_id = payment_intent_id
+        message = (
+            f"Received a donation charge {charge_id} ({payment_intent_id}) from Stripe "
+            "but no such Donation exists."
         )
         super().__init__(message)
 
@@ -51,6 +64,7 @@ class PaymentTransactionService(BaseTransactionService):
     ) -> Transaction:
         subscription: Subscription | None = None
         pledge: Pledge | None = None
+        donation: Donation | None = None
 
         # Retrieve customer
         customer_id = None
@@ -114,6 +128,21 @@ class PaymentTransactionService(BaseTransactionService):
                 payment_user = pledge.user
                 payment_organization = pledge.by_organization
 
+        # Try to link with a Donation
+        if charge.metadata.get("type") == ProductType.donation:
+            assert charge.payment_intent is not None
+            payment_intent = get_expandable_id(charge.payment_intent)
+            donation = await donation_service.get_by_payment_id(session, payment_intent)
+            # Give a chance to retry this later in case we didn't create the Donation yet.
+            if donation is None:
+                raise DonationDoesNotExist(charge.id, payment_intent)
+            # If we were not able to link to a payer by Stripe Customer ID,
+            # link from the pledge data. Happens for anonymous pledges.
+            # if payment_user is None and payment_organization is None:
+            #     await session.refresh(donation, {"by_user", "by_organization"})
+            #     payment_user = donation.by_user
+            #     payment_organization = donation.by_organization
+
         transaction = Transaction(
             type=TransactionType.payment,
             processor=PaymentProcessor.stripe,
@@ -130,6 +159,7 @@ class PaymentTransactionService(BaseTransactionService):
             charge_id=charge.id,
             pledge=pledge,
             subscription=subscription,
+            donation=donation,
             subscription_tier_price=subscription.price if subscription else None,
         )
 

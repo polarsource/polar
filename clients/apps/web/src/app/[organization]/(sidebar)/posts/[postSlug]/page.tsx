@@ -38,7 +38,13 @@ export async function generateMetadata(
         organizationName: params.organization,
         slug: params.postSlug,
       },
-      cacheConfig,
+      {
+        ...cacheConfig,
+        next: {
+          ...cacheConfig.next,
+          tags: [`articles:${params.organization}:${params.postSlug}`],
+        },
+      },
     )
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
@@ -147,7 +153,13 @@ export default async function Page({
           organizationName: params.organization,
           slug: params.postSlug,
         },
-        cacheConfig,
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`articles:${params.organization}:${params.postSlug}`],
+          },
+        },
       ),
 
       await api.subscriptions.searchSubscriptionTiers(

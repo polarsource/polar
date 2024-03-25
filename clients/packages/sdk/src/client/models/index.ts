@@ -1052,6 +1052,12 @@ export interface Article {
     paid_subscribers_only?: boolean;
     /**
      * 
+     * @type {string}
+     * @memberof Article
+     */
+    paid_subscribers_only_ends_at?: string;
+    /**
+     * 
      * @type {boolean}
      * @memberof Article
      */
@@ -1165,6 +1171,12 @@ export interface ArticleCreate {
      * @memberof ArticleCreate
      */
     paid_subscribers_only?: boolean;
+    /**
+     * If specified, time at which the article should no longer be restricted to paid subscribers. Only relevant if `paid_subscribers_only` is true.
+     * @type {string}
+     * @memberof ArticleCreate
+     */
+    paid_subscribers_only_ends_at?: string;
     /**
      * Time of publishing. If this date is in the future, the post will be scheduled to publish at this time. If visibility is 'public', published_at will default to the current time.
      * @type {string}
@@ -1355,6 +1367,12 @@ export interface ArticleUpdate {
      * @memberof ArticleUpdate
      */
     paid_subscribers_only?: boolean;
+    /**
+     * If specified, time at which the article should no longer be restricted to paid subscribers. Only relevant if `paid_subscribers_only` is true.
+     * @type {string}
+     * @memberof ArticleUpdate
+     */
+    paid_subscribers_only_ends_at?: string;
     /**
      * Time of publishing. If this date is in the future, the post will be scheduled to publish at this time.
      * @type {string}

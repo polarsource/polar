@@ -6164,7 +6164,6 @@ export interface RewardsSummaryReceiver {
 export const Status = {
     CREATED: 'created',
     ONBOARDING_STARTED: 'onboarding_started',
-    UNREVIEWED: 'unreviewed',
     UNDER_REVIEW: 'under_review',
     ACTIVE: 'active'
 } as const;

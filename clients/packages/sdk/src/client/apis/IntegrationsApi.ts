@@ -92,6 +92,10 @@ export interface IntegrationsApiIntegrationsGithubRepositoryBenefitUserCallbackR
     error?: string;
 }
 
+export interface IntegrationsApiIntegrationsStripeRefreshRequest {
+    returnPath?: string;
+}
+
 export interface IntegrationsApiLookupUserOperationRequest {
     lookupUserRequest: LookupUserRequest;
 }
@@ -99,10 +103,6 @@ export interface IntegrationsApiLookupUserOperationRequest {
 export interface IntegrationsApiRedirectToOrganizationInstallationRequest {
     id: string;
     returnTo?: string;
-}
-
-export interface IntegrationsApiStripeConnectRefreshRequest {
-    returnPath?: string;
 }
 
 export interface IntegrationsApiSynchronizeMembersRequest {
@@ -784,6 +784,124 @@ export class IntegrationsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Integrations.Stripe.Refresh
+     */
+    async integrationsStripeRefreshRaw(requestParameters: IntegrationsApiIntegrationsStripeRefreshRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters.returnPath !== undefined) {
+            queryParameters['return_path'] = requestParameters.returnPath;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/stripe/refresh`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Stripe.Refresh
+     */
+    async integrationsStripeRefresh(requestParameters: IntegrationsApiIntegrationsStripeRefreshRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsStripeRefreshRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Stripe.Webhook
+     */
+    async integrationsStripeWebhookRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/stripe/webhook`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Stripe.Webhook
+     */
+    async integrationsStripeWebhook(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsStripeWebhookRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Integrations.Stripe.Webhook Connect
+     */
+    async integrationsStripeWebhookConnectRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/stripe/webhook-connect`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Integrations.Stripe.Webhook Connect
+     */
+    async integrationsStripeWebhookConnect(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.integrationsStripeWebhookConnectRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Lookup User
      */
     async lookupUserRaw(requestParameters: IntegrationsApiLookupUserOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GithubUser>> {
@@ -871,48 +989,6 @@ export class IntegrationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Stripe Connect Refresh
-     */
-    async stripeConnectRefreshRaw(requestParameters: IntegrationsApiStripeConnectRefreshRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        const queryParameters: any = {};
-
-        if (requestParameters.returnPath !== undefined) {
-            queryParameters['return_path'] = requestParameters.returnPath;
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/integrations/stripe/refresh`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Stripe Connect Refresh
-     */
-    async stripeConnectRefresh(requestParameters: IntegrationsApiStripeConnectRefreshRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.stripeConnectRefreshRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Synchronize Members
      */
     async synchronizeMembersRaw(requestParameters: IntegrationsApiSynchronizeMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SynchronizeMembersResponse>> {
@@ -985,82 +1061,6 @@ export class IntegrationsApi extends runtime.BaseAPI {
      */
     async webhook(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookResponse> {
         const response = await this.webhookRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Webhook Connect
-     */
-    async webhookConnectRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/integrations/stripe/webhook-connect`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Webhook Connect
-     */
-    async webhookConnect(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.webhookConnectRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Webhook
-     */
-    async webhook_1Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/integrations/stripe/webhook`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Webhook
-     */
-    async webhook_1(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.webhook_1Raw(initOverrides);
         return await response.value();
     }
 

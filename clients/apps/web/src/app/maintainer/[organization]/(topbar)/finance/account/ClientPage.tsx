@@ -5,7 +5,7 @@ import AccountSetup from '@/components/Accounts/AccountSetup'
 import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { Organization } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import { ALL_ACCOUNT_TYPES } from 'polarkit/account'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -13,8 +13,11 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { useAccount, useListAccounts } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 
-export default function ClientPage() {
-  const { org } = useCurrentOrgAndRepoFromURL()
+export default function ClientPage({
+  organization,
+}: {
+  organization: Organization
+}) {
   const { data: accounts } = useListAccounts()
   const {
     isShown: isShownSetupModal,
@@ -22,39 +25,39 @@ export default function ClientPage() {
     hide: hideSetupModal,
   } = useModal()
 
-  const { data: organizationAccount } = useAccount(org?.account_id)
+  const { data: organizationAccount } = useAccount(organization.account_id)
 
   const [linkAccountLoading, setLinkAccountLoading] = useState(false)
   const onLinkAccount = useCallback(
     async (accountId: string) => {
-      if (org) {
-        setLinkAccountLoading(true)
-        try {
-          await api.organizations.setAccount({
-            id: org.id,
-            organizationSetAccount: { account_id: accountId },
-          })
-          window.location.reload()
-        } finally {
-          setLinkAccountLoading(false)
-        }
+      setLinkAccountLoading(true)
+      try {
+        await api.organizations.setAccount({
+          id: organization.id,
+          organizationSetAccount: { account_id: accountId },
+        })
+        window.location.reload()
+      } finally {
+        setLinkAccountLoading(false)
       }
     },
-    [org],
+    [organization],
   )
+
   return (
     <div className="flex flex-col gap-y-6">
-      {org && accounts && (
+      {accounts ? (
         <AccountSetup
-          organization={org}
+          organization={organization}
           accounts={accounts.items || []}
           organizationAccount={organizationAccount}
           loading={linkAccountLoading}
           onLinkAccount={onLinkAccount}
           onAccountSetup={showSetupModal}
         />
-      )}
-      {accounts?.items && accounts.items.length > 0 && (
+      ) : null}
+
+      {accounts?.items && accounts.items.length > 0 ? (
         <ShadowBoxOnMd>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-y-2">
@@ -65,14 +68,15 @@ export default function ClientPage() {
             </div>
           </div>
           <Separator className="my-8" />
-          {org && accounts?.items && (
+          {accounts?.items && (
             <AccountsList
               accounts={accounts?.items}
-              returnPath={`/maintainer/${org.name}/finance/account`}
+              returnPath={`/maintainer/${organization.name}/finance/account`}
             />
           )}
         </ShadowBoxOnMd>
-      )}
+      ) : null}
+
       <Modal
         isShown={isShownSetupModal}
         className="min-w-[400px]"
@@ -81,8 +85,8 @@ export default function ClientPage() {
           <AccountCreateModal
             onClose={hideSetupModal}
             accountTypes={ALL_ACCOUNT_TYPES}
-            forOrganizationId={org?.id}
-            returnPath={`/maintainer/${org?.name}/finance/account`}
+            forOrganizationId={organization.id}
+            returnPath={`/maintainer/${organization.name}/finance/account`}
           />
         }
       />

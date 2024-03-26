@@ -4,8 +4,7 @@ import AccountBalance from '@/components/Transactions/AccountBalance'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import PayoutTransactionsList from '@/components/Transactions/PayoutTransactionsList'
 import TransactionsList from '@/components/Transactions/TransactionsList'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { TransactionType } from '@polar-sh/sdk'
+import { Organization, TransactionType } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
@@ -26,20 +25,23 @@ import { useCallback } from 'react'
 export default function ClientPage({
   pagination,
   sorting,
+  organization,
 }: {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
+  organization: Organization
 }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const { org } = useCurrentOrgAndRepoFromURL()
 
   const setActiveTab = useCallback(
     (value: string) => {
-      router.replace(`/maintainer/${org?.name}/finance/incoming?type=${value}`)
+      router.replace(
+        `/maintainer/${organization.name}/finance/incoming?type=${value}`,
+      )
     },
-    [org, router],
+    [organization, router],
   )
 
   const setPagination = (
@@ -72,7 +74,7 @@ export default function ClientPage({
     )
   }
 
-  const { data: organizationAccount } = useAccount(org?.account_id)
+  const { data: organizationAccount } = useAccount(organization.account_id)
 
   const balancesHook = useSearchTransactions({
     accountId: organizationAccount?.id,
@@ -98,13 +100,15 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-6">
-      {org && <AccountBanner organization={org} />}
+      <AccountBanner organization={organization} />
+
       {organizationAccount && (
         <AccountBalance
           account={organizationAccount}
           onWithdrawSuccess={onWithdrawSuccess}
         />
       )}
+
       <ShadowBoxOnMd>
         <Tabs
           defaultValue={params?.get('type') ?? 'transactions'}

@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
-import { RedirectType, permanentRedirect } from 'next/navigation'
+import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -37,8 +37,8 @@ export default async function Page({
     cacheConfig,
   )
   if (organization.is_personal) {
-    permanentRedirect('/finance/account', RedirectType.replace)
+    redirect('/finance/account', RedirectType.replace)
   }
 
-  return <ClientPage />
+  return <ClientPage organization={organization} />
 }

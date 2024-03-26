@@ -1,6 +1,7 @@
 from typing import Literal
 
 import stripe as stripe_lib
+from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.currency.schemas import CurrencyAmount
@@ -108,7 +109,11 @@ class DonationService:
     async def get_by_payment_id(
         self, session: AsyncSession, id: str
     ) -> Donation | None:
-        stmt = sql.select(Donation).where(Donation.payment_id == id)
+        stmt = (
+            sql.select(Donation)
+            .where(Donation.payment_id == id)
+            .options(joinedload(Donation.to_organization))
+        )
         res = await session.execute(stmt)
         return res.scalar_one_or_none()
 
@@ -119,67 +124,26 @@ class DonationService:
         donation: Donation,
         payment_transaction: Transaction,
     ) -> None:
-        # assert invoice.charge is not None
-
-        # if invoice.subscription is None:
-        #     return
-
-        # stripe_subscription_id = get_expandable_id(invoice.subscription)
-        # subscription = await self.get_by_stripe_subscription_id(
-        #     session, stripe_subscription_id
-        # )
-        # if subscription is None:
-        #     raise SubscriptionDoesNotExist(stripe_subscription_id)
-
-        # await session.refresh(subscription, {"subscription_tier", "price"})
-        # account = await subscription_tier_service.get_managing_organization_account(
-        #     session, subscription.subscription_tier
-        # )
-
         assert payment_transaction.charge_id == donation.charge_id
 
         account = await account_service.get_by_organization_id(
             session, donation.to_organization_id
         )
-        # assert account
-
-        # tax = invoice.tax or 0
-        # transfer_amount = invoice.total - tax
-
-        # charge_id = donation.payment_id  # ?
-        # assert charge_id
-
-        # # Prepare an held balance
-        # # It'll be used if the account is not created yet
-
-        # Prepare an held balance
-        # It'll be used if the account is not created yet
-        # payment_transaction = await balance_transaction_service.get_by(
-        #     session, type=TransactionType.payment, charge_id=charge_id
-        # )
-        # if payment_transaction is None:
-        #     raise PaymentTransactionForChargeDoesNotExist(charge_id)
-        held_balance = HeldBalance(
-            amount=donation.amount_received,
-            # subscription=subscription,
-            # subscription_tier_price=subscription.price,
-            payment_transaction=payment_transaction,
-        )
 
         # No account, create the held balance
         if account is None:
-            # managing_organization = await organization_service.get(
-            #     session, subscription.subscription_tier.managing_organization_id
-            # )
-            # assert managing_organization is not None
-
             to_organization = await organization_service.get(
                 session, donation.to_organization_id
             )
 
             assert to_organization is not None
 
-            held_balance.organization_id = donation.to_organization.id
+            held_balance = HeldBalance(
+                amount=donation.amount_received,
+                payment_transaction=payment_transaction,
+                donation=donation,
+                organization_id=donation.to_organization.id,
+            )
             await held_balance_service.create(session, held_balance=held_balance)
 
             await notification_service.send_to_org_admins(

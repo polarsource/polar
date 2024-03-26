@@ -1,3 +1,5 @@
+from typing import Any
+
 import stripe
 import structlog
 from arq import Retry
@@ -76,25 +78,26 @@ async def account_updated(
 
 @task("stripe.webhook.payment_intent.succeeded")
 async def payment_intent_succeeded(
-    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+    ctx: JobContext,
+    event: dict[str, Any],
+    polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             payment_intent = event["data"]["object"]
             payload = PaymentIntentSuccessWebhook.model_validate(payment_intent)
+            metadata = payment_intent.get("metadata", {})
 
             # payments for pay_upfront (pi has metadata)
-            if payment_intent.metadata.get("type") == ProductType.pledge:
+            if metadata.get("type") == ProductType.pledge:
                 await pledge_service.handle_payment_intent_success(
                     session=session,
                     payload=payload,
                 )
                 return
 
-            if payment_intent.metadata.get("type") == ProductType.donation:
-                metadata = DonationPaymentIntentMetadata.model_validate(
-                    payment_intent.metadata
-                )
+            if metadata.get("type") == ProductType.donation:
+                metadata = DonationPaymentIntentMetadata.model_validate(metadata)
                 await donation_service.handle_payment_intent_success(
                     session=session,
                     payload=payload,
@@ -124,7 +127,9 @@ async def payment_intent_succeeded(
 
 @task("stripe.webhook.charge.succeeded")
 async def charge_succeeded(
-    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+    ctx: JobContext,
+    event: dict[str, Any],  # stripe.Event
+    polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:

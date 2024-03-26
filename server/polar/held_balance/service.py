@@ -57,6 +57,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 joinedload(HeldBalance.subscription),
                 joinedload(HeldBalance.subscription_tier_price),
                 joinedload(HeldBalance.issue_reward),
+                joinedload(HeldBalance.donation),
             )
         )
         held_balances = await session.stream_scalars(statement)
@@ -73,6 +74,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 subscription=held_balance.subscription,
                 subscription_tier_price=held_balance.subscription_tier_price,
                 issue_reward=held_balance.issue_reward,
+                donation=held_balance.donation,
             )
             balance_transactions_list.append(balance_transactions)
 

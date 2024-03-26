@@ -11,6 +11,7 @@ from polar.integrations.stripe.schemas import (
     PaymentIntentSuccessWebhook,
 )
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.money import get_cents_in_dollar_string
 from polar.models.donation import Donation
 from polar.models.held_balance import HeldBalance
 from polar.models.organization import Organization
@@ -18,6 +19,7 @@ from polar.models.transaction import Transaction
 from polar.models.user import User
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
+    MaintainerDonationReceivedNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -130,14 +132,13 @@ class DonationService:
             session, donation.to_organization_id
         )
 
+        to_organization = await organization_service.get(
+            session, donation.to_organization_id
+        )
+        assert to_organization is not None
+
         # No account, create the held balance
         if account is None:
-            to_organization = await organization_service.get(
-                session, donation.to_organization_id
-            )
-
-            assert to_organization is not None
-
             held_balance = HeldBalance(
                 amount=donation.amount_received,
                 payment_transaction=payment_transaction,
@@ -173,6 +174,22 @@ class DonationService:
         )
         await platform_fee_transaction_service.create_fees_reversal_balances(
             session, balance_transactions=balance_transactions
+        )
+
+        # Send notification to receiving org
+        await notification_service.send_to_org_admins(
+            session,
+            donation.to_organization_id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_donation_received,
+                payload=MaintainerDonationReceivedNotificationPayload(
+                    organization_name=to_organization.name,
+                    donation_amount=get_cents_in_dollar_string(
+                        donation.amount_received
+                    ),
+                    donation_id=donation.id,
+                ),
+            ),
         )
 
 

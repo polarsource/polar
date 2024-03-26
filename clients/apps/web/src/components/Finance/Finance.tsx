@@ -1,5 +1,4 @@
 import {
-  Account,
   Organization,
   Pledge,
   PledgeState,
@@ -35,10 +34,9 @@ const Finance = (props: {
   org: Organization
   tab: 'current' | 'rewarded' | 'contributors'
   pledges: Pledge[]
-  account: Account | undefined
   rewards: Reward[]
 }) => {
-  const { org, tab, pledges, account, rewards } = props
+  const { org, tab, pledges, rewards } = props
 
   const currentPledges =
     pledges.filter(
@@ -83,19 +81,31 @@ const Finance = (props: {
           title="Current pledges"
           amount={currentPledgesAmount}
           active={props.tab === 'current'}
-          href={`/maintainer/${org.name}/finance/issue-funding`}
+          href={
+            org.is_personal
+              ? `/finance/issue-funding`
+              : `/maintainer/${org.name}/finance/issue-funding`
+          }
         />
-        <HeaderPill
-          title={`Rewarded to ${org.name}`}
-          amount={rewardedToSelfAmount}
-          active={props.tab === 'rewarded'}
-          href={`/maintainer/${org.name}/finance/issue-funding/rewarded`}
-        />
+
+        {!org.is_personal ? (
+          <HeaderPill
+            title={`Rewarded to ${org.name}`}
+            amount={rewardedToSelfAmount}
+            active={props.tab === 'rewarded'}
+            href={`/maintainer/${org.name}/finance/issue-funding/rewarded`}
+          />
+        ) : null}
+
         <HeaderPill
           title="Rewarded to contributors"
           amount={rewardedToContributorsAmount}
           active={props.tab === 'contributors'}
-          href={`/maintainer/${org.name}/finance/issue-funding/contributors`}
+          href={
+            org.is_personal
+              ? `/finance/issue-funding/contributors`
+              : `/maintainer/${org.name}/finance/issue-funding/contributors`
+          }
         />
       </div>
 

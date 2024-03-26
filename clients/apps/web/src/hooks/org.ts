@@ -109,7 +109,7 @@ export const usePersonalOrganization = () => {
   const listOrganizationsQuery = useListAdminOrganizations()
 
   return listOrganizationsQuery.data?.items?.find(
-    (o) => o.name === currentUser?.username,
+    (o) => o.name === currentUser?.username && o.is_personal,
   )
 }
 

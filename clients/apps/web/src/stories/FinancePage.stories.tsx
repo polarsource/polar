@@ -95,7 +95,6 @@ export const Default: Story = {
     pledges: all_pledge_states,
     org: org,
     tab: 'current',
-    account: undefined,
     rewards: rewards,
   },
   render: (args) => (

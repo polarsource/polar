@@ -89,7 +89,7 @@ class Logging(Generic[RendererType]):
                             "handlers": [],
                             "propagate": True,
                         }
-                        for logger in ["uvicorn", "sqlalchemy", "arq"]
+                        for logger in ["uvicorn", "sqlalchemy", "arq", "authlib"]
                     },
                 },
             }

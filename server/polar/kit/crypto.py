@@ -8,7 +8,11 @@ def get_token_hash(token: str, *, secret: str) -> str:
     return hash.hexdigest()
 
 
-def generate_token(*, secret: str) -> tuple[str, str]:
+def generate_token(*, prefix: str = "") -> str:
+    return f"{prefix}{secrets.token_urlsafe()}"
+
+
+def generate_token_hash_pair(*, secret: str, prefix: str = "") -> tuple[str, str]:
     """
     Generate a token suitable for sensitive values
     like magic link tokens.
@@ -16,5 +20,5 @@ def generate_token(*, secret: str) -> tuple[str, str]:
     Returns both the actual value and its HMAC-SHA256 hash.
     Only the latter shall be stored in database.
     """
-    token = secrets.token_urlsafe()
+    token = generate_token(prefix=prefix)
     return token, get_token_hash(token, secret=secret)

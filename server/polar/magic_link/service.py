@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.exceptions import PolarError
-from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
@@ -40,7 +40,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
     ) -> tuple[MagicLink, str]:
         user = await user_service.get_by_email(session, email)
 
-        token, token_hash = generate_token(secret=settings.SECRET)
+        token, token_hash = generate_token_hash_pair(secret=settings.SECRET)
         magic_link_create = MagicLinkCreate(
             token_hash=token_hash,
             user_email=email,

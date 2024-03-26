@@ -190,6 +190,10 @@ export const personalFinanceSubRoutes = (): SubRoute[] => [
     link: `/finance/rewards`,
   },
   {
+    title: 'Issue Funding',
+    link: `/finance/issue-funding`,
+  },
+  {
     title: 'Payout Account',
     link: `/finance/account`,
   },

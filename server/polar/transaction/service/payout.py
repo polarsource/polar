@@ -13,7 +13,7 @@ from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.csv import IterableCSVWriter
-from polar.kit.db.postgres import async_sessionmaker
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
 from polar.models import Account, Issue, Pledge, Subscription, Transaction
@@ -310,11 +310,7 @@ class PayoutTransactionService(BaseTransactionService):
         return transaction
 
     async def get_payout_csv(
-        self,
-        sessionmaker: async_sessionmaker[AsyncSession],
-        *,
-        account: Account,
-        payout: Transaction,
+        self, sessionmaker: AsyncSessionMaker, *, account: Account, payout: Transaction
     ) -> AsyncIterable[str]:
         statement = (
             select(Transaction)

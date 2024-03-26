@@ -20,11 +20,13 @@ from polar.context import ExecutionContext
 from polar.kit.db.postgres import (
     AsyncEngine,
     AsyncSession,
-    async_sessionmaker,
-    create_sessionmaker,
+    create_async_sessionmaker,
+)
+from polar.kit.db.postgres import (
+    AsyncSessionMaker as AsyncSessionMakerType,
 )
 from polar.logging import generate_correlation_id
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 
 log = structlog.get_logger()
 
@@ -36,8 +38,8 @@ _jobs_to_enqueue = contextvars.ContextVar[list[JobToEnqueue]](
 
 class WorkerContext(TypedDict):
     redis: ArqRedis
-    engine: AsyncEngine
-    sessionmaker: async_sessionmaker[AsyncSession]
+    async_engine: AsyncEngine
+    async_sessionmaker: AsyncSessionMakerType
 
 
 class JobContext(WorkerContext):
@@ -64,13 +66,15 @@ class WorkerSettings:
     async def on_startup(ctx: WorkerContext) -> None:
         log.info("polar.worker.startup")
 
-        engine = create_engine("worker")
-        sessionmaker = create_sessionmaker(engine)
-        ctx.update({"engine": engine, "sessionmaker": sessionmaker})
+        async_engine = create_async_engine("worker")
+        async_sessionmaker = create_async_sessionmaker(async_engine)
+        ctx.update(
+            {"async_engine": async_engine, "async_sessionmaker": async_sessionmaker}
+        )
 
     @staticmethod
     async def on_shutdown(ctx: WorkerContext) -> None:
-        engine = ctx["engine"]
+        engine = ctx["async_engine"]
         await engine.dispose()
 
         log.info("polar.worker.shutdown")
@@ -255,7 +259,7 @@ def interval(
 @asynccontextmanager
 async def AsyncSessionMaker(ctx: JobContext) -> AsyncIterator[AsyncSession]:
     """Helper to open an AsyncSession context manager from the job context."""
-    async with ctx["sessionmaker"]() as session:
+    async with ctx["async_sessionmaker"]() as session:
         try:
             yield session
         except:

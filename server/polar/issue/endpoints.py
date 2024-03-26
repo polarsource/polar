@@ -13,13 +13,13 @@ from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
 from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, Pagination
 from polar.locker import Locker, get_locker
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import (
     AsyncSession,
-    AsyncSessionMaker,
     get_db_session,
     get_db_sessionmaker,
 )

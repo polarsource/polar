@@ -1,9 +1,9 @@
-from polar.kit.db.postgres import create_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.organization.service import organization as organization_service
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 
-engine = create_engine("app")
-sessionmaker = create_sessionmaker(engine)
+engine = create_async_engine("app")
+sessionmaker = create_async_sessionmaker(engine)
 
 
 async def is_allowed_custom_domain(origin: str) -> bool:

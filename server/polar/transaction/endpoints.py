@@ -8,16 +8,12 @@ from polar.account.service import account as account_service
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
-from polar.postgres import (
-    AsyncSession,
-    AsyncSessionMaker,
-    get_db_session,
-    get_db_sessionmaker,
-)
+from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.tags.api import Tags
 
 from .schemas import (

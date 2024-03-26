@@ -11,7 +11,7 @@ from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe_lib  # type: ignore[attr-defined]
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Account
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 
 cli = typer.Typer()
 
@@ -41,7 +41,7 @@ def typer_async(f):  # type: ignore
 @cli.command()
 @typer_async
 async def account_payout_schedule() -> None:
-    engine = create_engine("script")
+    engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin():
             session = AsyncSession(

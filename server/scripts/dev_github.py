@@ -11,9 +11,9 @@ from polar.integrations.github import client as github
 from polar.integrations.github.service import (
     github_organization,
 )
-from polar.kit.db.postgres import create_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Issue, Organization, Repository
-from polar.postgres import AsyncSession, create_engine, sql
+from polar.postgres import AsyncSession, create_async_engine, sql
 from polar.worker import enqueue_job
 from polar.worker import lifespan as worker_lifespan
 
@@ -29,8 +29,8 @@ cli = typer.Typer()
 # Helpers
 ###############################################################################
 
-engine = create_engine("script")
-AsyncSessionLocal = create_sessionmaker(engine=engine)
+engine = create_async_engine("script")
+AsyncSessionLocal = create_async_sessionmaker(engine=engine)
 
 
 def typer_async(f):  # type: ignore

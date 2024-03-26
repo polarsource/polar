@@ -11,7 +11,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.email import EmailNotValidError, validate_email
 from polar.models import Pledge
 from polar.models.pledge import PledgeState
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 from polar.user.service import user as user_service
 
 cli = typer.Typer()
@@ -46,7 +46,7 @@ async def anonymous_pledge_migration(
         False, help="If `True`, changes won't be commited to the database."
     ),
 ) -> None:
-    engine = create_engine("script")
+    engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
             session = AsyncSession(

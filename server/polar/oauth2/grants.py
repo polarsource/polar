@@ -19,11 +19,12 @@ from authlib.oidc.core.grants import (
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from polar.config import settings
+from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import OAuth2AuthorizationCode, OAuth2Client, OAuth2Token, User
 
 from .authorization_server import AuthorizationServer
 from .constants import AUTHORIZATION_CODE_PREFIX
-from .crypto import generate_token
 from .requests import StarletteOAuth2Request
 
 DUMMY_JWT_CONFIG = {
@@ -32,25 +33,6 @@ DUMMY_JWT_CONFIG = {
     "iss": "https://polar.sh",
     "exp": 3600,
 }
-
-
-def _save_authorization_code(
-    session: Session,
-    code: str,
-    request: StarletteOAuth2Request,
-) -> OAuth2AuthorizationCode:
-    nonce = request.data.get("nonce")
-    authorization_code = OAuth2AuthorizationCode(
-        code=code,
-        client_id=request.client_id,
-        user_id=request.user.id if request.user else None,
-        scope=request.scope,
-        redirect_uri=request.redirect_uri,
-        nonce=nonce,
-    )
-    session.add(authorization_code)
-    session.flush()
-    return authorization_code
 
 
 def _exists_nonce(
@@ -79,18 +61,31 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
     server: AuthorizationServer
 
     def generate_authorization_code(self) -> str:
-        return generate_token(AUTHORIZATION_CODE_PREFIX)
+        return generate_token(prefix=AUTHORIZATION_CODE_PREFIX)
 
     def save_authorization_code(
         self, code: str, request: StarletteOAuth2Request
     ) -> OAuth2AuthorizationCode:
-        return _save_authorization_code(self.server.session, code, request)
+        nonce = request.data.get("nonce")
+
+        authorization_code = OAuth2AuthorizationCode(
+            code=get_token_hash(code, secret=settings.SECRET),
+            client_id=request.client_id,
+            user_id=request.user.id if request.user else None,
+            scope=request.scope,
+            redirect_uri=request.redirect_uri,
+            nonce=nonce,
+        )
+        self.server.session.add(authorization_code)
+        self.server.session.flush()
+        return authorization_code
 
     def query_authorization_code(
         self, code: str, client: OAuth2Client
     ) -> OAuth2AuthorizationCode | None:
+        code_hash = get_token_hash(code, secret=settings.SECRET)
         statement = select(OAuth2AuthorizationCode).where(
-            OAuth2AuthorizationCode.code == code,
+            OAuth2AuthorizationCode.code == code_hash,
             OAuth2AuthorizationCode.client_id == client.client_id,
         )
         result = self.server.session.execute(statement)
@@ -144,8 +139,9 @@ class RefreshTokenGrant(_RefreshTokenGrant):
     INCLUDE_NEW_REFRESH_TOKEN = True
 
     def authenticate_refresh_token(self, refresh_token: str) -> OAuth2Token | None:
+        refresh_token_hash = get_token_hash(refresh_token, secret=settings.SECRET)
         statement = select(OAuth2Token).where(
-            OAuth2Token.refresh_token == refresh_token
+            OAuth2Token.refresh_token == refresh_token_hash
         )
         result = self.server.session.execute(statement)
         token = result.unique().scalar_one_or_none()

@@ -9,7 +9,7 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import AsyncSession
 from polar.magic_link.service import InvalidMagicLink
 from polar.magic_link.service import magic_link as magic_link_service
@@ -28,7 +28,7 @@ async def generate_magic_link_token(
     async def _generate_magic_link_token(
         user_email: str, user_id: UUID | None, expires_at: datetime | None
     ) -> tuple[MagicLink, str]:
-        token, token_hash = generate_token(secret=settings.SECRET)
+        token, token_hash = generate_token_hash_pair(secret=settings.SECRET)
         magic_link = MagicLink(
             token_hash=token_hash,
             user_email=user_email,

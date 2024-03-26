@@ -10,11 +10,12 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
 
+from polar.config import settings
+from polar.kit.crypto import generate_token, get_token_hash
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX, REFRESH_TOKEN_PREFIX
 
-from .crypto import generate_token
 from .requests import StarletteJsonRequest, StarletteOAuth2Request
 
 ExpiresInConfigType: typing.TypeAlias = dict[str, int]
@@ -45,10 +46,27 @@ class AuthorizationServer(_AuthorizationServer):
     def save_token(
         self, token: dict[str, typing.Any], request: StarletteOAuth2Request
     ) -> None:
-        oauth2_token = OAuth2Token(
-            client_id=request.client_id,
-            user=request.user,
+        access_token = token.get("access_token", None)
+        access_token_hash = (
+            get_token_hash(access_token, secret=settings.SECRET)
+            if access_token is not None
+            else None
+        )
+
+        refresh_token = token.get("refresh_token", None)
+        refresh_token_hash = (
+            get_token_hash(refresh_token, secret=settings.SECRET)
+            if refresh_token is not None
+            else None
+        )
+
+        token_data = {
             **token,
+            "access_token": access_token_hash,
+            "refresh_token": refresh_token_hash,
+        }
+        oauth2_token = OAuth2Token(
+            **token_data, client_id=request.client_id, user=request.user
         )
         self.session.add(oauth2_token)
         self.session.flush()
@@ -83,11 +101,11 @@ class AuthorizationServer(_AuthorizationServer):
         def _access_token_generator(
             client: OAuth2Client, grant_type: str, user: User, scope: str
         ) -> str:
-            return generate_token(ACCESS_TOKEN_PREFIX)
+            return generate_token(prefix=ACCESS_TOKEN_PREFIX)
 
         def _refresh_token_generator(
             client: OAuth2Client, grant_type: str, user: User, scope: str
         ) -> str:
-            return generate_token(REFRESH_TOKEN_PREFIX)
+            return generate_token(prefix=REFRESH_TOKEN_PREFIX)
 
         return BearerTokenGenerator(_access_token_generator, _refresh_token_generator)

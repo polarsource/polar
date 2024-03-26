@@ -57,6 +57,7 @@ async def create_transaction(
         else subscription.price
         if subscription is not None
         else None,
+        donation=None,
         payout_transaction=payout_transaction,
     )
     await save_fixture(transaction)

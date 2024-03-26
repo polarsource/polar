@@ -33,6 +33,7 @@ class NotificationType(StrEnum):
         "SubscriptionBenefitPreconditionErrorNotification"
     )
     maintainer_create_account = "MaintainerCreateAccountNotification"
+    maintainer_donation_received = "MaintainerDonationReceived"
 
 
 class NotificationPayloadBase(BaseModel):
@@ -213,7 +214,7 @@ class MaintainerPledgePendingNotification(NotificationBase):
     payload: MaintainerPledgePendingNotificationPayload
 
 
-# Sent to mainatiners after marking an issue as completed, and setting the rewards.
+# Sent to maintainers after marking an issue as completed, and setting the rewards.
 class MaintainerPledgedIssuePendingNotificationPayload(NotificationPayloadBase):
     pledge_amount_sum: str
     issue_id: UUID
@@ -517,6 +518,28 @@ class MaintainerCreateAccountNotification(NotificationBase):
     payload: MaintainerCreateAccountNotificationPayload
 
 
+class MaintainerDonationReceivedNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+    donation_amount: str
+    donation_id: UUID
+
+    def subject(self) -> str:
+        return "Received ${{donation_amount}} donation to {{organization_name}}"  # noqa: E501
+
+    def body(self) -> str:
+        return """Hi,<br><br>
+
+Great news! {{organization_name}} just received a ${{donation_amount}} donation.
+
+It's already available on your <a href="https://polar.sh/maintainer/{{organization_name}}/finance/incoming">Polar Balance</a>.
+"""  # noqa: E501
+
+
+class MaintainerDonationReceivedNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_donation_received]
+    payload: MaintainerDonationReceivedNotificationPayload
+
+
 NotificationPayload = (
     MaintainerPledgeCreatedNotificationPayload
     | MaintainerPledgeConfirmationPendingNotificationPayload
@@ -532,6 +555,7 @@ NotificationPayload = (
     | MaintainerNewPaidSubscriptionNotificationPayload
     | SubscriptionBenefitPreconditionErrorNotificationPayload
     | MaintainerCreateAccountNotificationPayload
+    | MaintainerDonationReceivedNotificationPayload
 )
 
 Notification = Annotated[
@@ -548,6 +572,7 @@ Notification = Annotated[
     | MaintainerAccountReviewedNotification
     | MaintainerNewPaidSubscriptionNotification
     | SubscriptionBenefitPreconditionErrorNotification
-    | MaintainerCreateAccountNotification,
+    | MaintainerCreateAccountNotification
+    | MaintainerDonationReceivedNotification,
     Discriminator(discriminator="type"),
 ]

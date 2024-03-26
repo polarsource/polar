@@ -136,12 +136,6 @@ class PaymentTransactionService(BaseTransactionService):
             # Give a chance to retry this later in case we didn't create the Donation yet.
             if donation is None:
                 raise DonationDoesNotExist(charge.id, payment_intent)
-            # If we were not able to link to a payer by Stripe Customer ID,
-            # link from the pledge data. Happens for anonymous pledges.
-            # if payment_user is None and payment_organization is None:
-            #     await session.refresh(donation, {"by_user", "by_organization"})
-            #     payment_user = donation.by_user
-            #     payment_organization = donation.by_organization
 
         transaction = Transaction(
             type=TransactionType.payment,

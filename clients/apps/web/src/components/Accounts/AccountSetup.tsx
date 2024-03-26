@@ -212,9 +212,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
               threshold, and as part of our security measures, we are now
               conducting a review.
             </p>
-            <p>
-              Payouts are note possible during this brief evaluation period.
-            </p>
+            <p>Payouts are not possible during this brief evaluation period.</p>
           </>
         )}
         {currentAccount &&

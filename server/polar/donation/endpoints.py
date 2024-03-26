@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import Auth
-from polar.authz.service import Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.donation.schemas import (
     DonationCreateStripePaymentIntent,
@@ -12,6 +11,7 @@ from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.models.organization import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.posthog import posthog
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -29,11 +29,21 @@ async def create_payment_intent(
     intent: DonationCreateStripePaymentIntent,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
-    authz: Authz = Depends(Authz.authz),
 ) -> DonationStripePaymentIntentMutationResponse:
+    # Feature flag
+    if not auth.user:
+        raise Unauthorized("You don't have access to this feature.")
+    if posthog.client and not posthog.client.feature_enabled(
+        "donations",
+        auth.user.posthog_distinct_id,
+    ):
+        raise Unauthorized("You don't have access to this feature.")
+
     to_organization = await organization_service.get(session, intent.to_organization_id)
     if not to_organization:
         raise ResourceNotFound()
+
+    # TODO: Check if org is allowed to received donations?
 
     # If on behalf of org, check that user is member of this org.
     on_behalf_of_organization: Organization | None = None

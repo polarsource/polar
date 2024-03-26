@@ -2,7 +2,7 @@
 
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { Organization } from '@polar-sh/sdk'
 import { usePathname, useRouter } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
@@ -16,13 +16,14 @@ import { useSearchTransactions } from 'polarkit/hooks'
 export default function ClientPage({
   pagination,
   sorting,
+  organization,
 }: {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
+  organization: Organization
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { org } = useCurrentOrgAndRepoFromURL()
 
   const setPagination = (
     updaterOrValue:
@@ -55,7 +56,7 @@ export default function ClientPage({
   }
 
   const transactionsHook = useSearchTransactions({
-    paymentOrganizationId: org?.id,
+    paymentOrganizationId: organization.id,
     ...getAPIParams(pagination, sorting),
   })
   const transactions = transactionsHook.data?.items || []
@@ -63,7 +64,7 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-6">
-      {org && <AccountBanner organization={org} />}
+      <AccountBanner organization={organization} />
       <ShadowBoxOnMd>
         <div className="mb-8 flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">

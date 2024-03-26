@@ -8,6 +8,8 @@ from polar.models.organization import Organization
 from polar.models.pledge import PledgeType
 from polar.models.user import User
 from polar.notifications.notification import (
+    MaintainerCreateAccountNotificationPayload,
+    MaintainerDonationReceivedNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerPledgeConfirmationPendingNotificationPayload,
     MaintainerPledgeCreatedNotificationPayload,
@@ -374,15 +376,36 @@ async def test_TeamAdminMemberPledgedNotification(
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-async def test_MaintainerNewPaidSubscriptionNotification(
-    predictable_user: User,
-) -> None:
+async def test_MaintainerNewPaidSubscriptionNotification() -> None:
     n = MaintainerNewPaidSubscriptionNotificationPayload(
         subscriber_name="John Doe",
         tier_name="My Paid Tier",
         tier_price_amount=500,
         tier_organization_name="myorg",
         tier_price_recurring_interval="month",
+    )
+
+    await check_diff(n.render())
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+async def test_MaintainerCreateAccountNotificationPayload() -> None:
+    n = MaintainerCreateAccountNotificationPayload(
+        organization_name="orgname",
+        url="https://example.com/url",
+    )
+
+    await check_diff(n.render())
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+async def test_MaintainerDonationReceivedNotificationPayload() -> None:
+    n = MaintainerDonationReceivedNotificationPayload(
+        organization_name="orgname",
+        donation_amount="20",
+        donation_id=uuid.uuid4(),
     )
 
     await check_diff(n.render())

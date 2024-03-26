@@ -17,6 +17,7 @@ from polar.kit.db.postgres import async_sessionmaker
 from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
 from polar.models import Account, Issue, Pledge, Subscription, Transaction
+from polar.models.donation import Donation
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.schemas import PayoutEstimate
@@ -154,6 +155,7 @@ class PayoutTransactionService(BaseTransactionService):
             issue_reward=None,
             subscription=None,
             subscription_tier_price=None,
+            donation=None,
             paid_transactions=[],
             incurred_transactions=[],
             account_incurred_transactions=[],
@@ -333,6 +335,10 @@ class PayoutTransactionService(BaseTransactionService):
                     joinedload(Issue.organization),
                     joinedload(Issue.repository),
                 ),
+                # Donation
+                selectinload(Transaction.donation).options(
+                    joinedload(Donation.to_organization)
+                ),
             )
         )
 
@@ -370,6 +376,10 @@ class PayoutTransactionService(BaseTransactionService):
                     description = f"Pledge to {transaction.pledge.issue.reference_key}"
                 elif transaction.subscription is not None:
                     description = f"Subscription to {transaction.subscription.subscription_tier.name}"
+                elif transaction.donation is not None:
+                    description = (
+                        f"Donation to {transaction.donation.to_organization.name}"
+                    )
 
                 transaction_id = (
                     str(transaction.id)

@@ -11,9 +11,7 @@ cli = typer.Typer()
 
 
 def get_sync_postgres_dsn() -> str:
-    # TODO: Dirty and quick hack. Change this later to drop unnecessary dependency.
-    async_dsn = str(settings.postgres_dsn)
-    return async_dsn.replace("asyncpg", "psycopg2")
+    return str(settings.get_postgres_dsn("psycopg2"))
 
 
 def _upgrade(revision: str = "head") -> None:

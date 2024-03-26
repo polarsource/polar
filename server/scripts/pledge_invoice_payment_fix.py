@@ -14,7 +14,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.models import Transaction
 from polar.models.transaction import TransactionType
 from polar.pledge.service import pledge as pledge_service
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 
 cli = typer.Typer()
 
@@ -50,7 +50,7 @@ async def pledge_invoice_payment_fix(
     ),
 ) -> None:
     stripe_lib.api_key = stripe_api_key
-    engine = create_engine("script")
+    engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
             session = AsyncSession(

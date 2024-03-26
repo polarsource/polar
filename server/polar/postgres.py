@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from fastapi import Depends, Request
 
@@ -7,31 +7,41 @@ from polar.config import settings
 from polar.kit.db.postgres import (
     AsyncEngine,
     AsyncSession,
-    async_sessionmaker,
-    create_sessionmaker,
+    AsyncSessionMaker,
+    Engine,
     sql,
 )
-from polar.kit.db.postgres import create_engine as _create_engine
+from polar.kit.db.postgres import (
+    create_async_engine as _create_async_engine,
+)
+from polar.kit.db.postgres import (
+    create_sync_engine as _create_sync_engine,
+)
+
+ProcessName: TypeAlias = Literal["app", "worker", "script", "backoffice"]
 
 
-def create_engine(
-    process_name: Literal["app", "worker", "script", "backoffice"],
-) -> AsyncEngine:
-    return _create_engine(
-        dsn=str(settings.postgres_dsn),
+def create_async_engine(process_name: ProcessName) -> AsyncEngine:
+    return _create_async_engine(
+        dsn=str(settings.get_postgres_dsn("asyncpg")),
         application_name=f"{settings.ENV.value}.{process_name}",
         debug=settings.DEBUG,
     )
 
 
-AsyncSessionMaker = async_sessionmaker[AsyncSession]
+def create_sync_engine(process_name: ProcessName) -> Engine:
+    return _create_sync_engine(
+        dsn=str(settings.get_postgres_dsn("psycopg2")),
+        application_name=f"{settings.ENV.value}.{process_name}",
+        debug=settings.DEBUG,
+    )
 
 
 async def get_db_sessionmaker(
     request: Request,
 ) -> AsyncGenerator[AsyncSessionMaker, None]:
-    sessionmaker: AsyncSessionMaker = request.state.sessionmaker
-    yield sessionmaker
+    async_sessionmaker: AsyncSessionMaker = request.state.async_sessionmaker
+    yield async_sessionmaker
 
 
 async def get_db_session(
@@ -50,9 +60,8 @@ async def get_db_session(
 __all__ = [
     "AsyncSession",
     "sql",
-    "create_engine",
-    "create_sessionmaker",
+    "create_async_engine",
+    "create_sync_engine",
     "get_db_session",
     "get_db_sessionmaker",
-    "AsyncSessionMaker",
 ]

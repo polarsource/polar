@@ -188,13 +188,19 @@ const Checkout = ({ organization }: { organization: Organization }) => {
   const amount = watch('amount')
   const amountAmount = watch('amount.amount')
   const email = watch('email')
+  const emailState = form.getFieldState('email')
 
   useEffect(() => {
+    // For logged out users, do not run validation until the user has entered an email address.
+    if (!email && !emailState.isTouched) {
+      return
+    }
+
     // Trigger form validation on all fields
     trigger(undefined)
 
     debouncedSync(form.getValues())
-  }, [amount, email, amountAmount])
+  }, [amount, email, amountAmount, emailState.isTouched])
 
   return (
     <>
@@ -211,8 +217,12 @@ const Checkout = ({ organization }: { organization: Organization }) => {
               />
             ) : (
               <div className="flex flex-col space-y-4">
-                <Skeleton className="h-[40px] w-full" />
-                <Skeleton className="h-[40px] w-full" />
+                {isSyncing ? (
+                  <>
+                    <Skeleton className="h-[40px] w-full" />
+                    <Skeleton className="h-[40px] w-full" />
+                  </>
+                ) : null}
 
                 <Button size="lg" disabled={true} fullWidth>
                   Donate

@@ -28,7 +28,7 @@ async def well_known_openid_configuration(
         authorization_endpoint=str(request.url_for("oauth2.authorize")),
         token_endpoint=str(request.url_for("oauth2.token")),
         jwks_uri=str(request.url_for("well_known.jwks")),
-        userinfo_endpoint="TODO",
+        userinfo_endpoint=str(request.url_for("oauth2.userinfo")),
         scopes_supported=constants.SCOPES_SUPPORTED,
         response_types_supported=authorization_server.response_types_supported,
         response_modes_supported=authorization_server.response_modes_supported,

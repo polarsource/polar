@@ -1,11 +1,33 @@
 from collections.abc import Generator
 
-from fastapi import Request
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import OpenIdConnect
+from fastapi.security.utils import get_authorization_scheme_param
 
 from polar.kit.db.postgres import SyncSessionMaker
+from polar.models import OAuth2Token
+from polar.postgres import AsyncSession, get_db_session
 
 from .authorization_server import AuthorizationServer
 from .constants import SCOPES_SUPPORTED
+from .service.oauth2_token import oauth2_token as oauth2_token_service
+
+openid_scheme = OpenIdConnect(openIdConnectUrl="/.well-known/openid-configuration")
+
+
+async def get_token(
+    authorization: str = Depends(openid_scheme),
+    session: AsyncSession = Depends(get_db_session),
+) -> OAuth2Token:
+    scheme, access_token = get_authorization_scheme_param(authorization)
+    if not authorization or scheme.lower() != "bearer":
+        raise HTTPException(status_code=401)
+
+    token = await oauth2_token_service.get_by_access_token(session, access_token)
+    if token is None:
+        raise HTTPException(status_code=401)
+
+    return token
 
 
 def get_authorization_server(

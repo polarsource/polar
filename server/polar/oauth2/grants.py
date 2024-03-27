@@ -1,7 +1,6 @@
 import time
 import typing
 
-from authlib.oauth2.rfc6749 import scope_to_list
 from authlib.oauth2.rfc6749.grants import (
     AuthorizationCodeGrant as _AuthorizationCodeGrant,
 )
@@ -10,7 +9,6 @@ from authlib.oauth2.rfc6749.grants import (
     RefreshTokenGrant as _RefreshTokenGrant,
 )
 from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
-from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import (
     OpenIDCode as _OpenIDCode,
 )
@@ -26,6 +24,7 @@ from polar.models import OAuth2AuthorizationCode, OAuth2Client, OAuth2Token, Use
 
 from .constants import AUTHORIZATION_CODE_PREFIX, ISSUER
 from .requests import StarletteOAuth2Request
+from .userinfo import UserInfo, generate_user_info
 
 if typing.TYPE_CHECKING:
     from .authorization_server import AuthorizationServer
@@ -47,17 +46,6 @@ def _exists_nonce(
     )
     result = session.execute(statement)
     return result.unique().scalar_one_or_none() is not None
-
-
-def _generate_user_info(user: User, scope: str) -> UserInfo:
-    scopes = scope_to_list(scope)
-    claims: dict[str, typing.Any] = {"sub": str(user.id)}
-    if scopes:
-        if "profile" in scopes:
-            claims.update({"name": user.username})
-        if "email" in scopes:
-            claims.update({"email": user.email, "email_verified": user.email_verified})
-    return UserInfo(**claims)
 
 
 class AuthorizationCodeGrant(_AuthorizationCodeGrant):
@@ -133,7 +121,7 @@ class OpenIDCode(_OpenIDCode):
         return JWT_CONFIG
 
     def generate_user_info(self, user: User, scope: str) -> UserInfo:
-        return _generate_user_info(user, scope)
+        return generate_user_info(user, scope)
 
 
 class OpenIDToken(_OpenIDToken):
@@ -141,7 +129,7 @@ class OpenIDToken(_OpenIDToken):
         return JWT_CONFIG
 
     def generate_user_info(self, user: User, scope: str) -> UserInfo:
-        return _generate_user_info(user, scope)
+        return generate_user_info(user, scope)
 
 
 class RefreshTokenGrant(_RefreshTokenGrant):
@@ -176,7 +164,7 @@ def register_grants(server: "AuthorizationServer") -> None:
         AuthorizationCodeGrant,
         [
             CodeChallenge(),
-            OpenIDCode(server.session, require_nonce=True),
+            OpenIDCode(server.session, require_nonce=False),
             OpenIDToken(),
         ],
     )

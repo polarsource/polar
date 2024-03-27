@@ -1,18 +1,21 @@
-from typing import Any
+from typing import Any, cast
 
 from authlib.oauth2 import OAuth2Error
 from fastapi import Depends, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.kit.routing import APIRouter
+from polar.models import OAuth2Token
 
 from ..authorization_server import (
     AuthorizationServer,
     IntrospectionEndpoint,
     RevocationEndpoint,
 )
-from ..dependencies import get_authorization_server
+from ..dependencies import get_authorization_server, get_token
 from ..grants import BaseGrant
+from ..userinfo import UserInfo, generate_user_info
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
@@ -32,7 +35,14 @@ async def oauth2_authorize(
             )
         except OAuth2Error as error:
             raise HTTPException(status_code=400, detail=dict(error.get_body()))
-        return {"grant": grant.request.scope, "user": user.id}
+        return HTMLResponse(
+            """
+            <form method="POST">
+                <input type="hidden" name="confirm" value="true">
+                <button type="submit">Confirm</button>
+            </form>
+            """
+        )
 
     if form.get("confirm"):
         grant_user = user
@@ -72,3 +82,10 @@ async def oauth2_introspect(
     return authorization_server.create_endpoint_response(
         IntrospectionEndpoint.ENDPOINT_NAME, request
     )
+
+
+@router.api_route(
+    "/userinfo", methods=["GET", "POST"], name="oauth2.userinfo", response_model=None
+)
+async def oauth2_userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
+    return generate_user_info(token.user, cast(str, token.scope))

@@ -34,6 +34,7 @@ import {
 } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
+import { Textarea } from 'polarkit/components/ui/textarea'
 import { useListPaymentMethods } from 'polarkit/hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -50,25 +51,23 @@ const Checkout = ({ organization }: { organization: Organization }) => {
 
   const [isSyncing, setIsSyncing] = useState(false)
 
-  const lastPledgeSync = useRef<DonateFormState | undefined>()
+  const latestFormSyncedState = useRef<DonateFormState | undefined>()
 
-  const createPaymentIntent = useCallback(
-    async (pledgeSync: DonateFormState) => {
-      return await api.donations.createPaymentIntent({
-        donationCreateStripePaymentIntent: {
-          to_organization_id: pledgeSync.to_organization_id,
-          amount: pledgeSync.amount,
-          email: pledgeSync.email,
-          setup_future_usage: pledgeSync.setup_future_usage,
-          on_behalf_of_organization_id: pledgeSync.on_behalf_of_organization_id,
-        },
-      })
-    },
-    [organization.id],
-  )
+  const createPaymentIntent = async (formState: DonateFormState) => {
+    return await api.donations.createPaymentIntent({
+      donationCreateStripePaymentIntent: {
+        to_organization_id: formState.to_organization_id,
+        amount: formState.amount,
+        email: formState.email,
+        setup_future_usage: formState.setup_future_usage,
+        on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
+        message: formState.message,
+      },
+    })
+  }
 
   const updatePaymentIntent = useCallback(
-    async (pledgeSync: DonateFormState) => {
+    async (formState: DonateFormState) => {
       if (!polarPaymentIntent) {
         throw new Error('no payment intent to update')
       }
@@ -76,37 +75,40 @@ const Checkout = ({ organization }: { organization: Organization }) => {
       return await api.donations.updatePaymentIntent({
         id: polarPaymentIntent.payment_intent_id,
         donationUpdateStripePaymentIntent: {
-          amount: pledgeSync.amount,
-          email: pledgeSync.email,
-          setup_future_usage: pledgeSync.setup_future_usage,
-          on_behalf_of_organization_id: pledgeSync.on_behalf_of_organization_id,
+          amount: formState.amount,
+          email: formState.email,
+          setup_future_usage: formState.setup_future_usage,
+          on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
+          message: formState.message,
         },
       })
     },
     [polarPaymentIntent],
   )
 
-  const shouldSynchronizePledge = (pledgeSync: DonateFormState) => {
-    if (!validateEmail(pledgeSync.email)) {
+  const shouldSynchronizePaymentIntent = (formState: DonateFormState) => {
+    if (!validateEmail(formState.email)) {
       return false
     }
 
-    if (pledgeSync.amount.amount <= 0) {
+    if (formState.amount.amount <= 0) {
       return false
     }
 
-    if (lastPledgeSync.current === undefined) {
+    if (latestFormSyncedState.current === undefined) {
       return true
     }
 
     if (
-      lastPledgeSync.current.amount.currency !== pledgeSync.amount.currency ||
-      lastPledgeSync.current.amount.amount !== pledgeSync.amount.amount ||
-      lastPledgeSync.current.email !== pledgeSync.email ||
-      lastPledgeSync.current.setup_future_usage !==
-        pledgeSync.setup_future_usage ||
-      lastPledgeSync.current.on_behalf_of_organization_id !==
-        pledgeSync.on_behalf_of_organization_id
+      latestFormSyncedState.current.amount.currency !==
+        formState.amount.currency ||
+      latestFormSyncedState.current.amount.amount !== formState.amount.amount ||
+      latestFormSyncedState.current.email !== formState.email ||
+      latestFormSyncedState.current.setup_future_usage !==
+        formState.setup_future_usage ||
+      latestFormSyncedState.current.on_behalf_of_organization_id !==
+        formState.on_behalf_of_organization_id ||
+      latestFormSyncedState.current.message !== formState.message
     ) {
       return true
     }
@@ -114,9 +116,10 @@ const Checkout = ({ organization }: { organization: Organization }) => {
     return false
   }
 
-  const synchronizePledge = useCallback(
-    async (pledgeSync: DonateFormState) => {
-      if (!shouldSynchronizePledge(pledgeSync)) {
+  const synchronizePaymentIntent = useCallback(
+    async (formState: DonateFormState) => {
+      if (!shouldSynchronizePaymentIntent(formState)) {
+        setIsSyncing(false)
         return
       }
 
@@ -128,18 +131,18 @@ const Checkout = ({ organization }: { organization: Organization }) => {
 
       try {
         if (!polarPaymentIntent) {
-          updatedPaymentIntent = await createPaymentIntent(pledgeSync)
+          updatedPaymentIntent = await createPaymentIntent(formState)
         } else {
-          updatedPaymentIntent = await updatePaymentIntent(pledgeSync)
+          updatedPaymentIntent = await updatePaymentIntent(formState)
         }
 
         if (updatedPaymentIntent) {
           setPolarPaymentIntent(updatedPaymentIntent)
         }
 
-        lastPledgeSync.current = {
-          ...pledgeSync,
-          amount: { ...pledgeSync.amount },
+        latestFormSyncedState.current = {
+          ...formState,
+          amount: { ...formState.amount },
         }
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -159,16 +162,24 @@ const Checkout = ({ organization }: { organization: Organization }) => {
       createPaymentIntent,
       updatePaymentIntent,
       polarPaymentIntent,
-      shouldSynchronizePledge,
+      shouldSynchronizePaymentIntent,
     ],
   )
 
   type Timeout = ReturnType<typeof setTimeout>
   const syncTimeout = useRef<Timeout | null>(null)
 
-  const debouncedSync = (pledgeSync: DonateFormState) => {
+  const debouncedSync = (formState: DonateFormState) => {
+    // Early user feedback that we're about to sync
+    if (shouldSynchronizePaymentIntent(formState)) {
+      setIsSyncing(true)
+    }
+
     syncTimeout.current && clearTimeout(syncTimeout.current)
-    syncTimeout.current = setTimeout(() => synchronizePledge(pledgeSync), 500)
+    syncTimeout.current = setTimeout(
+      () => synchronizePaymentIntent(formState),
+      500,
+    )
   }
 
   const { currentUser } = useAuth()
@@ -189,6 +200,7 @@ const Checkout = ({ organization }: { organization: Organization }) => {
   const amountAmount = watch('amount.amount')
   const email = watch('email')
   const emailState = form.getFieldState('email')
+  const message = watch('message')
 
   useEffect(() => {
     // For logged out users, do not run validation until the user has entered an email address.
@@ -200,7 +212,7 @@ const Checkout = ({ organization }: { organization: Organization }) => {
     trigger(undefined)
 
     debouncedSync(form.getValues())
-  }, [amount, email, amountAmount, emailState.isTouched])
+  }, [amount, email, amountAmount, emailState.isTouched, message])
 
   return (
     <>
@@ -209,6 +221,7 @@ const Checkout = ({ organization }: { organization: Organization }) => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <DonationAmount />
             <Email />
+            <Message />
 
             {polarPaymentIntent ? (
               <StripeForm
@@ -262,8 +275,8 @@ const DonationAmount = () => {
             <FormControl>
               <div className="w-full">
                 <MoneyInput
-                  id={''}
-                  {...field}
+                  id={'amount-amount'}
+                  name={'amount-amount'}
                   placeholder={2000}
                   value={field.value}
                   onChange={undefined}
@@ -299,13 +312,47 @@ const Email = () => {
           <FormItem className="flex flex-col items-start justify-between">
             <div className="flex flex-col gap-y-2">
               <FormLabel className="dark:text-polar-50 text-gray-950">
-                Billing email
+                Email
               </FormLabel>
               <FormMessage />
             </div>
             <FormControl>
               <div className="w-full">
-                <Input {...field} placeholder="billing@example.com" />
+                <Input {...field} placeholder="you@example.com" />
+              </div>
+            </FormControl>
+          </FormItem>
+        )}
+      />
+    </>
+  )
+}
+
+const Message = () => {
+  const { control } = useFormContext<DonationCreateStripePaymentIntent>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="message"
+        rules={{
+          maxLength: 240,
+        }}
+        render={({ field }) => (
+          <FormItem className="flex flex-col items-start justify-between">
+            <div className="flex flex-col gap-y-2">
+              <FormLabel className="dark:text-polar-50 text-gray-950">
+                Message
+              </FormLabel>
+              <FormMessage />
+            </div>
+            <FormControl>
+              <div className="w-full">
+                <Textarea
+                  {...field}
+                  placeholder="Include a personal message"
+                ></Textarea>
               </div>
             </FormControl>
           </FormItem>
@@ -345,6 +392,15 @@ const StripeForm = ({
   const [paymentMethod, setPaymentMethod] = useState<
     PaymentMethod | undefined
   >()
+
+  if (!stripePromise) {
+    return (
+      <>
+        <Skeleton className="h-[40px] w-full" />
+        <Skeleton className="h-[40px] w-full" />
+      </>
+    )
+  }
 
   return (
     <>

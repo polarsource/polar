@@ -1,10 +1,11 @@
 'use client'
 
-import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
+import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
+import { Skeleton } from '@mui/material'
 import { Organization } from '@polar-sh/sdk'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
@@ -12,7 +13,11 @@ import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import { useListRepositories } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 
-export default function ClientPage({organization}: {organization: Organization}) {
+export default function ClientPage({
+  organization,
+}: {
+  organization: Organization
+}) {
   const { repo: currentRepo } = useCurrentOrgAndRepoFromURL()
 
   const orgSlashRepo = currentRepo
@@ -31,7 +36,8 @@ export default function ClientPage({organization}: {organization: Organization})
 
   // Filter repos by current org
   const allOrgRepositories =
-    allRepositories?.filter((r) => r?.organization?.id === organization.id) || []
+    allRepositories?.filter((r) => r?.organization?.id === organization.id) ||
+    []
 
   const [currentEmbedTab, setCurrentEmbedTab] = useState('Tiers')
 
@@ -54,7 +60,10 @@ export default function ClientPage({organization}: {organization: Organization})
           media="(prefers-color-scheme: dark)"
           srcSet={`/embed/posts.svg?org=${organization.name}&darkmode`}
         />
-        <img alt="Posts on Polar" src={`/embed/posts.svg?org=${organization.name}`} />
+        <img
+          alt="Posts on Polar"
+          src={`/embed/posts.svg?org=${organization.name}`}
+        />
       </picture>
     ),
     Subscribe: (
@@ -141,8 +150,19 @@ export default function ClientPage({organization}: {organization: Organization})
                     </TabsList>
                   </div>
 
-                  <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full justify-center rounded-2xl border border-gray-200 bg-gray-50 p-12">
-                    {previews[currentEmbedTab] || <></>}
+                  <div className="dark:bg-polar-800 dark:border-polar-700 relative min-h-[200px] rounded-2xl border border-gray-200 bg-gray-50 p-12">
+                    <div className="relative z-10 flex h-[20px] w-full flex-col items-center justify-around">
+                      {/* Kind of hacky loading indicator _behind_ the image */}
+                      {currentEmbedTab === 'Shield' ? (
+                        <Skeleton className="h-[20px] w-[150px]" />
+                      ) : (
+                        <Spinner />
+                      )}
+                    </div>
+
+                    <div className="dark:bg-polar-800 relative z-20 -mt-[20px] flex w-full justify-center bg-gray-50">
+                      {previews[currentEmbedTab] || <></>}
+                    </div>
                   </div>
                 </div>
 

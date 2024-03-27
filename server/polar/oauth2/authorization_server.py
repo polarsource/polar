@@ -1,11 +1,13 @@
 import json
+import time
 import typing
 
 import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
-from sqlalchemy import select
+from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
@@ -24,7 +26,53 @@ TokenGeneratorType: typing.TypeAlias = typing.Callable[..., str]
 logger: Logger = structlog.get_logger(__name__)
 
 
+class RevocationEndpoint(_RevocationEndpoint):
+    server: "AuthorizationServer"
+
+    CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
+    def query_token(
+        self,
+        token: str,
+        token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
+    ) -> OAuth2Token | None:
+        token_hash = get_token_hash(token, secret=settings.SECRET)
+        statement = select(OAuth2Token)
+        if token_type_hint == "access_token":
+            statement = statement.where(OAuth2Token.access_token == token_hash)
+        elif token_type_hint == "refresh_token":
+            statement = statement.where(OAuth2Token.refresh_token == token_hash)
+        else:
+            statement = statement.where(
+                or_(
+                    OAuth2Token.access_token == token_hash,
+                    OAuth2Token.refresh_token == token_hash,
+                )
+            )
+
+        result = self.server.session.execute(statement)
+        return result.unique().scalar_one_or_none()
+
+    def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
+        now = int(time.time())
+        hint: typing.Literal["access_token", "refresh_token"] | None = request.form.get(
+            "token_type_hint"
+        )
+        token.access_token_revoked_at = now  # pyright: ignore
+        if hint != "access_token":
+            token.refresh_token_revoked_at = now  # pyright: ignore
+        self.server.session.add(token)
+        self.server.session.flush()
+
+
 class AuthorizationServer(_AuthorizationServer):
+    if typing.TYPE_CHECKING:
+
+        def create_endpoint_response(
+            self, name: str, request: Request | None = None
+        ) -> Response:
+            ...
+
     def __init__(
         self,
         session: Session,
@@ -137,3 +185,10 @@ class AuthorizationServer(_AuthorizationServer):
     @property
     def token_endpoint_auth_methods_supported(self) -> list[str]:
         return ["client_secret_basic", "client_secret_post", "none"]
+
+    @property
+    def revocation_endpoint_auth_methods_supported(self) -> list[str]:
+        auth_methods: list[str] = []
+        for endpoint in self._endpoints.get(RevocationEndpoint.ENDPOINT_NAME, []):
+            auth_methods.extend(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
+        return auth_methods

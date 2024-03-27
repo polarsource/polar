@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, Request, Response
 from polar.auth.dependencies import UserRequiredAuth
 from polar.kit.routing import APIRouter
 
-from ..authorization_server import AuthorizationServer
+from ..authorization_server import AuthorizationServer, RevocationEndpoint
 from ..dependencies import get_authorization_server
 from ..grants import BaseGrant
 
@@ -46,3 +46,14 @@ async def oauth2_token(
 ) -> Response:
     await request.form()
     return authorization_server.create_token_response(request)
+
+
+@router.post("/revoke", name="oauth2.revoke")
+async def oauth2_revoke(
+    request: Request,
+    authorization_server: AuthorizationServer = Depends(get_authorization_server),
+) -> Response:
+    await request.form()
+    return authorization_server.create_endpoint_response(
+        RevocationEndpoint.ENDPOINT_NAME, request
+    )

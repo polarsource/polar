@@ -1,23 +1,18 @@
 'use client'
 
-import {
-  useCurrentOrgAndRepoFromURL,
-  useIsOrganizationAdmin,
-  usePersonalOrganization,
-} from '@/hooks'
 import { useAuth } from '@/hooks/auth'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { LogoIcon } from 'polarkit/components/brand'
-import { useListAdminOrganizations } from 'polarkit/hooks'
 import {
   PropsWithChildren,
   Suspense,
   UIEventHandler,
   useCallback,
+  useContext,
   useEffect,
-  useMemo,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,17 +28,15 @@ import DashboardLayoutContext, {
 const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
-  const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
-  const listOrganizationQuery = useListAdminOrganizations()
-  const personalOrg = usePersonalOrganization()
 
-  const orgs = listOrganizationQuery?.data?.items
+  const orgContext = useContext(MaintainerOrganizationContext)
+  const currentOrg = orgContext?.organization
+  const orgs = orgContext?.memberOrganizations ?? []
+  const adminOrgs = orgContext?.adminOrganizations ?? []
+  const personalOrg = orgContext?.personalOrganization
+  const isOrgAdmin = adminOrgs.some((o) => currentOrg && o.id === currentOrg.id)
 
-  const isOrgAdmin = useIsOrganizationAdmin(currentOrg)
-  const isPersonalOrg = useMemo(
-    () => currentOrg?.id === personalOrg?.id,
-    [currentOrg, personalOrg],
-  )
+  const isPersonalOrg = currentOrg?.id === personalOrg?.id
 
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
@@ -54,14 +47,16 @@ const DashboardSidebar = () => {
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
   }, [])
-  const shouldRenderBorder = useMemo(() => scrollTop > 0, [scrollTop])
-  const scrollClassName = useMemo(
-    () =>
-      shouldRenderBorder
-        ? 'border-b dark:border-b-polar-800 border-b-gray-100'
-        : '',
-    [shouldRenderBorder],
-  )
+
+  const shouldRenderBorder = scrollTop > 0
+
+  const scrollClassName = shouldRenderBorder
+    ? 'border-b dark:border-b-polar-800 border-b-gray-100'
+    : ''
+
+  if (!currentUser) {
+    return <></>
+  }
 
   return (
     <aside
@@ -80,12 +75,10 @@ const DashboardSidebar = () => {
             </a>
           </div>
           <div className="mb-4 mt-8 flex px-4">
-            {currentUser && (
-              <DashboardProfileDropdown
-                useOrgFromURL={true}
-                className="shadow-xl"
-              />
-            )}
+            <DashboardProfileDropdown
+              useOrgFromURL={true}
+              className="shadow-xl"
+            />
           </div>
         </div>
 
@@ -96,6 +89,7 @@ const DashboardSidebar = () => {
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
           {shouldRenderAccountNavigation && <DashboardNavigation />}
         </div>
+
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
           <MetaNavigation />
         </div>

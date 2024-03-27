@@ -19,7 +19,7 @@ from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX, REFRESH_TOKEN_PREFIX
 
-from .grants import register_grants
+from .grants import CodeChallenge, register_grants
 from .requests import StarletteJsonRequest, StarletteOAuth2Request
 
 ExpiresInConfigType: typing.TypeAlias = dict[str, int]
@@ -242,3 +242,14 @@ class AuthorizationServer(_AuthorizationServer):
         for endpoint in self._endpoints.get(IntrospectionEndpoint.ENDPOINT_NAME, []):
             auth_methods.extend(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
         return auth_methods
+
+    @property
+    def code_challenge_methods_supported(self) -> list[str]:
+        code_challenge_methods: list[str] = []
+        for _, extensions in self._authorization_grants:
+            for extension in extensions:
+                if isinstance(extension, CodeChallenge):
+                    code_challenge_methods.extend(
+                        extension.SUPPORTED_CODE_CHALLENGE_METHOD
+                    )
+        return code_challenge_methods

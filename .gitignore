@@ -131,3 +131,5 @@ playground.py
 
 # Secrets
 .secrets/
+
+.jwks.json

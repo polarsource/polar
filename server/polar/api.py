@@ -19,7 +19,7 @@ from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
 from polar.magic_link.endpoints import router as magic_link_router
 from polar.notifications.endpoints import router as notifications_router
-from polar.oauth2.endpoints import router as oauth2_router
+from polar.oauth2.endpoints.oauth2 import router as oauth2_router
 from polar.organization.endpoints import router as organization_router
 from polar.payment_method.endpoints import router as payment_method_router
 from polar.personal_access_token.endpoints import router as pat_router

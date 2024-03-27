@@ -27,9 +27,9 @@ from .authorization_server import AuthorizationServer
 from .constants import AUTHORIZATION_CODE_PREFIX
 from .requests import StarletteOAuth2Request
 
-DUMMY_JWT_CONFIG = {
-    "key": "secret-key",
-    "alg": "HS256",
+JWT_CONFIG = {
+    "key": settings.JWKS.find_by_kid(settings.CURRENT_JWK_KID),
+    "alg": "RS256",
     "iss": "https://polar.sh",
     "exp": 3600,
 }
@@ -119,7 +119,7 @@ class OpenIDCode(_OpenIDCode):
         return _exists_nonce(self._session, nonce, request)
 
     def get_jwt_config(self, grant: BaseGrant) -> dict[str, typing.Any]:
-        return DUMMY_JWT_CONFIG
+        return JWT_CONFIG
 
     def generate_user_info(self, user: User, scope: str) -> UserInfo:
         return _generate_user_info(user, scope)
@@ -127,7 +127,7 @@ class OpenIDCode(_OpenIDCode):
 
 class OpenIDToken(_OpenIDToken):
     def get_jwt_config(self, grant: BaseGrant) -> dict[str, typing.Any]:
-        return DUMMY_JWT_CONFIG
+        return JWT_CONFIG
 
     def generate_user_info(self, user: User, scope: str) -> UserInfo:
         return _generate_user_info(user, scope)

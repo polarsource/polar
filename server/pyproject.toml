@@ -79,6 +79,7 @@ db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
 verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify that the github app is correctly configured" }
+generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", help = "generate a development JWKS file" }
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render"}
 
 [tool.pytest.ini_options]

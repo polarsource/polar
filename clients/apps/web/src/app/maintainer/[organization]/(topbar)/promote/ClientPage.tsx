@@ -5,56 +5,46 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
+import { Organization } from '@polar-sh/sdk'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import { useListRepositories } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 
-export default function ClientPage() {
-  const { org, isLoaded, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
+export default function ClientPage({organization}: {organization: Organization}) {
+  const { repo: currentRepo } = useCurrentOrgAndRepoFromURL()
 
   const orgSlashRepo = currentRepo
-    ? `${org?.name}/${currentRepo.name}`
-    : `${org?.name}`
+    ? `${organization.name}/${currentRepo.name}`
+    : `${organization.name}`
 
   const orgRepoParams = currentRepo
-    ? `org=${org?.name}&repo=${currentRepo.name}`
-    : `org=${org?.name}`
+    ? `org=${organization.name}&repo=${currentRepo.name}`
+    : `org=${organization.name}`
 
-  const fundingYAML = `polar: ${org?.name}`
+  const fundingYAML = `polar: ${organization.name}`
 
   // Get all repositories
   const listRepositoriesQuery = useListRepositories()
   const allRepositories = listRepositoriesQuery?.data?.items
 
-  // Filter repos by current org & normalize for our select
+  // Filter repos by current org
   const allOrgRepositories =
-    allRepositories?.filter((r) => r?.organization?.id === org?.id) || []
+    allRepositories?.filter((r) => r?.organization?.id === organization.id) || []
 
   const [currentEmbedTab, setCurrentEmbedTab] = useState('Tiers')
-
-  if (!org && isLoaded) {
-    return (
-      <>
-        <div className="mx-auto mt-32 flex max-w-[1100px] flex-col items-center">
-          <span>Organization not found</span>
-          <span>404 Not Found</span>
-        </div>
-      </>
-    )
-  }
 
   const previews: Record<string, ReactElement> = {
     Tiers: (
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/tiers.svg?org=${org?.name}&darkmode`}
+          srcSet={`/embed/tiers.svg?org=${organization.name}&darkmode`}
         />
         <img
           alt="Subscription Tiers on Polar"
-          src={`/embed/tiers.svg?org=${org?.name}`}
+          src={`/embed/tiers.svg?org=${organization.name}`}
         />
       </picture>
     ),
@@ -62,20 +52,20 @@ export default function ClientPage() {
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/posts.svg?org=${org?.name}&darkmode`}
+          srcSet={`/embed/posts.svg?org=${organization.name}&darkmode`}
         />
-        <img alt="Posts on Polar" src={`/embed/posts.svg?org=${org?.name}`} />
+        <img alt="Posts on Polar" src={`/embed/posts.svg?org=${organization.name}`} />
       </picture>
     ),
     Subscribe: (
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode`}
+          srcSet={`/embed/subscribe.svg?org=${organization.name}&label=Subscribe&darkmode`}
         />
         <img
           alt="Subscribe on Polar"
-          src={`/embed/subscribe.svg?org=${org?.name}&label=Subscribe`}
+          src={`/embed/subscribe.svg?org=${organization.name}&label=Subscribe`}
         />
       </picture>
     ),
@@ -84,9 +74,9 @@ export default function ClientPage() {
   }
 
   const embedCodes: Record<string, string> = {
-    Tiers: `<a href="https://polar.sh/${org?.name}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${org?.name}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${org?.name}"></picture></a>`,
-    Posts: `<a href="https://polar.sh/${org?.name}/posts"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/posts.svg?org=${org?.name}&darkmode"><img alt="Posts on Polar" src="https://polar.sh/embed/posts.svg?org=${org?.name}"></picture></a>`,
-    Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${org?.name}&label=Subscribe"></picture></a>`,
+    Tiers: `<a href="https://polar.sh/${organization.name}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${organization.name}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${organization.name}"></picture></a>`,
+    Posts: `<a href="https://polar.sh/${organization.name}/posts"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/posts.svg?org=${organization.name}&darkmode"><img alt="Posts on Polar" src="https://polar.sh/embed/posts.svg?org=${organization.name}"></picture></a>`,
+    Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${organization.name}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${organization.name}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
   }
@@ -101,8 +91,6 @@ export default function ClientPage() {
       </DashboardTopbar>
       <DashboardBody>
         <div className="flex flex-col gap-y-8">
-          {!org?.has_app_installed && <GitHubAppInstallationUpsell />}
-
           <ShadowBox className="flex flex-col gap-y-8">
             <div className="flex flex-col gap-y-2">
               <h2 className="text-lg font-medium">GitHub Sponsors</h2>

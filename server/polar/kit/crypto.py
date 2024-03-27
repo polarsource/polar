@@ -8,11 +8,13 @@ def get_token_hash(token: str, *, secret: str) -> str:
     return hash.hexdigest()
 
 
-def generate_token(*, prefix: str = "") -> str:
-    return f"{prefix}{secrets.token_urlsafe()}"
+def generate_token(*, prefix: str = "", nbytes: int | None = None) -> str:
+    return f"{prefix}{secrets.token_urlsafe(nbytes)}"
 
 
-def generate_token_hash_pair(*, secret: str, prefix: str = "") -> tuple[str, str]:
+def generate_token_hash_pair(
+    *, secret: str, prefix: str = "", nbytes: int | None = None
+) -> tuple[str, str]:
     """
     Generate a token suitable for sensitive values
     like magic link tokens.

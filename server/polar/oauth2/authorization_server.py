@@ -7,6 +7,9 @@ from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
+from authlib.oauth2.rfc7591 import (
+    ClientRegistrationEndpoint as _ClientRegistrationEndpoint,
+)
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -17,15 +20,54 @@ from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
-from polar.oauth2.constants import ACCESS_TOKEN_PREFIX, REFRESH_TOKEN_PREFIX
 
+from .constants import (
+    ACCESS_TOKEN_PREFIX,
+    CLIENT_ID_PREFIX,
+    CLIENT_SECRET_PREFIX,
+    REFRESH_TOKEN_PREFIX,
+)
 from .grants import CodeChallenge, register_grants
+from .metadata import get_server_metadata
 from .requests import StarletteJsonRequest, StarletteOAuth2Request
 
 ExpiresInConfigType: typing.TypeAlias = dict[str, int]
 TokenGeneratorType: typing.TypeAlias = typing.Callable[..., str]
 
 logger: Logger = structlog.get_logger(__name__)
+
+
+class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
+    server: "AuthorizationServer"
+
+    def generate_client_id(self) -> str:
+        return generate_token(prefix=CLIENT_ID_PREFIX, nbytes=16)
+
+    def generate_client_secret(self) -> str:
+        return generate_token(prefix=CLIENT_SECRET_PREFIX)
+
+    def get_server_metadata(self) -> dict[str, typing.Any]:
+        def _dummy_url_for(name: str) -> str:
+            return name
+
+        return get_server_metadata(self.server, _dummy_url_for).model_dump(
+            exclude_unset=True
+        )
+
+    def authenticate_token(self, request: StarletteJsonRequest) -> User | None:
+        return request.user
+
+    def save_client(
+        self,
+        client_info: dict[str, typing.Any],
+        client_metadata: dict[str, typing.Any],
+        request: StarletteJsonRequest,
+    ) -> OAuth2Client:
+        oauth2_client = OAuth2Client(**client_info)
+        oauth2_client.set_client_metadata(client_metadata)
+        self.server.session.add(oauth2_client)
+        self.server.session.flush()
+        return oauth2_client
 
 
 class _QueryTokenMixin:
@@ -126,6 +168,7 @@ class AuthorizationServer(_AuthorizationServer):
         )
         authorization_server.register_endpoint(RevocationEndpoint)
         authorization_server.register_endpoint(IntrospectionEndpoint)
+        authorization_server.register_endpoint(ClientRegistrationEndpoint)
         register_grants(authorization_server)
         return authorization_server
 

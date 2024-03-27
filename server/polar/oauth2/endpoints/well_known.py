@@ -5,10 +5,9 @@ from fastapi import Depends, Request
 from polar.config import settings
 from polar.kit.routing import APIRouter
 
-from .. import constants
 from ..authorization_server import AuthorizationServer
 from ..dependencies import get_authorization_server
-from ..schemas import OpenIDProviderMetadata
+from ..metadata import get_server_metadata
 
 router = APIRouter(prefix="/.well-known", tags=["well_known"])
 
@@ -23,25 +22,8 @@ async def well_known_openid_configuration(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> dict[str, Any]:
-    metadata = OpenIDProviderMetadata(
-        issuer=constants.ISSUER,
-        authorization_endpoint=str(request.url_for("oauth2.authorize")),
-        token_endpoint=str(request.url_for("oauth2.token")),
-        jwks_uri=str(request.url_for("well_known.jwks")),
-        userinfo_endpoint=str(request.url_for("oauth2.userinfo")),
-        scopes_supported=constants.SCOPES_SUPPORTED,
-        response_types_supported=authorization_server.response_types_supported,
-        response_modes_supported=authorization_server.response_modes_supported,
-        grant_types_supported=authorization_server.grant_types_supported,
-        token_endpoint_auth_methods_supported=authorization_server.token_endpoint_auth_methods_supported,
-        service_documentation=constants.SERVICE_DOCUMENTATION,
-        revocation_endpoint=str(request.url_for("oauth2.revoke")),
-        revocation_endpoint_auth_methods_supported=authorization_server.revocation_endpoint_auth_methods_supported,
-        introspection_endpoint=str(request.url_for("oauth2.introspect")),
-        introspection_endpoint_auth_methods_supported=authorization_server.introspection_endpoint_auth_methods_supported,
-        code_challenge_methods_supported=authorization_server.code_challenge_methods_supported,
-        subject_types_supported=constants.SUBJECT_TYPES_SUPPORTED,
-        id_token_signing_alg_values_supported=constants.ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED,
-        claims_supported=constants.CLAIMS_SUPPORTED,
-    )
+    def _url_for(name: str) -> str:
+        return str(request.url_for(name))
+
+    metadata = get_server_metadata(authorization_server, _url_for)
     return metadata.model_dump(exclude_unset=True)

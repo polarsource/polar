@@ -41,5 +41,6 @@ jobs:
         with:
           projectToken: ${{ secrets.CI_CHROMATIC_PROJECT_TOKEN }}
           workingDir: ./clients/apps/web
+          storybookBaseDir: ./clients/apps/web
           onlyChanged: true
           exitOnceUploaded: true

@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - clients/**
+      - .github/workflows/chromatic.yaml
 
 jobs:
   chromatic-deployment:

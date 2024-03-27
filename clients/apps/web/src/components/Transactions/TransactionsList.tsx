@@ -76,7 +76,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
   )
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-start gap-2">
       {transactionMeta.organization && (
         <Link
           className="hidden flex-shrink-0 md:block"
@@ -89,6 +89,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
           />
         </Link>
       )}
+
       <div className="flex flex-row gap-2">
         <div className="text-sm">{transactionMeta.type}</div>
         {transactionMeta.meta && (
@@ -122,13 +123,51 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
             {transactionMeta.type === 'Donation' &&
             'to_organization' in transactionMeta.meta &&
             transactionMeta.meta.to_organization ? (
-              <div>
+              <div className="flex flex-col gap-1">
                 <Link
                   className=" text-blue-500 dark:text-blue-400"
                   href={`/${transactionMeta.meta.to_organization.name}`}
                 >
                   {transactionMeta.meta.to_organization.name}
                 </Link>
+
+                {transactionMeta.meta.donor ? (
+                  <>
+                    <div className="flex items-center gap-1 text-xs text-gray-700 dark:text-gray-400">
+                      From
+                      {'name' in transactionMeta.meta.donor ? (
+                        <>
+                          <Link
+                            className="hidden flex-shrink-0 md:block"
+                            href={`/${transactionMeta.meta.donor.name}`}
+                          >
+                            <Avatar
+                              className="h-4 w-4"
+                              name={transactionMeta.meta.donor.name}
+                              avatar_url={transactionMeta.meta.donor.avatar_url}
+                            />
+                          </Link>
+                          <span>{transactionMeta.meta.donor.name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Avatar
+                            className="h-4 w-4"
+                            name={transactionMeta.meta.donor.public_name}
+                            avatar_url={transactionMeta.meta.donor.avatar_url}
+                          />
+                          <span>{transactionMeta.meta.donor.public_name}</span>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+
+                {transactionMeta.meta.message ? (
+                  <p className="text-xs text-gray-500">
+                    &quot;{transactionMeta.meta.message}&quot;
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </>

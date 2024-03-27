@@ -1,19 +1,23 @@
-import {
-  useCurrentOrgAndRepoFromURL,
-  useIsOrganizationAdmin,
-  usePersonalOrganization,
-} from '@/hooks'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { dashboardRoutes } from './navigation'
 
 const DashboardNavigation = () => {
   const path = usePathname()
-  const { org } = useCurrentOrgAndRepoFromURL()
-  const isOrgAdmin = useIsOrganizationAdmin(org)
 
-  const personalOrg = usePersonalOrganization()
+  const orgContext = useContext(MaintainerOrganizationContext)
+  const org = orgContext?.organization
+  const adminOrgs = orgContext?.adminOrganizations ?? []
+  const personalOrg = orgContext?.personalOrganization
+
+  if (!org) {
+    return <></>
+  }
+
+  const isOrgAdmin = adminOrgs.some((o) => o.id === org.id)
   const isPersonal = org?.id === personalOrg?.id
 
   // All routes and conditions

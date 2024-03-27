@@ -1,19 +1,22 @@
 'use client'
 
-import {
-  useCurrentOrgAndRepoFromURL,
-  usePersonalOrganization,
-} from '@/hooks/org'
-
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { maintainerRoutes } from './navigation'
 
 const MaintainerNavigation = () => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const pathname = usePathname()
 
-  const personalOrg = usePersonalOrganization()
+  const orgContext = useContext(MaintainerOrganizationContext)
+  const org = orgContext?.organization
+  const personalOrg = orgContext?.personalOrganization
+
+  if (!org) {
+    return <></>
+  }
 
   // All routes and conditions
   const navs = org
@@ -21,8 +24,6 @@ const MaintainerNavigation = () => {
     : personalOrg
       ? maintainerRoutes(personalOrg)
       : []
-
-  const pathname = usePathname()
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs

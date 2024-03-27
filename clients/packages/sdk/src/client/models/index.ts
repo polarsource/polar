@@ -2171,7 +2171,7 @@ export interface DonationCreateStripePaymentIntent {
      */
     to_organization_id: string;
     /**
-     * 
+     * The donators email address. Receipts will be sent to this address.
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
@@ -2194,6 +2194,12 @@ export interface DonationCreateStripePaymentIntent {
      * @memberof DonationCreateStripePaymentIntent
      */
     on_behalf_of_organization_id?: string;
+    /**
+     * Message included with the donation
+     * @type {string}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    message?: string;
 }
 
 
@@ -2268,7 +2274,7 @@ export interface DonationStripePaymentIntentMutationResponse {
  */
 export interface DonationUpdateStripePaymentIntent {
     /**
-     * 
+     * The donators email address. Receipts will be sent to this address.
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
@@ -2291,6 +2297,12 @@ export interface DonationUpdateStripePaymentIntent {
      * @memberof DonationUpdateStripePaymentIntent
      */
     on_behalf_of_organization_id?: string;
+    /**
+     * Message included with the donation
+     * @type {string}
+     * @memberof DonationUpdateStripePaymentIntent
+     */
+    message?: string;
 }
 
 

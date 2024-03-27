@@ -29,12 +29,14 @@ class Donation(RecordModel):
     # Stripe Charge ID
     charge_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
-    email: Mapped[str] = mapped_column(String, nullable=True, index=True, default=None)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+
+    message: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     amount_received: Mapped[int] = mapped_column(
-        BigInteger, nullable=True, default=None
+        BigInteger, nullable=False, default=None
     )
 
     # by_user_id, by_organization_id are mutually exclusive

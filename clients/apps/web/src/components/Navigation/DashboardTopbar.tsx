@@ -1,11 +1,7 @@
 'use client'
 
-import {
-  useAuth,
-  useCurrentOrgAndRepoFromURL,
-  useIsOrganizationAdmin,
-  usePersonalOrganization,
-} from '@/hooks'
+import { useAuth } from '@/hooks'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -69,13 +65,14 @@ const DashboardTopbar = ({
   isFixed?: boolean
 }>) => {
   const { currentUser } = useAuth()
-  const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
-  const personalOrg = usePersonalOrganization()
-
-  const isOrgAdmin = useIsOrganizationAdmin(currentOrgFromURL)
-  const isPersonal = currentOrgFromURL?.name === personalOrg?.name
-
   const pathname = usePathname()
+
+  const orgContext = useContext(MaintainerOrganizationContext)
+  const org = orgContext?.organization
+  const personalOrg = orgContext?.personalOrganization
+  const adminOrgs = orgContext?.adminOrganizations ?? []
+  const isOrgAdmin = adminOrgs.some((o) => org && o.id === org.id)
+  const isPersonal = Boolean(org && personalOrg && org.id === personalOrg.id)
 
   const getRoutes = (currentOrg?: Organization): Route[] => {
     return [
@@ -90,7 +87,7 @@ const DashboardTopbar = ({
     ]
   }
 
-  const routes = getRoutes(currentOrgFromURL)
+  const routes = getRoutes(org)
 
   const [currentRoute] = routes.filter((route) =>
     pathname?.startsWith(route.link),
@@ -160,8 +157,8 @@ const DashboardTopbar = ({
           </div>
           <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}
-            {currentOrgFromURL && (
-              <Link href={organizationPageLink(currentOrgFromURL)}>
+            {org ? (
+              <Link href={organizationPageLink(org)}>
                 <Button>
                   <div className="flex flex-row items-center gap-x-2">
                     <span className="whitespace-nowrap text-xs">
@@ -170,7 +167,7 @@ const DashboardTopbar = ({
                   </div>
                 </Button>
               </Link>
-            )}
+            ) : null}
             <TopbarRight authenticatedUser={currentUser} />
           </div>
         </div>

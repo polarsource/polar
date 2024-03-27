@@ -24,13 +24,13 @@ from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import OAuth2AuthorizationCode, OAuth2Client, OAuth2Token, User
 
 from .authorization_server import AuthorizationServer
-from .constants import AUTHORIZATION_CODE_PREFIX
+from .constants import AUTHORIZATION_CODE_PREFIX, ISSUER
 from .requests import StarletteOAuth2Request
 
 JWT_CONFIG = {
     "key": settings.JWKS.find_by_kid(settings.CURRENT_JWK_KID),
     "alg": "RS256",
-    "iss": "https://polar.sh",
+    "iss": ISSUER,
     "exp": 3600,
 }
 

@@ -109,3 +109,31 @@ class AuthorizationServer(_AuthorizationServer):
             return generate_token(prefix=REFRESH_TOKEN_PREFIX)
 
         return BearerTokenGenerator(_access_token_generator, _refresh_token_generator)
+
+    @property
+    def response_types_supported(self) -> list[str]:
+        response_types: list[str] = []
+        for grant, _ in self._authorization_grants:
+            try:
+                response_types.extend(getattr(grant, "RESPONSE_TYPES"))
+            except AttributeError:
+                pass
+        return response_types
+
+    @property
+    def response_modes_supported(self) -> list[str]:
+        return ["query"]
+
+    @property
+    def grant_types_supported(self) -> list[str]:
+        grant_types: list[str] = []
+        for grant, _ in self._authorization_grants:
+            try:
+                grant_types.append(getattr(grant, "GRANT_TYPE"))
+            except AttributeError:
+                pass
+        return grant_types
+
+    @property
+    def token_endpoint_auth_methods_supported(self) -> list[str]:
+        return ["client_secret_basic", "client_secret_post", "none"]

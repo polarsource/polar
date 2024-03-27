@@ -1,3 +1,5 @@
+CLIENT_ID_PREFIX = "polar_ci_"
+CLIENT_SECRET_PREFIX = "polar_cs_"
 AUTHORIZATION_CODE_PREFIX = "polar_ac_"
 ACCESS_TOKEN_PREFIX = "polar_at_"
 REFRESH_TOKEN_PREFIX = "polar_rt_"

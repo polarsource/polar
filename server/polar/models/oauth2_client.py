@@ -1,4 +1,3 @@
-
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 
 from polar.kit.db.models import RecordModel

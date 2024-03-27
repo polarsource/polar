@@ -4,12 +4,13 @@ from authlib.oauth2 import OAuth2Error
 from fastapi import Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token
 
 from ..authorization_server import (
     AuthorizationServer,
+    ClientRegistrationEndpoint,
     IntrospectionEndpoint,
     RevocationEndpoint,
 )
@@ -18,6 +19,19 @@ from ..grants import BaseGrant
 from ..userinfo import UserInfo, generate_user_info
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
+
+
+@router.post("/register", name="oauth2.register")
+async def oauth2_register(
+    request: Request,
+    auth: Auth = Depends(Auth.backoffice_user),
+    authorization_server: AuthorizationServer = Depends(get_authorization_server),
+) -> Response:
+    await request.json()
+    request.state.user = auth.user
+    return authorization_server.create_endpoint_response(
+        ClientRegistrationEndpoint.ENDPOINT_NAME, request
+    )
 
 
 @router.api_route("/authorize", methods=["GET", "POST"], name="oauth2.authorize")

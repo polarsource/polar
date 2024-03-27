@@ -2315,6 +2315,12 @@ export const DonationUpdateStripePaymentIntentSetupFutureUsageEnum = {
 export type DonationUpdateStripePaymentIntentSetupFutureUsageEnum = typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum[keyof typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum];
 
 /**
+ * @type Donor
+ * @export
+ */
+export type Donor = TransactionOrganization | TransactionUser;
+
+/**
  * 
  * @export
  * @interface EditAdvertisementCampaign
@@ -9433,6 +9439,18 @@ export interface TransactionDonation {
      * @memberof TransactionDonation
      */
     to_organization?: TransactionOrganization;
+    /**
+     * 
+     * @type {Donor}
+     * @memberof TransactionDonation
+     */
+    donor?: Donor | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionDonation
+     */
+    message?: string;
 }
 /**
  * 
@@ -9932,6 +9950,31 @@ export const TransactionType = {
 } as const;
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
 
+/**
+ * 
+ * @export
+ * @interface TransactionUser
+ */
+export interface TransactionUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionUser
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionUser
+     */
+    public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionUser
+     */
+    avatar_url: string;
+}
 /**
  * 
  * @export

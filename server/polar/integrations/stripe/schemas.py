@@ -69,3 +69,6 @@ class DonationPaymentIntentMetadata(PaymentIntentMetadata):
 
     # Set to empty string to unset the value
     on_behalf_of_organization_id: UUID | Literal[""] | None = None
+
+    # Set to empty string to unset the value
+    donation_message: str | Literal[""] | None = None

@@ -70,6 +70,7 @@ async def create_payment_intent(
         receipt_email=intent.email,
         to_organization=to_organization,
         on_behalf_of_organization=on_behalf_of_organization,
+        message=intent.message,
     )
 
     return DonationStripePaymentIntentMutationResponse(
@@ -117,6 +118,7 @@ async def update_payment_intent(
         receipt_email=updates.email,
         on_behalf_of_organization=on_behalf_of_organization,
         setup_future_usage=updates.setup_future_usage,
+        message=updates.message,
     )
 
     return DonationStripePaymentIntentMutationResponse(

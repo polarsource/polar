@@ -44,6 +44,7 @@ class DonationService:
         to_organization: Organization,
         amount: CurrencyAmount,
         receipt_email: str,
+        message: str | None,
     ) -> stripe_lib.PaymentIntent:
         metadata = DonationPaymentIntentMetadata(
             to_organization_id=to_organization.id,
@@ -52,6 +53,9 @@ class DonationService:
 
         if on_behalf_of_organization:
             metadata.on_behalf_of_organization_id = on_behalf_of_organization.id
+
+        if message:
+            metadata.donation_message = message
 
         return await stripe_service.create_payment_intent(
             session=session,
@@ -72,11 +76,21 @@ class DonationService:
         amount: CurrencyAmount,
         receipt_email: str,
         setup_future_usage: Literal["off_session", "on_session"] | None = None,
+        message: str | None,
     ) -> stripe_lib.PaymentIntent:
         metadata = DonationPaymentIntentMetadata()
 
         if on_behalf_of_organization:
             metadata.on_behalf_of_organization_id = on_behalf_of_organization.id
+        else:
+            # Set to empty string to unset previous value
+            metadata.on_behalf_of_organization_id = ""
+
+        if message:
+            metadata.donation_message = message
+        else:
+            # Set to empty string to unset previous value
+            metadata.donation_message = ""
 
         return await stripe_service.modify_payment_intent(
             session=session,
@@ -104,7 +118,9 @@ class DonationService:
             amount=payload.amount,
             amount_received=payload.amount_received,
             email=payload.receipt_email,
+            message=metadata.donation_message,
         )
+
         session.add(d)
         return None
 

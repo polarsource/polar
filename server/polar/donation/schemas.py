@@ -18,7 +18,9 @@ class DonationCurrencyAmount(CurrencyAmount):
 
 class DonationCreateStripePaymentIntent(Schema):
     to_organization_id: UUID
-    email: str
+    email: str = Field(
+        description="The donators email address. Receipts will be sent to this address."
+    )
     amount: DonationCurrencyAmount
     setup_future_usage: Literal["on_session"] | None = Field(
         None, description="If the payment method should be saved for future usage."
@@ -27,10 +29,13 @@ class DonationCreateStripePaymentIntent(Schema):
         None,
         description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
+    message: str | None = Field(None, description="Message included with the donation")
 
 
 class DonationUpdateStripePaymentIntent(Schema):
-    email: str
+    email: str = Field(
+        description="The donators email address. Receipts will be sent to this address."
+    )
     amount: DonationCurrencyAmount
     setup_future_usage: Literal["on_session"] | None = Field(
         None, description="If the payment method should be saved for future usage."
@@ -39,6 +44,7 @@ class DonationUpdateStripePaymentIntent(Schema):
         None,
         description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
+    message: str | None = Field(None, description="Message included with the donation")
 
 
 class DonationStripePaymentIntentMutationResponse(Schema):

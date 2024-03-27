@@ -4,8 +4,10 @@ from datetime import timedelta
 from enum import Enum
 from typing import Literal
 
-from pydantic import PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from polar.kit.jwk import JWKSFile
 
 
 class Environment(str, Enum):
@@ -31,6 +33,8 @@ class Settings(BaseSettings):
     TESTING: bool = False
 
     SECRET: str = "super secret jwt secret"
+    JWKS: JWKSFile = Field(default="./.jwks.json")
+    CURRENT_JWK_KID: str = "polar_dev"
 
     # Custom domain auth and exchange secrets
     CUSTOM_DOMAIN_JWT_KEY: str = "SETME! secret key used for custom domain auth"

@@ -6,9 +6,9 @@ from fastapi import Depends, HTTPException, Request, Response
 from polar.auth.dependencies import UserRequiredAuth
 from polar.kit.routing import APIRouter
 
-from .authorization_server import AuthorizationServer
-from .dependencies import get_authorization_server
-from .grants import BaseGrant
+from ..authorization_server import AuthorizationServer
+from ..dependencies import get_authorization_server
+from ..grants import BaseGrant
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 

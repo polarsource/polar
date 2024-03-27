@@ -37,6 +37,7 @@ from polar.middlewares import (
     LogCorrelationIdMiddleware,
     XForwardedHostMiddleware,
 )
+from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
@@ -119,6 +120,9 @@ def create_app() -> FastAPI:
         polar_redirection_exception_handler,  # type: ignore
     )
     app.add_exception_handler(PolarError, polar_exception_handler)  # type: ignore
+
+    # /.well-known
+    app.include_router(well_known_router)
 
     # /healthz and /readyz
     app.include_router(health_router)

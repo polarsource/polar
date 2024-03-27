@@ -80,7 +80,10 @@ class TransactionService(BaseTransactionService):
             subqueryload(Transaction.subscription_tier_price),
             # Donation
             subqueryload(Transaction.donation).options(
-                joinedload(Donation.to_organization)
+                joinedload(Donation.to_organization),
+                joinedload(Donation.by_user),
+                joinedload(Donation.by_organization),
+                joinedload(Donation.on_behalf_of_organization),
             ),
         )
 
@@ -134,7 +137,10 @@ class TransactionService(BaseTransactionService):
                 ),
                 # Donation
                 subqueryload(Transaction.donation).options(
-                    joinedload(Donation.to_organization)
+                    joinedload(Donation.to_organization),
+                    joinedload(Donation.by_user),
+                    joinedload(Donation.by_organization),
+                    joinedload(Donation.on_behalf_of_organization),
                 ),
                 # SubscriptionTierPrice
                 subqueryload(Transaction.subscription_tier_price),
@@ -164,6 +170,9 @@ class TransactionService(BaseTransactionService):
                 .subqueryload(Transaction.donation)
                 .options(
                     joinedload(Donation.to_organization),
+                    joinedload(Donation.by_user),
+                    joinedload(Donation.by_organization),
+                    joinedload(Donation.on_behalf_of_organization),
                 ),
             )
             .where(Transaction.id == id)

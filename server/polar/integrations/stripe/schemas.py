@@ -63,9 +63,10 @@ class DonationPaymentIntentMetadata(PaymentIntentMetadata):
     to_organization_id: UUID | None = None
     to_organization_name: str | None = None
 
-    by_user_id: UUID | None = None
-    by_user_username: str | None = None
-    by_user_email: str | None = None
+    by_user_id: UUID | Literal[""] | None = None
+    by_user_username: str | Literal[""] | None = None
+
+    by_organization_id: UUID | Literal[""] | None = None
 
     # Set to empty string to unset the value
     on_behalf_of_organization_id: UUID | Literal[""] | None = None

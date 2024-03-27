@@ -32,6 +32,7 @@ from polar.transaction.service.balance import (
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
+from polar.user.service import user as user_service
 
 
 class DonationService:
@@ -39,7 +40,8 @@ class DonationService:
         self,
         session: AsyncSession,
         *,
-        user: User | None,
+        by_user: User | None,
+        by_organization: Organization | None,
         on_behalf_of_organization: Organization | None,
         to_organization: Organization,
         amount: CurrencyAmount,
@@ -51,11 +53,23 @@ class DonationService:
             to_organization_name=to_organization.name,
         )
 
+        if by_user:
+            metadata.by_user_id = by_user.id
+
+        if by_organization:
+            metadata.by_organization_id = by_organization.id
+
         if on_behalf_of_organization:
             metadata.on_behalf_of_organization_id = on_behalf_of_organization.id
 
         if message:
             metadata.donation_message = message
+
+        customer: User | Organization | None = None
+        if by_organization:
+            customer = by_organization
+        elif by_user:
+            customer = by_user
 
         return await stripe_service.create_payment_intent(
             session=session,
@@ -63,7 +77,7 @@ class DonationService:
             metadata=metadata,
             receipt_email=receipt_email,
             description=f"Donation to {to_organization.name}",
-            customer=on_behalf_of_organization if on_behalf_of_organization else user,
+            customer=customer,
         )
 
     async def update_payment_intent(
@@ -71,26 +85,29 @@ class DonationService:
         session: AsyncSession,
         *,
         payment_intent_id: str,
-        user: User | None,
+        by_user: User | None,
+        by_organization: Organization | None,
         on_behalf_of_organization: Organization | None,
         amount: CurrencyAmount,
         receipt_email: str,
         setup_future_usage: Literal["off_session", "on_session"] | None = None,
         message: str | None,
     ) -> stripe_lib.PaymentIntent:
-        metadata = DonationPaymentIntentMetadata()
+        # Set to empty string to unset previous values
+        metadata = DonationPaymentIntentMetadata(
+            on_behalf_of_organization_id=(
+                on_behalf_of_organization.id if on_behalf_of_organization else ""
+            ),
+            donation_message=message if message else "",
+            by_user_id=by_user.id if by_user else "",
+            by_organization_id=by_organization.id if by_organization else "",
+        )
 
-        if on_behalf_of_organization:
-            metadata.on_behalf_of_organization_id = on_behalf_of_organization.id
-        else:
-            # Set to empty string to unset previous value
-            metadata.on_behalf_of_organization_id = ""
-
-        if message:
-            metadata.donation_message = message
-        else:
-            # Set to empty string to unset previous value
-            metadata.donation_message = ""
+        customer: User | Organization | None = None
+        if by_organization:
+            customer = by_organization
+        elif by_user:
+            customer = by_user
 
         return await stripe_service.modify_payment_intent(
             session=session,
@@ -98,7 +115,7 @@ class DonationService:
             amount=amount,
             metadata=metadata,
             receipt_email=receipt_email,
-            customer=on_behalf_of_organization if on_behalf_of_organization else user,
+            customer=customer,
             setup_future_usage=setup_future_usage,
         )
 
@@ -111,6 +128,22 @@ class DonationService:
         assert payload.status == "succeeded"
         assert metadata.to_organization_id
 
+        by_user: User | None = None
+        if metadata.by_user_id:
+            by_user = await user_service.get(session, metadata.by_user_id)
+
+        by_organization: Organization | None = None
+        if metadata.by_organization_id:
+            by_organization = await organization_service.get(
+                session, metadata.by_organization_id
+            )
+
+        on_behalf_of_organization: Organization | None = None
+        if metadata.on_behalf_of_organization_id:
+            on_behalf_of_organization = await organization_service.get(
+                session, metadata.on_behalf_of_organization_id
+            )
+
         d = Donation(
             to_organization_id=metadata.to_organization_id,
             payment_id=payload.id,
@@ -119,6 +152,9 @@ class DonationService:
             amount_received=payload.amount_received,
             email=payload.receipt_email,
             message=metadata.donation_message,
+            by_user=by_user,
+            by_organization=by_organization,
+            on_behalf_of_organization=on_behalf_of_organization,
         )
 
         session.add(d)

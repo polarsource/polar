@@ -65,12 +65,13 @@ async def create_payment_intent(
 
     pi = await donation_service.create_payment_intent(
         session=session,
-        user=auth.user,
         amount=intent.amount,
         receipt_email=intent.email,
         to_organization=to_organization,
-        on_behalf_of_organization=on_behalf_of_organization,
         message=intent.message,
+        by_user=auth.user,
+        by_organization=None,
+        on_behalf_of_organization=on_behalf_of_organization,
     )
 
     return DonationStripePaymentIntentMutationResponse(
@@ -113,12 +114,13 @@ async def update_payment_intent(
     pi = await donation_service.update_payment_intent(
         session=session,
         payment_intent_id=id,
-        user=auth.user,
         amount=updates.amount,
         receipt_email=updates.email,
-        on_behalf_of_organization=on_behalf_of_organization,
         setup_future_usage=updates.setup_future_usage,
         message=updates.message,
+        by_user=auth.user,
+        by_organization=None,
+        on_behalf_of_organization=on_behalf_of_organization,
     )
 
     return DonationStripePaymentIntentMutationResponse(

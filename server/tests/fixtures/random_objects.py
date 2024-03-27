@@ -22,6 +22,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.article import Article
+from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.pull_request import PullRequest
@@ -779,3 +780,27 @@ async def article(
     )
     await save_fixture(article)
     return article
+
+
+async def create_donation(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    by_user: User | None = None,
+    by_organization: Organization | None = None,
+    on_behalf_of_organization: Organization | None = None,
+) -> Donation:
+    amount = secrets.randbelow(100000) + 1
+    donation = Donation(
+        to_organization=organization,
+        payment_id=rstr("payment_id_"),
+        charge_id=rstr("charge_id_"),
+        email="donor@example.com",
+        amount=amount,
+        amount_received=amount,
+        by_user=by_user,
+        by_organization=by_organization,
+        on_behalf_of_organization=on_behalf_of_organization,
+    )
+    await save_fixture(donation)
+    return donation

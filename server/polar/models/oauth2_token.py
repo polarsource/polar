@@ -1,3 +1,4 @@
+from typing import cast
 from uuid import UUID
 
 from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
@@ -19,3 +20,6 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin):
     @declared_attr
     def user(cls) -> Mapped[User]:
         return relationship(User, lazy="joined")
+
+    def get_expires_at(self) -> int:
+        return cast(int, self.issued_at) + cast(int, self.expires_in)

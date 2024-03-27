@@ -23,9 +23,11 @@ from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import OAuth2AuthorizationCode, OAuth2Client, OAuth2Token, User
 
-from .authorization_server import AuthorizationServer
 from .constants import AUTHORIZATION_CODE_PREFIX, ISSUER
 from .requests import StarletteOAuth2Request
+
+if typing.TYPE_CHECKING:
+    from .authorization_server import AuthorizationServer
 
 JWT_CONFIG = {
     "key": settings.JWKS.find_by_kid(settings.CURRENT_JWK_KID),
@@ -58,7 +60,7 @@ def _generate_user_info(user: User, scope: str) -> UserInfo:
 
 
 class AuthorizationCodeGrant(_AuthorizationCodeGrant):
-    server: AuthorizationServer
+    server: "AuthorizationServer"
 
     def generate_authorization_code(self) -> str:
         return generate_token(prefix=AUTHORIZATION_CODE_PREFIX)
@@ -134,7 +136,7 @@ class OpenIDToken(_OpenIDToken):
 
 
 class RefreshTokenGrant(_RefreshTokenGrant):
-    server: AuthorizationServer
+    server: "AuthorizationServer"
 
     INCLUDE_NEW_REFRESH_TOKEN = True
 
@@ -160,7 +162,7 @@ class RefreshTokenGrant(_RefreshTokenGrant):
         self.server.session.flush()
 
 
-def register_grants(server: AuthorizationServer) -> None:
+def register_grants(server: "AuthorizationServer") -> None:
     server.register_grant(
         AuthorizationCodeGrant,
         [OpenIDCode(server.session, require_nonce=True), OpenIDToken()],

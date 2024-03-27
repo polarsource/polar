@@ -7,6 +7,7 @@ from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
+from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -18,6 +19,7 @@ from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX, REFRESH_TOKEN_PREFIX
 
+from .grants import register_grants
 from .requests import StarletteJsonRequest, StarletteOAuth2Request
 
 ExpiresInConfigType: typing.TypeAlias = dict[str, int]
@@ -26,10 +28,8 @@ TokenGeneratorType: typing.TypeAlias = typing.Callable[..., str]
 logger: Logger = structlog.get_logger(__name__)
 
 
-class RevocationEndpoint(_RevocationEndpoint):
+class _QueryTokenMixin:
     server: "AuthorizationServer"
-
-    CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
 
     def query_token(
         self,
@@ -53,6 +53,10 @@ class RevocationEndpoint(_RevocationEndpoint):
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()
 
+
+class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
+    CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())
         hint: typing.Literal["access_token", "refresh_token"] | None = request.form.get(
@@ -63,6 +67,29 @@ class RevocationEndpoint(_RevocationEndpoint):
             token.refresh_token_revoked_at = now  # pyright: ignore
         self.server.session.add(token)
         self.server.session.flush()
+
+
+class IntrospectionEndpoint(_QueryTokenMixin, _IntrospectionEndpoint):
+    CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
+    def check_permission(
+        self, token: OAuth2Token, client: OAuth2Client, request: StarletteOAuth2Request
+    ) -> bool:
+        return token.check_client(client)
+
+    def introspect_token(self, token: OAuth2Token) -> dict[str, typing.Any]:
+        return {
+            "active": True,
+            "client_id": token.client_id,
+            "token_type": token.token_type,
+            "username": token.user.username,
+            "scope": token.get_scope(),
+            "sub": str(token.user_id),
+            "aud": token.client_id,
+            "iss": "https://server.example.com/",
+            "exp": token.get_expires_at(),
+            "iat": token.issued_at,
+        }
 
 
 class AuthorizationServer(_AuthorizationServer):
@@ -85,6 +112,22 @@ class AuthorizationServer(_AuthorizationServer):
         self._error_uris = dict(error_uris) if error_uris is not None else None
 
         self.register_token_generator("default", self.create_bearer_token_generator())
+
+    @classmethod
+    def build(
+        cls,
+        session: Session,
+        *,
+        scopes_supported: list[str] | None = None,
+        error_uris: list[tuple[str, str]] | None = None,
+    ) -> typing.Self:
+        authorization_server = cls(
+            session, scopes_supported=scopes_supported, error_uris=error_uris
+        )
+        authorization_server.register_endpoint(RevocationEndpoint)
+        authorization_server.register_endpoint(IntrospectionEndpoint)
+        register_grants(authorization_server)
+        return authorization_server
 
     def query_client(self, client_id: str) -> OAuth2Client | None:
         statement = select(OAuth2Client).where(OAuth2Client.client_id == client_id)
@@ -190,5 +233,12 @@ class AuthorizationServer(_AuthorizationServer):
     def revocation_endpoint_auth_methods_supported(self) -> list[str]:
         auth_methods: list[str] = []
         for endpoint in self._endpoints.get(RevocationEndpoint.ENDPOINT_NAME, []):
+            auth_methods.extend(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
+        return auth_methods
+
+    @property
+    def introspection_endpoint_auth_methods_supported(self) -> list[str]:
+        auth_methods: list[str] = []
+        for endpoint in self._endpoints.get(IntrospectionEndpoint.ENDPOINT_NAME, []):
             auth_methods.extend(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
         return auth_methods

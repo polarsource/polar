@@ -201,6 +201,7 @@ const Checkout = ({ organization }: { organization: Organization }) => {
   const email = watch('email')
   const emailState = form.getFieldState('email')
   const message = watch('message')
+  const setupFutureUsage = watch('setup_future_usage')
 
   useEffect(() => {
     // For logged out users, do not run validation until the user has entered an email address.
@@ -212,7 +213,14 @@ const Checkout = ({ organization }: { organization: Organization }) => {
     trigger(undefined)
 
     debouncedSync(form.getValues())
-  }, [amount, email, amountAmount, emailState.isTouched, message])
+  }, [
+    amount,
+    email,
+    amountAmount,
+    emailState.isTouched,
+    message,
+    setupFutureUsage,
+  ])
 
   return (
     <>
@@ -372,7 +380,7 @@ const StripeForm = ({
   const { resolvedTheme } = useTheme()
   const { currentUser } = useAuth()
 
-  const { formState, watch } =
+  const { formState, watch, setValue } =
     useFormContext<DonationCreateStripePaymentIntent>()
 
   const router = useRouter()
@@ -392,6 +400,14 @@ const StripeForm = ({
   const [paymentMethod, setPaymentMethod] = useState<
     PaymentMethod | undefined
   >()
+
+  const onSavePaymentMethodChanged = (should: boolean) => {
+    if (should) {
+      setValue('setup_future_usage', 'on_session')
+    } else {
+      setValue('setup_future_usage', undefined)
+    }
+  }
 
   if (!stripePromise) {
     return (
@@ -453,8 +469,8 @@ const StripeForm = ({
           setErrorMessage={setErrorMessage}
           onSuccess={onStripePaymentSuccess}
           canSavePaymentMethod={currentUser !== undefined}
-          paymentMethod={undefined}
-          onSavePaymentMethodChanged={() => {}}
+          paymentMethod={paymentMethod}
+          onSavePaymentMethodChanged={onSavePaymentMethodChanged}
           isValid={formState.isValid}
           redirectTo={generateDonationRedirectURL()}
         />
@@ -521,43 +537,48 @@ const SelectPaymentMethod = ({
   }
 
   return (
-    <div>
-      <label
-        htmlFor="payment_method"
-        className="dark:text-polar-400 text-sm font-medium text-gray-500"
-      >
-        Payment method
-      </label>
-
-      <Select onValueChange={onPaymentMethodChange} name="payment_method">
-        <SelectTrigger className="mt-2 w-full">
-          {paymentMethod ? (
-            <SelectValue
-              placeholder={`${prettyCardName(paymentMethod.brand)} (****${
-                paymentMethod.last4
-              })
+    <div className="flex flex-col items-start justify-between">
+      <div className="flex flex-col gap-y-2">
+        <label
+          htmlFor="payment_method"
+          className="dark:text-polar-50 text-sm font-medium leading-none text-gray-950 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
+          Payment method
+        </label>
+      </div>
+      <div className="w-full">
+        <div className="w-full">
+          <Select onValueChange={onPaymentMethodChange} name="payment_method">
+            <SelectTrigger className="mt-2 w-full">
+              {paymentMethod ? (
+                <SelectValue
+                  placeholder={`${prettyCardName(paymentMethod.brand)} (****${
+                    paymentMethod.last4
+                  })
                     ${paymentMethod.exp_month.toString().padStart(2, '0')}/${
                       paymentMethod.exp_year
                     }`}
-            />
-          ) : (
-            <SelectValue placeholder="new" />
-          )}
-        </SelectTrigger>
+                />
+              ) : (
+                <SelectValue placeholder="+ New payment method" />
+              )}
+            </SelectTrigger>
 
-        <SelectContent>
-          {savedPaymentMethods.data.items.map((pm) => (
-            <SelectItem
-              value={pm.stripe_payment_method_id}
-              key={pm.stripe_payment_method_id}
-            >
-              {prettyCardName(pm.brand)} (****{pm.last4}){' '}
-              {pm.exp_month.toString().padStart(2, '0')}/{pm.exp_year}
-            </SelectItem>
-          ))}
-          <SelectItem value="new">+ New payment method</SelectItem>
-        </SelectContent>
-      </Select>
+            <SelectContent>
+              {savedPaymentMethods.data.items.map((pm) => (
+                <SelectItem
+                  value={pm.stripe_payment_method_id}
+                  key={pm.stripe_payment_method_id}
+                >
+                  {prettyCardName(pm.brand)} (****{pm.last4}){' '}
+                  {pm.exp_month.toString().padStart(2, '0')}/{pm.exp_year}
+                </SelectItem>
+              ))}
+              <SelectItem value="new">+ New payment method</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
     </div>
   )
 }

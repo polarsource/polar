@@ -175,7 +175,7 @@ const PaymentForm = ({
                 htmlFor="save_payment_method"
                 className="dark:text-polar-400 text-sm font-medium text-gray-500"
               >
-                Save payment method on file
+                Save payment method for future usage
               </label>
             </div>
           </div>

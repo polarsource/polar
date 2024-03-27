@@ -39,6 +39,7 @@ async def well_known_openid_configuration(
         revocation_endpoint_auth_methods_supported=authorization_server.revocation_endpoint_auth_methods_supported,
         introspection_endpoint=str(request.url_for("oauth2.introspect")),
         introspection_endpoint_auth_methods_supported=authorization_server.introspection_endpoint_auth_methods_supported,
+        code_challenge_methods_supported=authorization_server.code_challenge_methods_supported,
         subject_types_supported=constants.SUBJECT_TYPES_SUPPORTED,
         id_token_signing_alg_values_supported=constants.ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED,
         claims_supported=constants.CLAIMS_SUPPORTED,

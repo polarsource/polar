@@ -9,6 +9,7 @@ from authlib.oauth2.rfc6749.grants import BaseGrant
 from authlib.oauth2.rfc6749.grants import (
     RefreshTokenGrant as _RefreshTokenGrant,
 )
+from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import (
     OpenIDCode as _OpenIDCode,
@@ -69,6 +70,8 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
         self, code: str, request: StarletteOAuth2Request
     ) -> OAuth2AuthorizationCode:
         nonce = request.data.get("nonce")
+        code_challenge = request.data.get("code_challenge")
+        code_challenge_method = request.data.get("code_challenge_method")
 
         authorization_code = OAuth2AuthorizationCode(
             code=get_token_hash(code, secret=settings.SECRET),
@@ -77,6 +80,8 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
             scope=request.scope,
             redirect_uri=request.redirect_uri,
             nonce=nonce,
+            code_challenge=code_challenge,
+            code_challenge_method=code_challenge_method,
         )
         self.server.session.add(authorization_code)
         self.server.session.flush()
@@ -110,6 +115,10 @@ class AuthorizationCodeGrant(_AuthorizationCodeGrant):
         statement = select(User).where(User.id == authorization_code.user_id)
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()
+
+
+class CodeChallenge(_CodeChallenge):
+    pass
 
 
 class OpenIDCode(_OpenIDCode):
@@ -165,7 +174,11 @@ class RefreshTokenGrant(_RefreshTokenGrant):
 def register_grants(server: "AuthorizationServer") -> None:
     server.register_grant(
         AuthorizationCodeGrant,
-        [OpenIDCode(server.session, require_nonce=True), OpenIDToken()],
+        [
+            CodeChallenge(),
+            OpenIDCode(server.session, require_nonce=True),
+            OpenIDToken(),
+        ],
     )
     server.register_grant(RefreshTokenGrant)
 

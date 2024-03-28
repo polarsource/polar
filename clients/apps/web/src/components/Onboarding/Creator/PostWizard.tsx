@@ -179,7 +179,7 @@ const DraftPost = ({
       href={`/maintainer/${organization.name}/posts/${draft.slug}`}
       className="dark:text-polar-50 dark:border-polar-800 dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-row items-center justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-6 py-4 text-gray-950 shadow-sm transition-colors hover:bg-gray-50"
     >
-      <div className="flex flex-col">
+      <div className="flex flex-1 flex-col overflow-hidden">
         <h3 className="w-full truncate text-lg font-medium">{draft.title}</h3>
         <span className="dark:text-polar-500 text-sm capitalize text-gray-500">
           {draft.visibility}

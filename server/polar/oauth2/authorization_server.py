@@ -10,6 +10,9 @@ from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
 from authlib.oauth2.rfc7591 import (
     ClientRegistrationEndpoint as _ClientRegistrationEndpoint,
 )
+from authlib.oauth2.rfc7592 import (
+    ClientConfigurationEndpoint as _ClientConfigurationEndpoint,
+)
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -37,8 +40,27 @@ TokenGeneratorType: typing.TypeAlias = typing.Callable[..., str]
 logger: Logger = structlog.get_logger(__name__)
 
 
+def _get_server_metadata(server: "AuthorizationServer") -> dict[str, typing.Any]:
+    def _dummy_url_for(name: str) -> str:
+        return name
+
+    return get_server_metadata(server, _dummy_url_for).model_dump(exclude_unset=True)
+
+
 class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     server: "AuthorizationServer"
+
+    def generate_client_registration_info(
+        self, client: OAuth2Client, request: StarletteJsonRequest
+    ) -> dict[str, str]:
+        return {
+            "registration_client_uri": str(
+                request._request.url_for("oauth2.configure", client_id=client.client_id)
+            ),
+            "registration_access_token": generate_token(
+                prefix="registration_access_token"
+            ),
+        }
 
     def generate_client_id(self) -> str:
         return generate_token(prefix=CLIENT_ID_PREFIX, nbytes=16)
@@ -47,12 +69,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         return generate_token(prefix=CLIENT_SECRET_PREFIX)
 
     def get_server_metadata(self) -> dict[str, typing.Any]:
-        def _dummy_url_for(name: str) -> str:
-            return name
-
-        return get_server_metadata(self.server, _dummy_url_for).model_dump(
-            exclude_unset=True
-        )
+        return _get_server_metadata(self.server)
 
     def authenticate_token(self, request: StarletteJsonRequest) -> User | None:
         return request.user
@@ -68,6 +85,64 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         self.server.session.add(oauth2_client)
         self.server.session.flush()
         return oauth2_client
+
+
+class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
+    server: "AuthorizationServer"
+
+    def generate_client_registration_info(
+        self, client: OAuth2Client, request: StarletteJsonRequest
+    ) -> dict[str, str]:
+        return {
+            "registration_client_uri": str(
+                request._request.url_for("oauth2.configure", client_id=client.client_id)
+            ),
+            "registration_access_token": generate_token(
+                prefix="registration_access_token"
+            ),
+        }
+
+    def authenticate_token(self, request: StarletteJsonRequest) -> bool:
+        return True
+
+    def authenticate_client(self, request: StarletteJsonRequest) -> OAuth2Client | None:
+        client_id = request.path_params.get("client_id")
+        if client_id is None:
+            return None
+
+        statement = select(OAuth2Client).where(OAuth2Client.client_id == client_id)
+        result = self.server.session.execute(statement)
+        return result.unique().scalar_one_or_none()
+
+    def revoke_access_token(
+        self, token: typing.Any, request: StarletteJsonRequest
+    ) -> None:
+        return None
+
+    def check_permission(
+        self, client: OAuth2Client, request: StarletteJsonRequest
+    ) -> bool:
+        return True
+
+    def delete_client(
+        self, client: OAuth2Client, request: StarletteJsonRequest
+    ) -> None:
+        self.server.session.delete(client)
+        self.server.session.flush()
+
+    def update_client(
+        self,
+        client: OAuth2Client,
+        client_metadata: dict[str, typing.Any],
+        request: StarletteJsonRequest,
+    ) -> OAuth2Client:
+        client.set_client_metadata({**client.client_metadata, **client_metadata})
+        self.server.session.add(client)
+        self.server.session.flush()
+        return client
+
+    def get_server_metadata(self) -> dict[str, typing.Any]:
+        return _get_server_metadata(self.server)
 
 
 class _QueryTokenMixin:
@@ -169,6 +244,7 @@ class AuthorizationServer(_AuthorizationServer):
         authorization_server.register_endpoint(RevocationEndpoint)
         authorization_server.register_endpoint(IntrospectionEndpoint)
         authorization_server.register_endpoint(ClientRegistrationEndpoint)
+        authorization_server.register_endpoint(ClientConfigurationEndpoint)
         register_grants(authorization_server)
         return authorization_server
 
@@ -260,13 +336,13 @@ class AuthorizationServer(_AuthorizationServer):
 
     @property
     def grant_types_supported(self) -> list[str]:
-        grant_types: list[str] = []
-        for grant, _ in self._authorization_grants:
+        grant_types: set[str] = set()
+        for grant, _ in [*self._authorization_grants, *self._token_grants]:
             try:
-                grant_types.append(getattr(grant, "GRANT_TYPE"))
+                grant_types.add(getattr(grant, "GRANT_TYPE"))
             except AttributeError:
                 pass
-        return grant_types
+        return list(grant_types)
 
     @property
     def token_endpoint_auth_methods_supported(self) -> list[str]:
@@ -274,25 +350,25 @@ class AuthorizationServer(_AuthorizationServer):
 
     @property
     def revocation_endpoint_auth_methods_supported(self) -> list[str]:
-        auth_methods: list[str] = []
+        auth_methods: set[str] = set()
         for endpoint in self._endpoints.get(RevocationEndpoint.ENDPOINT_NAME, []):
-            auth_methods.extend(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
-        return auth_methods
+            auth_methods.union(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
+        return list(auth_methods)
 
     @property
     def introspection_endpoint_auth_methods_supported(self) -> list[str]:
-        auth_methods: list[str] = []
+        auth_methods: set[str] = set()
         for endpoint in self._endpoints.get(IntrospectionEndpoint.ENDPOINT_NAME, []):
-            auth_methods.extend(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
-        return auth_methods
+            auth_methods.union(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
+        return list(auth_methods)
 
     @property
     def code_challenge_methods_supported(self) -> list[str]:
-        code_challenge_methods: list[str] = []
+        code_challenge_methods: set[str] = set()
         for _, extensions in self._authorization_grants:
             for extension in extensions:
                 if isinstance(extension, CodeChallenge):
-                    code_challenge_methods.extend(
+                    code_challenge_methods.union(
                         extension.SUPPORTED_CODE_CHALLENGE_METHOD
                     )
-        return code_challenge_methods
+        return list(code_challenge_methods)

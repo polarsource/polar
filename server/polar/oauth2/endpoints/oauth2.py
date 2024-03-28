@@ -10,6 +10,7 @@ from polar.models import OAuth2Token
 
 from ..authorization_server import (
     AuthorizationServer,
+    ClientConfigurationEndpoint,
     ClientRegistrationEndpoint,
     IntrospectionEndpoint,
     RevocationEndpoint,
@@ -31,6 +32,23 @@ async def oauth2_register(
     request.state.user = auth.user
     return authorization_server.create_endpoint_response(
         ClientRegistrationEndpoint.ENDPOINT_NAME, request
+    )
+
+
+@router.api_route(
+    "/register/{client_id}", methods=["GET", "PUT", "DELETE"], name="oauth2.configure"
+)
+async def oauth2_configure(
+    client_id: str,
+    request: Request,
+    auth: Auth = Depends(Auth.backoffice_user),
+    authorization_server: AuthorizationServer = Depends(get_authorization_server),
+) -> Response:
+    if request.method == "PUT":
+        await request.json()
+    request.state.user = auth.user
+    return authorization_server.create_endpoint_response(
+        ClientConfigurationEndpoint.ENDPOINT_NAME, request
     )
 
 

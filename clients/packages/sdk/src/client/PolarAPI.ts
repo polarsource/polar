@@ -17,6 +17,7 @@ import {
   MagicLinkApi,
   NotificationsApi,
   OrganizationsApi,
+  Oauth2Api,
   PaymentMethodsApi,
   PersonalAccessTokenApi,
   PledgesApi,
@@ -47,6 +48,7 @@ export class PolarAPI {
   public readonly issues: IssuesApi
   public readonly magicLink: MagicLinkApi
   public readonly notifications: NotificationsApi
+  public readonly oauth2: Oauth2Api
   public readonly organizations: OrganizationsApi
   public readonly paymentMethods: PaymentMethodsApi
   public readonly personalAccessToken: PersonalAccessTokenApi
@@ -79,6 +81,7 @@ export class PolarAPI {
     this.issues = new IssuesApi(config)
     this.magicLink = new MagicLinkApi(config)
     this.notifications = new NotificationsApi(config)
+    this.oauth2 = new Oauth2Api(config)
     this.organizations = new OrganizationsApi(config)
     this.paymentMethods = new PaymentMethodsApi(config)
     this.personalAccessToken = new PersonalAccessTokenApi(config)

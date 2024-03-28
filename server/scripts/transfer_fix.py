@@ -25,7 +25,7 @@ from polar.integrations.github.service.repository import (
 )
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Issue, Organization, Repository
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 
 cli = typer.Typer()
 
@@ -60,7 +60,7 @@ async def organizations_renamed(
         False, help="If `True`, changes won't be commited to the database."
     ),
 ) -> None:
-    engine = create_engine("script")
+    engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
             session = AsyncSession(
@@ -134,7 +134,7 @@ async def repositories_transferred(
         False, help="If `True`, changes won't be commited to the database."
     ),
 ) -> None:
-    engine = create_engine("script")
+    engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
             session = AsyncSession(
@@ -217,7 +217,7 @@ async def issues_transferred(
         False, help="If `True`, changes won't be commited to the database."
     ),
 ) -> None:
-    engine = create_engine("script")
+    engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
             session = AsyncSession(

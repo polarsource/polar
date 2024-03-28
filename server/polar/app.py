@@ -22,9 +22,11 @@ from polar.kit.cors.cors import CallbackCORSMiddleware
 from polar.kit.cors.custom_domain_cors import is_allowed_custom_domain
 from polar.kit.db.postgres import (
     AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_sessionmaker,
+    AsyncSessionMaker,
+    Engine,
+    SyncSessionMaker,
+    create_async_sessionmaker,
+    create_sync_sessionmaker,
 )
 from polar.kit.prometheus.http import PrometheusHttpMiddleware
 from polar.logging import Logger
@@ -35,7 +37,9 @@ from polar.middlewares import (
     LogCorrelationIdMiddleware,
     XForwardedHostMiddleware,
 )
-from polar.postgres import create_engine
+from polar.oauth2.endpoints.well_known import router as well_known_router
+from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
+from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
 from polar.tags.api import Tags
@@ -64,22 +68,34 @@ def generate_unique_openapi_id(route: APIRoute) -> str:
 
 
 class State(TypedDict):
-    engine: AsyncEngine
-    sessionmaker: async_sessionmaker[AsyncSession]
+    async_engine: AsyncEngine
+    async_sessionmaker: AsyncSessionMaker
+    sync_engine: Engine
+    sync_sessionmaker: SyncSessionMaker
     arq_pool: ArqRedis
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     async with worker_lifespan() as arq_pool:
-        engine = create_engine("app")
-        sessionmaker = create_sessionmaker(engine)
+        async_engine = create_async_engine("app")
+        async_sessionmaker = create_async_sessionmaker(async_engine)
+
+        sync_engine = create_sync_engine("app")
+        sync_sessionmaker = create_sync_sessionmaker(sync_engine)
 
         log.info("Polar API started")
 
-        yield {"engine": engine, "sessionmaker": sessionmaker, "arq_pool": arq_pool}
+        yield {
+            "async_engine": async_engine,
+            "async_sessionmaker": async_sessionmaker,
+            "sync_engine": sync_engine,
+            "sync_sessionmaker": sync_sessionmaker,
+            "arq_pool": arq_pool,
+        }
 
-        await engine.dispose()
+        await async_engine.dispose()
+        sync_engine.dispose()
 
         log.info("Polar API stopped")
 
@@ -105,6 +121,10 @@ def create_app() -> FastAPI:
         polar_redirection_exception_handler,  # type: ignore
     )
     app.add_exception_handler(PolarError, polar_exception_handler)  # type: ignore
+    app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)  # pyright: ignore
+
+    # /.well-known
+    app.include_router(well_known_router)
 
     # /healthz and /readyz
     app.include_router(health_router)

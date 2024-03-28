@@ -10,7 +10,7 @@ from sqlalchemy import select
 from polar.kit.db.postgres import AsyncSession
 from polar.models import IssueReward, Pledge, Transaction
 from polar.models.transaction import TransactionType
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
@@ -47,7 +47,7 @@ async def platform_fees_migration(
         False, help="If `True`, changes won't be commited to the database."
     ),
 ) -> None:
-    engine = create_engine("script")
+    engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
             session = AsyncSession(

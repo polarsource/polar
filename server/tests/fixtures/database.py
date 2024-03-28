@@ -16,7 +16,7 @@ from polar.kit.db.postgres import AsyncEngine, AsyncSession
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import generate_uuid
 from polar.models import Model
-from polar.postgres import create_engine
+from polar.postgres import create_async_engine
 
 
 class TestModel(Model):
@@ -31,7 +31,7 @@ class TestModel(Model):
 
 @pytest_asyncio.fixture(scope="session")
 async def engine() -> AsyncIterator[AsyncEngine]:
-    engine = create_engine("app")
+    engine = create_async_engine("app")
     yield engine
     await engine.dispose()
 

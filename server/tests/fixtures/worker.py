@@ -5,7 +5,7 @@ from typing import cast
 import pytest
 from arq import ArqRedis
 
-from polar.kit.db.postgres import AsyncEngine, AsyncSession, async_sessionmaker
+from polar.kit.db.postgres import AsyncEngine, AsyncSession, AsyncSessionMaker
 from polar.kit.utils import utc_now
 from polar.worker import JobContext, PolarWorkerContext
 
@@ -18,8 +18,8 @@ def job_context(engine: AsyncEngine, session: AsyncSession) -> JobContext:
 
     return {
         "redis": ArqRedis(),
-        "engine": engine,
-        "sessionmaker": cast(async_sessionmaker[AsyncSession], sessionmaker),
+        "async_engine": engine,
+        "async_sessionmaker": cast(AsyncSessionMaker, sessionmaker),
         "job_id": "fake_job_id",
         "job_try": 1,
         "enqueue_time": utc_now(),

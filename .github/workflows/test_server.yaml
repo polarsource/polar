@@ -96,7 +96,9 @@ jobs:
           cache: "poetry"
       - name: 🔧 poetry install
         working-directory: ./server
-        run: poetry install --no-root
+        run: |
+          poetry install --no-root
+          poetry run task generate_dev_jwks
 
       - uses: actions/cache@v3
         with:

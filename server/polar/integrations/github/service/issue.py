@@ -20,6 +20,7 @@ from polar.issue.schemas import IssueCreate, IssueUpdate
 from polar.issue.service import IssueService
 from polar.kit.db.postgres import (
     AsyncSession,
+    AsyncSessionMaker,
 )
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
@@ -30,7 +31,6 @@ from polar.models.user import User
 from polar.organization.schemas import (
     OrganizationCreateFromGitHubUser,
 )
-from polar.postgres import AsyncSessionMaker
 from polar.redis import redis
 from polar.repository.hooks import (
     repository_issue_synced,

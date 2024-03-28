@@ -2,10 +2,12 @@ import os
 import uuid
 from datetime import timedelta
 from enum import Enum
-from functools import cached_property
+from typing import Literal
 
-from pydantic import PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from polar.kit.jwk import JWKSFile
 
 
 class Environment(str, Enum):
@@ -31,6 +33,8 @@ class Settings(BaseSettings):
     TESTING: bool = False
 
     SECRET: str = "super secret jwt secret"
+    JWKS: JWKSFile = Field(default="./.jwks.json")
+    CURRENT_JWK_KID: str = "polar_dev"
 
     # Custom domain auth and exchange secrets
     CUSTOM_DOMAIN_JWT_KEY: str = "SETME! secret key used for custom domain auth"
@@ -60,7 +64,6 @@ class Settings(BaseSettings):
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
     # Postgres
-    POSTGRES_SCHEME: str = "postgresql+asyncpg"
     POSTGRES_USER: str = "polar"
     POSTGRES_PWD: str = "polar"
     POSTGRES_HOST: str = "127.0.0.1"
@@ -163,11 +166,10 @@ class Settings(BaseSettings):
     def redis_url(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
 
-    @cached_property
-    def postgres_dsn(self) -> str:
+    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
         return str(
             PostgresDsn.build(
-                scheme=self.POSTGRES_SCHEME,
+                scheme=f"postgresql+{driver}",
                 username=self.POSTGRES_USER,
                 password=self.POSTGRES_PWD,
                 host=self.POSTGRES_HOST,

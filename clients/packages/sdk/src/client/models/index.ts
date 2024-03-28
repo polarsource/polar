@@ -1521,6 +1521,25 @@ export interface Author {
 /**
  * 
  * @export
+ * @interface AuthorizeResponse
+ */
+export interface AuthorizeResponse {
+    /**
+     * 
+     * @type {OAuth2Client}
+     * @memberof AuthorizeResponse
+     */
+    client: OAuth2Client;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof AuthorizeResponse
+     */
+    scopes: Array<string>;
+}
+/**
+ * 
+ * @export
  * @interface BackofficeBadge
  */
 export interface BackofficeBadge {
@@ -4513,6 +4532,80 @@ export interface NotificationsMarkRead {
      * @memberof NotificationsMarkRead
      */
     notification_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface OAuth2Client
+ */
+export interface OAuth2Client {
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    client_id: string;
+    /**
+     * 
+     * @type {OAuth2ClientMetadata}
+     * @memberof OAuth2Client
+     */
+    client_metadata: OAuth2ClientMetadata;
+}
+/**
+ * 
+ * @export
+ * @interface OAuth2ClientMetadata
+ */
+export interface OAuth2ClientMetadata {
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientMetadata
+     */
+    client_name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientMetadata
+     */
+    client_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientMetadata
+     */
+    logo_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientMetadata
+     */
+    tos_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientMetadata
+     */
+    policy_uri?: string;
 }
 /**
  * 

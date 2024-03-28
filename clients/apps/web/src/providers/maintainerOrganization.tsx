@@ -5,7 +5,7 @@ import React from 'react'
 
 export const MaintainerOrganizationContext = React.createContext<
   | {
-      organization: Organization
+      organization: Organization | undefined
       memberOrganizations: Organization[]
       adminOrganizations: Organization[]
       personalOrganization: Organization | undefined
@@ -20,7 +20,7 @@ export const MaintainerOrganizationContextProvider = ({
   personalOrganization,
   children,
 }: {
-  organization: Organization
+  organization: Organization | undefined
   memberOrganizations: Organization[]
   adminOrganizations: Organization[]
   personalOrganization: Organization | undefined

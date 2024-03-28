@@ -35,8 +35,9 @@ const DashboardSidebar = () => {
   const adminOrgs = orgContext?.adminOrganizations ?? []
   const personalOrg = orgContext?.personalOrganization
   const isOrgAdmin = adminOrgs.some((o) => currentOrg && o.id === currentOrg.id)
-
-  const isPersonalOrg = currentOrg?.id === personalOrg?.id
+  const isPersonalOrg = Boolean(
+    currentOrg && personalOrg && currentOrg.id === personalOrg.id,
+  )
 
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
@@ -75,10 +76,7 @@ const DashboardSidebar = () => {
             </a>
           </div>
           <div className="mb-4 mt-8 flex px-4">
-            <DashboardProfileDropdown
-              useOrgFromURL={true}
-              className="shadow-xl"
-            />
+            <DashboardProfileDropdown className="shadow-xl" />
           </div>
         </div>
 

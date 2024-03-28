@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
+from polar.config import settings
+
 from . import constants
 
 if TYPE_CHECKING:
@@ -76,7 +78,7 @@ def get_server_metadata(
 ) -> OpenIDProviderMetadata:
     return OpenIDProviderMetadata(
         issuer=constants.ISSUER,
-        authorization_endpoint=url_for("oauth2.authorize"),
+        authorization_endpoint=f"{settings.FRONTEND_BASE_URL}/oauth2/authorize",
         token_endpoint=url_for("oauth2.token"),
         jwks_uri=url_for("well_known.jwks"),
         userinfo_endpoint=url_for("oauth2.userinfo"),

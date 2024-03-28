@@ -38,6 +38,7 @@ from polar.middlewares import (
     XForwardedHostMiddleware,
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
+from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
@@ -120,6 +121,7 @@ def create_app() -> FastAPI:
         polar_redirection_exception_handler,  # type: ignore
     )
     app.add_exception_handler(PolarError, polar_exception_handler)  # type: ignore
+    app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)  # pyright: ignore
 
     # /.well-known
     app.include_router(well_known_router)

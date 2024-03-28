@@ -1,6 +1,6 @@
 from typing import Literal, cast
 
-from fastapi import Depends, Form, Request, Response
+from fastapi import Depends, Form, HTTPException, Request, Response
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.kit.routing import APIRouter
@@ -54,7 +54,7 @@ async def oauth2_configure(
 @router.get("/authorize", name="oauth2.authorize")
 async def oauth2_authorize(
     request: Request,
-    auth: UserRequiredAuth,
+    auth: Auth = Depends(Auth.optional_user),
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> AuthorizeResponse:
     user = auth.user
@@ -62,6 +62,9 @@ async def oauth2_authorize(
     grant: BaseGrant = authorization_server.get_consent_grant(
         request=request, end_user=user
     )
+
+    if grant.prompt == "login":
+        raise HTTPException(status_code=401)
 
     return AuthorizeResponse.model_validate(
         {"client": grant.client, "scopes": grant.request.scope}

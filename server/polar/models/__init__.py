@@ -15,6 +15,7 @@ from .magic_link import MagicLink
 from .notification import Notification
 from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_client import OAuth2Client
+from .oauth2_grant import OAuth2Grant
 from .oauth2_token import OAuth2Token
 from .organization import Organization
 from .personal_access_token import PersonalAccessToken
@@ -54,6 +55,7 @@ __all__ = [
     "OAuthAccount",
     "OAuth2AuthorizationCode",
     "OAuth2Client",
+    "OAuth2Grant",
     "OAuth2Token",
     "Organization",
     "PersonalAccessToken",

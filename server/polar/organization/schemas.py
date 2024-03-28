@@ -11,14 +11,12 @@ from polar.integrations.github import types
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization as OrganizationModel
 
-ORGANIZATION_DESCRIPTION_MAX_LENGTH = 160
-
 
 class OrganizationProfileSettings(Schema):
     description: str | None = Field(
         None,
         description="A description of the organization",
-        max_length=ORGANIZATION_DESCRIPTION_MAX_LENGTH,
+        max_length=160,
     )
     featured_projects: list[UUID4] | None = Field(
         None, description="A list of featured projects"

@@ -43,7 +43,6 @@ export const OrganizationPublicSidebar = ({
   subscriptionTiers,
 }: OrganizationPublicSidebarProps) => {
   const pathname = usePathname()
-  const [isDescriptionLoading, setIsDescriptionLoading] = useState(false)
 
   const {
     isShown: rssModalIsShown,
@@ -64,9 +63,7 @@ export const OrganizationPublicSidebar = ({
 
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateProfile = (
-    setting: Partial<OrganizationProfileSettingsUpdate>,
-  ) => {
+  const updateProfile = (setting: OrganizationProfileSettingsUpdate) => {
     return updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
@@ -78,11 +75,10 @@ export const OrganizationPublicSidebar = ({
   }
 
   const updateDescription = (description: string) => {
-    setIsDescriptionLoading(true)
     updateProfile({
       description,
       set_description: true,
-    }).finally(() => setIsDescriptionLoading(false))
+    })
   }
 
   return (
@@ -124,7 +120,8 @@ export const OrganizationPublicSidebar = ({
             onChange={updateDescription}
             disabled={!isAdmin}
             size="small"
-            loading={isDescriptionLoading}
+            loading={updateOrganizationMutation.isPending}
+            failed={updateOrganizationMutation.isError}
           />
           <div className="flex flex-row flex-wrap items-center gap-2.5 text-lg">
             <SocialLink href={`https://github.com/${organization.name}`}>

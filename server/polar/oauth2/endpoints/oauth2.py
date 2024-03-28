@@ -65,6 +65,10 @@ async def oauth2_authorize(
 
     if grant.prompt == "login":
         raise HTTPException(status_code=401)
+    elif grant.prompt == "none":
+        return authorization_server.create_authorization_response(
+            request=request, grant_user=user, save_consent=False
+        )
 
     return AuthorizeResponse.model_validate(
         {"client": grant.client, "scopes": grant.request.scope}
@@ -81,7 +85,7 @@ async def oauth2_consent(
     await request.form()
     grant_user = auth.user if action == "allow" else None
     return authorization_server.create_authorization_response(
-        request=request, grant_user=grant_user
+        request=request, grant_user=grant_user, save_consent=True
     )
 
 

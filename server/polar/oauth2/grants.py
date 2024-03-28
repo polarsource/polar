@@ -9,6 +9,7 @@ from authlib.oauth2.rfc6749.grants import (
     RefreshTokenGrant as _RefreshTokenGrant,
 )
 from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
+from authlib.oidc.core.errors import ConsentRequiredError
 from authlib.oidc.core.grants import (
     OpenIDCode as _OpenIDCode,
 )
@@ -24,6 +25,7 @@ from polar.models import OAuth2AuthorizationCode, OAuth2Client, OAuth2Token, Use
 
 from .constants import AUTHORIZATION_CODE_PREFIX, ISSUER
 from .requests import StarletteOAuth2Request
+from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from .userinfo import UserInfo, generate_user_info
 
 if typing.TYPE_CHECKING:
@@ -132,6 +134,48 @@ class OpenIDToken(_OpenIDToken):
         return generate_user_info(user, scope)
 
 
+class ValidateNonePromptScopeConsent:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def __call__(self, grant: BaseGrant) -> None:
+        grant.register_hook(
+            "after_validate_consent_request", self._validate_scope_consent
+        )
+
+    def _validate_scope_consent(
+        self, grant: BaseGrant, redirect_uri: str, redirect_fragment: bool = False
+    ) -> None:
+        prompt = grant.request.data.get("prompt")
+
+        # Temporary workaround until fix: https://github.com/lepture/authlib/pull/637
+        if prompt == "login":
+            grant.prompt = "login"  # pyright: ignore
+            return
+
+        # Check if the user has granted the requested scope or a subset of it
+        has_granted_scope = False
+        if grant.request.user is not None:
+            assert grant.client is not None
+            has_granted_scope = oauth2_grant_service.has_granted_scope(
+                self._session,
+                user_id=grant.request.user.id,
+                client_id=grant.client.client_id,
+                scope=grant.request.scope,
+            )
+
+        # If the prompt is "none", the user must be authenticated and have granted the requested scope
+        if prompt == "none":
+            if grant.request.user is None or not has_granted_scope:
+                raise ConsentRequiredError(
+                    redirect_uri=redirect_uri, redirect_fragment=redirect_fragment
+                )
+
+        # Bypass everything if nothing is specified and conditions are met
+        if prompt is None and has_granted_scope:
+            grant.prompt = "none"  # pyright: ignore
+
+
 class RefreshTokenGrant(_RefreshTokenGrant):
     server: "AuthorizationServer"
 
@@ -166,6 +210,7 @@ def register_grants(server: "AuthorizationServer") -> None:
             CodeChallenge(),
             OpenIDCode(server.session, require_nonce=False),
             OpenIDToken(),
+            ValidateNonePromptScopeConsent(server.session),
         ],
     )
     server.register_grant(RefreshTokenGrant)

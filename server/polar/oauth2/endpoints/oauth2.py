@@ -1,8 +1,6 @@
-from typing import Any, cast
+from typing import Literal, cast
 
-from authlib.oauth2 import OAuth2Error
-from fastapi import Depends, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, Form, Request, Response
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.kit.routing import APIRouter
@@ -17,6 +15,7 @@ from ..authorization_server import (
 )
 from ..dependencies import get_authorization_server, get_token
 from ..grants import BaseGrant
+from ..schemas import AuthorizeResponse
 from ..userinfo import UserInfo, generate_user_info
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
@@ -52,34 +51,32 @@ async def oauth2_configure(
     )
 
 
-@router.api_route("/authorize", methods=["GET", "POST"], name="oauth2.authorize")
+@router.get("/authorize", name="oauth2.authorize")
 async def oauth2_authorize(
     request: Request,
     auth: UserRequiredAuth,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
-) -> Any:
+) -> AuthorizeResponse:
     user = auth.user
-    form = await request.form()
-    if request.method == "GET":
-        try:
-            grant: BaseGrant = authorization_server.get_consent_grant(
-                request=request, end_user=user
-            )
-        except OAuth2Error as error:
-            raise HTTPException(status_code=400, detail=dict(error.get_body()))
-        return HTMLResponse(
-            """
-            <form method="POST">
-                <input type="hidden" name="confirm" value="true">
-                <button type="submit">Confirm</button>
-            </form>
-            """
-        )
+    await request.form()
+    grant: BaseGrant = authorization_server.get_consent_grant(
+        request=request, end_user=user
+    )
 
-    if form.get("confirm"):
-        grant_user = user
-    else:
-        grant_user = None
+    return AuthorizeResponse.model_validate(
+        {"client": grant.client, "scopes": grant.request.scope}
+    )
+
+
+@router.post("/consent", name="oauth2.consent")
+async def oauth2_consent(
+    request: Request,
+    auth: UserRequiredAuth,
+    action: Literal["allow", "deny"] = Form(...),
+    authorization_server: AuthorizationServer = Depends(get_authorization_server),
+) -> Response:
+    await request.form()
+    grant_user = auth.user if action == "allow" else None
     return authorization_server.create_authorization_response(
         request=request, grant_user=grant_user
     )

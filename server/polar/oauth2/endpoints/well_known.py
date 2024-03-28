@@ -9,7 +9,7 @@ from ..authorization_server import AuthorizationServer
 from ..dependencies import get_authorization_server
 from ..metadata import get_server_metadata
 
-router = APIRouter(prefix="/.well-known", tags=["well_known"])
+router = APIRouter(prefix="/.well-known", tags=["well_known"], include_in_schema=False)
 
 
 @router.get("/jwks.json", name="well_known.jwks")

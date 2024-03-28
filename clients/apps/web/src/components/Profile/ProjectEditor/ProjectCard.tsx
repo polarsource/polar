@@ -48,11 +48,11 @@ export const ProjectCard = ({
         href={organizationPageLink(repository.organization, repository.name)}
       >
         <CardHeader className="flex flex-row justify-between p-6">
-          <div className="flex flex-row items-baseline gap-x-3">
+          <div className="flex flex-row items-baseline gap-x-3 overflow-hidden">
             <span className="text-[20px] text-blue-500">
               <HiveOutlined fontSize="inherit" />
             </span>
-            <h3 className="dark:text-polar-50 text-lg text-gray-950">
+            <h3 className="dark:text-polar-50 truncate text-lg text-gray-950">
               {repository.organization.id !== organization.id ? (
                 <span className="flex flex-row items-baseline gap-x-1">
                   <span className="dark:text-polar-500 text-gray-500">

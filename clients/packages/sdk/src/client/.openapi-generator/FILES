@@ -15,6 +15,7 @@ apis/IntegrationsStripeApi.ts
 apis/IssuesApi.ts
 apis/MagicLinkApi.ts
 apis/NotificationsApi.ts
+apis/Oauth2Api.ts
 apis/OrganizationsApi.ts
 apis/PaymentMethodsApi.ts
 apis/PersonalAccessTokenApi.ts

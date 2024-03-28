@@ -17,6 +17,7 @@ export * from './IntegrationsStripeApi';
 export * from './IssuesApi';
 export * from './MagicLinkApi';
 export * from './NotificationsApi';
+export * from './Oauth2Api';
 export * from './OrganizationsApi';
 export * from './PaymentMethodsApi';
 export * from './PersonalAccessTokenApi';

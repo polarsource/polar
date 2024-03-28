@@ -32,6 +32,20 @@ export default async function Page({
     redirect(response.headers.get('Location') ?? '/')
   }
 
+  if (response.status === 401) {
+    const serializedSearchParams = new URLSearchParams({
+      ...searchParams,
+      // Avoid an infinite loop by changing the prompt to 'consent' if it was 'login'
+      prompt: searchParams.prompt === 'login' ? 'consent' : searchParams.prompt,
+    }).toString()
+    const returnTo = `/oauth2/authorize?${serializedSearchParams}`
+    const locationSearchParam = new URLSearchParams({
+      return_to: returnTo,
+    }).toString()
+    const location = `/login?${locationSearchParam}`
+    redirect(location)
+  }
+
   const data = await response.json()
 
   if (response.status === 400) {

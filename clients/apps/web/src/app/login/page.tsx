@@ -10,9 +10,13 @@ export const metadata: Metadata = {
 }
 
 export default async function Page({
-  searchParams: { return_to, for_organization_id },
+  searchParams: { return_to, for_organization_id, force },
 }: {
-  searchParams: { return_to?: string; for_organization_id?: string }
+  searchParams: {
+    return_to?: string
+    for_organization_id?: string
+    force?: string
+  }
 }) {
   // If the user is already logged in
   const api = getServerSideAPI()
@@ -22,7 +26,7 @@ export default async function Page({
     user = await api.users.getAuthenticated()
   } catch {}
 
-  if (user && user.id) {
+  if (user && user.id && force !== 'true') {
     // User is authenticated, and want to authenticate on polar.sh.
     // Redirect to /feed
     if (!for_organization_id) {

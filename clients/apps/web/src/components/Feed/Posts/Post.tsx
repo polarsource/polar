@@ -183,7 +183,7 @@ export const AnimatedIconButton = (
       size="icon"
       variant={props.active ? 'default' : props.variant}
       className={twMerge(
-        'h-8 w-8 overflow-hidden rounded-full',
+        'h-8 w-8 shrink-0 overflow-hidden rounded-full',
         props.className,
       )}
       onMouseEnter={handleMouse(1)}

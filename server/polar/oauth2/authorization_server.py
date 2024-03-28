@@ -33,6 +33,7 @@ from .constants import (
 from .grants import CodeChallenge, register_grants
 from .metadata import get_server_metadata
 from .requests import StarletteJsonRequest, StarletteOAuth2Request
+from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
 
 ExpiresInConfigType: typing.TypeAlias = dict[str, int]
 TokenGeneratorType: typing.TypeAlias = typing.Callable[..., str]
@@ -319,6 +320,29 @@ class AuthorizationServer(_AuthorizationServer):
             return generate_token(prefix=REFRESH_TOKEN_PREFIX)
 
         return BearerTokenGenerator(_access_token_generator, _refresh_token_generator)
+
+    def create_authorization_response(
+        self,
+        request: Request,
+        grant_user: User | None = None,
+        save_consent: bool = False,
+    ) -> typing.Any:
+        response: Response = super().create_authorization_response(request, grant_user)
+
+        if save_consent and response.status_code < 400:
+            assert grant_user is not None
+            self._save_consent(request, grant_user)
+
+        return response
+
+    def _save_consent(self, request: Request, grant_user: User) -> None:
+        oauth2_request = self.create_oauth2_request(request)
+        oauth2_grant_service.create_or_update_grant(
+            self.session,
+            user_id=grant_user.id,
+            client_id=oauth2_request.client_id,
+            scope=oauth2_request.scope,
+        )
 
     @property
     def response_types_supported(self) -> list[str]:

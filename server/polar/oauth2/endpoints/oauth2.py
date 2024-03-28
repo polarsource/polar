@@ -5,6 +5,7 @@ from fastapi import Depends, Form, HTTPException, Request, Response
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token
+from polar.postgres import AsyncSession, get_db_session
 
 from ..authorization_server import (
     AuthorizationServer,
@@ -54,6 +55,7 @@ async def oauth2_configure(
 @router.get("/authorize", name="oauth2.authorize")
 async def oauth2_authorize(
     request: Request,
+    session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> AuthorizeResponse:
@@ -65,6 +67,10 @@ async def oauth2_authorize(
 
     if grant.prompt == "login":
         raise HTTPException(status_code=401)
+    elif grant.prompt == "none":
+        return authorization_server.create_authorization_response(
+            request=request, grant_user=user, save_consent=False
+        )
 
     return AuthorizeResponse.model_validate(
         {
@@ -85,7 +91,7 @@ async def oauth2_consent(
     await request.form()
     grant_user = auth.user if action == "allow" else None
     return authorization_server.create_authorization_response(
-        request=request, grant_user=grant_user
+        request=request, grant_user=grant_user, save_consent=True
     )
 
 

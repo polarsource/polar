@@ -427,6 +427,8 @@ const OgDescription = ({ article }: { article: Article }) => {
         control={control}
         name="og_description"
         render={({ field }) => {
+          const value = field.value ?? defaultDescription
+
           return (
             <FormItem className="flex flex-1 flex-col">
               <div className="flex flex-col gap-2">
@@ -438,8 +440,7 @@ const OgDescription = ({ article }: { article: Article }) => {
                   <Textarea
                     className="flex-1"
                     onChange={field.onChange}
-                    defaultValue={field.value}
-                    placeholder={defaultDescription}
+                    defaultValue={value}
                   />
                 </FormControl>
               </div>

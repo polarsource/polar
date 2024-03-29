@@ -83,7 +83,7 @@ generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", 
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render"}
 
 [tool.pytest.ini_options]
-markers = ["authenticated", "http_auto_expunge", "skip_db_asserts"]
+markers = ["authenticated", "http_auto_expunge", "skip_db_asserts", "override_current_user"]
 asyncio_mode = "strict"
 
 [tool.coverage.run]

@@ -443,6 +443,8 @@ class TestDonations:
         )
         assert 0 == summary.balance.amount
 
+        session.expunge_all()
+
         await organization_service.set_account(
             session,
             authz=authz,

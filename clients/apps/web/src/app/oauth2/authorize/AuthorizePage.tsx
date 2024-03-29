@@ -66,6 +66,7 @@ const AuthorizePage = ({
             >
               Deny
             </Button>
+
             <Button className="grow" type="submit" name="action" value="allow">
               Allow
             </Button>

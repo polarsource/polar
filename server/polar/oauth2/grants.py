@@ -9,7 +9,7 @@ from authlib.oauth2.rfc6749.grants import (
     RefreshTokenGrant as _RefreshTokenGrant,
 )
 from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
-from authlib.oidc.core.errors import ConsentRequiredError
+from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
 from authlib.oidc.core.grants import (
     OpenIDCode as _OpenIDCode,
 )
@@ -166,7 +166,11 @@ class ValidateNonePromptScopeConsent:
 
         # If the prompt is "none", the user must be authenticated and have granted the requested scope
         if prompt == "none":
-            if grant.request.user is None or not has_granted_scope:
+            if grant.request.user is None:
+                raise LoginRequiredError(
+                    redirect_uri=redirect_uri, redirect_fragment=redirect_fragment
+                )
+            if not has_granted_scope:
                 raise ConsentRequiredError(
                     redirect_uri=redirect_uri, redirect_fragment=redirect_fragment
                 )

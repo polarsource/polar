@@ -329,8 +329,7 @@ class AuthorizationServer(_AuthorizationServer):
     ) -> typing.Any:
         response: Response = super().create_authorization_response(request, grant_user)
 
-        if save_consent and response.status_code < 400:
-            assert grant_user is not None
+        if save_consent and grant_user is not None and response.status_code < 400:
             self._save_consent(request, grant_user)
 
         return response

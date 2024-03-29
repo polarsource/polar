@@ -5,6 +5,7 @@ from fastapi import Depends, Form, HTTPException, Request, Response
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token
+from polar.tags.api import Tags
 
 from ..authorization_server import (
     AuthorizationServer,
@@ -89,7 +90,7 @@ async def oauth2_consent(
     )
 
 
-@router.post("/token", name="oauth2.token")
+@router.post("/token", name="oauth2.token", tags=[Tags.PUBLIC])
 async def oauth2_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -98,7 +99,7 @@ async def oauth2_token(
     return authorization_server.create_token_response(request)
 
 
-@router.post("/revoke", name="oauth2.revoke")
+@router.post("/revoke", name="oauth2.revoke", tags=[Tags.PUBLIC])
 async def oauth2_revoke(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -109,7 +110,7 @@ async def oauth2_revoke(
     )
 
 
-@router.post("/introspect", name="oauth2.introspect")
+@router.post("/introspect", name="oauth2.introspect", tags=[Tags.PUBLIC])
 async def oauth2_introspect(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -121,7 +122,11 @@ async def oauth2_introspect(
 
 
 @router.api_route(
-    "/userinfo", methods=["GET", "POST"], name="oauth2.userinfo", response_model=None
+    "/userinfo",
+    methods=["GET", "POST"],
+    name="oauth2.userinfo",
+    response_model=None,
+    tags=[Tags.PUBLIC],
 )
 async def oauth2_userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     return generate_user_info(token.user, cast(str, token.scope))

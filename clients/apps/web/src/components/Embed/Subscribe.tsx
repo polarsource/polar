@@ -13,6 +13,10 @@ export const Subscribe = ({
   label: string
 }) => {
   const extraSubscribersCount = totalSubscriptions - subscriptions.length
+  const extraSubscribersCountDisplay =
+    extraSubscribersCount > 1000
+      ? `${Math.round(extraSubscribersCount / 1000)}K`
+      : extraSubscribersCount
 
   return (
     <>
@@ -169,7 +173,7 @@ export const Subscribe = ({
                       flexShrink: '0',
                     }}
                   >
-                    <span>+{extraSubscribersCount}</span>
+                    <span>+{extraSubscribersCountDisplay}</span>
                   </div>
                 )}
               </div>

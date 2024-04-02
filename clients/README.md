@@ -7,7 +7,6 @@ This [Turborepo](https://turbo.build/) includes the following packages/apps:
 ### Apps and Packages
 
 - `apps/web`: [polar.sh](https://polar.sh) – [Next.js](https://nextjs.org/) app
-- `apps/chrome-extension`: Polar Chrome Extension, built with webpack
 - `packages/polarkit`: Shared resources
 - `packages/sdk`: API types
 

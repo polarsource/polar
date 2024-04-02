@@ -1,3 +1,4 @@
+import warnings
 from enum import Enum, auto
 from typing import Annotated, Self
 
@@ -8,7 +9,8 @@ from polar.authz.scope import Scope
 from polar.authz.service import Anonymous, ScopedSubject, Subject
 from polar.config import settings
 from polar.exceptions import Unauthorized
-from polar.models import User
+from polar.models import OAuth2Token, User
+from polar.oauth2.dependencies import get_optional_token
 from polar.postgres import AsyncSession, get_db_session
 
 from .service import AuthService
@@ -17,6 +19,7 @@ from .service import AuthService
 class AuthMethod(Enum):
     COOKIE = auto()
     PERSONAL_ACCESS_TOKEN = auto()
+    OAUTH2_ACCESS_TOKEN = auto()
 
 
 auth_header_scheme = HTTPBearer(
@@ -31,6 +34,7 @@ async def _get_cookie_token(request: Request) -> str | None:
 
 async def _current_user_optional(
     cookie_token: str | None = Depends(_get_cookie_token),
+    oauth2_token: OAuth2Token | None = Depends(get_optional_token),
     auth_header: HTTPAuthorizationCredentials | None = Depends(auth_header_scheme),
     session: AsyncSession = Depends(get_db_session),
 ) -> tuple[ScopedSubject | None, AuthMethod | None]:
@@ -41,6 +45,12 @@ async def _current_user_optional(
                 ScopedSubject(subject=user, scopes=[Scope.web_default]),
                 AuthMethod.COOKIE,
             )
+
+    if oauth2_token:
+        return (
+            ScopedSubject(subject=oauth2_token.user, scopes=oauth2_token.get_scopes()),
+            AuthMethod.OAUTH2_ACCESS_TOKEN,
+        )
 
     # Authorization header.
     # Can contain both a PAT and a forwarded cookie value (via Next/Vercel)
@@ -72,12 +82,6 @@ class Auth:
     scoped_subject: ScopedSubject
     auth_method: AuthMethod | None
 
-    # Deprecated: prefer to use scoped_subject instead
-    user: User | None
-
-    # Deprecated: prefer to use scoped_subject instead
-    subject: Subject
-
     def __init__(
         self,
         *,
@@ -87,13 +91,19 @@ class Auth:
         self.scoped_subject = scoped_subject
         self.auth_method = auth_method
 
-        # backwards compatability
-        self.subject = scoped_subject.subject
+    @property
+    def user(self) -> User | None:
+        warnings.warn("Use `scoped_subject` instead of `user`", DeprecationWarning)
+        return (
+            self.scoped_subject.subject
+            if isinstance(self.scoped_subject.subject, User)
+            else None
+        )
 
-        if isinstance(scoped_subject.subject, User):
-            self.user = scoped_subject.subject
-        else:
-            self.user = None
+    @property
+    def subject(self) -> Subject:
+        warnings.warn("Use `scoped_subject` instead of `subject`", DeprecationWarning)
+        return self.scoped_subject.subject
 
     ###############################################################################
     # FastAPI dependency methods

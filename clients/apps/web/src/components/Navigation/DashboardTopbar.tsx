@@ -2,9 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import { organizationPageLink } from 'polarkit/utils/nav'
@@ -17,20 +15,17 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
-  Route,
-  SubRoute,
-  dashboardRoutes,
-  maintainerRoutes,
+  SubRouteWithActive,
+  useDashboardRoutes,
+  useMaintainerRoutes,
 } from '../Dashboard/navigation'
 import DashboardLayoutContext from '../Layout/DashboardLayoutContext'
 import TopbarRight from '../Layout/Public/TopbarRight'
 
 export type LogoPosition = 'center' | 'left'
 
-export const SubNav = (props: {
-  items: (SubRoute & { active: boolean })[]
-}) => {
-  const current = props.items.find((i) => i.active)
+export const SubNav = (props: { items: SubRouteWithActive[] }) => {
+  const current = props.items.find((i) => i.isActive)
 
   return (
     <Tabs defaultValue={current?.title}>
@@ -65,7 +60,6 @@ const DashboardTopbar = ({
   isFixed?: boolean
 }>) => {
   const { currentUser } = useAuth()
-  const pathname = usePathname()
 
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
@@ -74,24 +68,15 @@ const DashboardTopbar = ({
   const isOrgAdmin = adminOrgs.some((o) => org && o.id === org.id)
   const isPersonal = Boolean(org && personalOrg && org.id === personalOrg.id)
 
-  const getRoutes = (currentOrg?: Organization): Route[] => {
-    return [
-      ...(currentOrg ? maintainerRoutes(currentOrg) : []),
-      ...(currentOrg
-        ? dashboardRoutes(
-            currentOrg,
-            currentOrg ? isPersonal : true,
-            isOrgAdmin ?? false,
-          )
-        : []),
-    ]
-  }
-
-  const routes = getRoutes(org)
-
-  const [currentRoute] = routes.filter((route) =>
-    pathname?.startsWith(route.link),
+  const maintainerRoutes = useMaintainerRoutes(org)
+  const dashboardRoutes = useDashboardRoutes(
+    org,
+    org ? isPersonal : true,
+    isOrgAdmin ?? false,
   )
+
+  const routes = [...maintainerRoutes, ...dashboardRoutes]
+  const currentRoute = routes.find((r) => r.isActive)
 
   const className = twMerge(
     props.isFixed !== false ? 'md:fixed z-20 left-0 top-0 right-0' : '',
@@ -143,17 +128,10 @@ const DashboardTopbar = ({
           </h4>
           <div className="flex flex-col gap-4  md:flex-row md:items-center md:gap-y-24">
             {currentRoute &&
-              'subs' in currentRoute &&
-              (currentRoute.subs?.length ?? 0) > 0 && (
-                <SubNav
-                  items={
-                    currentRoute.subs?.map((sub) => ({
-                      ...sub,
-                      active: sub.link === pathname,
-                    })) ?? []
-                  }
-                />
-              )}
+            'subs' in currentRoute &&
+            (currentRoute.subs?.length ?? 0) > 0 ? (
+              <SubNav items={currentRoute.subs ?? []} />
+            ) : null}
           </div>
           <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}

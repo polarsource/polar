@@ -15,7 +15,9 @@ import {
   ViewDayOutlined,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
+import { usePathname } from 'next/navigation'
 import { organizationPageLink } from 'polarkit/utils/nav'
+import { useMemo } from 'react'
 
 export type SubRoute = {
   readonly title: string
@@ -33,9 +35,96 @@ export type Route = {
   readonly subs?: SubRoute[]
   readonly selectedExactMatchOnly?: boolean
   readonly selectedMatchFallback?: boolean
+  readonly checkIsActive?: (currentPath: string) => boolean
 }
 
-export const maintainerRoutes = (org: Organization): Route[] => [
+export type SubRouteWithActive = SubRoute & { readonly isActive: boolean }
+
+export type RouteWithActive = Route & {
+  readonly isActive: boolean
+  readonly subs?: SubRouteWithActive[]
+}
+
+const applySubRouteIsActive = (
+  path: string,
+): ((r: SubRoute) => SubRouteWithActive) => {
+  return (r: SubRoute): SubRouteWithActive => {
+    const isActive = r.link === path
+    return {
+      ...r,
+      isActive,
+    }
+  }
+}
+
+const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
+  return (r: Route): RouteWithActive => {
+    let isActive = false
+
+    if (r.checkIsActive !== undefined) {
+      isActive = r.checkIsActive(path)
+    } else {
+      // Fallback
+      isActive = Boolean(path && path.startsWith(r.link))
+    }
+
+    const subs = r.subs ? r.subs.map(applySubRouteIsActive(path)) : undefined
+
+    return {
+      ...r,
+      isActive,
+      subs,
+    }
+  }
+}
+
+export const useMaintainerRoutes = (org?: Organization): RouteWithActive[] => {
+  const path = usePathname()
+
+  const r = useMemo(() => {
+    if (!org) {
+      return []
+    }
+
+    return maintainerRoutesList(org)
+      .filter((o) => o.if)
+      .map(applyIsActive(path))
+  }, [org, path])
+
+  return r
+}
+
+export const useDashboardRoutes = (
+  org: Organization | undefined,
+  isPersonal: boolean,
+  isOrgAdmin: boolean,
+): RouteWithActive[] => {
+  const path = usePathname()
+
+  if (!org) {
+    return []
+  }
+
+  return dashboardRoutesList(org, isPersonal, isOrgAdmin)
+    .filter((o) => o.if)
+    .map(applyIsActive(path))
+}
+
+export const useBackerRoutes = (): RouteWithActive[] => {
+  const path = usePathname()
+  return backerRoutesList()
+    .filter((o) => o.if)
+    .map(applyIsActive(path))
+}
+
+export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
+  const path = usePathname()
+  return personalFinanceSubRoutesList().map(applySubRouteIsActive(path))
+}
+
+// internals below
+
+const maintainerRoutesList = (org: Organization): Route[] => [
   {
     id: 'overview',
     title: 'Overview',
@@ -49,7 +138,10 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     title: 'Posts',
     icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/posts`,
+    link: `/maintainer/${org.name}/posts/overview`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.name}/posts`)
+    },
     if: true,
     subs: [
       {
@@ -67,7 +159,10 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     title: 'Subscriptions',
     icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/subscriptions`,
+    link: `/maintainer/${org.name}/subscriptions/overview`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.name}/subscriptions`)
+    },
     if: true,
     subs: [
       {
@@ -93,7 +188,10 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     title: 'Issues',
     icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/issues`,
+    link: `/maintainer/${org.name}/issues/overview`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.name}/issues`)
+    },
     if: true,
     subs: [
       {
@@ -146,7 +244,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
   },
 ]
 
-export const backerRoutes = (): Route[] => [
+const backerRoutesList = (): Route[] => [
   {
     id: 'posts',
     title: 'Feed',
@@ -176,7 +274,7 @@ export const backerRoutes = (): Route[] => [
   },
 ]
 
-export const personalFinanceSubRoutes = (): SubRoute[] => [
+const personalFinanceSubRoutesList = (): SubRoute[] => [
   {
     title: 'Incoming',
     link: `/finance/incoming`,
@@ -199,7 +297,7 @@ export const personalFinanceSubRoutes = (): SubRoute[] => [
   },
 ]
 
-export const orgFinanceSubRoutes = (org: Organization): SubRoute[] => [
+const orgFinanceSubRoutesList = (org: Organization): SubRoute[] => [
   {
     title: 'Incoming',
     link: `/maintainer/${org.name}/finance/incoming`,
@@ -219,7 +317,7 @@ export const orgFinanceSubRoutes = (org: Organization): SubRoute[] => [
   },
 ]
 
-export const dashboardRoutes = (
+const dashboardRoutesList = (
   org: Organization,
   isPersonal: boolean,
   isOrgAdmin: boolean,
@@ -231,7 +329,9 @@ export const dashboardRoutes = (
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: isOrgAdmin,
-    subs: isPersonal ? personalFinanceSubRoutes() : orgFinanceSubRoutes(org),
+    subs: isPersonal
+      ? personalFinanceSubRoutesList()
+      : orgFinanceSubRoutesList(org),
   },
   {
     id: 'settings',

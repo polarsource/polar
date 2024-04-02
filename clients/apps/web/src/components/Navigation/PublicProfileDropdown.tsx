@@ -13,7 +13,7 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { usePersonalOrganization } from '../../hooks'
-import { backerRoutes, dashboardRoutes } from '../Dashboard/navigation'
+import { useBackerRoutes, useDashboardRoutes } from '../Dashboard/navigation'
 import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
 
 const PublicProfileDropdown = ({
@@ -43,15 +43,9 @@ const PublicProfileDropdown = ({
 
   const loggedUser = authenticatedUser
 
-  const allBackerRoutes = backerRoutes()
-  const filteredBackerRoutes = showAllBackerRoutes
-    ? allBackerRoutes.filter((r) => r.if)
-    : []
-
-  const allPersonalRoutes = personalOrg
-    ? dashboardRoutes(personalOrg, true, true)
-    : []
-  const personalRoutes = allPersonalRoutes.filter((r) => r.if)
+  const backerRoutes = useBackerRoutes()
+  const filteredBackerRoutes = showAllBackerRoutes ? backerRoutes : []
+  const personalRoutes = useDashboardRoutes(personalOrg, true, true)
 
   if (!loggedUser) {
     return <></>

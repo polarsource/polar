@@ -1,38 +1,21 @@
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { dashboardRoutes } from './navigation'
+import { useDashboardRoutes } from './navigation'
 
 const DashboardNavigation = () => {
-  const path = usePathname()
-
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
   const adminOrgs = orgContext?.adminOrganizations ?? []
   const personalOrg = orgContext?.personalOrganization
+  const isOrgAdmin = adminOrgs.some((o) => org && o.id === org.id)
+  const isPersonal = Boolean(org && personalOrg && org.id === personalOrg.id)
+  const navs = useDashboardRoutes(org, isPersonal, isOrgAdmin ?? false)
 
   if (!org) {
     return <></>
   }
-
-  const isOrgAdmin = adminOrgs.some((o) => o.id === org.id)
-  const isPersonal = org?.id === personalOrg?.id
-
-  // All routes and conditions
-  const navs = org ? dashboardRoutes(org, isPersonal, isOrgAdmin ?? false) : []
-
-  // Filter routes, set isActive, and if subs should be expanded
-  const filteredNavs = navs
-    .filter((n) => n.if)
-    .map((n) => {
-      const isActive = path && path.startsWith(n.link)
-      return {
-        ...n,
-        isActive,
-      }
-    })
 
   return (
     <>
@@ -42,7 +25,7 @@ const DashboardNavigation = () => {
         </div>
       </div>
       <div className="flex flex-col gap-2 px-4 py-3">
-        {filteredNavs.map((n) => (
+        {navs.map((n) => (
           <div key={n.link} className="flex flex-col gap-4">
             <Link
               className={twMerge(

@@ -10,7 +10,7 @@ class Scope(StrEnum):
     user_read = "user:read"
 
 
-SCOPES_SUPPORTED = [s.value for s in Scope]
+SCOPES_SUPPORTED = [s.value for s in Scope if s != Scope.web_default]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Profile",

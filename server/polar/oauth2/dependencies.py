@@ -12,21 +12,27 @@ from polar.postgres import AsyncSession, get_db_session
 from .authorization_server import AuthorizationServer
 from .service.oauth2_token import oauth2_token as oauth2_token_service
 
-openid_scheme = OpenIdConnect(openIdConnectUrl="/.well-known/openid-configuration")
+openid_scheme = OpenIdConnect(
+    openIdConnectUrl="/.well-known/openid-configuration", auto_error=False
+)
+
+
+async def get_optional_token(
+    authorization: str = Depends(openid_scheme),
+    session: AsyncSession = Depends(get_db_session),
+) -> OAuth2Token | None:
+    scheme, access_token = get_authorization_scheme_param(authorization)
+    if not authorization or scheme.lower() != "bearer":
+        return None
+
+    return await oauth2_token_service.get_by_access_token(session, access_token)
 
 
 async def get_token(
-    authorization: str = Depends(openid_scheme),
-    session: AsyncSession = Depends(get_db_session),
+    token: OAuth2Token | None = Depends(get_optional_token),
 ) -> OAuth2Token:
-    scheme, access_token = get_authorization_scheme_param(authorization)
-    if not authorization or scheme.lower() != "bearer":
-        raise HTTPException(status_code=401)
-
-    token = await oauth2_token_service.get_by_access_token(session, access_token)
     if token is None:
         raise HTTPException(status_code=401)
-
     return token
 
 

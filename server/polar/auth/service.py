@@ -20,12 +20,6 @@ from polar.user.service import user as user_service
 log = structlog.get_logger()
 
 
-class LoginResponse(Schema):
-    success: bool
-    expires_at: datetime
-    token: str | None = None
-
-
 class LogoutResponse(Schema):
     success: bool
 
@@ -96,11 +90,6 @@ class AuthService:
         response = RedirectResponse(return_url, 303)
         cls.set_auth_cookie(response=response, value=token, secure=secure)
         return response
-
-    @classmethod
-    def generate_login_json_response(cls, *, user: User) -> LoginResponse:
-        (token, expires_at) = cls.generate_token(user=user)
-        return LoginResponse(success=True, token=token, expires_at=expires_at)
 
     @classmethod
     async def get_user_from_cookie(

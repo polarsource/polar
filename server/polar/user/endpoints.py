@@ -2,7 +2,7 @@ import structlog
 from fastapi import APIRouter, Depends, Response
 
 from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
-from polar.auth.service import AuthService, LoginResponse, LogoutResponse
+from polar.auth.service import AuthService, LogoutResponse
 from polar.authz.scope import Scope
 from polar.authz.service import Authz
 from polar.exceptions import InternalServerError, Unauthorized
@@ -55,11 +55,6 @@ async def scopes(
     ),
 ) -> UserScopes:
     return UserScopes(scopes=[s.value for s in auth.scoped_subject.scopes])
-
-
-@router.post("/me/token")
-async def create_token(auth: UserRequiredAuth) -> LoginResponse:
-    return AuthService.generate_login_json_response(user=auth.user)
 
 
 @router.put("/me", response_model=UserRead)

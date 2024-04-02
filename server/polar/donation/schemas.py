@@ -1,11 +1,55 @@
-from typing import Literal
-from uuid import UUID
+from typing import Literal, Self
 
-from pydantic import Field
+from pydantic import UUID4, Field
 
 from polar.currency.schemas import CurrencyAmount
+from polar.enums import Platforms
 from polar.kit.schemas import Schema
+from polar.models import Donation as DonationModel
+from polar.models.organization import Organization
+from polar.models.user import User
 from polar.pledge.schemas import MAXIMUM_AMOUNT
+
+
+class DonationOrganization(Schema):
+    id: UUID4
+    platform: Platforms
+    name: str
+    avatar_url: str
+    is_personal: bool
+
+
+class DonationUser(Schema):
+    id: UUID4
+    public_name: str
+    avatar_url: str
+
+
+class Donation(Schema):
+    id: UUID4
+    amount: CurrencyAmount
+    message: str | None
+    donor: DonationOrganization | DonationUser | None
+
+    @classmethod
+    def from_db(
+        cls,
+        i: DonationModel,
+    ) -> Self:
+        model_donor = i.donor
+
+        donor: DonationOrganization | DonationUser | None = None
+        if isinstance(model_donor, User):
+            donor = DonationUser.model_validate(model_donor)
+        elif isinstance(model_donor, Organization):
+            donor = DonationOrganization.model_validate(model_donor)
+
+        return cls(
+            id=i.id,
+            amount=CurrencyAmount(currency="USD", amount=i.amount_received),
+            message=i.message,
+            donor=donor,
+        )
 
 
 class DonationCurrencyAmount(CurrencyAmount):
@@ -17,7 +61,7 @@ class DonationCurrencyAmount(CurrencyAmount):
 
 
 class DonationCreateStripePaymentIntent(Schema):
-    to_organization_id: UUID
+    to_organization_id: UUID4
     email: str = Field(
         description="The donators email address. Receipts will be sent to this address."
     )
@@ -25,7 +69,7 @@ class DonationCreateStripePaymentIntent(Schema):
     setup_future_usage: Literal["on_session"] | None = Field(
         None, description="If the payment method should be saved for future usage."
     )
-    on_behalf_of_organization_id: UUID | None = Field(
+    on_behalf_of_organization_id: UUID4 | None = Field(
         None,
         description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
@@ -40,7 +84,7 @@ class DonationUpdateStripePaymentIntent(Schema):
     setup_future_usage: Literal["on_session"] | None = Field(
         None, description="If the payment method should be saved for future usage."
     )
-    on_behalf_of_organization_id: UUID | None = Field(
+    on_behalf_of_organization_id: UUID4 | None = Field(
         None,
         description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )

@@ -1,6 +1,8 @@
+from collections.abc import Sequence
 from typing import Literal
 
 import stripe as stripe_lib
+from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
@@ -12,6 +14,7 @@ from polar.integrations.stripe.schemas import (
 )
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.money import get_cents_in_dollar_string
+from polar.kit.pagination import PaginationParams, paginate
 from polar.models.donation import Donation
 from polar.models.held_balance import HeldBalance
 from polar.models.organization import Organization
@@ -36,6 +39,41 @@ from polar.user.service import user as user_service
 
 
 class DonationService:
+    async def get_by_payment_id(
+        self, session: AsyncSession, id: str
+    ) -> Donation | None:
+        stmt = (
+            sql.select(Donation)
+            .where(Donation.payment_id == id)
+            .options(joinedload(Donation.to_organization))
+        )
+        res = await session.execute(stmt)
+        return res.scalar_one_or_none()
+
+    async def search(
+        self,
+        session: AsyncSession,
+        *,
+        to_organization: Organization,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[Donation], int]:
+        statement = (
+            sql.select(Donation)
+            .where(Donation.to_organization_id == to_organization.id)
+            .options(
+                joinedload(Donation.to_organization),
+                joinedload(Donation.by_organization),
+                joinedload(Donation.on_behalf_of_organization),
+                joinedload(Donation.by_user),
+            )
+        )
+
+        statement = statement.order_by(desc(Donation.created_at))
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
+
     async def create_payment_intent(
         self,
         session: AsyncSession,
@@ -159,17 +197,6 @@ class DonationService:
 
         session.add(d)
         return None
-
-    async def get_by_payment_id(
-        self, session: AsyncSession, id: str
-    ) -> Donation | None:
-        stmt = (
-            sql.select(Donation)
-            .where(Donation.payment_id == id)
-            .options(joinedload(Donation.to_organization))
-        )
-        res = await session.execute(stmt)
-        return res.scalar_one_or_none()
 
     async def create_balance(
         self,

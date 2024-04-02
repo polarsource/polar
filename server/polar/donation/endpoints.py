@@ -1,16 +1,21 @@
 from fastapi import APIRouter, Depends
+from pydantic import UUID4
 
 from polar.auth.dependencies import Auth
+from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.donation.schemas import (
+    Donation,
     DonationCreateStripePaymentIntent,
     DonationStripePaymentIntentMutationResponse,
     DonationUpdateStripePaymentIntent,
 )
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models.organization import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.tags.api import Tags
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -18,6 +23,37 @@ from polar.user_organization.service import (
 from .service import donation_service
 
 router = APIRouter(tags=["donations"])
+
+
+@router.get(
+    "/donations/search",
+    response_model=ListResource[Donation],
+    tags=[Tags.PUBLIC],
+)
+async def search_donations(
+    pagination: PaginationParamsQuery,
+    to_organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
+) -> ListResource[Donation]:
+    to_organization = await organization_service.get(session, to_organization_id)
+    if not to_organization:
+        raise ResourceNotFound("Organization not found")
+    if not await authz.can(auth.subject, AccessType.write, to_organization):
+        raise Unauthorized()
+
+    results, count = await donation_service.search(
+        session,
+        to_organization=to_organization,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [Donation.from_db(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.post(

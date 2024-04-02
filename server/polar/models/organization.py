@@ -157,6 +157,8 @@ class Organization(RecordModel):
         JSONB, nullable=False, default=dict
     )
 
+    donations_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+
     #
     # Fields synced from GitHub
     #

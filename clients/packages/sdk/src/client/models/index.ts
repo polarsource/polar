@@ -4806,6 +4806,12 @@ export interface Organization {
      * @memberof Organization
      */
     is_teams_enabled: boolean;
+    /**
+     * If this organizations accepts donations
+     * @type {boolean}
+     * @memberof Organization
+     */
+    donations_enabled: boolean;
 }
 /**
  * 

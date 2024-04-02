@@ -78,6 +78,9 @@ class Organization(Schema):
     is_teams_enabled: bool = Field(
         description="Feature flag for if this organization is a team."
     )
+    donations_enabled: bool = Field(
+        description="If this organizations accepts donations"
+    )
 
     @classmethod
     def from_db(
@@ -125,6 +128,7 @@ class Organization(Schema):
             if include_member_fields
             else None,
             is_teams_enabled=o.is_teams_enabled,
+            donations_enabled=o.donations_enabled,
         )
 
 

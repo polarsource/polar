@@ -168,6 +168,7 @@ class PayoutTransactionService(BaseTransactionService):
 
         if account.account_type == AccountType.stripe:
             transaction = await self._prepare_stripe_payout(
+                session,
                 transaction=transaction,
                 account=account,
                 unpaid_balance_transactions=unpaid_balance_transactions,
@@ -399,6 +400,7 @@ class PayoutTransactionService(BaseTransactionService):
 
     async def _prepare_stripe_payout(
         self,
+        session: AsyncSession,
         *,
         transaction: Transaction,
         account: Account,
@@ -453,6 +455,11 @@ class PayoutTransactionService(BaseTransactionService):
                     metadata={"payout_transaction_id": str(transaction.id)},
                 )
                 balance_transaction.transfer_id = stripe_transfer.id
+
+                # Immediately commit the transfer_id: it's now effective in Stripe,
+                # we don't want to lose it
+                session.add(balance_transaction)
+                await session.commit()
             # Case where the transfer has already been made
             # Legacy behavior from the time when we automatically
             # transferred each balance

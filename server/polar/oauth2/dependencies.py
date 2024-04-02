@@ -4,12 +4,12 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import OpenIdConnect
 from fastapi.security.utils import get_authorization_scheme_param
 
+from polar.authz.scope import SCOPES_SUPPORTED
 from polar.kit.db.postgres import SyncSessionMaker
 from polar.models import OAuth2Token
 from polar.postgres import AsyncSession, get_db_session
 
 from .authorization_server import AuthorizationServer
-from .constants import SCOPES_SUPPORTED
 from .service.oauth2_token import oauth2_token as oauth2_token_service
 
 openid_scheme = OpenIdConnect(openIdConnectUrl="/.well-known/openid-configuration")

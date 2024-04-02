@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, Response
 
 from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
-from polar.authz.service import Authz, Scope
+from polar.authz.scope import Scope
+from polar.authz.service import Authz
 from polar.exceptions import InternalServerError, Unauthorized
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,

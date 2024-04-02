@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.auth.service import AuthService
-from polar.authz.service import Scope
+from polar.authz.scope import Scope
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags

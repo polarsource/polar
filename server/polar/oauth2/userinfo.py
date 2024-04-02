@@ -1,8 +1,8 @@
 import typing
 
-from authlib.oauth2.rfc6749 import scope_to_list
 from authlib.oidc.core import UserInfo
 
+from polar.authz.scope import Scope, scope_to_list
 from polar.models import User
 
 
@@ -10,9 +10,9 @@ def generate_user_info(user: User, scope: str) -> UserInfo:
     scopes = scope_to_list(scope)
     claims: dict[str, typing.Any] = {"sub": str(user.id)}
     if scopes:
-        if "profile" in scopes:
+        if Scope.openid in scopes:
             claims.update({"name": user.username})
-        if "email" in scopes:
+        if Scope.email in scopes:
             claims.update({"email": user.email, "email_verified": user.email_verified})
     return UserInfo(**claims)
 

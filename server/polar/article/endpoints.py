@@ -3,7 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
-from polar.authz.service import AccessType, Authz, Scope
+from polar.authz.scope import Scope
+from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.utils import utc_now

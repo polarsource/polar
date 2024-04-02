@@ -7,7 +7,7 @@ from fastapi import Body, Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import Auth, WebOrAnonymous
 from polar.authz.service import AccessType, Authz
 from polar.enums import UserSignupType
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
@@ -31,6 +31,7 @@ from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
 
+from . import auth
 from .schemas import (
     FreeSubscriptionCreate,
     SubscribeSession,
@@ -72,12 +73,12 @@ router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 async def search_subscription_tiers(
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
+    auth: auth.TiersReadOrAnonymousAuth,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
     include_archived: bool = Query(False),
     type: SubscriptionTierType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[SubscriptionTierSchema]:
     organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
@@ -119,7 +120,7 @@ async def search_subscription_tiers(
 )
 async def lookup_subscription_tier(
     subscription_tier_id: UUID4,
-    auth: Auth = Depends(Auth.optional_user),
+    auth: auth.TiersReadOrAnonymousAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
@@ -140,7 +141,7 @@ async def lookup_subscription_tier(
 )
 async def create_subscription_tier(
     subscription_tier_create: SubscriptionTierCreate,
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
@@ -153,7 +154,7 @@ async def create_subscription_tier(
 async def update_subscription_tier(
     id: UUID4,
     subscription_tier_update: SubscriptionTierUpdate,
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
@@ -182,7 +183,7 @@ async def update_subscription_tier(
 )
 async def archive_subscription_tier(
     id: UUID4,
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
@@ -212,7 +213,7 @@ async def archive_subscription_tier(
 async def update_subscription_tier_benefits(
     id: UUID4,
     benefits_update: SubscriptionTierBenefitsUpdate,
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
@@ -243,7 +244,7 @@ async def update_subscription_tier_benefits(
     tags=[Tags.PUBLIC],
 )
 async def search_subscription_benefits(
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
@@ -293,7 +294,7 @@ async def search_subscription_benefits(
 )
 async def lookup_subscription_benefit(
     subscription_benefit_id: UUID4,
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionBenefit:
     subscription_benefit = await subscription_benefit_service.get_by_id(
@@ -313,7 +314,7 @@ async def lookup_subscription_benefit(
     tags=[Tags.PUBLIC],
 )
 async def create_subscription_benefit(
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     subscription_benefit_create: SubscriptionBenefitCreate = Body(
         ..., discriminator="type"
     ),
@@ -341,7 +342,7 @@ async def create_subscription_benefit(
 async def update_subscription_benefit(
     id: UUID4,
     subscription_benefit_update: SubscriptionBenefitUpdate,
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionBenefit:
@@ -371,7 +372,7 @@ async def update_subscription_benefit(
 @router.delete("/benefits/{id}", status_code=204, tags=[Tags.PUBLIC])
 async def delete_subscription_benefit(
     id: UUID4,
-    auth: UserRequiredAuth,
+    auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
@@ -403,7 +404,7 @@ async def delete_subscription_benefit(
 )
 async def create_subscribe_session(
     session_create: SubscribeSessionCreate,
-    auth: Auth = Depends(Auth.optional_user),
+    auth: Auth = Depends(WebOrAnonymous),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
@@ -458,7 +459,7 @@ async def get_subscribe_session(
     tags=[Tags.PUBLIC],
 )
 async def get_subscriptions_statistics(
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsRead,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     start_date: date = Query(...),
@@ -509,7 +510,7 @@ SearchSorting = Annotated[
     tags=[Tags.PUBLIC],
 )
 async def search_subscriptions(
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     organization_name_platform: OrganizationNamePlatform,
@@ -569,7 +570,7 @@ async def search_subscriptions(
     tags=[Tags.PUBLIC],
 )
 async def search_subscribed_subscriptions(
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     organization_name_platform: OptionalOrganizationNamePlatform,
@@ -632,7 +633,7 @@ async def search_subscribed_subscriptions(
 )
 async def create_free_subscription(
     free_subscription_create: FreeSubscriptionCreate,
-    auth: Auth = Depends(Auth.optional_user),
+    auth: Auth = Depends(WebOrAnonymous),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     subscription = await subscription_service.create_free_subscription(
@@ -665,7 +666,7 @@ async def create_free_subscription(
 )
 async def create_email_subscription(
     subscription_create: SubscriptionCreateEmail,
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsWrite,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     authz: Authz = Depends(Authz.authz),
@@ -727,7 +728,7 @@ async def create_email_subscription(
     tags=[Tags.PUBLIC],
 )
 async def subscriptions_import(
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsWrite,
     file: UploadFile,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
@@ -803,7 +804,7 @@ async def subscriptions_import(
     tags=[Tags.PUBLIC],
 )
 async def subscriptions_export(
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsRead,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     authz: Authz = Depends(Authz.authz),
@@ -873,7 +874,7 @@ async def subscriptions_export(
 async def upgrade_subscription(
     id: UUID4,
     subscription_upgrade: SubscriptionUpgrade,
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
@@ -897,7 +898,7 @@ async def upgrade_subscription(
 )
 async def cancel_subscription(
     id: UUID4,
-    auth: UserRequiredAuth,
+    auth: auth.SubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:

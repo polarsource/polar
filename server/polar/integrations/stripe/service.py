@@ -52,7 +52,6 @@ class StripeService:
         session: AsyncSession,
         *,
         amount: CurrencyAmount,
-        transfer_group: str | None = None,
         metadata: PledgePaymentIntentMetadata
         | DonationPaymentIntentMetadata
         | None = None,
@@ -66,9 +65,6 @@ class StripeService:
             "receipt_email": receipt_email,
             "description": description,
         }
-
-        if transfer_group:
-            params["transfer_group"] = transfer_group
 
         if metadata is not None:
             params["metadata"] = metadata.model_dump(exclude_none=True)
@@ -87,7 +83,6 @@ class StripeService:
         id: str,
         *,
         amount: CurrencyAmount,
-        transfer_group: str | None = None,
         metadata: PledgePaymentIntentMetadata
         | DonationPaymentIntentMetadata
         | None = None,
@@ -106,9 +101,6 @@ class StripeService:
 
         if description is not None:
             params["description"] = description
-
-        if transfer_group:
-            params["transfer_group"] = transfer_group
 
         if setup_future_usage is not None:
             params["setup_future_usage"] = setup_future_usage

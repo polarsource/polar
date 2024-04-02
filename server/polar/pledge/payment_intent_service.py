@@ -79,7 +79,6 @@ class PaymentIntentService:
         try:
             payment_intent = pledge_stripe_service.create_anonymous_intent(
                 amount=amount_including_fee,
-                transfer_group=str(intent.issue_id),
                 pledge_issue=pledge_issue,
                 pledge_issue_org=pledge_issue_org,
                 pledge_issue_repo=pledge_issue_repo,
@@ -114,7 +113,6 @@ class PaymentIntentService:
         payment_intent = await pledge_stripe_service.create_user_intent(
             session=session,
             amount=amount_including_fee,
-            transfer_group=str(intent.issue_id),
             pledge_issue=pledge_issue,
             pledge_issue_org=pledge_issue_org,
             pledge_issue_repo=pledge_issue_repo,

@@ -449,7 +449,7 @@ class PayoutTransactionService(BaseTransactionService):
                     account.stripe_id,
                     amount,
                     source_transaction=source_transaction,
-                    transfer_group=transfer_group,
+                    # transfer_group=transfer_group,
                     metadata={"payout_transaction_id": str(transaction.id)},
                 )
                 balance_transaction.transfer_id = stripe_transfer.id

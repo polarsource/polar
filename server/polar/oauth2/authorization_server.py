@@ -375,14 +375,18 @@ class AuthorizationServer(_AuthorizationServer):
     def revocation_endpoint_auth_methods_supported(self) -> list[str]:
         auth_methods: set[str] = set()
         for endpoint in self._endpoints.get(RevocationEndpoint.ENDPOINT_NAME, []):
-            auth_methods.union(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
+            auth_methods = auth_methods.union(
+                getattr(endpoint, "CLIENT_AUTH_METHODS", [])
+            )
         return list(auth_methods)
 
     @property
     def introspection_endpoint_auth_methods_supported(self) -> list[str]:
         auth_methods: set[str] = set()
         for endpoint in self._endpoints.get(IntrospectionEndpoint.ENDPOINT_NAME, []):
-            auth_methods.union(getattr(endpoint, "CLIENT_AUTH_METHODS", []))
+            auth_methods = auth_methods.union(
+                getattr(endpoint, "CLIENT_AUTH_METHODS", [])
+            )
         return list(auth_methods)
 
     @property
@@ -391,7 +395,7 @@ class AuthorizationServer(_AuthorizationServer):
         for _, extensions in self._authorization_grants:
             for extension in extensions:
                 if isinstance(extension, CodeChallenge):
-                    code_challenge_methods.union(
+                    code_challenge_methods = code_challenge_methods.union(
                         extension.SUPPORTED_CODE_CHALLENGE_METHOD
                     )
         return list(code_challenge_methods)

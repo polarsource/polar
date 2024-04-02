@@ -22,3 +22,8 @@ async def test_openid_configuration(client: AsyncClient) -> None:
     response = await client.get("/.well-known/openid-configuration")
 
     assert response.status_code == 200
+
+    json = response.json()
+    assert len(json["revocation_endpoint_auth_methods_supported"]) > 0
+    assert len(json["introspection_endpoint_auth_methods_supported"]) > 0
+    assert len(json["code_challenge_methods_supported"]) > 0

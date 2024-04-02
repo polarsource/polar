@@ -677,3 +677,61 @@ async def test_update_organization_profile_settings_links(
     )
 
     assert response.status_code == 422  # expect unprocessable entity
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
+async def test_donations_enabled(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"donations_enabled": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["donations_enabled"] is True
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"donations_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["donations_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["donations_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"donations_enabled": False},
+    )
+    assert response.status_code == 200
+    assert response.json()["donations_enabled"] is False
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"donations_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["donations_enabled"] is False  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["donations_enabled"] is False  # no change

@@ -226,6 +226,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
             organization.profile_settings = profile_settings.model_dump(mode="json")
 
+        if settings.donations_enabled is not None:
+            organization.donations_enabled = settings.donations_enabled
+
         session.add(organization)
 
         log.info(

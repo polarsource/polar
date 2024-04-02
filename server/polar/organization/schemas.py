@@ -161,6 +161,8 @@ class OrganizationUpdate(Schema):
     set_per_user_monthly_spending_limit: bool | None = None
     per_user_monthly_spending_limit: int | None = None
 
+    donations_enabled: bool | None = None
+
     profile_settings: OrganizationProfileSettingsUpdate | None = None
 
 

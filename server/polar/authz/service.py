@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Self
 from uuid import UUID
 
@@ -22,6 +22,8 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
+from .scope import Scope
+
 
 class Anonymous:
     ...
@@ -30,7 +32,7 @@ class Anonymous:
 Subject = User | Anonymous
 
 
-class AccessType(str, Enum):
+class AccessType(StrEnum):
     read = "read"
     write = "write"
 
@@ -48,12 +50,6 @@ Object = (
     | Subscription
     | Article
 )
-
-
-class Scope(str, Enum):
-    web_default = "web_default"  # Web default scope. For users logged in on the web.
-    articles_read = "articles:read"  # article read only scope (used by RSS auth)
-    user_read = "user:read"
 
 
 class ScopedSubject:

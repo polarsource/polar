@@ -13,11 +13,11 @@ import pytest
 
 from polar.app import app
 from polar.auth.dependencies import Auth
-from polar.authz.service import Scope, ScopedSubject
+from polar.authz.scope import SCOPES_SUPPORTED, Scope
+from polar.authz.service import ScopedSubject
 from polar.kit.db.postgres import Engine, Session
 from polar.models import Model, User
 from polar.oauth2.authorization_server import AuthorizationServer
-from polar.oauth2.constants import SCOPES_SUPPORTED
 from polar.oauth2.dependencies import get_authorization_server
 from polar.postgres import create_sync_engine
 from tests.fixtures.database import SaveFixture

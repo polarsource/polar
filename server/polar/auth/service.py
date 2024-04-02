@@ -5,7 +5,8 @@ import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
-from polar.authz.service import Scope, ScopedSubject
+from polar.authz.scope import Scope
+from polar.authz.service import ScopedSubject
 from polar.config import settings
 from polar.exceptions import BadRequest
 from polar.kit import jwt

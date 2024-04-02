@@ -4,7 +4,8 @@ from typing import Annotated, Self
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from polar.authz.service import Anonymous, Scope, ScopedSubject, Subject
+from polar.authz.scope import Scope
+from polar.authz.service import Anonymous, ScopedSubject, Subject
 from polar.config import settings
 from polar.exceptions import Unauthorized
 from polar.models import User

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
+from polar.authz.scope import SCOPES_SUPPORTED
 from polar.config import settings
 
 from . import constants
@@ -83,7 +84,7 @@ def get_server_metadata(
         jwks_uri=url_for("well_known.jwks"),
         userinfo_endpoint=url_for("oauth2.userinfo"),
         registration_endpoint=url_for("oauth2.register"),
-        scopes_supported=constants.SCOPES_SUPPORTED,
+        scopes_supported=SCOPES_SUPPORTED,
         response_types_supported=authorization_server.response_types_supported,
         response_modes_supported=authorization_server.response_modes_supported,
         grant_types_supported=authorization_server.grant_types_supported,

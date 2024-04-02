@@ -145,7 +145,7 @@ async def test_incorrect_scope(auth_jwt: str, client: AsyncClient) -> None:
         response.text
         == '{"detail":"Missing required scope: have=articles:read requires=web_default,user:read"}'
     )
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio

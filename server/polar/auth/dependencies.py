@@ -238,7 +238,7 @@ class AuthenticatedWithScope:
             )
 
         raise HTTPException(
-            status_code=401,
+            status_code=403,
             detail=f"Missing required scope: have={",".join(scoped_subject.scopes)} requires={",".join(self.required_scopes or [])}",
         )
 

@@ -56,6 +56,7 @@ export const org: Organization = {
   pledge_badge_show_amount: true,
   is_teams_enabled: false,
   profile_settings: {},
+  donations_enabled: false,
 }
 
 export const user: UserRead = {

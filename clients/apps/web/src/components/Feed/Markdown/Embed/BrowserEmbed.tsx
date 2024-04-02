@@ -78,6 +78,7 @@ const EmbedIssue = (props: { src: string }) => {
         pledge_minimum_amount: 0,
         pledge_badge_show_amount: false,
         is_teams_enabled: false,
+        donations_enabled: false,
       },
     },
     pledge_badge_currently_embedded: false,

@@ -17,6 +17,15 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     )
   }
 
+  if (!organization.donations_enabled) {
+    return (
+      <div className="w-full pt-8 text-center text-gray-500">
+        {organization.pretty_name ?? organization.name} does not accept
+        donations via Polar at this moment.
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-y-12">
       <div className="flex flex-col gap-y-2">

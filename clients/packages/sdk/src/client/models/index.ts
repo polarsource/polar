@@ -1532,10 +1532,10 @@ export interface AuthorizeResponse {
     client: OAuth2Client;
     /**
      * 
-     * @type {Array<string>}
+     * @type {Array<Scope>}
      * @memberof AuthorizeResponse
      */
-    scopes: Array<string>;
+    scopes: Array<Scope>;
 }
 /**
  * 
@@ -3519,31 +3519,6 @@ export interface ListResourceWebhookIntegration {
  */
 export type LocationInner = number | string;
 
-/**
- * 
- * @export
- * @interface LoginResponse
- */
-export interface LoginResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof LoginResponse
-     */
-    success: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof LoginResponse
-     */
-    expires_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof LoginResponse
-     */
-    token?: string;
-}
 /**
  * 
  * @export
@@ -6483,6 +6458,25 @@ export interface RewardsSummaryReceiver {
      */
     avatar_url?: string;
 }
+
+/**
+ * 
+ * @export
+ */
+export const Scope = {
+    OPENID: 'openid',
+    PROFILE: 'profile',
+    EMAIL: 'email',
+    WEB_DEFAULT: 'web_default',
+    ARTICLESREAD: 'articles:read',
+    USERREAD: 'user:read',
+    SUBSCRIPTION_TIERSREAD: 'subscription_tiers:read',
+    SUBSCRIPTION_TIERSWRITE: 'subscription_tiers:write',
+    SUBSCRIPTIONSREAD: 'subscriptions:read',
+    SUBSCRIPTIONSWRITE: 'subscriptions:write'
+} as const;
+export type Scope = typeof Scope[keyof typeof Scope];
+
 
 /**
  * 

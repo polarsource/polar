@@ -28,6 +28,8 @@ const GeneralSettings = () => {
     const t = localStorage.getItem('theme')
     if (t) {
       setTheme(t as Theme)
+    } else {
+      setTheme('system')
     }
   }
   useEffect(onInitialLoad, [])

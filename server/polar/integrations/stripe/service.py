@@ -222,6 +222,12 @@ class StripeService:
     def get_transfer(self, id: str) -> stripe_lib.Transfer:
         return stripe_lib.Transfer.retrieve(id)
 
+    def update_transfer(self, id: str, metadata: dict[str, str]) -> stripe_lib.Transfer:
+        update_params: stripe_lib.Transfer.ModifyParams = {
+            "metadata": metadata,
+        }
+        return stripe_lib.Transfer.modify(id, **update_params)
+
     def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return stripe_lib.Customer.retrieve(customer_id)
 

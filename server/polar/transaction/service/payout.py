@@ -460,6 +460,10 @@ class PayoutTransactionService(BaseTransactionService):
                 stripe_transfer = stripe_service.get_transfer(
                     balance_transaction.transfer_id
                 )
+                stripe_service.update_transfer(
+                    stripe_transfer.id,
+                    metadata={"payout_transaction_id": str(transaction.id)},
+                )
 
             # Different source and destination currencies: get the converted amount
             if transaction.currency != transaction.account_currency:

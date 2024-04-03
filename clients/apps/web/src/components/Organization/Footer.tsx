@@ -61,6 +61,9 @@ const Footer = ({
             <div className="flex flex-col gap-y-2">
               <FooterLink href="/careers">Careers</FooterLink>
               <FooterLink href="https://blog.polar.sh">Blog</FooterLink>
+              <FooterLink href="/assets/brand/polar_brand.zip">
+                Brand Assets
+              </FooterLink>
               <FooterLink href="https://polarsource.github.io/legal/terms.pdf">
                 Terms of Service
               </FooterLink>

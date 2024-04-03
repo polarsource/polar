@@ -3,6 +3,7 @@
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": [
     "POLAR_CUSTOM_DOMAIN_FORWARD_SECRET",
+    "GITHUB_TOKEN",
     "NODE_ENV",
     "NEXT_PUBLIC_API_URL",
     "NEXT_PUBLIC_STRIPE_KEY",

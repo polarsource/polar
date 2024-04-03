@@ -2180,6 +2180,43 @@ export interface DiscordGuildRole {
 /**
  * 
  * @export
+ * @interface Donation
+ */
+export interface Donation {
+    /**
+     * 
+     * @type {string}
+     * @memberof Donation
+     */
+    id: string;
+    /**
+     * 
+     * @type {CurrencyAmount}
+     * @memberof Donation
+     */
+    amount: CurrencyAmount;
+    /**
+     * 
+     * @type {string}
+     * @memberof Donation
+     */
+    message: string;
+    /**
+     * 
+     * @type {Donor}
+     * @memberof Donation
+     */
+    donor: Donor | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Donation
+     */
+    created_at: string;
+}
+/**
+ * 
+ * @export
  * @interface DonationCreateStripePaymentIntent
  */
 export interface DonationCreateStripePaymentIntent {
@@ -2248,6 +2285,43 @@ export interface DonationCurrencyAmount {
      * @memberof DonationCurrencyAmount
      */
     amount: number;
+}
+/**
+ * 
+ * @export
+ * @interface DonationOrganization
+ */
+export interface DonationOrganization {
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationOrganization
+     */
+    id: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof DonationOrganization
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationOrganization
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationOrganization
+     */
+    avatar_url: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof DonationOrganization
+     */
+    is_personal: boolean;
 }
 /**
  * 
@@ -2334,10 +2408,41 @@ export const DonationUpdateStripePaymentIntentSetupFutureUsageEnum = {
 export type DonationUpdateStripePaymentIntentSetupFutureUsageEnum = typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum[keyof typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum];
 
 /**
+ * 
+ * @export
+ * @interface DonationUser
+ */
+export interface DonationUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationUser
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationUser
+     */
+    public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationUser
+     */
+    avatar_url: string;
+}
+/**
  * @type Donor
  * @export
  */
-export type Donor = TransactionOrganization | TransactionUser;
+export type Donor = DonationOrganization | DonationUser;
+
+/**
+ * @type Donor1
+ * @export
+ */
+export type Donor1 = TransactionOrganization | TransactionUser;
 
 /**
  * 
@@ -3168,6 +3273,25 @@ export interface ListResourceBackofficeReward {
      * 
      * @type {Pagination}
      * @memberof ListResourceBackofficeReward
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceDonation
+ */
+export interface ListResourceDonation {
+    /**
+     * 
+     * @type {Array<Donation>}
+     * @memberof ListResourceDonation
+     */
+    items?: Array<Donation>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceDonation
      */
     pagination: Pagination;
 }
@@ -5085,6 +5209,12 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     per_user_monthly_spending_limit?: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    donations_enabled?: boolean;
     /**
      * 
      * @type {OrganizationProfileSettingsUpdate}
@@ -9534,10 +9664,10 @@ export interface TransactionDonation {
     to_organization?: TransactionOrganization;
     /**
      * 
-     * @type {Donor}
+     * @type {Donor1}
      * @memberof TransactionDonation
      */
-    donor?: Donor | null;
+    donor?: Donor1 | null;
     /**
      * 
      * @type {string}

@@ -13,6 +13,7 @@ import {
   SpaceDashboardOutlined,
   TuneOutlined,
   ViewDayOutlined,
+  VolunteerActivism,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
@@ -180,6 +181,27 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       {
         title: 'Subscribers',
         link: `/maintainer/${org.name}/subscriptions/subscribers`,
+      },
+    ],
+  },
+  {
+    id: 'donations',
+    title: 'Donations',
+    icon: <VolunteerActivism className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/donations/overview`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.name}/donations`)
+    },
+    if: true,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/donations/overview`,
+      },
+      {
+        title: 'Donors',
+        link: `/maintainer/${org.name}/donations/donors`,
       },
     ],
   },

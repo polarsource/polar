@@ -364,6 +364,155 @@ class TestSearch:
         assert 20 == count
         assert 4 == len(results)
 
+    async def test_pagination_private_repository(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        repository: Repository,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,  # joined data, make sure that it doesn't affect anything...
+    ) -> None:
+        repository.is_private = True
+        assert save_fixture(repository)
+
+        benefits = []
+        for _ in range(10):
+            benefits.append(
+                await create_subscription_benefit(save_fixture, repository=repository)
+            )
+
+        tiers = []
+        for _ in range(3):
+            tiers.append(
+                await create_subscription_tier(
+                    save_fixture,
+                    repository=repository,
+                )
+            )
+
+        # # and some archived tiers
+        for _ in range(4):
+            tiers.append(
+                await create_subscription_tier(
+                    save_fixture,
+                    repository=repository,
+                    is_archived=True,
+                )
+            )
+
+        # test that benefits doesn't affect pagination
+        for t in tiers:
+            await add_subscription_benefits(
+                save_fixture,
+                subscription_tier=t,
+                subscription_benefits=benefits,
+            )
+
+        # then
+        session.expunge_all()
+
+        # unauthenticated
+        results, count = await subscription_tier_service.search(
+            session,
+            Anonymous(),
+            pagination=PaginationParams(1, 8),
+            repository=repository,
+        )
+        assert 0 == count
+        assert 0 == len(results)
+
+        # authed, can see private and archived
+        results, count = await subscription_tier_service.search(
+            session,
+            user,
+            pagination=PaginationParams(1, 8),  # page 1, limit 8
+            include_archived=True,
+            repository=repository,
+        )
+
+        # TODO: FIX! include_archived=True does not work for archived tiers connected to repositories
+        assert 3 == count
+        assert 3 == len(results)
+
+    async def test_pagination_prices(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,  # joined data, make sure that it doesn't affect anything...
+    ) -> None:
+        benefits = []
+        for _ in range(10):
+            benefits.append(
+                await create_subscription_benefit(
+                    save_fixture, organization=organization
+                )
+            )
+
+        tiers = []
+        for _ in range(3):
+            tiers.append(
+                await create_subscription_tier(
+                    save_fixture,
+                    organization=organization,
+                    prices=[
+                        (1000, SubscriptionTierPriceRecurringInterval.month),
+                        (2000, SubscriptionTierPriceRecurringInterval.year),
+                    ],
+                )
+            )
+
+        # # and some archived tiers
+        for _ in range(4):
+            tiers.append(
+                await create_subscription_tier(
+                    save_fixture,
+                    organization=organization,
+                    is_archived=True,
+                    prices=[
+                        (1000, SubscriptionTierPriceRecurringInterval.month),
+                        (2000, SubscriptionTierPriceRecurringInterval.year),
+                    ],
+                )
+            )
+
+        # test that benefits doesn't affect pagination
+        for t in tiers:
+            await add_subscription_benefits(
+                save_fixture,
+                subscription_tier=t,
+                subscription_benefits=benefits,
+            )
+
+        # then
+        session.expunge_all()
+
+        # unauthenticated
+        results, count = await subscription_tier_service.search(
+            session,
+            Anonymous(),
+            pagination=PaginationParams(1, 8),
+            organization=organization,
+        )
+        assert 3 == count
+        assert 3 == len(results)
+
+        # authed, can see private and archived
+        results, count = await subscription_tier_service.search(
+            session,
+            user,
+            pagination=PaginationParams(1, 8),  # page 1, limit 8
+            include_archived=True,
+            organization=organization,
+        )
+
+        assert 7 == count
+        assert 7 == len(results)
+
 
 @pytest.mark.asyncio
 class TestGetById:

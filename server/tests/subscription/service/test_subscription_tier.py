@@ -249,6 +249,32 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == archived_subscription_tier.id
 
+    async def test_filter_include_archived_authed_non_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        archived_subscription_tier = await create_subscription_tier(
+            save_fixture, organization=organization, is_archived=True
+        )
+
+        # then
+        session.expunge_all()
+
+        # User
+        results, count = await subscription_tier_service.search(
+            session, user, include_archived=False, pagination=PaginationParams(1, 10)
+        )
+        assert count == 0
+        assert len(results) == 0
+        results, count = await subscription_tier_service.search(
+            session, user, include_archived=True, pagination=PaginationParams(1, 10)
+        )
+        assert count == 0
+        assert len(results) == 0
+
     async def test_pagination(
         self,
         session: AsyncSession,

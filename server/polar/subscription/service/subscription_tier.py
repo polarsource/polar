@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import ColumnExpressionArgument, Select, case, or_, select, update
+from sqlalchemy import ColumnExpressionArgument, Select, and_, case, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import aliased, contains_eager
 
@@ -489,22 +489,10 @@ class SubscriptionTierService(
                 RepositoryUserOrganization.user_id == auth_subject.id
             )
 
-        archived_clauses: list[ColumnExpressionArgument[bool]] = [
-            SubscriptionTier.is_archived.is_(False)
-        ]
-        if isinstance(auth_subject, User):
-            archived_clauses.append(UserOrganization.user_id == auth_subject.id)
-
-        return (
+        stmt = (
             select(SubscriptionTier)
             .join(SubscriptionTier.organization, full=True)
             .join(SubscriptionTier.repository, full=True)
-            .join(
-                UserOrganization,
-                onclause=UserOrganization.organization_id
-                == SubscriptionTier.organization_id,
-                full=True,
-            )
             .join(
                 RepositoryOrganization,
                 onclause=RepositoryOrganization.id == Repository.organization_id,
@@ -521,9 +509,28 @@ class SubscriptionTierService(
                 SubscriptionTier.id.is_not(None),
                 SubscriptionTier.deleted_at.is_(None),
                 or_(*private_repositories_clauses),
-                or_(*archived_clauses),
             )
         )
+
+        if isinstance(auth_subject, User):
+            stmt = stmt.join(
+                UserOrganization,
+                onclause=and_(
+                    UserOrganization.organization_id
+                    == SubscriptionTier.organization_id,
+                    UserOrganization.user_id == auth_subject.id,
+                ),
+                full=True,
+            ).where(
+                or_(
+                    SubscriptionTier.is_archived.is_(False),
+                    UserOrganization.user_id == auth_subject.id,
+                )
+            )
+        else:
+            stmt = stmt.where(SubscriptionTier.is_archived.is_(False))
+
+        return stmt
 
     async def get_managing_organization_account(
         self, session: AsyncSession, subscription_tier: SubscriptionTier

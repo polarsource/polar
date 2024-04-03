@@ -249,6 +249,95 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == archived_subscription_tier.id
 
+    async def test_pagination(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,  # joined data, make sure that it doesn't affect anything...
+    ) -> None:
+        benefits = []
+        for _ in range(10):
+            benefits.append(
+                await create_subscription_benefit(
+                    save_fixture, organization=organization
+                )
+            )
+
+        tiers = []
+        for _ in range(10):
+            tiers.append(
+                await create_subscription_tier(
+                    save_fixture,
+                    organization=organization,
+                )
+            )
+
+        # and some archived tiers
+        for _ in range(10):
+            tiers.append(
+                await create_subscription_tier(
+                    save_fixture,
+                    organization=organization,
+                    is_archived=True,
+                )
+            )
+
+        # test that benefits doesn't affect pagination
+        for t in tiers:
+            await add_subscription_benefits(
+                save_fixture,
+                subscription_tier=t,
+                subscription_benefits=benefits,
+            )
+
+        # then
+        session.expunge_all()
+
+        # unauthenticated
+        results, count = await subscription_tier_service.search(
+            session,
+            Anonymous(),
+            pagination=PaginationParams(1, 8),  # page 1, limit 8
+        )
+        assert 10 == count
+        assert 8 == len(results)
+        results, count = await subscription_tier_service.search(
+            session,
+            Anonymous(),
+            pagination=PaginationParams(2, 8),  # page 2, limit 8
+        )
+        assert 10 == count
+        assert 2 == len(results)
+
+        # authed, can see archived
+        results, count = await subscription_tier_service.search(
+            session,
+            user,
+            pagination=PaginationParams(1, 8),  # page 1, limit 8
+            include_archived=True,
+        )
+        assert 20 == count
+        assert 8 == len(results)
+        results, count = await subscription_tier_service.search(
+            session,
+            user,
+            pagination=PaginationParams(2, 8),  # page 2, limit 8
+            include_archived=True,
+        )
+        assert 20 == count
+        assert 8 == len(results)
+        results, count = await subscription_tier_service.search(
+            session,
+            user,
+            pagination=PaginationParams(3, 8),  # page 3, limit 8
+            include_archived=True,
+        )
+        assert 20 == count
+        assert 4 == len(results)
+
 
 @pytest.mark.asyncio
 class TestGetById:

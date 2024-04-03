@@ -28,7 +28,7 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
   const current = props.items.find((i) => i.isActive)
 
   return (
-    <Tabs defaultValue={current?.title}>
+    <Tabs value={current?.title}>
       <TabsList
         className="
           flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0"

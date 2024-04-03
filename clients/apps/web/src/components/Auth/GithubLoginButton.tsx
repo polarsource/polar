@@ -21,16 +21,14 @@ const GithubLoginButton = (props: {
     userSignupType: props.userSignupType,
   })
 
-  const largeStyle =
-    'bg-gray-900 text-white p-2.5 px-5 hover:bg-gray-700 rounded-full text-md dark:bg-polar-700 dark:text-polar-200 dark:hover:bg-polar-600 dark:hover:text-polar-50'
-  const smallStyle =
-    'bg-white text-gray-900 p-2 px-3 hover:bg-gray-100 rounded-full border text-sm dark:bg-polar-700 dark:text-polar-200 dark:hover:bg-polar-600 dark:hover:text-polar-50'
+  const largeStyle = 'p-2.5 px-5 text-md space-x-3'
+  const smallStyle = 'p-2 px-4 text-sm space-x-2'
 
   return (
     <a
       href={authorizeURL}
       className={twMerge(
-        `flex content-center items-center justify-center space-x-2 transition-colors duration-200
+        `flex content-center items-center justify-center rounded-full bg-blue-500 text-white transition-colors duration-200 hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white
         ${props.size === 'large' ? largeStyle : smallStyle}
         ${props.fullWidth ? 'w-full' : ''}
       `,

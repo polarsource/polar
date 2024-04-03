@@ -83,6 +83,7 @@ const webEnv = async ({
 
   const adds: Record<string, any> = {
     NEXT_PUBLIC_API_URL: `${ingressHostProto}`,
+    NEXT_PUBLIC_FRONTEND_BASE_URL: `${ingressHostProto}`,
   }
 
   if (app && app.id) {

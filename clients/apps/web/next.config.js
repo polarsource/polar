@@ -197,6 +197,11 @@ const nextConfig = {
             type: 'host',
             value: defaultFrontendHostname,
           },
+          {
+            type: 'header',
+            key: 'x-forwarded-host',
+            value: defaultFrontendHostname,
+          }
         ],
         permanent: false,
       },

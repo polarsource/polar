@@ -156,7 +156,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           return <span className="text-gray-300">-</span>
         }
 
-        return <p className="text-gray-700">"{message}"</p>
+        return <p className="text-gray-700">&quot;{message}&quot;</p>
       },
     },
   ]

@@ -9,8 +9,7 @@ from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 
 
-class BaseTransactionServiceError(PolarError):
-    ...
+class BaseTransactionServiceError(PolarError): ...
 
 
 class BaseTransactionService(ResourceServiceReader[Transaction]):

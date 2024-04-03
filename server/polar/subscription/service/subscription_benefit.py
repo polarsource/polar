@@ -41,8 +41,7 @@ from .subscription_benefit_grant import (
 )
 
 
-class SubscriptionBenefitError(PolarError):
-    ...
+class SubscriptionBenefitError(PolarError): ...
 
 
 class OrganizationDoesNotExist(SubscriptionBenefitError):

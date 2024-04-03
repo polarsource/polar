@@ -24,8 +24,7 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 log: Logger = structlog.get_logger()
 
 
-class BalanceTransactionError(BaseTransactionServiceError):
-    ...
+class BalanceTransactionError(BaseTransactionServiceError): ...
 
 
 class PaymentTransactionForChargeDoesNotExist(BalanceTransactionError):

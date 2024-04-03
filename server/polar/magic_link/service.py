@@ -20,8 +20,7 @@ from polar.user.service import user as user_service
 from .schemas import MagicLinkCreate, MagicLinkSource, MagicLinkUpdate
 
 
-class MagicLinkError(PolarError):
-    ...
+class MagicLinkError(PolarError): ...
 
 
 class InvalidMagicLink(MagicLinkError):

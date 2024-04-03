@@ -50,8 +50,7 @@ MAX_RETRIES = 5
 DELAY = 10
 
 
-class StripeTaskError(PolarError):
-    ...
+class StripeTaskError(PolarError): ...
 
 
 class UnsetAccountOnPayoutEvent(StripeTaskError):

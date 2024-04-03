@@ -25,8 +25,7 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 log: Logger = structlog.get_logger()
 
 
-class PlatformFeeTransactionError(BaseTransactionServiceError):
-    ...
+class PlatformFeeTransactionError(BaseTransactionServiceError): ...
 
 
 class DanglingBalanceTransactions(PlatformFeeTransactionError):

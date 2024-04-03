@@ -11,8 +11,7 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 from .service import user as user_service
 
 
-class UserTaskError(PolarError):
-    ...
+class UserTaskError(PolarError): ...
 
 
 class UserDoesNotExist(UserTaskError):

@@ -89,8 +89,7 @@ from .subscription_tier_price import (
 )
 
 
-class SubscriptionError(PolarError):
-    ...
+class SubscriptionError(PolarError): ...
 
 
 class AssociatedSubscriptionTierPriceDoesNotExist(SubscriptionError):
@@ -187,13 +186,11 @@ class EndDateInTheFuture(SubscriptionError):
 
 
 @overload
-def _from_timestamp(t: int) -> datetime:
-    ...
+def _from_timestamp(t: int) -> datetime: ...
 
 
 @overload
-def _from_timestamp(t: None) -> None:
-    ...
+def _from_timestamp(t: None) -> None: ...
 
 
 def _from_timestamp(t: int | None) -> datetime | None:

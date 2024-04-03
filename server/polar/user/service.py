@@ -20,8 +20,7 @@ from .schemas import UserCreate, UserUpdate, UserUpdateSettings
 log: Logger = structlog.get_logger()
 
 
-class UserError(PolarError):
-    ...
+class UserError(PolarError): ...
 
 
 class InvalidAccount(UserError):

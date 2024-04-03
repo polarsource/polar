@@ -34,8 +34,7 @@ from .utils import (
 log = structlog.get_logger()
 
 
-class GitHubTasksWebhookError(PolarError):
-    ...
+class GitHubTasksWebhookError(PolarError): ...
 
 
 class UnknownRepositoryTransferOrganization(GitHubTasksWebhookError):

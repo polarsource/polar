@@ -25,8 +25,7 @@ from polar.postgres import AsyncSession
 log: Logger = structlog.get_logger()
 
 
-class GitHubError(PolarError):
-    ...
+class GitHubError(PolarError): ...
 
 
 class GitHubRepositoryBenefitAccountNotConnected(GitHubError):
@@ -200,7 +199,12 @@ class GitHubRepositoryBenefitUserService:
         if not isinstance(installation.account, types.SimpleUser):
             return None
 
-        plan: types.PublicUserPropPlan | types.PrivateUserPropPlan | types.OrganizationFullPropPlan | None = None
+        plan: (
+            types.PublicUserPropPlan
+            | types.PrivateUserPropPlan
+            | types.OrganizationFullPropPlan
+            | None
+        ) = None
 
         if installation.target_type == "User":
             user_client = github.get_client(access_token=oauth.access_token)

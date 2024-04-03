@@ -194,8 +194,7 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
         return create
 
 
-class PullRequestUpdate(FullPullRequestCreate):
-    ...
+class PullRequestUpdate(FullPullRequestCreate): ...
 
 
 class PullRequestRead(FullPullRequestCreate):

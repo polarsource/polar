@@ -10,8 +10,7 @@ from polar.postgres import AsyncSession
 from .base import BaseTransactionService, BaseTransactionServiceError
 
 
-class ProcessorFeeTransactionError(BaseTransactionServiceError):
-    ...
+class ProcessorFeeTransactionError(BaseTransactionServiceError): ...
 
 
 class UnsupportedStripeFeeType(ProcessorFeeTransactionError):

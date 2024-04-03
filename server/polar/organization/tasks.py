@@ -15,8 +15,7 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 from .service import organization as organization_service
 
 
-class OrganizationTaskError(PolarError):
-    ...
+class OrganizationTaskError(PolarError): ...
 
 
 class OrganizationDoesNotExist(OrganizationTaskError):

@@ -31,8 +31,7 @@ from .transaction import transaction as transaction_service
 log: Logger = structlog.get_logger()
 
 
-class PayoutTransactionError(BaseTransactionServiceError):
-    ...
+class PayoutTransactionError(BaseTransactionServiceError): ...
 
 
 class InsufficientBalance(PayoutTransactionError):

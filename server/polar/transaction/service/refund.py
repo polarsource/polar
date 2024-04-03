@@ -14,8 +14,7 @@ from .processor_fee import (
 )
 
 
-class RefundTransactionError(BaseTransactionServiceError):
-    ...
+class RefundTransactionError(BaseTransactionServiceError): ...
 
 
 class RefundUnknownPaymentTransaction(RefundTransactionError):

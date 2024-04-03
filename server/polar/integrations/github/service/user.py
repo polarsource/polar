@@ -30,8 +30,7 @@ GithubUser = types.PrivateUser | types.PublicUser
 GithubEmail = tuple[str, bool]
 
 
-class GithubUserServiceError(PolarError):
-    ...
+class GithubUserServiceError(PolarError): ...
 
 
 class NoPrimaryEmailError(GithubUserServiceError):

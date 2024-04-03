@@ -17,8 +17,7 @@ from .schemas import DiscordGuild, DiscordGuildRole
 log: Logger = structlog.get_logger()
 
 
-class DiscordError(PolarError):
-    ...
+class DiscordError(PolarError): ...
 
 
 class DiscordAccountNotConnected(DiscordError):

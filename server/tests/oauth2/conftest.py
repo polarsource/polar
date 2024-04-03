@@ -6,6 +6,7 @@ It's a bit tricky since we need to handle a synchronous database session.
 Bear in mind that there are lot of gotchas, especially if you try to rely on a DB
 state that's managed by the async database session.
 """
+
 import os
 from collections.abc import Iterator
 

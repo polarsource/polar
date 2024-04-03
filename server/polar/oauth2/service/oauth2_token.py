@@ -10,8 +10,7 @@ from polar.models import OAuth2Token
 from polar.postgres import AsyncSession
 
 
-class OAuth2TokenError(PolarError):
-    ...
+class OAuth2TokenError(PolarError): ...
 
 
 class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):

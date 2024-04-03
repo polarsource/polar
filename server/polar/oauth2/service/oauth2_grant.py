@@ -8,8 +8,7 @@ from polar.kit.services import ResourceServiceReader
 from polar.models import OAuth2Grant
 
 
-class OAuth2GrantError(PolarError):
-    ...
+class OAuth2GrantError(PolarError): ...
 
 
 class OAuth2GrantService(ResourceServiceReader[OAuth2Grant]):

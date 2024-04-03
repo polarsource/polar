@@ -215,8 +215,7 @@ class AuthorizationServer(_AuthorizationServer):
 
         def create_endpoint_response(
             self, name: str, request: Request | None = None
-        ) -> Response:
-            ...
+        ) -> Response: ...
 
     def __init__(
         self,

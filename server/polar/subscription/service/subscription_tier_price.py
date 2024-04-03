@@ -9,8 +9,7 @@ from polar.models import (
 )
 
 
-class SubscriptionTierPriceError(PolarError):
-    ...
+class SubscriptionTierPriceError(PolarError): ...
 
 
 class SubscriptionTierPriceService(ResourceServiceReader[SubscriptionTierPrice]):

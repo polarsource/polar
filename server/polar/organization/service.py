@@ -28,8 +28,7 @@ from .schemas import (
 log = structlog.get_logger()
 
 
-class OrganizationError(PolarError):
-    ...
+class OrganizationError(PolarError): ...
 
 
 class InvalidAccount(OrganizationError):

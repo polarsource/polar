@@ -21,8 +21,7 @@ from .processor_fee import (
 )
 
 
-class PaymentTransactionError(BaseTransactionServiceError):
-    ...
+class PaymentTransactionError(BaseTransactionServiceError): ...
 
 
 class SubscriptionDoesNotExist(PaymentTransactionError):

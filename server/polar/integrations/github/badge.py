@@ -86,12 +86,7 @@ class GithubBadge:
         )
 
     def generate_funding_url(self) -> str:
-        return "{base}/{org}/{repo}/issues/{number}".format(
-            base=settings.FRONTEND_BASE_URL,
-            org=self.organization.name,
-            repo=self.repository.name,
-            number=self.issue.number,
-        )
+        return f"{settings.FRONTEND_BASE_URL}/{self.organization.name}/{self.repository.name}/issues/{self.issue.number}"
 
     def badge_markdown(self, message: str) -> str:
         funding_url = self.generate_funding_url()

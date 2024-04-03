@@ -28,8 +28,7 @@ async def paginate(
     *,
     pagination: PaginationParams,
     count_clause: _ColumnsClauseArgument[Any] | None = None,
-) -> tuple[Sequence[M], int]:
-    ...
+) -> tuple[Sequence[M], int]: ...
 
 
 @overload
@@ -39,8 +38,7 @@ async def paginate(
     *,
     pagination: PaginationParams,
     count_clause: _ColumnsClauseArgument[Any] | None = None,
-) -> tuple[Sequence[T], int]:
-    ...
+) -> tuple[Sequence[T], int]: ...
 
 
 async def paginate(

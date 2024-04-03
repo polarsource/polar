@@ -25,8 +25,7 @@ from polar.user_organization.service import (
 from .scope import Scope
 
 
-class Anonymous:
-    ...
+class Anonymous: ...
 
 
 Subject = User | Anonymous

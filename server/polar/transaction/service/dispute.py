@@ -17,8 +17,7 @@ from .processor_fee import (
 )
 
 
-class DisputeTransactionError(BaseTransactionServiceError):
-    ...
+class DisputeTransactionError(BaseTransactionServiceError): ...
 
 
 class DisputeUnknownPaymentTransaction(DisputeTransactionError):

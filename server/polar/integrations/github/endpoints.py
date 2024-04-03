@@ -68,8 +68,7 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 )
 
 
-class OAuthCallbackError(PolarRedirectionError):
-    ...
+class OAuthCallbackError(PolarRedirectionError): ...
 
 
 class NotPermittedOrganizationBillingPlan(NotPermitted):

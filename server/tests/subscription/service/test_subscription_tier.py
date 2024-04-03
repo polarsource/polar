@@ -854,9 +854,9 @@ class TestUserUpdate:
             save_fixture, organization=organization, is_highlighted=True
         )
 
-        create_price_for_product_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_price_for_product
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
         create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
 
         # then

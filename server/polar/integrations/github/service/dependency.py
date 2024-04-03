@@ -58,9 +58,7 @@ class GitHubIssueDependenciesService:
                 # sync it
                 continue
 
-            lock_key = "sync_external_{}_{}_{}".format(
-                dependency.owner, dependency.repo, dependency.number
-            )
+            lock_key = f"sync_external_{dependency.owner}_{dependency.repo}_{dependency.number}"
             async with locker.lock(lock_key, timeout=10.0, blocking_timeout=10.0):
                 try:
                     dependency_issue = (

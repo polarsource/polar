@@ -29,8 +29,7 @@ from .service.subscription_tier_price import (
 log: Logger = structlog.get_logger()
 
 
-class SubscriptionTaskError(PolarError):
-    ...
+class SubscriptionTaskError(PolarError): ...
 
 
 class SubscriptionDoesNotExist(SubscriptionTaskError):

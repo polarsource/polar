@@ -19,8 +19,7 @@ from .subscription import subscription as subscription_service
 from .subscription_tier import subscription_tier as subscription_tier_service
 
 
-class SubscribeSessionError(PolarError):
-    ...
+class SubscribeSessionError(PolarError): ...
 
 
 class FreeSubscriptionTier(SubscribeSessionError):

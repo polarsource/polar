@@ -17,8 +17,7 @@ from polar.notifications.notification import (
 from polar.postgres import AsyncSession
 
 
-class SubscriptionBenefitServiceError(PolarError):
-    ...
+class SubscriptionBenefitServiceError(PolarError): ...
 
 
 class SubscriptionBenefitPropertyValidationError(TypedDict):

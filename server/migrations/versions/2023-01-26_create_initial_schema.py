@@ -19,6 +19,7 @@ Suffixes:
 See:
 https://stackoverflow.com/questions/4107915/postgresql-default-constraint-names/4108266#4108266
 """
+
 from typing import Any
 
 import sqlalchemy as sa

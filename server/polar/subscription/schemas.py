@@ -34,8 +34,7 @@ BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 # SubscriptionBenefitProperties
 
 
-class SubscriptionBenefitProperties(Schema):
-    ...
+class SubscriptionBenefitProperties(Schema): ...
 
 
 ## Custom
@@ -387,17 +386,16 @@ class SubscriptionTierUpdate(Schema):
         default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
     )
     is_highlighted: bool | None = None
-    prices: list[
-        ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate
-    ] | None = Field(default=None, min_length=1)
+    prices: list[ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate] | None = (
+        Field(default=None, min_length=1)
+    )
 
 
 class SubscriptionTierBenefitsUpdate(Schema):
     benefits: list[UUID4]
 
 
-class SubscriptionTierBenefit(SubscriptionBenefitBase):
-    ...
+class SubscriptionTierBenefit(SubscriptionBenefitBase): ...
 
 
 class SubscriptionTierPrice(TimestampedSchema):

@@ -38,8 +38,7 @@ from ...widgets.header import PolarHeader
 
 
 class PledgeReward(Widget):
-    class Updated(Message):
-        ...
+    class Updated(Message): ...
 
     def __init__(
         self,
@@ -164,8 +163,7 @@ class PledgeRewards(Widget):
 
 
 class PledgeContainer(Widget):
-    class Updated(Message):
-        ...
+    class Updated(Message): ...
 
     def __init__(
         self,

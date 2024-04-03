@@ -73,9 +73,9 @@ class PostHogIntegration(Integration):
                         else global_posthog.host
                     )
 
-                    event["tags"][
-                        "PostHog URL"
-                    ] = f"{host or DEFAULT_HOST}/person/{posthog_distinct_id}"
+                    event["tags"]["PostHog URL"] = (
+                        f"{host or DEFAULT_HOST}/person/{posthog_distinct_id}"
+                    )
 
                     properties = {
                         "$sentry_event_id": event["event_id"],

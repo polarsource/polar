@@ -19,8 +19,7 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 from .service import account as account_service
 
 
-class AccountTaskError(PolarError):
-    ...
+class AccountTaskError(PolarError): ...
 
 
 class AccountDoesNotExist(AccountTaskError):

@@ -37,9 +37,9 @@ def _load_production_environment(
             if environment_group["name"] not in ENVIRONMENT_GROUPS:
                 continue
             for environment_variable in environment_group["envVars"]:
-                environment_variables[
-                    environment_variable["key"]
-                ] = environment_variable["value"]
+                environment_variables[environment_variable["key"]] = (
+                    environment_variable["value"]
+                )
 
         response = client.get(f"/services/{render_service_id}/env-vars")
         response.raise_for_status()

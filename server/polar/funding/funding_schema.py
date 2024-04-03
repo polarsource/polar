@@ -4,6 +4,7 @@ only `Funding` to avoid circular imports.
 The goal is to remove it whenever possible
 in favor of the API implemented in this package.
 """
+
 from pydantic import Field
 
 from polar.currency.schemas import CurrencyAmount

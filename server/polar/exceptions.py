@@ -21,8 +21,7 @@ class PolarError(Exception):
         self.status_code = status_code
 
 
-class PolarTaskError(PolarError):
-    ...
+class PolarTaskError(PolarError): ...
 
 
 class PolarRedirectionError(PolarError):
@@ -65,8 +64,7 @@ class InternalServerError(PolarError):
         super().__init__(message, status_code)
 
 
-class StripeError(PolarError):
-    ...
+class StripeError(PolarError): ...
 
 
 class ResourceNotFound(PolarError):

@@ -1127,9 +1127,9 @@ class TestCreateSubscribeSession:
         subscription_tier_organization: SubscriptionTier,
         stripe_service_mock: MagicMock,
     ) -> None:
-        create_subscription_checkout_session_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_subscription_checkout_session
+        create_subscription_checkout_session_mock: MagicMock = (
+            stripe_service_mock.create_subscription_checkout_session
+        )
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             id="SESSION_ID",
             url="STRIPE_URL",
@@ -1161,9 +1161,9 @@ class TestCreateSubscribeSession:
         subscription_tier_repository: SubscriptionTier,
         stripe_service_mock: MagicMock,
     ) -> None:
-        create_subscription_checkout_session_mock: (
-            MagicMock
-        ) = stripe_service_mock.create_subscription_checkout_session
+        create_subscription_checkout_session_mock: MagicMock = (
+            stripe_service_mock.create_subscription_checkout_session
+        )
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             id="SESSION_ID",
             url="STRIPE_URL",

@@ -47,13 +47,11 @@ class UserRead(UserBase, TimestampedSchema):
 
 
 # TODO: remove
-class UserCreate(UserBase):
-    ...
+class UserCreate(UserBase): ...
 
 
 # TODO: remove
-class UserUpdate(UserBase):
-    ...
+class UserUpdate(UserBase): ...
 
 
 class UserUpdateSettings(Schema):

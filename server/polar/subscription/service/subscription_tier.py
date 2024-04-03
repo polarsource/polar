@@ -38,8 +38,7 @@ from ..schemas import (
 from .subscription_benefit import subscription_benefit as subscription_benefit_service
 
 
-class SubscriptionTierError(PolarError):
-    ...
+class SubscriptionTierError(PolarError): ...
 
 
 class OrganizationDoesNotExist(SubscriptionTierError):

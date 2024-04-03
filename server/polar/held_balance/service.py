@@ -22,8 +22,7 @@ from polar.transaction.service.platform_fee import (
 log: Logger = structlog.get_logger()
 
 
-class HeldBalanceError(PolarError):
-    ...
+class HeldBalanceError(PolarError): ...
 
 
 class HeldBalanceService(ResourceServiceReader[HeldBalance]):

@@ -180,8 +180,7 @@ class RepositoryCreate(Schema):
         )
 
 
-class RepositoryGitHubUpdate(RepositoryCreate):
-    ...
+class RepositoryGitHubUpdate(RepositoryCreate): ...
 
 
 class RepositoryLegacyRead(Schema):

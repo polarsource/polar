@@ -20,8 +20,7 @@ from .service.processor_fee import (
 )
 
 
-class TransactionTaskError(PolarError):
-    ...
+class TransactionTaskError(PolarError): ...
 
 
 class PayoutDoesNotExist(TransactionTaskError):

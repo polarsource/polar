@@ -375,8 +375,7 @@ class IssueCreate(IssueAndPullRequestBase):
         return ret
 
 
-class IssueUpdate(IssueCreate):
-    ...
+class IssueUpdate(IssueCreate): ...
 
 
 class IssueRead(IssueCreate):

@@ -81,7 +81,6 @@ def create_github_repository(
         private=private,
         # dummy values
         license_=None,
-        organization=None,
         forks=0,
         permissions=types.RepositoryPropPermissions(
             admin=True,
@@ -159,7 +158,6 @@ def create_github_repository(
         created_at=None,
         updated_at=None,
         allow_rebase_merge=True,
-        template_repository=None,
         temp_clone_token=None,
         allow_squash_merge=True,
         allow_auto_merge=True,
@@ -173,8 +171,6 @@ def create_github_repository(
         allow_merge_commit=True,
         allow_forking=True,
         web_commit_signoff_required=True,
-        subscribers_count=123,
-        network_count=123,
         open_issues=123,
         watchers=123,
         master_branch="main",

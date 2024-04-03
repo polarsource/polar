@@ -1,3 +1,4 @@
+import { ResponseError } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSideAPI } from './utils/api'
 import { defaultApiUrl, defaultFrontendHostname } from './utils/domain'
@@ -42,14 +43,6 @@ export async function middleware(request: NextRequest) {
     return
   }
 
-  const api = getServerSideAPI()
-  const org = await api.organizations.lookup({
-    customDomain: hostname,
-  })
-  if (!org) {
-    return
-  }
-
   const noRewrirePrefixes = ['/subscribe/success']
 
   // No redirect prefixes
@@ -59,9 +52,23 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.rewrite(
-    new URL(`/${org.name}${url.pathname}`, request.url),
-  )
+  const api = getServerSideAPI()
+  try {
+    const org = await api.organizations.lookup({
+      customDomain: hostname,
+    })
+    return NextResponse.rewrite(
+      new URL(`/${org.name}${url.pathname}`, request.url),
+    )
+  } catch (e) {
+    if (e instanceof ResponseError) {
+      console.error(
+        `middleware.ts: error while fetching custom domain organization: ${e.response.status}`,
+      )
+    } else {
+      console.error(e)
+    }
+  }
 }
 
 async function customDomainApiProxy(

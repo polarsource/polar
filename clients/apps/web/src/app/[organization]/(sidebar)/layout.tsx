@@ -1,3 +1,4 @@
+import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
@@ -126,12 +127,7 @@ export default async function Layout({
           <div className="flex h-full w-full flex-col gap-y-8 md:gap-y-16 md:py-12">
             <div className="flex w-full flex-row flex-wrap items-center justify-between gap-x-8 gap-y-4">
               <div className="flex w-full flex-row items-center gap-x-6 overflow-x-auto md:w-fit md:overflow-x-visible">
-                <a className="hidden md:flex" href="/">
-                  <LogoIcon
-                    className="text-blue-500 dark:text-blue-400"
-                    size={40}
-                  />
-                </a>
+                <BrandingMenu />
                 <div className="flex w-full flex-row items-center pb-2 md:pb-0">
                   <OrganizationPublicPageNav organization={organization} />
                 </div>

@@ -7,11 +7,5 @@
   "access": "restricted",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "chrome-extension",
-    "setup-github",
-    "web",
-    "astro-example",
-    "next-js-example"
-  ]
+  "ignore": ["setup-github", "web", "astro-example", "next-js-example"]
 }

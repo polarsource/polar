@@ -13,6 +13,7 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useUpdateOrganization } from 'polarkit/hooks'
+import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 
 export default function ClientPage({
@@ -78,11 +79,8 @@ export default function ClientPage({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {donations.map((donation) => (
-                <div
-                  key={donation.id}
-                  className="flex flex-row items-center justify-between"
-                >
-                  <div className="flex flex-row items-center justify-center gap-2">
+                <div key={donation.id} className="flex flex-row items-center">
+                  <div className="flex flex-1 flex-row items-center gap-2">
                     {donation.donor ? (
                       <>
                         {'is_personal' in donation.donor ? (
@@ -123,7 +121,7 @@ export default function ClientPage({
                           )}{' '}
                         </>
                       ) : (
-                        <div className="font-medium">Anonymous</div>
+                        <div className="fw-medium">{donation.email}</div>
                       )}
 
                       <div className="dark:text-polar-500 text-xs text-gray-400">
@@ -134,6 +132,14 @@ export default function ClientPage({
 
                   <div className="text-sm text-gray-600">
                     &quot;{donation.message}&quot;
+                  </div>
+
+                  <div className="ml-4 flex  flex-shrink-0  items-center justify-between gap-3">
+                    <div className="dark:text-polar-950 inline-flex gap-1 whitespace-nowrap rounded-xl bg-green-500 px-3 py-1 text-xs text-white">
+                      <div>
+                        ${getCentsInDollarString(donation.amount.amount)}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

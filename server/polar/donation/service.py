@@ -1,8 +1,9 @@
 from collections.abc import Sequence
-from typing import Literal
+from enum import StrEnum
+from typing import Any, Literal
 
 import stripe as stripe_lib
-from sqlalchemy import desc
+from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
@@ -15,6 +16,7 @@ from polar.integrations.stripe.schemas import (
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.money import get_cents_in_dollar_string
 from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.sorting import Sorting
 from polar.models.donation import Donation
 from polar.models.held_balance import HeldBalance
 from polar.models.organization import Organization
@@ -38,6 +40,11 @@ from polar.transaction.service.platform_fee import (
 from polar.user.service import user as user_service
 
 
+class SearchSortProperty(StrEnum):
+    amount = "amount"
+    created_at = "created_at"
+
+
 class DonationService:
     async def get_by_payment_id(
         self, session: AsyncSession, id: str
@@ -56,6 +63,9 @@ class DonationService:
         *,
         to_organization: Organization,
         pagination: PaginationParams,
+        sorting: list[Sorting[SearchSortProperty]] = [
+            (SearchSortProperty.created_at, True)
+        ],
     ) -> tuple[Sequence[Donation], int]:
         statement = (
             sql.select(Donation)
@@ -68,7 +78,15 @@ class DonationService:
             )
         )
 
-        statement = statement.order_by(desc(Donation.created_at))
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SearchSortProperty.amount:
+                order_by_clauses.append(clause_function(Donation.amount_received))
+            if criterion == SearchSortProperty.created_at:
+                order_by_clauses.append(clause_function(Donation.created_at))
+
+        statement = statement.order_by(*order_by_clauses)
 
         results, count = await paginate(session, statement, pagination=pagination)
 

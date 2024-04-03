@@ -1,12 +1,12 @@
 'use client'
 
+import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { Organization, UserRead } from '@polar-sh/sdk'
+import { Organization, UserRead, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { getGitHubAuthorizeURL } from 'polarkit/auth'
+import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { CONFIG } from 'polarkit/config'
 
@@ -20,7 +20,8 @@ export const PolarMenu = ({
   organization: Organization
 }) => {
   const pathname = usePathname()
-  const returnTo = pathname ?? '/feed'
+  const loginReturnTo = pathname ?? '/feed'
+  const createWithPolarReturnTo = '/maintainer'
 
   // Fallback to client side user loading (needed as we're loading data in the layout, and it isn't refreshed on navigation)
   const { currentUser: clientCurrentUser } = useAuth()
@@ -42,11 +43,11 @@ export const PolarMenu = ({
 
   // Login through polar.sh with auth forwarding if on custom domain
   const loginLink = currentOrg.custom_domain
-    ? `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${returnTo}&for_organization_id=${currentOrg.id}`
-    : `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${returnTo}`
+    ? `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}&for_organization_id=${currentOrg.id}`
+    : `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}`
 
   return (
-    <div className="flex flex-row items-center gap-x-4">
+    <div className="flex flex-row items-center gap-x-6">
       {authenticatedUser ? (
         <div>
           <div className="relative flex w-max flex-shrink-0 flex-row items-center justify-between gap-x-6">
@@ -71,7 +72,7 @@ export const PolarMenu = ({
         </div>
       ) : (
         <>
-          <CreateWithPolar returnTo={returnTo} />
+          <CreateWithPolar returnTo={createWithPolarReturnTo} />
           <Link
             href={loginLink}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
@@ -85,17 +86,11 @@ export const PolarMenu = ({
 }
 
 const CreateWithPolar = ({ returnTo }: { returnTo: string }) => {
-  const search = useSearchParams()
-  const authorizeURL = getGitHubAuthorizeURL({
-    paymentIntentId: search?.get('payment_intent_id') ?? undefined,
-    returnTo: returnTo,
-  })
-
   return (
-    <a href={authorizeURL}>
-      <Button variant="secondary" asChild>
-        Create with Polar
-      </Button>
-    </a>
+    <GithubLoginButton
+      text="Create with Polar"
+      returnTo={returnTo}
+      userSignupType={UserSignupType.MAINTAINER}
+    />
   )
 }

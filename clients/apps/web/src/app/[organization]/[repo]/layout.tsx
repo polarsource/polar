@@ -1,3 +1,4 @@
+import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
 import { getServerSideAPI } from '@/utils/api'
 import { Organization, Platforms, Repository, UserRead } from '@polar-sh/sdk'
@@ -95,10 +96,7 @@ export default async function Layout({
           </div>
           <div className="jusitfy-between flex w-full flex-row items-center gap-x-10">
             <div className="flex w-full flex-row items-center gap-x-8">
-              <LogoIcon
-                className="hidden text-blue-500 md:block dark:text-blue-400"
-                size={40}
-              />
+              <BrandingMenu />
               <Link className="-mr-4" href={organizationPageLink(organization)}>
                 <Avatar
                   className="h-8 w-8"

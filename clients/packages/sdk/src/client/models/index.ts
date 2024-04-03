@@ -2212,6 +2212,12 @@ export interface Donation {
      * @type {string}
      * @memberof Donation
      */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Donation
+     */
     created_at: string;
 }
 /**

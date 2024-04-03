@@ -94,7 +94,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: donation } }) => {
         if (!donation.donor) {
-          return <div className="flex flex-row items-center gap-2"></div>
+          return (
+            <div className="flex flex-row items-center gap-2">
+              <div className="fw-medium">{donation.email}</div>
+            </div>
+          )
         }
 
         if ('is_personal' in donation.donor) {
@@ -105,6 +109,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 name={donation.donor.name}
               />
               <div className="fw-medium">{donation.donor.name}</div>
+              <div className="fw-medium">{donation.email}</div>
             </div>
           )
         }
@@ -116,6 +121,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               name={donation.donor.public_name}
             />
             <div className="fw-medium">{donation.donor.public_name}</div>
+            <div className="fw-medium">{donation.email}</div>
           </div>
         )
       },

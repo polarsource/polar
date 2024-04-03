@@ -31,6 +31,7 @@ class Donation(Schema):
     amount: CurrencyAmount
     message: str | None
     donor: DonationOrganization | DonationUser | None
+    email: str
     created_at: datetime.datetime
 
     @classmethod
@@ -52,6 +53,7 @@ class Donation(Schema):
             message=i.message,
             donor=donor,
             created_at=i.created_at,
+            email=i.email,
         )
 
 

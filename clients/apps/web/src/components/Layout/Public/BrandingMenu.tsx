@@ -35,10 +35,11 @@ export const BrandingMenu = () => {
 
   const handleCopyLogoToClipboard = useCallback(() => {
     navigator.clipboard.writeText(PolarLogoSVGString)
+    setBrandingMenuOpen(false)
   }, [])
 
   return (
-    <div ref={brandingMenuRef} className="relative flex flex-row items-center">
+    <div className="relative flex flex-row items-center">
       <DropdownMenu open={brandingMenuOpen}>
         <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
           {/* Do not make this a Link, it breaks the Framer site proxy */}
@@ -46,7 +47,7 @@ export const BrandingMenu = () => {
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={42} />
           </a>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent ref={brandingMenuRef} align="start">
           <DropdownMenuLabel>Platform</DropdownMenuLabel>
           <DropdownMenuItem
             className="flex flex-row gap-x-3"
@@ -55,7 +56,10 @@ export const BrandingMenu = () => {
             <ContentPasteOutlined fontSize="inherit" />
             <span>Copy Logo as SVG</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="flex flex-row gap-x-3">
+          <DropdownMenuItem
+            className="flex flex-row gap-x-3"
+            onClick={() => setBrandingMenuOpen(false)}
+          >
             <ArrowDownwardOutlined fontSize="inherit" />
             <Link href="/assets/brand/polar_brand.zip">
               Download Branding Assets

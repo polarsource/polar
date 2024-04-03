@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from pydantic import UUID4
 
@@ -12,6 +14,7 @@ from polar.donation.schemas import (
 )
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.sorting import Sorting, SortingGetter
 from polar.models.organization import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -20,9 +23,15 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
-from .service import donation_service
+from .service import SearchSortProperty, donation_service
 
 router = APIRouter(tags=["donations"])
+
+
+SearchSorting = Annotated[
+    list[Sorting[SearchSortProperty]],
+    Depends(SortingGetter(SearchSortProperty, ["-created_at"])),
+]
 
 
 @router.get(
@@ -33,6 +42,7 @@ router = APIRouter(tags=["donations"])
 async def search_donations(
     pagination: PaginationParamsQuery,
     to_organization_id: UUID4,
+    sorting: SearchSorting,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
@@ -47,6 +57,7 @@ async def search_donations(
         session,
         to_organization=to_organization,
         pagination=pagination,
+        sorting=sorting,
     )
 
     return ListResource.from_paginated_results(

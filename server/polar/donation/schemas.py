@@ -1,3 +1,4 @@
+import datetime
 from typing import Literal, Self
 
 from pydantic import UUID4, Field
@@ -30,6 +31,7 @@ class Donation(Schema):
     amount: CurrencyAmount
     message: str | None
     donor: DonationOrganization | DonationUser | None
+    created_at: datetime.datetime
 
     @classmethod
     def from_db(
@@ -49,6 +51,7 @@ class Donation(Schema):
             amount=CurrencyAmount(currency="USD", amount=i.amount_received),
             message=i.message,
             donor=donor,
+            created_at=i.created_at,
         )
 
 

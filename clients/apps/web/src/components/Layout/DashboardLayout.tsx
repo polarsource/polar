@@ -24,6 +24,7 @@ import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import DashboardLayoutContext, {
   useDashboardLayoutContext,
 } from './DashboardLayoutContext'
+import { BrandingMenu } from './Public/BrandingMenu'
 
 const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
@@ -68,12 +69,7 @@ const DashboardSidebar = () => {
       <div className="flex h-full flex-col">
         <div className={scrollClassName}>
           <div className="relative z-10 mt-5 hidden translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8 md:flex">
-            <a
-              href="/"
-              className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
-            >
-              <LogoIcon className="h-10 w-10" />
-            </a>
+            <BrandingMenu />
           </div>
           <div className="mb-4 mt-8 flex px-4">
             <DashboardProfileDropdown className="shadow-xl" />

@@ -16,6 +16,14 @@ export const getServerSideAPI = (token?: string): PolarAPI => {
     }
   }
 
+  // When running inside GitHub Codespaces, we need to pass a token to access forwarded ports
+  if (process.env.GITHUB_TOKEN) {
+    headers = {
+      ...headers,
+      'X-Github-Token': process.env.GITHUB_TOKEN,
+    }
+  }
+
   return new PolarAPI(
     new Configuration({
       basePath: getServerURL(),

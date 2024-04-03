@@ -4,5 +4,9 @@
 			trusted_proxies private_ranges
 		}
 	}
-	reverse_proxy 127.0.0.1:3000
+	route * {
+		reverse_proxy 127.0.0.1:3000 {
+			trusted_proxies private_ranges
+		}
+	}
 }

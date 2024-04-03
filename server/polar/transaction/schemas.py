@@ -51,8 +51,6 @@ class TransactionPledge(TimestampedSchema):
 class TransactionDonation(TimestampedSchema):
     id: UUID4
     to_organization: TransactionOrganization | None = None
-    donor: TransactionOrganization | TransactionUser | None = None
-    message: str | None = None
 
 
 class TransactionIssueReward(TimestampedSchema):

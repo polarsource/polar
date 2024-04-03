@@ -130,44 +130,6 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                 >
                   {transactionMeta.meta.to_organization.name}
                 </Link>
-
-                {transactionMeta.meta.donor ? (
-                  <>
-                    <div className="flex items-center gap-1 text-xs text-gray-700 dark:text-gray-400">
-                      From
-                      {'name' in transactionMeta.meta.donor ? (
-                        <>
-                          <Link
-                            className="hidden flex-shrink-0 md:block"
-                            href={`/${transactionMeta.meta.donor.name}`}
-                          >
-                            <Avatar
-                              className="h-4 w-4"
-                              name={transactionMeta.meta.donor.name}
-                              avatar_url={transactionMeta.meta.donor.avatar_url}
-                            />
-                          </Link>
-                          <span>{transactionMeta.meta.donor.name}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Avatar
-                            className="h-4 w-4"
-                            name={transactionMeta.meta.donor.public_name}
-                            avatar_url={transactionMeta.meta.donor.avatar_url}
-                          />
-                          <span>{transactionMeta.meta.donor.public_name}</span>
-                        </>
-                      )}
-                    </div>
-                  </>
-                ) : null}
-
-                {transactionMeta.meta.message ? (
-                  <p className="text-xs text-gray-500">
-                    &quot;{transactionMeta.meta.message}&quot;
-                  </p>
-                ) : null}
               </div>
             ) : null}
           </>

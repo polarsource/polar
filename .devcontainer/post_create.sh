@@ -3,6 +3,9 @@
 set -euo pipefail
 set -x
 
+# Create test database
+./bin/create-test-db
+
 # Server setup
 cd /workspace/server
 poetry install

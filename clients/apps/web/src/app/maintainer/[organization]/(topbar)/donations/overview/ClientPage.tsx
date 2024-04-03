@@ -130,9 +130,11 @@ export default function ClientPage({
                     </div>
                   </div>
 
-                  <div className="text-sm text-gray-600">
-                    &quot;{donation.message}&quot;
-                  </div>
+                  {donation.message ? (
+                    <div className="text-sm text-gray-600">
+                      &quot;{donation.message}&quot;
+                    </div>
+                  ) : null}
 
                   <div className="ml-4 flex  flex-shrink-0  items-center justify-between gap-3">
                     <div className="dark:text-polar-950 inline-flex gap-1 whitespace-nowrap rounded-xl bg-green-500 px-3 py-1 text-xs text-white">

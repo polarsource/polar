@@ -48,34 +48,11 @@ const donation: TransactionDonation = {
     created_at: '2024-03-27',
     platform: Platforms.GITHUB,
   },
-  donor: null,
-  message: undefined,
 }
 
 const txDonation: Transaction = {
   ...tx,
   donation,
-}
-
-const txDonationWithMessage: Transaction = {
-  ...tx,
-  donation: {
-    ...donation,
-    message: "You're the best!",
-  },
-}
-
-const txDonationWithMessageFromDonor: Transaction = {
-  ...tx,
-  donation: {
-    ...donation,
-    message: "You're the best!",
-    donor: {
-      id: '',
-      avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
-      public_name: 'frankie567',
-    },
-  },
 }
 
 const issue_reward: TransactionIssueReward = {
@@ -159,13 +136,6 @@ const txSubscription: Transaction = {
 
 export const Default: Story = {
   args: {
-    transactions: [
-      tx,
-      txDonation,
-      txDonationWithMessage,
-      txDonationWithMessageFromDonor,
-      txIssueReward,
-      txSubscription,
-    ],
+    transactions: [tx, txDonation, txIssueReward, txSubscription],
   },
 }

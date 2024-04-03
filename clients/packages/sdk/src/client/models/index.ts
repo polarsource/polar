@@ -2445,12 +2445,6 @@ export interface DonationUser {
 export type Donor = DonationOrganization | DonationUser;
 
 /**
- * @type Donor1
- * @export
- */
-export type Donor1 = TransactionOrganization | TransactionUser;
-
-/**
  * 
  * @export
  * @interface EditAdvertisementCampaign
@@ -9668,18 +9662,6 @@ export interface TransactionDonation {
      * @memberof TransactionDonation
      */
     to_organization?: TransactionOrganization;
-    /**
-     * 
-     * @type {Donor1}
-     * @memberof TransactionDonation
-     */
-    donor?: Donor1 | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionDonation
-     */
-    message?: string;
 }
 /**
  * 
@@ -10179,31 +10161,6 @@ export const TransactionType = {
 } as const;
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
 
-/**
- * 
- * @export
- * @interface TransactionUser
- */
-export interface TransactionUser {
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionUser
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionUser
-     */
-    public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionUser
-     */
-    avatar_url: string;
-}
 /**
  * 
  * @export

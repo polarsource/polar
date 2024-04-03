@@ -6,6 +6,7 @@ set -x
 # Server setup
 cd /workspace/server
 poetry install
+poetry run task generate_dev_jwks
 echo "🐻‍❄️✅ Server ready"
 
 # Clients setup

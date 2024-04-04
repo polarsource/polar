@@ -4,8 +4,11 @@ set -e
 
 host="localhost"
 user="polar"
+password="polar"
 test_database="polar_test"
 
-if ! psql -h "$host" -U "$user" -tAc "SELECT 1 FROM pg_database WHERE datname='$test_database'" | grep -q 1; then
-  psql -h "$host" -U "$user" -c "CREATE DATABASE $test_database;"
+if ! PGPASSWORD=$password psql -h "$host" -U "$user" -d "postgres" -tAc "SELECT 1 FROM pg_database WHERE datname='$test_database'" | grep -q 1; then
+  PGPASSWORD=$password psql -h "$host" -U "$user" -d "postgres" -c "CREATE DATABASE $test_database;"
+else
+  echo "Database $test_database already exists."
 fi

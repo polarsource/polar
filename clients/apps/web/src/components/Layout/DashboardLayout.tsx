@@ -2,10 +2,13 @@
 
 import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
+import { CloseOutlined, GitHub, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { CONFIG } from 'polarkit'
 import { LogoIcon } from 'polarkit/components/brand'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   PropsWithChildren,
   Suspense,
@@ -25,6 +28,26 @@ import DashboardLayoutContext, {
   useDashboardLayoutContext,
 } from './DashboardLayoutContext'
 import { BrandingMenu } from './Public/BrandingMenu'
+
+const GitHubAppUpsell = () => {
+  return (
+    <div className="m-4 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
+      <div className="flex w-full flex-col gap-y-6">
+        <GitHub fontSize="large" />
+        <h3 className="text-lg leading-snug [text-wrap:balance]">
+          Import your repositories & enable crowdfunding for issues
+        </h3>
+        <Link href={CONFIG.GITHUB_INSTALLATION_URL}>
+          <Button>
+            <div className="flex flex-row items-center gap-2">
+              <span>Install GitHub App</span>
+            </div>
+          </Button>
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
@@ -83,6 +106,8 @@ const DashboardSidebar = () => {
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
           {shouldRenderAccountNavigation && <DashboardNavigation />}
         </div>
+
+        {currentOrg && !currentOrg.has_app_installed && <GitHubAppUpsell />}
 
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
           <MetaNavigation />

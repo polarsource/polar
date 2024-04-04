@@ -263,10 +263,7 @@ const ClientPage = ({
 
             {isFeatureEnabled('donations') &&
               organization.donations_enabled && (
-                <DonateWidget
-                  organization={organization}
-                  repository={repository}
-                />
+                <DonateWidget organization={organization} />
               )}
 
             {posts.length > 0 && (

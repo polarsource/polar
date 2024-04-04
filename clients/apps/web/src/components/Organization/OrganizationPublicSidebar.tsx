@@ -2,6 +2,7 @@
 
 import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
@@ -22,6 +23,7 @@ import { useUpdateOrganization } from 'polarkit/hooks'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL } from '.'
+import { DonateWidget } from '../Donations/DontateWidget'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { Modal, ModalHeader } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -80,6 +82,8 @@ export const OrganizationPublicSidebar = ({
       set_description: true,
     })
   }
+
+  const isDonatePage = pathname?.includes('/donate')
 
   return (
     <div className="flex h-full w-full flex-col items-start gap-y-6 md:max-w-[18rem]">
@@ -202,6 +206,10 @@ export const OrganizationPublicSidebar = ({
             </div>
           )}
         </div>
+
+        {isFeatureEnabled('donations') &&
+          organization.donations_enabled &&
+          !isDonatePage && <DonateWidget organization={organization} />}
       </div>
       <Modal
         isShown={rssModalIsShown}

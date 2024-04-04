@@ -6,7 +6,13 @@ import { Organization } from '@polar-sh/sdk'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import Checkout from './Checkout'
 
-const ClientPage = ({ organization }: { organization: Organization }) => {
+const ClientPage = ({
+  organization,
+  defaultAmount,
+}: {
+  organization: Organization
+  defaultAmount: number
+}) => {
   useTrafficRecordPageView({ organization: organization })
 
   if (!isFeatureEnabled('donations')) {
@@ -37,7 +43,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
       </div>
 
       <ShadowBoxOnMd className="lg:max-w-[500px]">
-        <Checkout organization={organization} />
+        <Checkout organization={organization} defaultAmount={defaultAmount} />
       </ShadowBoxOnMd>
     </div>
   )

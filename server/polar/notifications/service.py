@@ -148,7 +148,7 @@ class NotificationsService:
     def parse_payload(self, n: Notification) -> NotificationPayload:
         NotificationTypeAdapter = TypeAdapter(NotificationSchema)
         notification = NotificationTypeAdapter.validate_python(n)
-        return notification.payload  # type: ignore
+        return notification.payload
 
     async def get_user_last_read(
         self, session: AsyncSession, user_id: UUID

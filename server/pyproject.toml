@@ -20,7 +20,7 @@ sse-starlette = "^2.0.0"
 arq = "^0.25.0"
 stripe = "=7.4.0" # strictly pinned stripe version as different versions of stripe can be incompatible with each other
 pyjwt = "^2.6.0"
-pydantic = "^2.6.1"
+pydantic = { version = "^2.7.0b1", allow-prereleases = true}
 jinja2 = "^3.1.2"
 sentry-sdk = { extras = ["fastapi"], version = "^1.20.0" }
 discord-webhook = { extras = ["async"], version = "^1.3.0" }

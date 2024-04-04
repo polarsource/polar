@@ -45,7 +45,13 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 type DonateFormState = DonationCreateStripePaymentIntent &
   DonationUpdateStripePaymentIntent
 
-const Checkout = ({ organization }: { organization: Organization }) => {
+const Checkout = ({
+  organization,
+  defaultAmount = 1000,
+}: {
+  organization: Organization
+  defaultAmount: number
+}) => {
   const [polarPaymentIntent, setPolarPaymentIntent] =
     useState<DonationStripePaymentIntentMutationResponse | null>(null)
 
@@ -187,7 +193,7 @@ const Checkout = ({ organization }: { organization: Organization }) => {
   const form = useForm<DonationCreateStripePaymentIntent>({
     defaultValues: {
       to_organization_id: organization.id,
-      amount: { amount: 1000, currency: 'USD' },
+      amount: { amount: defaultAmount, currency: 'USD' },
       email: currentUser?.email ?? undefined,
     },
   })

@@ -75,8 +75,10 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams: { amount },
 }: {
   params: { organization: string }
+  searchParams: { amount: string }
 }) {
   let organization: Organization | undefined
   const api = getServerSideAPI()
@@ -108,5 +110,10 @@ export default async function Page({
     subPath: `/donate`,
   })
 
-  return <ClientPage organization={organization} />
+  return (
+    <ClientPage
+      organization={organization}
+      defaultAmount={parseInt(amount ?? '1000')}
+    />
+  )
 }

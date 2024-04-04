@@ -1,37 +1,45 @@
-import { VolunteerActivism } from '@mui/icons-material'
-import { Organization, Repository } from '@polar-sh/sdk'
+import { AttachMoneyOutlined } from '@mui/icons-material'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
+import { getCentsInDollarString } from 'polarkit/money'
 import { organizationPageLink } from 'polarkit/utils/nav'
+import { ChangeEvent, useState } from 'react'
 
 export interface DonateWidgetProps {
   organization: Organization
-  repository?: Repository
 }
 
-export const DonateWidget = ({
-  organization,
-  repository,
-}: DonateWidgetProps) => {
+export const DonateWidget = ({ organization }: DonateWidgetProps) => {
+  const [amount, setAmount] = useState<number>(1000)
+
+  const getCents = (event: ChangeEvent<HTMLInputElement>) => {
+    let newAmount = parseInt(event.target.value)
+    if (isNaN(newAmount)) {
+      newAmount = 0
+    }
+    const amountInCents = newAmount * 100
+    return amountInCents
+  }
+
+  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setAmount(getCents(e))
+  }
+
   return (
-    <div className="flex flex-row gap-y-8 rounded-3xl bg-gradient-to-bl from-blue-400 to-blue-100 p-6 text-white dark:from-blue-400 dark:to-blue-950">
-      <div className="flex w-full flex-col gap-y-6">
-        <h3 className="text-lg leading-snug [text-wrap:balance]">
-          Support{' '}
-          {repository
-            ? repository.name
-            : organization.pretty_name ?? organization.name}{' '}
-          with a donation
-        </h3>
-        <Link href={organizationPageLink(organization, 'donate')}>
-          <Button size="sm">
-            <div className="flex flex-row items-center gap-2">
-              <VolunteerActivism fontSize="inherit" />
-              <span>Donate</span>
-            </div>
-          </Button>
-        </Link>
-      </div>
+    <div className="flex flex-row items-center gap-x-2">
+      <Input
+        className="rounded-full px-8"
+        preSlot={<AttachMoneyOutlined fontSize="small" />}
+        value={getCentsInDollarString(amount)}
+        onChange={onChange}
+      />
+      <Link
+        href={organizationPageLink(organization, `donate?amount=${amount}`)}
+      >
+        <Button>Donate</Button>
+      </Link>
     </div>
   )
 }

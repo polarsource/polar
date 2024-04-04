@@ -22,5 +22,5 @@ def generate_token_hash_pair(
     Returns both the actual value and its HMAC-SHA256 hash.
     Only the latter shall be stored in database.
     """
-    token = generate_token(prefix=prefix)
+    token = generate_token(prefix=prefix, nbytes=nbytes)
     return token, get_token_hash(token, secret=secret)

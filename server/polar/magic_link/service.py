@@ -19,6 +19,8 @@ from polar.user.service import user as user_service
 
 from .schemas import MagicLinkCreate, MagicLinkSource, MagicLinkUpdate
 
+TOKEN_PREFIX = "polar_ml_"
+
 
 class MagicLinkError(PolarError): ...
 
@@ -39,7 +41,9 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
     ) -> tuple[MagicLink, str]:
         user = await user_service.get_by_email(session, email)
 
-        token, token_hash = generate_token_hash_pair(secret=settings.SECRET)
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=TOKEN_PREFIX
+        )
         magic_link_create = MagicLinkCreate(
             token_hash=token_hash,
             user_email=email,

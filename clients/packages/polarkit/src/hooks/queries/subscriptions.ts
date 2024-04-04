@@ -341,30 +341,24 @@ export const useSubscriptionSummary = (
     retry: defaultRetry,
   })
 
-export const useSubscriptionStatistics = (
-  orgName: string,
-  startDate: Date,
-  endDate: Date,
-  tierTypes: SubscriptionTierType[] | undefined = undefined,
-  subscriptionTierId: string | undefined = undefined,
-  platform: Platforms = Platforms.GITHUB,
-) =>
+export const useSubscriptionStatistics = (variables: {
+  orgName: string
+  platform: Platforms
+  startDate: Date
+  endDate: Date
+  tierTypes?: SubscriptionTierType[]
+  subscriptionTierId?: string
+}) =>
   useQuery({
-    queryKey: [
-      'subscriptionStatistics',
-      orgName,
-      tierTypes,
-      subscriptionTierId,
-      JSON.stringify({ startDate, endDate }),
-    ],
+    queryKey: ['subscriptionStatistics', JSON.stringify(variables)],
     queryFn: () =>
       api.subscriptions.getSubscriptionsStatistics({
-        organizationName: orgName,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
-        types: tierTypes,
-        subscriptionTierId,
-        platform,
+        organizationName: variables.orgName,
+        platform: variables.platform,
+        startDate: variables.startDate.toISOString().split('T')[0],
+        endDate: variables.endDate.toISOString().split('T')[0],
+        types: variables.tierTypes,
+        subscriptionTierId: variables.subscriptionTierId,
       }),
     retry: defaultRetry,
   })

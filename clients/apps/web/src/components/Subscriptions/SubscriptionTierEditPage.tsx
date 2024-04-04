@@ -82,13 +82,13 @@ const SubscriptionTierEdit = ({
   const [recurringInterval, setRecurringInterval] = useRecurringInterval([])
 
   const now = useMemo(() => new Date(), [])
-  const { data: subscriptionStatistics } = useSubscriptionStatistics(
-    organization.name,
-    now,
-    now,
-    undefined,
-    subscriptionTier.id,
-  )
+  const { data: subscriptionStatistics } = useSubscriptionStatistics({
+    orgName: organization.name,
+    platform: organization.platform,
+    startDate: now,
+    endDate: now,
+    subscriptionTierId: subscriptionTier.id,
+  })
   const nbSubscribers = useMemo(
     () => subscriptionStatistics?.periods[0].subscribers || 0,
     [subscriptionStatistics],

@@ -81,6 +81,7 @@ export default function ClientPage({
           onPaginationChange={setPagination}
           sorting={sorting}
           onSortingChange={setSorting}
+          isLoading={transactionsHook}
         />
       </ShadowBoxOnMd>
     </div>

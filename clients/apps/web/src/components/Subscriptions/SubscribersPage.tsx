@@ -357,6 +357,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
             onPaginationChange={setPagination}
             sorting={sorting}
             onSortingChange={setSorting}
+            isLoading={subscriptionsHook}
           />
         )}
         <div className="flex items-center justify-end gap-2">

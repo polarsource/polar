@@ -2,7 +2,10 @@ import { DownloadOutlined } from '@mui/icons-material'
 import { Transaction, TransactionEmbedded } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { getServerURL } from 'polarkit/api'
-import { DataTableColumnDef } from 'polarkit/components/ui/atoms/datatable'
+import {
+  DataTableColumnDef,
+  ReactQueryLoading,
+} from 'polarkit/components/ui/atoms/datatable'
 import {
   DataTableOnChangeFn,
   DataTablePaginationState,
@@ -17,6 +20,7 @@ interface PayoutTransactionsListProps {
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
   sorting: DataTableSortingState
   onSortingChange?: DataTableOnChangeFn<DataTableSortingState>
+  isLoading: boolean | ReactQueryLoading
 }
 
 const PayoutTransactionsList = ({
@@ -26,6 +30,7 @@ const PayoutTransactionsList = ({
   onPaginationChange,
   sorting,
   onSortingChange,
+  isLoading,
 }: PayoutTransactionsListProps) => {
   const extraColumns: DataTableColumnDef<Transaction | TransactionEmbedded>[] =
     [
@@ -65,6 +70,7 @@ const PayoutTransactionsList = ({
       sorting={sorting}
       onSortingChange={onSortingChange}
       extraColumns={extraColumns}
+      isLoading={isLoading}
     />
   )
 }

@@ -1,5 +1,5 @@
-import { DataTable, DataTableColumnDef } from './DataTable'
+import { DataTable, DataTableColumnDef, ReactQueryLoading } from './DataTable'
 import { DataTableColumnHeader } from './DataTableColumnHeader'
 
 export { DataTable, DataTableColumnHeader }
-export type { DataTableColumnDef }
+export type { DataTableColumnDef, ReactQueryLoading }

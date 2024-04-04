@@ -120,6 +120,7 @@ const TopReferrers = ({ org }: { org: Organization }) => {
           columns={columns}
           data={data.data.items}
           className="w-full"
+          isLoading={data}
         />
       ) : null}
     </>

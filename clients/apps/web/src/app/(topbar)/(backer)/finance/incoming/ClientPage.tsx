@@ -144,6 +144,7 @@ export default function ClientPage({
               onPaginationChange={setPagination}
               sorting={sorting}
               onSortingChange={setSorting}
+              isLoading={balancesHook}
             />
           </TabsContent>
           <TabsContent value="payouts">
@@ -154,6 +155,7 @@ export default function ClientPage({
               onPaginationChange={setPagination}
               sorting={sorting}
               onSortingChange={setSorting}
+              isLoading={payoutsHooks}
             />
           </TabsContent>
         </Tabs>

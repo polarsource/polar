@@ -116,7 +116,9 @@ class TestDonations:
             session, user, open_collective_account, await Authz.authz(session)
         )
 
-        assert 1900 == summary.balance.amount  # $20 minus $1 fee
+        assert (
+            1861 == summary.balance.amount
+        )  # $20 minus Polar and payment processor fees
         assert 0 == summary.payout.amount
 
     async def test_held_balance(
@@ -165,5 +167,7 @@ class TestDonations:
             session, user, account, await Authz.authz(session)
         )
 
-        assert 1900 == summary.balance.amount  # $20 minus $1 fee
+        assert (
+            1861 == summary.balance.amount
+        )  # $20 minus Polar and payment processor fees
         assert 0 == summary.payout.amount

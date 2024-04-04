@@ -10,6 +10,7 @@ export interface DescriptionEditorProps {
   failed?: boolean
   className?: string
   size?: 'default' | 'small'
+  maxLength: number
 }
 
 export const DescriptionEditor = ({
@@ -20,6 +21,7 @@ export const DescriptionEditor = ({
   failed,
   className,
   size = 'default',
+  maxLength,
 }: DescriptionEditorProps) => {
   const paragraphRef = useRef<HTMLParagraphElement>(null)
 
@@ -42,7 +44,7 @@ export const DescriptionEditor = ({
     setContentLength(content.length)
   }
 
-  const showLength = isDirty || contentLength > 160
+  const showLength = isDirty || contentLength > maxLength
 
   return (
     <div
@@ -79,10 +81,10 @@ export const DescriptionEditor = ({
         <div
           className={twMerge(
             'text-gray absolute bottom-2 right-2 text-xs',
-            contentLength > 160 ? 'text-red-500' : 'text-gray-500',
+            contentLength > maxLength ? 'text-red-500' : 'text-gray-500',
           )}
         >
-          {contentLength}/160
+          {contentLength}/{maxLength}
         </div>
       ) : null}
 

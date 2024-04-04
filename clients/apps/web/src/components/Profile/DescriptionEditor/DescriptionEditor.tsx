@@ -58,7 +58,7 @@ export const DescriptionEditor = ({
       <p
         ref={paragraphRef}
         className={twMerge(
-          'dark:text-polar-50 w-full text-pretty break-all text-3xl !font-normal leading-normal	text-gray-950 focus-visible:outline-0',
+          'dark:text-polar-50 break-word w-full text-pretty text-3xl !font-normal leading-normal	text-gray-950 focus-visible:outline-0',
           showLength ? 'pb-4' : '',
           className,
         )}

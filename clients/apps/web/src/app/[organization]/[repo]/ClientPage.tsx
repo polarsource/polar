@@ -1,6 +1,7 @@
 'use client'
 
 import revalidate from '@/app/actions'
+import { DonateWidget } from '@/components/Donations/DontateWidget'
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
@@ -258,6 +259,13 @@ const ClientPage = ({
                 </>
               ) : null}
             </div>
+
+            {organization.donations_enabled && (
+              <DonateWidget
+                organization={organization}
+                repository={repository}
+              />
+            )}
 
             {posts.length > 0 && (
               <div className="flex flex-col gap-6">

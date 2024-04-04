@@ -2994,37 +2994,6 @@ export type IssueStateEnum = typeof IssueStateEnum[keyof typeof IssueStateEnum];
 /**
  * 
  * @export
- * @interface IssueExtensionRead
- */
-export interface IssueExtensionRead {
-    /**
-     * 
-     * @type {number}
-     * @memberof IssueExtensionRead
-     */
-    number: number;
-    /**
-     * 
-     * @type {Array<Pledge>}
-     * @memberof IssueExtensionRead
-     */
-    pledges: Array<Pledge>;
-    /**
-     * 
-     * @type {Array<IssueReferenceRead>}
-     * @memberof IssueExtensionRead
-     */
-    references: Array<IssueReferenceRead>;
-    /**
-     * 
-     * @type {Issue}
-     * @memberof IssueExtensionRead
-     */
-    issue: Issue;
-}
-/**
- * 
- * @export
  * @interface IssueFunding
  */
 export interface IssueFunding {

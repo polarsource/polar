@@ -18,8 +18,10 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
   user,
   isPersonal,
 }) => {
-  const { data: organizationAccount } = useAccount(organization.account_id)
-  const { data: personalAccount } = useAccount(user?.account_id)
+  const { data: organizationAccount, isLoading: organizationAccountIsLoading } =
+    useAccount(organization.account_id)
+  const { data: personalAccount, isLoading: personalAccountIsLoading } =
+    useAccount(user?.account_id)
 
   const setupLink = isPersonal
     ? '/finance/account'
@@ -35,6 +37,10 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
     organizationAccount.id !== personalAccount.id
   const isActive = currentAccount?.status === Status.ACTIVE
   const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
+
+  if (organizationAccountIsLoading || personalAccountIsLoading) {
+    return null
+  }
 
   if (!currentAccount) {
     return (

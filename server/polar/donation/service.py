@@ -5,6 +5,8 @@ from typing import Any, Literal
 from uuid import UUID
 
 import stripe as stripe_lib
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
+from slack_sdk.webhook import WebhookClient as SlackWebhookClient
 from sqlalchemy import (
     ColumnExpressionArgument,
     UnaryExpression,
@@ -17,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
+from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.donation.schemas import DonationStatisticsPeriod
 from polar.held_balance.service import held_balance as held_balance_service
@@ -50,6 +53,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service import user as user_service
+from polar.webhook_notifications.service import webhook_notifications_service
 
 
 class SearchSortProperty(StrEnum):
@@ -226,6 +230,10 @@ class DonationService:
         )
 
         session.add(d)
+
+        await self.backoffice_discord_notification(session, d)
+        await self.user_webhook_notifications(session, d)
+
         return None
 
     async def create_balance(
@@ -362,6 +370,90 @@ class DonationService:
             )
             for (row_start_date, row_end_date, sum) in res.tuples().all()
         ]
+
+    async def backoffice_discord_notification(
+        self, session: AsyncSession, donation: Donation
+    ) -> None:
+        if not settings.DISCORD_WEBHOOK_URL:
+            return
+
+        to_org = await organization_service.get(session, donation.to_organization_id)
+        if not to_org:
+            return
+
+        webhook = AsyncDiscordWebhook(
+            url=settings.DISCORD_WEBHOOK_URL, content="New Donation"
+        )
+
+        embed = DiscordEmbed(
+            title="New Donation",
+            description=f"${get_cents_in_dollar_string(donation.amount_received)} to {to_org.name}\n\n> {donation.message or "No message"}",  # noqa: E501
+            color="65280",
+        )
+
+        embed.add_embed_field(
+            name=to_org.name,
+            value=f"[{to_org.name}](https://polar.sh/{to_org.name})",
+        )
+
+        webhook.add_embed(embed)
+        await webhook.execute()
+
+    async def user_webhook_notifications(
+        self, session: AsyncSession, donation: Donation
+    ) -> None:
+        webhooks = await webhook_notifications_service.search(
+            session, organization_id=donation.to_organization_id
+        )
+        to_org = await organization_service.get(session, donation.to_organization_id)
+        if not to_org:
+            return
+
+        _donation_amount = donation.amount_received / 100
+        description = f"A ${_donation_amount} donation has been made to {to_org.name}\n\n> {donation.message or "No message"}"
+
+        for wh in webhooks:
+            if wh.integration == "discord":
+                webhook = AsyncDiscordWebhook(
+                    url=wh.url, content="New Donation Received"
+                )
+
+                embed = DiscordEmbed(
+                    title="New Donation Received",
+                    description=description,
+                    color="65280",
+                )
+
+                embed.set_thumbnail(url=settings.THUMBNAIL_URL)
+                embed.set_author(name="Polar.sh", icon_url=settings.FAVICON_URL)
+                embed.add_embed_field(
+                    name="Amount", value=f"${_donation_amount}", inline=True
+                )
+                embed.set_footer(text="Powered by Polar.sh")
+
+                webhook.add_embed(embed)
+                await webhook.execute()
+                continue
+
+            if wh.integration == "slack":
+                slack_webhook = SlackWebhookClient(wh.url)
+                response = slack_webhook.send(
+                    text=description,
+                    blocks=[
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": description,
+                            },
+                            "accessory": {
+                                "type": "button",
+                                "text": {"type": "plain_text", "text": "Open"},
+                                "url": f"https://polar.sh/{to_org.name}",
+                            },
+                        },
+                    ],
+                )
 
 
 donation_service = DonationService()

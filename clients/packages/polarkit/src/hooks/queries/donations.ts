@@ -2,7 +2,7 @@ import {
   DonationStatistics,
   ListResourceDonation,
   ResponseError,
-  StatisticsIntervalEnum,
+  StatisticsDonationsIntervalEnum,
 } from '@polar-sh/sdk'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { api } from '../../api'
@@ -26,7 +26,7 @@ export const useDonationStatistics = (variables: {
   toOrganizationId: string
   startDate: Date
   endDate: Date
-  interval: StatisticsIntervalEnum
+  interval: StatisticsDonationsIntervalEnum
   groupByArticle?: boolean
 }): UseQueryResult<DonationStatistics> =>
   useQuery({
@@ -36,7 +36,7 @@ export const useDonationStatistics = (variables: {
         toOrganizationId: variables.toOrganizationId,
         startDate: variables.startDate.toISOString().split('T')[0],
         endDate: variables.endDate.toISOString().split('T')[0],
-        interval: variables.interval,
+        donationsInterval: variables.interval,
       }),
     retry: defaultRetry,
   })

@@ -64,7 +64,7 @@ async def statistics(
     article_id: UUID | None = Query(None),
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
-    interval: Literal["month", "week", "day"] = Query(...),
+    interval: Literal["month", "week", "day"] = Query(..., alias="trafficInterval"),
     group_by_article: bool = Query(False),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),

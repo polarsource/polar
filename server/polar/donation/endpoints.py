@@ -182,7 +182,7 @@ async def statistics(
     to_organization_id: UUID4,
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
-    interval: Literal["month", "week", "day"] = Query(...),
+    interval: Literal["month", "week", "day"] = Query(..., alias="donationsInterval"),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> DonationStatistics:

@@ -1,7 +1,7 @@
 import {
   ListResourceTrafficReferrer,
   Platforms,
-  StatisticsIntervalEnum,
+  StatisticsTrafficIntervalEnum,
   TrafficStatistics,
 } from '@polar-sh/sdk'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
@@ -13,7 +13,7 @@ export const useTrafficStatistics = (variables: {
   platform?: Platforms
   startDate: Date
   endDate: Date
-  interval: StatisticsIntervalEnum
+  interval: StatisticsTrafficIntervalEnum
   groupByArticle?: boolean
 }): UseQueryResult<TrafficStatistics> =>
   useQuery({
@@ -24,7 +24,7 @@ export const useTrafficStatistics = (variables: {
         platform: variables.platform ?? Platforms.GITHUB,
         startDate: variables.startDate.toISOString().split('T')[0],
         endDate: variables.endDate.toISOString().split('T')[0],
-        interval: variables.interval,
+        trafficInterval: variables.interval,
         groupByArticle: variables.groupByArticle,
       }),
     retry: defaultRetry,

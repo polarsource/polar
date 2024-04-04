@@ -28,9 +28,9 @@ export const DonateWidget = ({ organization }: DonateWidgetProps) => {
   }
 
   return (
-    <div className="flex flex-row items-center gap-x-2">
+    <div className="flex w-full flex-row items-center gap-x-2">
       <Input
-        className="rounded-full px-8"
+        className="w-full rounded-full px-8"
         preSlot={<AttachMoneyOutlined fontSize="small" />}
         value={getCentsInDollarString(amount)}
         onChange={onChange}

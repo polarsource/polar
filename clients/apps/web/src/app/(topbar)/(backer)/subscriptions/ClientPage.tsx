@@ -128,8 +128,8 @@ const Subscription = ({
         className={twMerge(
           'flex cursor-pointer flex-row items-center justify-between px-4 py-3 transition-colors',
           expanded
-            ? 'dark:bg-polar-800 bg-gray-75'
-            : 'dark:hover:bg-polar-800 hover:bg-gray-75',
+            ? 'dark:bg-polar-800 bg-gray-50'
+            : 'dark:hover:bg-polar-800 hover:bg-gray-50',
         )}
         onClick={() => setExpanded((expanded) => !expanded)}
       >

@@ -7,7 +7,6 @@ export * from './AuthApi';
 export * from './BackofficeApi';
 export * from './DashboardApi';
 export * from './DonationsApi';
-export * from './ExtensionApi';
 export * from './FundingApi';
 export * from './HealthApi';
 export * from './IntegrationsDiscordApi';

@@ -5,7 +5,6 @@ apis/AuthApi.ts
 apis/BackofficeApi.ts
 apis/DashboardApi.ts
 apis/DonationsApi.ts
-apis/ExtensionApi.ts
 apis/FundingApi.ts
 apis/HealthApi.ts
 apis/IntegrationsDiscordApi.ts

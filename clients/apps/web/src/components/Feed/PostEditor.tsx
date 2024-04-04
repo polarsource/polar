@@ -196,12 +196,12 @@ const Sidebar = () => {
 
   return (
     <div>
-      <div className="sticky top-24 hidden w-full min-w-[250px] max-w-xs flex-col gap-y-4 lg:flex">
-        <ShadowBoxOnMd className="dark:border-polar-800 w-full !shadow-2xl md:p-8 dark:border">
+      <div className="sticky top-24 hidden w-full min-w-[250px] max-w-[280px] flex-col gap-y-4 lg:flex">
+        <ShadowBoxOnMd className="dark:border-polar-800 w-full md:p-8 dark:border">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">
               <div className="flex flex-col gap-y-2">
-                <h3 className="font-medium">Components</h3>
+                <h3 className="text-sm">Components</h3>
                 <Button
                   variant={'outline'}
                   size={'sm'}
@@ -227,7 +227,7 @@ const Sidebar = () => {
             {benefits.isFetched ? (
               <>
                 <div className="flex flex-col gap-y-2">
-                  <h3 className="font-medium">Ad</h3>
+                  <h3 className="text-sm">Ad</h3>
 
                   {adBenefits.length > 0 ? (
                     <>
@@ -288,7 +288,7 @@ const SidebarYouTube = () => {
 
   return (
     <div className="flex flex-col gap-y-2">
-      <h3 className="font-medium">YouTube</h3>
+      <h3 className="text-sm">YouTube</h3>
 
       <Input
         placeholder="Video URL"
@@ -296,7 +296,7 @@ const SidebarYouTube = () => {
         onChange={(e) => setURL(e.target.value)}
       />
       <Button
-        variant={'outline'}
+        className="self-start"
         size={'sm'}
         onClick={() => {
           insertYouTube(url)

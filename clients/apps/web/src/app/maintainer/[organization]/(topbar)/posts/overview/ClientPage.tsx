@@ -12,7 +12,7 @@ import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { captureEvent } from '@/utils/posthog'
 import { prettyReferrerURL } from '@/utils/traffic'
-import { EnvelopeIcon, EyeIcon, PhotoIcon } from '@heroicons/react/24/outline'
+import { EnvelopeIcon, EyeIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
   ArrowForward,
@@ -223,126 +223,106 @@ const PostItem = (post: Article) => {
     >
       <div
         className={twMerge(
-          'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row justify-between gap-x-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-gray-50',
+          'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-col justify-between gap-x-8 gap-y-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-gray-50',
           post.paid_subscribers_only &&
             'border-white bg-gradient-to-l from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
         )}
       >
-        {image ? (
-          <img
-            src={image}
-            className="hidden h-28 w-28 flex-shrink-0 rounded-2xl object-cover md:block"
-          />
-        ) : (
-          <div
-            className={twMerge(
-              'dark:bg-polar-700 hidden h-28 w-28 flex-shrink-0 flex-col items-center justify-center self-start rounded-2xl bg-gray-100 bg-cover bg-center bg-no-repeat md:flex',
-              post.paid_subscribers_only && 'bg-blue-50/50',
+        <div className="flex w-full flex-col gap-y-6">
+          <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+            {post.title}
+          </h3>
+          <div className="prose prose-headings:font-medium prose-headings:first:mt-0 prose-p:first:mt-0 prose-img:first:mt-0 prose-p:last:mb-0 dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 dark:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1 w-full max-w-none text-gray-600">
+            <AbbreviatedBrowserRender article={post} />
+          </div>
+        </div>
+        <div className="flex flex-row items-center justify-between whitespace-nowrap">
+          <div className="dark:text-polar-300  flex w-full flex-row flex-wrap gap-x-3 text-sm text-gray-500">
+            {post.published_at && new Date(post.published_at) <= new Date() ? (
+              <PolarTimeAgo date={new Date(post.published_at)} />
+            ) : (
+              <>
+                {post.published_at ? (
+                  <span>
+                    {post.notify_subscribers
+                      ? 'Publishing and sending in'
+                      : 'Publising in'}{' '}
+                    <PolarTimeAgo
+                      date={new Date(post.published_at)}
+                      suffix=""
+                    />
+                  </span>
+                ) : (
+                  <span>Not scheduled</span>
+                )}
+              </>
             )}
-          >
-            <PhotoIcon className="text-polar-400 h-8 w-8" />
-          </div>
-        )}
-        <div className="flex min-w-0 flex-grow flex-col justify-between gap-y-6">
-          <div className="flex w-full flex-col gap-y-2">
-            <h3 className="text-md dark:text-polar-50 font-medium text-gray-950">
-              {post.title}
-            </h3>
-            <div className="prose prose-headings:font-medium prose-headings:first:mt-0 prose-p:first:mt-0 prose-img:first:mt-0 prose-p:last:mb-0 dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 dark:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1 w-full max-w-none text-gray-600">
-              <AbbreviatedBrowserRender article={post} />
-            </div>
-          </div>
-          <div className="flex flex-row items-center justify-between whitespace-nowrap">
-            <div className="dark:text-polar-300  flex w-full flex-row flex-wrap gap-x-3 text-sm text-gray-500">
-              {post.published_at &&
-              new Date(post.published_at) <= new Date() ? (
-                <PolarTimeAgo date={new Date(post.published_at)} />
-              ) : (
-                <>
-                  {post.published_at ? (
-                    <span>
-                      {post.notify_subscribers
-                        ? 'Publishing and sending in'
-                        : 'Publising in'}{' '}
-                      <PolarTimeAgo
-                        date={new Date(post.published_at)}
-                        suffix=""
-                      />
+            &middot;
+            {post.visibility !== 'public' ? (
+              <div className="flex flex-row items-center gap-x-2 text-sm">
+                <span className="capitalize">{post.visibility}</span>
+              </div>
+            ) : (
+              <div className="flex flex-row items-center gap-x-2 text-sm">
+                {post.paid_subscribers_only ? (
+                  <div className="flex flex-row items-center rounded-full bg-blue-50 bg-gradient-to-l px-2 py-0.5 dark:bg-blue-950">
+                    <span className="text-xs text-blue-300 dark:text-blue-300">
+                      Premium
                     </span>
-                  ) : (
-                    <span>Not scheduled</span>
-                  )}
-                </>
-              )}
-              &middot;
-              {post.visibility !== 'public' ? (
+                  </div>
+                ) : (
+                  <>
+                    <LanguageOutlined
+                      className="text-blue-500"
+                      fontSize="inherit"
+                    />
+                    <span className="capitalize">Public</span>
+                  </>
+                )}
+              </div>
+            )}
+            {post.is_pinned ? (
+              <>
+                &middot;
                 <div className="flex flex-row items-center gap-x-2 text-sm">
-                  <span className="capitalize">{post.visibility}</span>
+                  <div className="flex flex-row items-center rounded-full bg-green-100 bg-gradient-to-l px-2 py-0.5 dark:bg-green-950">
+                    <span className="text-xs text-green-400 dark:text-green-300">
+                      Pinned
+                    </span>
+                  </div>
                 </div>
-              ) : (
+              </>
+            ) : null}
+            {post.web_view_count !== undefined ? (
+              <>
+                &middot;
                 <div className="flex flex-row items-center gap-x-2 text-sm">
-                  {post.paid_subscribers_only ? (
-                    <div className="flex flex-row items-center rounded-full bg-blue-50 bg-gradient-to-l px-2 py-0.5 dark:bg-blue-950">
-                      <span className="text-xs text-blue-300 dark:text-blue-300">
-                        Premium
-                      </span>
-                    </div>
-                  ) : (
-                    <>
-                      <LanguageOutlined
-                        className="text-blue-500"
-                        fontSize="inherit"
-                      />
-                      <span className="capitalize">Public</span>
-                    </>
-                  )}
+                  <EyeIcon className="h-4 w-4" />
+                  <span>
+                    {post.web_view_count}{' '}
+                    {post.web_view_count === 1 ? 'view' : 'views'}
+                  </span>
                 </div>
-              )}
-              {post.is_pinned ? (
-                <>
-                  &middot;
-                  <div className="flex flex-row items-center gap-x-2 text-sm">
-                    <div className="flex flex-row items-center rounded-full bg-green-100 bg-gradient-to-l px-2 py-0.5 dark:bg-green-950">
-                      <span className="text-xs text-green-400 dark:text-green-300">
-                        Pinned
-                      </span>
-                    </div>
-                  </div>
-                </>
-              ) : null}
-              {post.web_view_count !== undefined ? (
-                <>
-                  &middot;
-                  <div className="flex flex-row items-center gap-x-2 text-sm">
-                    <EyeIcon className="h-4 w-4" />
-                    <span>
-                      {post.web_view_count}{' '}
-                      {post.web_view_count === 1 ? 'view' : 'views'}
-                    </span>
-                  </div>
-                </>
-              ) : null}
-              {post.email_sent_to_count ? (
-                <>
-                  &middot;
-                  <div className="flex flex-row items-center gap-x-2 text-sm">
-                    <EnvelopeIcon className="h-4 w-4" />
-                    <span>
-                      {post.email_sent_to_count}{' '}
-                      {post.email_sent_to_count === 1
-                        ? 'receiver'
-                        : 'receivers'}
-                    </span>
-                  </div>
-                </>
-              ) : null}
-            </div>
+              </>
+            ) : null}
+            {post.email_sent_to_count ? (
+              <>
+                &middot;
+                <div className="flex flex-row items-center gap-x-2 text-sm">
+                  <EnvelopeIcon className="h-4 w-4" />
+                  <span>
+                    {post.email_sent_to_count}{' '}
+                    {post.email_sent_to_count === 1 ? 'receiver' : 'receivers'}
+                  </span>
+                </div>
+              </>
+            ) : null}
+          </div>
 
-            <div className="hidden flex-row items-center gap-x-4 lg:flex">
-              <AnimatedIconButton active={isHovered} variant="secondary">
-                <ArrowForward fontSize="inherit" />
-              </AnimatedIconButton>
-            </div>
+          <div className="hidden flex-row items-center gap-x-4 lg:flex">
+            <AnimatedIconButton active={isHovered} variant="secondary">
+              <ArrowForward fontSize="inherit" />
+            </AnimatedIconButton>
           </div>
         </div>
       </div>

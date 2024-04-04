@@ -2551,12 +2551,6 @@ export interface Entry {
     pledges_summary?: PledgesTypeSummaries;
     /**
      * 
-     * @type {Array<IssueReferenceRead>}
-     * @memberof Entry
-     */
-    references?: Array<IssueReferenceRead>;
-    /**
-     * 
      * @type {Array<Pledge>}
      * @memberof Entry
      */
@@ -2574,104 +2568,6 @@ export interface ExistingSubscriptionTierPrice {
      * @memberof ExistingSubscriptionTierPrice
      */
     id: string;
-}
-/**
- * 
- * @export
- * @interface ExternalGitHubCommitReference
- */
-export interface ExternalGitHubCommitReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    sha: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    branch_name?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    message?: string;
-}
-/**
- * 
- * @export
- * @interface ExternalGitHubPullRequestReference
- */
-export interface ExternalGitHubPullRequestReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    number: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    state: string;
 }
 /**
  * 
@@ -3051,55 +2947,6 @@ export const IssueListType = {
     DEPENDENCIES: 'dependencies'
 } as const;
 export type IssueListType = typeof IssueListType[keyof typeof IssueListType];
-
-/**
- * 
- * @export
- * @interface IssueReferenceRead
- */
-export interface IssueReferenceRead {
-    /**
-     * 
-     * @type {string}
-     * @memberof IssueReferenceRead
-     */
-    id: string;
-    /**
-     * 
-     * @type {IssueReferenceType}
-     * @memberof IssueReferenceRead
-     */
-    type: IssueReferenceType;
-    /**
-     * 
-     * @type {PullRequestReference}
-     * @memberof IssueReferenceRead
-     */
-    pull_request_reference?: PullRequestReference;
-    /**
-     * 
-     * @type {ExternalGitHubPullRequestReference}
-     * @memberof IssueReferenceRead
-     */
-    external_github_pull_request_reference?: ExternalGitHubPullRequestReference;
-    /**
-     * 
-     * @type {ExternalGitHubCommitReference}
-     * @memberof IssueReferenceRead
-     */
-    external_github_commit_reference?: ExternalGitHubCommitReference;
-}
-
-/**
- * 
- * @export
- */
-export const IssueReferenceType = {
-    PULL_REQUEST: 'pull_request',
-    EXTERNAL_GITHUB_PULL_REQUEST: 'external_github_pull_request',
-    EXTERNAL_GITHUB_COMMIT: 'external_github_commit'
-} as const;
-export type IssueReferenceType = typeof IssueReferenceType[keyof typeof IssueReferenceType];
 
 
 /**
@@ -5984,85 +5831,6 @@ export interface PullRequest {
      * @memberof PullRequest
      */
     is_closed: boolean;
-}
-/**
- * 
- * @export
- * @interface PullRequestReference
- */
-export interface PullRequestReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    number: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    additions: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    deletions: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    state: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    merged_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    closed_at?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PullRequestReference
-     */
-    is_draft: boolean;
 }
 /**
  * 

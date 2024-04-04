@@ -15,13 +15,8 @@
 
 import * as runtime from '../runtime';
 import type {
-  HTTPValidationError,
   ListResourcePullRequest,
 } from '../models/index';
-
-export interface PullRequestsApiSearchRequest {
-    referencesIssueId?: string;
-}
 
 /**
  * 
@@ -32,12 +27,8 @@ export class PullRequestsApi extends runtime.BaseAPI {
      * Search pull requests.
      * Search pull requests (Public API)
      */
-    async searchRaw(requestParameters: PullRequestsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePullRequest>> {
+    async searchRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePullRequest>> {
         const queryParameters: any = {};
-
-        if (requestParameters.referencesIssueId !== undefined) {
-            queryParameters['references_issue_id'] = requestParameters.referencesIssueId;
-        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -63,8 +54,8 @@ export class PullRequestsApi extends runtime.BaseAPI {
      * Search pull requests.
      * Search pull requests (Public API)
      */
-    async search(requestParameters: PullRequestsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourcePullRequest> {
-        const response = await this.searchRaw(requestParameters, initOverrides);
+    async search(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourcePullRequest> {
+        const response = await this.searchRaw(initOverrides);
         return await response.value();
     }
 

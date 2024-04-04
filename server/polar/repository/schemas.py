@@ -78,7 +78,10 @@ class Repository(Schema):
 
 class RepositoryProfileSettingsUpdate(Schema):
     set_description: bool | None = None
-    description: str | None = None
+    description: str | None = Field(
+        None,
+        max_length=REPOSITORY_PROFILE_DESCRIPTION_MAX_LENGTH,
+    )
 
     set_cover_image_url: bool | None = None
     cover_image_url: str | None = None

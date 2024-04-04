@@ -34,7 +34,7 @@ const OpenGraphImageArticle = ({
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         color: 'white',
-        padding: '92px',
+        padding: '64px 92px',
         gap: '24px',
         whiteSpace: 'pre-wrap',
         fontWeight: 600,

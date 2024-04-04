@@ -94,7 +94,7 @@ export const SubscriptionTierEditor = ({
           />
         </div>
       )}
-      <div className="flex w-full flex-row flex-wrap items-center justify-center gap-8">
+      <div className="flex w-full flex-row flex-wrap items-center justify-center gap-6">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

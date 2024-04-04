@@ -12,7 +12,10 @@ import {
   EarningsMetric,
   SubscribersMetric,
 } from '@/components/Subscriptions/SubscriptionsMetric'
-import { getSubscriptionTiersByType } from '@/components/Subscriptions/utils'
+import {
+  getSubscriptionTiersByType,
+  tiersTypeDisplayNames,
+} from '@/components/Subscriptions/utils'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -97,23 +100,29 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
     [router, organization],
   )
 
-  const apiQueryParams = useMemo(() => {
-    return {
-      ...(subscriptionTierId ? { subscriptionTierId } : {}),
-      ...(subscriptionTierType ? { types: [subscriptionTierType] } : {}),
-    }
-  }, [subscriptionTierId, subscriptionTierType])
-
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
     number | undefined
   >()
+
+  const statisticsAllTiersAndTypes = useSubscriptionStatistics({
+    startDate,
+    endDate,
+    platform: organization.platform,
+    orgName: organization.name,
+  })
+
+  const haveHadSubscribers = useMemo(() => {
+    const s = statisticsAllTiersAndTypes.data?.periods ?? []
+    return s.some((p) => p.earnings > 0 || p.subscribers > 0)
+  }, [statisticsAllTiersAndTypes])
 
   const statistics = useSubscriptionStatistics({
     startDate,
     endDate,
     platform: organization.platform,
     orgName: organization.name,
-    ...apiQueryParams,
+    subscriptionTierId,
+    ...(subscriptionTierType ? { tierTypes: [subscriptionTierType] } : {}),
   })
 
   const periods = statistics?.data?.periods ?? []
@@ -126,21 +135,18 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
     [periods],
   )
 
-  const haveData = useMemo(
-    () =>
-      realStatisticsPeriods.some((p) => p.earnings > 0 || p.subscribers > 0),
-    [realStatisticsPeriods],
-  )
-
   const statisticsPeriods = useMemo(
     () =>
-      haveData
+      haveHadSubscribers
         ? realStatisticsPeriods
         : generateDemoStats(realStatisticsPeriods),
-    [haveData, realStatisticsPeriods],
+    [haveHadSubscribers, realStatisticsPeriods],
   )
 
-  const isDemoData = !haveData && statistics.isFetched
+  const isDemoData =
+    !haveHadSubscribers &&
+    statistics.isFetched &&
+    statisticsAllTiersAndTypes.isFetched
 
   const displayedPeriod = useMemo(() => {
     if (statisticsPeriods.length === 0) {
@@ -168,10 +174,15 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
     active: true,
     limit: 5,
     page: 1,
-    ...apiQueryParams,
+    subscriptionTierId,
+    type: subscriptionTierType,
   })
 
   const lastSubscriptions = lastSubscriptionsHook.data?.items ?? []
+
+  const selectedSingleTier = subscriptionTierId
+    ? subscriptionTiers.data?.items?.find((t) => t.id === subscriptionTierId)
+    : undefined
 
   return (
     <div className="flex flex-col gap-6">
@@ -280,7 +291,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
           : null}
       </div>
 
-      {lastSubscriptions.length > 0 && (
+      {!isDemoData && lastSubscriptionsHook.isFetched ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -290,68 +301,86 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              {lastSubscriptions.map((subscription) => (
-                <div
-                  key={subscription.id}
-                  className="flex flex-row items-center justify-between"
-                >
-                  <div className="flex flex-row items-center justify-center gap-2">
-                    <Avatar
-                      avatar_url={
-                        subscription.organization
-                          ? subscription.organization.avatar_url
-                          : subscription.user.avatar_url
-                      }
-                      name={
-                        subscription.organization
-                          ? subscription.organization.name
-                          : subscription.user.public_name
-                      }
-                      className="h-8 w-8"
-                    />
-                    <div className="flex flex-col text-sm">
-                      {subscription.organization ? (
-                        <div className="font-medium">
-                          {subscription.organization.name}
-                        </div>
-                      ) : (
-                        <>
-                          {subscription.user.github_username ? (
-                            <>
-                              <div className="font-medium">
-                                {subscription.user.github_username}
-                              </div>
-                              <div className="dark:text-polar-500 text-xs text-gray-400">
-                                {subscription.user.email}
-                              </div>
-                            </>
-                          ) : (
+              {lastSubscriptions.length > 0 ? (
+                <>
+                  {lastSubscriptions.map((subscription) => (
+                    <div
+                      key={subscription.id}
+                      className="flex flex-row items-center justify-between"
+                    >
+                      <div className="flex flex-row items-center justify-center gap-2">
+                        <Avatar
+                          avatar_url={
+                            subscription.organization
+                              ? subscription.organization.avatar_url
+                              : subscription.user.avatar_url
+                          }
+                          name={
+                            subscription.organization
+                              ? subscription.organization.name
+                              : subscription.user.public_name
+                          }
+                          className="h-8 w-8"
+                        />
+                        <div className="flex flex-col text-sm">
+                          {subscription.organization ? (
                             <div className="font-medium">
-                              {subscription.user.email}
+                              {subscription.organization.name}
                             </div>
+                          ) : (
+                            <>
+                              {subscription.user.github_username ? (
+                                <>
+                                  <div className="font-medium">
+                                    {subscription.user.github_username}
+                                  </div>
+                                  <div className="dark:text-polar-500 text-xs text-gray-400">
+                                    {subscription.user.email}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="font-medium">
+                                  {subscription.user.email}
+                                </div>
+                              )}
+                            </>
                           )}
-                        </>
-                      )}
 
-                      <div className="dark:text-polar-500 text-xs text-gray-400">
-                        <FormattedDateTime
-                          datetime={subscription.started_at as string}
+                          <div className="dark:text-polar-500 text-xs text-gray-400">
+                            <FormattedDateTime
+                              datetime={subscription.started_at as string}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <SubscriptionTierPill
+                          subscriptionTier={subscription.subscription_tier}
+                          price={subscription.price}
                         />
                       </div>
                     </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <div className="dark:text-polar-500 text-sm text-gray-400">
+                    {subscriptionTierType
+                      ? ` You don't have any
+                    ${tiersTypeDisplayNames[subscriptionTierType]} subscribers,
+                    yet!`
+                      : selectedSingleTier
+                        ? ` You don't have any
+                      subscribers to ${selectedSingleTier.name}, yet!
+                      `
+                        : `You don't have any subscribers, yet!`}
                   </div>
-                  <div>
-                    <SubscriptionTierPill
-                      subscriptionTier={subscription.subscription_tier}
-                      price={subscription.price}
-                    />
-                  </div>
-                </div>
-              ))}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
-      )}
+      ) : null}
 
       {isDemoData ? (
         <p className="text-muted-foreground text-center text-sm">

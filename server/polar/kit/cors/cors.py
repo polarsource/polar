@@ -7,6 +7,8 @@ from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import PlainTextResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from polar.kit.db.postgres import AsyncSessionMaker
+
 # Based on CORSMiddleware from starlette.middleware.cors
 #
 # Extended with a is_allowed_origin_hook callback function to support dynamic origin lookup.
@@ -59,7 +61,8 @@ class CallbackCORSMiddleware:
         allow_origin_regex: str | None = None,
         expose_headers: typing.Sequence[str] = (),
         max_age: int = 600,
-        is_allowed_origin_hook: Callable[[str], Awaitable[bool]] | None = None,
+        is_allowed_origin_hook: Callable[[str, AsyncSessionMaker], Awaitable[bool]]
+        | None = None,
     ) -> None:
         if "*" in allow_methods:
             allow_methods = ALL_METHODS
@@ -123,14 +126,28 @@ class CallbackCORSMiddleware:
             await self.app(scope, receive, send)
             return
 
+        async_sessionmaker = scope["state"]["async_sessionmaker"]
+
         if method == "OPTIONS" and "access-control-request-method" in headers:
-            response = await self.preflight_response(request_headers=headers)
+            response = await self.preflight_response(
+                request_headers=headers, async_sessionmaker=async_sessionmaker
+            )
             await response(scope, receive, send)
             return
 
-        await self.simple_response(scope, receive, send, request_headers=headers)
+        await self.simple_response(
+            scope,
+            receive,
+            send,
+            request_headers=headers,
+            async_sessionmaker=async_sessionmaker,
+        )
 
-    async def is_allowed_origin(self, origin: str) -> bool:
+    async def is_allowed_origin(
+        self,
+        origin: str,
+        async_sessionmaker: AsyncSessionMaker,
+    ) -> bool:
         if self.allow_all_origins:
             return True
 
@@ -143,12 +160,14 @@ class CallbackCORSMiddleware:
             return True
 
         if self.is_allowed_origin_hook is not None:
-            if await self.is_allowed_origin_hook(origin):
+            if await self.is_allowed_origin_hook(origin, async_sessionmaker):
                 return True
 
         return False
 
-    async def preflight_response(self, request_headers: Headers) -> Response:
+    async def preflight_response(
+        self, request_headers: Headers, async_sessionmaker: AsyncSessionMaker
+    ) -> Response:
         requested_origin = request_headers["origin"]
         requested_method = request_headers["access-control-request-method"]
         requested_headers = request_headers.get("access-control-request-headers")
@@ -156,7 +175,7 @@ class CallbackCORSMiddleware:
         headers = dict(self.preflight_headers)
         failures = []
 
-        if await self.is_allowed_origin(origin=requested_origin):
+        if await self.is_allowed_origin(requested_origin, async_sessionmaker):
             if self.preflight_explicit_allow_origin:
                 # The "else" case is already accounted for in self.preflight_headers
                 # and the value would be "*".
@@ -187,13 +206,27 @@ class CallbackCORSMiddleware:
         return PlainTextResponse("OK", status_code=200, headers=headers)
 
     async def simple_response(
-        self, scope: Scope, receive: Receive, send: Send, request_headers: Headers
+        self,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
+        request_headers: Headers,
+        async_sessionmaker: AsyncSessionMaker,
     ) -> None:
-        send = functools.partial(self.send, send=send, request_headers=request_headers)
+        send = functools.partial(
+            self.send,
+            send=send,
+            request_headers=request_headers,
+            async_sessionmaker=async_sessionmaker,
+        )
         await self.app(scope, receive, send)
 
     async def send(
-        self, message: Message, send: Send, request_headers: Headers
+        self,
+        message: Message,
+        send: Send,
+        request_headers: Headers,
+        async_sessionmaker: AsyncSessionMaker,
     ) -> None:
         if message["type"] != "http.response.start":
             await send(message)
@@ -212,7 +245,9 @@ class CallbackCORSMiddleware:
 
         # If we only allow specific origins, then we have to mirror back
         # the Origin header in the response.
-        elif not self.allow_all_origins and await self.is_allowed_origin(origin=origin):
+        elif not self.allow_all_origins and await self.is_allowed_origin(
+            origin, async_sessionmaker
+        ):
             self.allow_explicit_origin(headers, origin)
 
         await send(message)

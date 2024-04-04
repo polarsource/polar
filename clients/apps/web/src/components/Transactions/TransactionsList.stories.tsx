@@ -137,5 +137,6 @@ const txSubscription: Transaction = {
 export const Default: Story = {
   args: {
     transactions: [tx, txDonation, txIssueReward, txSubscription],
+    isLoading: false,
   },
 }

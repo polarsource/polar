@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { issue, issueBodyHTML, pledger, pullRequest } from 'polarkit/testdata'
+import { issue, issueBodyHTML, pledger } from 'polarkit/testdata'
 import IssueCard from './IssueCard'
 
 const meta: Meta<typeof IssueCard> = {
@@ -272,7 +272,6 @@ export const RewardedSplitPulls: Story = {
         },
       ],
     },
-    pullRequests: [pullRequest, pullRequest],
   },
 }
 
@@ -284,6 +283,5 @@ export const Pulls: Story = {
     issue: {
       ...issue,
     },
-    pullRequests: [pullRequest, pullRequest],
   },
 }

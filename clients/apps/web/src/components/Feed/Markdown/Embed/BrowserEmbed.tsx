@@ -90,7 +90,6 @@ const EmbedIssue = (props: { src: string }) => {
     <div className="not-prose dark:bg-polar-800 border-bg-gray-100 dark:border:bg-polar-700 my-2 overflow-hidden rounded-2xl border bg-white">
       <IssueListItem
         issue={issue}
-        references={[]}
         pledges={[]}
         key={issue.id}
         canAddRemovePolarLabel={false}

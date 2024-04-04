@@ -36,7 +36,6 @@ const Recommended = () => {
             {issues.data?.items?.map((issue) => (
               <IssueListItem
                 issue={issue}
-                references={[]}
                 pledges={[]}
                 key={issue.id}
                 canAddRemovePolarLabel={false}

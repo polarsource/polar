@@ -35,14 +35,12 @@ const IssueCard = ({
   pledgers,
   currentPledgeAmount,
   rewards,
-  pullRequests,
 }: {
   issue: Issue
   htmlBody?: string
   pledgers: Pledger[]
   currentPledgeAmount: number
   rewards?: RewardsSummary
-  pullRequests?: PullRequest[]
 }) => {
   const url = githubIssueUrl(
     issue.repository.organization.name,
@@ -206,10 +204,6 @@ const IssueCard = ({
           )}
         </div>
       ) : null}
-
-      {pullRequests && pullRequests.length > 0 && (
-        <PullRequests pulls={pullRequests} />
-      )}
     </div>
   )
 }

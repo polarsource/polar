@@ -2,13 +2,7 @@
 
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
-import {
-  Issue,
-  IssueReferenceRead,
-  Pledge,
-  PledgesTypeSummaries,
-  Reward,
-} from '@polar-sh/sdk'
+import { Issue, Pledge, PledgesTypeSummaries, Reward } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
 import {
   IssueActivityBox,
@@ -25,7 +19,6 @@ import { AddBadgeButton } from './IssuePromotionModal'
 
 const IssueListItem = (props: {
   issue: Issue
-  references: IssueReferenceRead[]
   pledges: Array<Pledge>
   pledgesSummary?: PledgesTypeSummaries
   checkJustPledged?: boolean
@@ -55,8 +48,6 @@ const IssueListItem = (props: {
   }
 
   const havePledge = mergedPledges.length > 0
-  const haveReference = props.references && props.references?.length > 0
-  const havePledgeOrReference = havePledge || haveReference
 
   const [showDisputeModalForPledge, setShowDisputeModalForPledge] = useState<
     Pledge | undefined
@@ -96,13 +87,12 @@ const IssueListItem = (props: {
             </>
           }
         />
-        {havePledgeOrReference && (
+        {havePledge && (
           <IssueActivityBox>
             <IssueListItemDecoration
               issue={props.issue}
               pledges={mergedPledges}
               pledgesSummary={props.pledgesSummary}
-              references={props.references}
               showDisputeAction={true}
               onDispute={onDispute}
               showConfirmPledgeAction={true}

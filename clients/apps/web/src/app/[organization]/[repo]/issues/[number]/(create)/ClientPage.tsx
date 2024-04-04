@@ -5,13 +5,7 @@ import HowItWorks from '@/components/Pledge/HowItWorks'
 import IssueCard from '@/components/Pledge/IssueCard'
 import PledgeCheckoutPanel from '@/components/Pledge/PledgeCheckoutPanel'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import {
-  Issue,
-  Pledger,
-  PullRequest,
-  RewardsSummary,
-  Visibility,
-} from '@polar-sh/sdk'
+import { Issue, Pledger, RewardsSummary, Visibility } from '@polar-sh/sdk'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { Banner } from 'polarkit/components/ui/molecules'
 import posthog from 'posthog-js'
@@ -23,14 +17,12 @@ const ClientPage = ({
   pledgers,
   gotoURL,
   rewards,
-  pullRequests,
 }: {
   issue: Issue
   htmlBody?: string
   pledgers: Pledger[]
   gotoURL?: string
   rewards?: RewardsSummary
-  pullRequests?: PullRequest[]
 }) => {
   useTrafficRecordPageView({ organization: issue.repository.organization })
 
@@ -70,7 +62,6 @@ const ClientPage = ({
             pledgers={pledgers}
             currentPledgeAmount={amount}
             rewards={rewards}
-            pullRequests={pullRequests}
           />
         </div>
 

@@ -2,13 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import { PolarQueryClientProvider } from '@/app/providers'
 import {
-  IssueReferenceRead,
-  IssueReferenceType,
   IssueStatus,
   Pledge,
   PledgeState,
   PledgeType,
-  PullRequestReference,
   Reward,
   RewardState,
 } from '@polar-sh/sdk'
@@ -94,108 +91,6 @@ const dateConv = (input: Date): string => {
   return input.toISOString()
 }
 
-const pullRequestReference: PullRequestReference = {
-  id: '11',
-  title: 'Updated Readme.md',
-  author_login: '33',
-  author_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
-  number: 55,
-  additions: 10,
-  deletions: 2,
-  state: 'open',
-  created_at: dateConv(new Date('2023-04-08')),
-  is_draft: false,
-}
-
-const references: IssueReferenceRead[] = [
-  {
-    id: 'wha',
-    type: IssueReferenceType.PULL_REQUEST,
-    pull_request_reference: pullRequestReference,
-  },
-]
-
-const referencesDraft: IssueReferenceRead[] = [
-  {
-    id: 'wha',
-    type: IssueReferenceType.PULL_REQUEST,
-    pull_request_reference: {
-      ...pullRequestReference,
-      is_draft: true,
-    },
-  },
-]
-
-const referencesMerged: IssueReferenceRead[] = [
-  {
-    id: 'wha',
-    type: IssueReferenceType.PULL_REQUEST,
-    pull_request_reference: {
-      ...pullRequestReference,
-      //is_draft: true,
-      state: 'closed',
-      merged_at: dateConv(new Date('2024-05-01')),
-    },
-  },
-]
-
-const referencesClosed: IssueReferenceRead[] = [
-  {
-    id: 'wha',
-    type: IssueReferenceType.PULL_REQUEST,
-    pull_request_reference: {
-      ...pullRequestReference,
-      state: 'closed',
-      closed_at: dateConv(new Date('2024-05-01')),
-    },
-  },
-]
-
-const doubleReference: IssueReferenceRead[] = [
-  {
-    id: 'wha',
-    type: IssueReferenceType.PULL_REQUEST,
-    pull_request_reference: {
-      ...pullRequestReference,
-    },
-  },
-  {
-    id: 'wha',
-    type: IssueReferenceType.PULL_REQUEST,
-    pull_request_reference: {
-      ...pullRequestReference,
-    },
-  },
-]
-
-const referencesCommit: IssueReferenceRead[] = [
-  {
-    id: 'wha',
-    type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
-    external_github_commit_reference: {
-      author_login: 'petterheterjag',
-      author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-      sha: '160a13da0ecedacb326de1b913186f448185ad9a',
-      organization_name: 'petterheterjag',
-      repository_name: 'polartest',
-      message: 'What is this',
-      branch_name: 'fix-1234',
-    }, // with branch name
-  },
-  {
-    id: 'wha',
-    type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
-    external_github_commit_reference: {
-      author_login: 'petterheterjag',
-      author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-      sha: '160a13da0ecedacb326de1b913186f448185ad9a',
-      organization_name: 'petterheterjag',
-      repository_name: 'polartest',
-      message: 'What is this',
-    }, // without branch name
-  },
-]
-
 const issueTriaged = {
   ...issue,
   labels: [
@@ -260,22 +155,9 @@ const meta: Meta<typeof IssueListItem> = {
       },
       defaultValue: pledges,
     },
-    references: {
-      options: ['None', 'Draft', 'OpenPR', 'MergedPR', 'ClosedPR', 'Commits'],
-      mapping: {
-        None: [],
-        Draft: referencesDraft,
-        OpenPR: references,
-        MergedPR: referencesMerged,
-        ClosedPR: referencesClosed,
-        Commits: referencesCommit,
-      },
-      defaultValue: pledges,
-    },
   },
   args: {
     pledges: pledges,
-    references: references,
     issue: issue,
     pledgesSummary: {
       ...pledgesSummaries,
@@ -308,7 +190,6 @@ export const StatusTriaged: Story = {
 export const StatusInProgress: Story = {
   args: {
     ...Default.args,
-    references: referencesDraft,
     issue: issueInProgress,
   },
 }
@@ -323,79 +204,7 @@ export const StatusPullRequest: Story = {
 export const StatusClosed: Story = {
   args: {
     ...Default.args,
-    references: referencesMerged,
     issue: issueClosed,
-  },
-}
-
-export const TwoReferences: Story = {
-  args: {
-    ...Default.args,
-    pledges: [],
-    references: doubleReference,
-  },
-}
-
-export const AllReferences: Story = {
-  args: {
-    ...Default.args,
-    pledges: [],
-    references: [
-      ...doubleReference,
-      ...referencesDraft,
-      ...references,
-      ...referencesMerged,
-      ...referencesClosed,
-      ...referencesCommit,
-      {
-        id: 'wha',
-        type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
-        external_github_pull_request_reference: {
-          author_login: 'petterheterjag',
-          author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-          organization_name: 'petterheterjag',
-          repository_name: 'polartest',
-          title: 'foo',
-          number: 23,
-          state: 'open',
-        },
-      },
-      {
-        id: 'wha',
-        type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
-        external_github_pull_request_reference: {
-          author_login: 'petterheterjag',
-          author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-          organization_name: 'petterheterjag',
-          repository_name: 'polartest',
-          title: 'foo',
-          number: 23,
-          state: 'closed',
-        },
-      },
-    ],
-  },
-}
-
-export const ReferencesNoPledge: Story = {
-  args: {
-    ...Default.args,
-    pledges: [],
-    references: doubleReference,
-  },
-}
-
-export const ReferencesCommit: Story = {
-  args: {
-    ...Default.args,
-    references: referencesCommit,
-  },
-}
-
-export const PledgeNoReferences: Story = {
-  args: {
-    ...Default.args,
-    references: [],
   },
 }
 
@@ -473,7 +282,6 @@ export const PledgeConfirmationPending: Story = {
   args: {
     ...Default.args,
     issue: { ...issueClosed, needs_confirmation_solved: true },
-    references: referencesMerged,
     pledges: [
       {
         ...pledgePublicAPI,
@@ -492,7 +300,6 @@ export const PledgeConfirmationPendingConfirmed: Story = {
       needs_confirmation_solved: false,
       confirmed_solved_at: dateConv(addDays(new Date(), -3)),
     },
-    references: referencesMerged,
     pledges: [
       {
         ...pledgePublicAPI,
@@ -568,22 +375,6 @@ export const PledgeMultipleTypes: Story = {
   },
 }
 
-export const StatusPullRequestNameHighlights: Story = {
-  args: {
-    ...Default.args,
-    issue: { ...issuePullRequest, title: ' `IsInstance` type annotation' },
-    references: [
-      {
-        ...references[0],
-        pull_request_reference: {
-          ...pullRequestReference,
-          title: 'Wow! `Highlight!`',
-        },
-      },
-    ],
-  },
-}
-
 export const FundingGoal: Story = {
   args: {
     ...Default.args,
@@ -593,7 +384,6 @@ export const FundingGoal: Story = {
         funding_goal: { currency: 'USD', amount: 60000 },
       },
     },
-    references: referencesMerged,
     pledges: [
       {
         ...pledgePublicAPI,
@@ -611,7 +401,6 @@ export const SelfSummaryFundingGoal: Story = {
         funding_goal: { currency: 'USD', amount: 60000 },
       },
     },
-    references: referencesMerged,
     pledges: [
       {
         ...pledgePublicAPI,
@@ -656,7 +445,6 @@ export const SelfSummaryNoGoal: Story = {
       ...issueClosed,
       upfront_split_to_contributors: 90,
     },
-    references: referencesMerged,
     pledges: [
       {
         ...pledgePublicAPI,
@@ -779,7 +567,6 @@ export const PublicReward: Story = {
       ...issueClosed,
       upfront_split_to_contributors: 90,
     },
-    references: [],
     pledgesSummary: pledgesSummaries,
   },
 }
@@ -800,7 +587,6 @@ export const RewardsStatusAll: Story = {
         pledges_sum: { amount: 8000, currency: 'USD' },
       },
     },
-    references: [],
 
     pledgesSummary: {
       ...pledgesSummaries,
@@ -849,7 +635,6 @@ export const RewardsStatusPaidOnly: Story = {
         pledges_sum: { amount: 8000, currency: 'USD' },
       },
     },
-    references: [],
 
     pledgesSummary: {
       ...pledgesSummaries,
@@ -883,7 +668,6 @@ export const RewardsStatusPaidOnlyZero: Story = {
         pledges_sum: { amount: 8000, currency: 'USD' },
       },
     },
-    references: [],
 
     pledgesSummary: {
       ...pledgesSummaries,

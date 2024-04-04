@@ -83,7 +83,6 @@ export default function ClientPage() {
             <IssueListItem
               key={ps[0].issue.id}
               issue={ps[0].issue}
-              references={[]}
               pledges={ps}
               canAddRemovePolarLabel={false}
               showLogo={true}
@@ -99,7 +98,6 @@ export default function ClientPage() {
             <IssueListItem
               key={ps[0].issue.id}
               issue={ps[0].issue}
-              references={[]}
               pledges={ps}
               canAddRemovePolarLabel={false}
               showLogo={true}

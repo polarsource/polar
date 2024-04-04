@@ -1,9 +1,9 @@
+import DiffStat from './DiffStat'
 import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
 import IssueFundingDetails from './IssueFundingDetails'
 import IssueLabel from './IssueLabel'
 import IssuePledge from './IssuePledge'
-import IssueReference, { DiffStat } from './IssueReference'
 import IssueSummary from './IssueSummary'
 import IssueListItemDecoration, {
   getExpectedHeight,
@@ -20,7 +20,6 @@ export {
   IssueLabel,
   IssueListItemDecoration,
   IssuePledge,
-  IssueReference,
   IssueSummary,
   Pledgers,
   PublicRewardPill,

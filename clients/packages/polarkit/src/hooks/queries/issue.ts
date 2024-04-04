@@ -272,15 +272,3 @@ export const useIssueMarkConfirmed = () =>
       updateIssuesCache(result)
     },
   })
-
-export const useListPullsReferencingIssue = (issueId?: string) =>
-  useQuery({
-    queryKey: ['pullsByIssue', issueId],
-    queryFn: () =>
-      api.pullRequests.search({
-        referencesIssueId: issueId || '',
-      }),
-
-    enabled: !!issueId,
-    retry: defaultRetry,
-  })

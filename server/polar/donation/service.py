@@ -12,7 +12,6 @@ from sqlalchemy import (
     asc,
     desc,
     func,
-    null,
     text,
 )
 from sqlalchemy.orm import joinedload

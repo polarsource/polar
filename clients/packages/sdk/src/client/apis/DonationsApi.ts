@@ -38,7 +38,7 @@ export interface DonationsApiStatisticsRequest {
     toOrganizationId: string;
     startDate: string;
     endDate: string;
-    interval: StatisticsIntervalEnum;
+    donationsInterval: StatisticsDonationsIntervalEnum;
 }
 
 export interface DonationsApiUpdatePaymentIntentRequest {
@@ -162,8 +162,8 @@ export class DonationsApi extends runtime.BaseAPI {
             throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling statistics.');
         }
 
-        if (requestParameters.interval === null || requestParameters.interval === undefined) {
-            throw new runtime.RequiredError('interval','Required parameter requestParameters.interval was null or undefined when calling statistics.');
+        if (requestParameters.donationsInterval === null || requestParameters.donationsInterval === undefined) {
+            throw new runtime.RequiredError('donationsInterval','Required parameter requestParameters.donationsInterval was null or undefined when calling statistics.');
         }
 
         const queryParameters: any = {};
@@ -180,8 +180,8 @@ export class DonationsApi extends runtime.BaseAPI {
             queryParameters['end_date'] = requestParameters.endDate;
         }
 
-        if (requestParameters.interval !== undefined) {
-            queryParameters['interval'] = requestParameters.interval;
+        if (requestParameters.donationsInterval !== undefined) {
+            queryParameters['donationsInterval'] = requestParameters.donationsInterval;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -262,9 +262,9 @@ export class DonationsApi extends runtime.BaseAPI {
 /**
  * @export
  */
-export const StatisticsIntervalEnum = {
+export const StatisticsDonationsIntervalEnum = {
     MONTH: 'month',
     WEEK: 'week',
     DAY: 'day'
 } as const;
-export type StatisticsIntervalEnum = typeof StatisticsIntervalEnum[keyof typeof StatisticsIntervalEnum];
+export type StatisticsDonationsIntervalEnum = typeof StatisticsDonationsIntervalEnum[keyof typeof StatisticsDonationsIntervalEnum];

@@ -35,7 +35,7 @@ export interface TrafficApiReferrersRequest {
 export interface TrafficApiStatisticsRequest {
     startDate: string;
     endDate: string;
-    interval: StatisticsIntervalEnum;
+    trafficInterval: StatisticsTrafficIntervalEnum;
     articleId?: string;
     groupByArticle?: boolean;
     organizationName?: string;
@@ -137,8 +137,8 @@ export class TrafficApi extends runtime.BaseAPI {
             throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling statistics.');
         }
 
-        if (requestParameters.interval === null || requestParameters.interval === undefined) {
-            throw new runtime.RequiredError('interval','Required parameter requestParameters.interval was null or undefined when calling statistics.');
+        if (requestParameters.trafficInterval === null || requestParameters.trafficInterval === undefined) {
+            throw new runtime.RequiredError('trafficInterval','Required parameter requestParameters.trafficInterval was null or undefined when calling statistics.');
         }
 
         const queryParameters: any = {};
@@ -155,8 +155,8 @@ export class TrafficApi extends runtime.BaseAPI {
             queryParameters['end_date'] = requestParameters.endDate;
         }
 
-        if (requestParameters.interval !== undefined) {
-            queryParameters['interval'] = requestParameters.interval;
+        if (requestParameters.trafficInterval !== undefined) {
+            queryParameters['trafficInterval'] = requestParameters.trafficInterval;
         }
 
         if (requestParameters.groupByArticle !== undefined) {
@@ -245,9 +245,9 @@ export class TrafficApi extends runtime.BaseAPI {
 /**
  * @export
  */
-export const StatisticsIntervalEnum = {
+export const StatisticsTrafficIntervalEnum = {
     MONTH: 'month',
     WEEK: 'week',
     DAY: 'day'
 } as const;
-export type StatisticsIntervalEnum = typeof StatisticsIntervalEnum[keyof typeof StatisticsIntervalEnum];
+export type StatisticsTrafficIntervalEnum = typeof StatisticsTrafficIntervalEnum[keyof typeof StatisticsTrafficIntervalEnum];

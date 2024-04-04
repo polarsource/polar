@@ -44,7 +44,7 @@ export default async function Layout({
   return (
     <PublicPageOrganizationContextProvider organization={organization}>
       <div className="flex flex-col">
-        <div className="mx-auto flex w-full max-w-[1580px] flex-col items-start px-4 md:h-full md:flex-row md:gap-16 md:space-y-8 md:px-24 lg:gap-32">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col items-start px-4 md:h-full md:flex-row md:gap-16 md:space-y-8 md:px-24 lg:gap-32">
           {children}
         </div>
       </div>

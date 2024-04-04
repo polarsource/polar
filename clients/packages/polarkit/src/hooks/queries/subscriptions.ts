@@ -312,14 +312,20 @@ export const useSearchSubscriptions = (variables: {
   limit: number
   page: number
   subscriptionTierId?: string
-  subscriptionTierType?: string
+  type?: SubscriptionTierType
   active?: boolean
 }) =>
   useQuery({
     queryKey: ['subscriptions', 'search', JSON.stringify(variables)],
     queryFn: () =>
       api.subscriptions.searchSubscriptions({
-        ...variables,
+        organizationName: variables.organizationName,
+        platform: variables.platform,
+        limit: variables.limit,
+        page: variables.page,
+        subscriptionTierId: variables.subscriptionTierId,
+        type: variables.type,
+        active: variables.active,
       }),
     retry: defaultRetry,
     enabled: !!variables.organizationName && !!variables.platform,

@@ -6,11 +6,34 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { TabsTrigger as TabsTriggerPrimitive } from 'polarkit/components/ui/tabs'
+import {
+  TabsList as TabsListPrimitive,
+  TabsTrigger as TabsTriggerPrimitive,
+} from 'polarkit/components/ui/tabs'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import PledgeCheckoutContribute from './PledgeCheckoutContribute'
 import PledgeCheckoutFund from './PledgeCheckoutFund'
+
+export const PledgeTabsList = React.forwardRef<
+  React.ElementRef<typeof TabsListPrimitive>,
+  React.ComponentPropsWithoutRef<typeof TabsListPrimitive> & {
+    vertical?: boolean
+  }
+>(({ className, vertical, ...props }, ref) => (
+  <TabsListPrimitive
+    ref={ref}
+    className={twMerge(
+      'dark:bg-polar-900 bg-gray-75 dark:ring-polar-900 relative flex h-fit w-fit flex-row flex-col items-start gap-2 rounded-xl ring-1 ring-gray-100 md:flex-row',
+      vertical
+        ? 'flex-col md:flex-col'
+        : 'md:flex-row md:items-center md:justify-start',
+      className,
+    )}
+    {...props}
+  />
+))
+TabsList.displayName = PledgeTabsList.displayName
 
 export const PledgeTabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsTriggerPrimitive>,
@@ -50,7 +73,7 @@ const PledgeCheckoutPanel = ({
         </label>
 
         <Tabs defaultValue="fund" className="">
-          <TabsList className="w-full">
+          <PledgeTabsList className="w-full">
             <PledgeTabsTrigger
               value="fund"
               className="dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 dark:data-[state=active]:text-polar-50 flex w-full flex-row items-center gap-x-2 px-4 py-2 font-normal hover:text-gray-950 data-[state=active]:rounded-md data-[state=active]:font-medium data-[state=active]:text-gray-800 data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600 dark:data-[state=active]:text-white"
@@ -68,7 +91,7 @@ const PledgeCheckoutPanel = ({
                 Contribute
               </div>
             </PledgeTabsTrigger>
-          </TabsList>
+          </PledgeTabsList>
           <TabsContent value="fund">
             <PledgeCheckoutFund
               issue={issue}

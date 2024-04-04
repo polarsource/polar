@@ -18,7 +18,7 @@ const TabsList = React.forwardRef<
   <TabsListPrimitive
     ref={ref}
     className={twMerge(
-      'dark:bg-polar-900 bg-gray-75 dark:ring-polar-900 relative flex h-fit w-fit flex-row flex-col items-start gap-2 rounded-xl ring-1 ring-gray-100 md:flex-row',
+      'relative flex h-fit w-fit flex-row flex-col items-start gap-2 rounded-xl bg-transparent ring-0 md:flex-row dark:bg-transparent dark:ring-0',
       vertical
         ? 'flex-col md:flex-col'
         : 'md:flex-row md:items-center md:justify-start',

@@ -47,7 +47,7 @@ export default async function Layout({
         userAdminOrganizations={userAdminOrganizations?.items ?? []}
       />
       <PublicLayout showUpsellFooter={!authenticatedUser} wide>
-        <div className="relative flex min-h-screen w-full flex-col">
+        <div className="relative flex min-h-screen w-full flex-col py-4 md:py-0">
           {children}
         </div>
       </PublicLayout>

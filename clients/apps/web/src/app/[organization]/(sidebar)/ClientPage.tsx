@@ -1,6 +1,7 @@
 'use client'
 
 import revalidate from '@/app/actions'
+import { DonateWidget } from '@/components/Donations/DontateWidget'
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { PublicPagePostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
@@ -181,6 +182,10 @@ const ClientPage = ({
         </div>
 
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
+          {organization.donations_enabled && (
+            <DonateWidget organization={organization} />
+          )}
+
           <HighlightedTiersEditor
             organization={organization}
             adminOrganizations={adminOrganizations}

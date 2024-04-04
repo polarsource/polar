@@ -1,17 +1,12 @@
-from typing import Annotated
+import datetime
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import UUID4
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
-from polar.donation.schemas import (
-    Donation,
-    DonationCreateStripePaymentIntent,
-    DonationStripePaymentIntentMutationResponse,
-    DonationUpdateStripePaymentIntent,
-)
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
@@ -23,6 +18,13 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
+from .schemas import (
+    Donation,
+    DonationCreateStripePaymentIntent,
+    DonationStatistics,
+    DonationStripePaymentIntentMutationResponse,
+    DonationUpdateStripePaymentIntent,
+)
 from .service import SearchSortProperty, donation_service
 
 router = APIRouter(tags=["donations"])
@@ -168,3 +170,36 @@ async def update_payment_intent(
         amount_including_fee=updates.amount,
         client_secret=pi.client_secret,
     )
+
+
+@router.get(
+    "/donations/statistics",
+    response_model=DonationStatistics,
+    tags=[Tags.PUBLIC],
+)
+async def statistics(
+    auth: UserRequiredAuth,
+    to_organization_id: UUID4,
+    start_date: datetime.date = Query(...),
+    end_date: datetime.date = Query(...),
+    interval: Literal["month", "week", "day"] = Query(...),
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> DonationStatistics:
+    org = await organization_service.get(session, to_organization_id)
+    if not org:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    res = await donation_service.statistics(
+        session,
+        to_organization_id=to_organization_id,
+        start_date=start_date,
+        end_date=end_date,
+        start_of_last_period=end_date,
+        interval=interval,
+    )
+
+    return DonationStatistics(periods=res)

@@ -1,4 +1,5 @@
 import datetime
+from collections.abc import Sequence
 from typing import Literal, Self
 
 from pydantic import UUID4, Field
@@ -106,3 +107,13 @@ class DonationStripePaymentIntentMutationResponse(Schema):
 
 class DonationCreateFromPaymentIntent(Schema):
     payment_intent_id: str
+
+
+class DonationStatisticsPeriod(Schema):
+    start_date: datetime.date
+    end_date: datetime.date
+    sum: int
+
+
+class DonationStatistics(Schema):
+    periods: Sequence[DonationStatisticsPeriod]

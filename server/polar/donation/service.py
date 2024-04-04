@@ -1,13 +1,25 @@
+import datetime
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, Literal
+from uuid import UUID
 
 import stripe as stripe_lib
-from sqlalchemy import UnaryExpression, asc, desc
+from sqlalchemy import (
+    ColumnExpressionArgument,
+    UnaryExpression,
+    and_,
+    asc,
+    desc,
+    func,
+    null,
+    text,
+)
 from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.currency.schemas import CurrencyAmount
+from polar.donation.schemas import DonationStatisticsPeriod
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import (
     DonationPaymentIntentMetadata,
@@ -17,6 +29,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.money import get_cents_in_dollar_string
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
 from polar.models.donation import Donation
 from polar.models.held_balance import HeldBalance
 from polar.models.organization import Organization
@@ -288,6 +301,68 @@ class DonationService:
                 ),
             ),
         )
+
+    async def statistics(
+        self,
+        session: AsyncSession,
+        *,
+        to_organization_id: UUID,
+        start_date: datetime.date,
+        end_date: datetime.date,
+        interval: Literal["month", "week", "day"],
+        start_of_last_period: datetime.date | None = None,
+    ) -> Sequence[DonationStatisticsPeriod]:
+        interval_txt = {
+            "month": "interval 'P1M'",
+            "week": "interval 'P1W'",
+            "day": "interval 'P1D'",
+        }[interval]
+
+        sql_interval = text(interval_txt)
+
+        start_date_column = func.generate_series(
+            start_date, end_date, sql_interval
+        ).column_valued("start_date")
+        end_date_column = start_date_column + sql_interval
+
+        start_of_last_period = start_of_last_period or utc_now().date().replace(day=1)
+
+        joinclauses: list[ColumnExpressionArgument[bool]] = []
+        joinclauses.append(Donation.to_organization_id == to_organization_id)
+
+        stmt = (
+            sql.select(
+                start_date_column,
+            )
+            .add_columns(
+                end_date_column,
+                func.coalesce(
+                    func.sum(Donation.amount_received).filter(
+                        Donation.created_at >= start_date_column,
+                        Donation.created_at < end_date_column,
+                    ),
+                    0,
+                ),
+            )
+            .join(
+                Donation,
+                onclause=and_(True, *joinclauses),
+            )
+            .where(start_date_column <= start_of_last_period)
+            .group_by(start_date_column)
+            .order_by(start_date_column)
+        )
+
+        res = await session.execute(stmt)
+
+        return [
+            DonationStatisticsPeriod(
+                start_date=row_start_date,
+                end_date=row_end_date,
+                sum=sum,
+            )
+            for (row_start_date, row_end_date, sum) in res.tuples().all()
+        ]
 
 
 donation_service = DonationService()

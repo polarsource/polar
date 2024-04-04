@@ -2332,6 +2332,44 @@ export interface DonationOrganization {
 /**
  * 
  * @export
+ * @interface DonationStatistics
+ */
+export interface DonationStatistics {
+    /**
+     * 
+     * @type {Array<DonationStatisticsPeriod>}
+     * @memberof DonationStatistics
+     */
+    periods: Array<DonationStatisticsPeriod>;
+}
+/**
+ * 
+ * @export
+ * @interface DonationStatisticsPeriod
+ */
+export interface DonationStatisticsPeriod {
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationStatisticsPeriod
+     */
+    start_date: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationStatisticsPeriod
+     */
+    end_date: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof DonationStatisticsPeriod
+     */
+    sum: number;
+}
+/**
+ * 
+ * @export
  * @interface DonationStripePaymentIntentMutationResponse
  */
 export interface DonationStripePaymentIntentMutationResponse {

@@ -125,21 +125,20 @@ async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
     if not repo:
         return
 
+    _pledge_amount = pledge.amount / 100
+    _issue_polar_url = f"https://polar.sh/{org.name}/{repo.name}/issues/{issue.number}"
+    _issue_github_url = (
+        f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}"
+    )
+
+    description = (
+        f"A ${_pledge_amount} pledge has been made towards [{repo.name}#{issue.number}]({_issue_github_url}): "
+        f"\n > `{issue.title}`."
+    )
+
     for wh in webhooks:
         if wh.integration == "discord":
             webhook = AsyncDiscordWebhook(url=wh.url, content="New Pledge Received")
-            _pledge_amount = pledge.amount / 100
-            _issue_polar_url = (
-                f"https://polar.sh/{org.name}/{repo.name}/issues/{issue.number}"
-            )
-            _issue_github_url = (
-                f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}"
-            )
-
-            description = (
-                f"A ${_pledge_amount} pledge has been made towards [{repo.name}#{issue.number}]({_issue_github_url}): "
-                f"\n > `{issue.title}`."
-            )
 
             embed = DiscordEmbed(
                 title="New pledge Received",

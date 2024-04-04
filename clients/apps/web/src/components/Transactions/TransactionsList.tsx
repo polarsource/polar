@@ -15,6 +15,7 @@ import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
+  ReactQueryLoading,
 } from 'polarkit/components/ui/atoms/datatable'
 import {
   DataTableOnChangeFn,
@@ -161,6 +162,7 @@ interface TransactionsListProps {
   sorting: DataTableSortingState
   onSortingChange?: DataTableOnChangeFn<DataTableSortingState>
   extraColumns?: DataTableColumnDef<Transaction | TransactionEmbedded>[]
+  isLoading: boolean | ReactQueryLoading
 }
 
 export const isTransaction = (
@@ -175,6 +177,7 @@ const TransactionsList = ({
   sorting,
   onSortingChange,
   extraColumns,
+  isLoading,
 }: TransactionsListProps) => {
   const columns: DataTableColumnDef<Transaction | TransactionEmbedded>[] = [
     {
@@ -324,6 +327,7 @@ const TransactionsList = ({
       getSubRows={(row) =>
         isTransaction(row) ? row.account_incurred_transactions : undefined
       }
+      isLoading={isLoading}
     />
   )
 }

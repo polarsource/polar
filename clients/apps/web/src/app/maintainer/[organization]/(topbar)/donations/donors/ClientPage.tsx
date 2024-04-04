@@ -182,6 +182,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             onPaginationChange={setPagination}
             sorting={sorting}
             onSortingChange={setSorting}
+            isLoading={donationsHook}
           />
         ) : null}
       </div>

@@ -26,6 +26,8 @@ export interface ReactQueryLoading {
   isFetching: boolean
   isFetched: boolean
   isLoading: boolean
+  status: string
+  fetchStatus: string
 }
 
 interface DataTableProps<TData, TValue> {
@@ -48,6 +50,13 @@ export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
 
 export type DataTablePaginationState = PaginationState
 export type DataTableSortingState = SortingState
+
+const queryIsDisabled = (s: ReactQueryLoading): boolean => {
+  if (s.status === 'pending' && s.fetchStatus === 'idle') {
+    return true
+  }
+  return false
+}
 
 export function DataTable<TData, TValue>({
   columns,
@@ -81,7 +90,8 @@ export function DataTable<TData, TValue>({
   const calcLoading =
     typeof isLoading === 'boolean'
       ? isLoading
-      : !isLoading.isFetched || isLoading.isLoading
+      : (!isLoading.isFetched || isLoading.isLoading) &&
+        !queryIsDisabled(isLoading)
 
   return (
     <div className={twMerge('flex flex-col gap-6', className)}>

@@ -73,9 +73,12 @@ export default function ClientPage({
     )
   }
 
-  const { data: organizationAccount } = useAccount(
+  const { data: organizationAccount, isLoading: accountIsLoading } = useAccount(
     personalOrganization?.account_id,
   )
+
+  const dependenciesIsLoading =
+    personalOrganization === undefined || accountIsLoading
 
   const balancesHook = useSearchTransactions({
     accountId: organizationAccount?.id,
@@ -144,7 +147,7 @@ export default function ClientPage({
               onPaginationChange={setPagination}
               sorting={sorting}
               onSortingChange={setSorting}
-              isLoading={balancesHook}
+              isLoading={dependenciesIsLoading || balancesHook}
             />
           </TabsContent>
           <TabsContent value="payouts">
@@ -155,7 +158,7 @@ export default function ClientPage({
               onPaginationChange={setPagination}
               sorting={sorting}
               onSortingChange={setSorting}
-              isLoading={payoutsHooks}
+              isLoading={dependenciesIsLoading || payoutsHooks}
             />
           </TabsContent>
         </Tabs>

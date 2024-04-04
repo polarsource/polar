@@ -128,3 +128,33 @@ export const EarningsMetric: React.FC<EarningsMetricProps> = ({
     />
   )
 }
+
+interface DonationsEarningsMetricProps {
+  data: number
+  dataDate?: Date
+  previousData?: number
+  hasPayoutAccount: boolean
+}
+
+export const DonationsEarningsMetric: React.FC<EarningsMetricProps> = ({
+  data,
+  dataDate,
+  previousData,
+  hasPayoutAccount,
+}) => {
+  return (
+    <SubscriptionsMetric
+      data={data}
+      dataDate={dataDate}
+      previousData={previousData}
+      title={
+        <div className="inline-flex items-center gap-2">
+          <div>Donation Earnings</div>
+          {!hasPayoutAccount && <NoPayoutAccountTooltip />}
+        </div>
+      }
+      IconComponent={AttachMoney}
+      dataFormatter={(data) => formatCurrencyAndAmount(data, 'usd')}
+    />
+  )
+}

@@ -16,6 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   DonationCreateStripePaymentIntent,
+  DonationStatistics,
   DonationStripePaymentIntentMutationResponse,
   DonationUpdateStripePaymentIntent,
   HTTPValidationError,
@@ -31,6 +32,13 @@ export interface DonationsApiSearchDonationsRequest {
     page?: number;
     limit?: number;
     sorting?: Array<string>;
+}
+
+export interface DonationsApiStatisticsRequest {
+    toOrganizationId: string;
+    startDate: string;
+    endDate: string;
+    interval: StatisticsIntervalEnum;
 }
 
 export interface DonationsApiUpdatePaymentIntentRequest {
@@ -139,6 +147,72 @@ export class DonationsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Statistics
+     */
+    async statisticsRaw(requestParameters: DonationsApiStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DonationStatistics>> {
+        if (requestParameters.toOrganizationId === null || requestParameters.toOrganizationId === undefined) {
+            throw new runtime.RequiredError('toOrganizationId','Required parameter requestParameters.toOrganizationId was null or undefined when calling statistics.');
+        }
+
+        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
+            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling statistics.');
+        }
+
+        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
+            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling statistics.');
+        }
+
+        if (requestParameters.interval === null || requestParameters.interval === undefined) {
+            throw new runtime.RequiredError('interval','Required parameter requestParameters.interval was null or undefined when calling statistics.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.toOrganizationId !== undefined) {
+            queryParameters['to_organization_id'] = requestParameters.toOrganizationId;
+        }
+
+        if (requestParameters.startDate !== undefined) {
+            queryParameters['start_date'] = requestParameters.startDate;
+        }
+
+        if (requestParameters.endDate !== undefined) {
+            queryParameters['end_date'] = requestParameters.endDate;
+        }
+
+        if (requestParameters.interval !== undefined) {
+            queryParameters['interval'] = requestParameters.interval;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/donations/statistics`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Statistics
+     */
+    async statistics(requestParameters: DonationsApiStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DonationStatistics> {
+        const response = await this.statisticsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Update Payment Intent
      */
     async updatePaymentIntentRaw(requestParameters: DonationsApiUpdatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DonationStripePaymentIntentMutationResponse>> {
@@ -184,3 +258,13 @@ export class DonationsApi extends runtime.BaseAPI {
     }
 
 }
+
+/**
+ * @export
+ */
+export const StatisticsIntervalEnum = {
+    MONTH: 'month',
+    WEEK: 'week',
+    DAY: 'day'
+} as const;
+export type StatisticsIntervalEnum = typeof StatisticsIntervalEnum[keyof typeof StatisticsIntervalEnum];

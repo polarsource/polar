@@ -126,6 +126,7 @@ export const OrganizationPublicSidebar = ({
             size="small"
             loading={updateOrganizationMutation.isPending}
             failed={updateOrganizationMutation.isError}
+            maxLength={160}
           />
           <div className="flex flex-row flex-wrap items-center gap-2.5 text-lg">
             <SocialLink href={`https://github.com/${organization.name}`}>

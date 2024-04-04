@@ -33,7 +33,7 @@ import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useUpdateProject } from 'polarkit/hooks'
 import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 const ClientPage = ({
   organization,
@@ -54,7 +54,6 @@ const ClientPage = ({
   links: { opengraph: OgObject; url: string }[]
   posts: Article[]
 }) => {
-  const [descriptionIsLoading, setDescriptionIsLoading] = useState(false)
   const isAdmin = useMemo(
     () => adminOrganizations?.some((org) => org.id === organization.id),
     [organization, adminOrganizations],
@@ -89,15 +88,10 @@ const ClientPage = ({
 
   const updateDescription = useDebouncedCallback(
     async (description: string | undefined) => {
-      setDescriptionIsLoading(true)
-      try {
-        await updateProfile({ set_description: true, description })
-      } finally {
-        setDescriptionIsLoading(false)
-      }
+      await updateProfile({ set_description: true, description })
     },
     500,
-    [updateProfile, setDescriptionIsLoading],
+    [updateProfile],
   )
 
   const updateLinks = (links: LinkItem[]) => {
@@ -113,18 +107,19 @@ const ClientPage = ({
       <div className="flex w-full flex-col gap-16">
         <div className="flex flex-col gap-16 md:flex-row">
           <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16">
-            {repository.description && (
-              <DescriptionEditor
-                description={
-                  repository.profile_settings.description ??
-                  repository.description ??
-                  ''
-                }
-                onChange={updateDescription}
-                disabled={!isAdmin}
-                loading={descriptionIsLoading}
-              />
-            )}
+            <DescriptionEditor
+              description={
+                repository.profile_settings.description ??
+                repository.description ??
+                ''
+              }
+              onChange={updateDescription}
+              disabled={!isAdmin}
+              loading={updateProjectMutation.isPending}
+              failed={updateProjectMutation.isError}
+              maxLength={240}
+            />
+
             <CoverEditor
               organization={organization}
               onChange={updateCoverImage}

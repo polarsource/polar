@@ -13,9 +13,8 @@ import {
   SubscribersMetric,
 } from '@/components/Subscriptions/SubscriptionsMetric'
 import { getSubscriptionTiersByType } from '@/components/Subscriptions/utils'
-import { Organization, Subscription, SubscriptionTierType } from '@polar-sh/sdk'
+import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
@@ -24,8 +23,12 @@ import {
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import { useSubscriptionTiers } from 'polarkit/hooks'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useSearchSubscriptions,
+  useSubscriptionStatistics,
+  useSubscriptionTiers,
+} from 'polarkit/hooks'
+import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const generateDemoStats = (
@@ -101,15 +104,43 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
     }
   }, [subscriptionTierId, subscriptionTierType])
 
-  const [statisticsPeriods, setStatisticsPeriods] = useState<
-    ParsedSubscriptionsStatisticsPeriod[]
-  >([])
-
-  const [isDemoData, setIsDemoData] = useState(false)
-
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
     number | undefined
   >()
+
+  const statistics = useSubscriptionStatistics({
+    startDate,
+    endDate,
+    platform: organization.platform,
+    orgName: organization.name,
+    ...apiQueryParams,
+  })
+
+  const periods = statistics?.data?.periods ?? []
+
+  const realStatisticsPeriods: ParsedSubscriptionsStatisticsPeriod[] = useMemo(
+    () =>
+      periods.map((p) => {
+        return { ...p, parsedStartDate: new Date(p.start_date) }
+      }),
+    [periods],
+  )
+
+  const haveData = useMemo(
+    () =>
+      realStatisticsPeriods.some((p) => p.earnings > 0 || p.subscribers > 0),
+    [realStatisticsPeriods],
+  )
+
+  const statisticsPeriods = useMemo(
+    () =>
+      haveData
+        ? realStatisticsPeriods
+        : generateDemoStats(realStatisticsPeriods),
+    [haveData, realStatisticsPeriods],
+  )
+
+  const isDemoData = !haveData && statistics.isFetched
 
   const displayedPeriod = useMemo(() => {
     if (statisticsPeriods.length === 0) {
@@ -131,53 +162,16 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
     return statisticsPeriods[statisticsPeriods.length - 2]
   }, [statisticsPeriods])
 
-  const [lastSubscriptions, setLastSubscriptions] = useState<
-    Subscription[] | undefined
-  >()
+  const lastSubscriptionsHook = useSearchSubscriptions({
+    platform: organization.platform,
+    organizationName: organization.name,
+    active: true,
+    limit: 5,
+    page: 1,
+    ...apiQueryParams,
+  })
 
-  useEffect(() => {
-    setStatisticsPeriods([])
-    api.subscriptions
-      .getSubscriptionsStatistics({
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
-        platform: organization.platform,
-        organizationName: organization.name,
-        ...apiQueryParams,
-      })
-      .then((summary) => {
-        const statisticsPeriods = summary.periods.map((period) => ({
-          ...period,
-          parsedStartDate: new Date(period.start_date),
-        }))
-
-        // Empty stats, generate demo data
-        if (
-          statisticsPeriods.every(
-            (period) => period.subscribers === 0 && period.earnings === 0,
-          )
-        ) {
-          setStatisticsPeriods(generateDemoStats(statisticsPeriods))
-          setIsDemoData(true)
-        } else {
-          setStatisticsPeriods(statisticsPeriods)
-          setIsDemoData(false)
-        }
-      })
-  }, [startDate, endDate, organization, apiQueryParams])
-
-  useEffect(() => {
-    setLastSubscriptions(undefined)
-    api.subscriptions
-      .searchSubscriptions({
-        platform: organization.platform,
-        organizationName: organization.name,
-        active: true,
-        limit: 5,
-        ...apiQueryParams,
-      })
-      .then((subscriptions) => setLastSubscriptions(subscriptions.items || []))
-  }, [organization, apiQueryParams])
+  const lastSubscriptions = lastSubscriptionsHook.data?.items ?? []
 
   return (
     <div className="flex flex-col gap-6">
@@ -221,7 +215,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
           </>
         )}
         {!displayedPeriod &&
-          [0, 1, 2].map((i) => (
+          [0, 1].map((i) => (
             <Card key={`metric-loading-${i}`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <Skeleton className="h-4 w-1/2" />
@@ -257,9 +251,9 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
               <CardHeader>
                 <div className="inline-flex gap-2">
                   <div className="font-medium">Earnings</div>
-                  {organization.account_id === null && (
+                  {organization.account_id === null ? (
                     <NoPayoutAccountTooltip />
-                  )}
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent>
@@ -272,19 +266,21 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
             </Card>
           </>
         )}
-        {statisticsPeriods.length === 0 &&
-          [0, 1].map((i) => (
-            <Card key={`chart-loading-${i}`}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <Skeleton className="h-4 w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-[300px]" />
-              </CardContent>
-            </Card>
-          ))}
+        {statisticsPeriods.length === 0
+          ? [0, 1].map((i) => (
+              <Card key={`chart-loading-${i}`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[300px]" />
+                </CardContent>
+              </Card>
+            ))
+          : null}
       </div>
-      {(lastSubscriptions?.length ?? 0) > 0 && (
+
+      {lastSubscriptions.length > 0 && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -294,79 +290,75 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              {lastSubscriptions !== undefined &&
-                lastSubscriptions.map((subscription) => (
-                  <div
-                    key={subscription.id}
-                    className="flex flex-row items-center justify-between"
-                  >
-                    <div className="flex flex-row items-center justify-center gap-2">
-                      <Avatar
-                        avatar_url={
-                          subscription.organization
-                            ? subscription.organization.avatar_url
-                            : subscription.user.avatar_url
-                        }
-                        name={
-                          subscription.organization
-                            ? subscription.organization.name
-                            : subscription.user.public_name
-                        }
-                        className="h-8 w-8"
-                      />
-                      <div className="flex flex-col text-sm">
-                        {subscription.organization ? (
-                          <div className="font-medium">
-                            {subscription.organization.name}
-                          </div>
-                        ) : (
-                          <>
-                            {subscription.user.github_username ? (
-                              <>
-                                <div className="font-medium">
-                                  {subscription.user.github_username}
-                                </div>
-                                <div className="dark:text-polar-500 text-xs text-gray-400">
-                                  {subscription.user.email}
-                                </div>
-                              </>
-                            ) : (
+              {lastSubscriptions.map((subscription) => (
+                <div
+                  key={subscription.id}
+                  className="flex flex-row items-center justify-between"
+                >
+                  <div className="flex flex-row items-center justify-center gap-2">
+                    <Avatar
+                      avatar_url={
+                        subscription.organization
+                          ? subscription.organization.avatar_url
+                          : subscription.user.avatar_url
+                      }
+                      name={
+                        subscription.organization
+                          ? subscription.organization.name
+                          : subscription.user.public_name
+                      }
+                      className="h-8 w-8"
+                    />
+                    <div className="flex flex-col text-sm">
+                      {subscription.organization ? (
+                        <div className="font-medium">
+                          {subscription.organization.name}
+                        </div>
+                      ) : (
+                        <>
+                          {subscription.user.github_username ? (
+                            <>
                               <div className="font-medium">
+                                {subscription.user.github_username}
+                              </div>
+                              <div className="dark:text-polar-500 text-xs text-gray-400">
                                 {subscription.user.email}
                               </div>
-                            )}
-                          </>
-                        )}
+                            </>
+                          ) : (
+                            <div className="font-medium">
+                              {subscription.user.email}
+                            </div>
+                          )}
+                        </>
+                      )}
 
-                        <div className="dark:text-polar-500 text-xs text-gray-400">
-                          <FormattedDateTime
-                            datetime={subscription.started_at as string}
-                          />
-                        </div>
+                      <div className="dark:text-polar-500 text-xs text-gray-400">
+                        <FormattedDateTime
+                          datetime={subscription.started_at as string}
+                        />
                       </div>
                     </div>
-                    <div>
-                      <SubscriptionTierPill
-                        subscriptionTier={subscription.subscription_tier}
-                        price={subscription.price}
-                      />
-                    </div>
                   </div>
-                ))}
-              {lastSubscriptions === undefined &&
-                [0, 1, 2, 3, 4].map((i) => (
-                  <Skeleton key={`activity-loading-${i}`} className="h-4" />
-                ))}
+                  <div>
+                    <SubscriptionTierPill
+                      subscriptionTier={subscription.subscription_tier}
+                      price={subscription.price}
+                    />
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
       )}
-      {isDemoData && (
+
+      {isDemoData ? (
         <p className="text-muted-foreground text-center text-sm">
           Demonstration data. Get your first subscribers to unlock your
           statistics!
         </p>
-      )}
+      ) : null}
     </div>
   )
 }

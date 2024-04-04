@@ -8,8 +8,6 @@ from .donation import Donation
 from .held_balance import HeldBalance
 from .invites import Invite
 from .issue import Issue
-from .issue_dependency import IssueDependency
-from .issue_reference import IssueReference
 from .issue_reward import IssueReward
 from .magic_link import MagicLink
 from .notification import Notification
@@ -46,8 +44,6 @@ __all__ = [
     "HeldBalance",
     "Invite",
     "Issue",
-    "IssueDependency",
-    "IssueReference",
     "IssueReward",
     "MagicLink",
     "Model",

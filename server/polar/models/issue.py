@@ -34,7 +34,6 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.types import JSONAny
 
 if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.issue_reference import IssueReference
     from polar.models.organization import Organization
     from polar.models.pledge import Pledge
     from polar.models.repository import Repository
@@ -194,10 +193,6 @@ class Issue(IssueFields, RecordModel):
     github_timeline_fetched_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-
-    @declared_attr
-    def references(cls) -> "Mapped[list[IssueReference]]":
-        return relationship("IssueReference", lazy="raise", viewonly=True)
 
     @declared_attr
     def pledges(cls) -> "Mapped[list[Pledge]]":

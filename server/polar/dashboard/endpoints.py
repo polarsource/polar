@@ -17,7 +17,6 @@ from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
-from polar.issue.schemas import IssueReferenceRead
 from polar.issue.service import issue
 from polar.models.organization import Organization
 from polar.models.pledge import PledgeState
@@ -211,7 +210,6 @@ async def dashboard(
         else None,
         have_pledge=True if only_pledged else None,
         have_polar_badge=True if only_badged else None,
-        load_references=True,
         load_pledges=True,
         load_repository=True,
         show_closed=show_closed,
@@ -260,15 +258,6 @@ async def dashboard(
             irefs.append(pledge_schema)
             issue_pledges[i.id] = irefs
 
-    # get linked pull requests
-    issue_references: dict[UUID, list[IssueReferenceRead]] = {}
-    for i in issues:
-        refs = i.references
-        for ref in refs:
-            issue_refs = issue_references.get(ref.issue_id, [])
-            issue_refs.append(IssueReferenceRead.from_model(ref))
-            issue_references[ref.issue_id] = issue_refs
-
     # get pledge summary (public data, vs pledges who are dependent on who you are)
     pledge_summaries = await pledge_service.issues_pledge_type_summary(
         session,
@@ -305,7 +294,6 @@ async def dashboard(
             attributes=IssueSchema.from_db(i),
             rewards=issue_rewards.get(i.id, None),
             pledges_summary=issue_pledge_summaries.get(i.id, None),
-            references=issue_references.get(i.id, None),
             pledges=issue_pledges.get(i.id, None),
         )
         for i in issues

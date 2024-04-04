@@ -13,6 +13,7 @@ import {
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { SubscriptionTierEditor } from '@/components/Profile/SubscriptionTierEditor/SubscriptionTierEditor'
 import useDebouncedCallback from '@/hooks/utils'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { ArrowForward } from '@mui/icons-material'
@@ -260,12 +261,13 @@ const ClientPage = ({
               ) : null}
             </div>
 
-            {organization.donations_enabled && (
-              <DonateWidget
-                organization={organization}
-                repository={repository}
-              />
-            )}
+            {isFeatureEnabled('donations') &&
+              organization.donations_enabled && (
+                <DonateWidget
+                  organization={organization}
+                  repository={repository}
+                />
+              )}
 
             {posts.length > 0 && (
               <div className="flex flex-col gap-6">

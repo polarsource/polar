@@ -12,6 +12,7 @@ import {
   LinksEditor,
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { GitHub, ViewDayOutlined } from '@mui/icons-material'
 import {
@@ -182,7 +183,7 @@ const ClientPage = ({
         </div>
 
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
-          {organization.donations_enabled && (
+          {isFeatureEnabled('donations') && organization.donations_enabled && (
             <DonateWidget organization={organization} />
           )}
 

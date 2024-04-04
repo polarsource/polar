@@ -48,7 +48,7 @@ class Account(RecordModel):
     is_payouts_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     processor_fees_applicable: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
+        Boolean, nullable=False, default=True
     )
     _platform_pledge_fee_percent: Mapped[int | None] = mapped_column(
         Integer,

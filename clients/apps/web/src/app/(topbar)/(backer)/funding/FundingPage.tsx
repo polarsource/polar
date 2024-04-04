@@ -7,6 +7,7 @@ import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import { useAuth, useGitHubAccount } from '@/hooks'
 import { IssueListType, IssueStatus } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
   useAccount,
@@ -53,41 +54,39 @@ const FundingPage = () => {
 
   return (
     <div className="flex flex-col-reverse gap-8 px-4 md:flex-row md:gap-16 md:px-0">
-      <div className="mb-24 mt-2 w-full space-y-10">
-        <div className="space-y-10">
-          {showPendingRewardsBanner && (
-            <Banner color="blue">
-              <div className="flex w-full items-center justify-between">
-                <span>
-                  Great news! You have pending rewards and payouts. Setup a
-                  Stripe account to get paid.
-                </span>
-                <Link href="/rewards" className="whitespace-nowrap font-medium">
-                  Go to Rewards
-                </Link>
-              </div>
-            </Banner>
-          )}
-
-          {totalCount !== undefined && totalCount > 0 && (
-            <div className="flex flex-col gap-y-4">
-              <h1 className="dark:text-polar-50 text-lg text-gray-950">
-                Funded issues
-              </h1>
-              <IssueList
-                totalCount={totalCount}
-                loading={dashboardQuery.isLoading}
-                dashboard={dashboard}
-                filters={filters}
-                onSetFilters={() => {}}
-                isInitialLoading={dashboardQuery.isInitialLoading}
-                isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-                hasNextPage={dashboardQuery.hasNextPage || false}
-                fetchNextPage={dashboardQuery.fetchNextPage}
-              />
+      <div className="flex w-full flex-col gap-y-8">
+        {showPendingRewardsBanner && (
+          <Banner color="blue">
+            <div className="flex w-full items-center justify-between">
+              <span>
+                Great news! You have pending rewards and payouts. Setup a Stripe
+                account to get paid.
+              </span>
+              <Link href="/rewards" className="whitespace-nowrap font-medium">
+                Go to Rewards
+              </Link>
             </div>
-          )}
-        </div>
+          </Banner>
+        )}
+
+        {totalCount !== undefined && totalCount > 0 && (
+          <ShadowBoxOnMd className="flex flex-col gap-y-4">
+            <h1 className="dark:text-polar-50 text-lg text-gray-950">
+              Funded issues
+            </h1>
+            <IssueList
+              totalCount={totalCount}
+              loading={dashboardQuery.isLoading}
+              dashboard={dashboard}
+              filters={filters}
+              onSetFilters={() => {}}
+              isInitialLoading={dashboardQuery.isInitialLoading}
+              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+              hasNextPage={dashboardQuery.hasNextPage || false}
+              fetchNextPage={dashboardQuery.fetchNextPage}
+            />
+          </ShadowBoxOnMd>
+        )}
 
         {githubAccount && <Recommended />}
       </div>

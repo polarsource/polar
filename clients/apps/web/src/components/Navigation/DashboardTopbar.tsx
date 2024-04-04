@@ -36,7 +36,11 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>
-              <TabsTrigger value={item.title} size="small">
+              <TabsTrigger
+                className="flex flex-row items-center gap-x-2"
+                value={item.title}
+                size="small"
+              >
                 {item.icon && <div className="text-[17px]">{item.icon}</div>}
                 <div>{item.title}</div>
               </TabsTrigger>

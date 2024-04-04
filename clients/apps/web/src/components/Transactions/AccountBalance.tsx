@@ -1,3 +1,4 @@
+import { Skeleton } from '@mui/material'
 import { Account, Status } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -15,9 +16,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
   account,
   onWithdrawSuccess: _onWithdrawSuccess,
 }) => {
-  const { data: summary, refetch: refetchBalance } = useTransactionsSummary(
-    account.id,
-  )
+  const {
+    data: summary,
+    refetch: refetchBalance,
+    isLoading,
+  } = useTransactionsSummary(account.id)
   const canWithdraw =
     account.status === Status.ACTIVE &&
     summary?.balance?.amount &&
@@ -46,7 +49,9 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium capitalize">Balance</h2>
             <div className="text-4xl">
-              {
+              {isLoading ? (
+                <Skeleton />
+              ) : (
                 <>
                   $
                   {getCentsInDollarString(
@@ -55,7 +60,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
                     true,
                   )}
                 </>
-              }
+              )}
             </div>
           </div>
           <div>

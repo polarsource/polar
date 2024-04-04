@@ -91,10 +91,19 @@ export default function ClientPage({
           </Banner>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <DonationActivity organization={organization} donations={donations} />
-          <DonationsEarnings organization={organization} />
-        </div>
+        {donations.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <DonationActivity
+              organization={organization}
+              donations={donations}
+            />
+            <DonationsEarnings organization={organization} />
+          </div>
+        ) : (
+          <div className="p-4 text-gray-400">
+            {"You haven't received any donations yet, come back later..."}
+          </div>
+        )}
       </div>
     </DashboardBody>
   )

@@ -134,7 +134,10 @@ class Organization(Schema):
 
 class OrganizationProfileSettingsUpdate(Schema):
     set_description: bool | None = None
-    description: str | None = None
+    description: str | None = Field(
+        None,
+        max_length=160,
+    )
 
     featured_projects: list[UUID4] | None = None
     featured_organizations: list[UUID4] | None = None

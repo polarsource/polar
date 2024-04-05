@@ -2,7 +2,6 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from pydantic import ValidationError
 
 from polar.config import settings
 from polar.kit.utils import utc_now
@@ -615,17 +614,19 @@ async def test_update_organization_profile_settings_description(
     assert response.json()["id"] == str(organization.id)
     assert response.json()["profile_settings"]["description"] == "Hello whitespace!"
 
-    # setting a description which exceeds the maximum length should throw a validation error
-    with pytest.raises(ValidationError):
-        response = await client.patch(
-            f"/api/v1/organizations/{organization.id}",
-            json={
-                "profile_settings": {
-                    "description": "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium.",
-                    "set_description": True,
-                }
-            },
-        )
+    # setting a description which exceeds the maximum length
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={
+            "profile_settings": {
+                "description": "a" * 161,
+                "set_description": True,
+            }
+        },
+    )
+
+    assert 422 == response.status_code
+    assert response.json()["detail"][0]["type"] == "string_too_long"
 
 
 @pytest.mark.asyncio

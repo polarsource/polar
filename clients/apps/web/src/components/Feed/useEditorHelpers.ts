@@ -161,12 +161,13 @@ export const useEditorHelpers = (
           ? 'Uploading...'
           : `Uploading ${idx + 1}/${files.length}...`
 
+      insertTextAtCursor(uploadingText, false)
+      const initialSelectionStart =
+        ref.current.selectionStart - uploadingText.length
+      const initialSelectionEnd = initialSelectionStart + uploadingText.length
+      ref.current.selectionStart = initialSelectionStart
+
       try {
-        insertTextAtCursor(uploadingText, false)
-
-        ref.current.selectionStart =
-          ref.current.selectionEnd - uploadingText.length
-
         const newBlob = await upload(file.name, file, {
           access: 'public',
           handleUploadUrl: '/api/blob/upload',
@@ -175,9 +176,13 @@ export const useEditorHelpers = (
         const textToInsert = `![${newBlob.pathname}](${newBlob.url})`
 
         ref.current.focus()
+        ref.current.selectionStart = initialSelectionStart
+        ref.current.selectionEnd = initialSelectionEnd
         document.execCommand('insertText', false, textToInsert)
       } catch (err) {
         ref.current.focus()
+        ref.current.selectionStart = initialSelectionStart
+        ref.current.selectionEnd = initialSelectionEnd
         document.execCommand('insertText', false, 'Upload failed!')
       } finally {
         onChange?.(element.value)

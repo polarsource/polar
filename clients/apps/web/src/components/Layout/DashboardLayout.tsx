@@ -65,8 +65,6 @@ const DashboardSidebar = () => {
     ? isOrgAdmin
     : orgs?.some((org) => org.name === currentUser?.username)
 
-  const shouldRenderAccountNavigation = !isPersonalOrg
-
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
   }, [])
@@ -102,7 +100,7 @@ const DashboardSidebar = () => {
           onScroll={handleScroll}
         >
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
-          {shouldRenderAccountNavigation && <DashboardNavigation />}
+          <DashboardNavigation />
         </div>
 
         {currentOrg && !currentOrg.has_app_installed && <GitHubAppUpsell />}

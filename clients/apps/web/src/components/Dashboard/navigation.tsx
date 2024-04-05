@@ -350,7 +350,7 @@ const dashboardRoutesList = (
     title: 'Finance',
     link: isPersonal ? `/finance` : `/maintainer/${org.name}/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
+    postIcon: isPersonal ? <ArrowUpRightIcon className="h-5 w-5" /> : undefined,
     if: isOrgAdmin,
     subs: isPersonal
       ? personalFinanceSubRoutesList()
@@ -361,7 +361,7 @@ const dashboardRoutesList = (
     title: 'Settings',
     link: isPersonal ? `/settings` : `/maintainer/${org.name}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
+    postIcon: isPersonal ? <ArrowUpRightIcon className="h-5 w-5" /> : undefined,
     if: isPersonal || isOrgAdmin ? true : false,
     subs: undefined,
   },

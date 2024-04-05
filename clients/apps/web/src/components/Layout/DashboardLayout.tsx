@@ -24,9 +24,7 @@ import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
-import DashboardLayoutContext, {
-  useDashboardLayoutContext,
-} from './DashboardLayoutContext'
+import DashboardLayoutContext from './DashboardLayoutContext'
 import { BrandingMenu } from './Public/BrandingMenu'
 
 const GitHubAppUpsell = () => {
@@ -118,36 +116,33 @@ const DashboardSidebar = () => {
 }
 
 const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
-  const layoutContext = useDashboardLayoutContext()
-
-  const marginTop = layoutContext.isMD ? layoutContext.topbarHeight || 80 : 0
+  const layoutContext = useContext(DashboardLayoutContext)
+  const marginTop = layoutContext.isMD ? layoutContext.topbarHeight || 79 : 0
 
   return (
     <>
-      <DashboardLayoutContext.Provider value={layoutContext}>
-        <div className="relative flex h-full w-full flex-col md:flex-row">
-          <MobileNav />
-          <div className="hidden md:flex">
-            <DashboardSidebar />
-          </div>
-          <div
-            className={twMerge(
-              'dark:bg-polar-950 relative flex h-full w-full translate-x-0 flex-row overflow-hidden bg-gray-50 pt-8 md:pt-0',
-              props.className,
-            )}
-          >
-            {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-            <main
-              className="relative w-full md:overflow-auto"
-              style={{
-                marginTop,
-              }}
-            >
-              <Suspense>{props.children}</Suspense>
-            </main>
-          </div>
+      <div className="relative flex h-full w-full flex-col md:flex-row">
+        <MobileNav />
+        <div className="hidden md:flex">
+          <DashboardSidebar />
         </div>
-      </DashboardLayoutContext.Provider>
+        <div
+          className={twMerge(
+            'dark:bg-polar-950 relative flex h-full w-full translate-x-0 flex-row overflow-hidden bg-gray-50 pt-8 md:pt-0',
+            props.className,
+          )}
+        >
+          {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
+          <main
+            className="relative w-full md:overflow-auto"
+            style={{
+              marginTop,
+            }}
+          >
+            <Suspense>{props.children}</Suspense>
+          </main>
+        </div>
+      </div>
     </>
   )
 }

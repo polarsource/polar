@@ -27,6 +27,27 @@ const SubscriptionTierCelebration: React.FC<
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
+      <defs>
+        <linearGradient
+          id="paint0_linear_1064_4979"
+          x1="152.458"
+          y1="-60.5"
+          x2="172.114"
+          y2="77.3192"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" stop-color={gradientColorStart} />
+          <stop offset="1" stop-color={gradientColorEnd} />
+        </linearGradient>
+        <clipPath id="clip0_1064_4979">
+          <rect
+            width="34"
+            height="33"
+            fill="white"
+            transform="translate(93 25)"
+          />
+        </clipPath>
+      </defs>
       <rect
         x="10.4355"
         y="73.9209"
@@ -94,37 +115,12 @@ const SubscriptionTierCelebration: React.FC<
         d="M106 6.3094C108.475 4.88034 111.525 4.88034 114 6.3094L137.177 19.6906C139.652 21.1197 141.177 23.7607 141.177 26.6188V53.3812C141.177 56.2393 139.652 58.8803 137.177 60.3094L114 73.6906C111.525 75.1197 108.475 75.1197 106 73.6906L82.8231 60.3094C80.3479 58.8803 78.8231 56.2393 78.8231 53.3812V26.6188C78.8231 23.7607 80.3479 21.1197 82.8231 19.6906L106 6.3094Z"
         fill="url(#paint0_linear_1064_4979)"
       />
-      <path
-        d="M106 6.3094C108.475 4.88034 111.525 4.88034 114 6.3094L137.177 19.6906C139.652 21.1197 141.177 23.7607 141.177 26.6188V53.3812C141.177 56.2393 139.652 58.8803 137.177 60.3094L114 73.6906C111.525 75.1197 108.475 75.1197 106 73.6906L82.8231 60.3094C80.3479 58.8803 78.8231 56.2393 78.8231 53.3812V26.6188C78.8231 23.7607 80.3479 21.1197 82.8231 19.6906L106 6.3094Z"
-        fill="url(#paint1_linear_1064_4979)"
-      />
       <g clip-path="url(#clip0_1064_4979)">
         <path
           d="M105.75 47.2338L99.8427 41.5L97.8311 43.4388L105.75 51.125L122.75 34.625L120.753 32.6863L105.75 47.2338Z"
           fill="white"
         />
       </g>
-      <defs>
-        <linearGradient
-          id="paint0_linear_1064_4979"
-          x1="152.458"
-          y1="-60.5"
-          x2="172.114"
-          y2="77.3192"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stop-color={gradientColorStart} />
-          <stop offset="1" stop-color={gradientColorEnd} />
-        </linearGradient>
-        <clipPath id="clip0_1064_4979">
-          <rect
-            width="34"
-            height="33"
-            fill="white"
-            transform="translate(93 25)"
-          />
-        </clipPath>
-      </defs>
     </svg>
   )
 }

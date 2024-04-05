@@ -5,7 +5,6 @@ import {
   ListResourceIssueFunding,
   ListResourceOrganization,
   ListResourceRepository,
-  ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
   Organization,
   Platforms,
@@ -117,7 +116,6 @@ export default async function Page({
   let articles: ListResourceArticle | undefined
   let subscriptionTiers: ListResourceSubscriptionTier | undefined
   let repositories: ListResourceRepository | undefined
-  let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
   let listAdminOrganizations: ListResourceOrganization | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
 
@@ -128,7 +126,6 @@ export default async function Page({
       loadPinnedArticles,
       loadSubscriptionTiers,
       loadRepositories,
-      loadSubscriptionsSummary,
       loadListAdminOrganizations,
       loadListIssueFunding,
     ] = await Promise.all([
@@ -190,14 +187,6 @@ export default async function Page({
           },
         },
       ),
-      api.subscriptions.searchSubscriptionsSummary(
-        {
-          organizationName: params.organization,
-          platform: Platforms.GITHUB,
-          limit: 3,
-        },
-        cacheConfig,
-      ),
       api.organizations
         .list(
           {
@@ -238,7 +227,6 @@ export default async function Page({
     pinnedArticles = loadPinnedArticles
     subscriptionTiers = loadSubscriptionTiers
     repositories = loadRepositories
-    subscriptionsSummary = loadSubscriptionsSummary
     listAdminOrganizations = loadListAdminOrganizations
     listIssueFunding = loadListIssueFunding
   } catch (e) {
@@ -368,8 +356,7 @@ export default async function Page({
         repositories={sortedRepositories}
         featuredProjects={featuredProjects}
         featuredOrganizations={featuredOrganizations}
-        subscriptionTiers={subscriptionTiers}
-        subscriptionsSummary={subscriptionsSummary}
+        subscriptionTiers={subscriptionTiers?.items ?? []}
         adminOrganizations={listAdminOrganizations?.items ?? []}
         issues={listIssueFunding?.items ?? []}
         links={links}

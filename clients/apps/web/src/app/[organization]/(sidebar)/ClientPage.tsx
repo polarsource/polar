@@ -16,11 +16,10 @@ import { GitHub, ViewDayOutlined } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
-  ListResourceSubscriptionSummary,
-  ListResourceSubscriptionTier,
   Organization,
   OrganizationProfileSettingsUpdate,
   Repository,
+  SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
@@ -36,18 +35,16 @@ const ClientPage = ({
   featuredOrganizations,
   repositories,
   featuredProjects,
-  subscriptionsSummary,
   adminOrganizations,
   issues,
   links,
 }: {
   organization: Organization
   posts: Article[]
-  subscriptionTiers: ListResourceSubscriptionTier
+  subscriptionTiers: SubscriptionTier[]
   featuredOrganizations: Organization[]
   repositories: Repository[]
   featuredProjects: Repository[]
-  subscriptionsSummary: ListResourceSubscriptionSummary
   adminOrganizations: Organization[]
   issues: IssueFunding[]
   links: LinkItem[]
@@ -142,18 +139,18 @@ const ClientPage = ({
             <HighlightedTiersEditor
               organization={organization}
               adminOrganizations={adminOrganizations}
-              subscriptionTiers={subscriptionTiers.items ?? []}
+              subscriptionTiers={subscriptionTiers}
             />
           </div>
 
-          {repositories.length > 0 && (
+          {repositories.length > 0 ? (
             <ProjectsEditor
               organization={organization}
               repositories={repositories}
               featuredRepositories={featuredProjects}
               disabled={!isAdmin}
             />
-          )}
+          ) : null}
 
           <CreatorsEditor
             organization={organization}
@@ -172,19 +169,19 @@ const ClientPage = ({
             />
           </div>
 
-          {issues.length > 0 && (
+          {issues.length > 0 ? (
             <OrganizationIssueSummaryList
               issues={issues}
               organization={organization}
             />
-          )}
+          ) : null}
         </div>
 
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
           <HighlightedTiersEditor
             organization={organization}
             adminOrganizations={adminOrganizations}
-            subscriptionTiers={subscriptionTiers.items ?? []}
+            subscriptionTiers={subscriptionTiers}
           />
 
           <LinksEditor

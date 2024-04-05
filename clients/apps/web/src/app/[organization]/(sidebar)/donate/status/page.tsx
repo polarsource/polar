@@ -4,6 +4,7 @@ import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
+import ClientPage from './ClientPage'
 
 const cacheConfig = {
   cache: 'no-store',
@@ -74,8 +75,10 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: { organization: string }
+  searchParams?: { [key: string]: string | string[] | undefined }
 }) {
   let organization: Organization | undefined
   const api = getServerSideAPI()
@@ -107,5 +110,8 @@ export default async function Page({
     subPath: `/donate/status`,
   })
 
-  return <h1>Thanks for your donation!</h1>
+  const email =
+    typeof searchParams?.email === 'string' ? searchParams.email : undefined
+
+  return <ClientPage organization={organization} email={email} />
 }

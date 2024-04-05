@@ -17,6 +17,10 @@ class Tunnel(NamedTuple):
 
 EnvVars: TypeAlias = dict[str, str]
 
+IGNORED_ENVIRONMENT_VARIABLES = {
+    "POLAR_JWKS",
+}
+
 
 def _load_production_environment(
     render_api_key: str, render_service_id: str
@@ -72,7 +76,8 @@ def _set_tunnels(environment_variables: EnvVars) -> tuple[EnvVars, list[Tunnel]]
 def _set_environment_variables(environment_variables: EnvVars) -> None:
     os.environ["POLAR_ENV"] = environment_variables["POLAR_ENV"]
     for key, value in environment_variables.items():
-        os.environ[key] = value
+        if key not in IGNORED_ENVIRONMENT_VARIABLES:
+            os.environ[key] = value
 
 
 def _get_ssh_hostname(render_api_key: str, render_service_id: str) -> str:

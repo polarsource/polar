@@ -56,6 +56,11 @@ const BadgeMessageForm = (props: {
     },
   }
 
+  const showAmountRaised =
+    props.showAmountRaised &&
+    funding.pledges_sum?.amount !== undefined &&
+    funding.pledges_sum?.amount > 0
+
   const onClickUpdate = async (e: MouseEvent<HTMLButtonElement>) => {
     setIsLoading(true)
     await props.onUpdateMessage(message)
@@ -118,7 +123,7 @@ const BadgeMessageForm = (props: {
 
             <Badge
               orgName={props.org.name}
-              showAmountRaised={props.showAmountRaised}
+              showAmountRaised={showAmountRaised}
               darkmode={resolvedTheme === 'dark'}
               funding={funding}
               avatarsUrls={[]}

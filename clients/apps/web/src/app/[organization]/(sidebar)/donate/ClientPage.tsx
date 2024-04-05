@@ -1,7 +1,6 @@
 'use client'
 
 import { HighlightedTiersEditor } from '@/components/Profile/HighlightedTiersEditor/HighlightedTiersEditor'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -19,14 +18,6 @@ const ClientPage = ({
   defaultAmount: number
 }) => {
   useTrafficRecordPageView({ organization: organization })
-
-  if (!isFeatureEnabled('donations')) {
-    return (
-      <div className="w-full pt-8 text-center text-gray-500">
-        {"You've found an upcoming feature. Please come back later. 😎"}
-      </div>
-    )
-  }
 
   if (!organization.donations_enabled) {
     return (

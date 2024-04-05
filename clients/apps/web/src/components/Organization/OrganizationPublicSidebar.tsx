@@ -2,7 +2,6 @@
 
 import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
@@ -207,9 +206,9 @@ export const OrganizationPublicSidebar = ({
           )}
         </div>
 
-        {isFeatureEnabled('donations') &&
-          organization.donations_enabled &&
-          !isDonatePage && <DonateWidget organization={organization} />}
+        {organization.donations_enabled && !isDonatePage ? (
+          <DonateWidget organization={organization} />
+        ) : null}
       </div>
       <Modal
         isShown={rssModalIsShown}

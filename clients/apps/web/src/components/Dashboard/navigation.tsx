@@ -1,6 +1,5 @@
 import { Organization } from '@polar-sh/sdk'
 
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
@@ -203,7 +202,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/donations`)
     },
-    if: isFeatureEnabled('donations'),
+    if: true,
     subs: [
       {
         title: 'Overview',

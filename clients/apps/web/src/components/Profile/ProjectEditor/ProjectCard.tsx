@@ -17,11 +17,13 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 
 export const ProjectCard = ({
+  className,
   organization,
   repository,
   disabled,
   sortable,
 }: {
+  className?: string
   organization: Organization
   repository: Repository
   disabled?: boolean
@@ -41,6 +43,7 @@ export const ProjectCard = ({
       className={twMerge(
         'dark:text-polar-500 transition-color dark:hover:text-polar-300 dark:hover:bg-polar-800 transition-color flex flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
         sortable?.isDragging && 'opacity-30',
+        className,
       )}
     >
       <Link
@@ -108,10 +111,12 @@ export const ProjectCard = ({
 }
 
 export const DraggableProjectCard = ({
+  className,
   organization,
   repository,
   disabled,
 }: {
+  className?: string
   organization: Organization
   repository: Repository
   disabled?: boolean
@@ -120,6 +125,7 @@ export const DraggableProjectCard = ({
 
   return (
     <ProjectCard
+      className={className}
       sortable={sortable}
       repository={repository}
       disabled={disabled}

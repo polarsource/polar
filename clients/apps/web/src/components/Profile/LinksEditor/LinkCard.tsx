@@ -19,10 +19,12 @@ import { twMerge } from 'tailwind-merge'
 import { Link as LinkItem } from './LinksEditor'
 
 export const LinkCard = ({
+  className,
   link,
   disabled,
   sortable,
 }: {
+  className?: string
   link: LinkItem
   disabled?: boolean
   sortable?: ReturnType<typeof useSortable>
@@ -70,6 +72,7 @@ export const LinkCard = ({
       className={twMerge(
         'dark:text-polar-500 transition-color dark:hover:text-polar-300 dark:hover:bg-polar-800 transition-color flex flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
         sortable?.isDragging && 'opacity-30',
+        className,
       )}
     >
       <Link
@@ -127,13 +130,22 @@ export const LinkCard = ({
 }
 
 export const DraggableLinkCard = ({
+  className,
   link,
   disabled,
 }: {
+  className?: string
   link: LinkItem
   disabled?: boolean
 }) => {
   const sortable = useSortable({ id: link.id })
 
-  return <LinkCard sortable={sortable} link={link} disabled={disabled} />
+  return (
+    <LinkCard
+      className={className}
+      sortable={sortable}
+      link={link}
+      disabled={disabled}
+    />
+  )
 }

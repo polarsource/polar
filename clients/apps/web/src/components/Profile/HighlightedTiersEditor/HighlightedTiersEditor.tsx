@@ -110,13 +110,13 @@ export const HighlightedTiersEditor = ({
           />
         </div>
       )}
-      <div className="flex w-full flex-col gap-4">
+      <div className="-mx-4 flex flex-row justify-start gap-6 overflow-x-auto px-4 pb-4 md:mx-0 md:flex-col md:gap-6 md:p-0">
         {highlightedTiers.length > 0 ? (
           highlightedTiers
             .filter(hasRecurringInterval(recurringInterval))
             .map((tier) => (
               <SubscriptionTierCard
-                className="min-h-0 w-full"
+                className="min-h-0 w-full max-w-[260px] shrink-0 md:max-w-full"
                 key={tier.id}
                 subscriptionTier={tier}
                 variant="small"

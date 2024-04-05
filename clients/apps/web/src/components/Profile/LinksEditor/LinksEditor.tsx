@@ -110,12 +110,14 @@ export const LinksEditor = ({
           <div
             className={twMerge(
               variant === 'grid'
-                ? 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'
-                : 'flex flex-col gap-y-4',
+                ? 'gap-6 md:grid md:grid-cols-2 lg:grid-cols-3'
+                : 'flex gap-y-4 md:flex-col',
+              '-mx-4 flex-row justify-start gap-6 overflow-x-auto px-4 pb-4 md:mx-0 md:p-0',
             )}
           >
             {selectedLinks.map((link) => (
               <DraggableLinkCard
+                className="w-full max-w-[80%] shrink-0 md:max-w-full"
                 key={link.id}
                 link={link}
                 disabled={disabled}

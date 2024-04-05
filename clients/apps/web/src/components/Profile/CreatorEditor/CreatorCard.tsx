@@ -15,10 +15,12 @@ import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 
 export const CreatorCard = ({
+  className,
   organization,
   disabled,
   sortable,
 }: {
+  className?: string
   organization: Organization
   disabled?: boolean
   sortable?: ReturnType<typeof useSortable>
@@ -37,6 +39,7 @@ export const CreatorCard = ({
       className={twMerge(
         'dark:text-polar-500 dark:hover:text-polar-300 transition-color dark:hover:bg-polar-800 flex flex-col rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
         sortable?.isDragging && 'opacity-30',
+        className,
       )}
     >
       <Link className="h-full" href={organizationPageLink(organization)}>
@@ -100,9 +103,11 @@ export const CreatorCard = ({
 }
 
 export const DraggableCreatorCard = ({
+  className,
   organization,
   disabled,
 }: {
+  className?: string
   organization: Organization
   disabled?: boolean
 }) => {
@@ -110,6 +115,7 @@ export const DraggableCreatorCard = ({
 
   return (
     <CreatorCard
+      className={className}
       organization={organization}
       disabled={disabled}
       sortable={sortable}

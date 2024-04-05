@@ -529,7 +529,7 @@ class MaintainerDonationReceivedNotificationPayload(NotificationPayloadBase):
     def body(self) -> str:
         return """Hi,<br><br>
 
-Great news! {{organization_name}} just received a ${{donation_amount}} donation.
+Great news! {{organization_name}} just received a ${{donation_amount}} <a href="https://polar.sh/maintainer/{{organization_name}}/donations/overview">donation</a>.
 
 It's already available on your <a href="https://polar.sh/maintainer/{{organization_name}}/finance/incoming">Polar Balance</a>.
 """  # noqa: E501

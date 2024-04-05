@@ -375,7 +375,7 @@ class TestSearch:
         user_organization_second: UserOrganization,  # joined data, make sure that it doesn't affect anything...
     ) -> None:
         repository.is_private = True
-        assert save_fixture(repository)
+        await save_fixture(repository)
 
         benefits = []
         for _ in range(10):
@@ -432,9 +432,8 @@ class TestSearch:
             repository=repository,
         )
 
-        # TODO: FIX! include_archived=True does not work for archived tiers connected to repositories
-        assert 3 == count
-        assert 3 == len(results)
+        assert len(tiers) == count
+        assert len(tiers) == len(results)
 
     async def test_pagination_prices(
         self,

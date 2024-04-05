@@ -14,7 +14,7 @@ import {
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useSelectedLayoutSegment } from 'next/navigation'
 import { api } from 'polarkit'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -44,7 +44,7 @@ export const OrganizationPublicSidebar = ({
   userAdminOrganizations,
   subscriptionTiers,
 }: OrganizationPublicSidebarProps) => {
-  const pathname = usePathname()
+  const segment = useSelectedLayoutSegment()
 
   const {
     isShown: rssModalIsShown,
@@ -57,8 +57,6 @@ export const OrganizationPublicSidebar = ({
   )
 
   const isAdmin = userAdminOrganizations.some((o) => o.id === organization.id)
-
-  const isPostView = pathname?.includes('/posts/')
 
   const shouldRenderSubscriberCount =
     (subscriptionsSummary.items?.length ?? 0) > 0
@@ -83,7 +81,8 @@ export const OrganizationPublicSidebar = ({
     })
   }
 
-  const isDonatePage = pathname?.includes('/donate')
+  const isPostView = segment === 'posts'
+  const isDonatePage = segment === 'donate'
 
   return (
     <div className="flex h-full w-full flex-col items-start gap-y-6 md:max-w-[18rem]">

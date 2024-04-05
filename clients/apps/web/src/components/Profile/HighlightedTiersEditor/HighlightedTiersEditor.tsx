@@ -39,7 +39,7 @@ export const HighlightedTiersEditor = ({
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
   const isAdmin = useMemo(
-    () => adminOrganizations?.some((org) => org.id === organization.id),
+    () => adminOrganizations.some((org) => org.id === organization.id),
     [organization, adminOrganizations],
   )
 

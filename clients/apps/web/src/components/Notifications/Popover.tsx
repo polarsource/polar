@@ -723,7 +723,7 @@ const MaintainerDonationReceived = ({
           <>
             {payload.organization_name} received a ${payload.donation_amount}{' '}
             <InternalLink
-              href={`/maintainer/${payload.organization_name}/finance/incoming`}
+              href={`/maintainer/${payload.organization_name}/donations/overview`}
             >
               <>donation</>
             </InternalLink>

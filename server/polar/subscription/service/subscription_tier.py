@@ -552,8 +552,8 @@ class SubscriptionTierService(
             )
         )
 
-        # Authed users can see archived tiers if they are a member of the tiers organization
         if isinstance(auth_subject, User):
+            # Direct tier's organization member
             stmt = stmt.join(
                 UserOrganization,
                 onclause=and_(
@@ -563,47 +563,46 @@ class SubscriptionTierService(
                     UserOrganization.deleted_at.is_(None),
                 ),
                 full=True,
-            ).where(
-                or_(
-                    SubscriptionTier.is_archived.is_(False),
-                    UserOrganization.user_id == auth_subject.id,
-                )
             )
-        else:
-            stmt = stmt.where(SubscriptionTier.is_archived.is_(False))
 
-        # Authed users can see tiers for private repositories if they are a member
-        if isinstance(auth_subject, User):
-            stmt = (
-                stmt.join(
-                    RepositoryOrganization,
-                    onclause=RepositoryOrganization.id == Repository.organization_id,
-                    full=True,
-                )
-                .join(
-                    RepositoryUserOrganization,
-                    onclause=and_(
-                        RepositoryUserOrganization.organization_id
-                        == RepositoryOrganization.id,
-                        RepositoryUserOrganization.user_id == auth_subject.id,
-                        RepositoryUserOrganization.deleted_at.is_(None),
-                    ),
-                    full=True,
-                )
-                .where(
-                    or_(
-                        SubscriptionTier.repository_id.is_(None),
-                        Repository.is_private.is_(False),
-                        RepositoryUserOrganization.user_id == auth_subject.id,
-                    )
-                )
+            # Tier's repository's organization member
+            stmt = stmt.join(
+                RepositoryOrganization,
+                onclause=RepositoryOrganization.id == Repository.organization_id,
+                full=True,
+            ).join(
+                RepositoryUserOrganization,
+                onclause=and_(
+                    RepositoryUserOrganization.organization_id
+                    == RepositoryOrganization.id,
+                    RepositoryUserOrganization.user_id == auth_subject.id,
+                    RepositoryUserOrganization.deleted_at.is_(None),
+                ),
+                full=True,
             )
-        else:
+
             stmt = stmt.where(
+                # Can see private repository tiers if they are
+                # a member of the repository's organization
                 or_(
                     SubscriptionTier.repository_id.is_(None),
                     Repository.is_private.is_(False),
-                )
+                    RepositoryUserOrganization.user_id == auth_subject.id,
+                ),
+                # Can see archived tiers if they are a member of the tier's organization
+                or_(
+                    SubscriptionTier.is_archived.is_(False),
+                    UserOrganization.user_id == auth_subject.id,
+                    RepositoryUserOrganization.user_id == auth_subject.id,
+                ),
+            )
+        else:
+            stmt = stmt.where(
+                SubscriptionTier.is_archived.is_(False),
+                or_(
+                    SubscriptionTier.repository_id.is_(None),
+                    Repository.is_private.is_(False),
+                ),
             )
 
         return stmt

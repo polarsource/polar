@@ -432,9 +432,8 @@ class TestSearch:
             repository=repository,
         )
 
-        # TODO: FIX! include_archived=True does not work for archived tiers connected to repositories
-        assert 3 == count
-        assert 3 == len(results)
+        assert len(tiers) == count
+        assert len(tiers) == len(results)
 
     async def test_pagination_prices(
         self,

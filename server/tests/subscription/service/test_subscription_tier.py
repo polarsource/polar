@@ -375,7 +375,7 @@ class TestSearch:
         user_organization_second: UserOrganization,  # joined data, make sure that it doesn't affect anything...
     ) -> None:
         repository.is_private = True
-        assert save_fixture(repository)
+        await save_fixture(repository)
 
         benefits = []
         for _ in range(10):

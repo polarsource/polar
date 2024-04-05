@@ -14,9 +14,18 @@ const defaultDashboardLayoutContext: {
   setIsMD: (v: boolean) => {},
 }
 
-export const useDashboardLayoutContext = () => {
-  const [topbarHeight, setTopbarHeight] = useState(0)
-  const [isMD, setIsMD] = useState(false)
+const DEFAULT_DESKTOP_HEIGHT = 79
+const DEFAULT_MOBILE_HEIGHT = 0
+
+export const useDashboardLayoutContext = (probablyIsMDOrLarger: boolean) => {
+  // Using probabilistic values here
+  // Will be updated with real values from <Topbar> once initialized on the client
+  const [topbarHeight, setTopbarHeight] = useState(
+    probablyIsMDOrLarger ? DEFAULT_DESKTOP_HEIGHT : DEFAULT_MOBILE_HEIGHT,
+  )
+
+  const [isMD, setIsMD] = useState(probablyIsMDOrLarger)
+
   return {
     topbarHeight,
     setTopbarHeight,

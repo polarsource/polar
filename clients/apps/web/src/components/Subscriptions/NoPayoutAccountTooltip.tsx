@@ -12,11 +12,11 @@ const NoPayoutAccountTooltip: React.FC = () => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger>
-          <div className="text-yellow-500">
-            <ErrorOutlined className="h-4 w-4" />
+          <div className="text-red-500">
+            <ErrorOutlined className="h-5 w-5" />
           </div>
         </TooltipTrigger>
-        <TooltipContent side="right">
+        <TooltipContent align="start" side="right">
           Earnings won&apos;t show up here until you set up a payout account.
         </TooltipContent>
       </Tooltip>

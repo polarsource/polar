@@ -117,7 +117,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar
-              avatar_url={donation.donor.avatar_url}
+              avatar_url={donation.donor?.avatar_url ?? undefined}
               name={donation.donor.public_name}
             />
             <div className="fw-medium">{donation.donor.public_name}</div>

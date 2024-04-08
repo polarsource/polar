@@ -249,8 +249,11 @@ export default async function Page({
   let featuredProjects: Repository[] = []
 
   try {
+    const featuredOrganizationIDs =
+      organization.profile_settings?.featured_organizations ?? []
+
     const loadFeaturedOrganizations = await Promise.all(
-      (organization.profile_settings.featured_organizations ?? []).map((id) =>
+      featuredOrganizationIDs.map((id) =>
         api.organizations.get(
           { id },
           { ...cacheConfig, next: { revalidate: 60 * 60 } },
@@ -258,13 +261,17 @@ export default async function Page({
       ),
     )
 
-    const loadFeaturedProjects = organization.profile_settings.featured_projects
-      ? await Promise.all(
-          organization.profile_settings.featured_projects.map((id) =>
-            api.repositories.get({ id }, cacheConfig),
-          ),
-        )
-      : sortedRepositories.slice(0, 2) ?? []
+    const featuredProjectIDs =
+      organization.profile_settings?.featured_projects ?? []
+
+    const loadFeaturedProjects =
+      featuredProjectIDs.length > 0
+        ? await Promise.all(
+            featuredProjectIDs.map((id) =>
+              api.repositories.get({ id }, cacheConfig),
+            ),
+          )
+        : sortedRepositories.slice(0, 2) ?? []
 
     const fallbackLinks = [
       `https://github.com/${organization.name}`,
@@ -280,8 +287,10 @@ export default async function Page({
         : []),
     ]
 
+    const featuredLinks = organization.profile_settings?.links ?? fallbackLinks
+
     const loadLinkOpengraphs = await Promise.all(
-      (organization.profile_settings.links ?? fallbackLinks).map((link) =>
+      featuredLinks.map((link) =>
         fetch(`${CONFIG.FRONTEND_BASE_URL}/link/og?url=${link}`)
           .then((res) => (res && res.ok ? res.json() : undefined))
           .then((og) => ({ opengraph: og as OgObject, url: link })),

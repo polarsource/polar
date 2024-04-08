@@ -29,6 +29,9 @@ export const SubscriptionTierEditor = ({
   const { show, isShown, hide } = useModal()
   const updateProjectMutation = useUpdateProject()
 
+  const repoHighlightedTiers =
+    repository.profile_settings?.highlighted_subscription_tiers ?? []
+
   const {
     items: highlightedTiers,
     sensors,
@@ -38,9 +41,9 @@ export const SubscriptionTierEditor = ({
     handleDragCancel,
     updateItems,
   } = useDraggableEditorCallbacks(
-    repository.profile_settings.highlighted_subscription_tiers
-      ?.map((id) => subscriptionTiers.find((tier) => tier.id === id))
-      .filter((tier): tier is SubscriptionTier => !!tier) ?? [],
+    repoHighlightedTiers
+      .map((id) => subscriptionTiers.find((tier) => tier.id === id))
+      .filter((tier): tier is SubscriptionTier => !!tier),
     (tiers) =>
       updateProjectMutation
         .mutateAsync({

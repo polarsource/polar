@@ -414,7 +414,7 @@ const Tab = ({
   icon: React.ReactElement
   title: string
 }) => (
-  <TabsTrigger value={value}>
+  <TabsTrigger value={value} className="flex flex-row items-center gap-x-2">
     <div>{icon}</div>
     <div>{title}</div>
   </TabsTrigger>

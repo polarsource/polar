@@ -24,7 +24,7 @@ class DonationOrganization(Schema):
 class DonationUser(Schema):
     id: UUID4
     public_name: str
-    avatar_url: str
+    avatar_url: str | None
 
 
 class Donation(Schema):

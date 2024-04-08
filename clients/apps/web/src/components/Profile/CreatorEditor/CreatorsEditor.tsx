@@ -91,7 +91,7 @@ export const CreatorsEditor = ({
               </div>
             )}
           </div>
-          <div className="-mx-4 flex flex-row justify-start gap-6 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:flex-col md:gap-6 md:p-0 xl:grid-cols-2">
+          <div className="-mx-4 flex flex-row justify-start gap-6 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:flex-col md:gap-6 md:overflow-x-visible md:p-0 xl:grid-cols-2">
             {featuredCreators.map((creator) => (
               <DraggableCreatorCard
                 className="w-full max-w-[80%] shrink-0 md:max-w-full"

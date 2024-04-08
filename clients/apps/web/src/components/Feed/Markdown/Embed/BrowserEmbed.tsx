@@ -79,6 +79,7 @@ const EmbedIssue = (props: { src: string }) => {
         pledge_badge_show_amount: false,
         is_teams_enabled: false,
         donations_enabled: false,
+        public_page_enabled: true,
       },
     },
     pledge_badge_currently_embedded: false,

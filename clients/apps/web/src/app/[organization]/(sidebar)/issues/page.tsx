@@ -115,6 +115,9 @@ export default async function Page({
   if (!organization) {
     notFound()
   }
+  if (!organization.public_page_enabled) {
+    notFound()
+  }
 
   redirectToCanonicalDomain({
     organization,

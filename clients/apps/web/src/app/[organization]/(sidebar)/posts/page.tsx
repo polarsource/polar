@@ -47,6 +47,9 @@ export async function generateMetadata(
   if (!organization) {
     notFound()
   }
+  if (!organization.public_page_enabled) {
+    notFound()
+  }
 
   return {
     title: `${organization.pretty_name || organization.name}`, // " | Polar is added by the template"

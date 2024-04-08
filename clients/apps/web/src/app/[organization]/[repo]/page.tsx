@@ -186,6 +186,10 @@ export default async function Page({
     subPath: `/${params.repo}`,
   })
 
+  if (!repository.organization.public_page_enabled) {
+    notFound()
+  }
+
   let featuredOrganizations: Organization[] = []
   let links: { opengraph: OgObject; url: string }[] = []
 

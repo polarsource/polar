@@ -196,6 +196,7 @@ class GithubOrganizationService(OrganizationService):
             avatar_url=user.avatar_url,
             external_id=int(oauth.account_id),
             is_personal=True,
+            created_from_user_maintainer_upgrade=True,
         )
 
         org = await organization_service.create_or_update(session, new)

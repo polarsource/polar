@@ -23,6 +23,7 @@ async def test_create_or_update(session: AsyncSession) -> None:
             avatar_url="http://example.com",
             external_id=123,
             is_personal=False,
+            created_from_user_maintainer_upgrade=False,
         ),
     )
 
@@ -56,6 +57,7 @@ async def test_create_or_update(session: AsyncSession) -> None:
             avatar_url="http://example.com",
             external_id=123,
             is_personal=False,
+            created_from_user_maintainer_upgrade=False,
         ),
     )
 

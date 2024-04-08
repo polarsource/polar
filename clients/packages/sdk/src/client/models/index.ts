@@ -4918,6 +4918,12 @@ export interface Organization {
      * @memberof Organization
      */
     donations_enabled: boolean;
+    /**
+     * If this organization has a public Polar page
+     * @type {boolean}
+     * @memberof Organization
+     */
+    public_page_enabled: boolean;
 }
 /**
  * 

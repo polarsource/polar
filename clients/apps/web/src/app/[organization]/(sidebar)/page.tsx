@@ -239,6 +239,10 @@ export default async function Page({
     headers: headers(),
   })
 
+  if (!organization.public_page_enabled) {
+    notFound()
+  }
+
   const sortedRepositories =
     repositories.items
       ?.filter((repo) => repo.visibility === 'public')

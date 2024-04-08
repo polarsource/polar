@@ -57,6 +57,7 @@ export const org: Organization = {
   is_teams_enabled: false,
   profile_settings: {},
   donations_enabled: false,
+  public_page_enabled: true,
 }
 
 export const user: UserRead = {

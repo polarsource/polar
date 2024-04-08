@@ -140,6 +140,10 @@ export default async function Page({
     notFound()
   }
 
+  if (!organization.public_page_enabled) {
+    notFound()
+  }
+
   redirectToCanonicalDomain({
     organization: organization,
     paramOrganizationName: params.organization,

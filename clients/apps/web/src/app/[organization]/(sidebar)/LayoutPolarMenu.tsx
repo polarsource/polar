@@ -21,7 +21,7 @@ export const PolarMenu = ({
 }) => {
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/feed'
-  const createWithPolarReturnTo = '/maintainer'
+  const createWithPolarReturnTo = '/me'
 
   // Fallback to client side user loading (needed as we're loading data in the layout, and it isn't refreshed on navigation)
   const { currentUser: clientCurrentUser } = useAuth()

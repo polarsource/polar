@@ -78,8 +78,13 @@ class Organization(Schema):
     is_teams_enabled: bool = Field(
         description="Feature flag for if this organization is a team."
     )
+
     donations_enabled: bool = Field(
         description="If this organizations accepts donations"
+    )
+
+    public_page_enabled: bool = Field(
+        description="If this organization has a public Polar page"
     )
 
     @classmethod
@@ -129,6 +134,9 @@ class Organization(Schema):
             else None,
             is_teams_enabled=o.is_teams_enabled,
             donations_enabled=o.donations_enabled,
+            public_page_enabled=True
+            if o.installation_id or o.created_from_user_maintainer_upgrade
+            else False,
         )
 
 
@@ -231,6 +239,7 @@ class OrganizationCreateFromGitHubUser(Schema):
     avatar_url: str
     external_id: int
     is_personal: bool
+    created_from_user_maintainer_upgrade: bool
 
     @classmethod
     def from_github(
@@ -244,6 +253,7 @@ class OrganizationCreateFromGitHubUser(Schema):
             external_id=user.id,
             avatar_url=user.avatar_url,
             is_personal=user.type.lower() == "user",
+            created_from_user_maintainer_upgrade=False,
         )
 
 

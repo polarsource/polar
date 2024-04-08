@@ -199,7 +199,7 @@ const DonationActivity = ({
                   ) : (
                     <>
                       <Avatar
-                        avatar_url={donation.donor.avatar_url}
+                        avatar_url={donation.donor?.avatar_url ?? undefined}
                         name={donation.donor.public_name}
                         className="h-8 w-8"
                       />

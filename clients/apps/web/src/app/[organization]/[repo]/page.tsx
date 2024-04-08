@@ -190,14 +190,19 @@ export default async function Page({
   let links: { opengraph: OgObject; url: string }[] = []
 
   try {
+    const featuredOrganizationIDs =
+      repository.profile_settings?.featured_organizations ?? []
+
     const loadFeaturedOrganizations = await Promise.all(
-      (repository.profile_settings.featured_organizations ?? []).map((id) =>
+      featuredOrganizationIDs.map((id) =>
         api.organizations.get({ id }, cacheConfig),
       ),
     )
 
+    const featuredLinks = repository.profile_settings?.links ?? []
+
     const loadLinkOpengraphs = await Promise.all(
-      (repository.profile_settings.links ?? []).map((link) =>
+      featuredLinks.map((link) =>
         fetch(`${CONFIG.FRONTEND_BASE_URL}/link/og?url=${link}`)
           .then((res) => (res && res.ok ? res.json() : undefined))
           .then((og) => ({ opengraph: og as OgObject, url: link })),

@@ -108,7 +108,7 @@ const ClientPage = ({
           <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16">
             <DescriptionEditor
               description={
-                repository.profile_settings.description ??
+                repository.profile_settings?.description ??
                 repository.description ??
                 ''
               }
@@ -122,7 +122,7 @@ const ClientPage = ({
             <CoverEditor
               organization={organization}
               onChange={updateCoverImage}
-              coverImageUrl={repository.profile_settings.cover_image_url}
+              coverImageUrl={repository.profile_settings?.cover_image_url}
               disabled={!isAdmin}
             />
 

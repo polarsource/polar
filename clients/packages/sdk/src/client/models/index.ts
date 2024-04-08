@@ -1130,19 +1130,19 @@ export interface ArticleCreate {
      */
     title: string;
     /**
-     * Slug of the article to be used in URLs. If no slug is provided one will be generated from the title.
+     * 
      * @type {string}
      * @memberof ArticleCreate
      */
     slug?: string;
     /**
-     * Body in string format. Either one of body or body_base64 is required.
+     * 
      * @type {string}
      * @memberof ArticleCreate
      */
     body?: string;
     /**
-     * Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). Either one of body or body_base64 is required.
+     * 
      * @type {string}
      * @memberof ArticleCreate
      */
@@ -1172,37 +1172,37 @@ export interface ArticleCreate {
      */
     paid_subscribers_only?: boolean;
     /**
-     * If specified, time at which the article should no longer be restricted to paid subscribers. Only relevant if `paid_subscribers_only` is true.
+     * 
      * @type {string}
      * @memberof ArticleCreate
      */
     paid_subscribers_only_ends_at?: string;
     /**
-     * Time of publishing. If this date is in the future, the post will be scheduled to publish at this time. If visibility is 'public', published_at will default to the current time.
+     * 
      * @type {string}
      * @memberof ArticleCreate
      */
     published_at?: string;
     /**
-     * Set to true to deliver this article via email and/or notifications to subscribers.
+     * 
      * @type {boolean}
      * @memberof ArticleCreate
      */
     notify_subscribers?: boolean;
     /**
-     * If the article should be pinned
+     * 
      * @type {boolean}
      * @memberof ArticleCreate
      */
     is_pinned?: boolean;
     /**
-     * Custom og:image URL value
+     * 
      * @type {string}
      * @memberof ArticleCreate
      */
     og_image_url?: string;
     /**
-     * Custom og:description value
+     * 
      * @type {string}
      * @memberof ArticleCreate
      */
@@ -1332,13 +1332,13 @@ export interface ArticleUpdate {
      */
     title?: string;
     /**
-     * Body in string format. body and body_base64 are mutually exclusive.
+     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
     body?: string;
     /**
-     * Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). body and body_base64 are mutually exclusive.
+     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
@@ -1350,7 +1350,7 @@ export interface ArticleUpdate {
      */
     slug?: string;
     /**
-     * If the user or organization should be credited in the byline.
+     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
@@ -1362,61 +1362,61 @@ export interface ArticleUpdate {
      */
     visibility?: ArticleUpdateVisibilityEnum;
     /**
-     * Set to true to only make this article available for subscribers to a paid subscription tier in the organization.
+     * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
     paid_subscribers_only?: boolean;
     /**
-     * If specified, time at which the article should no longer be restricted to paid subscribers. Only relevant if `paid_subscribers_only` is true.
+     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
     paid_subscribers_only_ends_at?: string;
     /**
-     * Time of publishing. If this date is in the future, the post will be scheduled to publish at this time.
+     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
     published_at?: string;
     /**
-     * Set to true for changes to published_at to take effect.
+     * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
     set_published_at?: boolean;
     /**
-     * Set to true to deliver this article via email and/or notifications to subscribers.
+     * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
     notify_subscribers?: boolean;
     /**
-     * If the article should be pinned
+     * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
     is_pinned?: boolean;
     /**
-     * Set to true for changes to og_image_url to take effect.
+     * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
     set_og_image_url?: boolean;
     /**
-     * Custom og:image URL value
+     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
     og_image_url?: string;
     /**
-     * Set to true for changes to og_description to take effect.
+     * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
     set_og_description?: boolean;
     /**
-     * Custom og:description value
+     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
@@ -1664,13 +1664,13 @@ export interface BackofficePledge {
      */
     type: PledgeType;
     /**
-     * If and when the pledge was refunded to the pledger
+     * 
      * @type {string}
      * @memberof BackofficePledge
      */
     refunded_at?: string;
     /**
-     * When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date.
+     * 
      * @type {string}
      * @memberof BackofficePledge
      */
@@ -1688,7 +1688,7 @@ export interface BackofficePledge {
      */
     pledger?: Pledger;
     /**
-     * URL of invoice for this pledge
+     * 
      * @type {string}
      * @memberof BackofficePledge
      */
@@ -1779,7 +1779,7 @@ export interface BackofficeReward {
      */
     state: RewardState;
     /**
-     * If and when the reward was paid out.
+     * 
      * @type {string}
      * @memberof BackofficeReward
      */
@@ -2026,13 +2026,13 @@ export interface CreatePledgePayLater {
      */
     amount: number;
     /**
-     * The organization to give credit to. The pledge will be paid by the authenticated user.
+     * 
      * @type {string}
      * @memberof CreatePledgePayLater
      */
     on_behalf_of_organization_id?: string;
     /**
-     * The organization to create the pledge as. The pledge will be paid by this organization.
+     * 
      * @type {string}
      * @memberof CreatePledgePayLater
      */
@@ -2200,7 +2200,7 @@ export interface Donation {
      * @type {string}
      * @memberof Donation
      */
-    message: string;
+    message: string | null;
     /**
      * 
      * @type {Donor}
@@ -2245,19 +2245,19 @@ export interface DonationCreateStripePaymentIntent {
      */
     amount: DonationCurrencyAmount;
     /**
-     * If the payment method should be saved for future usage.
+     * 
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
     setup_future_usage?: DonationCreateStripePaymentIntentSetupFutureUsageEnum;
     /**
-     * The organization to give credit to. The pledge will be paid by the authenticated user.
+     * 
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
     on_behalf_of_organization_id?: string;
     /**
-     * Message included with the donation
+     * 
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
@@ -2423,19 +2423,19 @@ export interface DonationUpdateStripePaymentIntent {
      */
     amount: DonationCurrencyAmount;
     /**
-     * If the payment method should be saved for future usage.
+     * 
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
     setup_future_usage?: DonationUpdateStripePaymentIntentSetupFutureUsageEnum;
     /**
-     * The organization to give credit to. The pledge will be paid by the authenticated user.
+     * 
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
     on_behalf_of_organization_id?: string;
     /**
-     * Message included with the donation
+     * 
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
@@ -2474,7 +2474,7 @@ export interface DonationUser {
      * @type {string}
      * @memberof DonationUser
      */
-    avatar_url: string;
+    avatar_url: string | null;
 }
 /**
  * @type Donor
@@ -2686,7 +2686,7 @@ export interface FreeSubscriptionCreate {
      */
     tier_id: string;
     /**
-     * Email of your backer. This field is required if the API is called outside the Polar app.
+     * 
      * @type {string}
      * @memberof FreeSubscriptionCreate
      */
@@ -2878,13 +2878,13 @@ export interface Issue {
      */
     title: string;
     /**
-     * GitHub issue body
+     * 
      * @type {string}
      * @memberof Issue
      */
     body?: string;
     /**
-     * Number of GitHub comments made on the issue
+     * 
      * @type {number}
      * @memberof Issue
      */
@@ -2902,7 +2902,7 @@ export interface Issue {
      */
     author?: Author;
     /**
-     * GitHub assignees
+     * 
      * @type {Array<Assignee>}
      * @memberof Issue
      */
@@ -2944,7 +2944,7 @@ export interface Issue {
      */
     needs_confirmation_solved: boolean;
     /**
-     * If this issue has been marked as confirmed solved through Polar
+     * 
      * @type {string}
      * @memberof Issue
      */
@@ -2962,7 +2962,7 @@ export interface Issue {
      */
     repository: Repository;
     /**
-     * Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive).
+     * 
      * @type {number}
      * @memberof Issue
      */
@@ -2974,7 +2974,7 @@ export interface Issue {
      */
     pledge_badge_currently_embedded: boolean;
     /**
-     * Optional custom badge SVG promotional content
+     * 
      * @type {string}
      * @memberof Issue
      */
@@ -4754,7 +4754,7 @@ export interface OAuthAccountRead {
      * @type {string}
      * @memberof OAuthAccountRead
      */
-    account_username: string;
+    account_username: string | null;
 }
 
 /**
@@ -4805,43 +4805,43 @@ export interface Organization {
      */
     is_personal: boolean;
     /**
-     * Public field from GitHub
+     * 
      * @type {string}
      * @memberof Organization
      */
     bio?: string;
     /**
-     * Public field from GitHub
+     * 
      * @type {string}
      * @memberof Organization
      */
     pretty_name?: string;
     /**
-     * Public field from GitHub
+     * 
      * @type {string}
      * @memberof Organization
      */
     company?: string;
     /**
-     * Public field from GitHub
+     * 
      * @type {string}
      * @memberof Organization
      */
     blog?: string;
     /**
-     * Public field from GitHub
+     * 
      * @type {string}
      * @memberof Organization
      */
     location?: string;
     /**
-     * Public field from GitHub
+     * 
      * @type {string}
      * @memberof Organization
      */
     email?: string;
     /**
-     * Public field from GitHub
+     * 
      * @type {string}
      * @memberof Organization
      */
@@ -4887,21 +4887,21 @@ export interface Organization {
      * @type {OrganizationProfileSettings}
      * @memberof Organization
      */
-    profile_settings: OrganizationProfileSettings;
+    profile_settings: OrganizationProfileSettings | null;
     /**
-     * Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization
+     * 
      * @type {string}
      * @memberof Organization
      */
     billing_email?: string;
     /**
-     * Overall team monthly spending limit, per calendar month. Only visible for members of the organization
+     * 
      * @type {number}
      * @memberof Organization
      */
     total_monthly_spending_limit?: number;
     /**
-     * Team members monthly spending limit, per calendar month. Only visible for members of the organization
+     * 
      * @type {number}
      * @memberof Organization
      */
@@ -5057,25 +5057,25 @@ export interface OrganizationMember {
  */
 export interface OrganizationProfileSettings {
     /**
-     * A description of the organization
+     * 
      * @type {string}
      * @memberof OrganizationProfileSettings
      */
     description?: string;
     /**
-     * A list of featured projects
+     * 
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
     featured_projects?: Array<string>;
     /**
-     * A list of featured organizations
+     * 
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
     featured_organizations?: Array<string>;
     /**
-     * A list of links associated with the organization
+     * 
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
@@ -5482,13 +5482,13 @@ export interface Pledge {
      */
     type: PledgeType;
     /**
-     * If and when the pledge was refunded to the pledger
+     * 
      * @type {string}
      * @memberof Pledge
      */
     refunded_at?: string;
     /**
-     * When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date.
+     * 
      * @type {string}
      * @memberof Pledge
      */
@@ -5506,7 +5506,7 @@ export interface Pledge {
      */
     pledger?: Pledger;
     /**
-     * URL of invoice for this pledge
+     * 
      * @type {string}
      * @memberof Pledge
      */
@@ -5622,13 +5622,13 @@ export interface PledgeStripePaymentIntentCreate {
      */
     amount: number;
     /**
-     * If the payment method should be saved for future usage.
+     * 
      * @type {string}
      * @memberof PledgeStripePaymentIntentCreate
      */
     setup_future_usage?: PledgeStripePaymentIntentCreateSetupFutureUsageEnum;
     /**
-     * The organization to give credit to. The pledge will be paid by the authenticated user.
+     * 
      * @type {string}
      * @memberof PledgeStripePaymentIntentCreate
      */
@@ -5700,13 +5700,13 @@ export interface PledgeStripePaymentIntentUpdate {
      */
     amount: number;
     /**
-     * If the payment method should be saved for future usage.
+     * 
      * @type {string}
      * @memberof PledgeStripePaymentIntentUpdate
      */
     setup_future_usage?: PledgeStripePaymentIntentUpdateSetupFutureUsageEnum;
     /**
-     * The organization to give credit to. The pledge will be paid by the authenticated user.
+     * 
      * @type {string}
      * @memberof PledgeStripePaymentIntentUpdate
      */
@@ -5924,12 +5924,6 @@ export interface PostIssueComment {
      */
     append_badge?: boolean;
 }
-/**
- * @type PricesInner
- * @export
- */
-export type PricesInner = ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate;
-
 /**
  * 
  * @export
@@ -6184,7 +6178,7 @@ export interface Repository {
      * @type {RepositoryProfileSettings}
      * @memberof Repository
      */
-    profile_settings: RepositoryProfileSettings;
+    profile_settings: RepositoryProfileSettings | null;
     /**
      * 
      * @type {Organization}
@@ -6303,31 +6297,31 @@ export interface RepositoryBadgeSettingsUpdate {
  */
 export interface RepositoryProfileSettings {
     /**
-     * A description of the repository
+     * 
      * @type {string}
      * @memberof RepositoryProfileSettings
      */
     description?: string;
     /**
-     * A URL to a cover image
+     * 
      * @type {string}
      * @memberof RepositoryProfileSettings
      */
     cover_image_url?: string;
     /**
-     * A list of featured organizations
+     * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettings
      */
     featured_organizations?: Array<string>;
     /**
-     * A list of highlighted subscription tiers
+     * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettings
      */
     highlighted_subscription_tiers?: Array<string>;
     /**
-     * A list of links related to the repository
+     * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettings
      */
@@ -6450,7 +6444,7 @@ export interface Reward {
      */
     state: RewardState;
     /**
-     * If and when the reward was paid out.
+     * 
      * @type {string}
      * @memberof Reward
      */
@@ -6640,7 +6634,7 @@ export interface SubscribeSession {
      */
     id: string;
     /**
-     * URL where you should redirect your backer so they can subscribe to the selected tier.
+     * 
      * @type {string}
      * @memberof SubscribeSession
      */
@@ -6713,13 +6707,13 @@ export interface SubscribeSessionCreate {
      */
     success_url: string;
     /**
-     * ID of the Organization on behalf which you want to subscribe this tier to. You need to be an administrator of the Organization to do this.
+     * 
      * @type {string}
      * @memberof SubscribeSessionCreate
      */
     organization_subscriber_id?: string;
     /**
-     * If you already know the email of your backer, you can set it. It'll be pre-filled on the subscription page.
+     * 
      * @type {string}
      * @memberof SubscribeSessionCreate
      */
@@ -8966,11 +8960,17 @@ export interface SubscriptionTierUpdate {
     is_highlighted?: boolean;
     /**
      * 
-     * @type {Array<PricesInner>}
+     * @type {Array<SubscriptionTierUpdatePricesInner>}
      * @memberof SubscriptionTierUpdate
      */
-    prices?: Array<PricesInner>;
+    prices?: Array<SubscriptionTierUpdatePricesInner>;
 }
+/**
+ * @type SubscriptionTierUpdatePricesInner
+ * @export
+ */
+export type SubscriptionTierUpdatePricesInner = ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate;
+
 /**
  * 
  * @export

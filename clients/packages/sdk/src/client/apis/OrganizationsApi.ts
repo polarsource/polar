@@ -49,7 +49,7 @@ export interface OrganizationsApiListRequest {
 }
 
 export interface OrganizationsApiListMembersRequest {
-    id: string;
+    id: string | null;
 }
 
 export interface OrganizationsApiLookupRequest {

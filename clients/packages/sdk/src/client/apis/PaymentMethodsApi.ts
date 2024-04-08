@@ -33,8 +33,11 @@ export class PaymentMethodsApi extends runtime.BaseAPI {
      * Detach
      */
     async detachRaw(requestParameters: PaymentMethodsApiDetachRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PaymentMethod>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling detach.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling detach().'
+            );
         }
 
         const queryParameters: any = {};
@@ -50,7 +53,7 @@ export class PaymentMethodsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/payment_methods/{id}/detach`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/payment_methods/{id}/detach`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

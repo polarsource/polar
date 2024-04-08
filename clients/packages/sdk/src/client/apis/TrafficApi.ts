@@ -55,46 +55,58 @@ export class TrafficApi extends runtime.BaseAPI {
      * Referrers
      */
     async referrersRaw(requestParameters: TrafficApiReferrersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceTrafficReferrer>> {
-        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
-            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling referrers.');
+        if (requestParameters['startDate'] == null) {
+            throw new runtime.RequiredError(
+                'startDate',
+                'Required parameter "startDate" was null or undefined when calling referrers().'
+            );
         }
 
-        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
-            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling referrers.');
+        if (requestParameters['endDate'] == null) {
+            throw new runtime.RequiredError(
+                'endDate',
+                'Required parameter "endDate" was null or undefined when calling referrers().'
+            );
         }
 
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling referrers.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling referrers().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling referrers.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling referrers().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.startDate !== undefined) {
-            queryParameters['start_date'] = requestParameters.startDate;
+        if (requestParameters['startDate'] != null) {
+            queryParameters['start_date'] = requestParameters['startDate'];
         }
 
-        if (requestParameters.endDate !== undefined) {
-            queryParameters['end_date'] = requestParameters.endDate;
+        if (requestParameters['endDate'] != null) {
+            queryParameters['end_date'] = requestParameters['endDate'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -129,46 +141,55 @@ export class TrafficApi extends runtime.BaseAPI {
      * Statistics
      */
     async statisticsRaw(requestParameters: TrafficApiStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrafficStatistics>> {
-        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
-            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling statistics.');
+        if (requestParameters['startDate'] == null) {
+            throw new runtime.RequiredError(
+                'startDate',
+                'Required parameter "startDate" was null or undefined when calling statistics().'
+            );
         }
 
-        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
-            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling statistics.');
+        if (requestParameters['endDate'] == null) {
+            throw new runtime.RequiredError(
+                'endDate',
+                'Required parameter "endDate" was null or undefined when calling statistics().'
+            );
         }
 
-        if (requestParameters.trafficInterval === null || requestParameters.trafficInterval === undefined) {
-            throw new runtime.RequiredError('trafficInterval','Required parameter requestParameters.trafficInterval was null or undefined when calling statistics.');
+        if (requestParameters['trafficInterval'] == null) {
+            throw new runtime.RequiredError(
+                'trafficInterval',
+                'Required parameter "trafficInterval" was null or undefined when calling statistics().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.articleId !== undefined) {
-            queryParameters['article_id'] = requestParameters.articleId;
+        if (requestParameters['articleId'] != null) {
+            queryParameters['article_id'] = requestParameters['articleId'];
         }
 
-        if (requestParameters.startDate !== undefined) {
-            queryParameters['start_date'] = requestParameters.startDate;
+        if (requestParameters['startDate'] != null) {
+            queryParameters['start_date'] = requestParameters['startDate'];
         }
 
-        if (requestParameters.endDate !== undefined) {
-            queryParameters['end_date'] = requestParameters.endDate;
+        if (requestParameters['endDate'] != null) {
+            queryParameters['end_date'] = requestParameters['endDate'];
         }
 
-        if (requestParameters.trafficInterval !== undefined) {
-            queryParameters['trafficInterval'] = requestParameters.trafficInterval;
+        if (requestParameters['trafficInterval'] != null) {
+            queryParameters['trafficInterval'] = requestParameters['trafficInterval'];
         }
 
-        if (requestParameters.groupByArticle !== undefined) {
-            queryParameters['group_by_article'] = requestParameters.groupByArticle;
+        if (requestParameters['groupByArticle'] != null) {
+            queryParameters['group_by_article'] = requestParameters['groupByArticle'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -203,8 +224,11 @@ export class TrafficApi extends runtime.BaseAPI {
      * Track Page View
      */
     async trackPageViewRaw(requestParameters: TrafficApiTrackPageViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrackPageViewResponse>> {
-        if (requestParameters.trackPageView === null || requestParameters.trackPageView === undefined) {
-            throw new runtime.RequiredError('trackPageView','Required parameter requestParameters.trackPageView was null or undefined when calling trackPageView.');
+        if (requestParameters['trackPageView'] == null) {
+            throw new runtime.RequiredError(
+                'trackPageView',
+                'Required parameter "trackPageView" was null or undefined when calling trackPageView().'
+            );
         }
 
         const queryParameters: any = {};
@@ -226,7 +250,7 @@ export class TrafficApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.trackPageView,
+            body: requestParameters['trackPageView'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

@@ -35,8 +35,8 @@ export class PullRequestsApi extends runtime.BaseAPI {
     async searchRaw(requestParameters: PullRequestsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePullRequest>> {
         const queryParameters: any = {};
 
-        if (requestParameters.referencesIssueId !== undefined) {
-            queryParameters['references_issue_id'] = requestParameters.referencesIssueId;
+        if (requestParameters['referencesIssueId'] != null) {
+            queryParameters['references_issue_id'] = requestParameters['referencesIssueId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

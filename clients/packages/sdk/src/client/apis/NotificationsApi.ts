@@ -67,8 +67,11 @@ export class NotificationsApi extends runtime.BaseAPI {
      * Mark Read
      */
     async markReadRaw(requestParameters: NotificationsApiMarkReadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.notificationsMarkRead === null || requestParameters.notificationsMarkRead === undefined) {
-            throw new runtime.RequiredError('notificationsMarkRead','Required parameter requestParameters.notificationsMarkRead was null or undefined when calling markRead.');
+        if (requestParameters['notificationsMarkRead'] == null) {
+            throw new runtime.RequiredError(
+                'notificationsMarkRead',
+                'Required parameter "notificationsMarkRead" was null or undefined when calling markRead().'
+            );
         }
 
         const queryParameters: any = {};
@@ -90,7 +93,7 @@ export class NotificationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.notificationsMarkRead,
+            body: requestParameters['notificationsMarkRead'],
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {

@@ -201,8 +201,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Archive Subscription Tier
      */
     async archiveSubscriptionTierRaw(requestParameters: SubscriptionsApiArchiveSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling archiveSubscriptionTier.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling archiveSubscriptionTier().'
+            );
         }
 
         const queryParameters: any = {};
@@ -218,7 +221,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/tiers/{id}/archive`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/tiers/{id}/archive`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -239,8 +242,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Cancel Subscription
      */
     async cancelSubscriptionRaw(requestParameters: SubscriptionsApiCancelSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling cancelSubscription.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling cancelSubscription().'
+            );
         }
 
         const queryParameters: any = {};
@@ -256,7 +262,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -277,30 +283,39 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Create Email Subscription
      */
     async createEmailSubscriptionRaw(requestParameters: SubscriptionsApiCreateEmailSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling createEmailSubscription.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling createEmailSubscription().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling createEmailSubscription.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling createEmailSubscription().'
+            );
         }
 
-        if (requestParameters.subscriptionCreateEmail === null || requestParameters.subscriptionCreateEmail === undefined) {
-            throw new runtime.RequiredError('subscriptionCreateEmail','Required parameter requestParameters.subscriptionCreateEmail was null or undefined when calling createEmailSubscription.');
+        if (requestParameters['subscriptionCreateEmail'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionCreateEmail',
+                'Required parameter "subscriptionCreateEmail" was null or undefined when calling createEmailSubscription().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -320,7 +335,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscriptionCreateEmail,
+            body: requestParameters['subscriptionCreateEmail'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -338,8 +353,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Create Free Subscription
      */
     async createFreeSubscriptionRaw(requestParameters: SubscriptionsApiCreateFreeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters.freeSubscriptionCreate === null || requestParameters.freeSubscriptionCreate === undefined) {
-            throw new runtime.RequiredError('freeSubscriptionCreate','Required parameter requestParameters.freeSubscriptionCreate was null or undefined when calling createFreeSubscription.');
+        if (requestParameters['freeSubscriptionCreate'] == null) {
+            throw new runtime.RequiredError(
+                'freeSubscriptionCreate',
+                'Required parameter "freeSubscriptionCreate" was null or undefined when calling createFreeSubscription().'
+            );
         }
 
         const queryParameters: any = {};
@@ -361,7 +379,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.freeSubscriptionCreate,
+            body: requestParameters['freeSubscriptionCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -379,8 +397,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Create Subscribe Session
      */
     async createSubscribeSessionRaw(requestParameters: SubscriptionsApiCreateSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscribeSession>> {
-        if (requestParameters.subscribeSessionCreate === null || requestParameters.subscribeSessionCreate === undefined) {
-            throw new runtime.RequiredError('subscribeSessionCreate','Required parameter requestParameters.subscribeSessionCreate was null or undefined when calling createSubscribeSession.');
+        if (requestParameters['subscribeSessionCreate'] == null) {
+            throw new runtime.RequiredError(
+                'subscribeSessionCreate',
+                'Required parameter "subscribeSessionCreate" was null or undefined when calling createSubscribeSession().'
+            );
         }
 
         const queryParameters: any = {};
@@ -402,7 +423,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscribeSessionCreate,
+            body: requestParameters['subscribeSessionCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -420,8 +441,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Create Subscription Benefit
      */
     async createSubscriptionBenefitRaw(requestParameters: SubscriptionsApiCreateSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseSubscriptionsCreateSubscriptionBenefit>> {
-        if (requestParameters.subscriptionBenefitCreate === null || requestParameters.subscriptionBenefitCreate === undefined) {
-            throw new runtime.RequiredError('subscriptionBenefitCreate','Required parameter requestParameters.subscriptionBenefitCreate was null or undefined when calling createSubscriptionBenefit.');
+        if (requestParameters['subscriptionBenefitCreate'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionBenefitCreate',
+                'Required parameter "subscriptionBenefitCreate" was null or undefined when calling createSubscriptionBenefit().'
+            );
         }
 
         const queryParameters: any = {};
@@ -443,7 +467,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscriptionBenefitCreate,
+            body: requestParameters['subscriptionBenefitCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -461,8 +485,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Create Subscription Tier
      */
     async createSubscriptionTierRaw(requestParameters: SubscriptionsApiCreateSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
-        if (requestParameters.subscriptionTierCreate === null || requestParameters.subscriptionTierCreate === undefined) {
-            throw new runtime.RequiredError('subscriptionTierCreate','Required parameter requestParameters.subscriptionTierCreate was null or undefined when calling createSubscriptionTier.');
+        if (requestParameters['subscriptionTierCreate'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionTierCreate',
+                'Required parameter "subscriptionTierCreate" was null or undefined when calling createSubscriptionTier().'
+            );
         }
 
         const queryParameters: any = {};
@@ -484,7 +511,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscriptionTierCreate,
+            body: requestParameters['subscriptionTierCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -502,8 +529,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Delete Subscription Benefit
      */
     async deleteSubscriptionBenefitRaw(requestParameters: SubscriptionsApiDeleteSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling deleteSubscriptionBenefit.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling deleteSubscriptionBenefit().'
+            );
         }
 
         const queryParameters: any = {};
@@ -519,7 +549,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -539,8 +569,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Get Subscribe Session
      */
     async getSubscribeSessionRaw(requestParameters: SubscriptionsApiGetSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscribeSession>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getSubscribeSession.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getSubscribeSession().'
+            );
         }
 
         const queryParameters: any = {};
@@ -556,7 +589,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/subscribe-sessions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/subscribe-sessions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -577,54 +610,66 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Get Subscriptions Statistics
      */
     async getSubscriptionsStatisticsRaw(requestParameters: SubscriptionsApiGetSubscriptionsStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsStatistics>> {
-        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
-            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling getSubscriptionsStatistics.');
+        if (requestParameters['startDate'] == null) {
+            throw new runtime.RequiredError(
+                'startDate',
+                'Required parameter "startDate" was null or undefined when calling getSubscriptionsStatistics().'
+            );
         }
 
-        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
-            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling getSubscriptionsStatistics.');
+        if (requestParameters['endDate'] == null) {
+            throw new runtime.RequiredError(
+                'endDate',
+                'Required parameter "endDate" was null or undefined when calling getSubscriptionsStatistics().'
+            );
         }
 
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling getSubscriptionsStatistics.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling getSubscriptionsStatistics().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling getSubscriptionsStatistics.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling getSubscriptionsStatistics().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.startDate !== undefined) {
-            queryParameters['start_date'] = requestParameters.startDate;
+        if (requestParameters['startDate'] != null) {
+            queryParameters['start_date'] = requestParameters['startDate'];
         }
 
-        if (requestParameters.endDate !== undefined) {
-            queryParameters['end_date'] = requestParameters.endDate;
+        if (requestParameters['endDate'] != null) {
+            queryParameters['end_date'] = requestParameters['endDate'];
         }
 
-        if (requestParameters.directOrganization !== undefined) {
-            queryParameters['direct_organization'] = requestParameters.directOrganization;
+        if (requestParameters['directOrganization'] != null) {
+            queryParameters['direct_organization'] = requestParameters['directOrganization'];
         }
 
-        if (requestParameters.types) {
-            queryParameters['types'] = requestParameters.types;
+        if (requestParameters['types'] != null) {
+            queryParameters['types'] = requestParameters['types'];
         }
 
-        if (requestParameters.subscriptionTierId !== undefined) {
-            queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        if (requestParameters['subscriptionTierId'] != null) {
+            queryParameters['subscription_tier_id'] = requestParameters['subscriptionTierId'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -659,14 +704,17 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Lookup Subscription Benefit
      */
     async lookupSubscriptionBenefitRaw(requestParameters: SubscriptionsApiLookupSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseSubscriptionsLookupSubscriptionBenefit>> {
-        if (requestParameters.subscriptionBenefitId === null || requestParameters.subscriptionBenefitId === undefined) {
-            throw new runtime.RequiredError('subscriptionBenefitId','Required parameter requestParameters.subscriptionBenefitId was null or undefined when calling lookupSubscriptionBenefit.');
+        if (requestParameters['subscriptionBenefitId'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionBenefitId',
+                'Required parameter "subscriptionBenefitId" was null or undefined when calling lookupSubscriptionBenefit().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.subscriptionBenefitId !== undefined) {
-            queryParameters['subscription_benefit_id'] = requestParameters.subscriptionBenefitId;
+        if (requestParameters['subscriptionBenefitId'] != null) {
+            queryParameters['subscription_benefit_id'] = requestParameters['subscriptionBenefitId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -701,14 +749,17 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Lookup Subscription Tier
      */
     async lookupSubscriptionTierRaw(requestParameters: SubscriptionsApiLookupSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
-        if (requestParameters.subscriptionTierId === null || requestParameters.subscriptionTierId === undefined) {
-            throw new runtime.RequiredError('subscriptionTierId','Required parameter requestParameters.subscriptionTierId was null or undefined when calling lookupSubscriptionTier.');
+        if (requestParameters['subscriptionTierId'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionTierId',
+                'Required parameter "subscriptionTierId" was null or undefined when calling lookupSubscriptionTier().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.subscriptionTierId !== undefined) {
-            queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        if (requestParameters['subscriptionTierId'] != null) {
+            queryParameters['subscription_tier_id'] = requestParameters['subscriptionTierId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -745,48 +796,48 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     async searchSubscribedSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscribedSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSubscriber>> {
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.directOrganization !== undefined) {
-            queryParameters['direct_organization'] = requestParameters.directOrganization;
+        if (requestParameters['directOrganization'] != null) {
+            queryParameters['direct_organization'] = requestParameters['directOrganization'];
         }
 
-        if (requestParameters.type !== undefined) {
-            queryParameters['type'] = requestParameters.type;
+        if (requestParameters['type'] != null) {
+            queryParameters['type'] = requestParameters['type'];
         }
 
-        if (requestParameters.subscriptionTierId !== undefined) {
-            queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        if (requestParameters['subscriptionTierId'] != null) {
+            queryParameters['subscription_tier_id'] = requestParameters['subscriptionTierId'];
         }
 
-        if (requestParameters.subscriberUserId !== undefined) {
-            queryParameters['subscriber_user_id'] = requestParameters.subscriberUserId;
+        if (requestParameters['subscriberUserId'] != null) {
+            queryParameters['subscriber_user_id'] = requestParameters['subscriberUserId'];
         }
 
-        if (requestParameters.subscriberOrganizationId !== undefined) {
-            queryParameters['subscriber_organization_id'] = requestParameters.subscriberOrganizationId;
+        if (requestParameters['subscriberOrganizationId'] != null) {
+            queryParameters['subscriber_organization_id'] = requestParameters['subscriberOrganizationId'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.sorting) {
-            queryParameters['sorting'] = requestParameters.sorting;
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -821,42 +872,48 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscription Benefits
      */
     async searchSubscriptionBenefitsRaw(requestParameters: SubscriptionsApiSearchSubscriptionBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling searchSubscriptionBenefits.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling searchSubscriptionBenefits().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling searchSubscriptionBenefits.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling searchSubscriptionBenefits().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.directOrganization !== undefined) {
-            queryParameters['direct_organization'] = requestParameters.directOrganization;
+        if (requestParameters['directOrganization'] != null) {
+            queryParameters['direct_organization'] = requestParameters['directOrganization'];
         }
 
-        if (requestParameters.type !== undefined) {
-            queryParameters['type'] = requestParameters.type;
+        if (requestParameters['type'] != null) {
+            queryParameters['type'] = requestParameters['type'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -891,46 +948,52 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscription Tiers
      */
     async searchSubscriptionTiersRaw(requestParameters: SubscriptionsApiSearchSubscriptionTiersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionTier>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling searchSubscriptionTiers.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling searchSubscriptionTiers().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling searchSubscriptionTiers.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling searchSubscriptionTiers().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.directOrganization !== undefined) {
-            queryParameters['direct_organization'] = requestParameters.directOrganization;
+        if (requestParameters['directOrganization'] != null) {
+            queryParameters['direct_organization'] = requestParameters['directOrganization'];
         }
 
-        if (requestParameters.includeArchived !== undefined) {
-            queryParameters['include_archived'] = requestParameters.includeArchived;
+        if (requestParameters['includeArchived'] != null) {
+            queryParameters['include_archived'] = requestParameters['includeArchived'];
         }
 
-        if (requestParameters.type !== undefined) {
-            queryParameters['type'] = requestParameters.type;
+        if (requestParameters['type'] != null) {
+            queryParameters['type'] = requestParameters['type'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -965,62 +1028,68 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscriptions
      */
     async searchSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscription>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling searchSubscriptions.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling searchSubscriptions().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling searchSubscriptions.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling searchSubscriptions().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.directOrganization !== undefined) {
-            queryParameters['direct_organization'] = requestParameters.directOrganization;
+        if (requestParameters['directOrganization'] != null) {
+            queryParameters['direct_organization'] = requestParameters['directOrganization'];
         }
 
-        if (requestParameters.type !== undefined) {
-            queryParameters['type'] = requestParameters.type;
+        if (requestParameters['type'] != null) {
+            queryParameters['type'] = requestParameters['type'];
         }
 
-        if (requestParameters.subscriptionTierId !== undefined) {
-            queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        if (requestParameters['subscriptionTierId'] != null) {
+            queryParameters['subscription_tier_id'] = requestParameters['subscriptionTierId'];
         }
 
-        if (requestParameters.subscriberUserId !== undefined) {
-            queryParameters['subscriber_user_id'] = requestParameters.subscriberUserId;
+        if (requestParameters['subscriberUserId'] != null) {
+            queryParameters['subscriber_user_id'] = requestParameters['subscriberUserId'];
         }
 
-        if (requestParameters.subscriberOrganizationId !== undefined) {
-            queryParameters['subscriber_organization_id'] = requestParameters.subscriberOrganizationId;
+        if (requestParameters['subscriberOrganizationId'] != null) {
+            queryParameters['subscriber_organization_id'] = requestParameters['subscriberOrganizationId'];
         }
 
-        if (requestParameters.active !== undefined) {
-            queryParameters['active'] = requestParameters.active;
+        if (requestParameters['active'] != null) {
+            queryParameters['active'] = requestParameters['active'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.sorting) {
-            queryParameters['sorting'] = requestParameters.sorting;
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -1055,34 +1124,40 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscriptions Summary
      */
     async searchSubscriptionsSummaryRaw(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSummary>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling searchSubscriptionsSummary.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling searchSubscriptionsSummary().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling searchSubscriptionsSummary.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling searchSubscriptionsSummary().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -1117,26 +1192,32 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Subscriptions Export
      */
     async subscriptionsExportRaw(requestParameters: SubscriptionsApiSubscriptionsExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling subscriptionsExport.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling subscriptionsExport().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling subscriptionsExport.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling subscriptionsExport().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -1175,30 +1256,39 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Subscriptions Import
      */
     async subscriptionsImportRaw(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsImported>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling subscriptionsImport.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling subscriptionsImport().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling subscriptionsImport.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling subscriptionsImport().'
+            );
         }
 
-        if (requestParameters.file === null || requestParameters.file === undefined) {
-            throw new runtime.RequiredError('file','Required parameter requestParameters.file was null or undefined when calling subscriptionsImport.');
+        if (requestParameters['file'] == null) {
+            throw new runtime.RequiredError(
+                'file',
+                'Required parameter "file" was null or undefined when calling subscriptionsImport().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -1227,8 +1317,8 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             formParams = new URLSearchParams();
         }
 
-        if (requestParameters.file !== undefined) {
-            formParams.append('file', requestParameters.file as any);
+        if (requestParameters['file'] != null) {
+            formParams.append('file', requestParameters['file'] as any);
         }
 
         const response = await this.request({
@@ -1254,12 +1344,18 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Update Subscription Benefit
      */
     async updateSubscriptionBenefitRaw(requestParameters: SubscriptionsApiUpdateSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseSubscriptionsUpdateSubscriptionBenefit>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling updateSubscriptionBenefit.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateSubscriptionBenefit().'
+            );
         }
 
-        if (requestParameters.subscriptionBenefitUpdate === null || requestParameters.subscriptionBenefitUpdate === undefined) {
-            throw new runtime.RequiredError('subscriptionBenefitUpdate','Required parameter requestParameters.subscriptionBenefitUpdate was null or undefined when calling updateSubscriptionBenefit.');
+        if (requestParameters['subscriptionBenefitUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionBenefitUpdate',
+                'Required parameter "subscriptionBenefitUpdate" was null or undefined when calling updateSubscriptionBenefit().'
+            );
         }
 
         const queryParameters: any = {};
@@ -1277,11 +1373,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscriptionBenefitUpdate,
+            body: requestParameters['subscriptionBenefitUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1299,12 +1395,18 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Update Subscription Tier
      */
     async updateSubscriptionTierRaw(requestParameters: SubscriptionsApiUpdateSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling updateSubscriptionTier.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateSubscriptionTier().'
+            );
         }
 
-        if (requestParameters.subscriptionTierUpdate === null || requestParameters.subscriptionTierUpdate === undefined) {
-            throw new runtime.RequiredError('subscriptionTierUpdate','Required parameter requestParameters.subscriptionTierUpdate was null or undefined when calling updateSubscriptionTier.');
+        if (requestParameters['subscriptionTierUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionTierUpdate',
+                'Required parameter "subscriptionTierUpdate" was null or undefined when calling updateSubscriptionTier().'
+            );
         }
 
         const queryParameters: any = {};
@@ -1322,11 +1424,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/tiers/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/tiers/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscriptionTierUpdate,
+            body: requestParameters['subscriptionTierUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1344,12 +1446,18 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Update Subscription Tier Benefits
      */
     async updateSubscriptionTierBenefitsRaw(requestParameters: SubscriptionsApiUpdateSubscriptionTierBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling updateSubscriptionTierBenefits.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateSubscriptionTierBenefits().'
+            );
         }
 
-        if (requestParameters.subscriptionTierBenefitsUpdate === null || requestParameters.subscriptionTierBenefitsUpdate === undefined) {
-            throw new runtime.RequiredError('subscriptionTierBenefitsUpdate','Required parameter requestParameters.subscriptionTierBenefitsUpdate was null or undefined when calling updateSubscriptionTierBenefits.');
+        if (requestParameters['subscriptionTierBenefitsUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionTierBenefitsUpdate',
+                'Required parameter "subscriptionTierBenefitsUpdate" was null or undefined when calling updateSubscriptionTierBenefits().'
+            );
         }
 
         const queryParameters: any = {};
@@ -1367,11 +1475,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/tiers/{id}/benefits`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/tiers/{id}/benefits`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscriptionTierBenefitsUpdate,
+            body: requestParameters['subscriptionTierBenefitsUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1389,12 +1497,18 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Upgrade Subscription
      */
     async upgradeSubscriptionRaw(requestParameters: SubscriptionsApiUpgradeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling upgradeSubscription.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling upgradeSubscription().'
+            );
         }
 
-        if (requestParameters.subscriptionUpgrade === null || requestParameters.subscriptionUpgrade === undefined) {
-            throw new runtime.RequiredError('subscriptionUpgrade','Required parameter requestParameters.subscriptionUpgrade was null or undefined when calling upgradeSubscription.');
+        if (requestParameters['subscriptionUpgrade'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionUpgrade',
+                'Required parameter "subscriptionUpgrade" was null or undefined when calling upgradeSubscription().'
+            );
         }
 
         const queryParameters: any = {};
@@ -1412,11 +1526,11 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.subscriptionUpgrade,
+            body: requestParameters['subscriptionUpgrade'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

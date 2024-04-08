@@ -55,8 +55,11 @@ export class DonationsApi extends runtime.BaseAPI {
      * Create Payment Intent
      */
     async createPaymentIntentRaw(requestParameters: DonationsApiCreatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DonationStripePaymentIntentMutationResponse>> {
-        if (requestParameters.donationCreateStripePaymentIntent === null || requestParameters.donationCreateStripePaymentIntent === undefined) {
-            throw new runtime.RequiredError('donationCreateStripePaymentIntent','Required parameter requestParameters.donationCreateStripePaymentIntent was null or undefined when calling createPaymentIntent.');
+        if (requestParameters['donationCreateStripePaymentIntent'] == null) {
+            throw new runtime.RequiredError(
+                'donationCreateStripePaymentIntent',
+                'Required parameter "donationCreateStripePaymentIntent" was null or undefined when calling createPaymentIntent().'
+            );
         }
 
         const queryParameters: any = {};
@@ -78,7 +81,7 @@ export class DonationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.donationCreateStripePaymentIntent,
+            body: requestParameters['donationCreateStripePaymentIntent'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -96,26 +99,29 @@ export class DonationsApi extends runtime.BaseAPI {
      * Search Donations
      */
     async searchDonationsRaw(requestParameters: DonationsApiSearchDonationsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceDonation>> {
-        if (requestParameters.toOrganizationId === null || requestParameters.toOrganizationId === undefined) {
-            throw new runtime.RequiredError('toOrganizationId','Required parameter requestParameters.toOrganizationId was null or undefined when calling searchDonations.');
+        if (requestParameters['toOrganizationId'] == null) {
+            throw new runtime.RequiredError(
+                'toOrganizationId',
+                'Required parameter "toOrganizationId" was null or undefined when calling searchDonations().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.toOrganizationId !== undefined) {
-            queryParameters['to_organization_id'] = requestParameters.toOrganizationId;
+        if (requestParameters['toOrganizationId'] != null) {
+            queryParameters['to_organization_id'] = requestParameters['toOrganizationId'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.sorting) {
-            queryParameters['sorting'] = requestParameters.sorting;
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -150,38 +156,50 @@ export class DonationsApi extends runtime.BaseAPI {
      * Statistics
      */
     async statisticsRaw(requestParameters: DonationsApiStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DonationStatistics>> {
-        if (requestParameters.toOrganizationId === null || requestParameters.toOrganizationId === undefined) {
-            throw new runtime.RequiredError('toOrganizationId','Required parameter requestParameters.toOrganizationId was null or undefined when calling statistics.');
+        if (requestParameters['toOrganizationId'] == null) {
+            throw new runtime.RequiredError(
+                'toOrganizationId',
+                'Required parameter "toOrganizationId" was null or undefined when calling statistics().'
+            );
         }
 
-        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
-            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling statistics.');
+        if (requestParameters['startDate'] == null) {
+            throw new runtime.RequiredError(
+                'startDate',
+                'Required parameter "startDate" was null or undefined when calling statistics().'
+            );
         }
 
-        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
-            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling statistics.');
+        if (requestParameters['endDate'] == null) {
+            throw new runtime.RequiredError(
+                'endDate',
+                'Required parameter "endDate" was null or undefined when calling statistics().'
+            );
         }
 
-        if (requestParameters.donationsInterval === null || requestParameters.donationsInterval === undefined) {
-            throw new runtime.RequiredError('donationsInterval','Required parameter requestParameters.donationsInterval was null or undefined when calling statistics.');
+        if (requestParameters['donationsInterval'] == null) {
+            throw new runtime.RequiredError(
+                'donationsInterval',
+                'Required parameter "donationsInterval" was null or undefined when calling statistics().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.toOrganizationId !== undefined) {
-            queryParameters['to_organization_id'] = requestParameters.toOrganizationId;
+        if (requestParameters['toOrganizationId'] != null) {
+            queryParameters['to_organization_id'] = requestParameters['toOrganizationId'];
         }
 
-        if (requestParameters.startDate !== undefined) {
-            queryParameters['start_date'] = requestParameters.startDate;
+        if (requestParameters['startDate'] != null) {
+            queryParameters['start_date'] = requestParameters['startDate'];
         }
 
-        if (requestParameters.endDate !== undefined) {
-            queryParameters['end_date'] = requestParameters.endDate;
+        if (requestParameters['endDate'] != null) {
+            queryParameters['end_date'] = requestParameters['endDate'];
         }
 
-        if (requestParameters.donationsInterval !== undefined) {
-            queryParameters['donationsInterval'] = requestParameters.donationsInterval;
+        if (requestParameters['donationsInterval'] != null) {
+            queryParameters['donationsInterval'] = requestParameters['donationsInterval'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -216,12 +234,18 @@ export class DonationsApi extends runtime.BaseAPI {
      * Update Payment Intent
      */
     async updatePaymentIntentRaw(requestParameters: DonationsApiUpdatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DonationStripePaymentIntentMutationResponse>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling updatePaymentIntent.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updatePaymentIntent().'
+            );
         }
 
-        if (requestParameters.donationUpdateStripePaymentIntent === null || requestParameters.donationUpdateStripePaymentIntent === undefined) {
-            throw new runtime.RequiredError('donationUpdateStripePaymentIntent','Required parameter requestParameters.donationUpdateStripePaymentIntent was null or undefined when calling updatePaymentIntent.');
+        if (requestParameters['donationUpdateStripePaymentIntent'] == null) {
+            throw new runtime.RequiredError(
+                'donationUpdateStripePaymentIntent',
+                'Required parameter "donationUpdateStripePaymentIntent" was null or undefined when calling updatePaymentIntent().'
+            );
         }
 
         const queryParameters: any = {};
@@ -239,11 +263,11 @@ export class DonationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/donations/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/donations/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.donationUpdateStripePaymentIntent,
+            body: requestParameters['donationUpdateStripePaymentIntent'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

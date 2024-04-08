@@ -63,8 +63,11 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Issue
      */
     async issueRaw(requestParameters: BackofficeApiIssueRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling issue.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling issue().'
+            );
         }
 
         const queryParameters: any = {};
@@ -80,7 +83,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/issue/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/backoffice/issue/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -101,8 +104,11 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Manage Badge
      */
     async manageBadgeRaw(requestParameters: BackofficeApiManageBadgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BackofficeBadgeResponse>> {
-        if (requestParameters.backofficeBadge === null || requestParameters.backofficeBadge === undefined) {
-            throw new runtime.RequiredError('backofficeBadge','Required parameter requestParameters.backofficeBadge was null or undefined when calling manageBadge.');
+        if (requestParameters['backofficeBadge'] == null) {
+            throw new runtime.RequiredError(
+                'backofficeBadge',
+                'Required parameter "backofficeBadge" was null or undefined when calling manageBadge().'
+            );
         }
 
         const queryParameters: any = {};
@@ -124,7 +130,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.backofficeBadge,
+            body: requestParameters['backofficeBadge'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -142,8 +148,11 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Pledge Create Invoice
      */
     async pledgeCreateInvoiceRaw(requestParameters: BackofficeApiPledgeCreateInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BackofficePledge>> {
-        if (requestParameters.pledgeId === null || requestParameters.pledgeId === undefined) {
-            throw new runtime.RequiredError('pledgeId','Required parameter requestParameters.pledgeId was null or undefined when calling pledgeCreateInvoice.');
+        if (requestParameters['pledgeId'] == null) {
+            throw new runtime.RequiredError(
+                'pledgeId',
+                'Required parameter "pledgeId" was null or undefined when calling pledgeCreateInvoice().'
+            );
         }
 
         const queryParameters: any = {};
@@ -159,7 +168,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/pledges/create_invoice/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters.pledgeId))),
+            path: `/api/v1/backoffice/pledges/create_invoice/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -180,8 +189,11 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Pledge Mark Disputed
      */
     async pledgeMarkDisputedRaw(requestParameters: BackofficeApiPledgeMarkDisputedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BackofficePledge>> {
-        if (requestParameters.pledgeId === null || requestParameters.pledgeId === undefined) {
-            throw new runtime.RequiredError('pledgeId','Required parameter requestParameters.pledgeId was null or undefined when calling pledgeMarkDisputed.');
+        if (requestParameters['pledgeId'] == null) {
+            throw new runtime.RequiredError(
+                'pledgeId',
+                'Required parameter "pledgeId" was null or undefined when calling pledgeMarkDisputed().'
+            );
         }
 
         const queryParameters: any = {};
@@ -197,7 +209,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/pledges/mark_disputed/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters.pledgeId))),
+            path: `/api/v1/backoffice/pledges/mark_disputed/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -218,8 +230,11 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Pledge Reward Transfer
      */
     async pledgeRewardTransferRaw(requestParameters: BackofficeApiPledgeRewardTransferRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BackofficeReward>> {
-        if (requestParameters.pledgeRewardTransfer === null || requestParameters.pledgeRewardTransfer === undefined) {
-            throw new runtime.RequiredError('pledgeRewardTransfer','Required parameter requestParameters.pledgeRewardTransfer was null or undefined when calling pledgeRewardTransfer.');
+        if (requestParameters['pledgeRewardTransfer'] == null) {
+            throw new runtime.RequiredError(
+                'pledgeRewardTransfer',
+                'Required parameter "pledgeRewardTransfer" was null or undefined when calling pledgeRewardTransfer().'
+            );
         }
 
         const queryParameters: any = {};
@@ -241,7 +256,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.pledgeRewardTransfer,
+            body: requestParameters['pledgeRewardTransfer'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -295,8 +310,8 @@ export class BackofficeApi extends runtime.BaseAPI {
     async rewardsRaw(requestParameters: BackofficeApiRewardsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceBackofficeReward>> {
         const queryParameters: any = {};
 
-        if (requestParameters.issueId !== undefined) {
-            queryParameters['issue_id'] = requestParameters.issueId;
+        if (requestParameters['issueId'] != null) {
+            queryParameters['issue_id'] = requestParameters['issueId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -365,22 +380,28 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Update Badge Contents
      */
     async updateBadgeContentsRaw(requestParameters: BackofficeApiUpdateBadgeContentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
-        if (requestParameters.orgSlug === null || requestParameters.orgSlug === undefined) {
-            throw new runtime.RequiredError('orgSlug','Required parameter requestParameters.orgSlug was null or undefined when calling updateBadgeContents.');
+        if (requestParameters['orgSlug'] == null) {
+            throw new runtime.RequiredError(
+                'orgSlug',
+                'Required parameter "orgSlug" was null or undefined when calling updateBadgeContents().'
+            );
         }
 
-        if (requestParameters.repoSlug === null || requestParameters.repoSlug === undefined) {
-            throw new runtime.RequiredError('repoSlug','Required parameter requestParameters.repoSlug was null or undefined when calling updateBadgeContents.');
+        if (requestParameters['repoSlug'] == null) {
+            throw new runtime.RequiredError(
+                'repoSlug',
+                'Required parameter "repoSlug" was null or undefined when calling updateBadgeContents().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.orgSlug !== undefined) {
-            queryParameters['org_slug'] = requestParameters.orgSlug;
+        if (requestParameters['orgSlug'] != null) {
+            queryParameters['org_slug'] = requestParameters['orgSlug'];
         }
 
-        if (requestParameters.repoSlug !== undefined) {
-            queryParameters['repo_slug'] = requestParameters.repoSlug;
+        if (requestParameters['repoSlug'] != null) {
+            queryParameters['repo_slug'] = requestParameters['repoSlug'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

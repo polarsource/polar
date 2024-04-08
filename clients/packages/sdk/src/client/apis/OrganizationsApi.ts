@@ -87,8 +87,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * Create Stripe Customer Portal
      */
     async createStripeCustomerPortalRaw(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationStripePortalSession>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling createStripeCustomerPortal.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling createStripeCustomerPortal().'
+            );
         }
 
         const queryParameters: any = {};
@@ -104,7 +107,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/stripe_customer_portal`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}/stripe_customer_portal`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -126,8 +129,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * Get organization (Public API)
      */
     async getRaw(requestParameters: OrganizationsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling get.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
+            );
         }
 
         const queryParameters: any = {};
@@ -143,7 +149,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -165,8 +171,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * Get badge settings (Internal API)
      */
     async getBadgeSettingsRaw(requestParameters: OrganizationsApiGetBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationBadgeSettingsRead>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getBadgeSettings.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getBadgeSettings().'
+            );
         }
 
         const queryParameters: any = {};
@@ -182,7 +191,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -203,8 +212,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * Get Credits
      */
     async getCreditsRaw(requestParameters: OrganizationsApiGetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreditBalance>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getCredits.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getCredits().'
+            );
         }
 
         const queryParameters: any = {};
@@ -220,7 +232,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/credit`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}/credit`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -244,8 +256,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     async listRaw(requestParameters: OrganizationsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
         const queryParameters: any = {};
 
-        if (requestParameters.isAdminOnly !== undefined) {
-            queryParameters['is_admin_only'] = requestParameters.isAdminOnly;
+        if (requestParameters['isAdminOnly'] != null) {
+            queryParameters['is_admin_only'] = requestParameters['isAdminOnly'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -282,8 +294,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * List members in an organization (Public API)
      */
     async listMembersRaw(requestParameters: OrganizationsApiListMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganizationMember>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling listMembers.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling listMembers().'
+            );
         }
 
         const queryParameters: any = {};
@@ -299,7 +314,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/members`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}/members`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -324,16 +339,16 @@ export class OrganizationsApi extends runtime.BaseAPI {
     async lookupRaw(requestParameters: OrganizationsApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         const queryParameters: any = {};
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.customDomain !== undefined) {
-            queryParameters['custom_domain'] = requestParameters.customDomain;
+        if (requestParameters['customDomain'] != null) {
+            queryParameters['custom_domain'] = requestParameters['customDomain'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -372,12 +387,12 @@ export class OrganizationsApi extends runtime.BaseAPI {
     async searchRaw(requestParameters: OrganizationsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
         const queryParameters: any = {};
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -414,12 +429,18 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * Set organization organization (Public API)
      */
     async setAccountRaw(requestParameters: OrganizationsApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling setAccount.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling setAccount().'
+            );
         }
 
-        if (requestParameters.organizationSetAccount === null || requestParameters.organizationSetAccount === undefined) {
-            throw new runtime.RequiredError('organizationSetAccount','Required parameter requestParameters.organizationSetAccount was null or undefined when calling setAccount.');
+        if (requestParameters['organizationSetAccount'] == null) {
+            throw new runtime.RequiredError(
+                'organizationSetAccount',
+                'Required parameter "organizationSetAccount" was null or undefined when calling setAccount().'
+            );
         }
 
         const queryParameters: any = {};
@@ -437,11 +458,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/account`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}/account`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.organizationSetAccount,
+            body: requestParameters['organizationSetAccount'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -461,12 +482,18 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * Update an organization (Public API)
      */
     async updateRaw(requestParameters: OrganizationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling update().'
+            );
         }
 
-        if (requestParameters.organizationUpdate === null || requestParameters.organizationUpdate === undefined) {
-            throw new runtime.RequiredError('organizationUpdate','Required parameter requestParameters.organizationUpdate was null or undefined when calling update.');
+        if (requestParameters['organizationUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'organizationUpdate',
+                'Required parameter "organizationUpdate" was null or undefined when calling update().'
+            );
         }
 
         const queryParameters: any = {};
@@ -484,11 +511,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.organizationUpdate,
+            body: requestParameters['organizationUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -507,12 +534,18 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * Update badge settings (Internal API)
      */
     async updateBadgeSettingsRaw(requestParameters: OrganizationsApiUpdateBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling updateBadgeSettings.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateBadgeSettings().'
+            );
         }
 
-        if (requestParameters.organizationBadgeSettingsUpdate === null || requestParameters.organizationBadgeSettingsUpdate === undefined) {
-            throw new runtime.RequiredError('organizationBadgeSettingsUpdate','Required parameter requestParameters.organizationBadgeSettingsUpdate was null or undefined when calling updateBadgeSettings.');
+        if (requestParameters['organizationBadgeSettingsUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'organizationBadgeSettingsUpdate',
+                'Required parameter "organizationBadgeSettingsUpdate" was null or undefined when calling updateBadgeSettings().'
+            );
         }
 
         const queryParameters: any = {};
@@ -530,11 +563,11 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.organizationBadgeSettingsUpdate,
+            body: requestParameters['organizationBadgeSettingsUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

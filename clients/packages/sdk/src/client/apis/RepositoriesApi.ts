@@ -53,8 +53,11 @@ export class RepositoriesApi extends runtime.BaseAPI {
      * Get a repository (Public API)
      */
     async getRaw(requestParameters: RepositoriesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling get.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
+            );
         }
 
         const queryParameters: any = {};
@@ -70,7 +73,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -129,30 +132,39 @@ export class RepositoriesApi extends runtime.BaseAPI {
      * Lookup repositories (Public API)
      */
     async lookupRaw(requestParameters: RepositoriesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling lookup.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling lookup().'
+            );
         }
 
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling lookup.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling lookup().'
+            );
         }
 
-        if (requestParameters.repositoryName === null || requestParameters.repositoryName === undefined) {
-            throw new runtime.RequiredError('repositoryName','Required parameter requestParameters.repositoryName was null or undefined when calling lookup.');
+        if (requestParameters['repositoryName'] == null) {
+            throw new runtime.RequiredError(
+                'repositoryName',
+                'Required parameter "repositoryName" was null or undefined when calling lookup().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -189,26 +201,32 @@ export class RepositoriesApi extends runtime.BaseAPI {
      * Search repositories (Public API)
      */
     async searchRaw(requestParameters: RepositoriesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceRepository>> {
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling search.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling search().'
+            );
         }
 
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling search.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling search().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -245,12 +263,18 @@ export class RepositoriesApi extends runtime.BaseAPI {
      * Update a repository (Public API)
      */
     async updateRaw(requestParameters: RepositoriesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling update().'
+            );
         }
 
-        if (requestParameters.repositoryUpdate === null || requestParameters.repositoryUpdate === undefined) {
-            throw new runtime.RequiredError('repositoryUpdate','Required parameter requestParameters.repositoryUpdate was null or undefined when calling update.');
+        if (requestParameters['repositoryUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'repositoryUpdate',
+                'Required parameter "repositoryUpdate" was null or undefined when calling update().'
+            );
         }
 
         const queryParameters: any = {};
@@ -268,11 +292,11 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.repositoryUpdate,
+            body: requestParameters['repositoryUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

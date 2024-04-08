@@ -100,8 +100,11 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Delete an article (Public API)
      */
     async _deleteRaw(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleDeleteResponse>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling _delete.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling _delete().'
+            );
         }
 
         const queryParameters: any = {};
@@ -117,7 +120,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -140,8 +143,11 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Create article (Public API)
      */
     async createRaw(requestParameters: ArticlesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
-        if (requestParameters.articleCreate === null || requestParameters.articleCreate === undefined) {
-            throw new runtime.RequiredError('articleCreate','Required parameter requestParameters.articleCreate was null or undefined when calling create.');
+        if (requestParameters['articleCreate'] == null) {
+            throw new runtime.RequiredError(
+                'articleCreate',
+                'Required parameter "articleCreate" was null or undefined when calling create().'
+            );
         }
 
         const queryParameters: any = {};
@@ -163,7 +169,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.articleCreate,
+            body: requestParameters['articleCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -183,14 +189,17 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Stop delivery of articles via email.
      */
     async emailUnsubscribeRaw(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleUnsubscribeResponse>> {
-        if (requestParameters.articleSubscriptionId === null || requestParameters.articleSubscriptionId === undefined) {
-            throw new runtime.RequiredError('articleSubscriptionId','Required parameter requestParameters.articleSubscriptionId was null or undefined when calling emailUnsubscribe.');
+        if (requestParameters['articleSubscriptionId'] == null) {
+            throw new runtime.RequiredError(
+                'articleSubscriptionId',
+                'Required parameter "articleSubscriptionId" was null or undefined when calling emailUnsubscribe().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.articleSubscriptionId !== undefined) {
-            queryParameters['article_subscription_id'] = requestParameters.articleSubscriptionId;
+        if (requestParameters['articleSubscriptionId'] != null) {
+            queryParameters['article_subscription_id'] = requestParameters['articleSubscriptionId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -227,8 +236,11 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Get article (Public API)
      */
     async getRaw(requestParameters: ArticlesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling get.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
+            );
         }
 
         const queryParameters: any = {};
@@ -244,7 +256,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -269,12 +281,12 @@ export class ArticlesApi extends runtime.BaseAPI {
     async listRaw(requestParameters: ArticlesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
         const queryParameters: any = {};
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -311,30 +323,39 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Lookup article (Public API)
      */
     async lookupRaw(requestParameters: ArticlesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
-        if (requestParameters.slug === null || requestParameters.slug === undefined) {
-            throw new runtime.RequiredError('slug','Required parameter requestParameters.slug was null or undefined when calling lookup.');
+        if (requestParameters['slug'] == null) {
+            throw new runtime.RequiredError(
+                'slug',
+                'Required parameter "slug" was null or undefined when calling lookup().'
+            );
         }
 
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling lookup.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling lookup().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling lookup.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling lookup().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.slug !== undefined) {
-            queryParameters['slug'] = requestParameters.slug;
+        if (requestParameters['slug'] != null) {
+            queryParameters['slug'] = requestParameters['slug'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -371,30 +392,39 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Get number of potential receivers for an article. (Public API)
      */
     async receiversRaw(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleReceiversResponse>> {
-        if (requestParameters.paidSubscribersOnly === null || requestParameters.paidSubscribersOnly === undefined) {
-            throw new runtime.RequiredError('paidSubscribersOnly','Required parameter requestParameters.paidSubscribersOnly was null or undefined when calling receivers.');
+        if (requestParameters['paidSubscribersOnly'] == null) {
+            throw new runtime.RequiredError(
+                'paidSubscribersOnly',
+                'Required parameter "paidSubscribersOnly" was null or undefined when calling receivers().'
+            );
         }
 
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling receivers.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling receivers().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling receivers.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling receivers().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.paidSubscribersOnly !== undefined) {
-            queryParameters['paid_subscribers_only'] = requestParameters.paidSubscribersOnly;
+        if (requestParameters['paidSubscribersOnly'] != null) {
+            queryParameters['paid_subscribers_only'] = requestParameters['paidSubscribersOnly'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -431,38 +461,44 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Search articles (Public API)
      */
     async searchRaw(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling search.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling search().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling search.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling search().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.showUnpublished !== undefined) {
-            queryParameters['show_unpublished'] = requestParameters.showUnpublished;
+        if (requestParameters['showUnpublished'] != null) {
+            queryParameters['show_unpublished'] = requestParameters['showUnpublished'];
         }
 
-        if (requestParameters.isPinned !== undefined) {
-            queryParameters['is_pinned'] = requestParameters.isPinned;
+        if (requestParameters['isPinned'] != null) {
+            queryParameters['is_pinned'] = requestParameters['isPinned'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -499,8 +535,11 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Send email to all subscribers (Public API)
      */
     async sendRaw(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleSentResponse>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling send.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling send().'
+            );
         }
 
         const queryParameters: any = {};
@@ -516,7 +555,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}/send`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/articles/{id}/send`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -539,12 +578,18 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Send preview email (Public API)
      */
     async sendPreviewRaw(requestParameters: ArticlesApiSendPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticlePreviewResponse>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling sendPreview.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling sendPreview().'
+            );
         }
 
-        if (requestParameters.articlePreview === null || requestParameters.articlePreview === undefined) {
-            throw new runtime.RequiredError('articlePreview','Required parameter requestParameters.articlePreview was null or undefined when calling sendPreview.');
+        if (requestParameters['articlePreview'] == null) {
+            throw new runtime.RequiredError(
+                'articlePreview',
+                'Required parameter "articlePreview" was null or undefined when calling sendPreview().'
+            );
         }
 
         const queryParameters: any = {};
@@ -562,11 +607,11 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}/send_preview`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/articles/{id}/send_preview`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.articlePreview,
+            body: requestParameters['articlePreview'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -586,12 +631,18 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Update an article (Public API)
      */
     async updateRaw(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling update().'
+            );
         }
 
-        if (requestParameters.articleUpdate === null || requestParameters.articleUpdate === undefined) {
-            throw new runtime.RequiredError('articleUpdate','Required parameter requestParameters.articleUpdate was null or undefined when calling update.');
+        if (requestParameters['articleUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'articleUpdate',
+                'Required parameter "articleUpdate" was null or undefined when calling update().'
+            );
         }
 
         const queryParameters: any = {};
@@ -609,11 +660,11 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.articleUpdate,
+            body: requestParameters['articleUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -633,8 +684,11 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Track article (Public API)
      */
     async viewedRaw(requestParameters: ArticlesApiViewedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleViewedResponse>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling viewed.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling viewed().'
+            );
         }
 
         const queryParameters: any = {};
@@ -650,7 +704,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}/viewed`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/articles/{id}/viewed`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

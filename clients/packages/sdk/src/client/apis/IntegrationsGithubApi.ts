@@ -75,12 +75,18 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Check Organization Permissions
      */
     async checkOrganizationPermissionsRaw(requestParameters: IntegrationsGithubApiCheckOrganizationPermissionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling checkOrganizationPermissions.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling checkOrganizationPermissions().'
+            );
         }
 
-        if (requestParameters.organizationCheckPermissionsInput === null || requestParameters.organizationCheckPermissionsInput === undefined) {
-            throw new runtime.RequiredError('organizationCheckPermissionsInput','Required parameter requestParameters.organizationCheckPermissionsInput was null or undefined when calling checkOrganizationPermissions.');
+        if (requestParameters['organizationCheckPermissionsInput'] == null) {
+            throw new runtime.RequiredError(
+                'organizationCheckPermissionsInput',
+                'Required parameter "organizationCheckPermissionsInput" was null or undefined when calling checkOrganizationPermissions().'
+            );
         }
 
         const queryParameters: any = {};
@@ -98,11 +104,11 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/organizations/{id}/check_permissions`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/integrations/github/organizations/{id}/check_permissions`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.organizationCheckPermissionsInput,
+            body: requestParameters['organizationCheckPermissionsInput'],
         }, initOverrides);
 
         return new runtime.VoidApiResponse(response);
@@ -119,8 +125,11 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Get Organization Billing Plan
      */
     async getOrganizationBillingPlanRaw(requestParameters: IntegrationsGithubApiGetOrganizationBillingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationBillingPlan>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getOrganizationBillingPlan.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getOrganizationBillingPlan().'
+            );
         }
 
         const queryParameters: any = {};
@@ -136,7 +145,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/organizations/{id}/billing`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/integrations/github/organizations/{id}/billing`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -157,8 +166,11 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Install
      */
     async installRaw(requestParameters: IntegrationsGithubApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        if (requestParameters.installationCreate === null || requestParameters.installationCreate === undefined) {
-            throw new runtime.RequiredError('installationCreate','Required parameter requestParameters.installationCreate was null or undefined when calling install.');
+        if (requestParameters['installationCreate'] == null) {
+            throw new runtime.RequiredError(
+                'installationCreate',
+                'Required parameter "installationCreate" was null or undefined when calling install().'
+            );
         }
 
         const queryParameters: any = {};
@@ -180,7 +192,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.installationCreate,
+            body: requestParameters['installationCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -200,16 +212,16 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
     async integrationsGithubAuthorizeRaw(requestParameters: IntegrationsGithubApiIntegrationsGithubAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.paymentIntentId !== undefined) {
-            queryParameters['payment_intent_id'] = requestParameters.paymentIntentId;
+        if (requestParameters['paymentIntentId'] != null) {
+            queryParameters['payment_intent_id'] = requestParameters['paymentIntentId'];
         }
 
-        if (requestParameters.userSignupType !== undefined) {
-            queryParameters['user_signup_type'] = requestParameters.userSignupType;
+        if (requestParameters['userSignupType'] != null) {
+            queryParameters['user_signup_type'] = requestParameters['userSignupType'];
         }
 
-        if (requestParameters.returnTo !== undefined) {
-            queryParameters['return_to'] = requestParameters.returnTo;
+        if (requestParameters['returnTo'] != null) {
+            queryParameters['return_to'] = requestParameters['returnTo'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -250,20 +262,20 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
     async integrationsGithubCallbackRaw(requestParameters: IntegrationsGithubApiIntegrationsGithubCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.code !== undefined) {
-            queryParameters['code'] = requestParameters.code;
+        if (requestParameters['code'] != null) {
+            queryParameters['code'] = requestParameters['code'];
         }
 
-        if (requestParameters.codeVerifier !== undefined) {
-            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        if (requestParameters['codeVerifier'] != null) {
+            queryParameters['code_verifier'] = requestParameters['codeVerifier'];
         }
 
-        if (requestParameters.state !== undefined) {
-            queryParameters['state'] = requestParameters.state;
+        if (requestParameters['state'] != null) {
+            queryParameters['state'] = requestParameters['state'];
         }
 
-        if (requestParameters.error !== undefined) {
-            queryParameters['error'] = requestParameters.error;
+        if (requestParameters['error'] != null) {
+            queryParameters['error'] = requestParameters['error'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -302,8 +314,11 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Lookup User
      */
     async lookupUserRaw(requestParameters: IntegrationsGithubApiLookupUserOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GithubUser>> {
-        if (requestParameters.lookupUserRequest === null || requestParameters.lookupUserRequest === undefined) {
-            throw new runtime.RequiredError('lookupUserRequest','Required parameter requestParameters.lookupUserRequest was null or undefined when calling lookupUser.');
+        if (requestParameters['lookupUserRequest'] == null) {
+            throw new runtime.RequiredError(
+                'lookupUserRequest',
+                'Required parameter "lookupUserRequest" was null or undefined when calling lookupUser().'
+            );
         }
 
         const queryParameters: any = {};
@@ -325,7 +340,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.lookupUserRequest,
+            body: requestParameters['lookupUserRequest'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -343,14 +358,17 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Redirect To Organization Installation
      */
     async redirectToOrganizationInstallationRaw(requestParameters: IntegrationsGithubApiRedirectToOrganizationInstallationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling redirectToOrganizationInstallation.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling redirectToOrganizationInstallation().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.returnTo !== undefined) {
-            queryParameters['return_to'] = requestParameters.returnTo;
+        if (requestParameters['returnTo'] != null) {
+            queryParameters['return_to'] = requestParameters['returnTo'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -364,7 +382,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/organizations/{id}/installation`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/integrations/github/organizations/{id}/installation`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -389,14 +407,17 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Synchronize Members
      */
     async synchronizeMembersRaw(requestParameters: IntegrationsGithubApiSynchronizeMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SynchronizeMembersResponse>> {
-        if (requestParameters.organizationId === null || requestParameters.organizationId === undefined) {
-            throw new runtime.RequiredError('organizationId','Required parameter requestParameters.organizationId was null or undefined when calling synchronizeMembers.');
+        if (requestParameters['organizationId'] == null) {
+            throw new runtime.RequiredError(
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling synchronizeMembers().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.organizationId !== undefined) {
-            queryParameters['organization_id'] = requestParameters.organizationId;
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

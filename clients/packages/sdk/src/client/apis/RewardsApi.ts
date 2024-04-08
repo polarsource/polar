@@ -42,16 +42,16 @@ export class RewardsApi extends runtime.BaseAPI {
     async searchRaw(requestParameters: RewardsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceReward>> {
         const queryParameters: any = {};
 
-        if (requestParameters.pledgesToOrganization !== undefined) {
-            queryParameters['pledges_to_organization'] = requestParameters.pledgesToOrganization;
+        if (requestParameters['pledgesToOrganization'] != null) {
+            queryParameters['pledges_to_organization'] = requestParameters['pledgesToOrganization'];
         }
 
-        if (requestParameters.rewardsToUser !== undefined) {
-            queryParameters['rewards_to_user'] = requestParameters.rewardsToUser;
+        if (requestParameters['rewardsToUser'] != null) {
+            queryParameters['rewards_to_user'] = requestParameters['rewardsToUser'];
         }
 
-        if (requestParameters.rewardsToOrg !== undefined) {
-            queryParameters['rewards_to_org'] = requestParameters.rewardsToOrg;
+        if (requestParameters['rewardsToOrg'] != null) {
+            queryParameters['rewards_to_org'] = requestParameters['rewardsToOrg'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -88,14 +88,17 @@ export class RewardsApi extends runtime.BaseAPI {
      * Get rewards summary (Public API)
      */
     async summaryRaw(requestParameters: RewardsApiSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<RewardsSummary>> {
-        if (requestParameters.issueId === null || requestParameters.issueId === undefined) {
-            throw new runtime.RequiredError('issueId','Required parameter requestParameters.issueId was null or undefined when calling summary.');
+        if (requestParameters['issueId'] == null) {
+            throw new runtime.RequiredError(
+                'issueId',
+                'Required parameter "issueId" was null or undefined when calling summary().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.issueId !== undefined) {
-            queryParameters['issue_id'] = requestParameters.issueId;
+        if (requestParameters['issueId'] != null) {
+            queryParameters['issue_id'] = requestParameters['issueId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

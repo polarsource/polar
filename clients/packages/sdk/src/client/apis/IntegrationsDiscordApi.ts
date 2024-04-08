@@ -54,14 +54,17 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
      * Discord Guild Lookup
      */
     async discordGuildLookupRaw(requestParameters: IntegrationsDiscordApiDiscordGuildLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DiscordGuild>> {
-        if (requestParameters.guildToken === null || requestParameters.guildToken === undefined) {
-            throw new runtime.RequiredError('guildToken','Required parameter requestParameters.guildToken was null or undefined when calling discordGuildLookup.');
+        if (requestParameters['guildToken'] == null) {
+            throw new runtime.RequiredError(
+                'guildToken',
+                'Required parameter "guildToken" was null or undefined when calling discordGuildLookup().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.guildToken !== undefined) {
-            queryParameters['guild_token'] = requestParameters.guildToken;
+        if (requestParameters['guildToken'] != null) {
+            queryParameters['guild_token'] = requestParameters['guildToken'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -98,8 +101,8 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
     async integrationsDiscordBotAuthorizeRaw(requestParameters: IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.returnTo !== undefined) {
-            queryParameters['return_to'] = requestParameters.returnTo;
+        if (requestParameters['returnTo'] != null) {
+            queryParameters['return_to'] = requestParameters['returnTo'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -140,20 +143,20 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
     async integrationsDiscordBotCallbackRaw(requestParameters: IntegrationsDiscordApiIntegrationsDiscordBotCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.code !== undefined) {
-            queryParameters['code'] = requestParameters.code;
+        if (requestParameters['code'] != null) {
+            queryParameters['code'] = requestParameters['code'];
         }
 
-        if (requestParameters.codeVerifier !== undefined) {
-            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        if (requestParameters['codeVerifier'] != null) {
+            queryParameters['code_verifier'] = requestParameters['codeVerifier'];
         }
 
-        if (requestParameters.state !== undefined) {
-            queryParameters['state'] = requestParameters.state;
+        if (requestParameters['state'] != null) {
+            queryParameters['state'] = requestParameters['state'];
         }
 
-        if (requestParameters.error !== undefined) {
-            queryParameters['error'] = requestParameters.error;
+        if (requestParameters['error'] != null) {
+            queryParameters['error'] = requestParameters['error'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -194,8 +197,8 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
     async integrationsDiscordUserAuthorizeRaw(requestParameters: IntegrationsDiscordApiIntegrationsDiscordUserAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.returnTo !== undefined) {
-            queryParameters['return_to'] = requestParameters.returnTo;
+        if (requestParameters['returnTo'] != null) {
+            queryParameters['return_to'] = requestParameters['returnTo'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -236,20 +239,20 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
     async integrationsDiscordUserCallbackRaw(requestParameters: IntegrationsDiscordApiIntegrationsDiscordUserCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.code !== undefined) {
-            queryParameters['code'] = requestParameters.code;
+        if (requestParameters['code'] != null) {
+            queryParameters['code'] = requestParameters['code'];
         }
 
-        if (requestParameters.codeVerifier !== undefined) {
-            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        if (requestParameters['codeVerifier'] != null) {
+            queryParameters['code_verifier'] = requestParameters['codeVerifier'];
         }
 
-        if (requestParameters.state !== undefined) {
-            queryParameters['state'] = requestParameters.state;
+        if (requestParameters['state'] != null) {
+            queryParameters['state'] = requestParameters['state'];
         }
 
-        if (requestParameters.error !== undefined) {
-            queryParameters['error'] = requestParameters.error;
+        if (requestParameters['error'] != null) {
+            queryParameters['error'] = requestParameters['error'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

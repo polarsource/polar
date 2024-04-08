@@ -117,8 +117,8 @@ export class IntegrationsGithubRepositoryBenefitApi extends runtime.BaseAPI {
     async integrationsGithubRepositoryBenefitUserAuthorizeRaw(requestParameters: IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.returnTo !== undefined) {
-            queryParameters['return_to'] = requestParameters.returnTo;
+        if (requestParameters['returnTo'] != null) {
+            queryParameters['return_to'] = requestParameters['returnTo'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -159,20 +159,20 @@ export class IntegrationsGithubRepositoryBenefitApi extends runtime.BaseAPI {
     async integrationsGithubRepositoryBenefitUserCallbackRaw(requestParameters: IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.code !== undefined) {
-            queryParameters['code'] = requestParameters.code;
+        if (requestParameters['code'] != null) {
+            queryParameters['code'] = requestParameters['code'];
         }
 
-        if (requestParameters.codeVerifier !== undefined) {
-            queryParameters['code_verifier'] = requestParameters.codeVerifier;
+        if (requestParameters['codeVerifier'] != null) {
+            queryParameters['code_verifier'] = requestParameters['codeVerifier'];
         }
 
-        if (requestParameters.state !== undefined) {
-            queryParameters['state'] = requestParameters.state;
+        if (requestParameters['state'] != null) {
+            queryParameters['state'] = requestParameters['state'];
         }
 
-        if (requestParameters.error !== undefined) {
-            queryParameters['error'] = requestParameters.error;
+        if (requestParameters['error'] != null) {
+            queryParameters['error'] = requestParameters['error'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

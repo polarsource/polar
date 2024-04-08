@@ -20,7 +20,7 @@ export const Feed = () => {
       .filter((item): item is Article => Boolean(item)) ?? []
 
   useEffect(() => {
-    if (inView && articles.hasNextPage) {
+    if (inView && articles.hasNextPage && !articles.isPending) {
       articles.fetchNextPage()
     }
   }, [inView, articles])

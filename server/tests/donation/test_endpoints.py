@@ -73,6 +73,7 @@ class TestSearch:
         client: AsyncClient,
         organization: Organization,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
         save_fixture: SaveFixture,
         donation_sender: DonationSender,
@@ -88,10 +89,43 @@ class TestSearch:
                 balance_transaction_id=f"bal_{x}",
             )
 
+        # donation from user
+        await donation_sender.send_payment_intent_then_charge(
+            payment_intent_id="pi_user",
+            latest_charge="py_user",
+            balance_transaction_id="bal_user",
+            by_user_id=user.id,
+        )
+
+        # donation from user without avatar
+        user_second.avatar_url = None
+        await save_fixture(user_second)
+        await donation_sender.send_payment_intent_then_charge(
+            payment_intent_id="pi_user_second",
+            latest_charge="py_user_second",
+            balance_transaction_id="bal_user_second",
+            by_user_id=user_second.id,
+        )
+
         params = {"to_organization_id": str(organization.id)}
         response = await client.get("/api/v1/donations/search", params=params)
 
         assert response.status_code == 200
         json = response.json()
 
-        assert 3 == len(json["items"])
+        # order by desc
+
+        assert 5 == len(json["items"])
+
+        # user without avatar
+        assert json["items"][0]["donor"]
+        assert json["items"][0]["donor"]["public_name"]
+        assert json["items"][0]["donor"]["avatar_url"] is None
+
+        # user with avatar
+        assert json["items"][1]["donor"]
+        assert json["items"][1]["donor"]["public_name"]
+        assert json["items"][1]["donor"]["avatar_url"]
+
+        # anonymous
+        assert json["items"][2]["donor"] is None

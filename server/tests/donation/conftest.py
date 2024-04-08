@@ -1,9 +1,11 @@
 from typing import Any
+from uuid import UUID
 
 import pytest
 import stripe
 from pytest_mock import MockerFixture
 
+from polar.integrations.stripe.schemas import DonationPaymentIntentMetadata, ProductType
 from polar.integrations.stripe.tasks import charge_succeeded, payment_intent_succeeded
 from polar.models.organization import Organization
 from polar.worker import JobContext, PolarWorkerContext
@@ -245,16 +247,19 @@ class DonationSender:
         payment_intent_id: str | None = None,
         latest_charge: str | None = None,
         balance_transaction_id: str | None = None,
+        by_user_id: UUID | None = None,
     ) -> None:
         payment_intent_id = payment_intent_id or "pi_TESTING"
         latest_charge = latest_charge or "py_TESTING"
         balance_transaction_id = balance_transaction_id or "txn_BALANCE_TESTING"
 
-        to_organization_id = str(self.organization.id)
-        metadata = {
-            "type": "donation",
-            "to_organization_id": to_organization_id,
-        }
+        metadata = DonationPaymentIntentMetadata(
+            type=ProductType.donation,
+            to_organization_id=self.organization.id,
+        )
+
+        if by_user_id:
+            metadata.by_user_id = by_user_id
 
         def _stripe_get_charge(self: Any, id: str) -> stripe.Charge:
             assert id == latest_charge
@@ -263,7 +268,7 @@ class DonationSender:
                 values=get_charge(
                     charge_id=id,
                     payment_intent_id=payment_intent_id,
-                    metadata=metadata,
+                    metadata=metadata.model_dump(exclude_none=True),
                     balance_transaction_id=balance_transaction_id,
                 ),
             )
@@ -293,7 +298,7 @@ class DonationSender:
             values=get_payment_intent_succeeded(
                 payment_intent_id=payment_intent_id,
                 latest_charge=latest_charge,
-                metadata=metadata,
+                metadata=metadata.model_dump(exclude_none=True),
             ),
             key=None,
         )
@@ -310,10 +315,7 @@ class DonationSender:
                 payment_intent_id=payment_intent_id,
                 charge_id=latest_charge,
                 balance_transaction_id=balance_transaction_id,
-                metadata={
-                    "type": "donation",
-                    "to_organization_id": to_organization_id,
-                },
+                metadata=metadata.model_dump(exclude_none=True),
             ),
             key=None,
         )

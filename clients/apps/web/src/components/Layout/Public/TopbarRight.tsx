@@ -14,7 +14,7 @@ const TopbarRight = ({
 }) => {
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/feed'
-  const createWithPolarReturnTo = '/maintainer'
+  const createWithPolarReturnTo = '/me'
 
   return (
     <>

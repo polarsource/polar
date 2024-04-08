@@ -63,8 +63,11 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Create Campaign
      */
     async createCampaignRaw(requestParameters: AdvertisementsApiCreateCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
-        if (requestParameters.createAdvertisementCampaign === null || requestParameters.createAdvertisementCampaign === undefined) {
-            throw new runtime.RequiredError('createAdvertisementCampaign','Required parameter requestParameters.createAdvertisementCampaign was null or undefined when calling createCampaign.');
+        if (requestParameters['createAdvertisementCampaign'] == null) {
+            throw new runtime.RequiredError(
+                'createAdvertisementCampaign',
+                'Required parameter "createAdvertisementCampaign" was null or undefined when calling createCampaign().'
+            );
         }
 
         const queryParameters: any = {};
@@ -86,7 +89,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.createAdvertisementCampaign,
+            body: requestParameters['createAdvertisementCampaign'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -104,8 +107,11 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Delete Campaign
      */
     async deleteCampaignRaw(requestParameters: AdvertisementsApiDeleteCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling deleteCampaign.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling deleteCampaign().'
+            );
         }
 
         const queryParameters: any = {};
@@ -121,7 +127,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -142,12 +148,18 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Edit Campaign
      */
     async editCampaignRaw(requestParameters: AdvertisementsApiEditCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling editCampaign.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling editCampaign().'
+            );
         }
 
-        if (requestParameters.editAdvertisementCampaign === null || requestParameters.editAdvertisementCampaign === undefined) {
-            throw new runtime.RequiredError('editAdvertisementCampaign','Required parameter requestParameters.editAdvertisementCampaign was null or undefined when calling editCampaign.');
+        if (requestParameters['editAdvertisementCampaign'] == null) {
+            throw new runtime.RequiredError(
+                'editAdvertisementCampaign',
+                'Required parameter "editAdvertisementCampaign" was null or undefined when calling editCampaign().'
+            );
         }
 
         const queryParameters: any = {};
@@ -165,11 +177,11 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.editAdvertisementCampaign,
+            body: requestParameters['editAdvertisementCampaign'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -187,8 +199,11 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Get Campaign
      */
     async getCampaignRaw(requestParameters: AdvertisementsApiGetCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getCampaign.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getCampaign().'
+            );
         }
 
         const queryParameters: any = {};
@@ -204,7 +219,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/advertisements/campaigns/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -227,12 +242,12 @@ export class AdvertisementsApi extends runtime.BaseAPI {
     async searchCampaignsRaw(requestParameters: AdvertisementsApiSearchCampaignsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementCampaign>> {
         const queryParameters: any = {};
 
-        if (requestParameters.subscriptionId !== undefined) {
-            queryParameters['subscription_id'] = requestParameters.subscriptionId;
+        if (requestParameters['subscriptionId'] != null) {
+            queryParameters['subscription_id'] = requestParameters['subscriptionId'];
         }
 
-        if (requestParameters.subscriptionBenefitId !== undefined) {
-            queryParameters['subscription_benefit_id'] = requestParameters.subscriptionBenefitId;
+        if (requestParameters['subscriptionBenefitId'] != null) {
+            queryParameters['subscription_benefit_id'] = requestParameters['subscriptionBenefitId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -267,14 +282,17 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Search Display
      */
     async searchDisplayRaw(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementDisplay>> {
-        if (requestParameters.subscriptionBenefitId === null || requestParameters.subscriptionBenefitId === undefined) {
-            throw new runtime.RequiredError('subscriptionBenefitId','Required parameter requestParameters.subscriptionBenefitId was null or undefined when calling searchDisplay.');
+        if (requestParameters['subscriptionBenefitId'] == null) {
+            throw new runtime.RequiredError(
+                'subscriptionBenefitId',
+                'Required parameter "subscriptionBenefitId" was null or undefined when calling searchDisplay().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.subscriptionBenefitId !== undefined) {
-            queryParameters['subscription_benefit_id'] = requestParameters.subscriptionBenefitId;
+        if (requestParameters['subscriptionBenefitId'] != null) {
+            queryParameters['subscription_benefit_id'] = requestParameters['subscriptionBenefitId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -309,8 +327,11 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Track View
      */
     async trackViewRaw(requestParameters: AdvertisementsApiTrackViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaignPublic>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling trackView.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling trackView().'
+            );
         }
 
         const queryParameters: any = {};
@@ -326,7 +347,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/advertisements/campaigns/{id}/track_view`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/advertisements/campaigns/{id}/track_view`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

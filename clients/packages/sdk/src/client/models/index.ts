@@ -1646,19 +1646,19 @@ export interface BackofficePledge {
      */
     created_at: string;
     /**
-     * 
+     * Amount pledged towards the issue
      * @type {CurrencyAmount}
      * @memberof BackofficePledge
      */
     amount: CurrencyAmount;
     /**
-     * 
+     * Current state of the pledge
      * @type {PledgeState}
      * @memberof BackofficePledge
      */
     state: PledgeState;
     /**
-     * 
+     * Type of pledge
      * @type {PledgeType}
      * @memberof BackofficePledge
      */
@@ -1676,7 +1676,7 @@ export interface BackofficePledge {
      */
     scheduled_payout_at?: string;
     /**
-     * 
+     * The issue that the pledge was made towards
      * @type {Issue}
      * @memberof BackofficePledge
      */
@@ -1749,7 +1749,7 @@ export interface BackofficePledge {
  */
 export interface BackofficeReward {
     /**
-     * 
+     * The pledge that the reward was split from
      * @type {Pledge}
      * @memberof BackofficeReward
      */
@@ -2045,7 +2045,7 @@ export interface CreatePledgePayLater {
  */
 export interface CreditBalance {
     /**
-     * 
+     * The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit).
      * @type {CurrencyAmount}
      * @memberof CreditBalance
      */
@@ -2860,7 +2860,7 @@ export interface Issue {
      */
     id: string;
     /**
-     * 
+     * Issue platform (currently always GitHub)
      * @type {Platforms}
      * @memberof Issue
      */
@@ -2956,7 +2956,7 @@ export interface Issue {
      */
     funding: Funding;
     /**
-     * 
+     * The repository that the issue is in
      * @type {Repository}
      * @memberof Issue
      */
@@ -5464,19 +5464,19 @@ export interface Pledge {
      */
     created_at: string;
     /**
-     * 
+     * Amount pledged towards the issue
      * @type {CurrencyAmount}
      * @memberof Pledge
      */
     amount: CurrencyAmount;
     /**
-     * 
+     * Current state of the pledge
      * @type {PledgeState}
      * @memberof Pledge
      */
     state: PledgeState;
     /**
-     * 
+     * Type of pledge
      * @type {PledgeType}
      * @memberof Pledge
      */
@@ -5494,7 +5494,7 @@ export interface Pledge {
      */
     scheduled_payout_at?: string;
     /**
-     * 
+     * The issue that the pledge was made towards
      * @type {Issue}
      * @memberof Pledge
      */
@@ -6420,7 +6420,7 @@ export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefit
  */
 export interface Reward {
     /**
-     * 
+     * The pledge that the reward was split from
      * @type {Pledge}
      * @memberof Reward
      */
@@ -9085,7 +9085,7 @@ export interface SubscriptionsStatisticsPeriod {
  */
 export interface SummaryPledge {
     /**
-     * 
+     * Type of pledge
      * @type {PledgeType}
      * @memberof SummaryPledge
      */

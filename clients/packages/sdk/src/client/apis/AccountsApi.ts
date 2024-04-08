@@ -53,8 +53,11 @@ export class AccountsApi extends runtime.BaseAPI {
      * Create
      */
     async createRaw(requestParameters: AccountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Account>> {
-        if (requestParameters.accountCreate === null || requestParameters.accountCreate === undefined) {
-            throw new runtime.RequiredError('accountCreate','Required parameter requestParameters.accountCreate was null or undefined when calling create.');
+        if (requestParameters['accountCreate'] == null) {
+            throw new runtime.RequiredError(
+                'accountCreate',
+                'Required parameter "accountCreate" was null or undefined when calling create().'
+            );
         }
 
         const queryParameters: any = {};
@@ -76,7 +79,7 @@ export class AccountsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.accountCreate,
+            body: requestParameters['accountCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -94,8 +97,11 @@ export class AccountsApi extends runtime.BaseAPI {
      * Dashboard Link
      */
     async dashboardLinkRaw(requestParameters: AccountsApiDashboardLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AccountLink>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling dashboardLink.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling dashboardLink().'
+            );
         }
 
         const queryParameters: any = {};
@@ -111,7 +117,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts/{id}/dashboard_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/accounts/{id}/dashboard_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -132,8 +138,11 @@ export class AccountsApi extends runtime.BaseAPI {
      * Get
      */
     async getRaw(requestParameters: AccountsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Account>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling get.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
+            );
         }
 
         const queryParameters: any = {};
@@ -149,7 +158,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/accounts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -170,18 +179,24 @@ export class AccountsApi extends runtime.BaseAPI {
      * Onboarding Link
      */
     async onboardingLinkRaw(requestParameters: AccountsApiOnboardingLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AccountLink>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling onboardingLink.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling onboardingLink().'
+            );
         }
 
-        if (requestParameters.returnPath === null || requestParameters.returnPath === undefined) {
-            throw new runtime.RequiredError('returnPath','Required parameter requestParameters.returnPath was null or undefined when calling onboardingLink.');
+        if (requestParameters['returnPath'] == null) {
+            throw new runtime.RequiredError(
+                'returnPath',
+                'Required parameter "returnPath" was null or undefined when calling onboardingLink().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.returnPath !== undefined) {
-            queryParameters['return_path'] = requestParameters.returnPath;
+        if (requestParameters['returnPath'] != null) {
+            queryParameters['return_path'] = requestParameters['returnPath'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -195,7 +210,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts/{id}/onboarding_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/accounts/{id}/onboarding_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -218,12 +233,12 @@ export class AccountsApi extends runtime.BaseAPI {
     async searchRaw(requestParameters: AccountsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAccount>> {
         const queryParameters: any = {};
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

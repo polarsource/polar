@@ -90,46 +90,52 @@ export class DashboardApi extends runtime.BaseAPI {
      * Get Dashboard
      */
     async getDashboardRaw(requestParameters: DashboardApiGetDashboardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IssueListResponse>> {
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling getDashboard.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling getDashboard().'
+            );
         }
 
-        if (requestParameters.orgName === null || requestParameters.orgName === undefined) {
-            throw new runtime.RequiredError('orgName','Required parameter requestParameters.orgName was null or undefined when calling getDashboard.');
+        if (requestParameters['orgName'] == null) {
+            throw new runtime.RequiredError(
+                'orgName',
+                'Required parameter "orgName" was null or undefined when calling getDashboard().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repoName !== undefined) {
-            queryParameters['repo_name'] = requestParameters.repoName;
+        if (requestParameters['repoName'] != null) {
+            queryParameters['repo_name'] = requestParameters['repoName'];
         }
 
-        if (requestParameters.issueListType !== undefined) {
-            queryParameters['issue_list_type'] = requestParameters.issueListType;
+        if (requestParameters['issueListType'] != null) {
+            queryParameters['issue_list_type'] = requestParameters['issueListType'];
         }
 
-        if (requestParameters.status) {
-            queryParameters['status'] = requestParameters.status;
+        if (requestParameters['status'] != null) {
+            queryParameters['status'] = requestParameters['status'];
         }
 
-        if (requestParameters.q !== undefined) {
-            queryParameters['q'] = requestParameters.q;
+        if (requestParameters['q'] != null) {
+            queryParameters['q'] = requestParameters['q'];
         }
 
-        if (requestParameters.sort !== undefined) {
-            queryParameters['sort'] = requestParameters.sort;
+        if (requestParameters['sort'] != null) {
+            queryParameters['sort'] = requestParameters['sort'];
         }
 
-        if (requestParameters.onlyPledged !== undefined) {
-            queryParameters['only_pledged'] = requestParameters.onlyPledged;
+        if (requestParameters['onlyPledged'] != null) {
+            queryParameters['only_pledged'] = requestParameters['onlyPledged'];
         }
 
-        if (requestParameters.onlyBadged !== undefined) {
-            queryParameters['only_badged'] = requestParameters.onlyBadged;
+        if (requestParameters['onlyBadged'] != null) {
+            queryParameters['only_badged'] = requestParameters['onlyBadged'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -143,7 +149,7 @@ export class DashboardApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/dashboard/{platform}/{org_name}`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters.platform))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters.orgName))),
+            path: `/api/v1/dashboard/{platform}/{org_name}`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters['platform']))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters['orgName']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -166,32 +172,32 @@ export class DashboardApi extends runtime.BaseAPI {
     async getPersonalDashboardRaw(requestParameters: DashboardApiGetPersonalDashboardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IssueListResponse>> {
         const queryParameters: any = {};
 
-        if (requestParameters.issueListType !== undefined) {
-            queryParameters['issue_list_type'] = requestParameters.issueListType;
+        if (requestParameters['issueListType'] != null) {
+            queryParameters['issue_list_type'] = requestParameters['issueListType'];
         }
 
-        if (requestParameters.status) {
-            queryParameters['status'] = requestParameters.status;
+        if (requestParameters['status'] != null) {
+            queryParameters['status'] = requestParameters['status'];
         }
 
-        if (requestParameters.q !== undefined) {
-            queryParameters['q'] = requestParameters.q;
+        if (requestParameters['q'] != null) {
+            queryParameters['q'] = requestParameters['q'];
         }
 
-        if (requestParameters.sort !== undefined) {
-            queryParameters['sort'] = requestParameters.sort;
+        if (requestParameters['sort'] != null) {
+            queryParameters['sort'] = requestParameters['sort'];
         }
 
-        if (requestParameters.onlyPledged !== undefined) {
-            queryParameters['only_pledged'] = requestParameters.onlyPledged;
+        if (requestParameters['onlyPledged'] != null) {
+            queryParameters['only_pledged'] = requestParameters['onlyPledged'];
         }
 
-        if (requestParameters.onlyBadged !== undefined) {
-            queryParameters['only_badged'] = requestParameters.onlyBadged;
+        if (requestParameters['onlyBadged'] != null) {
+            queryParameters['only_badged'] = requestParameters['onlyBadged'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

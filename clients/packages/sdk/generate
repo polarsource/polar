@@ -13,7 +13,7 @@ docker rm generate-api || true
 docker run \
     --volume "${SCRIPTPATH}":/sdk \
     --name generate-api \
-    openapitools/openapi-generator-cli:v7.0.1 \
+    openapitools/openapi-generator-cli:v7.4.0 \
     generate \
     -i /sdk/openapi/updated.json \
     -t /sdk/openapi_templates \

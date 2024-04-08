@@ -85,12 +85,18 @@ export class IssuesApi extends runtime.BaseAPI {
      * Add Issue Comment
      */
     async addIssueCommentRaw(requestParameters: IssuesApiAddIssueCommentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling addIssueComment.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling addIssueComment().'
+            );
         }
 
-        if (requestParameters.postIssueComment === null || requestParameters.postIssueComment === undefined) {
-            throw new runtime.RequiredError('postIssueComment','Required parameter requestParameters.postIssueComment was null or undefined when calling addIssueComment.');
+        if (requestParameters['postIssueComment'] == null) {
+            throw new runtime.RequiredError(
+                'postIssueComment',
+                'Required parameter "postIssueComment" was null or undefined when calling addIssueComment().'
+            );
         }
 
         const queryParameters: any = {};
@@ -108,11 +114,11 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/comment`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}/comment`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.postIssueComment,
+            body: requestParameters['postIssueComment'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -130,8 +136,11 @@ export class IssuesApi extends runtime.BaseAPI {
      * Add Polar Badge
      */
     async addPolarBadgeRaw(requestParameters: IssuesApiAddPolarBadgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling addPolarBadge.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling addPolarBadge().'
+            );
         }
 
         const queryParameters: any = {};
@@ -147,7 +156,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/add_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}/add_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -168,12 +177,18 @@ export class IssuesApi extends runtime.BaseAPI {
      * Badge With Message
      */
     async badgeWithMessageRaw(requestParameters: IssuesApiBadgeWithMessageRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling badgeWithMessage.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling badgeWithMessage().'
+            );
         }
 
-        if (requestParameters.issueUpdateBadgeMessage === null || requestParameters.issueUpdateBadgeMessage === undefined) {
-            throw new runtime.RequiredError('issueUpdateBadgeMessage','Required parameter requestParameters.issueUpdateBadgeMessage was null or undefined when calling badgeWithMessage.');
+        if (requestParameters['issueUpdateBadgeMessage'] == null) {
+            throw new runtime.RequiredError(
+                'issueUpdateBadgeMessage',
+                'Required parameter "issueUpdateBadgeMessage" was null or undefined when calling badgeWithMessage().'
+            );
         }
 
         const queryParameters: any = {};
@@ -191,11 +206,11 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/badge_with_message`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}/badge_with_message`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.issueUpdateBadgeMessage,
+            body: requestParameters['issueUpdateBadgeMessage'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -214,12 +229,18 @@ export class IssuesApi extends runtime.BaseAPI {
      * Mark an issue as confirmed solved. (Public API)
      */
     async confirmRaw(requestParameters: IssuesApiConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling confirm.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling confirm().'
+            );
         }
 
-        if (requestParameters.confirmIssue === null || requestParameters.confirmIssue === undefined) {
-            throw new runtime.RequiredError('confirmIssue','Required parameter requestParameters.confirmIssue was null or undefined when calling confirm.');
+        if (requestParameters['confirmIssue'] == null) {
+            throw new runtime.RequiredError(
+                'confirmIssue',
+                'Required parameter "confirmIssue" was null or undefined when calling confirm().'
+            );
         }
 
         const queryParameters: any = {};
@@ -237,11 +258,11 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/confirm_solved`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}/confirm_solved`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.confirmIssue,
+            body: requestParameters['confirmIssue'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -295,8 +316,11 @@ export class IssuesApi extends runtime.BaseAPI {
      * Get issue (Public API)
      */
     async getRaw(requestParameters: IssuesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling get.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
+            );
         }
 
         const queryParameters: any = {};
@@ -312,7 +336,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -334,8 +358,11 @@ export class IssuesApi extends runtime.BaseAPI {
      * Get Body
      */
     async getBodyRaw(requestParameters: IssuesApiGetBodyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getBody.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getBody().'
+            );
         }
 
         const queryParameters: any = {};
@@ -351,7 +378,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/body`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}/body`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -378,8 +405,8 @@ export class IssuesApi extends runtime.BaseAPI {
     async lookupRaw(requestParameters: IssuesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
         const queryParameters: any = {};
 
-        if (requestParameters.externalUrl !== undefined) {
-            queryParameters['external_url'] = requestParameters.externalUrl;
+        if (requestParameters['externalUrl'] != null) {
+            queryParameters['external_url'] = requestParameters['externalUrl'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -414,8 +441,11 @@ export class IssuesApi extends runtime.BaseAPI {
      * Remove Polar Badge
      */
     async removePolarBadgeRaw(requestParameters: IssuesApiRemovePolarBadgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling removePolarBadge.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling removePolarBadge().'
+            );
         }
 
         const queryParameters: any = {};
@@ -431,7 +461,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/remove_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}/remove_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -453,42 +483,48 @@ export class IssuesApi extends runtime.BaseAPI {
      * Search issues (Public API)
      */
     async searchRaw(requestParameters: IssuesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceIssue>> {
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling search.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling search().'
+            );
         }
 
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling search.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling search().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.sort !== undefined) {
-            queryParameters['sort'] = requestParameters.sort;
+        if (requestParameters['sort'] != null) {
+            queryParameters['sort'] = requestParameters['sort'];
         }
 
-        if (requestParameters.havePledge !== undefined) {
-            queryParameters['have_pledge'] = requestParameters.havePledge;
+        if (requestParameters['havePledge'] != null) {
+            queryParameters['have_pledge'] = requestParameters['havePledge'];
         }
 
-        if (requestParameters.haveBadge !== undefined) {
-            queryParameters['have_badge'] = requestParameters.haveBadge;
+        if (requestParameters['haveBadge'] != null) {
+            queryParameters['have_badge'] = requestParameters['haveBadge'];
         }
 
-        if (requestParameters.githubMilestoneNumber !== undefined) {
-            queryParameters['github_milestone_number'] = requestParameters.githubMilestoneNumber;
+        if (requestParameters['githubMilestoneNumber'] != null) {
+            queryParameters['github_milestone_number'] = requestParameters['githubMilestoneNumber'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -525,12 +561,18 @@ export class IssuesApi extends runtime.BaseAPI {
      * Update issue. (Public API)
      */
     async updateRaw(requestParameters: IssuesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling update().'
+            );
         }
 
-        if (requestParameters.updateIssue === null || requestParameters.updateIssue === undefined) {
-            throw new runtime.RequiredError('updateIssue','Required parameter requestParameters.updateIssue was null or undefined when calling update.');
+        if (requestParameters['updateIssue'] == null) {
+            throw new runtime.RequiredError(
+                'updateIssue',
+                'Required parameter "updateIssue" was null or undefined when calling update().'
+            );
         }
 
         const queryParameters: any = {};
@@ -548,11 +590,11 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.updateIssue,
+            body: requestParameters['updateIssue'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

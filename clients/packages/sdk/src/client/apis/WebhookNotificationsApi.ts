@@ -51,8 +51,11 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
      * Delete webhook notification integration (Public API)
      */
     async _deleteRaw(requestParameters: WebhookNotificationsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling _delete.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling _delete().'
+            );
         }
 
         const queryParameters: any = {};
@@ -68,7 +71,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -91,8 +94,11 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
      * Create a webhook notification integration (Public API)
      */
     async createRaw(requestParameters: WebhookNotificationsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
-        if (requestParameters.webhookIntegrationCreate === null || requestParameters.webhookIntegrationCreate === undefined) {
-            throw new runtime.RequiredError('webhookIntegrationCreate','Required parameter requestParameters.webhookIntegrationCreate was null or undefined when calling create.');
+        if (requestParameters['webhookIntegrationCreate'] == null) {
+            throw new runtime.RequiredError(
+                'webhookIntegrationCreate',
+                'Required parameter "webhookIntegrationCreate" was null or undefined when calling create().'
+            );
         }
 
         const queryParameters: any = {};
@@ -114,7 +120,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.webhookIntegrationCreate,
+            body: requestParameters['webhookIntegrationCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -134,22 +140,28 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
      * Search webhook notification integrations (Public API)
      */
     async searchRaw(requestParameters: WebhookNotificationsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceWebhookIntegration>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling search.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling search().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling search.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling search().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -186,12 +198,18 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
      * Update webhook notification integration (Public API)
      */
     async updateRaw(requestParameters: WebhookNotificationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling update().'
+            );
         }
 
-        if (requestParameters.webhookIntegrationUpdate === null || requestParameters.webhookIntegrationUpdate === undefined) {
-            throw new runtime.RequiredError('webhookIntegrationUpdate','Required parameter requestParameters.webhookIntegrationUpdate was null or undefined when calling update.');
+        if (requestParameters['webhookIntegrationUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'webhookIntegrationUpdate',
+                'Required parameter "webhookIntegrationUpdate" was null or undefined when calling update().'
+            );
         }
 
         const queryParameters: any = {};
@@ -209,11 +227,11 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.webhookIntegrationUpdate,
+            body: requestParameters['webhookIntegrationUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

@@ -102,6 +102,8 @@ const convert = (schema) => {
     if (value && typeof value === 'object' && 'anyOf' in value) {
       const anyOf = value['anyOf']
 
+      console.log('DROP NULL', key, value)
+
       if (anyOf.length === 2 && anyOf[1].type === 'null') {
         const res = {
           ...value,

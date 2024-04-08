@@ -37,18 +37,21 @@ export class MagicLinkApi extends runtime.BaseAPI {
      * Magic Link.Authenticate
      */
     async magicLinkAuthenticateRaw(requestParameters: MagicLinkApiMagicLinkAuthenticateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.token === null || requestParameters.token === undefined) {
-            throw new runtime.RequiredError('token','Required parameter requestParameters.token was null or undefined when calling magicLinkAuthenticate.');
+        if (requestParameters['token'] == null) {
+            throw new runtime.RequiredError(
+                'token',
+                'Required parameter "token" was null or undefined when calling magicLinkAuthenticate().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.token !== undefined) {
-            queryParameters['token'] = requestParameters.token;
+        if (requestParameters['token'] != null) {
+            queryParameters['token'] = requestParameters['token'];
         }
 
-        if (requestParameters.returnTo !== undefined) {
-            queryParameters['return_to'] = requestParameters.returnTo;
+        if (requestParameters['returnTo'] != null) {
+            queryParameters['return_to'] = requestParameters['returnTo'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -87,8 +90,11 @@ export class MagicLinkApi extends runtime.BaseAPI {
      * Magic Link.Request
      */
     async magicLinkRequestRaw(requestParameters: MagicLinkApiMagicLinkRequestRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.magicLinkRequest === null || requestParameters.magicLinkRequest === undefined) {
-            throw new runtime.RequiredError('magicLinkRequest','Required parameter requestParameters.magicLinkRequest was null or undefined when calling magicLinkRequest.');
+        if (requestParameters['magicLinkRequest'] == null) {
+            throw new runtime.RequiredError(
+                'magicLinkRequest',
+                'Required parameter "magicLinkRequest" was null or undefined when calling magicLinkRequest().'
+            );
         }
 
         const queryParameters: any = {};
@@ -110,7 +116,7 @@ export class MagicLinkApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.magicLinkRequest,
+            body: requestParameters['magicLinkRequest'],
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {

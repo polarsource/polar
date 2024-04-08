@@ -40,8 +40,11 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
      * Delete a personal access tokens (Public API)
      */
     async _deleteRaw(requestParameters: PersonalAccessTokenApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PersonalAccessToken>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling _delete.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling _delete().'
+            );
         }
 
         const queryParameters: any = {};
@@ -57,7 +60,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/personal_access_tokens/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/personal_access_tokens/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -80,8 +83,11 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
      * Create a new personal access token (Public API)
      */
     async createRaw(requestParameters: PersonalAccessTokenApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreatePersonalAccessTokenResponse>> {
-        if (requestParameters.createPersonalAccessToken === null || requestParameters.createPersonalAccessToken === undefined) {
-            throw new runtime.RequiredError('createPersonalAccessToken','Required parameter requestParameters.createPersonalAccessToken was null or undefined when calling create.');
+        if (requestParameters['createPersonalAccessToken'] == null) {
+            throw new runtime.RequiredError(
+                'createPersonalAccessToken',
+                'Required parameter "createPersonalAccessToken" was null or undefined when calling create().'
+            );
         }
 
         const queryParameters: any = {};
@@ -103,7 +109,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.createPersonalAccessToken,
+            body: requestParameters['createPersonalAccessToken'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

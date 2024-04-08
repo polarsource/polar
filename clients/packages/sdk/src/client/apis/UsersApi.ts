@@ -108,6 +108,7 @@ export class UsersApi extends runtime.BaseAPI {
 
     /**
      * Logout
+     * @deprecated
      */
     async logoutRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LogoutResponse>> {
         const queryParameters: any = {};
@@ -134,6 +135,7 @@ export class UsersApi extends runtime.BaseAPI {
 
     /**
      * Logout
+     * @deprecated
      */
     async logout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LogoutResponse> {
         const response = await this.logoutRaw(initOverrides);
@@ -212,8 +214,11 @@ export class UsersApi extends runtime.BaseAPI {
      * Set Account
      */
     async setAccountRaw(requestParameters: UsersApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
-        if (requestParameters.userSetAccount === null || requestParameters.userSetAccount === undefined) {
-            throw new runtime.RequiredError('userSetAccount','Required parameter requestParameters.userSetAccount was null or undefined when calling setAccount.');
+        if (requestParameters['userSetAccount'] == null) {
+            throw new runtime.RequiredError(
+                'userSetAccount',
+                'Required parameter "userSetAccount" was null or undefined when calling setAccount().'
+            );
         }
 
         const queryParameters: any = {};
@@ -235,7 +240,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.userSetAccount,
+            body: requestParameters['userSetAccount'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -253,8 +258,11 @@ export class UsersApi extends runtime.BaseAPI {
      * Update Preferences
      */
     async updatePreferencesRaw(requestParameters: UsersApiUpdatePreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
-        if (requestParameters.userUpdateSettings === null || requestParameters.userUpdateSettings === undefined) {
-            throw new runtime.RequiredError('userUpdateSettings','Required parameter requestParameters.userUpdateSettings was null or undefined when calling updatePreferences.');
+        if (requestParameters['userUpdateSettings'] == null) {
+            throw new runtime.RequiredError(
+                'userUpdateSettings',
+                'Required parameter "userUpdateSettings" was null or undefined when calling updatePreferences().'
+            );
         }
 
         const queryParameters: any = {};
@@ -276,7 +284,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.userUpdateSettings,
+            body: requestParameters['userUpdateSettings'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

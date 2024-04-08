@@ -47,14 +47,17 @@ export class FundingApi extends runtime.BaseAPI {
      * Lookup
      */
     async lookupRaw(requestParameters: FundingApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IssueFunding>> {
-        if (requestParameters.issueId === null || requestParameters.issueId === undefined) {
-            throw new runtime.RequiredError('issueId','Required parameter requestParameters.issueId was null or undefined when calling lookup.');
+        if (requestParameters['issueId'] == null) {
+            throw new runtime.RequiredError(
+                'issueId',
+                'Required parameter "issueId" was null or undefined when calling lookup().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.issueId !== undefined) {
-            queryParameters['issue_id'] = requestParameters.issueId;
+        if (requestParameters['issueId'] != null) {
+            queryParameters['issue_id'] = requestParameters['issueId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -89,50 +92,56 @@ export class FundingApi extends runtime.BaseAPI {
      * Search
      */
     async searchRaw(requestParameters: FundingApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceIssueFunding>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling search.');
+        if (requestParameters['organizationName'] == null) {
+            throw new runtime.RequiredError(
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling search().'
+            );
         }
 
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling search.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling search().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.query !== undefined) {
-            queryParameters['query'] = requestParameters.query;
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
         }
 
-        if (requestParameters.badged !== undefined) {
-            queryParameters['badged'] = requestParameters.badged;
+        if (requestParameters['badged'] != null) {
+            queryParameters['badged'] = requestParameters['badged'];
         }
 
-        if (requestParameters.closed !== undefined) {
-            queryParameters['closed'] = requestParameters.closed;
+        if (requestParameters['closed'] != null) {
+            queryParameters['closed'] = requestParameters['closed'];
         }
 
-        if (requestParameters.sorting) {
-            queryParameters['sorting'] = requestParameters.sorting;
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

@@ -39,16 +39,25 @@ export class StreamApi extends runtime.BaseAPI {
      * User Org Repo Stream
      */
     async userOrgRepoStreamRaw(requestParameters: StreamApiUserOrgRepoStreamRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling userOrgRepoStream.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling userOrgRepoStream().'
+            );
         }
 
-        if (requestParameters.orgName === null || requestParameters.orgName === undefined) {
-            throw new runtime.RequiredError('orgName','Required parameter requestParameters.orgName was null or undefined when calling userOrgRepoStream.');
+        if (requestParameters['orgName'] == null) {
+            throw new runtime.RequiredError(
+                'orgName',
+                'Required parameter "orgName" was null or undefined when calling userOrgRepoStream().'
+            );
         }
 
-        if (requestParameters.repoName === null || requestParameters.repoName === undefined) {
-            throw new runtime.RequiredError('repoName','Required parameter requestParameters.repoName was null or undefined when calling userOrgRepoStream.');
+        if (requestParameters['repoName'] == null) {
+            throw new runtime.RequiredError(
+                'repoName',
+                'Required parameter "repoName" was null or undefined when calling userOrgRepoStream().'
+            );
         }
 
         const queryParameters: any = {};
@@ -64,7 +73,7 @@ export class StreamApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/{platform}/{org_name}/{repo_name}/stream`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters.platform))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters.orgName))).replace(`{${"repo_name"}}`, encodeURIComponent(String(requestParameters.repoName))),
+            path: `/api/v1/{platform}/{org_name}/{repo_name}/stream`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters['platform']))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters['orgName']))).replace(`{${"repo_name"}}`, encodeURIComponent(String(requestParameters['repoName']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -89,12 +98,18 @@ export class StreamApi extends runtime.BaseAPI {
      * User Org Stream
      */
     async userOrgStreamRaw(requestParameters: StreamApiUserOrgStreamRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling userOrgStream.');
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling userOrgStream().'
+            );
         }
 
-        if (requestParameters.orgName === null || requestParameters.orgName === undefined) {
-            throw new runtime.RequiredError('orgName','Required parameter requestParameters.orgName was null or undefined when calling userOrgStream.');
+        if (requestParameters['orgName'] == null) {
+            throw new runtime.RequiredError(
+                'orgName',
+                'Required parameter "orgName" was null or undefined when calling userOrgStream().'
+            );
         }
 
         const queryParameters: any = {};
@@ -110,7 +125,7 @@ export class StreamApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/{platform}/{org_name}/stream`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters.platform))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters.orgName))),
+            path: `/api/v1/{platform}/{org_name}/stream`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters['platform']))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters['orgName']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

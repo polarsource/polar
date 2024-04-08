@@ -85,8 +85,11 @@ export class PledgesApi extends runtime.BaseAPI {
      * Create
      */
     async createRaw(requestParameters: PledgesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
-        if (requestParameters.createPledgeFromPaymentIntent === null || requestParameters.createPledgeFromPaymentIntent === undefined) {
-            throw new runtime.RequiredError('createPledgeFromPaymentIntent','Required parameter requestParameters.createPledgeFromPaymentIntent was null or undefined when calling create.');
+        if (requestParameters['createPledgeFromPaymentIntent'] == null) {
+            throw new runtime.RequiredError(
+                'createPledgeFromPaymentIntent',
+                'Required parameter "createPledgeFromPaymentIntent" was null or undefined when calling create().'
+            );
         }
 
         const queryParameters: any = {};
@@ -108,7 +111,7 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.createPledgeFromPaymentIntent,
+            body: requestParameters['createPledgeFromPaymentIntent'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -128,8 +131,11 @@ export class PledgesApi extends runtime.BaseAPI {
      * Create Invoice
      */
     async createInvoiceRaw(requestParameters: PledgesApiCreateInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling createInvoice.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling createInvoice().'
+            );
         }
 
         const queryParameters: any = {};
@@ -145,7 +151,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/{id}/create_invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/pledges/{id}/create_invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -168,8 +174,11 @@ export class PledgesApi extends runtime.BaseAPI {
      * Create Pay On Completion
      */
     async createPayOnCompletionRaw(requestParameters: PledgesApiCreatePayOnCompletionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
-        if (requestParameters.createPledgePayLater === null || requestParameters.createPledgePayLater === undefined) {
-            throw new runtime.RequiredError('createPledgePayLater','Required parameter requestParameters.createPledgePayLater was null or undefined when calling createPayOnCompletion.');
+        if (requestParameters['createPledgePayLater'] == null) {
+            throw new runtime.RequiredError(
+                'createPledgePayLater',
+                'Required parameter "createPledgePayLater" was null or undefined when calling createPayOnCompletion().'
+            );
         }
 
         const queryParameters: any = {};
@@ -191,7 +200,7 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.createPledgePayLater,
+            body: requestParameters['createPledgePayLater'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -210,8 +219,11 @@ export class PledgesApi extends runtime.BaseAPI {
      * Create Payment Intent
      */
     async createPaymentIntentRaw(requestParameters: PledgesApiCreatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgeStripePaymentIntentMutationResponse>> {
-        if (requestParameters.pledgeStripePaymentIntentCreate === null || requestParameters.pledgeStripePaymentIntentCreate === undefined) {
-            throw new runtime.RequiredError('pledgeStripePaymentIntentCreate','Required parameter requestParameters.pledgeStripePaymentIntentCreate was null or undefined when calling createPaymentIntent.');
+        if (requestParameters['pledgeStripePaymentIntentCreate'] == null) {
+            throw new runtime.RequiredError(
+                'pledgeStripePaymentIntentCreate',
+                'Required parameter "pledgeStripePaymentIntentCreate" was null or undefined when calling createPaymentIntent().'
+            );
         }
 
         const queryParameters: any = {};
@@ -233,7 +245,7 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.pledgeStripePaymentIntentCreate,
+            body: requestParameters['pledgeStripePaymentIntentCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -251,18 +263,24 @@ export class PledgesApi extends runtime.BaseAPI {
      * Dispute Pledge
      */
     async disputePledgeRaw(requestParameters: PledgesApiDisputePledgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
-        if (requestParameters.pledgeId === null || requestParameters.pledgeId === undefined) {
-            throw new runtime.RequiredError('pledgeId','Required parameter requestParameters.pledgeId was null or undefined when calling disputePledge.');
+        if (requestParameters['pledgeId'] == null) {
+            throw new runtime.RequiredError(
+                'pledgeId',
+                'Required parameter "pledgeId" was null or undefined when calling disputePledge().'
+            );
         }
 
-        if (requestParameters.reason === null || requestParameters.reason === undefined) {
-            throw new runtime.RequiredError('reason','Required parameter requestParameters.reason was null or undefined when calling disputePledge.');
+        if (requestParameters['reason'] == null) {
+            throw new runtime.RequiredError(
+                'reason',
+                'Required parameter "reason" was null or undefined when calling disputePledge().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.reason !== undefined) {
-            queryParameters['reason'] = requestParameters.reason;
+        if (requestParameters['reason'] != null) {
+            queryParameters['reason'] = requestParameters['reason'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -276,7 +294,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/{pledge_id}/dispute`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters.pledgeId))),
+            path: `/api/v1/pledges/{pledge_id}/dispute`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -298,8 +316,11 @@ export class PledgesApi extends runtime.BaseAPI {
      * Get pledge (Public API)
      */
     async getRaw(requestParameters: PledgesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling get.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
+            );
         }
 
         const queryParameters: any = {};
@@ -315,7 +336,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/pledges/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -340,28 +361,28 @@ export class PledgesApi extends runtime.BaseAPI {
     async searchRaw(requestParameters: PledgesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePledge>> {
         const queryParameters: any = {};
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
         }
 
-        if (requestParameters.repositoryName !== undefined) {
-            queryParameters['repository_name'] = requestParameters.repositoryName;
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
-        if (requestParameters.issueId !== undefined) {
-            queryParameters['issue_id'] = requestParameters.issueId;
+        if (requestParameters['issueId'] != null) {
+            queryParameters['issue_id'] = requestParameters['issueId'];
         }
 
-        if (requestParameters.byOrganizationId !== undefined) {
-            queryParameters['by_organization_id'] = requestParameters.byOrganizationId;
+        if (requestParameters['byOrganizationId'] != null) {
+            queryParameters['by_organization_id'] = requestParameters['byOrganizationId'];
         }
 
-        if (requestParameters.byUserId !== undefined) {
-            queryParameters['by_user_id'] = requestParameters.byUserId;
+        if (requestParameters['byUserId'] != null) {
+            queryParameters['by_user_id'] = requestParameters['byUserId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -398,14 +419,17 @@ export class PledgesApi extends runtime.BaseAPI {
      * Get user spending (Public API)
      */
     async spendingRaw(requestParameters: PledgesApiSpendingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgeSpending>> {
-        if (requestParameters.organizationId === null || requestParameters.organizationId === undefined) {
-            throw new runtime.RequiredError('organizationId','Required parameter requestParameters.organizationId was null or undefined when calling spending.');
+        if (requestParameters['organizationId'] == null) {
+            throw new runtime.RequiredError(
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling spending().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.organizationId !== undefined) {
-            queryParameters['organization_id'] = requestParameters.organizationId;
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -442,14 +466,17 @@ export class PledgesApi extends runtime.BaseAPI {
      * Get pledges summary (Public API)
      */
     async summaryRaw(requestParameters: PledgesApiSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgePledgesSummary>> {
-        if (requestParameters.issueId === null || requestParameters.issueId === undefined) {
-            throw new runtime.RequiredError('issueId','Required parameter requestParameters.issueId was null or undefined when calling summary.');
+        if (requestParameters['issueId'] == null) {
+            throw new runtime.RequiredError(
+                'issueId',
+                'Required parameter "issueId" was null or undefined when calling summary().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.issueId !== undefined) {
-            queryParameters['issue_id'] = requestParameters.issueId;
+        if (requestParameters['issueId'] != null) {
+            queryParameters['issue_id'] = requestParameters['issueId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -485,12 +512,18 @@ export class PledgesApi extends runtime.BaseAPI {
      * Update Payment Intent
      */
     async updatePaymentIntentRaw(requestParameters: PledgesApiUpdatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgeStripePaymentIntentMutationResponse>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling updatePaymentIntent.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updatePaymentIntent().'
+            );
         }
 
-        if (requestParameters.pledgeStripePaymentIntentUpdate === null || requestParameters.pledgeStripePaymentIntentUpdate === undefined) {
-            throw new runtime.RequiredError('pledgeStripePaymentIntentUpdate','Required parameter requestParameters.pledgeStripePaymentIntentUpdate was null or undefined when calling updatePaymentIntent.');
+        if (requestParameters['pledgeStripePaymentIntentUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'pledgeStripePaymentIntentUpdate',
+                'Required parameter "pledgeStripePaymentIntentUpdate" was null or undefined when calling updatePaymentIntent().'
+            );
         }
 
         const queryParameters: any = {};
@@ -508,11 +541,11 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/pledges/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.pledgeStripePaymentIntentUpdate,
+            body: requestParameters['pledgeStripePaymentIntentUpdate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

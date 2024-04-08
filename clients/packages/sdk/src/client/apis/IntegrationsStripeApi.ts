@@ -33,8 +33,8 @@ export class IntegrationsStripeApi extends runtime.BaseAPI {
     async integrationsStripeRefreshRaw(requestParameters: IntegrationsStripeApiIntegrationsStripeRefreshRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.returnPath !== undefined) {
-            queryParameters['return_path'] = requestParameters.returnPath;
+        if (requestParameters['returnPath'] != null) {
+            queryParameters['return_path'] = requestParameters['returnPath'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

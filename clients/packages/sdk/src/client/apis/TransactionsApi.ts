@@ -65,8 +65,11 @@ export class TransactionsApi extends runtime.BaseAPI {
      * Create Payout
      */
     async createPayoutRaw(requestParameters: TransactionsApiCreatePayoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Transaction>> {
-        if (requestParameters.payoutCreate === null || requestParameters.payoutCreate === undefined) {
-            throw new runtime.RequiredError('payoutCreate','Required parameter requestParameters.payoutCreate was null or undefined when calling createPayout.');
+        if (requestParameters['payoutCreate'] == null) {
+            throw new runtime.RequiredError(
+                'payoutCreate',
+                'Required parameter "payoutCreate" was null or undefined when calling createPayout().'
+            );
         }
 
         const queryParameters: any = {};
@@ -88,7 +91,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.payoutCreate,
+            body: requestParameters['payoutCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -106,8 +109,11 @@ export class TransactionsApi extends runtime.BaseAPI {
      * Get Payout Csv
      */
     async getPayoutCsvRaw(requestParameters: TransactionsApiGetPayoutCsvRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getPayoutCsv.');
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getPayoutCsv().'
+            );
         }
 
         const queryParameters: any = {};
@@ -123,7 +129,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/payouts/{id}/csv`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/transactions/payouts/{id}/csv`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -148,14 +154,17 @@ export class TransactionsApi extends runtime.BaseAPI {
      * Get Payout Estimate
      */
     async getPayoutEstimateRaw(requestParameters: TransactionsApiGetPayoutEstimateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PayoutEstimate>> {
-        if (requestParameters.accountId === null || requestParameters.accountId === undefined) {
-            throw new runtime.RequiredError('accountId','Required parameter requestParameters.accountId was null or undefined when calling getPayoutEstimate.');
+        if (requestParameters['accountId'] == null) {
+            throw new runtime.RequiredError(
+                'accountId',
+                'Required parameter "accountId" was null or undefined when calling getPayoutEstimate().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.accountId !== undefined) {
-            queryParameters['account_id'] = requestParameters.accountId;
+        if (requestParameters['accountId'] != null) {
+            queryParameters['account_id'] = requestParameters['accountId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -190,14 +199,17 @@ export class TransactionsApi extends runtime.BaseAPI {
      * Get Summary
      */
     async getSummaryRaw(requestParameters: TransactionsApiGetSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TransactionsSummary>> {
-        if (requestParameters.accountId === null || requestParameters.accountId === undefined) {
-            throw new runtime.RequiredError('accountId','Required parameter requestParameters.accountId was null or undefined when calling getSummary.');
+        if (requestParameters['accountId'] == null) {
+            throw new runtime.RequiredError(
+                'accountId',
+                'Required parameter "accountId" was null or undefined when calling getSummary().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.accountId !== undefined) {
-            queryParameters['account_id'] = requestParameters.accountId;
+        if (requestParameters['accountId'] != null) {
+            queryParameters['account_id'] = requestParameters['accountId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -232,14 +244,17 @@ export class TransactionsApi extends runtime.BaseAPI {
      * Lookup Transaction
      */
     async lookupTransactionRaw(requestParameters: TransactionsApiLookupTransactionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TransactionDetails>> {
-        if (requestParameters.transactionId === null || requestParameters.transactionId === undefined) {
-            throw new runtime.RequiredError('transactionId','Required parameter requestParameters.transactionId was null or undefined when calling lookupTransaction.');
+        if (requestParameters['transactionId'] == null) {
+            throw new runtime.RequiredError(
+                'transactionId',
+                'Required parameter "transactionId" was null or undefined when calling lookupTransaction().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.transactionId !== undefined) {
-            queryParameters['transaction_id'] = requestParameters.transactionId;
+        if (requestParameters['transactionId'] != null) {
+            queryParameters['transaction_id'] = requestParameters['transactionId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -276,36 +291,36 @@ export class TransactionsApi extends runtime.BaseAPI {
     async searchTransactionsRaw(requestParameters: TransactionsApiSearchTransactionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceTransaction>> {
         const queryParameters: any = {};
 
-        if (requestParameters.type !== undefined) {
-            queryParameters['type'] = requestParameters.type;
+        if (requestParameters['type'] != null) {
+            queryParameters['type'] = requestParameters['type'];
         }
 
-        if (requestParameters.accountId !== undefined) {
-            queryParameters['account_id'] = requestParameters.accountId;
+        if (requestParameters['accountId'] != null) {
+            queryParameters['account_id'] = requestParameters['accountId'];
         }
 
-        if (requestParameters.paymentUserId !== undefined) {
-            queryParameters['payment_user_id'] = requestParameters.paymentUserId;
+        if (requestParameters['paymentUserId'] != null) {
+            queryParameters['payment_user_id'] = requestParameters['paymentUserId'];
         }
 
-        if (requestParameters.paymentOrganizationId !== undefined) {
-            queryParameters['payment_organization_id'] = requestParameters.paymentOrganizationId;
+        if (requestParameters['paymentOrganizationId'] != null) {
+            queryParameters['payment_organization_id'] = requestParameters['paymentOrganizationId'];
         }
 
-        if (requestParameters.excludePlatformFees !== undefined) {
-            queryParameters['exclude_platform_fees'] = requestParameters.excludePlatformFees;
+        if (requestParameters['excludePlatformFees'] != null) {
+            queryParameters['exclude_platform_fees'] = requestParameters['excludePlatformFees'];
         }
 
-        if (requestParameters.page !== undefined) {
-            queryParameters['page'] = requestParameters.page;
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters.limit !== undefined) {
-            queryParameters['limit'] = requestParameters.limit;
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters.sorting) {
-            queryParameters['sorting'] = requestParameters.sorting;
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

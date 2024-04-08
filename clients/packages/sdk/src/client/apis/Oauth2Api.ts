@@ -78,8 +78,11 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Oauth2.Configure
      */
     async oauth2ConfigureRaw(requestParameters: Oauth2ApiOauth2ConfigureRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.clientId === null || requestParameters.clientId === undefined) {
-            throw new runtime.RequiredError('clientId','Required parameter requestParameters.clientId was null or undefined when calling oauth2Configure.');
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling oauth2Configure().'
+            );
         }
 
         const queryParameters: any = {};
@@ -95,7 +98,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters.clientId))),
+            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -120,8 +123,11 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Oauth2.Configure
      */
     async oauth2Configure_1Raw(requestParameters: Oauth2ApiOauth2Configure0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.clientId === null || requestParameters.clientId === undefined) {
-            throw new runtime.RequiredError('clientId','Required parameter requestParameters.clientId was null or undefined when calling oauth2Configure_1.');
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling oauth2Configure_1().'
+            );
         }
 
         const queryParameters: any = {};
@@ -137,7 +143,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters.clientId))),
+            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
@@ -162,8 +168,11 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Oauth2.Configure
      */
     async oauth2Configure_2Raw(requestParameters: Oauth2ApiOauth2Configure1Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.clientId === null || requestParameters.clientId === undefined) {
-            throw new runtime.RequiredError('clientId','Required parameter requestParameters.clientId was null or undefined when calling oauth2Configure_2.');
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling oauth2Configure_2().'
+            );
         }
 
         const queryParameters: any = {};
@@ -179,7 +188,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters.clientId))),
+            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -204,8 +213,11 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Oauth2.Consent
      */
     async oauth2ConsentRaw(requestParameters: Oauth2ApiOauth2ConsentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters.action === null || requestParameters.action === undefined) {
-            throw new runtime.RequiredError('action','Required parameter requestParameters.action was null or undefined when calling oauth2Consent.');
+        if (requestParameters['action'] == null) {
+            throw new runtime.RequiredError(
+                'action',
+                'Required parameter "action" was null or undefined when calling oauth2Consent().'
+            );
         }
 
         const queryParameters: any = {};
@@ -234,8 +246,8 @@ export class Oauth2Api extends runtime.BaseAPI {
             formParams = new URLSearchParams();
         }
 
-        if (requestParameters.action !== undefined) {
-            formParams.append('action', requestParameters.action as any);
+        if (requestParameters['action'] != null) {
+            formParams.append('action', requestParameters['action'] as any);
         }
 
         const response = await this.request({

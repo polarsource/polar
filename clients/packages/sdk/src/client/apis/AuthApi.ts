@@ -42,8 +42,11 @@ export class AuthApi extends runtime.BaseAPI {
      * Custom Domain Exchange
      */
     async customDomainExchangeRaw(requestParameters: AuthApiCustomDomainExchangeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomDomainExchangeResponse>> {
-        if (requestParameters.customDomainExchangeRequest === null || requestParameters.customDomainExchangeRequest === undefined) {
-            throw new runtime.RequiredError('customDomainExchangeRequest','Required parameter requestParameters.customDomainExchangeRequest was null or undefined when calling customDomainExchange.');
+        if (requestParameters['customDomainExchangeRequest'] == null) {
+            throw new runtime.RequiredError(
+                'customDomainExchangeRequest',
+                'Required parameter "customDomainExchangeRequest" was null or undefined when calling customDomainExchange().'
+            );
         }
 
         const queryParameters: any = {};
@@ -65,7 +68,7 @@ export class AuthApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters.customDomainExchangeRequest,
+            body: requestParameters['customDomainExchangeRequest'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -83,14 +86,17 @@ export class AuthApi extends runtime.BaseAPI {
      * Custom Domain Forward
      */
     async customDomainForwardRaw(requestParameters: AuthApiCustomDomainForwardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomDomainForwardResponse>> {
-        if (requestParameters.organizationId === null || requestParameters.organizationId === undefined) {
-            throw new runtime.RequiredError('organizationId','Required parameter requestParameters.organizationId was null or undefined when calling customDomainForward.');
+        if (requestParameters['organizationId'] == null) {
+            throw new runtime.RequiredError(
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling customDomainForward().'
+            );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters.organizationId !== undefined) {
-            queryParameters['organization_id'] = requestParameters.organizationId;
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -127,8 +133,8 @@ export class AuthApi extends runtime.BaseAPI {
     async logoutRaw(requestParameters: AuthApiLogoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
 
-        if (requestParameters.organizationId !== undefined) {
-            queryParameters['organization_id'] = requestParameters.organizationId;
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

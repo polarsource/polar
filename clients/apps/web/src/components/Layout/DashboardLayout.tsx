@@ -30,13 +30,13 @@ import { BrandingMenu } from './Public/BrandingMenu'
 const GitHubAppUpsell = () => {
   return (
     <div className="m-4 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
-      <div className="flex w-full flex-col gap-y-6">
+      <div className="flex w-full flex-col gap-y-4">
         <GitHub fontSize="large" />
-        <h3 className="text-lg leading-snug [text-wrap:balance]">
+        <h3 className="leading-snug [text-wrap:balance]">
           Import your repositories & enable crowdfunding for issues
         </h3>
         <Link href={CONFIG.GITHUB_INSTALLATION_URL}>
-          <Button>
+          <Button size="sm">
             <div className="flex flex-row items-center gap-2">
               <span>Install GitHub App</span>
             </div>
@@ -99,11 +99,11 @@ const DashboardSidebar = () => {
           className="flex w-full flex-grow flex-col gap-y-2 md:h-full md:overflow-y-auto"
           onScroll={handleScroll}
         >
+          {currentOrg && !currentOrg.has_app_installed && <GitHubAppUpsell />}
+
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
           <DashboardNavigation />
         </div>
-
-        {currentOrg && !currentOrg.has_app_installed && <GitHubAppUpsell />}
 
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
           <MetaNavigation />

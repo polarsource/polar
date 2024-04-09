@@ -87,6 +87,10 @@ class Organization(Schema):
         description="If this organization has a public Polar page"
     )
 
+    public_donation_timestamps: bool = Field(
+        description="If this organization should make donation timestamps publicly available"
+    )
+
     @classmethod
     def from_db(
         cls,
@@ -134,6 +138,7 @@ class Organization(Schema):
             else None,
             is_teams_enabled=o.is_teams_enabled,
             donations_enabled=o.donations_enabled,
+            public_donation_timestamps=o.public_donation_timestamps,
             public_page_enabled=True
             if o.installation_id or o.created_from_user_maintainer_upgrade
             else False,
@@ -173,6 +178,7 @@ class OrganizationUpdate(Schema):
     per_user_monthly_spending_limit: int | None = None
 
     donations_enabled: bool | None = None
+    public_donation_timestamps: bool | None = None
 
     profile_settings: OrganizationProfileSettingsUpdate | None = None
 

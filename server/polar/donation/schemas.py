@@ -121,17 +121,18 @@ class DonationStatistics(Schema):
     periods: Sequence[DonationStatisticsPeriod]
 
 
-class DonationSummary(Schema):
+class PublicDonation(Schema):
     id: UUID4
     amount: CurrencyAmount
     message: str | None
     donor: DonationOrganization | DonationUser | None
-    created_at: datetime.datetime
+    created_at: datetime.datetime | None
 
     @classmethod
     def from_db(
         cls,
         i: DonationModel,
+        include_created_at: bool = False,
     ) -> Self:
         model_donor = i.donor
 
@@ -146,5 +147,5 @@ class DonationSummary(Schema):
             amount=CurrencyAmount(currency="USD", amount=i.amount_received),
             message=i.message,
             donor=donor,
-            created_at=i.created_at,
+            created_at=i.created_at if include_created_at else None,
         )

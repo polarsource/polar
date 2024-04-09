@@ -28,7 +28,8 @@ from .schemas import (
 log = structlog.get_logger()
 
 
-class OrganizationError(PolarError): ...
+class OrganizationError(PolarError):
+    ...
 
 
 class InvalidAccount(OrganizationError):
@@ -227,6 +228,11 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         if settings.donations_enabled is not None:
             organization.donations_enabled = settings.donations_enabled
+
+        if settings.public_donation_timestamps is not None:
+            organization.public_donation_timestamps = (
+                settings.public_donation_timestamps
+            )
 
         session.add(organization)
 

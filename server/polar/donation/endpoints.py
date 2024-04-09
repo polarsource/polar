@@ -24,8 +24,8 @@ from .schemas import (
     DonationCreateStripePaymentIntent,
     DonationStatistics,
     DonationStripePaymentIntentMutationResponse,
-    DonationSummary,
     DonationUpdateStripePaymentIntent,
+    PublicDonation,
 )
 from .service import SearchSortProperty, donation_service
 
@@ -217,16 +217,16 @@ async def statistics(
 
 
 @router.get(
-    "/donations/summary",
-    response_model=ListResource[DonationSummary],
+    "/donations/public/search",
+    response_model=ListResource[PublicDonation],
     tags=[Tags.PUBLIC],
 )
-async def search_donation_summary(
+async def donations_public_search(
     pagination: PaginationParamsQuery,
     to_organization_id: UUID4,
     sorting: SearchSorting,
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[DonationSummary]:
+) -> ListResource[PublicDonation]:
     org = await organization_service.get(session, to_organization_id)
     if not org:
         raise ResourceNotFound()
@@ -236,7 +236,12 @@ async def search_donation_summary(
     )
 
     return ListResource.from_paginated_results(
-        [DonationSummary.from_db(result) for result in results],
+        [
+            PublicDonation.from_db(
+                result, include_created_at=org.public_donation_timestamps
+            )
+            for result in results
+        ],
         count,
         pagination,
     )

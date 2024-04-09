@@ -130,7 +130,7 @@ class TestSearch:
         # anonymous
         assert json["items"][2]["donor"] is None
 
-    async def test_unauthenticated_summary(
+    async def test_public_search(
         self,
         client: AsyncClient,
         organization: Organization,
@@ -166,7 +166,7 @@ class TestSearch:
         )
 
         params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/api/v1/donations/summary", params=params)
+        response = await client.get("/api/v1/donations/public/search", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -176,23 +176,51 @@ class TestSearch:
         assert 5 == len(json["items"])
 
         # user without avatar
-        assert json["items"][0]["donor"]
-        assert json["items"][0]["donor"]["public_name"]
-        assert json["items"][0]["donor"]["avatar_url"] is None
         assert (
             "email" not in (json["items"][0])
         )  # email should not be publicly available
+        assert (
+            json["items"][0]["created_at"] is None
+        )  # timestamps are not public by default
+        assert json["items"][0]["donor"]
+        assert json["items"][0]["donor"]["public_name"]
+        assert json["items"][0]["donor"]["avatar_url"] is None
 
         # user with avatar
-        assert json["items"][1]["donor"]
-        assert json["items"][1]["donor"]["public_name"]
-        assert json["items"][1]["donor"]["avatar_url"]
         assert (
             "email" not in (json["items"][1])
         )  # email should not be publicly available
+        assert (
+            json["items"][1]["created_at"] is None
+        )  # timestamps are not public by default
+        assert json["items"][1]["donor"]
+        assert json["items"][1]["donor"]["public_name"]
+        assert json["items"][1]["donor"]["avatar_url"]
 
         # anonymous
-        assert json["items"][2]["donor"] is None
         assert (
             "email" not in (json["items"][2])
         )  # email should not be publicly available
+        assert (
+            json["items"][2]["created_at"] is None
+        )  # timestamps are not public by default
+        assert json["items"][2]["donor"] is None
+
+        # allow timestamps to be publicly shown
+        organization.public_donation_timestamps = True
+        await save_fixture(organization)
+
+        params = {"to_organization_id": str(organization.id)}
+        response = await client.get("/api/v1/donations/public/search", params=params)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        # user without avatar
+        assert json["items"][0]["created_at"] is not None
+
+        # user with avatar
+        assert json["items"][1]["created_at"] is not None
+
+        # anonymous
+        assert json["items"][2]["created_at"] is not None

@@ -80,6 +80,7 @@ class DonationCreateStripePaymentIntent(Schema):
         description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
     message: str | None = Field(None, description="Message included with the donation")
+    issue_id: UUID4 | None = Field(None)
 
 
 class DonationUpdateStripePaymentIntent(Schema):
@@ -95,6 +96,7 @@ class DonationUpdateStripePaymentIntent(Schema):
         description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
     message: str | None = Field(None, description="Message included with the donation")
+    issue_id: UUID4 | None = Field(None)
 
 
 class DonationStripePaymentIntentMutationResponse(Schema):

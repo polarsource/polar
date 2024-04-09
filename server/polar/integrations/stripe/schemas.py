@@ -73,3 +73,6 @@ class DonationPaymentIntentMetadata(PaymentIntentMetadata):
 
     # Set to empty string to unset the value
     donation_message: str | Literal[""] | None = None
+
+    # Set to empty string to unset the value
+    issue_id: UUID | Literal[""] | None = None

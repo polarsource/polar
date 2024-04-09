@@ -58,6 +58,7 @@ export const org: Organization = {
   profile_settings: {},
   donations_enabled: false,
   public_page_enabled: true,
+  public_donation_timestamps: false,
 }
 
 export const user: UserRead = {

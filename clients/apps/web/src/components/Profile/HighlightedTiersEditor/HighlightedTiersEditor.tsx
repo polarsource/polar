@@ -16,13 +16,15 @@ import {
   useSubscriptionBenefits,
   useUpdateSubscriptionTierBenefits,
 } from 'polarkit/hooks'
-import { hasRecurringInterval } from 'polarkit/subscriptions'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useMemo, useState } from 'react'
 import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
 import SubscriptionTierRecurringIntervalSwitch from '../../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '../../Subscriptions/SubscriptionTierSubscribeButton'
-import { isPremiumArticlesBenefit } from '../../Subscriptions/utils'
+import {
+  hasRecurringInterval,
+  isPremiumArticlesBenefit,
+} from '../../Subscriptions/utils'
 import { HighlightedTiersModal } from './HighlightedTiersModal'
 
 export interface HighlightedTiersEditorProps {

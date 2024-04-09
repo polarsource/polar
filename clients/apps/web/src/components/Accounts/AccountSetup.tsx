@@ -1,9 +1,9 @@
 'use client'
 
 import AccountAssociations from '@/components/Accounts/AccountAssociations'
+import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { Account, Organization, Status } from '@polar-sh/sdk'
 import { api } from 'polarkit'
-import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,

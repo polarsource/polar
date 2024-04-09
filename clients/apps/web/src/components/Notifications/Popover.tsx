@@ -1,3 +1,4 @@
+import GitMergeIcon from '@/components/Icons/GitMergeIcon'
 import {
   Announcement,
   NotificationsOutlined,
@@ -22,7 +23,6 @@ import {
   TeamAdminMemberPledgedNotification,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { GitMergeIcon } from 'polarkit/components/icons'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import {

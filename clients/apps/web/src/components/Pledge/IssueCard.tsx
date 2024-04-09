@@ -9,11 +9,6 @@ import {
   RewardsSummary,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import {
-  GitMergeIcon,
-  GitPullRequestClosedIcon,
-  GitPullRequestIcon,
-} from 'polarkit/components/icons'
 import { IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Alert from 'polarkit/components/ui/atoms/alert'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -23,6 +18,9 @@ import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import GitMergeIcon from '../Icons/GitMergeIcon'
+import GitPullRequestClosedIcon from '../Icons/GitPullRequestClosedIcon'
+import GitPullRequestIcon from '../Icons/GitPullRequestIcon'
 import { DiffStat } from '../Issues/IssueReference'
 import Pledgers from '../Issues/Pledgers'
 import { generateMarkdownTitle } from '../Issues/markdown'

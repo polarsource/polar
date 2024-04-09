@@ -1,3 +1,4 @@
+import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import {
   Account,
   AccountType,
@@ -5,7 +6,6 @@ import {
   ValidationError,
 } from '@polar-sh/sdk'
 import { api } from 'polarkit'
-import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { getValidationErrorsMap } from 'polarkit/api/errors'
 import Button from 'polarkit/components/ui/atoms/button'
 import CountryPicker from 'polarkit/components/ui/atoms/countrypicker'

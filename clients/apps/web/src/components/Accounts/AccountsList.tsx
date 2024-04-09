@@ -1,9 +1,9 @@
-import { Account, Status } from '@polar-sh/sdk'
-import { api } from 'polarkit'
 import {
   ACCOUNT_STATUS_DISPLAY_NAMES,
   ACCOUNT_TYPE_DISPLAY_NAMES,
-} from 'polarkit/account'
+} from '@/utils/account'
+import { Account, Status } from '@polar-sh/sdk'
+import { api } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
 import AccountAssociations from './AccountAssociations'

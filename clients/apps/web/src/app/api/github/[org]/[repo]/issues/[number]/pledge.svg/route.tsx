@@ -1,6 +1,6 @@
+import IssueBadge from '@/components/Embed/IssueBadge'
 import { Issue, PledgePledgesSummary, Pledger } from '@polar-sh/sdk'
 import { getServerURL } from 'polarkit/api'
-import { Badge } from 'polarkit/components/badge'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -82,7 +82,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
     data.issue.repository.organization.default_upfront_split_to_contributors
 
   return await satori(
-    <Badge
+    <IssueBadge
       showAmountRaised={showAmountRaised}
       darkmode={isDarkmode}
       funding={funding}

@@ -59,7 +59,6 @@
     "./components/ui/table": "./src/components/ui/table.tsx",
     "./components/ui/accordion": "./src/components/ui/accordion.tsx",
     "./components/brand": "./src/components/brand/index.ts",
-    "./components/badge": "./src/components/badge/index.ts",
     "./components/ui/Cards": "./src/components/ui/Cards/index.ts",
     "./components/icons": "./src/components/icons/index.ts",
     "./components/Issue": "./src/components/Issue/index.ts",

@@ -32,7 +32,7 @@ const Wrapper = (props: {
 }
 
 const meta: Meta<typeof Wrapper> = {
-  title: 'Organisms/PledgeBadgeSVG',
+  title: 'Organisms/IssueBadgeSVG',
   component: Wrapper,
   tags: ['autodocs'],
   args: {

@@ -38,7 +38,7 @@ const emptyState = {
   latestPledgeShown: false,
 }
 
-export const createUserSlice: StateCreator<UserSlice> = (set, get) => ({
+export const createUserSlice: StateCreator<UserSlice> = (set, _get) => ({
   ...emptyState,
   setOnboardingDashboardSkip: (skip: boolean) => {
     set({

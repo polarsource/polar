@@ -28,14 +28,14 @@ import { EditorHelpers, useEditorHelpers } from './useEditorHelpers'
 const defaultPostEditorContext: EditorHelpers = {
   bodyRef: { current: null },
   titleRef: { current: null },
-  insertTextAtCursor: (text: string) => {},
-  wrapSelectionWithText: ([before, after]: [string, string]) => {},
-  handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {},
-  handleDrag: (e: React.DragEvent<HTMLTextAreaElement>) => {},
-  handleDragOver: (e: React.DragEvent<HTMLTextAreaElement>) => {},
-  handleDrop: (e: React.DragEvent<HTMLTextAreaElement>) => {},
-  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {},
-  handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => {},
+  insertTextAtCursor: (_text: string) => {},
+  wrapSelectionWithText: ([_before, _after]: [string, string]) => {},
+  handleChange: (_: React.ChangeEvent<HTMLTextAreaElement>) => {},
+  handleDrag: (_: React.DragEvent<HTMLTextAreaElement>) => {},
+  handleDragOver: (_: React.DragEvent<HTMLTextAreaElement>) => {},
+  handleDrop: (_: React.DragEvent<HTMLTextAreaElement>) => {},
+  handleKeyDown: (_: React.KeyboardEvent<HTMLTextAreaElement>) => {},
+  handlePaste: (_: React.ClipboardEvent<HTMLTextAreaElement>) => {},
 }
 
 export const PostEditorContext = React.createContext(defaultPostEditorContext)

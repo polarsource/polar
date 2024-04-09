@@ -1,7 +1,7 @@
 import Rewarded from '@/components/Finance/IssueFunding/Rewarded'
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
-import { Metadata, ResolvingMetadata } from 'next'
+import { Metadata } from 'next'
 import { RedirectType, redirect } from 'next/navigation'
 
 const cacheConfig = {
@@ -10,14 +10,11 @@ const cacheConfig = {
   },
 }
 
-export async function generateMetadata(
-  {
-    params,
-  }: {
-    params: { organization: string }
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string }
+}): Promise<Metadata> {
   return {
     title: `${params.organization}`, // " | Polar is added by the template"
   }

@@ -1,16 +1,13 @@
 import SubscriptionTierEditPage from '@/components/Subscriptions/SubscriptionTierEditPage'
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
-import { Metadata, ResolvingMetadata } from 'next'
+import { Metadata } from 'next'
 
-export async function generateMetadata(
-  {
-    params,
-  }: {
-    params: { organization: string; tier: string }
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string; tier: string }
+}): Promise<Metadata> {
   return {
     title: `${params.organization}`, // " | Polar is added by the template"
   }

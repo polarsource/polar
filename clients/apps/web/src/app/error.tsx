@@ -2,13 +2,7 @@
 
 import Button from 'polarkit/components/ui/atoms/button'
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error
-  reset: () => void
-}) {
+export default function Error({ error }: { error: Error }) {
   return (
     <html>
       <body className="bg-blue-100">

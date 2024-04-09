@@ -56,11 +56,11 @@ export class Callback extends Plot.Dot {
   // @ts-ignore
   public render(
     index: number[],
-    scales: Plot.ScaleFunctions,
-    values: Plot.ChannelValues,
-    dimensions: Plot.Dimensions,
-    context: Plot.Context,
-    next?: Plot.RenderFunction,
+    _scales: Plot.ScaleFunctions,
+    _values: Plot.ChannelValues,
+    _dimensions: Plot.Dimensions,
+    _context: Plot.Context,
+    _next?: Plot.RenderFunction,
   ): SVGElement | null {
     if (index.length) {
       this.callbackFunction(index[0])
@@ -111,7 +111,7 @@ export function Chart<T extends ChartData, K extends keyof T>({
   const [width, setWidth] = useState(0)
 
   useEffect(() => {
-    const resizeObserver = new ResizeObserver((entries) => {
+    const resizeObserver = new ResizeObserver((_entries) => {
       if (containerRef) {
         setWidth(containerRef.clientWidth ?? 0)
       }
@@ -259,7 +259,7 @@ export const EarningsChart: React.FC<EarningsChartProps> = ({
       y="earnings"
       axisYOptions={{
         label: null,
-        tickFormat: (t, i) => formatCurrencyAndAmount(t, 'usd'),
+        tickFormat: (t, _i) => formatCurrencyAndAmount(t, 'usd'),
       }}
       onDataIndexHover={onDataIndexHover}
       hoveredIndex={hoveredIndex}

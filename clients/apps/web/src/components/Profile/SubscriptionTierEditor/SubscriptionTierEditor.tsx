@@ -147,7 +147,6 @@ export const SubscriptionTierEditor = ({
             selectedSubscriptionTiers={highlightedTiers}
             setSubscriptionTiers={updateItems}
             subscriptionTiers={subscriptionTiers}
-            organization={organization}
             hideModal={hide}
           />
         }

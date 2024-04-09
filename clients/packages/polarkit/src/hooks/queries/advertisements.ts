@@ -56,7 +56,7 @@ export const useCreateAdvertisementCampaigns: () => UseMutationResult<
         createAdvertisementCampaign,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['advertisements', 'campaigns', result.subscription_id],
       })
@@ -85,7 +85,7 @@ export const useEditAdvertisementCampaigns: () => UseMutationResult<
         editAdvertisementCampaign,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['advertisements', 'campaigns', result.subscription_id],
       })
@@ -106,7 +106,7 @@ export const useDeleteAdvertisementCampaigns: () => UseMutationResult<
         id,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['advertisements', 'campaigns', result.subscription_id],
       })

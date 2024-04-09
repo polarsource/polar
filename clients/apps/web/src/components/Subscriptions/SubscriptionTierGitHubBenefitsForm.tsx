@@ -400,7 +400,7 @@ export const GitHubRepositoryBenefitForm = ({
         rules={{
           required: 'This field is required',
         }}
-        render={({ field }) => {
+        render={() => {
           return (
             <FormItem>
               <FormMessage />

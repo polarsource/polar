@@ -60,7 +60,7 @@ export const useSSE = (
       emitter.emit(data.key, data.payload)
     }
 
-    connection.onerror = (event) => cleanup
+    connection.onerror = (_event) => cleanup
     return cleanup
   }, [streamURL])
 

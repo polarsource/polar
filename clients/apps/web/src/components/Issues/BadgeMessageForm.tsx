@@ -6,7 +6,7 @@ import { LabeledRadioButton } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
-import React, { ChangeEvent, MouseEvent, useEffect, useState } from 'react'
+import React, { ChangeEvent, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const BadgeMessageForm = (props: {
@@ -61,7 +61,7 @@ const BadgeMessageForm = (props: {
     funding.pledges_sum?.amount !== undefined &&
     funding.pledges_sum?.amount > 0
 
-  const onClickUpdate = async (e: MouseEvent<HTMLButtonElement>) => {
+  const onClickUpdate = async () => {
     setIsLoading(true)
     await props.onUpdateMessage(message)
     await props.onUpdateFundingGoal(funding.funding_goal)

@@ -8,10 +8,10 @@ const defaultDashboardLayoutContext: {
   setTopbarHeight: (v: number) => void
 } = {
   topbarHeight: 0,
-  setTopbarHeight: (v: number) => {},
+  setTopbarHeight: (_: number) => {},
 
   isMD: false,
-  setIsMD: (v: boolean) => {},
+  setIsMD: (_: boolean) => {},
 }
 
 const DEFAULT_DESKTOP_HEIGHT = 79

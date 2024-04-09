@@ -93,10 +93,7 @@ export default function ClientPage({
 
         {donations.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <DonationActivity
-              organization={organization}
-              donations={donations}
-            />
+            <DonationActivity donations={donations} />
             <DonationsEarnings organization={organization} />
           </div>
         ) : (
@@ -167,13 +164,7 @@ const DonationsEarnings = ({
   )
 }
 
-const DonationActivity = ({
-  organization,
-  donations,
-}: {
-  organization: Organization
-  donations: Donation[]
-}) => {
+const DonationActivity = ({ donations }: { donations: Donation[] }) => {
   return (
     <Card>
       <CardHeader>

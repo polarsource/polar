@@ -37,7 +37,7 @@ const NotificationSettings = () => {
     setCanSave(true)
   }
 
-  const save = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const save = async () => {
     await mutation.mutateAsync({ userUpdateSettings: settings })
   }
 

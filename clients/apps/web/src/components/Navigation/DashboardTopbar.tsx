@@ -101,7 +101,7 @@ const DashboardTopbar = ({
   }
 
   useEffect(() => {
-    const resizeObserver = new ResizeObserver((entries) => {
+    const resizeObserver = new ResizeObserver(() => {
       if (domNode) {
         propagateHeight(domNode)
       }

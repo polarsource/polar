@@ -1,4 +1,4 @@
-export async function GET(request: Request) {
+export async function GET() {
   return new Response(
     `
                              ::-=+**########**++=:.                             
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
 
 
-              Polar is made by all of our wonderfull contributors.
+              Polar is made by all of our wonderful contributors.
 
                     https://github.com/polarsource/polar
 

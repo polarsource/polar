@@ -14,13 +14,7 @@ import { twMerge } from 'tailwind-merge'
 import CircledNumber from './CircledNumber'
 import OrganizationSelect from './OrganizationSelect'
 
-const PledgeCheckoutFundByTeam = ({
-  issue,
-  gotoURL,
-}: {
-  issue: Issue
-  gotoURL?: string
-}) => {
+const PledgeCheckoutFundByTeam = ({ issue }: { issue: Issue }) => {
   const organization = issue.repository.organization
 
   const [formState, setFormState] = useState<{

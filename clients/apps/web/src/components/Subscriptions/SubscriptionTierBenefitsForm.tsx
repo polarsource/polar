@@ -543,8 +543,8 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
 
       {!update ? <BenefitTypeSelect /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
-      {type === 'ads' && <AdsBenefitForm update={update} />}
-      {type === 'discord' && <DiscordBenefitForm update={update} />}
+      {type === 'ads' && <AdsBenefitForm />}
+      {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
       )}
@@ -609,11 +609,7 @@ export const CustomBenefitForm = ({
   )
 }
 
-interface AdsBenefitFormProps {
-  update?: boolean
-}
-
-export const AdsBenefitForm = ({ update = false }: AdsBenefitFormProps) => {
+export const AdsBenefitForm = () => {
   const { control } = useFormContext<SubscriptionBenefitAdsCreate>()
 
   return (
@@ -660,13 +656,7 @@ export const AdsBenefitForm = ({ update = false }: AdsBenefitFormProps) => {
   )
 }
 
-interface DiscordBenefitFormProps {
-  update?: boolean
-}
-
-export const DiscordBenefitForm = ({
-  update = false,
-}: DiscordBenefitFormProps) => {
+export const DiscordBenefitForm = () => {
   const { control, watch } = useFormContext<SubscriptionBenefitDiscordCreate>()
   const pathname = usePathname()
   const description = watch('description')

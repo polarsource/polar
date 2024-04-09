@@ -1,12 +1,6 @@
 'use client'
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error
-  reset: () => void
-}) {
+export default function Error({ error }: { error: Error }) {
   return (
     <div className="flex grow flex-col items-center justify-center p-8">
       <h2 className="text-xl">Something went wrong!</h2>

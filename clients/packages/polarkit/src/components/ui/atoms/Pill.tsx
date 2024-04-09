@@ -2,12 +2,10 @@ import { twMerge } from 'tailwind-merge'
 
 const Pill = ({
   children,
-  withIcon,
   color,
   className,
 }: {
   children: React.ReactNode
-  withIcon?: boolean
   color: 'gray' | 'blue' | 'purple'
   className?: string
 }) => {

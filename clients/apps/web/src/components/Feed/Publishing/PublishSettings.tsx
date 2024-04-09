@@ -241,7 +241,7 @@ const FormSlug = (props: { article: Article }) => {
         required: 'This field is required',
         minLength: 1,
       }}
-      render={({ field, fieldState }) => {
+      render={({ field }) => {
         const onSaveSlug = async () => {
           setSlugIsSaving(true)
           const art = await updateArticle.mutateAsync({

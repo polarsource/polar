@@ -17,13 +17,7 @@ import { twMerge } from 'tailwind-merge'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import OrganizationSelect from './OrganizationSelect'
 
-const PledgeCheckoutFundOnCompletion = ({
-  issue,
-  gotoURL,
-}: {
-  issue: Issue
-  gotoURL?: string
-}) => {
+const PledgeCheckoutFundOnCompletion = ({ issue }: { issue: Issue }) => {
   const organization = issue.repository.organization
 
   const [formState, setFormState] = useState<{

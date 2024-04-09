@@ -65,10 +65,10 @@ const PledgeCheckoutFund = ({
             />
           </TabsContent>
           <TabsContent value="fund_on_completion">
-            <PledgeCheckoutFundOnCompletion issue={issue} gotoURL={gotoURL} />
+            <PledgeCheckoutFundOnCompletion issue={issue} />
           </TabsContent>
           <TabsContent value="fund_by_team">
-            <PledgeCheckoutFundByTeam issue={issue} gotoURL={gotoURL} />
+            <PledgeCheckoutFundByTeam issue={issue} />
           </TabsContent>
         </Tabs>
       </div>

@@ -18,11 +18,9 @@ import { twMerge } from 'tailwind-merge'
 export default function ClientPage({
   organization,
   subscriptionTiers,
-  email,
 }: {
   organization: Organization
   subscriptionTiers: ListResourceSubscriptionTier
-  email?: string
 }) {
   const [selectedTierIndex, selectTierIndex] = useState(0)
 

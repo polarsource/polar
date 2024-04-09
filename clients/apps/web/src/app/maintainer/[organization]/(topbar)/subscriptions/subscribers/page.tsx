@@ -1,17 +1,14 @@
 import SubscribersPage from '@/components/Subscriptions/SubscribersPage'
 import { getServerSideAPI } from '@/utils/api'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
-import { Metadata, ResolvingMetadata } from 'next'
+import { Metadata } from 'next'
 import { DataTableSearchParams, parseSearchParams } from 'polarkit/datatable'
 
-export async function generateMetadata(
-  {
-    params,
-  }: {
-    params: { organization: string }
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string }
+}): Promise<Metadata> {
   return {
     title: `${params.organization}`, // " | Polar is added by the template"
   }

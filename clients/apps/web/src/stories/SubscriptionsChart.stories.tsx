@@ -20,7 +20,7 @@ export const Default: Story = {
         axisYOptions={{
           ticks: 'month',
           label: null,
-          tickFormat: (t, i) =>
+          tickFormat: (t, _) =>
             `$${getCentsInDollarString(t, undefined, true)}`,
         }}
         data={sampleData.map((d) => ({

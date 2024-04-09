@@ -80,6 +80,7 @@ const EmbedIssue = (props: { src: string }) => {
         is_teams_enabled: false,
         donations_enabled: false,
         public_page_enabled: true,
+        public_donation_timestamps: false,
       },
     },
     pledge_badge_currently_embedded: false,

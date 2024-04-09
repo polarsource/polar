@@ -22,6 +22,7 @@ import type {
   HTTPValidationError,
   ListResourceDonation,
   ListResourcePublicDonation,
+  Platforms,
 } from '../models/index';
 
 export interface DonationsApiCreatePaymentIntentRequest {
@@ -29,7 +30,8 @@ export interface DonationsApiCreatePaymentIntentRequest {
 }
 
 export interface DonationsApiDonationsPublicSearchRequest {
-    toOrganizationId: string;
+    organizationName: string;
+    platform: Platforms;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
@@ -107,18 +109,21 @@ export class DonationsApi extends runtime.BaseAPI {
      * Donations Public Search
      */
     async donationsPublicSearchRaw(requestParameters: DonationsApiDonationsPublicSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePublicDonation>> {
-        if (requestParameters['toOrganizationId'] == null) {
+        if (requestParameters['organizationName'] == null) {
             throw new runtime.RequiredError(
-                'toOrganizationId',
-                'Required parameter "toOrganizationId" was null or undefined when calling donationsPublicSearch().'
+                'organizationName',
+                'Required parameter "organizationName" was null or undefined when calling donationsPublicSearch().'
+            );
+        }
+
+        if (requestParameters['platform'] == null) {
+            throw new runtime.RequiredError(
+                'platform',
+                'Required parameter "platform" was null or undefined when calling donationsPublicSearch().'
             );
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['toOrganizationId'] != null) {
-            queryParameters['to_organization_id'] = requestParameters['toOrganizationId'];
-        }
 
         if (requestParameters['page'] != null) {
             queryParameters['page'] = requestParameters['page'];
@@ -126,6 +131,14 @@ export class DonationsApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['organizationName'] != null) {
+            queryParameters['organization_name'] = requestParameters['organizationName'];
+        }
+
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
         }
 
         if (requestParameters['sorting'] != null) {

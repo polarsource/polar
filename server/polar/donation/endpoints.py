@@ -12,6 +12,7 @@ from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models.organization import Organization
+from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
@@ -223,11 +224,12 @@ async def statistics(
 )
 async def donations_public_search(
     pagination: PaginationParamsQuery,
-    to_organization_id: UUID4,
+    organization_name_platform: OrganizationNamePlatform,
     sorting: SearchSorting,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PublicDonation]:
-    org = await organization_service.get(session, to_organization_id)
+    organization_name, platform = organization_name_platform
+    org = await organization_service.get_by_name(session, platform, organization_name)
     if not org:
         raise ResourceNotFound()
 

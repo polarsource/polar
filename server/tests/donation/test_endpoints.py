@@ -165,7 +165,7 @@ class TestSearch:
             by_user_id=user_second.id,
         )
 
-        params = {"to_organization_id": str(organization.id)}
+        params = {"organization_name": str(organization.name), "platform": "github"}
         response = await client.get("/api/v1/donations/public/search", params=params)
 
         assert response.status_code == 200
@@ -210,7 +210,7 @@ class TestSearch:
         organization.public_donation_timestamps = True
         await save_fixture(organization)
 
-        params = {"to_organization_id": str(organization.id)}
+        params = {"organization_name": str(organization.name), "platform": "github"}
         response = await client.get("/api/v1/donations/public/search", params=params)
 
         assert response.status_code == 200

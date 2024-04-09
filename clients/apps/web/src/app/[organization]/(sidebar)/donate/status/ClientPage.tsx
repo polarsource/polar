@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import SubscriptionTierCelebration from '@/components/Subscriptions/SubscriptionTierCelebration'
 import { useAuth } from '@/hooks/auth'
 import { useSendMagicLink } from '@/hooks/magicLink'
@@ -13,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from 'polarkit/components/ui/atoms/card'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const ClientPage = ({
   organization,
@@ -26,6 +27,10 @@ const ClientPage = ({
 
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)
   const sendMagicLink = useSendMagicLink()
+
+  useEffect(() => {
+    revalidate(`donations:${organization.name}`)
+  }, [organization])
 
   const router = useRouter()
 
@@ -56,7 +61,7 @@ const ClientPage = ({
         <div className="flex justify-center">
           <Card className="w-full md:w-1/2">
             <CardHeader>
-              <CardTitle className="text-xl font-medium">
+              <CardTitle className="text-center text-xl font-medium">
                 Thank you for donating to{' '}
                 {organization.pretty_name || organization.name}!
               </CardTitle>

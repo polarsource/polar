@@ -18,15 +18,19 @@ import {
   IssueFunding,
   Organization,
   OrganizationProfileSettingsUpdate,
+  PublicDonation,
   Repository,
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useUpdateOrganization } from 'polarkit/hooks'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
   organization,
@@ -38,6 +42,7 @@ const ClientPage = ({
   adminOrganizations,
   issues,
   links,
+  donations,
 }: {
   organization: Organization
   posts: Article[]
@@ -48,6 +53,7 @@ const ClientPage = ({
   adminOrganizations: Organization[]
   issues: IssueFunding[]
   links: LinkItem[]
+  donations: PublicDonation[]
 }) => {
   useTrafficRecordPageView({ organization })
 
@@ -160,6 +166,10 @@ const ClientPage = ({
           />
 
           <div className="flex w-full flex-col lg:hidden">
+            <DonationsFeed donations={donations} />
+          </div>
+
+          <div className="flex w-full flex-col lg:hidden">
             <LinksEditor
               links={links}
               onChange={updateLinks}
@@ -182,6 +192,8 @@ const ClientPage = ({
             adminOrganizations={adminOrganizations}
             subscriptionTiers={subscriptionTiers}
           />
+
+          <DonationsFeed donations={donations} />
 
           <LinksEditor
             links={links}
@@ -213,6 +225,71 @@ const GitHubAppUpsell = () => {
           </Button>
         </Link>
       </div>
+    </div>
+  )
+}
+
+interface DonationsFeedProps {
+  donations: PublicDonation[]
+}
+
+const DonationsFeed = ({ donations }: DonationsFeedProps) => {
+  const getDonorName = (donation: PublicDonation) => {
+    if (donation.donor) {
+      return 'public_name' in donation.donor
+        ? donation.donor.public_name
+        : donation.donor.name
+    } else {
+      return 'An anonymous donor'
+    }
+  }
+
+  if (donations.length < 1) {
+    return null
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-y-8 md:gap-y-4">
+      <div>
+        <h3 className="text-lg">Donations</h3>
+      </div>
+      <ShadowBoxOnMd className="flex w-full flex-col gap-y-6 md:p-6">
+        {donations.map((donation) => (
+          <div
+            key={donation.id}
+            className={twMerge(
+              'flex w-full flex-row gap-x-4',
+              !donation.message && 'items-center',
+            )}
+          >
+            <Avatar
+              className="h-8 w-8"
+              avatar_url={donation.donor?.avatar_url ?? undefined}
+              name={getDonorName(donation)}
+            />
+            <div className="flex w-full flex-col gap-y-2">
+              <h3 className="text-sm">
+                <span className="font-medium">{getDonorName(donation)}</span>
+                {` donated $${donation.amount.amount / 100}`}
+              </h3>
+              {donation.message && (
+                <p className="dark:bg-polar-700 rounded-lg bg-gray-100 px-3 py-2 text-sm">
+                  {donation.message}
+                </p>
+              )}
+              {donation.created_at && (
+                <span className="dark:text-polar-500 text-xs text-gray-500">
+                  {new Date(donation.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </ShadowBoxOnMd>
     </div>
   )
 }

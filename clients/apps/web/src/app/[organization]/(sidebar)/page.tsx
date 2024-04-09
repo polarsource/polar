@@ -11,7 +11,7 @@ import {
   Repository,
   ResponseError,
 } from '@polar-sh/sdk'
-import type { Metadata, ResolvingMetadata } from 'next'
+import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -28,14 +28,11 @@ const cacheConfig = {
   },
 }
 
-export async function generateMetadata(
-  {
-    params,
-  }: {
-    params: { organization: string }
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string }
+}): Promise<Metadata> {
   let organization: Organization | undefined
   const api = getServerSideAPI()
 

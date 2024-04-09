@@ -1,16 +1,13 @@
 import { getServerSideAPI } from '@/utils/api'
-import { Platforms, SubscriptionTierCreateTypeEnum } from '@polar-sh/sdk'
-import { Metadata, ResolvingMetadata } from 'next'
+import { Platforms } from '@polar-sh/sdk'
+import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
-export async function generateMetadata(
-  {
-    params,
-  }: {
-    params: { organization: string }
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string }
+}): Promise<Metadata> {
   return {
     title: `${params.organization}`, // " | Polar is added by the template"
   }
@@ -18,10 +15,8 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
-  searchParams,
 }: {
   params: { organization: string }
-  searchParams: { type?: SubscriptionTierCreateTypeEnum }
 }) {
   const api = getServerSideAPI()
 

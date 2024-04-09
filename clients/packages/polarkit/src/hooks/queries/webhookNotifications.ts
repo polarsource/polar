@@ -45,7 +45,7 @@ export const useDeleteWebhookNotification: () => UseMutationResult<
         id: variables.id,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({ queryKey: ['webhookNotifications'] })
     },
   })
@@ -62,7 +62,7 @@ export const useCreateWebhookNotification: () => UseMutationResult<
         webhookIntegrationCreate: variables,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({ queryKey: ['webhookNotifications'] })
     },
   })

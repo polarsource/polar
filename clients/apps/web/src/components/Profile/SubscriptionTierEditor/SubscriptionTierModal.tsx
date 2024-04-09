@@ -1,13 +1,12 @@
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { CloseOutlined } from '@mui/icons-material'
-import { Organization, SubscriptionTier } from '@polar-sh/sdk'
+import { SubscriptionTier } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 
 export interface SubscriptionTiersModalProps {
   subscriptionTiers: SubscriptionTier[]
   selectedSubscriptionTiers: SubscriptionTier[]
-  organization: Organization
   hideModal: () => void
   setSubscriptionTiers: (
     producer: (subscriptionTiers: SubscriptionTier[]) => SubscriptionTier[],
@@ -17,7 +16,6 @@ export interface SubscriptionTiersModalProps {
 export const SubscriptionTiersModal = ({
   subscriptionTiers,
   selectedSubscriptionTiers,
-  organization,
   hideModal,
   setSubscriptionTiers,
 }: SubscriptionTiersModalProps) => {

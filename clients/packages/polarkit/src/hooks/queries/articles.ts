@@ -126,7 +126,7 @@ export const useCreateArticle = (): UseMutationResult<
             : undefined,
         },
       }),
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['article', 'organization', result.organization.name],
       })
@@ -151,7 +151,7 @@ export const useUpdateArticle = () =>
             : undefined,
         },
       }),
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['article', 'organization', result.organization.name],
       })
@@ -173,7 +173,7 @@ export const useDeleteArticle = () =>
       api.articles._delete({
         id: variables.id,
       }),
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['article'],
       })

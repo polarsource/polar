@@ -172,7 +172,6 @@ const twConfig = {
 }
 
 const renderArticle = async (
-  req: NextRequest,
   articleId: string,
   injectMagicLinkToken?: string,
   unsubscribeLink?: string,
@@ -353,14 +352,14 @@ const renderArticle = async (
 }
 
 export async function GET(
-  req: NextRequest,
+  _: NextRequest,
   {
     params,
   }: {
     params: { id: string }
   },
 ): Promise<NextResponse> {
-  return renderArticle(req, params.id)
+  return renderArticle(params.id)
 }
 
 export async function POST(
@@ -379,5 +378,5 @@ export async function POST(
 
   const unsubscribeLink = input ? input['unsubscribe_link'] : undefined
 
-  return renderArticle(req, params.id, injectMagicLinkToken, unsubscribeLink)
+  return renderArticle(params.id, injectMagicLinkToken, unsubscribeLink)
 }

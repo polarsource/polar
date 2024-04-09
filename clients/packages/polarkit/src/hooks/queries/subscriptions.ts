@@ -70,7 +70,7 @@ export const useUpdateSubscriptionTier: (orgName?: string) => UseMutationResult<
         subscriptionTierUpdate,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['subscriptionTiers', 'id', result.id],
       })
@@ -88,7 +88,7 @@ export const useCreateSubscriptionTier = (orgName?: string) =>
         subscriptionTierCreate,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['subscriptionTiers', 'organization', orgName],
       })
@@ -102,7 +102,7 @@ export const useArchiveSubscriptionTier = (orgName?: string) =>
         id,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['subscriptionTiers', 'id', variables.id],
       })
@@ -156,7 +156,7 @@ export const useUpdateSubscriptionBenefit = (orgName?: string) =>
         subscriptionBenefitUpdate,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['subscriptionBenefits', 'id', result.id],
       })
@@ -185,7 +185,7 @@ export const useUpdateSubscriptionTierBenefits = (orgName?: string) =>
         subscriptionTierBenefitsUpdate,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['subscriptionTiers', 'id', result.id],
       })
@@ -203,7 +203,7 @@ export const useCreateSubscriptionBenefit = (orgName?: string) =>
         subscriptionBenefitCreate,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['subscriptionBenefits', 'id', result.id],
       })
@@ -225,7 +225,7 @@ export const useDeleteSubscriptionBenefit = (orgName?: string) =>
         id,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['subscriptionBenefits', 'id', variables.id],
       })
@@ -275,7 +275,7 @@ export const useCreateFreeSubscription = () =>
         },
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['userSubscriptions'],
       })

@@ -5,14 +5,7 @@ import { api } from 'polarkit'
 
 export default async function Page({
   searchParams,
-  params,
 }: {
-  params: {
-    organization: string
-    repo: string
-    number: string
-    payment_intent_id: string
-  }
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
   const paymentIntentId = searchParams['payment_intent_id']

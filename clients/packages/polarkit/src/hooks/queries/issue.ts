@@ -32,7 +32,7 @@ export const useIssueAddPolarBadge: () => UseMutationResult<
     mutationFn: (variables: { id: string }) => {
       return api.issues.addPolarBadge(variables)
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       updateIssuesCache(result)
     },
   })
@@ -42,7 +42,7 @@ export const useIssueRemovePolarBadge = () =>
     mutationFn: (variables: { id: string }) => {
       return api.issues.removePolarBadge(variables)
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       updateIssuesCache(result)
     },
   })
@@ -86,7 +86,7 @@ export const useUpdateIssue = () =>
         },
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
       updateIssuesCache(result)
     },
   })
@@ -268,7 +268,7 @@ export const useIssueMarkConfirmed = () =>
         },
       })
     },
-    onSuccess: async (result, variables, ctx) => {
+    onSuccess: async (result, _variables, _ctx) => {
       updateIssuesCache(result)
     },
   })

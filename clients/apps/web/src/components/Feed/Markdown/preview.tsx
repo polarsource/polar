@@ -9,7 +9,7 @@ export const previewOpts = {
     ...markdownOpts.overrides,
     p: (args: any) => <>{args.children} </>, // Note the space
     div: (args: any) => <>{args.children} </>, // Note the space
-    img: (args: any) => <></>,
+    img: () => <></>,
     a: (args: any) => <>{args.children}</>,
     strong: (args: any) => <>{args.children}</>,
     em: (args: any) => <>{args.children}</>,

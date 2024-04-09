@@ -75,7 +75,6 @@ export const ProjectsEditor = ({
               featuredRepositories={featuredProjects}
               setFeaturedProjects={updateItems}
               repositories={repositories}
-              organization={organization}
               hideModal={hide}
             />
           }
@@ -118,7 +117,7 @@ export const ProjectsEditor = ({
             )}
           </div>
           <div className="-mx-4 flex flex-row justify-start gap-6 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:flex-col md:gap-6 md:p-0 xl:grid-cols-2">
-            {featuredProjects.map((project, i) => (
+            {featuredProjects.map((project) => (
               <DraggableProjectCard
                 className="w-[80%] shrink-0 md:w-full"
                 key={project.id}
@@ -151,7 +150,6 @@ export const ProjectsEditor = ({
               featuredRepositories={featuredProjects}
               setFeaturedProjects={updateItems}
               repositories={repositories}
-              organization={organization}
               hideModal={hide}
             />
           }

@@ -2,7 +2,6 @@ import { Modal } from '@/components/Modal'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { LanguageOutlined } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import { twMerge } from 'tailwind-merge'
 import { useModal } from '../../Modal/useModal'
@@ -17,7 +16,6 @@ export interface Link {
 }
 
 export interface LinksEditorProps {
-  organization: Organization
   links: { opengraph: OgObject; url: string }[]
   onChange: (organizations: Link[]) => void
   disabled?: boolean
@@ -25,7 +23,6 @@ export interface LinksEditorProps {
 }
 
 export const LinksEditor = ({
-  organization,
   links,
   onChange,
   disabled,
@@ -72,7 +69,6 @@ export const LinksEditor = ({
           modalContent={
             <LinksModal
               links={selectedLinks}
-              organization={organization}
               setLinks={updateItems}
               hideModal={hide}
             />
@@ -141,7 +137,6 @@ export const LinksEditor = ({
           modalContent={
             <LinksModal
               links={selectedLinks}
-              organization={organization}
               setLinks={updateItems}
               hideModal={hide}
             />

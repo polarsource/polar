@@ -16,6 +16,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectTriggerBase,
 } from 'polarkit/components/ui/atoms/select'
 import {
   useListAllOrganizations,
@@ -24,7 +25,6 @@ import {
 } from 'polarkit/hooks'
 import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useCallback, useMemo, useState } from 'react'
-import { SelectTriggerBase } from '../../../../../packages/polarkit/src/components/ui/atoms/Select'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 
 const buttonClasses =

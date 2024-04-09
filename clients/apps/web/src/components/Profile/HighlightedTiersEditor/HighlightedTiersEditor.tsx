@@ -47,8 +47,7 @@ export const HighlightedTiersEditor = ({
 
   const highlightedTiers = useMemo(
     () =>
-      subscriptionTiers?.filter(({ type, is_highlighted }) => is_highlighted) ??
-      [],
+      subscriptionTiers?.filter(({ is_highlighted }) => is_highlighted) ?? [],
     [subscriptionTiers],
   )
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =

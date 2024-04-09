@@ -280,7 +280,7 @@ const BadgeSetup = ({
           <div className="flex flex-col space-y-4 p-5">
             <BadgeMessageForm
               value={settings.message || ''}
-              onUpdateMessage={async (value: string) => {}}
+              onUpdateMessage={async (_value: string) => {}}
               onUpdateFundingGoal={async () => {}}
               showUpdateButton={false}
               showAmountRaised={settings.show_amount}

@@ -29,7 +29,7 @@ export const useUserPreferencesMutation: () => UseMutationResult<
         userUpdateSettings: variables.userUpdateSettings,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({ queryKey: ['user'] })
     },
   })
@@ -50,7 +50,7 @@ export const useCreatePersonalAccessToken = () =>
         },
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({ queryKey: ['personalAccessTokens'] })
     },
   })
@@ -62,7 +62,7 @@ export const useDeletePersonalAccessToken = () =>
         id: variables.id,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({ queryKey: ['personalAccessTokens'] })
     },
   })
@@ -72,7 +72,7 @@ export const useMaintainerUpgrade = () =>
     mutationFn: () => {
       return api.users.maintainerUpgrade()
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries()
     },
   })

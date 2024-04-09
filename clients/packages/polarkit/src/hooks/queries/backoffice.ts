@@ -65,7 +65,7 @@ export const useBackofficePledgeRewardTransfer: () => UseMutationResult<
         },
       })
     },
-    onSuccess: async (result, variables, ctx) => {
+    onSuccess: async (_result, _variables, _ctx) => {
       await invalidateBackofficePledges()
     },
   })
@@ -77,7 +77,7 @@ export const useBackofficePledgeMarkDisputed = () =>
         pledgeId: variables.pledgeId,
       })
     },
-    onSuccess: async (result, variables, ctx) => {
+    onSuccess: async (_result, _variables, _ctx) => {
       await invalidateBackofficePledges()
     },
   })
@@ -98,7 +98,7 @@ export const useBackofficePledgeCreateInvoice = () =>
         pledgeId: variables.pledgeId,
       })
     },
-    onSuccess: async (result, variables, ctx) => {
+    onSuccess: async (_result, _variables, _ctx) => {
       await invalidateBackofficePledges()
     },
   })

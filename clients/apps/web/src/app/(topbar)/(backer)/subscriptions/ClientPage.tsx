@@ -255,10 +255,7 @@ interface BenefitContextWidgetProps {
   subscription: SubscriptionSubscriber
 }
 
-const GitHubRepoWidget = ({
-  benefit,
-  subscription,
-}: BenefitContextWidgetProps) => {
+const GitHubRepoWidget = ({ benefit }: BenefitContextWidgetProps) => {
   if (benefit.type !== 'github_repository') {
     return <></>
   }

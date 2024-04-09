@@ -74,7 +74,7 @@ export const useSyncOrganizationMembers = () =>
         organizationId: variables.id,
       }),
     retry: defaultRetry,
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['organizationMembers', variables.id],
       })
@@ -113,7 +113,7 @@ export const useUpdateOrganizationBadgeSettings: () => UseMutationResult<
         organizationBadgeSettingsUpdate: variables.settings,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['organizationBadgeSettings', variables.id],
       })
@@ -178,7 +178,7 @@ export const useUpdateOrganization = () =>
         organizationUpdate: variables.settings,
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (result, variables, _ctx) => {
       updateOrgsCache(result)
 
       queryClient.invalidateQueries({

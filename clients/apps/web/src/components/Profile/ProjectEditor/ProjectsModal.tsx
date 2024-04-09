@@ -1,7 +1,7 @@
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
-import { Organization, Platforms, Repository } from '@polar-sh/sdk'
+import { Platforms, Repository } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -14,7 +14,6 @@ export interface ProfileModalProps {
   repositories: Repository[]
   featuredRepositories: Repository[]
   setFeaturedProjects: (producer: (repos: Repository[]) => Repository[]) => void
-  organization: Organization
   hideModal: () => void
 }
 
@@ -22,7 +21,6 @@ export const ProjectsModal = ({
   repositories,
   featuredRepositories,
   setFeaturedProjects,
-  organization,
   hideModal,
 }: ProfileModalProps) => {
   const [orgAndRepo, setOrgAndRepo] = useState('')
@@ -151,7 +149,7 @@ const SearchedProjectRow = ({
       </div>
       <Button
         className="h-6 w-6"
-        onClick={(e) => onRemove(repository)}
+        onClick={() => onRemove(repository)}
         variant="secondary"
         size="icon"
       >

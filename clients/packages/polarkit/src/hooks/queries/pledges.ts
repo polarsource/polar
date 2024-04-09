@@ -84,7 +84,7 @@ export const useDetachPaymentMethodMutation: () => UseMutationResult<
     mutationFn: (variables: { id: string }) => {
       return api.paymentMethods.detach(variables)
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({ queryKey: ['paymentMethods'] })
     },
   })

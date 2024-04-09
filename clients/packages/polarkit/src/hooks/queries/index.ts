@@ -85,7 +85,7 @@ export const useNotificationsMarkRead: () => UseMutationResult<
         },
       })
     },
-    onSuccess: (result, variables, ctx) => {
+    onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
   })

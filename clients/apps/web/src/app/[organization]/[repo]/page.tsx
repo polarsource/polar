@@ -13,7 +13,7 @@ import {
   Repository,
   ResponseError,
 } from '@polar-sh/sdk'
-import { Metadata, ResolvingMetadata } from 'next'
+import { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
@@ -26,14 +26,11 @@ const cacheConfig = {
   },
 }
 
-export async function generateMetadata(
-  {
-    params,
-  }: {
-    params: { organization: string; repo: string }
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string; repo: string }
+}): Promise<Metadata> {
   let organization: Organization | undefined
   let repository: Repository | undefined
 

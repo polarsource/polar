@@ -394,7 +394,7 @@ const Issue = ({ issue }: { issue: Issue }) => {
       <FormField
         control={control}
         name="issue_id"
-        render={({ field }) => (
+        render={() => (
           <FormItem className="flex flex-col items-start justify-between">
             <div className="flex flex-col gap-y-2">
               <FormLabel className="dark:text-polar-50 text-gray-950">

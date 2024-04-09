@@ -1,5 +1,4 @@
 import { CloseOutlined } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -8,17 +7,11 @@ import { Link } from './LinksEditor'
 
 export interface LinksModalProps {
   links: Link[]
-  organization: Organization
   hideModal: () => void
   setLinks: (producer: (links: Link[]) => Link[]) => void
 }
 
-export const LinksModal = ({
-  links,
-  organization,
-  hideModal,
-  setLinks,
-}: LinksModalProps) => {
+export const LinksModal = ({ links, hideModal, setLinks }: LinksModalProps) => {
   const [url, setUrl] = useState('')
   const [urlNotValid, setUrlNotValid] = useState(false)
 
@@ -75,7 +68,7 @@ export const LinksModal = ({
             }}
             placeholder="https://..."
           />
-          <Button onClick={(e) => addLink(url)}>Add</Button>
+          <Button onClick={() => addLink(url)}>Add</Button>
         </div>
         {urlNotValid && <Banner color="red">URL is not valid</Banner>}
       </div>
@@ -129,7 +122,7 @@ const LinkRow = ({
       <div className="flex-shrink-0">
         <Button
           className="h-6 w-6"
-          onClick={(e) => onRemove(link)}
+          onClick={() => onRemove(link)}
           variant="secondary"
           size="icon"
         >

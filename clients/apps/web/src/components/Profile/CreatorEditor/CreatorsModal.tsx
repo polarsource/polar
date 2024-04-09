@@ -60,7 +60,7 @@ export const CreatorsModal = ({
       .then((org) => {
         setCreators((creators) => [...creators, org])
       })
-      .catch((e) => {
+      .catch(() => {
         toggleOrgNotFound(true)
       })
   }
@@ -98,7 +98,7 @@ export const CreatorsModal = ({
             onChange={(e) => setUsername(e.target.value)}
             placeholder="GitHub Username or Organization Name"
           />
-          <Button onClick={(e) => addCreator(username)}>Add</Button>
+          <Button onClick={() => addCreator(username)}>Add</Button>
         </div>
         {showOrgNotFound && (
           <Banner color="red">User or Organization not found</Banner>
@@ -174,7 +174,7 @@ const CreatorRow = ({
       </div>
       <Button
         className="h-6 w-6"
-        onClick={(e) => onRemove(creator)}
+        onClick={() => onRemove(creator)}
         variant="secondary"
         size="icon"
       >

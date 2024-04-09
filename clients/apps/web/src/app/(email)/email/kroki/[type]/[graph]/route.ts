@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { CONFIG } from 'polarkit'
 
 export async function GET(
-  request: NextRequest,
+  _: NextRequest,
   { params: { graph, type } }: { params: { type: string; graph: string } },
 ) {
   /*

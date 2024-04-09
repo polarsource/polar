@@ -7,7 +7,7 @@ import {
   ResponseError,
   RewardsSummary,
 } from '@polar-sh/sdk'
-import { Metadata, ResolvingMetadata } from 'next'
+import { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -16,14 +16,11 @@ const cacheConfig = {
   cache: 'no-store',
 } as const
 
-export async function generateMetadata(
-  {
-    params,
-  }: {
-    params: { organization: string; repo: string; number: string }
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string; repo: string; number: string }
+}): Promise<Metadata> {
   let issue: Issue | undefined
 
   try {

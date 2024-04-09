@@ -10,7 +10,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (
-        pathname: string,
+        _: string, // pathname
         /* clientPayload?: string, */
       ) => {
         const user = await getServerSideAPI().users.getAuthenticated()

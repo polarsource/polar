@@ -31,9 +31,15 @@
     "isolatedModules": true,
   
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedParameters": true,
     "preserveWatchOutput": true,
     "skipLibCheck": true,
+
+    "allowUnreachableCode": false,
+
+    // TODO
+    "noUncheckedIndexedAccess": null,
+
     "target": "ES6",
     "jsx": "preserve",
     "plugins": [

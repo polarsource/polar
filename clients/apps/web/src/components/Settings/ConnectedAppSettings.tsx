@@ -1,5 +1,5 @@
 import { useAuth, useDiscordAccount } from '@/hooks'
-import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
+import { OAuthAccountRead } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { getUserDiscordAuthorizeURL } from 'polarkit/auth'
 import {
@@ -37,13 +37,11 @@ const ConnectedApp: React.FC<ConnectedAppProps> = ({
 }
 
 interface DiscordConnectedAppProps {
-  user: UserRead
   oauthAccount: OAuthAccountRead | undefined
   returnTo: string
 }
 
 const DiscordConnectedApp: React.FC<DiscordConnectedAppProps> = ({
-  user,
   oauthAccount,
   returnTo,
 }) => {
@@ -122,7 +120,6 @@ const ConnectedAppSettings = () => {
         <ShadowListGroup>
           <ShadowListGroup.Item>
             <DiscordConnectedApp
-              user={currentUser}
               oauthAccount={discordAccount}
               returnTo={pathname || '/feed'}
             />

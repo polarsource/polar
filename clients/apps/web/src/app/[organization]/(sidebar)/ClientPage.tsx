@@ -161,7 +161,6 @@ const ClientPage = ({
 
           <div className="flex w-full flex-col lg:hidden">
             <LinksEditor
-              organization={organization}
               links={links}
               onChange={updateLinks}
               disabled={!isAdmin}
@@ -185,7 +184,6 @@ const ClientPage = ({
           />
 
           <LinksEditor
-            organization={organization}
             links={links}
             onChange={updateLinks}
             disabled={!isAdmin}

@@ -299,7 +299,6 @@ const ClientPage = ({
             )}
 
             <LinksEditor
-              organization={organization}
               links={links}
               onChange={updateLinks}
               disabled={!isAdmin}

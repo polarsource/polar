@@ -79,7 +79,7 @@ export const BadgeRepositories = ({
               showIndividualBadgeLabel={badgeLabels.size > 1}
               onEnableBadgeChange={
                 // noop
-                (badge: boolean) => {}
+                (_badge: boolean) => {}
               }
             />
           </li>

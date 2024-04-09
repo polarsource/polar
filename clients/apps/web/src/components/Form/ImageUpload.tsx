@@ -116,7 +116,7 @@ const ImageUpload = ({
                   errorMessage ? 'border-red-500' : '',
                   !height && !width ? 'h-32 w-32' : '',
                 )}
-                onClick={(e) => {
+                onClick={() => {
                   inputFileRef.current?.click()
                 }}
                 onLoad={onLoad}
@@ -131,7 +131,7 @@ const ImageUpload = ({
             </div>
           ) : (
             <div
-              onClick={(e) => {
+              onClick={() => {
                 inputFileRef.current?.click()
               }}
               className={twMerge(

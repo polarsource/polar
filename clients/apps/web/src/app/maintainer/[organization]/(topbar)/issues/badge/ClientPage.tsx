@@ -34,7 +34,7 @@ export default function ClientPage() {
                   org={org}
                   showControls={true}
                   setShowControls={() => true}
-                  setSyncIssuesCount={(value: number) => true}
+                  setSyncIssuesCount={(_: number) => true}
                   isSettingPage={true}
                 />
               </>

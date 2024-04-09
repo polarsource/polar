@@ -4,11 +4,11 @@ import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
+import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/subscriptions'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
 import { useListAdminOrganizations } from 'polarkit/hooks'
-import { hasRecurringInterval } from 'polarkit/subscriptions'
 import React, { useMemo } from 'react'
 
 interface OrganizationSubscriptionsPublicPageProps {

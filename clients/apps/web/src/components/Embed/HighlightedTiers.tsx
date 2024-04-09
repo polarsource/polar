@@ -6,10 +6,10 @@ import { LogoIcon } from 'polarkit/components/brand'
 import { formatCurrencyAndAmount } from 'polarkit/money'
 import {
   getRecurringBillingLabel,
+  getSubscriptionColorByType,
   getSubscriptionTierAudience,
   getSubscriptionTierPrice,
-} from 'polarkit/subscriptions'
-import { getSubscriptionColorByType } from '../Subscriptions/utils'
+} from '../Subscriptions/utils'
 
 const HighlightedTier = ({
   tier,
@@ -22,6 +22,9 @@ const HighlightedTier = ({
 }) => {
   const audience = getSubscriptionTierAudience(tier.type)
   const price = getSubscriptionTierPrice(tier, recurringInterval)
+  if (!price) {
+    return null
+  }
   const recurringBillingLabel = getRecurringBillingLabel(
     price.recurring_interval,
   )

@@ -1,13 +1,13 @@
 import {
+  getRecurringBillingLabel,
+  getSubscriptionTierAudience,
+  getSubscriptionTierPrice,
+} from '@/components/Subscriptions/utils'
+import {
   SubscriptionTier,
   SubscriptionTierPriceRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
-import {
-  getRecurringBillingLabel,
-  getSubscriptionTierAudience,
-  getSubscriptionTierPrice,
-} from 'polarkit/subscriptions'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 
 export const useRecurringInterval = (

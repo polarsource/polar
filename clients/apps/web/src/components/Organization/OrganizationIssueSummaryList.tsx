@@ -1,7 +1,4 @@
-import {
-  ArrowForwardOutlined,
-  FavoriteBorderOutlined,
-} from '@mui/icons-material'
+import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { IssueFunding, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {

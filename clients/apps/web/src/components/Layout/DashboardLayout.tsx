@@ -55,11 +55,7 @@ const DashboardSidebar = () => {
   const currentOrg = orgContext?.organization
   const orgs = orgContext?.memberOrganizations ?? []
   const adminOrgs = orgContext?.adminOrganizations ?? []
-  const personalOrg = orgContext?.personalOrganization
   const isOrgAdmin = adminOrgs.some((o) => currentOrg && o.id === currentOrg.id)
-  const isPersonalOrg = Boolean(
-    currentOrg && personalOrg && currentOrg.id === personalOrg.id,
-  )
 
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin

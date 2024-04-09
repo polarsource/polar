@@ -191,7 +191,7 @@ export const BadgePromotionModal = (props: {
   onUpdateFundingGoal: (amount: CurrencyAmount) => Promise<void>
   defaultTab?: string
 }) => {
-  const { isShown, toggle } = props
+  const { toggle } = props
 
   const clickRemoveBadge = async () => {
     await props.onRemoveBadge()

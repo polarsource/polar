@@ -4,9 +4,6 @@ import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useCallback, useEffect, useState } from 'react'
 
 const createAreaGradient = (id: string) => {
-  // Create an SVG element
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-
   // Create a <defs> element
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
 

@@ -4,7 +4,6 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { getValidationErrorsMap } from 'polarkit/api/errors'
@@ -27,8 +26,6 @@ const AccountCreateModal = ({
   accountTypes: AccountType[]
   returnPath: string
 }) => {
-  const router = useRouter()
-
   const [accountType, setAccountType] = useState<AccountType>(
     AccountType.STRIPE,
   )

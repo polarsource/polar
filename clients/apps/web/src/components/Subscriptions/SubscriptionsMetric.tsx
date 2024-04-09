@@ -129,13 +129,6 @@ export const EarningsMetric: React.FC<EarningsMetricProps> = ({
   )
 }
 
-interface DonationsEarningsMetricProps {
-  data: number
-  dataDate?: Date
-  previousData?: number
-  hasPayoutAccount: boolean
-}
-
 export const DonationsEarningsMetric: React.FC<EarningsMetricProps> = ({
   data,
   dataDate,

@@ -9,7 +9,6 @@ import {
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { captureEvent } from '@/utils/posthog'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { EnvelopeIcon, EyeIcon } from '@heroicons/react/24/outline'
@@ -211,8 +210,6 @@ const PostItem = (post: Article) => {
   const ref = useRef<HTMLAnchorElement>(null)
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
-  const image = firstImageUrlFromMarkdown(post.body)
-
   const href = `/maintainer/${currentOrg?.name}/posts/${post.slug}`
 
   return (

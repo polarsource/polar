@@ -73,12 +73,11 @@ const WebhookNotificationSettings = (props: { org: Organization }) => {
       return
     }
 
-    const created = await createWebhook.mutateAsync({
+    await createWebhook.mutateAsync({
       url: webhookUrl,
       organization_id: props.org.id,
       integration: integration,
     })
-    // setCreatedToken(created)
     setWebhookUrl('')
   }
 

@@ -5,7 +5,6 @@ import {
   PanoramaOutlined,
 } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
-import { PutBlobResult } from '@vercel/blob'
 import { upload } from '@vercel/blob/client'
 import Image from 'next/image'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -26,7 +25,6 @@ export const CoverEditor = ({
   disabled,
 }: CoverEditorProps) => {
   const inputFileRef = useRef<HTMLInputElement>(null)
-  const [blob, setBlob] = useState<PutBlobResult | null>(null)
   const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>(
     coverImageUrl,
   )
@@ -47,7 +45,6 @@ export const CoverEditor = ({
         access: 'public',
         handleUploadUrl: '/api/blob/upload',
       })
-      setBlob(newBlob)
       onChange(newBlob.url)
     } finally {
       setIsLoading(false)

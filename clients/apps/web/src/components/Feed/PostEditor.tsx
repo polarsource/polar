@@ -144,8 +144,7 @@ const Editor = ({
   disabled,
   article,
 }: EditorProps) => {
-  const { titleRef, bodyRef, insertTextAtCursor } =
-    useContext(PostEditorContext)
+  const { titleRef, bodyRef } = useContext(PostEditorContext)
 
   const onTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Move focus to body

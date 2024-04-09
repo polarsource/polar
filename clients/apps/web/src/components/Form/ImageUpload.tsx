@@ -2,7 +2,6 @@
 
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { PhotoIcon } from '@heroicons/react/24/outline'
-import { type PutBlobResult } from '@vercel/blob'
 import { upload } from '@vercel/blob/client'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -21,7 +20,7 @@ const ImageUpload = ({
   width?: number
 }) => {
   const inputFileRef = useRef<HTMLInputElement>(null)
-  const [blob, setBlob] = useState<PutBlobResult | null>(null)
+
   const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>(
     defaultValue,
   )
@@ -45,7 +44,6 @@ const ImageUpload = ({
         access: 'public',
         handleUploadUrl: '/api/blob/upload',
       })
-      setBlob(newBlob)
       onUploaded(newBlob.url)
     } catch (e) {
       setErrorMessage('Failed to upload image')

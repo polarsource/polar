@@ -12,8 +12,7 @@ interface SubscriptionTierPriceLabelProps {
 const SubscriptionTierPriceLabel: React.FC<SubscriptionTierPriceLabelProps> = ({
   price,
 }) => {
-  const { recurring_interval, price_amount, price_currency, is_archived } =
-    price
+  const { recurring_interval, price_amount, price_currency } = price
   const intervalDisplay = useMemo(() => {
     switch (recurring_interval) {
       case SubscriptionTierPriceRecurringInterval.MONTH:

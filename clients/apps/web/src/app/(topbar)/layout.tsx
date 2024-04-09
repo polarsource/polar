@@ -4,12 +4,6 @@ import { getServerSideAPI } from '@/utils/api'
 import { ListResourceOrganization, UserRead } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 
-const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
-}
-
 export default async function Layout({
   children,
 }: {

@@ -606,7 +606,6 @@ const MaintainerAccountReviewed = ({
 }: {
   n: MaintainerAccountReviewedNotification
 }) => {
-  const { payload } = n
   return (
     <Item n={n} iconClasses="bg-green-200 text-green-500">
       {{

@@ -30,19 +30,6 @@ const pledge: Pledge = {
   issue: issue,
 }
 
-let all_pledge_states: Pledge[] = Object.values(PledgeState).map(
-  (s): Pledge => {
-    return {
-      ...pledge,
-      state: s,
-      issue: {
-        ...pledge.issue,
-        title: `${pledge.issue.title} (${s})`,
-      },
-    }
-  },
-)
-
 const reward: Reward = {
   pledge,
   user: {

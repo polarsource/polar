@@ -1,7 +1,6 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
 import {
   ListResourceSubscriptionSummary,
-  Organization,
   SubscriptionSummary,
 } from '@polar-sh/sdk'
 import { getServerURL } from 'polarkit/api/url'
@@ -20,19 +19,6 @@ const getSubscriptions = async (
   })
   const data = (await response.json()) as ListResourceSubscriptionSummary
   return [data.items || [], data.pagination.total_count]
-}
-
-const getOrganization = async (org: string): Promise<Organization> => {
-  let url = `${getServerURL()}/api/v1/organizations/lookup?platform=github&organization_name=${org}`
-
-  return await fetch(url, {
-    method: 'GET',
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
-  })
 }
 
 const renderBadge = async (

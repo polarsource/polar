@@ -8,8 +8,6 @@ import {
   useRef,
 } from 'react'
 
-const uploadingText = 'Uploading...'
-
 export interface EditorHelpers {
   bodyRef: React.RefObject<HTMLTextAreaElement>
   titleRef: React.RefObject<HTMLInputElement>
@@ -57,15 +55,6 @@ export const useEditorHelpers = (
       if (ref.current) {
         const cursorPosition = ref.current.selectionStart
 
-        const textBeforeCursorPosition = ref.current.value.substring(
-          0,
-          cursorPosition,
-        )
-        const textAfterCursorPosition = ref.current.value.substring(
-          cursorPosition,
-          ref.current.value.length,
-        )
-
         ref.current.focus()
         document.execCommand('insertText', false, text)
 
@@ -84,7 +73,7 @@ export const useEditorHelpers = (
     ([before, after]: [string, string], fireOnChange = true) => {
       const textSelection = getTextSelection()
       if (ref.current && textSelection) {
-        const [textBeforeSelection, textInSelection, textAfterSelection] =
+        const [_textBeforeSelection, textInSelection, _textAfterSelection] =
           textSelection
 
         const selectionStart = ref.current.selectionStart

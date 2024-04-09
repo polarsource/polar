@@ -1,5 +1,5 @@
+import { getCentsInDollarString } from '@/utils/money'
 import { Issue } from '@polar-sh/sdk'
-import { getCentsInDollarString } from 'polarkit/money'
 
 const OpenGraphImageFunding = (props: {
   org_name: string

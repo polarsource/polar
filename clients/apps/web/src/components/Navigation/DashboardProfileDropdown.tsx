@@ -2,10 +2,10 @@
 
 import { useGitHubAccount, useLogout } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { useOutsideClick } from '@/utils/useOutsideClick'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
 import Link from 'next/link'
-import { useOutsideClick } from 'polarkit/utils'
 import { useContext, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../hooks'

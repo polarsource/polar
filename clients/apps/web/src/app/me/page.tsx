@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api'
+import { organizationPageLink } from '@/utils/nav'
 import { redirect } from 'next/navigation'
-import { organizationPageLink } from 'polarkit/utils/nav'
 
 export default async function Route() {
   const api = getServerSideAPI()

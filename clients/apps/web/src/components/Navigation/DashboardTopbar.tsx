@@ -2,10 +2,10 @@
 
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import {
   PropsWithChildren,
   useCallback,

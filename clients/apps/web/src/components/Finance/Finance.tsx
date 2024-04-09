@@ -1,3 +1,4 @@
+import { getCentsInDollarString } from '@/utils/money'
 import {
   Organization,
   Pledge,
@@ -6,7 +7,6 @@ import {
   RewardState,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { getCentsInDollarString } from 'polarkit/money'
 import { twMerge } from 'tailwind-merge'
 import AccountBanner from '../Transactions/AccountBanner'
 import { default as ListPledges } from './ListPledges'

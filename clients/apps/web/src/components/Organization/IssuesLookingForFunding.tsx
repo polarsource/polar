@@ -1,5 +1,6 @@
 'use client'
 
+import { organizationPageLink } from '@/utils/nav'
 import {
   FavoriteBorderOutlined,
   FilterList,
@@ -30,7 +31,6 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { useSearchFunding } from 'polarkit/hooks'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import {
   ChangeEvent,
   Dispatch,

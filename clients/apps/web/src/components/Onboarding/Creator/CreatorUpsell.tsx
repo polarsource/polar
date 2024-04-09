@@ -2,6 +2,7 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { DiscordIcon } from '@/components/Subscriptions/utils'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { organizationPageLink } from '@/utils/nav'
 import {
   CloseOutlined,
   DonutLargeOutlined,
@@ -12,7 +13,6 @@ import { Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useOrganizationArticles, useSubscriptionTiers } from 'polarkit/hooks'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const ONBOARDING_MAP_KEY = 'creator_onboarding'

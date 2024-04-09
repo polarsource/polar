@@ -1,3 +1,4 @@
+import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
@@ -22,7 +23,6 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from 'polarkit/datatable'
-import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useMemo } from 'react'
 import SubscriptionTierPill from '../Subscriptions/SubscriptionTierPill'
 

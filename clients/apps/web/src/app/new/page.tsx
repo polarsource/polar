@@ -1,7 +1,7 @@
 import PledgeByLink from '@/components/Pledge/PledgeByLink'
+import { parseGitHubIssueLink } from '@/utils/github'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { parseGitHubIssueLink } from 'polarkit/github'
 
 export const metadata: Metadata = {
   title: 'Create a new pledge',

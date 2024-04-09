@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
-import { getCentsInDollarString } from 'polarkit/money'
+import { getCentsInDollarString } from '@/utils/money'
 
 const meta: Meta<typeof Chart> = {
   title: 'Organisms/Chart',

@@ -3,6 +3,7 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { useRecurringInterval } from '@/hooks/subscriptions'
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowForward } from '@mui/icons-material'
 import {
   Organization,
@@ -16,7 +17,6 @@ import {
   useSubscriptionBenefits,
   useUpdateSubscriptionTierBenefits,
 } from 'polarkit/hooks'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useMemo, useState } from 'react'
 import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
 import SubscriptionTierRecurringIntervalSwitch from '../../Subscriptions/SubscriptionTierRecurringIntervalSwitch'

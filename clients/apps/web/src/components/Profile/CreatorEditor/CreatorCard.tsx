@@ -1,3 +1,4 @@
+import { organizationPageLink } from '@/utils/nav'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined, GitHub } from '@mui/icons-material'
@@ -11,7 +12,6 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 
 export const CreatorCard = ({

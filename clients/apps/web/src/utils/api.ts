@@ -1,6 +1,5 @@
 import { Configuration, HTTPHeaders, PolarAPI } from '@polar-sh/sdk'
 import { cookies } from 'next/headers'
-import { getServerURL } from 'polarkit/api'
 
 export const getServerSideAPI = (token?: string): PolarAPI => {
   let headers: HTTPHeaders | undefined
@@ -31,4 +30,11 @@ export const getServerSideAPI = (token?: string): PolarAPI => {
       headers,
     }),
   )
+}
+
+export const getServerURL = (path?: string): string => {
+  path = path !== undefined ? path : ''
+  const baseURL = process?.env?.NEXT_PUBLIC_API_URL
+  const baseWithPath = `${baseURL}${path}`
+  return baseWithPath
 }

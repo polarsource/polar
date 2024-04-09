@@ -1,10 +1,10 @@
 'use client'
 
+import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 
 interface OrganizationPublicPageNavProps {

@@ -6,12 +6,12 @@ import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/subscriptions'
+import { organizationPageLink } from '@/utils/nav'
 import { ListResourceSubscriptionTier, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useListAdminOrganizations } from 'polarkit/hooks'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

@@ -1,4 +1,5 @@
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { formatStarsNumber } from '@/utils/stars'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
 import { Platforms, Repository } from '@polar-sh/sdk'
@@ -7,7 +8,6 @@ import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { formatStarsNumber } from 'polarkit/utils'
 import { useState } from 'react'
 
 export interface ProfileModalProps {

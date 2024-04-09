@@ -1,9 +1,9 @@
 'use client'
 
+import { organizationPageLink } from '@/utils/nav'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Issue, IssueStateEnum, Label } from '@polar-sh/sdk'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 import IconCounter from './IconCounter'
 import IssueLabel from './IssueLabel'

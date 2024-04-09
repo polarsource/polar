@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { getCentsInDollarString } from '@/utils/money'
 import { CurrencyAmount, Donation, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -17,7 +18,6 @@ import {
   serializeSearchParams,
 } from 'polarkit/datatable'
 import { useSearchDonations } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
 import React from 'react'
 
 interface ClientPageProps {

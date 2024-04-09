@@ -7,6 +7,7 @@ import {
 } from '@mui/icons-material'
 import Link from 'next/link'
 
+import { useOutsideClick } from '@/utils/useOutsideClick'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useOutsideClick } from 'polarkit/utils'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 
 export const BrandingMenu = () => {

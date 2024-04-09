@@ -1,4 +1,6 @@
 import GitMergeIcon from '@/components/Icons/GitMergeIcon'
+import { getCentsInDollarString } from '@/utils/money'
+import { useOutsideClick } from '@/utils/useOutsideClick'
 import {
   Announcement,
   NotificationsOutlined,
@@ -32,8 +34,6 @@ import {
   useNotifications,
   useNotificationsMarkRead,
 } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
-import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SplitRewardModal from '../Finance/SplitRewardModal'

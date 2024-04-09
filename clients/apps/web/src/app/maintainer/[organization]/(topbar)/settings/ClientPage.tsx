@@ -5,6 +5,7 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
+import { getCentsInDollarString } from '@/utils/money'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { CreditBalance, Organization } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
@@ -21,7 +22,6 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { useOrganizationCredits, useUpdateOrganization } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 

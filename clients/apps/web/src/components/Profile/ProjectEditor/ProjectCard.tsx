@@ -1,3 +1,5 @@
+import { organizationPageLink } from '@/utils/nav'
+import { formatStarsNumber } from '@/utils/stars'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { StarIcon } from '@heroicons/react/20/solid'
@@ -12,8 +14,6 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { formatStarsNumber } from 'polarkit/utils'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
 
 export const ProjectCard = ({

@@ -1,3 +1,5 @@
+import { githubPullReqeustUrl } from '@/utils/github'
+import { dateOrString } from '@/utils/time'
 import {
   ExternalGitHubCommitReference,
   ExternalGitHubPullRequestReference,
@@ -6,8 +8,6 @@ import {
   type PullRequestReference,
 } from '@polar-sh/sdk'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import { githubPullReqeustUrl } from 'polarkit/github'
-import { dateOrString } from 'polarkit/utils'
 import { twMerge } from 'tailwind-merge'
 import GitBranchIcon from '../Icons/GitBranchIcon'
 import GitMergeIcon from '../Icons/GitMergeIcon'

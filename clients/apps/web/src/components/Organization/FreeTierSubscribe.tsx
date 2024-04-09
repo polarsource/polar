@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, SubscriptionTier, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -14,7 +15,6 @@ import {
   useSubscriptionTiers,
   useUserSubscriptions,
 } from 'polarkit/hooks'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { Modal } from '../Modal'

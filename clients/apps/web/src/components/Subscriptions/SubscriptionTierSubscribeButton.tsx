@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks'
+import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   Organization,
   SubscriptionTier,
@@ -23,7 +24,6 @@ import {
   useOrganizationSubscriptions,
   useUserSubscriptions,
 } from 'polarkit/hooks'
-import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useCallback, useMemo, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 

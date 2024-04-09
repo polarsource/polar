@@ -1,9 +1,11 @@
 import { prettyCardName, validateEmail } from '@/components/Pledge/payment'
 import { useAuth } from '@/hooks'
+import { githubIssueLink } from '@/utils/github'
 import {
   DonationCreateStripePaymentIntent,
   DonationStripePaymentIntentMutationResponse,
   DonationUpdateStripePaymentIntent,
+  Issue,
   Organization,
   PaymentMethod,
   ResponseError,
@@ -14,6 +16,7 @@ import { loadStripe } from '@stripe/stripe-js/pure'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
+import { generateMarkdownTitle } from 'polarkit/components/Issue'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -47,9 +50,11 @@ type DonateFormState = DonationCreateStripePaymentIntent &
 
 const Checkout = ({
   organization,
+  issue,
   defaultAmount = 1000,
 }: {
   organization: Organization
+  issue: Issue | undefined
   defaultAmount: number
 }) => {
   const [polarPaymentIntent, setPolarPaymentIntent] =
@@ -68,6 +73,7 @@ const Checkout = ({
         setup_future_usage: formState.setup_future_usage,
         on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
         message: formState.message,
+        issue_id: formState.issue_id,
       },
     })
   }
@@ -86,6 +92,7 @@ const Checkout = ({
           setup_future_usage: formState.setup_future_usage,
           on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
           message: formState.message,
+          issue_id: formState.issue_id,
         },
       })
     },
@@ -114,7 +121,8 @@ const Checkout = ({
         formState.setup_future_usage ||
       latestFormSyncedState.current.on_behalf_of_organization_id !==
         formState.on_behalf_of_organization_id ||
-      latestFormSyncedState.current.message !== formState.message
+      latestFormSyncedState.current.message !== formState.message ||
+      latestFormSyncedState.current.issue_id !== formState.issue_id
     ) {
       return true
     }
@@ -195,6 +203,7 @@ const Checkout = ({
       to_organization_id: organization.id,
       amount: { amount: defaultAmount, currency: 'USD' },
       email: currentUser?.email ?? undefined,
+      issue_id: issue ? issue.id : undefined,
     },
   })
 
@@ -236,6 +245,7 @@ const Checkout = ({
             <DonationAmount />
             <Email />
             <Message />
+            {issue ? <Issue issue={issue} /> : null}
 
             {polarPaymentIntent ? (
               <StripeForm
@@ -367,6 +377,40 @@ const Message = () => {
                   {...field}
                   placeholder="Include a personal message"
                 ></Textarea>
+              </div>
+            </FormControl>
+          </FormItem>
+        )}
+      />
+    </>
+  )
+}
+
+const Issue = ({ issue }: { issue: Issue }) => {
+  const { control } = useFormContext<DonationCreateStripePaymentIntent>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="issue_id"
+        render={({ field }) => (
+          <FormItem className="flex flex-col items-start justify-between">
+            <div className="flex flex-col gap-y-2">
+              <FormLabel className="dark:text-polar-50 text-gray-950">
+                Issue
+              </FormLabel>
+              <FormMessage />
+            </div>
+            <FormControl>
+              <div className="flex w-full flex-col gap-2">
+                <span className="font-medium text-gray-800">
+                  {generateMarkdownTitle(issue.title)}
+                </span>
+                <a href={githubIssueLink(issue)}>
+                  {issue.repository.organization.name}/{issue.repository.name}#
+                  {issue.number}
+                </a>
               </div>
             </FormControl>
           </FormItem>

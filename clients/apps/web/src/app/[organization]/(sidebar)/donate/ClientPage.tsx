@@ -1,8 +1,7 @@
 'use client'
-
 import { HighlightedTiersEditor } from '@/components/Profile/HighlightedTiersEditor/HighlightedTiersEditor'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { Organization, SubscriptionTier } from '@polar-sh/sdk'
+import { Issue, Organization, SubscriptionTier } from '@polar-sh/sdk'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import Checkout from './Checkout'
 
@@ -11,11 +10,13 @@ const ClientPage = ({
   adminOrganizations,
   subscriptionTiers,
   defaultAmount,
+  issue,
 }: {
   organization: Organization
   adminOrganizations: Organization[]
   subscriptionTiers: SubscriptionTier[]
   defaultAmount: number
+  issue: Issue | undefined
 }) => {
   useTrafficRecordPageView({ organization: organization })
 
@@ -45,6 +46,7 @@ const ClientPage = ({
               <Checkout
                 organization={organization}
                 defaultAmount={defaultAmount}
+                issue={issue}
               />
             </ShadowBoxOnMd>
           </div>

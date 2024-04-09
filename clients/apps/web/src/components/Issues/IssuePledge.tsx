@@ -10,11 +10,11 @@ import {
   PledgeType,
   PledgesTypeSummaries,
 } from '@polar-sh/sdk'
+import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { FormattedDateTime } from '../ui/atoms'
-import Avatar from '../ui/atoms/Avatar'
 import FundingPill from './FundingPill'
 import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'
@@ -100,7 +100,7 @@ const IssuePledge = (props: Props) => {
               )}
               {confirmable && (
                 <button
-                  className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-400 dark:hover:bg-polar-900 flex items-center gap-2 rounded-md border border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition duration-100 hover:bg-gray-300/50 hover:text-gray-800"
+                  className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-400 dark:hover:bg-polar-900 flex items-center gap-2 rounded-md border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition duration-100 hover:bg-gray-300/50 hover:text-gray-800"
                   onClick={props.onConfirmPledges}
                 >
                   <CheckCircleIcon className="h-6 w-6 text-green-600" />
@@ -116,7 +116,7 @@ const IssuePledge = (props: Props) => {
         <div
           className={twMerge(
             'dark:border-polar-700 border-t',
-            'flex flex-row items-center gap-2 bg-gray-50 bg-white px-6 py-2 text-sm  dark:bg-transparent',
+            'flex flex-row items-center gap-2 bg-white px-6 py-2 text-sm  dark:bg-transparent',
           )}
           key={p.id}
         >

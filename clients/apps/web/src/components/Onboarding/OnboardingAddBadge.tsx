@@ -1,10 +1,11 @@
 import { CONFIG } from 'polarkit'
-import { IconCounter, IssueLabel } from 'polarkit/components/Issue'
 import Button from 'polarkit/components/ui/atoms/button'
+import IconCounter from '../Issues/IconCounter'
+import IssueLabel from '../Issues/IssueLabel'
 
 const OnboardingAddBadge = () => {
   return (
-    <div className="dark:bg-polar-800 dark:ring-polar-700 grid overflow-hidden rounded-2xl bg-white shadow-sm dark:ring-1 lg:grid-cols-2">
+    <div className="dark:bg-polar-800 dark:ring-polar-700 grid overflow-hidden rounded-2xl bg-white shadow-sm lg:grid-cols-2 dark:ring-1">
       <div className="px-6 py-4">
         <h2 className="dark:text-polar-50 font-medium text-gray-900">
           Add the Polar badge to an issue to promote funding.

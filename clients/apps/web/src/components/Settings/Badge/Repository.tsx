@@ -1,7 +1,7 @@
+import IssueLabel from '@/components/Issues/IssueLabel'
 import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { IssueLabel } from 'polarkit/components/Issue'
 import { twMerge } from 'tailwind-merge'
 
 const ProgressText = ({

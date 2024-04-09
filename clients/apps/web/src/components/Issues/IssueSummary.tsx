@@ -3,8 +3,8 @@
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Issue, IssueStateEnum, Label } from '@polar-sh/sdk'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import { organizationPageLink } from 'polarkit/utils/nav'
 import { twMerge } from 'tailwind-merge'
-import { organizationPageLink } from '../../utils/nav'
 import IconCounter from './IconCounter'
 import IssueLabel from './IssueLabel'
 import { generateMarkdownTitle } from './markdown'
@@ -70,7 +70,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <a
-              className="text-md text-nowrap dark:text-polar-50 font-medium"
+              className="text-md dark:text-polar-50 text-nowrap font-medium"
               href={organizationPageLink(
                 organization,
                 `${repository.name}/issues/${number}`,

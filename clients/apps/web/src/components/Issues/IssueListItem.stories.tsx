@@ -22,7 +22,7 @@ import {
   pledgesSummaries,
   user,
 } from 'polarkit/testdata'
-import IssueListItem from '../components/Issues/IssueListItem'
+import IssueListItem from './IssueListItem'
 
 type Story = StoryObj<typeof IssueListItem>
 

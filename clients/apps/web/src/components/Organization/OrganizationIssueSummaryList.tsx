@@ -1,15 +1,13 @@
 import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { IssueFunding, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
-import {
-  IssueActivityBox,
-  IssueFundingDetails,
-  IssueSummary,
-} from 'polarkit/components/Issue'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { Fragment } from 'react'
+import IssueActivityBox from '../Issues/IssueActivityBox'
+import IssueFundingDetails from '../Issues/IssueFundingDetails'
+import IssueSummary from '../Issues/IssueSummary'
 
 export interface OrganizationIssueSummaryListProps {
   organization: Organization
@@ -56,9 +54,9 @@ export const OrganizationIssueSummaryList = ({
                   </Link>
                 }
               />
-              {(i.total.amount > 0 ||
-                !!i.funding_goal ||
-                !!i.issue.upfront_split_to_contributors) && (
+              {i.total.amount > 0 ||
+              !!i.funding_goal ||
+              !!i.issue.upfront_split_to_contributors ? (
                 <IssueActivityBox>
                   <div className="p-4">
                     <IssueFundingDetails
@@ -69,7 +67,7 @@ export const OrganizationIssueSummaryList = ({
                     />
                   </div>
                 </IssueActivityBox>
-              )}
+              ) : null}
             </Fragment>
           ))}
         </div>

@@ -10,18 +10,16 @@ import {
   Reward,
 } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import {
-  IssueActivityBox,
-  IssueListItemDecoration,
-  IssueSummary,
-} from 'polarkit/components/Issue'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import SplitRewardModal from '../Finance/SplitRewardModal'
 import { useModal } from '../Modal/useModal'
+import IssueActivityBox from './IssueActivityBox'
 import { AddBadgeButton } from './IssuePromotionModal'
+import IssueSummary from './IssueSummary'
+import IssueListItemDecoration from './ListItemDecoration'
 
 const IssueListItem = (props: {
   issue: Issue

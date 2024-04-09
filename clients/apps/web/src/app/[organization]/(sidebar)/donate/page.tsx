@@ -1,6 +1,7 @@
 import { getServerSideAPI } from '@/utils/api'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
+  Issue,
   ListResourceOrganization,
   ListResourceSubscriptionTier,
   Organization,
@@ -81,22 +82,24 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
-  searchParams: { amount },
+  searchParams: { amount, issue_id },
 }: {
   params: { organization: string }
-  searchParams: { amount: string }
+  searchParams: { amount?: string; issue_id?: string }
 }) {
   const api = getServerSideAPI()
 
   let organization: Organization | undefined
   let listAdminOrganizations: ListResourceOrganization | undefined
   let subscriptionTiers: ListResourceSubscriptionTier | undefined
+  let issue: Issue | undefined
 
   try {
     const [
       loadOrganization,
       loadListAdminOrganizations,
       loadSubscriptionTiers,
+      loadIssue,
     ] = await Promise.all([
       api.organizations.lookup(
         {
@@ -107,6 +110,7 @@ export default async function Page({
           cache: 'no-store',
         },
       ),
+
       api.organizations
         .list(
           {
@@ -118,6 +122,7 @@ export default async function Page({
           // Handle unauthenticated
           return undefined
         }),
+
       api.subscriptions.searchSubscriptionTiers(
         {
           platform: Platforms.GITHUB,
@@ -131,11 +136,17 @@ export default async function Page({
           },
         },
       ),
+
+      // Optional Issue Loading
+      issue_id
+        ? api.issues.get({ id: issue_id }, cacheConfig)
+        : Promise.resolve(undefined),
     ])
 
     organization = loadOrganization
     listAdminOrganizations = loadListAdminOrganizations
     subscriptionTiers = loadSubscriptionTiers
+    issue = loadIssue
   } catch (e) {
     notFound()
   }
@@ -148,8 +159,13 @@ export default async function Page({
     organization: organization,
     paramOrganizationName: params.organization,
     headers: headers(),
-    subPath: `/donate`,
+    subPath: `/donate`, // TODO: forward search params
   })
+
+  // If issue and issue does not match org
+  if (issue && issue.repository.organization.id !== organization.id) {
+    notFound()
+  }
 
   return (
     <ClientPage
@@ -157,6 +173,7 @@ export default async function Page({
       adminOrganizations={listAdminOrganizations?.items ?? []}
       subscriptionTiers={subscriptionTiers?.items ?? []}
       defaultAmount={parseInt(amount ?? '1000')}
+      issue={issue}
     />
   )
 }

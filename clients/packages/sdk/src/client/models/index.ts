@@ -2262,6 +2262,12 @@ export interface DonationCreateStripePaymentIntent {
      * @memberof DonationCreateStripePaymentIntent
      */
     message?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    issue_id?: string;
 }
 
 
@@ -2440,6 +2446,12 @@ export interface DonationUpdateStripePaymentIntent {
      * @memberof DonationUpdateStripePaymentIntent
      */
     message?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationUpdateStripePaymentIntent
+     */
+    issue_id?: string;
 }
 
 

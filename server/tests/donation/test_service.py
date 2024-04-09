@@ -8,7 +8,9 @@ from polar.donation.service import donation_service
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.tasks import charge_succeeded, payment_intent_succeeded
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import PaginationParams
 from polar.models.account import Account
+from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.organization.service import organization as organization_service
@@ -171,3 +173,30 @@ class TestDonations:
             1861 == summary.balance.amount
         )  # $20 minus Polar and payment processor fees
         assert 0 == summary.payout.amount
+
+    async def test_with_issue_id(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        open_collective_account: Account,
+        user: User,
+        donation_sender: DonationSender,
+        issue: Issue,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        await donation_sender.send_payment_intent_then_charge(
+            issue_id=issue.id,
+        )
+
+        # expect held balance
+
+        (donations, _) = await donation_service.search(
+            session,
+            to_organization=organization,
+            pagination=PaginationParams(page=1, limit=10),
+        )
+
+        assert 1 == len(donations)
+        assert issue.id == donations[0].issue_id

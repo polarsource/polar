@@ -119,6 +119,7 @@ class DonationService:
         amount: CurrencyAmount,
         receipt_email: str,
         message: str | None,
+        issue_id: UUID | None,
     ) -> stripe_lib.PaymentIntent:
         metadata = DonationPaymentIntentMetadata(
             to_organization_id=to_organization.id,
@@ -136,6 +137,9 @@ class DonationService:
 
         if message:
             metadata.donation_message = message
+
+        if issue_id:
+            metadata.issue_id = issue_id
 
         customer: User | Organization | None = None
         if by_organization:
@@ -227,6 +231,7 @@ class DonationService:
             by_user=by_user,
             by_organization=by_organization,
             on_behalf_of_organization=on_behalf_of_organization,
+            issue_id=metadata.issue_id if metadata.issue_id else None,
         )
 
         session.add(d)

@@ -127,3 +127,10 @@ class Donation(RecordModel):
             return self.by_user
 
         return None
+
+    issue_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("issues.id"),
+        nullable=True,
+        default=None,
+    )

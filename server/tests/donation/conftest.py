@@ -248,6 +248,7 @@ class DonationSender:
         latest_charge: str | None = None,
         balance_transaction_id: str | None = None,
         by_user_id: UUID | None = None,
+        issue_id: UUID | None = None,
     ) -> None:
         payment_intent_id = payment_intent_id or "pi_TESTING"
         latest_charge = latest_charge or "py_TESTING"
@@ -260,6 +261,9 @@ class DonationSender:
 
         if by_user_id:
             metadata.by_user_id = by_user_id
+
+        if issue_id:
+            metadata.issue_id = issue_id
 
         def _stripe_get_charge(self: Any, id: str) -> stripe.Charge:
             assert id == latest_charge

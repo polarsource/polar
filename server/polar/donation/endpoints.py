@@ -8,6 +8,7 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
+from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models.organization import Organization
@@ -103,6 +104,14 @@ async def create_payment_intent(
         if not on_behalf_of_organization:
             raise ResourceNotFound()
 
+    # If linked to issue, make sure that the issue exists and is for the same org
+    if intent.issue_id:
+        issue = await issue_service.get(session, intent.issue_id)
+        if not issue:
+            raise ResourceNotFound("Issue not found")
+        if issue.organization_id != to_organization.id:
+            raise BadRequest("The linked issue does not belong to to_organization")
+
     pi = await donation_service.create_payment_intent(
         session=session,
         amount=intent.amount,
@@ -112,6 +121,7 @@ async def create_payment_intent(
         by_user=auth.user,
         by_organization=None,
         on_behalf_of_organization=on_behalf_of_organization,
+        issue_id=intent.issue_id,
     )
 
     return DonationStripePaymentIntentMutationResponse(

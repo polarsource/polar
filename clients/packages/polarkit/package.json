@@ -11,7 +11,6 @@
     "./api/errors": "./src/api/errors.ts",
     "./api/types": "./src/api/types.ts",
     "./api/url": "./src/api/url/index.ts",
-    "./account": "./src/account/index.ts",
     "./auth": "./src/auth/index.ts",
     "./config": "./src/config.ts",
     "./store": "./src/store/index.ts",
@@ -59,7 +58,6 @@
     "./components/ui/table": "./src/components/ui/table.tsx",
     "./components/ui/accordion": "./src/components/ui/accordion.tsx",
     "./components/ui/Cards": "./src/components/ui/Cards/index.ts",
-    "./components/icons": "./src/components/icons/index.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

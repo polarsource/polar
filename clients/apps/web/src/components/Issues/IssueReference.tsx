@@ -5,16 +5,14 @@ import {
   IssueReferenceType,
   type PullRequestReference,
 } from '@polar-sh/sdk'
-import {
-  GitBranchIcon,
-  GitMergeIcon,
-  GitPullRequestClosedIcon,
-  GitPullRequestIcon,
-} from 'polarkit/components/icons'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { githubPullReqeustUrl } from 'polarkit/github'
 import { dateOrString } from 'polarkit/utils'
 import { twMerge } from 'tailwind-merge'
+import GitBranchIcon from '../Icons/GitBranchIcon'
+import GitMergeIcon from '../Icons/GitMergeIcon'
+import GitPullRequestClosedIcon from '../Icons/GitPullRequestClosedIcon'
+import GitPullRequestIcon from '../Icons/GitPullRequestIcon'
 import { generateMarkdownTitle } from './markdown'
 
 const IssueReference = (props: {

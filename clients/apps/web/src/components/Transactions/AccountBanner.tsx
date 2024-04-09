@@ -1,7 +1,7 @@
+import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { AccountType, Organization, Status, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useAccount } from 'polarkit/hooks'

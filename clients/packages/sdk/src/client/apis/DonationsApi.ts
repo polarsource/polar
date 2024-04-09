@@ -21,10 +21,18 @@ import type {
   DonationUpdateStripePaymentIntent,
   HTTPValidationError,
   ListResourceDonation,
+  ListResourcePublicDonation,
 } from '../models/index';
 
 export interface DonationsApiCreatePaymentIntentRequest {
     donationCreateStripePaymentIntent: DonationCreateStripePaymentIntent;
+}
+
+export interface DonationsApiDonationsPublicSearchRequest {
+    toOrganizationId: string;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
 }
 
 export interface DonationsApiSearchDonationsRequest {
@@ -92,6 +100,63 @@ export class DonationsApi extends runtime.BaseAPI {
      */
     async createPaymentIntent(requestParameters: DonationsApiCreatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DonationStripePaymentIntentMutationResponse> {
         const response = await this.createPaymentIntentRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Donations Public Search
+     */
+    async donationsPublicSearchRaw(requestParameters: DonationsApiDonationsPublicSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePublicDonation>> {
+        if (requestParameters['toOrganizationId'] == null) {
+            throw new runtime.RequiredError(
+                'toOrganizationId',
+                'Required parameter "toOrganizationId" was null or undefined when calling donationsPublicSearch().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['toOrganizationId'] != null) {
+            queryParameters['to_organization_id'] = requestParameters['toOrganizationId'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/donations/public/search`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Donations Public Search
+     */
+    async donationsPublicSearch(requestParameters: DonationsApiDonationsPublicSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourcePublicDonation> {
+        const response = await this.donationsPublicSearchRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

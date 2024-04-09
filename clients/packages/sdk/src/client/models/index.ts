@@ -3450,6 +3450,25 @@ export interface ListResourcePledge {
 /**
  * 
  * @export
+ * @interface ListResourcePublicDonation
+ */
+export interface ListResourcePublicDonation {
+    /**
+     * 
+     * @type {Array<PublicDonation>}
+     * @memberof ListResourcePublicDonation
+     */
+    items?: Array<PublicDonation>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourcePublicDonation
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourcePullRequest
  */
 export interface ListResourcePullRequest {
@@ -4936,6 +4955,12 @@ export interface Organization {
      * @memberof Organization
      */
     public_page_enabled: boolean;
+    /**
+     * If this organization should make donation timestamps publicly available
+     * @type {boolean}
+     * @memberof Organization
+     */
+    public_donation_timestamps: boolean;
 }
 /**
  * 
@@ -5240,6 +5265,12 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     donations_enabled?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    public_donation_timestamps?: boolean;
     /**
      * 
      * @type {OrganizationProfileSettingsUpdate}
@@ -5941,6 +5972,43 @@ export interface PostIssueComment {
      * @memberof PostIssueComment
      */
     append_badge?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface PublicDonation
+ */
+export interface PublicDonation {
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicDonation
+     */
+    id: string;
+    /**
+     * 
+     * @type {CurrencyAmount}
+     * @memberof PublicDonation
+     */
+    amount: CurrencyAmount;
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicDonation
+     */
+    message: string | null;
+    /**
+     * 
+     * @type {Donor}
+     * @memberof PublicDonation
+     */
+    donor: Donor | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicDonation
+     */
+    created_at: string | null;
 }
 /**
  * 

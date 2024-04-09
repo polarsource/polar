@@ -4,6 +4,7 @@ import {
   ListResourceArticle,
   ListResourceIssueFunding,
   ListResourceOrganization,
+  ListResourcePublicDonation,
   ListResourceRepository,
   ListResourceSubscriptionTier,
   Organization,
@@ -115,6 +116,7 @@ export default async function Page({
   let repositories: ListResourceRepository | undefined
   let listAdminOrganizations: ListResourceOrganization | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
+  let donations: ListResourcePublicDonation | undefined
 
   try {
     const [
@@ -125,6 +127,7 @@ export default async function Page({
       loadRepositories,
       loadListAdminOrganizations,
       loadListIssueFunding,
+      loadDonations,
     ] = await Promise.all([
       api.organizations.lookup(
         {
@@ -217,6 +220,20 @@ export default async function Page({
           },
         },
       ),
+      api.donations.donationsPublicSearch(
+        {
+          organizationName: params.organization,
+          platform: Platforms.GITHUB,
+          limit: 5,
+        },
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`donations:${params.organization}`],
+          },
+        },
+      ),
     ])
 
     organization = loadOrganization
@@ -226,6 +243,7 @@ export default async function Page({
     repositories = loadRepositories
     listAdminOrganizations = loadListAdminOrganizations
     listIssueFunding = loadListIssueFunding
+    donations = loadDonations
   } catch (e) {
     notFound()
   }
@@ -370,6 +388,7 @@ export default async function Page({
         adminOrganizations={listAdminOrganizations?.items ?? []}
         issues={listIssueFunding?.items ?? []}
         links={links}
+        donations={donations?.items ?? []}
       />
     </>
   )

@@ -1,6 +1,6 @@
+import { formatCurrencyAndAmount } from '@/utils/money'
 import * as Plot from '@observablehq/plot'
 import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
-import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useCallback, useEffect, useState } from 'react'
 
 const createAreaGradient = (id: string) => {

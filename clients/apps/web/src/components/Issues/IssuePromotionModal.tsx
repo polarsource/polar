@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks'
 import { githubIssueLink } from '@/utils/github'
+import { getCentsInDollarString } from '@/utils/money'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
@@ -25,7 +26,6 @@ import {
   useOrganizationBadgeSettings,
   useUpdateIssue,
 } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

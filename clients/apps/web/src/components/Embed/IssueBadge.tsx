@@ -11,8 +11,8 @@
  * So it's too early for us to use TailwindCSS in this component.
  */
 
+import { getCentsInDollarString } from '@/utils/money'
 import { Funding } from '@polar-sh/sdk'
-import { getCentsInDollarString } from 'polarkit/money'
 
 const IssueBadge = ({
   showAmountRaised = false,

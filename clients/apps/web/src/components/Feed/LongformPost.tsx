@@ -1,10 +1,10 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
+import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscribeNowWithModal from '../Subscriptions/SubscribeNowWithModal'

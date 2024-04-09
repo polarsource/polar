@@ -1,3 +1,4 @@
+import { formatCurrencyAndAmount } from '@/utils/money'
 import { AttachMoney, Face } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
@@ -8,7 +9,6 @@ import {
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { CardFooter } from 'polarkit/components/ui/card'
-import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useMemo } from 'react'
 import NoPayoutAccountTooltip from './NoPayoutAccountTooltip'
 

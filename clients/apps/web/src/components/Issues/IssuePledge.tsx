@@ -1,3 +1,4 @@
+import { getCentsInDollarString } from '@/utils/money'
 import {
   CheckCircleIcon,
   ChevronDoubleRightIcon,
@@ -12,7 +13,6 @@ import {
 } from '@polar-sh/sdk'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FundingPill from './FundingPill'

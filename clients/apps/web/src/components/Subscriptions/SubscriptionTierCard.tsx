@@ -5,6 +5,7 @@ import {
   useSubscriptionTierAudience,
   useSubscriptionTierPrice,
 } from '@/hooks/subscriptions'
+import { formatCurrencyAndAmount } from '@/utils/money'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
@@ -20,7 +21,6 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import { formatCurrencyAndAmount } from 'polarkit/money'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'

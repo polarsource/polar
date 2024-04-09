@@ -1,5 +1,6 @@
 'use client'
 
+import { getCentsInDollarString } from '@/utils/money'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -15,7 +16,6 @@ import {
   useBackofficePledgeCreateInvoice,
   useBackofficeRewardsPending,
 } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
 import { Fragment, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

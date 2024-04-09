@@ -1,11 +1,11 @@
+import { organizationPageLink } from '@/utils/nav'
 import { LinkedIn } from '@mui/icons-material'
 import XIcon from '@mui/icons-material/X'
-import { organizationPageLink } from 'polarkit/utils/nav'
 
 import { Article } from '@polar-sh/sdk'
 
+import { useOutsideClick } from '@/utils/useOutsideClick'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useOutsideClick } from 'polarkit/utils'
 import React, { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

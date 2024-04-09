@@ -1,5 +1,7 @@
 'use client'
 
+import { organizationPageLink } from '@/utils/nav'
+import { formatStarsNumber } from '@/utils/stars'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { StarIcon } from '@heroicons/react/24/solid'
 import { HiveOutlined } from '@mui/icons-material'
@@ -12,8 +14,6 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { formatStarsNumber } from 'polarkit/utils'
-import { organizationPageLink } from 'polarkit/utils/nav'
 
 interface RepositoriesOverviewProps {
   organization: Organization

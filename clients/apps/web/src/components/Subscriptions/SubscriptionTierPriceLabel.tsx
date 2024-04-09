@@ -1,8 +1,8 @@
+import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   SubscriptionTierPrice,
   SubscriptionTierPriceRecurringInterval,
 } from '@polar-sh/sdk'
-import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useMemo } from 'react'
 
 interface SubscriptionTierPriceLabelProps {

@@ -1,4 +1,4 @@
-import { getCentsInDollarString } from 'polarkit/money'
+import { getCentsInDollarString } from '@/utils/money'
 import { ChangeEvent, FocusEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'

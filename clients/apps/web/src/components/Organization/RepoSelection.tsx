@@ -1,8 +1,8 @@
 'use client'
 
+import { useOutsideClick } from '@/utils/useOutsideClick'
 import { Repository } from '@polar-sh/sdk'
 import { Command } from 'cmdk'
-import { useOutsideClick } from 'polarkit/utils'
 import React, { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'

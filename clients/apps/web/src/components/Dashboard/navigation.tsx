@@ -1,5 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
+import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
@@ -17,7 +18,6 @@ import {
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 
 export type SubRoute = {

@@ -1,5 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
+import { getCentsInDollarString } from '@/utils/money'
 import {
   BellIcon,
   ClockIcon,
@@ -11,7 +12,6 @@ import { api } from 'polarkit/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
-import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GithubLoginButton from '../Auth/GithubLoginButton'

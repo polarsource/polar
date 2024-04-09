@@ -13,6 +13,8 @@ import {
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { SubscriptionTierEditor } from '@/components/Profile/SubscriptionTierEditor/SubscriptionTierEditor'
 import useDebouncedCallback from '@/hooks/utils'
+import { organizationPageLink } from '@/utils/nav'
+import { formatStarsNumber } from '@/utils/stars'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { ArrowForward } from '@mui/icons-material'
@@ -30,8 +32,6 @@ import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useUpdateProject } from 'polarkit/hooks'
-import { formatStarsNumber } from 'polarkit/utils'
-import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 
 const ClientPage = ({

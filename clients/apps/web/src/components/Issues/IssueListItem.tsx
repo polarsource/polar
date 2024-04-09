@@ -2,6 +2,7 @@
 
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
+import { getCentsInDollarString } from '@/utils/money'
 import {
   Issue,
   IssueReferenceRead,
@@ -12,7 +13,6 @@ import {
 import { api } from 'polarkit/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
-import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import SplitRewardModal from '../Finance/SplitRewardModal'
 import { useModal } from '../Modal/useModal'

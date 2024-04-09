@@ -1,11 +1,11 @@
 'use client'
 
+import { getCentsInDollarString } from '@/utils/money'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import { BackofficePledge } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useBackofficeAllPledges } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

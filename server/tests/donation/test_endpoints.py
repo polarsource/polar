@@ -129,3 +129,70 @@ class TestSearch:
 
         # anonymous
         assert json["items"][2]["donor"] is None
+
+    async def test_unauthenticated_summary(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        donation_sender: DonationSender,
+        user: User,
+        user_second: User,
+        save_fixture: SaveFixture,
+    ) -> None:
+        # 3 donations
+        for x in range(3):
+            await donation_sender.send_payment_intent_then_charge(
+                payment_intent_id=f"pi_{x}",
+                latest_charge=f"py_{x}",
+                balance_transaction_id=f"bal_{x}",
+            )
+
+        # donation from user
+        await donation_sender.send_payment_intent_then_charge(
+            payment_intent_id="pi_user",
+            latest_charge="py_user",
+            balance_transaction_id="bal_user",
+            by_user_id=user.id,
+        )
+
+        # donation from user without avatar
+        user_second.avatar_url = None
+        await save_fixture(user_second)
+        await donation_sender.send_payment_intent_then_charge(
+            payment_intent_id="pi_user_second",
+            latest_charge="py_user_second",
+            balance_transaction_id="bal_user_second",
+            by_user_id=user_second.id,
+        )
+
+        params = {"to_organization_id": str(organization.id)}
+        response = await client.get("/api/v1/donations/summary", params=params)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        # order by desc
+
+        assert 5 == len(json["items"])
+
+        # user without avatar
+        assert json["items"][0]["donor"]
+        assert json["items"][0]["donor"]["public_name"]
+        assert json["items"][0]["donor"]["avatar_url"] is None
+        assert (
+            "email" not in (json["items"][0])
+        )  # email should not be publicly available
+
+        # user with avatar
+        assert json["items"][1]["donor"]
+        assert json["items"][1]["donor"]["public_name"]
+        assert json["items"][1]["donor"]["avatar_url"]
+        assert (
+            "email" not in (json["items"][1])
+        )  # email should not be publicly available
+
+        # anonymous
+        assert json["items"][2]["donor"] is None
+        assert (
+            "email" not in (json["items"][2])
+        )  # email should not be publicly available

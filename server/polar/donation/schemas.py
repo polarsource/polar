@@ -119,3 +119,32 @@ class DonationStatisticsPeriod(Schema):
 
 class DonationStatistics(Schema):
     periods: Sequence[DonationStatisticsPeriod]
+
+
+class DonationSummary(Schema):
+    id: UUID4
+    amount: CurrencyAmount
+    message: str | None
+    donor: DonationOrganization | DonationUser | None
+    created_at: datetime.datetime
+
+    @classmethod
+    def from_db(
+        cls,
+        i: DonationModel,
+    ) -> Self:
+        model_donor = i.donor
+
+        donor: DonationOrganization | DonationUser | None = None
+        if isinstance(model_donor, User):
+            donor = DonationUser.model_validate(model_donor)
+        elif isinstance(model_donor, Organization):
+            donor = DonationOrganization.model_validate(model_donor)
+
+        return cls(
+            id=i.id,
+            amount=CurrencyAmount(currency="USD", amount=i.amount_received),
+            message=i.message,
+            donor=donor,
+            created_at=i.created_at,
+        )

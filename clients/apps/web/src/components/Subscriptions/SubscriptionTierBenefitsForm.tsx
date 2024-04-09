@@ -1,4 +1,12 @@
 import {
+  useCreateSubscriptionBenefit,
+  useDeleteSubscriptionBenefit,
+  useDiscordGuild,
+  useUpdateSubscriptionBenefit,
+} from '@/hooks/queries'
+import { setValidationErrors } from '@/utils/api/errors'
+import { getBotDiscordAuthorizeURL } from '@/utils/auth'
+import {
   AutoAwesome,
   LoyaltyOutlined,
   MoreVertOutlined,
@@ -15,8 +23,6 @@ import {
   ValidationError,
 } from '@polar-sh/sdk'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { setValidationErrors } from 'polarkit/api/errors'
-import { getBotDiscordAuthorizeURL } from 'polarkit/auth'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -47,12 +53,6 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import {
-  useCreateSubscriptionBenefit,
-  useDeleteSubscriptionBenefit,
-  useDiscordGuild,
-  useUpdateSubscriptionBenefit,
-} from 'polarkit/hooks'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'

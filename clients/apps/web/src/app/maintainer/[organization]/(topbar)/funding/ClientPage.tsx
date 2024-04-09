@@ -8,7 +8,7 @@ import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { Pledge } from '@polar-sh/sdk'
 
-import { useSearchPledges } from 'polarkit/hooks'
+import { useSearchPledges } from '@/hooks/queries'
 
 export default function ClientPage() {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()

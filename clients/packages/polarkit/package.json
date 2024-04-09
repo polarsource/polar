@@ -7,14 +7,8 @@
   "exports": {
     ".": "./index.ts",
     "./testdata": "./testdata.ts",
-    "./api": "./src/api/index.ts",
-    "./api/errors": "./src/api/errors.ts",
-    "./api/types": "./src/api/types.ts",
-    "./api/url": "./src/api/url/index.ts",
-    "./auth": "./src/auth/index.ts",
     "./config": "./src/config.ts",
     "./store": "./src/store/index.ts",
-    "./hooks": "./src/hooks/index.ts",
     "./datatable": "./src/datatable.ts",
     "./components": "./src/components/index.ts",
     "./components/ui/atoms": "./src/components/ui/atoms/index.ts",
@@ -57,8 +51,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "lint": "TIMING=1 eslint \"**/*.ts*\"",
-    "test": "jest"
+    "lint": "TIMING=1 eslint \"**/*.ts*\""
   },
   "dependencies": {
     "@heroicons/react": "^2.0.16",
@@ -84,7 +77,6 @@
     "class-variance-authority": "^0.6.0",
     "clsx": "^1.2.1",
     "cmdk": "^0.2.0",
-    "eventemitter3": "^5.0.0",
     "lucide-react": "^0.272.0",
     "react": "^18.2.0",
     "react-aria": "^3.30.0",
@@ -97,17 +89,13 @@
     "zustand": "^4.3.3"
   },
   "devDependencies": {
-    "@jest/globals": "^29.7.0",
     "@storybook/react": "^8.0.1",
-    "@types/jest": "^29.5.11",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@types/react-timeago": "^4.1.3",
     "eslint": "^8.55.0",
     "eslint-config-custom": "workspace:*",
     "eslint-plugin-polar-rules": "workspace:^",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.1",
     "tsconfig": "workspace:*",
     "typescript": "5.3.3"
   }

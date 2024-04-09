@@ -8,7 +8,7 @@ import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
-import { useListAdminOrganizations } from 'polarkit/hooks'
+import { useListAdminOrganizations } from '@/hooks/queries'
 
 export default function Page() {
   const orgs = useListAdminOrganizations()

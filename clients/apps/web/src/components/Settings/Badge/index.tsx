@@ -1,5 +1,11 @@
 import BadgeMessageForm from '@/components/Issues/BadgeMessageForm'
 import PublicRewardsSetting from '@/components/Issues/UpfrontRewards'
+import {
+  useOrganizationBadgeSettings,
+  useUpdateOrganization,
+  useUpdateOrganizationBadgeSettings,
+} from '@/hooks/queries'
+import { useSSE } from '@/hooks/sse'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { InfoOutlined } from '@mui/icons-material'
 import {
@@ -12,12 +18,6 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
-import {
-  useOrganizationBadgeSettings,
-  useSSE,
-  useUpdateOrganization,
-  useUpdateOrganizationBadgeSettings,
-} from 'polarkit/hooks'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
 import { twMerge } from 'tailwind-merge'

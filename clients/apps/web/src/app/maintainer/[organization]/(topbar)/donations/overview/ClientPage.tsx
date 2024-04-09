@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
+import { useDonationStatistics, useUpdateOrganization } from '@/hooks/queries'
 import { getCentsInDollarString } from '@/utils/money'
 import { Donation, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -14,7 +15,6 @@ import {
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { useDonationStatistics, useUpdateOrganization } from 'polarkit/hooks'
 import { useState } from 'react'
 
 const startOfMonth = new Date()

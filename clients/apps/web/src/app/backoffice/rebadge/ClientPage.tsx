@@ -1,6 +1,6 @@
 'use client'
 
-import { api } from 'polarkit/api'
+import { api } from '@/utils/api'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Button } from 'polarkit/components/ui/button'
 import {

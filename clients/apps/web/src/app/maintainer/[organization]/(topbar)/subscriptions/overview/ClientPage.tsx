@@ -16,6 +16,11 @@ import {
   getSubscriptionTiersByType,
   tiersTypeDisplayNames,
 } from '@/components/Subscriptions/utils'
+import {
+  useSearchSubscriptions,
+  useSubscriptionStatistics,
+  useSubscriptionTiers,
+} from '@/hooks/queries'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -26,11 +31,6 @@ import {
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import {
-  useSearchSubscriptions,
-  useSubscriptionStatistics,
-  useSubscriptionTiers,
-} from 'polarkit/hooks'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

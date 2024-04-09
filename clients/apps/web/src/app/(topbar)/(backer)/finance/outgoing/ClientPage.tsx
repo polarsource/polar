@@ -3,6 +3,7 @@
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
+import { useSearchTransactions } from '@/hooks/queries'
 import { usePathname, useRouter } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
@@ -11,7 +12,6 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from 'polarkit/datatable'
-import { useSearchTransactions } from 'polarkit/hooks'
 
 export default function ClientPage({
   pagination,

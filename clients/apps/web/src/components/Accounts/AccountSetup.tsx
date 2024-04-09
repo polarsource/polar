@@ -2,8 +2,8 @@
 
 import AccountAssociations from '@/components/Accounts/AccountAssociations'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
+import { api } from '@/utils/api'
 import { Account, Organization, Status } from '@polar-sh/sdk'
-import { api } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,

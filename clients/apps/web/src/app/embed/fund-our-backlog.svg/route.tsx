@@ -1,6 +1,6 @@
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
+import { getServerURL } from '@/utils/api'
 import { Issue, ListResourceIssue } from '@polar-sh/sdk'
-import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

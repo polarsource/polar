@@ -1,5 +1,5 @@
+import { api, queryClient } from '@/utils/api'
 import { Organization } from '@polar-sh/sdk'
-import { api, queryClient } from 'polarkit/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useRef, useState } from 'react'

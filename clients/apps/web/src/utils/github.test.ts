@@ -1,4 +1,4 @@
-import { parseGitHubIssueLink } from '.'
+import { parseGitHubIssueLink } from './github'
 
 describe('parseGitHubIssueLink', () => {
   it.each([

@@ -2,9 +2,9 @@
 
 import Finance from '@/components/Finance/Finance'
 import { useToast } from '@/components/Toast/use-toast'
+import { useListPledgesForOrganization, useListRewards } from '@/hooks/queries'
 import { Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
-import { useListPledgesForOrganization, useListRewards } from 'polarkit/hooks'
 import { useEffect } from 'react'
 
 export default function Current({

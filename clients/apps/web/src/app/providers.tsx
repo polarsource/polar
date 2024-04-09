@@ -1,10 +1,10 @@
 'use client'
 
+import { queryClient } from '@/utils/api'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experimental'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { queryClient } from 'polarkit/api'
 import { CONFIG } from 'polarkit/config'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'

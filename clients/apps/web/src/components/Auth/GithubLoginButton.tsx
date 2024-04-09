@@ -1,8 +1,8 @@
 'use client'
 
+import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { UserSignupType } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
-import { getGitHubAuthorizeURL } from 'polarkit/auth'
 import { twMerge } from 'tailwind-merge'
 
 const GithubLoginButton = (props: {

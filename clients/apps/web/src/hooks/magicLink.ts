@@ -1,9 +1,8 @@
 'use client'
 
 import { PublicPageOrganizationContext } from '@/providers/organization'
+import { api, isOnCustomDomain } from '@/utils/api'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit/api'
-import { isOnCustomDomain } from 'polarkit/api/url'
 import { CONFIG } from 'polarkit/config'
 import { useCallback, useContext } from 'react'
 

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { notFound } from 'next/navigation'
 
 export const runtime = 'edge'

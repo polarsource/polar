@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { requestHost } from '@/utils/nav'
 import { ResponseError } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'

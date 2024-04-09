@@ -1,11 +1,20 @@
 import { useAuth } from '@/hooks'
+import {
+  useBadgeWithComment,
+  useIssueAddComment,
+  useIssueAddPolarBadge,
+  useIssueRemovePolarBadge,
+  useListPledesForIssue,
+  useOrganizationBadgeSettings,
+  useUpdateIssue,
+} from '@/hooks/queries'
+import { api, queryClient } from '@/utils/api'
 import { githubIssueLink } from '@/utils/github'
 import { getCentsInDollarString } from '@/utils/money'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Image from 'next/image'
-import { api, queryClient } from 'polarkit/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -17,15 +26,6 @@ import {
 } from 'polarkit/components/ui/atoms/tabs'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Banner } from 'polarkit/components/ui/molecules'
-import {
-  useBadgeWithComment,
-  useIssueAddComment,
-  useIssueAddPolarBadge,
-  useIssueRemovePolarBadge,
-  useListPledesForIssue,
-  useOrganizationBadgeSettings,
-  useUpdateIssue,
-} from 'polarkit/hooks'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

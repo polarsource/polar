@@ -1,9 +1,9 @@
 import { useDiscordAccount, useGitHubAccount } from '@/hooks'
+import { useOrganization } from '@/hooks/queries'
 import { ArrowForwardOutlined, LinkOutlined } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
 import { useRouter } from 'next/navigation'
-import { useOrganization } from 'polarkit/hooks'
 import { BenefitSubscriber } from './Benefit'
 
 interface BenefitAction {

@@ -1,10 +1,7 @@
 import { useDiscordAccount, useGitHubAccount } from '@/hooks'
+import { getGitHubAuthorizeURL, getUserDiscordAuthorizeURL } from '@/utils/auth'
 import { AutoAwesome } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
-import {
-  getGitHubAuthorizeURL,
-  getUserDiscordAuthorizeURL,
-} from 'polarkit/auth'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'

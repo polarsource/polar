@@ -1,10 +1,10 @@
 import { useAuth } from '@/hooks'
-import { Author, ConfirmIssueSplit } from '@polar-sh/sdk'
 import {
   useIssueMarkConfirmed,
   useListPledesForIssue,
   useListPullsReferencingIssue,
-} from 'polarkit/hooks'
+} from '@/hooks/queries'
+import { Author, ConfirmIssueSplit } from '@polar-sh/sdk'
 import { useState } from 'react'
 import Spinner from '../Shared/Spinner'
 import Split, { Contributor, Share } from './Split'

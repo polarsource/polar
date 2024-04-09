@@ -1,5 +1,5 @@
 import SubscriptionTierCreatePage from '@/components/Subscriptions/SubscriptionTierCreatePage'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Platforms, SubscriptionTierCreateTypeEnum } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 

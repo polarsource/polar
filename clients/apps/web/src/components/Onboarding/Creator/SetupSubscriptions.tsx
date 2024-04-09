@@ -1,9 +1,9 @@
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useSubscriptionTiers } from '@/hooks/queries'
 import { ArrowForwardOutlined, Bolt } from '@mui/icons-material'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useSubscriptionTiers } from 'polarkit/hooks'
 
 export const SetupSubscriptions = () => {
   const { org } = useCurrentOrgAndRepoFromURL()

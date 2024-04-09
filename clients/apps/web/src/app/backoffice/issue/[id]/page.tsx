@@ -1,13 +1,13 @@
 'use client'
 
-import { getCentsInDollarString } from '@/utils/money'
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import Button from 'polarkit/components/ui/atoms/button'
 import {
   useBackofficeIssue,
   useBackofficePledgeRewardTransfer,
   useBackofficeRewards,
-} from 'polarkit/hooks'
+} from '@/hooks/queries'
+import { getCentsInDollarString } from '@/utils/money'
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
+import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
 
 export default function Page({ params }: { params: { id: string } }) {

@@ -15,6 +15,12 @@ import {
   DiscordIcon,
   resolveBenefitIcon,
 } from '@/components/Subscriptions/utils'
+import {
+  useAdvertisementDisplays,
+  useDeleteSubscriptionBenefit,
+  useSubscriptionBenefits,
+  useSubscriptionTiers,
+} from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined, WebOutlined } from '@mui/icons-material'
 import {
   BenefitsInner,
@@ -33,12 +39,6 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { Textarea } from 'polarkit/components/ui/textarea'
-import {
-  useAdvertisementDisplays,
-  useDeleteSubscriptionBenefit,
-  useSubscriptionBenefits,
-  useSubscriptionTiers,
-} from 'polarkit/hooks'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

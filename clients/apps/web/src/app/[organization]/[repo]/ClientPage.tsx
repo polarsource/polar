@@ -12,6 +12,7 @@ import {
   LinksEditor,
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { SubscriptionTierEditor } from '@/components/Profile/SubscriptionTierEditor/SubscriptionTierEditor'
+import { useUpdateProject } from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
@@ -31,7 +32,6 @@ import Link from 'next/link'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
-import { useUpdateProject } from 'polarkit/hooks'
 import { useMemo } from 'react'
 
 const ClientPage = ({

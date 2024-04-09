@@ -1,5 +1,6 @@
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks'
+import { useSendArticlePreview, useUpdateArticle } from '@/hooks/queries'
 import {
   ChevronDownIcon,
   EnvelopeIcon,
@@ -19,7 +20,6 @@ import {
 import { Label } from 'polarkit/components/ui/label'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
-import { useSendArticlePreview, useUpdateArticle } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
 import { Modal } from '../../Modal'
 

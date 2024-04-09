@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Platforms } from '@polar-sh/sdk'
 import ClientPage from './ClientPage'
 

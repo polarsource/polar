@@ -8,6 +8,8 @@ import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import { useToast } from '@/components/Toast/use-toast'
+import { useDashboard, useListRepositories } from '@/hooks/queries'
+import { useSSE } from '@/hooks/sse'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import {
   IssueListType,
@@ -19,7 +21,6 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Separator } from 'polarkit/components/ui/separator'
-import { useDashboard, useListRepositories, useSSE } from 'polarkit/hooks'
 import {
   Dispatch,
   SetStateAction,

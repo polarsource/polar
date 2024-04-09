@@ -10,6 +10,7 @@ import {
   EarningsMetric,
   SubscribersMetric,
 } from '@/components/Subscriptions/SubscriptionsMetric'
+import { useSubscriptionStatistics } from '@/hooks/queries'
 import { FlagOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import {
@@ -17,7 +18,6 @@ import {
   CardContent,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { useSubscriptionStatistics } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 
 const subscriberGoals = [5, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]

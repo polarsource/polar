@@ -1,5 +1,5 @@
 import Current from '@/components/Finance/IssueFunding/Current'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { RedirectType, redirect } from 'next/navigation'

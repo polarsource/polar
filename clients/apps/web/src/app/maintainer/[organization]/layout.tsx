@@ -1,5 +1,5 @@
 import { MaintainerOrganizationContextProvider } from '@/providers/maintainerOrganization'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { ListResourceOrganization } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import React from 'react'

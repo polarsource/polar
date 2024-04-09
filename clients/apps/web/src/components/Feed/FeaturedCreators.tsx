@@ -1,15 +1,15 @@
 import { useAuth } from '@/hooks'
-import { AddOutlined } from '@mui/icons-material'
-import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
-import Link from 'next/link'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
 import {
   useCreateFreeSubscription,
   useListAdminOrganizations,
   useSubscriptionTiers,
   useUserSubscriptions,
-} from 'polarkit/hooks'
+} from '@/hooks/queries'
+import { AddOutlined } from '@mui/icons-material'
+import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
+import Link from 'next/link'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Button from 'polarkit/components/ui/atoms/button'
 import { MouseEventHandler, useCallback, useMemo } from 'react'
 
 type ArrayElement<A> = A extends readonly (infer T)[] ? T : never

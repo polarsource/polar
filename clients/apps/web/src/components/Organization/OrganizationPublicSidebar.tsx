@@ -2,6 +2,8 @@
 
 import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
+import { useUpdateOrganization } from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
@@ -14,11 +16,9 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
-import { api } from 'polarkit'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
-import { useUpdateOrganization } from 'polarkit/hooks'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL } from '.'

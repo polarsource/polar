@@ -11,8 +11,8 @@ import { NextRequest } from 'next/server'
 import OpenGraphImageArticle from '@/components/Organization/OpenGraphImageArticle'
 import OpenGraphImageCreator from '@/components/Organization/OpenGraphImageCreator'
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
+import { getServerURL } from '@/utils/api'
 import { notFound } from 'next/navigation'
-import { getServerURL } from 'polarkit/api/url'
 
 export const runtime = 'edge'
 

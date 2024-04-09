@@ -1,10 +1,10 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
+import { getServerURL } from '@/utils/api'
 import {
   ListResourceSubscriptionTier,
   SubscriptionTier,
   SubscriptionTierPriceRecurringInterval,
 } from '@polar-sh/sdk'
-import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

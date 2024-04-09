@@ -1,4 +1,4 @@
-import { getCentsInDollarString } from '.'
+import { getCentsInDollarString } from './money'
 
 test('getCentsInDollarString', () => {
   expect(getCentsInDollarString(12300)).toBe('123')

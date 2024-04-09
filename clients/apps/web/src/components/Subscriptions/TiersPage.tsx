@@ -1,12 +1,12 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useSubscriptionTiers } from '@/hooks/queries'
 import { useRecurringInterval } from '@/hooks/subscriptions'
 import { Add, Bolt } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useSubscriptionTiers } from 'polarkit/hooks'
 import React from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
 import SubscriptionTierCard from './SubscriptionTierCard'

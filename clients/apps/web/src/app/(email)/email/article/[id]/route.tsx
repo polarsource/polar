@@ -1,10 +1,10 @@
 import EmailRender from '@/components/Feed/Markdown/EmailRender'
 import PreviewText from '@/components/Feed/Markdown/preview'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Article } from '@polar-sh/sdk'
-import { getMagicLinkAuthenticateURL } from 'polarkit/auth'
 
 import { parseBenefitIdsFromBody } from '@/components/Feed/Markdown/Ad/EmailAd'
+import { getMagicLinkAuthenticateURL } from '@/utils/auth'
 import {
   Body,
   Column,

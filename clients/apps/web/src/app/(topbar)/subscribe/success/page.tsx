@@ -1,6 +1,6 @@
 import SubscriptionSuccess from '@/components/Subscriptions/SubscriptionSuccess'
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Organization, ResponseError, SubscribeSession } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 

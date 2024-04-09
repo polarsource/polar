@@ -1,5 +1,5 @@
+import { useListAllOrganizations } from '@/hooks/queries'
 import { Organization } from '@polar-sh/sdk'
-import { useListAllOrganizations } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
 import { useAuth } from './auth'
 

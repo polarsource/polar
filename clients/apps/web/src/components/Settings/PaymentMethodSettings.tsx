@@ -1,15 +1,15 @@
 import {
+  useDetachPaymentMethodMutation,
+  useListPaymentMethods,
+} from '@/hooks/queries'
+import { api } from '@/utils/api'
+import {
   ArrowTopRightOnSquareIcon,
   CreditCardIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { PaymentMethod } from '@polar-sh/sdk'
-import { api } from 'polarkit/api'
 import Button from 'polarkit/components/ui/atoms/button'
-import {
-  useDetachPaymentMethodMutation,
-  useListPaymentMethods,
-} from 'polarkit/hooks'
 import { useState } from 'react'
 import { prettyCardName } from '../Pledge/payment'
 import Spinner from '../Shared/Spinner'

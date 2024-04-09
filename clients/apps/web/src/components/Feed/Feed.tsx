@@ -1,8 +1,9 @@
 'use client'
 
+import { useListArticles } from '@/hooks/queries'
+import { useSSE } from '@/hooks/sse'
 import { ViewDayOutlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
-import { useListArticles, useSSE } from 'polarkit/hooks'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { Post as PostComponent } from './Posts/Post'

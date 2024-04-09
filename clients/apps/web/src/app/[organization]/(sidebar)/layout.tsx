@@ -3,7 +3,7 @@ import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import {
   ListResourceOrganization,
   ListResourceSubscriptionSummary,

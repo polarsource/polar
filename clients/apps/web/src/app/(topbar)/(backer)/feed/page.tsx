@@ -13,7 +13,7 @@ import {
   useListAdminOrganizations,
   useSearchArticles,
   useUserSubscriptions,
-} from 'polarkit/hooks'
+} from '@/hooks/queries'
 import { useEffect } from 'react'
 
 export default function Page() {

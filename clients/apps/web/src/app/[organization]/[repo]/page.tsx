@@ -5,7 +5,7 @@ import {
 } from '@/components/Organization/filters'
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Organization,

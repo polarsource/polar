@@ -1,5 +1,5 @@
+import { api } from '@/utils/api'
 import { Article, Organization, TrafficReferrer } from '@polar-sh/sdk'
-import { api } from 'polarkit/api'
 import { useEffect } from 'react'
 
 const pageViewKey = 'pages_viewed'

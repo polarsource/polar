@@ -1,5 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
+import { api } from '@/utils/api'
 import { getCentsInDollarString } from '@/utils/money'
 import {
   BellIcon,
@@ -8,7 +9,6 @@ import {
 } from '@heroicons/react/24/outline'
 import { Issue, Organization, UserSignupType } from '@polar-sh/sdk'
 import { usePathname, useRouter } from 'next/navigation'
-import { api } from 'polarkit/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import { Checkbox } from 'polarkit/components/ui/checkbox'

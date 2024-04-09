@@ -5,15 +5,15 @@ import IssueList from '@/components/Issues/IssueList'
 import { DashboardFilters, DefaultFilters } from '@/components/Issues/filters'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import { useAuth, useGitHubAccount } from '@/hooks'
-import { IssueListType, IssueStatus } from '@polar-sh/sdk'
-import Link from 'next/link'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
-import { Banner } from 'polarkit/components/ui/molecules'
 import {
   useAccount,
   useListRewardsToUser,
   usePersonalDashboard,
-} from 'polarkit/hooks'
+} from '@/hooks/queries'
+import { IssueListType, IssueStatus } from '@polar-sh/sdk'
+import Link from 'next/link'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
+import { Banner } from 'polarkit/components/ui/molecules'
 
 const FundingPage = () => {
   const { currentUser } = useAuth()

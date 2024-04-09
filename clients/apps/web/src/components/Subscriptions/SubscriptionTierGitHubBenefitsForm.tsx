@@ -1,4 +1,7 @@
 import { useAuth } from '@/hooks'
+import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/hooks/queries'
+import { useSSE } from '@/hooks/sse'
+import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RefreshOutlined } from '@mui/icons-material'
@@ -11,7 +14,6 @@ import {
   SubscriptionBenefitType,
 } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
-import { getGitHubRepositoryBenefitAuthorizeURL } from 'polarkit/auth'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
@@ -29,10 +31,6 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
-import {
-  useListIntegrationsGithubRepositoryBenefitUserRepositories,
-  useSSE,
-} from 'polarkit/hooks'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 

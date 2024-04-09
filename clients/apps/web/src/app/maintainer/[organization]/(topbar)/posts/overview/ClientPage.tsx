@@ -9,6 +9,11 @@ import {
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import {
+  useOrganizationArticles,
+  useTrafficStatistics,
+  useTrafficTopReferrers,
+} from '@/hooks/queries'
 import { captureEvent } from '@/utils/posthog'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { EnvelopeIcon, EyeIcon } from '@heroicons/react/24/outline'
@@ -23,11 +28,6 @@ import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Card } from 'polarkit/components/ui/atoms/card'
-import {
-  useOrganizationArticles,
-  useTrafficStatistics,
-  useTrafficTopReferrers,
-} from 'polarkit/hooks'
 import { useRef, useState } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'

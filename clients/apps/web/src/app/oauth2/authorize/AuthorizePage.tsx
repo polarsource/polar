@@ -1,7 +1,7 @@
 import LogoType from '@/components/Brand/LogoType'
+import { getServerURL } from '@/utils/api'
 import { AddOutlined } from '@mui/icons-material'
 import { AuthorizeResponse } from '@polar-sh/sdk'
-import { getServerURL } from 'polarkit/api'
 import Button from 'polarkit/components/ui/atoms/button'
 
 const AuthorizePage = ({

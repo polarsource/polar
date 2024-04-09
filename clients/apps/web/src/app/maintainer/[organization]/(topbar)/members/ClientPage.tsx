@@ -9,6 +9,10 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 
 import {
+  useListOrganizationMembers,
+  useSyncOrganizationMembers,
+} from '@/hooks/queries'
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,10 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from 'polarkit/components/ui/table'
-import {
-  useListOrganizationMembers,
-  useSyncOrganizationMembers,
-} from 'polarkit/hooks'
 
 export default function ClientPage() {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()

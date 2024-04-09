@@ -1,5 +1,5 @@
 import EmailRender from '@/components/Feed/Markdown/EmailRender'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { Platforms } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'

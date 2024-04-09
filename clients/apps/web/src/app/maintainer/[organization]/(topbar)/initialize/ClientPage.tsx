@@ -2,7 +2,7 @@
 
 import BadgeSetup from '@/components/Settings/Badge'
 import Spinner from '@/components/Shared/Spinner'
-import { useSSE } from 'polarkit/hooks'
+import { useSSE } from '@/hooks/sse'
 import { useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
 

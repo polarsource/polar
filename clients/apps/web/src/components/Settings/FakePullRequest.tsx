@@ -1,7 +1,7 @@
 import { useTheme } from 'next-themes'
 import { CONFIG } from 'polarkit'
-import { Badge } from 'polarkit/components/badge'
 import { twMerge } from 'tailwind-merge'
+import IssueBadge from '../Embed/IssueBadge'
 
 const FakePullRequest = ({
   showAmount,
@@ -46,7 +46,7 @@ const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
   const { resolvedTheme } = useTheme()
 
   return (
-    <Badge
+    <IssueBadge
       showAmountRaised={showAmount}
       funding={{
         pledges_sum: { currency: 'USD', amount: 2500 },

@@ -12,11 +12,10 @@
  */
 
 import { Funding } from '@polar-sh/sdk'
-import { getCentsInDollarString } from '../../money'
+import { getCentsInDollarString } from 'polarkit/money'
 
-export const Badge = ({
+const IssueBadge = ({
   showAmountRaised = false,
-  // amountRaised = undefined,
   darkmode = false,
   funding = undefined,
   avatarsUrls = [],
@@ -24,7 +23,6 @@ export const Badge = ({
   orgName,
 }: {
   showAmountRaised?: boolean
-  // amountRaised?: string
   darkmode: boolean
   funding?: Funding
   avatarsUrls: string[]
@@ -419,7 +417,7 @@ export const Badge = ({
   )
 }
 
-export default Badge
+export default IssueBadge
 
 const Heart = () => (
   <svg

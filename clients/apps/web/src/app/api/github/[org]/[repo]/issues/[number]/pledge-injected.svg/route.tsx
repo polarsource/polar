@@ -1,5 +1,5 @@
+import IssueBadge from '@/components/Embed/IssueBadge'
 import { Funding } from '@polar-sh/sdk'
-import { Badge } from 'polarkit/components/badge'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -24,7 +24,7 @@ const renderBadge = async ({
   ])
 
   return await satori(
-    <Badge
+    <IssueBadge
       showAmountRaised={hasAmount}
       darkmode={isDarkMode}
       funding={funding}

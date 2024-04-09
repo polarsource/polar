@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { Badge } from 'polarkit/components/badge'
 
-const meta: Meta<typeof Badge> = {
-  title: 'Organisms/PledgeBadge',
-  component: Badge,
+import IssueBadge from './IssueBadge'
+
+const meta: Meta<typeof IssueBadge> = {
+  title: 'Organisms/IssueBadge',
+  component: IssueBadge,
   tags: ['autodocs'],
   args: {
     showAmountRaised: false,
@@ -15,7 +16,7 @@ const meta: Meta<typeof Badge> = {
 
 export default meta
 
-type Story = StoryObj<typeof Badge>
+type Story = StoryObj<typeof IssueBadge>
 
 export const Default: Story = {
   args: {
@@ -31,8 +32,8 @@ export const Default: Story = {
           rel="stylesheet"
         ></link>
 
-        <Badge {...args} />
-        <Badge {...args} darkmode={true} />
+        <IssueBadge {...args} />
+        <IssueBadge {...args} darkmode={true} />
       </div>
     )
   },

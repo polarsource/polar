@@ -47,6 +47,7 @@
     "class-variance-authority": "^0.6.0",
     "cmdk": "^0.2.0",
     "date-fns": "^2.30.0",
+    "eventemitter3": "^5.0.0",
     "framer-motion": "^10.17.8",
     "html-entities": "^2.4.0",
     "markdown-to-jsx": "^7.4.5",

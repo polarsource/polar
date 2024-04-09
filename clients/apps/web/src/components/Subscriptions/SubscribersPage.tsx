@@ -1,6 +1,8 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useSearchSubscriptions, useSubscriptionTiers } from '@/hooks/queries'
+import { getServerURL } from '@/utils/api'
 import {
   Add,
   FileDownloadOutlined,
@@ -15,7 +17,6 @@ import {
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { getServerURL } from 'polarkit/api'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -30,7 +31,6 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from 'polarkit/datatable'
-import { useSearchSubscriptions, useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useCallback, useMemo } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'

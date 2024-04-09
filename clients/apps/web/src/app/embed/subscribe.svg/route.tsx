@@ -1,9 +1,9 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
+import { getServerURL } from '@/utils/api'
 import {
   ListResourceSubscriptionSummary,
   SubscriptionSummary,
 } from '@polar-sh/sdk'
-import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

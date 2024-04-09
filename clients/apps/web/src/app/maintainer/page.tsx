@@ -5,11 +5,11 @@ import { Progress50 } from '@/components/Issues/IssueProgress'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import FakePullRequest from '@/components/Settings/FakePullRequest'
 import { useAuth, usePersonalOrganization } from '@/hooks'
+import { useListAdminOrganizations } from '@/hooks/queries'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useCallback, useEffect } from 'react'
 
 export default function Page() {
@@ -83,7 +83,7 @@ export default function Page() {
             }
           >
             <div className="flex h-full flex-col items-center justify-center md:my-0">
-              <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow  dark:ring-1 md:flex-row ">
+              <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow  md:flex-row dark:ring-1 ">
                 <div className="flex flex-col gap-8 p-8 md:max-w-[320px] ">
                   <h1 className="text-3xl">Enable Maintainer mode</h1>
 

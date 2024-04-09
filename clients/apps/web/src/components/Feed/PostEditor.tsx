@@ -1,4 +1,5 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useSubscriptionBenefits } from '@/hooks/queries'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -12,7 +13,6 @@ import {
 } from 'polarkit/components/ui/atoms/select'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { TabsContent } from 'polarkit/components/ui/atoms/tabs'
-import { useSubscriptionBenefits } from 'polarkit/hooks'
 import React, { PropsWithChildren, useContext, useState } from 'react'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'

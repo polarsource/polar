@@ -1,5 +1,6 @@
 import revalidate from '@/app/actions'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
+import { useUpdateSubscriptionTier } from '@/hooks/queries'
 import { AddOutlined, CloseOutlined } from '@mui/icons-material'
 import {
   Organization,
@@ -15,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
-import { useUpdateSubscriptionTier } from 'polarkit/hooks'
 import { useCallback, useMemo } from 'react'
 
 export interface HighlightedTiersModalProps {

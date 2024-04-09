@@ -1,6 +1,6 @@
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
+import { getServerURL } from '@/utils/api'
 import { ListResourceIssue } from '@polar-sh/sdk'
-import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

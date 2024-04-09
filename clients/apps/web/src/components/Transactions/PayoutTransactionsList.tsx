@@ -1,7 +1,7 @@
+import { getServerURL } from '@/utils/api'
 import { DownloadOutlined } from '@mui/icons-material'
 import { Transaction, TransactionEmbedded } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { getServerURL } from 'polarkit/api'
 import {
   DataTableColumnDef,
   ReactQueryLoading,

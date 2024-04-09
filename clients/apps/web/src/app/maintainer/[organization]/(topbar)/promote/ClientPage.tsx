@@ -5,12 +5,12 @@ import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
+import { useListRepositories } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
 import { Organization } from '@polar-sh/sdk'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import { useListRepositories } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 
 export default function ClientPage({

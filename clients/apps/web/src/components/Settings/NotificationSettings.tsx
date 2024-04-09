@@ -1,6 +1,6 @@
+import { useUser, useUserPreferencesMutation } from '@/hooks/queries'
 import { InfoOutlined } from '@mui/icons-material'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useUser, useUserPreferencesMutation } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
 import Box from './Box'
 import SettingsCheckbox from './SettingsCheckbox'

@@ -5,6 +5,7 @@ import AccountBanner from '@/components/Transactions/AccountBanner'
 import PayoutTransactionsList from '@/components/Transactions/PayoutTransactionsList'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
+import { useAccount, useSearchTransactions } from '@/hooks/queries'
 import { TransactionType } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -20,7 +21,6 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from 'polarkit/datatable'
-import { useAccount, useSearchTransactions } from 'polarkit/hooks'
 import { useCallback } from 'react'
 
 export default function ClientPage({

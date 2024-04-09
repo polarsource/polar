@@ -18,7 +18,7 @@ import {
   unauthenticatedRoutes,
   useBackerRoutes,
 } from '@/components/Dashboard/navigation'
-import { useMaintainerUpgrade } from 'polarkit/hooks'
+import { useMaintainerUpgrade } from '@/hooks/queries'
 import { BrandingMenu } from './BrandingMenu'
 import TopbarNavigation from './TopbarNavigation'
 import TopbarRight from './TopbarRight'

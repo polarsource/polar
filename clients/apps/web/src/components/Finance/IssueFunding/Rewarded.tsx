@@ -1,8 +1,8 @@
 'use client'
 
 import Finance from '@/components/Finance/Finance'
+import { useListPledgesForOrganization, useListRewards } from '@/hooks/queries'
 import { Organization } from '@polar-sh/sdk'
-import { useListPledgesForOrganization, useListRewards } from 'polarkit/hooks'
 
 export default function ClientPage({
   organization,

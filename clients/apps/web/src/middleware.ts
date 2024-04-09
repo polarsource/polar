@@ -1,6 +1,6 @@
 import { ResponseError } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSideAPI } from './utils/api'
+import { getServerSideAPI } from './utils/api/serverside'
 import { defaultApiUrl, defaultFrontendHostname } from './utils/domain'
 import { requestHost } from './utils/nav'
 

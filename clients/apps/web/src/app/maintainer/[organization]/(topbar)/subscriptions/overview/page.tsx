@@ -1,5 +1,5 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'

@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 

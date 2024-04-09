@@ -1,5 +1,5 @@
 import TiersPage from '@/components/Subscriptions/TiersPage'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 

@@ -6,11 +6,11 @@ import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth, usePersonalOrganization } from '@/hooks'
+import { useAccount, useListAccounts } from '@/hooks/queries'
 import { ALL_ACCOUNT_TYPES } from '@/utils/account'
-import { api } from 'polarkit'
+import { api } from '@/utils/api'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Separator } from 'polarkit/components/ui/separator'
-import { useAccount, useListAccounts } from 'polarkit/hooks'
 import { useCallback, useEffect, useState } from 'react'
 
 export default function ClientPage() {

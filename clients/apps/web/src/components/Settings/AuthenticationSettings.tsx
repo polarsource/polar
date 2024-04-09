@@ -1,8 +1,8 @@
 import { useAuth, useGitHubAccount } from '@/hooks'
+import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { AtSymbolIcon } from '@heroicons/react/24/solid'
 import { OAuthAccountRead } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
-import { getGitHubAuthorizeURL } from 'polarkit/auth'
 import {
   FormattedDateTime,
   ShadowListGroup,

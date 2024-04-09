@@ -1,6 +1,11 @@
 'use client'
 
 import {
+  useCreatePersonalAccessToken,
+  useDeletePersonalAccessToken,
+  useListPersonalAccessTokens,
+} from '@/hooks/queries'
+import {
   CreatePersonalAccessTokenResponse,
   PersonalAccessToken,
 } from '@polar-sh/sdk'
@@ -12,11 +17,6 @@ import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Banner } from 'polarkit/components/ui/molecules'
-import {
-  useCreatePersonalAccessToken,
-  useDeletePersonalAccessToken,
-  useListPersonalAccessTokens,
-} from 'polarkit/hooks'
 import { useState } from 'react'
 
 const AccessToken = (

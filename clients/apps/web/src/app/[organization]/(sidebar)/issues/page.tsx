@@ -3,7 +3,7 @@ import {
   buildFundingFilters,
   urlSearchFromObj,
 } from '@/components/Organization/filters'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'

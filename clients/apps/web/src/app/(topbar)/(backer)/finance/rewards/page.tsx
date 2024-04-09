@@ -3,7 +3,7 @@
 import { HeaderPill, RewardsContent } from '@/components/Finance/Finance'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import { useAuth, usePersonalOrganization } from '@/hooks'
-import { useListRewardsToUser } from 'polarkit/hooks'
+import { useListRewardsToUser } from '@/hooks/queries'
 
 export default function Page() {
   const { currentUser } = useAuth()

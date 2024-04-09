@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useSearchDonations } from '@/hooks/queries'
 import { getCentsInDollarString } from '@/utils/money'
 import { CurrencyAmount, Donation, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -17,7 +18,6 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from 'polarkit/datatable'
-import { useSearchDonations } from 'polarkit/hooks'
 import React from 'react'
 
 interface ClientPageProps {

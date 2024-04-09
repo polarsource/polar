@@ -1,10 +1,10 @@
 'use client'
 
+import { useBackofficeBadgeAction } from '@/hooks/queries'
 import {
   BackofficeBadgeActionEnum,
   BackofficeBadgeResponse,
 } from '@polar-sh/sdk'
-import { useBackofficeBadgeAction } from 'polarkit/hooks'
 import { useState } from 'react'
 
 const Badge = () => {

@@ -1,7 +1,7 @@
 import { useAuth, useDiscordAccount } from '@/hooks'
+import { getUserDiscordAuthorizeURL } from '@/utils/auth'
 import { OAuthAccountRead } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
-import { getUserDiscordAuthorizeURL } from 'polarkit/auth'
 import {
   FormattedDateTime,
   ShadowListGroup,

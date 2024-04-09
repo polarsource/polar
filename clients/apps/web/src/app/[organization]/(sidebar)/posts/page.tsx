@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   ListResourceArticle,

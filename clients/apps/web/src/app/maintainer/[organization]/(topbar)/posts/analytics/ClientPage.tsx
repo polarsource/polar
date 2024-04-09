@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useTrafficStatistics, useTrafficTopReferrers } from '@/hooks/queries'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { Organization, TrafficReferrer } from '@polar-sh/sdk'
 import { Card } from 'polarkit/components/ui/atoms/card'
@@ -11,7 +12,6 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import { useTrafficStatistics, useTrafficTopReferrers } from 'polarkit/hooks'
 import { useState } from 'react'
 
 const startOfMonth = new Date()

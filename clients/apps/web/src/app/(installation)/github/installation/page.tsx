@@ -5,6 +5,7 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
+import { api } from '@/utils/api'
 import {
   InstallationCreatePlatformEnum,
   Organization,
@@ -12,7 +13,6 @@ import {
   UserSignupType,
 } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { api } from 'polarkit'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useEffect, useState } from 'react'
 

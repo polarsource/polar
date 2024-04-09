@@ -1,5 +1,5 @@
 import Login from '@/components/Auth/Login'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { UserRead } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'

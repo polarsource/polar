@@ -1,4 +1,4 @@
-import { useAdvertisementDisplays } from 'polarkit/hooks'
+import { useAdvertisementDisplays } from '@/hooks/queries'
 
 const BrowserAd = (props: { subscriptionBenefitId: string }) => {
   const display = useAdvertisementDisplays(props.subscriptionBenefitId)

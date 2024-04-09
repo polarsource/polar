@@ -1,6 +1,6 @@
 import { Posts } from '@/components/Embed/Posts'
+import { getServerURL } from '@/utils/api'
 import { Article, ListResourceArticle, Organization } from '@polar-sh/sdk'
-import { getServerURL } from 'polarkit/api'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

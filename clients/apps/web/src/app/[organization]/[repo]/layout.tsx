@@ -1,7 +1,7 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization, Platforms, Repository, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'

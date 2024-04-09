@@ -2,7 +2,7 @@ import { Inter } from 'next/font/google'
 import '../styles/globals.scss'
 
 import { UserContextProvider } from '@/providers/auth'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Metadata } from 'next'
 import { twMerge } from 'tailwind-merge'
 import {

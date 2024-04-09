@@ -1,4 +1,10 @@
 import { useAuth } from '@/hooks'
+import {
+  useListAllOrganizations,
+  useOrganizationSubscriptions,
+  useUserSubscriptions,
+} from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   Organization,
@@ -10,7 +16,6 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button, { ButtonProps } from 'polarkit/components/ui/atoms/button'
 import {
@@ -19,11 +24,6 @@ import {
   SelectItem,
   SelectTriggerBase,
 } from 'polarkit/components/ui/atoms/select'
-import {
-  useListAllOrganizations,
-  useOrganizationSubscriptions,
-  useUserSubscriptions,
-} from 'polarkit/hooks'
 import { useCallback, useMemo, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 

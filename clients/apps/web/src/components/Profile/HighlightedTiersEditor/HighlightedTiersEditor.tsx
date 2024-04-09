@@ -2,6 +2,11 @@ import revalidate from '@/app/actions'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import {
+  useCreateSubscriptionTier,
+  useSubscriptionBenefits,
+  useUpdateSubscriptionTierBenefits,
+} from '@/hooks/queries'
 import { useRecurringInterval } from '@/hooks/subscriptions'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowForward } from '@mui/icons-material'
@@ -12,11 +17,6 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import {
-  useCreateSubscriptionTier,
-  useSubscriptionBenefits,
-  useUpdateSubscriptionTierBenefits,
-} from 'polarkit/hooks'
 import { useCallback, useMemo, useState } from 'react'
 import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
 import SubscriptionTierRecurringIntervalSwitch from '../../Subscriptions/SubscriptionTierRecurringIntervalSwitch'

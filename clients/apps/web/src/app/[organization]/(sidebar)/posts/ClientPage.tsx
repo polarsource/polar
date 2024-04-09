@@ -2,12 +2,12 @@
 
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { useIsOrganizationAdmin } from '@/hooks'
+import { useSearchArticles } from '@/hooks/queries'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ViewDayOutlined } from '@mui/icons-material'
 import { Article, ListResourceArticle, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useSearchArticles } from 'polarkit/hooks'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 

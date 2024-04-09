@@ -1,5 +1,5 @@
 import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {

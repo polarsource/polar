@@ -1,5 +1,5 @@
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
-import { getServerSideAPI } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Organization, Platforms } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import React from 'react'

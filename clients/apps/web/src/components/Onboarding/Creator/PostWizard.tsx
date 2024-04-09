@@ -1,5 +1,6 @@
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useOrganizationArticles } from '@/hooks/queries'
 import {
   ArrowForward,
   BiotechOutlined,
@@ -15,7 +16,6 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { useOrganizationArticles } from 'polarkit/hooks'
 import { useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 

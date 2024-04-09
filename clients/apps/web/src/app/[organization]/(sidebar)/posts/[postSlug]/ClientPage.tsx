@@ -6,10 +6,10 @@ import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowBackOutlined } from '@mui/icons-material'
 
+import { useListAllOrganizations, useUserSubscriptions } from '@/hooks/queries'
 import { Article, BenefitsInner, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useListAllOrganizations, useUserSubscriptions } from 'polarkit/hooks'
 
 interface PostPageProps {
   subscriptionTiers: SubscriptionTier[]

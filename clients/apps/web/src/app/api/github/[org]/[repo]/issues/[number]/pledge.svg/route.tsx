@@ -1,6 +1,6 @@
 import IssueBadge from '@/components/Embed/IssueBadge'
+import { getServerURL } from '@/utils/api'
 import { Issue, PledgePledgesSummary, Pledger } from '@polar-sh/sdk'
-import { getServerURL } from 'polarkit/api'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

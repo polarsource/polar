@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  useCreateWebhookNotification,
+  useDeleteWebhookNotification,
+  useSearchWebhookNotifications,
+} from '@/hooks/queries'
 import { Organization, WebhookIntegration } from '@polar-sh/sdk'
 import {
   FormattedDateTime,
@@ -7,11 +12,6 @@ import {
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
-import {
-  useCreateWebhookNotification,
-  useDeleteWebhookNotification,
-  useSearchWebhookNotifications,
-} from 'polarkit/hooks'
 import { useState } from 'react'
 
 const WebhookNotification = (props: WebhookIntegration) => {

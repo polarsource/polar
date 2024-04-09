@@ -1,6 +1,6 @@
+import { getServerURL } from '@/utils/api'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { getServerURL } from 'polarkit/api'
 import AuthorizeErrorPage from './AuthorizeErrorPage'
 import AuthorizePage from './AuthorizePage'
 

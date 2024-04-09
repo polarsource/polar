@@ -1,5 +1,10 @@
 import { useAuth } from '@/hooks/auth'
 import { useSendMagicLink } from '@/hooks/magicLink'
+import {
+  useCreateFreeSubscription,
+  useSubscriptionTiers,
+  useUserSubscriptions,
+} from '@/hooks/queries'
 import { captureEvent } from '@/utils/posthog'
 import { CheckIcon } from '@heroicons/react/24/outline'
 import {
@@ -13,11 +18,6 @@ import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
-import {
-  useCreateFreeSubscription,
-  useSubscriptionTiers,
-  useUserSubscriptions,
-} from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { CloseButton, Modal, ModalHeader } from '../Modal'

@@ -1,6 +1,6 @@
 import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 
-import { IssueLabel } from 'polarkit/components/Issue'
+import IssueLabel from '@/components/Issues/IssueLabel'
 import { twMerge } from 'tailwind-merge'
 import BadgeRepository from './Repository'
 

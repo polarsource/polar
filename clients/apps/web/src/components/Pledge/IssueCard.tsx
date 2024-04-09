@@ -10,11 +10,6 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
-  DiffStat,
-  Pledgers,
-  generateMarkdownTitle,
-} from 'polarkit/components/Issue'
-import {
   GitMergeIcon,
   GitPullRequestClosedIcon,
   GitPullRequestIcon,
@@ -28,6 +23,9 @@ import { formatStarsNumber } from 'polarkit/utils'
 import { organizationPageLink } from 'polarkit/utils/nav'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { DiffStat } from '../Issues/IssueReference'
+import Pledgers from '../Issues/Pledgers'
+import { generateMarkdownTitle } from '../Issues/markdown'
 
 const IssueCard = ({
   issue,

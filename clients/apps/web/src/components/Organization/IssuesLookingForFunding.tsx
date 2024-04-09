@@ -19,11 +19,6 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation'
-import {
-  IssueActivityBox,
-  IssueFundingDetails,
-  IssueSummary,
-} from 'polarkit/components/Issue'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
@@ -45,6 +40,9 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import IssueActivityBox from '../Issues/IssueActivityBox'
+import IssueFundingDetails from '../Issues/IssueFundingDetails'
+import IssueSummary from '../Issues/IssueSummary'
 import Pagination, { usePagination } from '../Pagination/Pagination'
 import Spinner from '../Shared/Spinner'
 import {

@@ -1,3 +1,4 @@
+import LogoIcon from '@/components/Brand/LogoIcon'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -7,7 +8,6 @@ import {
   X,
 } from '@mui/icons-material'
 import Link from 'next/link'
-import { LogoIcon } from 'polarkit/components/brand'
 import {
   Card,
   CardContent,

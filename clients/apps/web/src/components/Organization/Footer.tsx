@@ -1,5 +1,5 @@
+import LogoType from '@/components/Brand/LogoType'
 import Link, { LinkProps } from 'next/link'
-import { LogoType } from 'polarkit/components/brand'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { UpsellFooter } from './UpsellFooter'

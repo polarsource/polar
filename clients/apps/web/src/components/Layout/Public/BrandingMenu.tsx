@@ -1,11 +1,11 @@
 'use client'
 
+import LogoIcon from '@/components/Brand/LogoIcon'
 import {
   ArrowDownwardOutlined,
   ContentPasteOutlined,
 } from '@mui/icons-material'
 import Link from 'next/link'
-import { LogoIcon } from 'polarkit/components/brand'
 
 import {
   DropdownMenu,

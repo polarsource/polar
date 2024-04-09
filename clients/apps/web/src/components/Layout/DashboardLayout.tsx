@@ -1,5 +1,6 @@
 'use client'
 
+import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CloseOutlined, GitHub, ShortTextOutlined } from '@mui/icons-material'
@@ -7,7 +8,6 @@ import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CONFIG } from 'polarkit'
-import { LogoIcon } from 'polarkit/components/brand'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   PropsWithChildren,

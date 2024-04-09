@@ -1,5 +1,5 @@
+import LogoType70 from '@/components/Brand/LogoType70'
 import Link from 'next/link'
-import { LogoType70 } from 'polarkit/components/brand'
 import Button from 'polarkit/components/ui/atoms/button'
 
 export default function Page({

@@ -1,5 +1,5 @@
+import LogoType70 from '@/components/Brand/LogoType70'
 import { Metadata } from 'next'
-import { LogoType70 } from 'polarkit/components/brand'
 
 export const metadata: Metadata = {
   title: 'Sign in link sent',

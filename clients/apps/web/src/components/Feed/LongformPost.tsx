@@ -1,7 +1,7 @@
 'use client'
 
+import LogoIcon from '@/components/Brand/LogoIcon'
 import Link from 'next/link'
-import { LogoIcon } from 'polarkit/components/brand'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { organizationPageLink } from 'polarkit/utils/nav'

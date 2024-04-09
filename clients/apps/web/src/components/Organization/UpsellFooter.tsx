@@ -1,3 +1,4 @@
+import LogoIcon from '@/components/Brand/LogoIcon'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   ArrowForward,
@@ -5,7 +6,6 @@ import {
   HiveOutlined,
 } from '@mui/icons-material'
 import Link from 'next/link'
-import { LogoIcon } from 'polarkit/components/brand'
 import { Separator } from 'polarkit/components/ui/separator'
 import { twMerge } from 'tailwind-merge'
 

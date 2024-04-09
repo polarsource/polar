@@ -1,4 +1,4 @@
-import { LogoType } from 'polarkit/components/brand'
+import LogoType from '@/components/Brand/LogoType'
 import Alert from 'polarkit/components/ui/atoms/alert'
 import Button from 'polarkit/components/ui/atoms/button'
 

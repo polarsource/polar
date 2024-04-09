@@ -1,5 +1,5 @@
+import LogoIcon from '@/components/Brand/LogoIcon'
 import { Article, Organization } from '@polar-sh/sdk'
-import { LogoIcon } from 'polarkit/components/brand'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 
 export const Posts = ({

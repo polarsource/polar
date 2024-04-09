@@ -1,7 +1,7 @@
 'use client'
 
+import LogoType70 from '@/components/Brand/LogoType70'
 import { UserSignupType } from '@polar-sh/sdk'
-import { LogoType70 } from 'polarkit/components/brand'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import { Progress50 } from '../Issues/IssueProgress'
 import FakePullRequest from '../Settings/FakePullRequest'
@@ -29,7 +29,7 @@ const MaintainerSignup = () => {
       <div className="my-16 flex flex-col items-center  md:my-0">
         <LogoType70 className="mb-16 h-10" />
 
-        <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow  dark:ring-1 md:flex-row ">
+        <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow  md:flex-row dark:ring-1 ">
           <div className="flex flex-col gap-8 p-8 md:max-w-[320px] ">
             <h1 className="text-4xl font-light">Get a funded backlog</h1>
 

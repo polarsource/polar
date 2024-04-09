@@ -1,3 +1,4 @@
+import LogoIcon from '@/components/Brand/LogoIcon'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
@@ -12,7 +13,6 @@ import {
   UserRead,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
-import { LogoIcon } from 'polarkit/components/brand'
 import React from 'react'
 import { PolarMenu } from './LayoutPolarMenu'
 

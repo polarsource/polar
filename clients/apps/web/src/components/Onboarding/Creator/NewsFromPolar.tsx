@@ -1,6 +1,6 @@
+import LogoIcon from '@/components/Brand/LogoIcon'
 import { ArrowForward } from '@mui/icons-material'
 import Link from 'next/link'
-import { LogoIcon } from 'polarkit/components/brand'
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ export const NewsFromPolar = () => {
   return (
     <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">
       <div className="col-span-2 flex flex-col gap-y-4 md:gap-y-6 md:py-6 lg:col-span-1">
-        <LogoIcon className="hidden h-16 w-16 text-blue-500 dark:text-blue-400 md:block" />
+        <LogoIcon className="hidden h-16 w-16 text-blue-500 md:block dark:text-blue-400" />
         <h2 className="text-2xl font-bold">New Features</h2>
         <p className="dark:text-polar-400 w-full text-gray-600 [text-wrap:balance]">
           Some of the latest features and updates along with Tips & Tricks for

@@ -1,8 +1,8 @@
+import LogoIcon from '@/components/Brand/LogoIcon'
 import {
   SubscriptionTier,
   SubscriptionTierPriceRecurringInterval,
 } from '@polar-sh/sdk'
-import { LogoIcon } from 'polarkit/components/brand'
 import { formatCurrencyAndAmount } from 'polarkit/money'
 import {
   getRecurringBillingLabel,

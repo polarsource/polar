@@ -1,4 +1,4 @@
-import { LogoType70 } from 'polarkit/components/brand'
+import LogoType70 from '@/components/Brand/LogoType70'
 import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'

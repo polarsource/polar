@@ -2,6 +2,8 @@
 
 An example app of how to use `@polar-sh/sdk` with NextJS to add Polar data to your website.
 
+A live demo of this example app is deployed [here](https://polar-next-js-example.vercel.app).
+
 ```
 # ch to this directory
 cd clients/examples/next-js-example

@@ -7,8 +7,10 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
+import { githubIssueLink } from '@/utils/github'
 import { getCentsInDollarString } from '@/utils/money'
-import { CurrencyAmount, Donation, Organization } from '@polar-sh/sdk'
+import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
+import { CurrencyAmount, Donation, Issue, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -161,7 +163,36 @@ const DonorsTable: React.FC<DonorsTableProps> = ({
           return <span className="text-gray-300">-</span>
         }
 
-        return <p className="text-gray-700">&quot;{message}&quot;</p>
+        return (
+          <p className="text-gray-700 dark:text-gray-400">
+            &quot;{message}&quot;
+          </p>
+        )
+      },
+    },
+    {
+      id: 'issue',
+      accessorKey: 'issue',
+      enableSorting: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Issue" />
+      ),
+      cell: (props) => {
+        const issue = props.getValue() as Issue | undefined
+
+        if (!issue) {
+          return <span className="text-gray-300">-</span>
+        }
+
+        return (
+          <a
+            href={githubIssueLink(issue)}
+            className="inline-flex items-center gap-1 text-blue-700 underline dark:text-blue-400 "
+          >
+            <span>{issue.title}</span>
+            <ArrowUpRightIcon className="h-3 w-3" />
+          </a>
+        )
       },
     },
   ]

@@ -2219,6 +2219,12 @@ export interface Donation {
      * @memberof Donation
      */
     created_at: string;
+    /**
+     * 
+     * @type {Issue}
+     * @memberof Donation
+     */
+    issue: Issue | null;
 }
 /**
  * 

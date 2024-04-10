@@ -4,8 +4,8 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
-import { WhiteCard } from 'polarkit/components/ui/Cards'
 import Button from 'polarkit/components/ui/atoms/button'
+import WhiteCard from '../Cards/WhiteCard'
 import GitHubIcon from '../Icons/GitHubIcon'
 import screenshot from './dashboard.png'
 
@@ -74,7 +74,7 @@ const ThankYouUpsell = (props: {
             Sign in with email
           </Button>
         </div>
-        <div className="bg-grid-pattern dark:bg-grid-pattern-dark relative hidden w-3/5 overflow-hidden border-l border-blue-100 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/20 md:block">
+        <div className="bg-grid-pattern dark:bg-grid-pattern-dark relative hidden w-3/5 overflow-hidden border-l border-blue-100 bg-blue-50 md:block dark:border-blue-500/20 dark:bg-blue-500/20">
           <Image
             src={screenshot}
             alt="Polar dashboard screenshot"

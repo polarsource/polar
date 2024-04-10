@@ -203,16 +203,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       return currentRoute.startsWith(`/maintainer/${org.name}/donations`)
     },
     if: true,
-    subs: [
-      {
-        title: 'Overview',
-        link: `/maintainer/${org.name}/donations/overview`,
-      },
-      {
-        title: 'Donors',
-        link: `/maintainer/${org.name}/donations/donors`,
-      },
-    ],
   },
   {
     id: 'org-issues',

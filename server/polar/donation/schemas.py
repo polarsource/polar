@@ -6,6 +6,7 @@ from pydantic import UUID4, Field
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
+from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
 from polar.models import Donation as DonationModel
 from polar.models.organization import Organization
@@ -34,6 +35,7 @@ class Donation(Schema):
     donor: DonationOrganization | DonationUser | None
     email: str
     created_at: datetime.datetime
+    issue: Issue | None
 
     @classmethod
     def from_db(
@@ -55,6 +57,7 @@ class Donation(Schema):
             donor=donor,
             created_at=i.created_at,
             email=i.email,
+            issue=Issue.from_db(i.issue) if i.issue else None,
         )
 
 

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
+from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.user import User
 
@@ -134,3 +135,11 @@ class Donation(RecordModel):
         nullable=True,
         default=None,
     )
+
+    @declared_attr
+    def issue(cls) -> Mapped[Issue | None]:
+        return relationship(
+            Issue,
+            primaryjoin=Issue.id == cls.issue_id,
+            lazy="raise",
+        )

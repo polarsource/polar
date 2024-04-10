@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import User
+from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
 from tests.donation.conftest import DonationSender
@@ -129,6 +130,39 @@ class TestSearch:
 
         # anonymous
         assert json["items"][2]["donor"] is None
+
+    @pytest.mark.authenticated
+    async def test_with_issue(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        donation_sender: DonationSender,
+        issue: Issue,
+    ) -> None:
+        user_organization.is_admin = True
+        await save_fixture(user_organization)
+
+        await donation_sender.send_payment_intent_then_charge(
+            issue_id=issue.id,
+        )
+
+        params = {"to_organization_id": str(organization.id)}
+        response = await client.get("/api/v1/donations/search", params=params)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        assert 1 == len(json["items"])
+        assert str(issue.id) == json["items"][0]["issue"]["id"]
+        assert issue.title == json["items"][0]["issue"]["title"]
+        assert json["items"][0]["issue"]["repository"]
+        assert json["items"][0]["issue"]["repository"]["organization"]
+        assert (
+            str(organization.id)
+            == json["items"][0]["issue"]["repository"]["organization"]["id"]
+        )
 
     async def test_public_search(
         self,

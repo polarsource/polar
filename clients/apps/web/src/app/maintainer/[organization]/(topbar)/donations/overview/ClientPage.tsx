@@ -3,6 +3,10 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useDonationStatistics, useUpdateOrganization } from '@/hooks/queries'
+import {
+  DataTablePaginationState,
+  DataTableSortingState,
+} from '@/utils/datatable'
 import { getCentsInDollarString } from '@/utils/money'
 import { Donation, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -16,6 +20,7 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useState } from 'react'
+import DonorsTable from './DonorsTable'
 
 const startOfMonth = new Date()
 startOfMonth.setUTCHours(0, 0, 0, 0)
@@ -41,9 +46,13 @@ function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
 export default function ClientPage({
   organization,
   donations,
+  pagination,
+  sorting,
 }: {
   organization: Organization
   donations: Donation[]
+  pagination: DataTablePaginationState
+  sorting: DataTableSortingState
 }) {
   const updateOrganization = useUpdateOrganization()
 
@@ -92,10 +101,18 @@ export default function ClientPage({
         ) : null}
 
         {donations.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <DonationActivity donations={donations} />
-            <DonationsEarnings organization={organization} />
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <DonationActivity donations={donations} />
+              <DonationsEarnings organization={organization} />
+            </div>
+
+            <DonorsTable
+              pagination={pagination}
+              sorting={sorting}
+              organization={organization}
+            />
+          </>
         ) : (
           <div className="p-4 text-gray-400">
             {"You haven't received any donations yet, come back later..."}

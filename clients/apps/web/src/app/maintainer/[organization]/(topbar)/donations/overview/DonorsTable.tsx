@@ -1,6 +1,5 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useSearchDonations } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -20,13 +19,13 @@ import {
 } from 'polarkit/components/ui/atoms/datatable'
 import React from 'react'
 
-interface ClientPageProps {
+interface DonorsTableProps {
   organization: Organization
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
+const DonorsTable: React.FC<DonorsTableProps> = ({
   organization,
   pagination,
   sorting,
@@ -52,7 +51,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/donations/donors?${getSearchParams(
+      `/maintainer/${organization.name}/donations/overview?${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -70,7 +69,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/donations/donors?${getSearchParams(
+      `/maintainer/${organization.name}/donations/overview?${getSearchParams(
         pagination,
         updatedSorting,
       )}`,
@@ -168,26 +167,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
   ]
 
   return (
-    <DashboardBody>
-      <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Donors</h2>
-        </div>
-        {donations && pageCount !== undefined ? (
-          <DataTable
-            columns={columns}
-            data={donations}
-            pageCount={pageCount}
-            pagination={pagination}
-            onPaginationChange={setPagination}
-            sorting={sorting}
-            onSortingChange={setSorting}
-            isLoading={donationsHook}
-          />
-        ) : null}
-      </div>
-    </DashboardBody>
+    <>
+      {donations && pageCount !== undefined ? (
+        <DataTable
+          columns={columns}
+          data={donations}
+          pageCount={pageCount}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          isLoading={donationsHook}
+        />
+      ) : null}
+    </>
   )
 }
 
-export default ClientPage
+export default DonorsTable

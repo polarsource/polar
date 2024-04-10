@@ -8,11 +8,13 @@ from polar.config import settings
 # Redis is generic at type checking, but not at runtime...
 if TYPE_CHECKING:
     Redis = _async_redis.Redis[str]
+    ConnectionPool = _async_redis.ConnectionPool[_async_redis.Connection]
 else:
     Redis = _async_redis.Redis
+    ConnectionPool = _async_redis.ConnectionPool
 
 
-def create_async_connection_pool() -> _async_redis.ConnectionPool:
+def create_async_connection_pool() -> ConnectionPool:
     return _async_redis.ConnectionPool.from_url(
         settings.redis_url, decode_responses=True
     )

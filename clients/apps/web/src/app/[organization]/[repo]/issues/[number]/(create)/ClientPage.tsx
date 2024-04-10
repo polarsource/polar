@@ -55,13 +55,15 @@ const ClientPage = ({
   return (
     <>
       {issue.repository.visibility === Visibility.PRIVATE && (
-        <Banner color="muted">
-          This is an issue in a private repository. Only logged in users that
-          are members of {issue.repository.organization.name} can see it.
-        </Banner>
+        <div className="w-full">
+          <Banner color="muted">
+            This is an issue in a private repository. Only logged in users that
+            are members of {issue.repository.organization.name} can see it.
+          </Banner>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+      <div className="grid w-full grid-cols-1 gap-12 lg:grid-cols-2">
         {/* Left side */}
         <div className="mt-12">
           <IssueCard

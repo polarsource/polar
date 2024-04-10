@@ -37,10 +37,19 @@ const ClientPage = ({
             <ShadowBoxOnMd>
               <div className="flex flex-col gap-y-2">
                 <h2 className="text-xl">Donate</h2>
-                <p className="dark:text-polar-500 text-gray-500">
-                  Donate to {organization.pretty_name ?? organization.name} as a
-                  thank you
-                </p>
+
+                {issue ? (
+                  <p className="dark:text-polar-500 text-gray-500">
+                    Donate to {organization.pretty_name ?? organization.name} as
+                    a thank you for fixing {issue.repository.organization.name}/
+                    {issue.repository.name}#{issue.number}
+                  </p>
+                ) : (
+                  <p className="dark:text-polar-500 text-gray-500">
+                    Donate to {organization.pretty_name ?? organization.name} as
+                    a thank you
+                  </p>
+                )}
               </div>
 
               <Checkout

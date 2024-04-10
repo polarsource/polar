@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { redirectToCanonicalDomain } from '@/utils/nav'
+import { organizationPageLink, redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Issue,
   Pledger,
@@ -9,7 +9,7 @@ import {
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { headers } from 'next/headers'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -120,6 +120,16 @@ export default async function Page({
     headers: headers(),
     subPath: `/${issue.repository.name}/issues/${issue.number}`,
   })
+
+  // Closed issue, redirect to donation instead
+  if (issue.issue_closed_at) {
+    redirect(
+      organizationPageLink(
+        issue.repository.organization,
+        `donate?issue_id=${issue.id}`,
+      ),
+    )
+  }
 
   return (
     <ClientPage

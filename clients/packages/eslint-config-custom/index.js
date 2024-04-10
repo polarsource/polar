@@ -5,22 +5,6 @@ module.exports = {
   rules: {
     '@next/next/no-html-link-for-pages': 'off',
     'react/jsx-key': 'error',
-    'no-restricted-imports': [
-      'warn',
-      {
-        patterns: [
-          {
-            group: [
-              'polarkit/components/ui/*',
-              '!polarkit/components/ui/atoms',
-              '!polarkit/components/ui/molecules',
-            ],
-            message:
-              'Direct usages of shadcn components are not allowed. Please use the proxied components in the atoms & molecules directories instead.',
-          },
-        ],
-      },
-    ],
     'polar-rules/enforce-github-capitalization': 'warn',
   },
 }

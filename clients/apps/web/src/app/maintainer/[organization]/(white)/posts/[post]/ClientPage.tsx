@@ -79,27 +79,29 @@ const ClientPage = () => {
 
   useAlertIfUnsaved(localHasDiff)
 
-  const handleSave = useCallback(async () => {
-    if (!post?.data?.id) {
-      return
-    }
+  const handleSave = useCallback(
+    async (showBanner = true) => {
+      if (!post?.data?.id) {
+        return
+      }
 
-    try {
-      await update.mutateAsync({
-        id: post.data.id,
-        articleUpdate: localArticle,
-      })
+      try {
+        await update.mutateAsync({
+          id: post.data.id,
+          articleUpdate: localArticle,
+        })
 
-      // Invalidate cache on public pages
-      revalidate(`articles:${post.data.organization.name}:${post.data.slug}`)
+        // Invalidate cache on public pages
+        revalidate(`articles:${post.data.organization.name}:${post.data.slug}`)
 
-      setAnimateSaveBanner(true)
-
-      setTimeout(() => {
-        setAnimateSaveBanner(false)
-      }, 2000)
-    } catch (err) {}
-  }, [post, update, localArticle])
+        if (showBanner) {
+          setAnimateSaveBanner(true)
+          setTimeout(() => setAnimateSaveBanner(false), 2000)
+        }
+      } catch (err) {}
+    },
+    [post, update, localArticle],
+  )
 
   useEffect(() => {
     const keyHandler = (e: KeyboardEvent) => {
@@ -127,7 +129,7 @@ const ClientPage = () => {
     return () => {
       window.removeEventListener('keydown', keyHandler)
     }
-  }, [handleSave, router, params])
+  }, [handleSave, router, params, tab])
 
   if (!post.data) {
     return (
@@ -148,6 +150,7 @@ const ClientPage = () => {
     setTab(tab)
 
     if (tab === 'settings') {
+      handleSave(false)
       captureEvent('posts:edit_tab_settings:view')
     } else if (tab === 'edit') {
       captureEvent('posts:edit_tab_edit:view')
@@ -177,7 +180,7 @@ const ClientPage = () => {
           </Link>
           <Button
             disabled={!localHasDiff}
-            onClick={handleSave}
+            onClick={() => handleSave()}
             loading={update.isPending}
           >
             Save

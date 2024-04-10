@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
 import Markdown from 'react-markdown'
 

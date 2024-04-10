@@ -7,12 +7,13 @@ import { Account, Organization, Status } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
+  SelectContent,
+  SelectItem,
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form, FormField } from 'polarkit/components/ui/form'
-import { SelectContent, SelectItem } from 'polarkit/components/ui/select'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useForm } from 'react-hook-form'
 

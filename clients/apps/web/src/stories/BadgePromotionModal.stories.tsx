@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import { PolarQueryClientProvider } from '@/app/providers'
 import { BadgePromotionModal } from '@/components/Issues/IssuePromotionModal'
-import { issue, user } from 'polarkit/testdata'
+import { issue, user } from '@/utils/testdata'
 
 type Story = StoryObj<typeof BadgePromotionModal>
 

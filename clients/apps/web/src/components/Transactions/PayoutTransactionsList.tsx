@@ -1,4 +1,9 @@
 import { getServerURL } from '@/utils/api'
+import {
+  DataTableOnChangeFn,
+  DataTablePaginationState,
+  DataTableSortingState,
+} from '@/utils/datatable'
 import { DownloadOutlined } from '@mui/icons-material'
 import { Transaction, TransactionEmbedded } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -6,11 +11,6 @@ import {
   DataTableColumnDef,
   ReactQueryLoading,
 } from 'polarkit/components/ui/atoms/datatable'
-import {
-  DataTableOnChangeFn,
-  DataTablePaginationState,
-  DataTableSortingState,
-} from 'polarkit/datatable'
 import TransactionsList, { isTransaction } from './TransactionsList'
 
 interface PayoutTransactionsListProps {

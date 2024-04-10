@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
+import { issue, org } from '@/utils/testdata'
 import { Reactions } from '@polar-sh/sdk'
-import { issue, org } from 'polarkit/testdata'
 
 const meta: Meta<typeof OpenGraphImageFunding> = {
   title: 'Organisms/OpenGraphImageFunding',

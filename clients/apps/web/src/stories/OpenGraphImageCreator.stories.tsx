@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import OpenGraphImageCreator from '@/components/Organization/OpenGraphImageCreator'
-import { org } from 'polarkit/testdata'
+import { org } from '@/utils/testdata'
 
 const meta: Meta<typeof OpenGraphImageCreator> = {
   title: 'Organisms/OpenGraphImageCreator',

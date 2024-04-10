@@ -1,8 +1,8 @@
+import { CONFIG } from '@/utils/config'
 import { Organization } from '@polar-sh/sdk'
 import { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers'
 import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
-import { CONFIG } from 'polarkit/config'
 
 export const redirectToCanonicalDomain = ({
   organization,

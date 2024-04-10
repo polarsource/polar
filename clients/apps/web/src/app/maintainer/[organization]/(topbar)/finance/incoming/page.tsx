@@ -1,8 +1,8 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { RedirectType, redirect } from 'next/navigation'
-import { DataTableSearchParams, parseSearchParams } from 'polarkit/datatable'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {

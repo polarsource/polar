@@ -1,9 +1,9 @@
 import Login from '@/components/Auth/Login'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { CONFIG } from '@/utils/config'
 import { UserRead } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { CONFIG } from 'polarkit/config'
 
 export const metadata: Metadata = {
   title: 'Login to Polar',

@@ -1,4 +1,4 @@
-import { CONFIG } from 'polarkit'
+import { CONFIG } from '@/utils/config'
 import Button from 'polarkit/components/ui/atoms/button'
 import IconCounter from '../Issues/IconCounter'
 import IssueLabel from '../Issues/IssueLabel'

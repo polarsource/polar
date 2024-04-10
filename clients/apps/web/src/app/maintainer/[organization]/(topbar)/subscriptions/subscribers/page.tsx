@@ -1,8 +1,8 @@
 import SubscribersPage from '@/components/Subscriptions/SubscribersPage'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { DataTableSearchParams, parseSearchParams } from 'polarkit/datatable'
 
 export async function generateMetadata({
   params,

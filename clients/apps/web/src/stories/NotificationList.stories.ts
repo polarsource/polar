@@ -5,7 +5,7 @@ import {
   notification_maintainerPledgePaidNotification,
   notification_maintainerPledgePendingNotification,
   notification_pledgerPledgePendingNotification,
-} from 'polarkit/testdata'
+} from '@/utils/testdata'
 import { List } from '../components/Notifications/Popover'
 
 const meta: Meta<typeof List> = {

@@ -1,7 +1,7 @@
 'use client'
 
+import { CONFIG } from '@/utils/config'
 import { Command } from 'cmdk'
-import { CONFIG } from 'polarkit'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

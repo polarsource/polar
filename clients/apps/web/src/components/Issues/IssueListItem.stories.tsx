@@ -2,6 +2,16 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import { PolarQueryClientProvider } from '@/app/providers'
 import {
+  addDays,
+  addHours,
+  issue,
+  org,
+  pledgePublicAPI,
+  pledger,
+  pledgesSummaries,
+  user,
+} from '@/utils/testdata'
+import {
   IssueReferenceRead,
   IssueReferenceType,
   IssueStatus,
@@ -12,16 +22,6 @@ import {
   Reward,
   RewardState,
 } from '@polar-sh/sdk'
-import {
-  addDays,
-  addHours,
-  issue,
-  org,
-  pledgePublicAPI,
-  pledger,
-  pledgesSummaries,
-  user,
-} from 'polarkit/testdata'
 import IssueListItem from './IssueListItem'
 
 type Story = StoryObj<typeof IssueListItem>

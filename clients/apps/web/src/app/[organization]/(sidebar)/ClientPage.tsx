@@ -12,6 +12,7 @@ import {
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
 import { useUpdateOrganization } from '@/hooks/queries'
+import { CONFIG } from '@/utils/config'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { GitHub, ViewDayOutlined } from '@mui/icons-material'
@@ -25,7 +26,6 @@ import {
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { CONFIG } from 'polarkit'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'

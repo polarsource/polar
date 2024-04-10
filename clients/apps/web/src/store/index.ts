@@ -1,6 +1,6 @@
+import { CONFIG } from '@/utils/config'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { CONFIG } from '../config'
 import { FormDraftSlice, createFormDraftSlice } from './formDraftSlice'
 import { UserSlice, createUserSlice } from './userContext'
 

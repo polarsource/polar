@@ -2,8 +2,8 @@
 
 import { PublicPageOrganizationContext } from '@/providers/organization'
 import { api, isOnCustomDomain } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
 import { useRouter } from 'next/navigation'
-import { CONFIG } from 'polarkit/config'
 import { useCallback, useContext } from 'react'
 
 export const useSendMagicLink = () => {

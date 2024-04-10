@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 
 import { UserContextProvider } from '@/providers/auth'
-import { issue } from 'polarkit/testdata'
+import { issue } from '@/utils/testdata'
 
 const meta: Meta<typeof PledgeCheckoutFundOnCompletion> = {
   title: 'Organisms/PledgeCheckoutFundOnCompletion',

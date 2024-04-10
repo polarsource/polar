@@ -1,6 +1,6 @@
+import { useStore } from '@/store'
+import { CONFIG } from '@/utils/config'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { CONFIG } from 'polarkit/config'
-import { useStore } from 'polarkit/store'
 
 const BackerConnectUpsell = () => {
   const setSkipped = useStore(

@@ -1,5 +1,5 @@
+import { issue, pledgePublicAPI, user } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
-import { issue, pledgePublicAPI, user } from 'polarkit/testdata'
 import SplitNotify from './SplitNotify'
 
 const meta: Meta<typeof SplitNotify> = {

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import List from '@/components/Finance/ListRewards'
+import { issue } from '@/utils/testdata'
 import {
   Pledge,
   PledgeState,
@@ -8,7 +9,6 @@ import {
   Reward,
   RewardState,
 } from '@polar-sh/sdk'
-import { issue } from 'polarkit/testdata'
 
 type Story = StoryObj<typeof List>
 

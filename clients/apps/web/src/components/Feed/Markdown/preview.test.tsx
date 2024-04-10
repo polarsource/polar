@@ -1,6 +1,6 @@
+import { article } from '@/utils/testdata'
 import { Article } from '@polar-sh/sdk'
 import '@testing-library/jest-dom'
-import { article } from 'polarkit/testdata'
 import ReactDOMServer from 'react-dom/server'
 import PreviewText, { UnescapeText } from './preview'
 

@@ -1,5 +1,5 @@
+import { issue, pledgePublicAPI, user } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
-import { issue, pledgePublicAPI, user } from 'polarkit/testdata'
 import Split, { Contributor } from './Split'
 
 const meta: Meta<typeof Split> = {

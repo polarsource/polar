@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { DataTableSearchParams, parseSearchParams } from 'polarkit/datatable'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({

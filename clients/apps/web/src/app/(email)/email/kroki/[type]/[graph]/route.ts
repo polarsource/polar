@@ -1,5 +1,5 @@
+import { CONFIG } from '@/utils/config'
 import { NextResponse, type NextRequest } from 'next/server'
-import { CONFIG } from 'polarkit'
 
 export async function GET(
   _: NextRequest,

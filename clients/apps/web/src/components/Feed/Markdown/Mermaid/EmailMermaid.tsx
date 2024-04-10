@@ -1,5 +1,5 @@
+import { CONFIG } from '@/utils/config'
 import pako from 'pako'
-import { CONFIG } from 'polarkit'
 
 interface EmailMermaidProps {
   graphDefinition: string

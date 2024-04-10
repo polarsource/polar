@@ -1,6 +1,6 @@
+import { CONFIG } from '@/utils/config'
 import { NextResponse, type NextRequest } from 'next/server'
 import ogs from 'open-graph-scraper-lite'
-import { CONFIG } from 'polarkit'
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.searchParams.get('url')

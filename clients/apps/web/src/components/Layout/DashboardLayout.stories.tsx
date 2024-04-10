@@ -1,7 +1,7 @@
 import { PolarQueryClientProvider } from '@/app/providers'
 import { UserContextProvider } from '@/providers/auth'
+import { repo } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
-import { repo } from 'polarkit/testdata'
 import {
   DashboardBody,
   DashboardHeader,

@@ -1,5 +1,5 @@
+import { CONFIG } from '@/utils/config'
 import { Article } from '@polar-sh/sdk'
-import { CONFIG } from 'polarkit'
 import { twMerge } from 'tailwind-merge'
 import { firstChild } from '../markdown'
 

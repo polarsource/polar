@@ -1,5 +1,6 @@
 'use client'
 
+import WhiteCard from '@/components/Cards/WhiteCard'
 import FAQ from '@/components/Pledge/FAQ'
 import HowItWorks from '@/components/Pledge/HowItWorks'
 import IssueCard from '@/components/Pledge/IssueCard'
@@ -12,7 +13,6 @@ import {
   RewardsSummary,
   Visibility,
 } from '@polar-sh/sdk'
-import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { Banner } from 'polarkit/components/ui/molecules'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'

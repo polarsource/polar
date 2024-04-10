@@ -9,10 +9,10 @@ import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Pledge } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { GrayCard } from 'polarkit/components/ui/Cards'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import GrayCard from '../Cards/GrayCard'
 
 export const Status = (props: {
   pledge: Pledge

@@ -38,7 +38,6 @@
     "./components/ui/separator": "./src/components/ui/separator.tsx",
     "./components/ui/table": "./src/components/ui/table.tsx",
     "./components/ui/accordion": "./src/components/ui/accordion.tsx",
-    "./components/ui/Cards": "./src/components/ui/Cards/index.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

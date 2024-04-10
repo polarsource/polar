@@ -3,7 +3,7 @@ import { api } from '@/utils/api'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { Issue } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Button } from 'polarkit/components/ui/button'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useEffect, useState } from 'react'
 
 const Embed = (props: { src: string }) => {

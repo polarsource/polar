@@ -15,7 +15,6 @@ module.exports = {
               '!polarkit/components/ui/atoms',
               '!polarkit/components/ui/molecules',
               '!polarkit/components/ui/Cards',
-              '!polarkit/components/ui/Form',
             ],
             message:
               'Direct usages of shadcn components are not allowed. Please use the proxied components in the atoms & molecules directories instead.',

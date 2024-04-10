@@ -3,13 +3,9 @@ import { Issue } from '@polar-sh/sdk'
 import {
   Tabs,
   TabsContent,
-  TabsList,
-  TabsTrigger,
-} from 'polarkit/components/ui/atoms/tabs'
-import {
   TabsList as TabsListPrimitive,
   TabsTrigger as TabsTriggerPrimitive,
-} from 'polarkit/components/ui/tabs'
+} from 'polarkit/components/ui/atoms/tabs'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import PledgeCheckoutContribute from './PledgeCheckoutContribute'
@@ -33,7 +29,7 @@ export const PledgeTabsList = React.forwardRef<
     {...props}
   />
 ))
-TabsList.displayName = PledgeTabsList.displayName
+PledgeTabsList.displayName = 'PledgeTabsList'
 
 export const PledgeTabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsTriggerPrimitive>,
@@ -51,7 +47,7 @@ export const PledgeTabsTrigger = React.forwardRef<
     {...props}
   />
 ))
-TabsTrigger.displayName = PledgeTabsTrigger.displayName
+PledgeTabsTrigger.displayName = 'PledgeTabsTrigger'
 
 const PledgeCheckoutPanel = ({
   issue,

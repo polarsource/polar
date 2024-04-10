@@ -34,7 +34,9 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models.donation import Donation
 from polar.models.held_balance import HeldBalance
+from polar.models.issue import Issue
 from polar.models.organization import Organization
+from polar.models.repository import Repository
 from polar.models.transaction import Transaction
 from polar.models.user import User
 from polar.notifications.notification import (
@@ -91,6 +93,9 @@ class DonationService:
                 joinedload(Donation.by_organization),
                 joinedload(Donation.on_behalf_of_organization),
                 joinedload(Donation.by_user),
+                joinedload(Donation.issue)
+                .joinedload(Issue.repository)
+                .joinedload(Repository.organization),
             )
         )
 

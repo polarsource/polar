@@ -200,3 +200,5 @@ class TestDonations:
 
         assert 1 == len(donations)
         assert issue.id == donations[0].issue_id
+        assert donations[0].issue
+        assert issue.title == donations[0].issue.title

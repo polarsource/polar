@@ -40,6 +40,7 @@
     "@tailwindcss/typography": "^0.5.9",
     "@tanstack/react-query": "^5.25.0",
     "@tanstack/react-query-next-experimental": "^5.25.0",
+    "@tanstack/react-table": "^8.10.7",
     "@types/web": "^0.0.125",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
@@ -72,7 +73,8 @@
     "satori": "^0.10.11",
     "schema-dts": "^1.1.2",
     "tailwind-merge": "^1.14.0",
-    "tailwindcss-radix": "^2.8.0"
+    "tailwindcss-radix": "^2.8.0",
+    "zustand": "^4.3.3"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

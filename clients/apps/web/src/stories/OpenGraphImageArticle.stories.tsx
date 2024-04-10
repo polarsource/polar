@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import OpenGraphImageArticle from '@/components/Organization/OpenGraphImageArticle'
-import { article } from 'polarkit/testdata'
+import { article } from '@/utils/testdata'
 
 const meta: Meta<typeof OpenGraphImageArticle> = {
   title: 'Organisms/OpenGraphImageArticle',

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import IssueSummary from './IssueSummary'
 
-import { issue } from 'polarkit/testdata'
+import { issue } from '@/utils/testdata'
 
 const meta: Meta<typeof IssueSummary> = {
   title: 'Issue/IssueSummary',

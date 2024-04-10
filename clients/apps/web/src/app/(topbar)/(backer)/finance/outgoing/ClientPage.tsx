@@ -4,14 +4,14 @@ import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
 import { useSearchTransactions } from '@/hooks/queries'
-import { usePathname, useRouter } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DataTablePaginationState,
   DataTableSortingState,
   getAPIParams,
   serializeSearchParams,
-} from 'polarkit/datatable'
+} from '@/utils/datatable'
+import { usePathname, useRouter } from 'next/navigation'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
   pagination,

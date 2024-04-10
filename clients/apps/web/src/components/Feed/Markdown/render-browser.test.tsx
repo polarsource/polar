@@ -1,4 +1,4 @@
-import { article } from 'polarkit/testdata'
+import { article } from '@/utils/testdata'
 
 import { PolarQueryClientProvider } from '@/app/providers'
 import '@testing-library/jest-dom'

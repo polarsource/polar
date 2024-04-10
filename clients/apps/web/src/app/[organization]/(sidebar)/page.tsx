@@ -19,8 +19,8 @@ import ClientPage from './ClientPage'
 
 import { externalURL } from '@/components/Organization'
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
+import { CONFIG } from '@/utils/config'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
-import { CONFIG } from 'polarkit'
 import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
 const cacheConfig = {

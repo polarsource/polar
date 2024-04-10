@@ -3,12 +3,12 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { CONFIG } from '@/utils/config'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserRead, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { CONFIG } from 'polarkit/config'
 
 export const PolarMenu = ({
   authenticatedUser,

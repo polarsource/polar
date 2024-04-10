@@ -1,5 +1,5 @@
+import { CONFIG } from '@/utils/config'
 import { useTheme } from 'next-themes'
-import { CONFIG } from 'polarkit'
 import { twMerge } from 'tailwind-merge'
 import IssueBadge from '../Embed/IssueBadge'
 

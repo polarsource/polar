@@ -4,12 +4,12 @@ import { PostEditor } from '@/components/Feed/PostEditor'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useCreateArticle } from '@/hooks/queries'
+import { useStore } from '@/store'
 import { captureEvent } from '@/utils/posthog'
 import { ArticleCreate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
-import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
 
 const ClientPage = () => {

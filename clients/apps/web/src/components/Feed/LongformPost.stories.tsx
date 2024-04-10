@@ -1,7 +1,7 @@
 import { PolarQueryClientProvider } from '@/app/providers'
 import { UserContextProvider } from '@/providers/auth'
+import { article } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
-import { article } from 'polarkit/testdata'
 import LongformPost from './LongformPost'
 
 const meta: Meta<typeof LongformPost> = {

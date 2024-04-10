@@ -1,4 +1,4 @@
-import { CONFIG } from 'polarkit'
+import { CONFIG } from '@/utils/config'
 import { posthog } from 'posthog-js'
 
 export const isFeatureEnabled = (key: string): boolean => {

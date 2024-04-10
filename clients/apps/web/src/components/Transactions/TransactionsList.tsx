@@ -1,3 +1,8 @@
+import {
+  DataTableOnChangeFn,
+  DataTablePaginationState,
+  DataTableSortingState,
+} from '@/utils/datatable'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   KeyboardArrowDownOutlined,
@@ -18,11 +23,6 @@ import {
   DataTableColumnHeader,
   ReactQueryLoading,
 } from 'polarkit/components/ui/atoms/datatable'
-import {
-  DataTableOnChangeFn,
-  DataTablePaginationState,
-  DataTableSortingState,
-} from 'polarkit/datatable'
 import { useMemo } from 'react'
 import SubscriptionTierPill from '../Subscriptions/SubscriptionTierPill'
 

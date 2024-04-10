@@ -6,10 +6,6 @@
   "types": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./testdata": "./testdata.ts",
-    "./config": "./src/config.ts",
-    "./store": "./src/store/index.ts",
-    "./datatable": "./src/datatable.ts",
     "./components": "./src/components/index.ts",
     "./components/ui/atoms": "./src/components/ui/atoms/index.ts",
     "./components/ui/atoms/alert": "./src/components/ui/atoms/Alert.tsx",
@@ -85,8 +81,7 @@
     "react-hook-form": "^7.50.1",
     "react-stately": "^3.28.0",
     "react-timeago": "^7.1.0",
-    "tailwind-merge": "^1.14.0",
-    "zustand": "^4.3.3"
+    "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
     "@storybook/react": "^8.0.1",

@@ -54,6 +54,7 @@
     "next.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "sentry.*.config.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [

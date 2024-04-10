@@ -1,9 +1,9 @@
 import { AuthContext } from '@/providers/auth'
 import { PublicPageOrganizationContext } from '@/providers/organization'
 import { api } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
 import { UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
-import { CONFIG } from 'polarkit/config'
 import posthog from 'posthog-js'
 import { useCallback, useContext, useEffect, useState } from 'react'
 

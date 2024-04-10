@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import PledgeCheckoutContribute from './PledgeCheckoutContribute'
 
-import { issue } from 'polarkit/testdata'
+import { issue } from '@/utils/testdata'
 
 const meta: Meta<typeof PledgeCheckoutContribute> = {
   title: 'Organisms/PledgeCheckoutContribute',

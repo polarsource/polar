@@ -9,7 +9,7 @@ import {
   notification_maintainerPledgePendingNotification,
   notification_pledgerPledgePendingNotification,
   notification_rewardPaidNotification,
-} from 'polarkit/testdata'
+} from '@/utils/testdata'
 import {
   MaintainerPledgeConfirmationPending,
   Notification,

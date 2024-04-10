@@ -1,5 +1,5 @@
+import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { Metadata } from 'next'
-import { DataTableSearchParams, parseSearchParams } from 'polarkit/datatable'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata(): Promise<Metadata> {

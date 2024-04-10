@@ -1,6 +1,6 @@
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
+import { issue } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
-import { issue } from 'polarkit/testdata'
 
 const meta: Meta<typeof FundOurBacklog> = {
   title: 'Organisms/FundOurBacklog',

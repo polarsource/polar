@@ -1,4 +1,4 @@
-import { article } from 'polarkit/testdata'
+import { article } from '@/utils/testdata'
 
 import '@testing-library/jest-dom'
 import { render } from '@testing-library/react'

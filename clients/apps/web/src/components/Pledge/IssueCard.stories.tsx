@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { issue, issueBodyHTML, pledger, pullRequest } from 'polarkit/testdata'
+import { issue, issueBodyHTML, pledger, pullRequest } from '@/utils/testdata'
 import IssueCard from './IssueCard'
 
 const meta: Meta<typeof IssueCard> = {

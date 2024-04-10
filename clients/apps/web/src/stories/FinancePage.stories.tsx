@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import { PolarQueryClientProvider } from '@/app/providers'
 import Finance from '@/components/Finance/Finance'
+import { issue, org } from '@/utils/testdata'
 import {
   Pledge,
   PledgeState,
@@ -9,7 +10,6 @@ import {
   Reward,
   RewardState,
 } from '@polar-sh/sdk'
-import { issue, org } from 'polarkit/testdata'
 
 type Story = StoryObj<typeof Finance>
 

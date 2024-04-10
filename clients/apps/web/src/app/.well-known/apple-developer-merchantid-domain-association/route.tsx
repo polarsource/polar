@@ -1,4 +1,4 @@
-import { CONFIG } from 'polarkit/config'
+import { CONFIG } from '@/utils/config'
 
 export const runtime = 'edge'
 

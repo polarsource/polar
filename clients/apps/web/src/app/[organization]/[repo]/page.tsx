@@ -6,6 +6,7 @@ import {
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { CONFIG } from '@/utils/config'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Organization,
@@ -17,7 +18,6 @@ import { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
-import { CONFIG } from 'polarkit'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {

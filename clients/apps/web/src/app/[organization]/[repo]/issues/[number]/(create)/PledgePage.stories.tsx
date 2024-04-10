@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { PolarQueryClientProvider } from '@/app/providers'
 import PublicLayout from '@/components/Layout/PublicLayout'
 import { UserContextProvider } from '@/providers/auth'
-import { issue, issueBodyHTML, pledger } from 'polarkit/testdata'
+import { issue, issueBodyHTML, pledger } from '@/utils/testdata'
 import ClientPage from './ClientPage'
 
 const meta: Meta<typeof ClientPage> = {

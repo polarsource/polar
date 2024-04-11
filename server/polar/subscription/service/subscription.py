@@ -5,6 +5,8 @@ from enum import StrEnum
 from typing import Any, cast, overload
 
 import stripe as stripe_lib
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
+from slack_sdk.webhook import WebhookClient as SlackWebhookClient
 from sqlalchemy import (
     Select,
     UnaryExpression,
@@ -23,6 +25,7 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
+from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
 from polar.held_balance.service import held_balance as held_balance_service
@@ -72,6 +75,7 @@ from polar.user.service import user as user_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 
 from ..schemas import (
@@ -685,6 +689,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         enqueue_job(
             "subscription.discord_notification", subscription_id=subscription.id
         )
+        enqueue_job(
+            "subscription.user_webhook_notifications", subscription_id=subscription.id
+        )
 
         return subscription
 
@@ -1160,6 +1167,82 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         return statistics_periods
+
+    async def user_webhook_notifications(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        if subscription.price_id is None:
+            return
+
+        await session.refresh(subscription, {"subscription_tier", "price"})
+        assert subscription.price is not None
+
+        webhooks = await webhook_notifications_service.search(
+            session,
+            organization_id=subscription.subscription_tier.managing_organization_id,
+        )
+
+        organization = await organization_service.get(
+            session, subscription.subscription_tier.managing_organization_id
+        )
+        assert organization is not None
+
+        subscription_tier = subscription.subscription_tier
+        price = subscription.price
+        price_display = f"${price.price_amount / 100} / {price.recurring_interval}"
+
+        description = (
+            f"New subscription has been made to {organization.name} "
+            f"on tier {subscription_tier.name}."
+        )
+
+        for wh in webhooks:
+            if wh.integration == "discord":
+                webhook = AsyncDiscordWebhook(url=wh.url, content="New Subscription")
+
+                embed = DiscordEmbed(
+                    title="New Subscription",
+                    description=description,
+                    color="65280",
+                )
+
+                embed.set_thumbnail(url=settings.THUMBNAIL_URL)
+                embed.set_author(name="Polar.sh", icon_url=settings.FAVICON_URL)
+                embed.add_embed_field(name="Price", value=price_display, inline=True)
+                embed.set_footer(text="Powered by Polar.sh")
+
+                webhook.add_embed(embed)
+                await webhook.execute()
+                continue
+
+            if wh.integration == "slack":
+                slack_webhook = SlackWebhookClient(wh.url)
+                slack_webhook.send(
+                    text=description,
+                    blocks=[
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": description,
+                            },
+                            "accessory": {
+                                "type": "button",
+                                "text": {"type": "plain_text", "text": "Open"},
+                                "url": f"https://polar.sh/{organization.name}",
+                            },
+                        },
+                        {
+                            "type": "section",
+                            "fields": [
+                                {
+                                    "type": "mrkdwn",
+                                    "text": f"*Price:*\n{price_display}",
+                                },
+                            ],
+                        },
+                    ],
+                )
 
     def _get_readable_subscriptions_statement(self, user: User) -> Select[Any]:
         statement = (

@@ -237,11 +237,29 @@ export const UpfrontSplitZero: Story = {
   },
 }
 
-export const ClosedIssue: Story = {
+export const ClosedIssueCanDonate: Story = {
   ...Default,
   args: {
     ...Default.args,
     issueIsClosed: true,
+    donationsEnabled: true,
+
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: avatars,
+    upfront_split_to_contributors: 80,
+  },
+}
+
+export const ClosedIssue: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+
+    issueIsClosed: true,
+    donationsEnabled: false,
 
     showAmountRaised: true,
     funding: {

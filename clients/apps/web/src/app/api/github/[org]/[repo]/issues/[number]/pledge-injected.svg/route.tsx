@@ -32,6 +32,7 @@ const renderBadge = async ({
       orgName="SerenityOS"
       upfront_split_to_contributors={withUpfrontSplit ? 80 : undefined}
       issueIsClosed={false}
+      donationsEnabled={false}
     />,
     {
       width: 400,

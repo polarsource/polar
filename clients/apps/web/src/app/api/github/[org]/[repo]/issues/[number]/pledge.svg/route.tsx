@@ -90,6 +90,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       upfront_split_to_contributors={upfront_split_to_contributors}
       orgName={data.issue.repository.organization.name}
       issueIsClosed={Boolean(data.issue.issue_closed_at)}
+      donationsEnabled={data.issue.repository.organization.donations_enabled}
     />,
     {
       width: 400,

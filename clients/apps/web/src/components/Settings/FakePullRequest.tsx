@@ -55,6 +55,7 @@ const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
       avatarsUrls={[]}
       orgName={'myorg'}
       issueIsClosed={false}
+      donationsEnabled={false}
     />
   )
 }

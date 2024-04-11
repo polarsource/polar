@@ -129,6 +129,7 @@ const BadgeMessageForm = (props: {
               avatarsUrls={[]}
               upfront_split_to_contributors={props.upfrontSplit}
               issueIsClosed={false}
+              donationsEnabled={false}
             />
           </>
         )}

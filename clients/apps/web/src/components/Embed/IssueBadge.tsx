@@ -4,30 +4,38 @@ import { Funding } from '@polar-sh/sdk'
 const IssueBadge = ({
   showAmountRaised = false,
   darkmode = false,
-  funding = undefined,
+  funding,
   avatarsUrls = [],
   upfront_split_to_contributors,
   orgName,
+  issueIsClosed,
 }: {
   showAmountRaised?: boolean
   darkmode: boolean
-  funding?: Funding
+  funding: Funding
   avatarsUrls: string[]
   upfront_split_to_contributors?: number
-  orgName?: string
+  orgName: string
+  issueIsClosed: boolean
 }) => {
-  const showFundingGoal =
+  let showFundingGoal =
     funding &&
     funding.funding_goal &&
     funding.pledges_sum &&
     funding.funding_goal.amount > 0
-  const showAmount = !showFundingGoal && showAmountRaised
+  let showAmount = !showFundingGoal && showAmountRaised
 
-  const showAvatars =
+  let showAvatars =
     avatarsUrls.length > 4 ? avatarsUrls.slice(0, 3) : avatarsUrls
-  const extraAvatarsCount = avatarsUrls.length - showAvatars.length
+  let extraAvatarsCount = avatarsUrls.length - showAvatars.length
 
-  const title = showFundingGoal || showAmount ? 'Fund' : 'Fund this issue'
+  let title = showFundingGoal || showAmount ? 'Fund' : 'Fund this issue'
+
+  if (issueIsClosed) {
+    title = 'Tip'
+    // showFundingGoal = false
+    // showAmount = false
+  }
 
   return (
     <>
@@ -35,7 +43,7 @@ const IssueBadge = ({
         style={{
           display: 'flex',
           marginBottom: 2,
-          maxWidth: '400px',
+          maxWidth: '500px',
           flexDirection: 'column',
           borderRadius: 11,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
@@ -115,15 +123,29 @@ const IssueBadge = ({
           </div>
         </div>
 
-        {orgName &&
-        upfront_split_to_contributors &&
-        upfront_split_to_contributors > 0 ? (
-          <UpfrontSplitRewards
-            orgName={orgName}
-            darkmode={darkmode}
-            upfront_split_to_contributors={upfront_split_to_contributors}
-          />
-        ) : null}
+        {issueIsClosed ? (
+          <BelowBox darkmode={darkmode}>
+            <div
+              style={{
+                flexShrink: '0',
+              }}
+            >
+              Make a donation to @{orgName} as a thank you
+            </div>
+          </BelowBox>
+        ) : (
+          <>
+            {orgName &&
+            upfront_split_to_contributors &&
+            upfront_split_to_contributors > 0 ? (
+              <UpfrontSplitRewards
+                orgName={orgName}
+                darkmode={darkmode}
+                upfront_split_to_contributors={upfront_split_to_contributors}
+              />
+            ) : null}
+          </>
+        )}
       </div>
     </>
   )
@@ -146,14 +168,12 @@ const Heart = () => (
   </svg>
 )
 
-const UpfrontSplitRewards = ({
+const BelowBox = ({
   darkmode,
-  orgName,
-  upfront_split_to_contributors,
+  children,
 }: {
   darkmode: boolean
-  orgName: String
-  upfront_split_to_contributors: number
+  children: React.ReactNode
 }) => (
   <div
     style={{
@@ -171,6 +191,20 @@ const UpfrontSplitRewards = ({
       minWidth: '400px',
     }}
   >
+    {children}
+  </div>
+)
+
+const UpfrontSplitRewards = ({
+  darkmode,
+  orgName,
+  upfront_split_to_contributors,
+}: {
+  darkmode: boolean
+  orgName: String
+  upfront_split_to_contributors: number
+}) => (
+  <BelowBox darkmode={darkmode}>
     <Heart />
 
     <div
@@ -209,7 +243,7 @@ const UpfrontSplitRewards = ({
     >
       Contribute
     </div>
-  </div>
+  </BelowBox>
 )
 
 const PolarLogo = ({ darkmode }: { darkmode: boolean }) => (

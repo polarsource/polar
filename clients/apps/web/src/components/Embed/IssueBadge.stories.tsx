@@ -21,6 +21,7 @@ type Story = StoryObj<typeof IssueBadge>
 export const Default: Story = {
   args: {
     orgName: 'SerenityOS',
+    issueIsClosed: false,
   },
   render: (args) => {
     return (
@@ -233,5 +234,20 @@ export const UpfrontSplitZero: Story = {
     },
     avatarsUrls: [...avatars, ...avatars].slice(0, 1),
     upfront_split_to_contributors: 0,
+  },
+}
+
+export const ClosedIssue: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issueIsClosed: true,
+
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: avatars,
+    upfront_split_to_contributors: 80,
   },
 }

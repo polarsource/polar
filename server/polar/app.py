@@ -1,5 +1,5 @@
+import contextlib
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from os import environ
 from typing import TypedDict
 
@@ -75,7 +75,7 @@ class State(TypedDict):
     arq_pool: ArqRedis
 
 
-@asynccontextmanager
+@contextlib.asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     async with worker_lifespan() as arq_pool:
         async_engine = create_async_engine("app")

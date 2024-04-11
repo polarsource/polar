@@ -116,8 +116,10 @@ def _open_ssh(
     assert process.stdin is not None
     assert process.stdout is not None
     process.stdout.read()
-    yield process
-    process.terminate()
+    try:
+        yield process
+    finally:
+        process.terminate()
 
 
 if __name__ == "__main__":

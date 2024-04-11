@@ -1,8 +1,8 @@
+import contextlib
 import contextvars
 import functools
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
-from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, ParamSpec, TypeAlias, TypedDict, TypeVar, cast
 
@@ -104,11 +104,13 @@ class WorkerSettings:
         """
 
 
-@asynccontextmanager
+@contextlib.asynccontextmanager
 async def lifespan() -> AsyncIterator[ArqRedis]:
     arq_pool = await arq_create_pool(WorkerSettings.redis_settings)
-    yield arq_pool
-    await arq_pool.close(True)
+    try:
+        yield arq_pool
+    finally:
+        await arq_pool.close(True)
 
 
 def enqueue_job(name: str, *args: Any, **kwargs: Any) -> None:
@@ -256,7 +258,7 @@ def interval(
     return decorator
 
 
-@asynccontextmanager
+@contextlib.asynccontextmanager
 async def AsyncSessionMaker(ctx: JobContext) -> AsyncIterator[AsyncSession]:
     """Helper to open an AsyncSession context manager from the job context."""
     async with ctx["async_sessionmaker"]() as session:

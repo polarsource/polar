@@ -307,3 +307,17 @@ async def subscription_discord_notification(
 
         webhook.add_embed(embed)
         await webhook.execute()
+
+
+@task("subscription.user_webhook_notifications")
+async def subscription_user_webhook_notifications(
+    ctx: JobContext,
+    subscription_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        subscription = await subscription_service.get(session, subscription_id)
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        await subscription_service.user_webhook_notifications(session, subscription)

@@ -89,18 +89,19 @@ class Locker:
 
         log.debug("acquired lock", name=name)
 
-        yield lock
-
         try:
-            await lock.release()
-        except LockNotOwnedError as e:
-            log.error(
-                "could not release lock as it already expired",
-                name=name,
-                timeout=timeout,
-            )
-            raise ExpiredLockError() from e
-        log.debug("released lock", name=name)
+            yield lock
+        finally:
+            try:
+                await lock.release()
+            except LockNotOwnedError as e:
+                log.error(
+                    "could not release lock as it already expired",
+                    name=name,
+                    timeout=timeout,
+                )
+                raise ExpiredLockError() from e
+            log.debug("released lock", name=name)
 
 
 async def get_locker(redis: Redis = Depends(get_redis)) -> Locker:

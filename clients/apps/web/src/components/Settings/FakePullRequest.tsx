@@ -53,6 +53,8 @@ const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
       }}
       darkmode={resolvedTheme === 'dark' ? true : false}
       avatarsUrls={[]}
+      orgName={'myorg'}
+      issueIsClosed={false}
     />
   )
 }

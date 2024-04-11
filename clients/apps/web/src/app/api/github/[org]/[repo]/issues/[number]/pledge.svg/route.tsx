@@ -89,6 +89,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       avatarsUrls={Array.from(avatarUrlsSet)}
       upfront_split_to_contributors={upfront_split_to_contributors}
       orgName={data.issue.repository.organization.name}
+      issueIsClosed={Boolean(data.issue.issue_closed_at)}
     />,
     {
       width: 400,

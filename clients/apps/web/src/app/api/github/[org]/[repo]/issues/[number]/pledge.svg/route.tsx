@@ -1,6 +1,11 @@
 import IssueBadge from '@/components/Embed/IssueBadge'
 import { getServerURL } from '@/utils/api'
-import { Issue, PledgePledgesSummary, Pledger } from '@polar-sh/sdk'
+import {
+  Issue,
+  IssueStateEnum,
+  PledgePledgesSummary,
+  Pledger,
+} from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -89,7 +94,10 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       avatarsUrls={Array.from(avatarUrlsSet)}
       upfront_split_to_contributors={upfront_split_to_contributors}
       orgName={data.issue.repository.organization.name}
-      issueIsClosed={Boolean(data.issue.issue_closed_at)}
+      issueIsClosed={Boolean(
+        data.issue.issue_closed_at !== undefined ||
+          data.issue.state === IssueStateEnum.CLOSED,
+      )}
       donationsEnabled={data.issue.repository.organization.donations_enabled}
     />,
     {

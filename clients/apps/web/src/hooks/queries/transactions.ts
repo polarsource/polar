@@ -2,6 +2,7 @@ import { api } from '@/utils/api'
 import {
   ListResourceTransaction,
   PayoutEstimate,
+  ResponseError,
   TransactionType,
   TransactionsSummary,
 } from '@polar-sh/sdk'
@@ -50,6 +51,7 @@ export const usePayoutEstimate = (
   useQuery({
     queryKey: ['payout_estimate', accountId],
     queryFn: () => api.transactions.getPayoutEstimate({ accountId }),
-    retry: defaultRetry,
+    retry: (failureCount, error) =>
+      !(error instanceof ResponseError) && failureCount < 3,
     enabled,
   })

@@ -122,7 +122,10 @@ export default async function Page({
   })
 
   // Closed issue, redirect to donation instead
-  if (issue.issue_closed_at) {
+  if (
+    issue.issue_closed_at &&
+    issue.repository.organization.donations_enabled
+  ) {
     redirect(
       organizationPageLink(
         issue.repository.organization,

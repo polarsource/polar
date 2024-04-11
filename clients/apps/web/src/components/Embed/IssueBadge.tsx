@@ -136,6 +136,7 @@ const IssueBadge = ({
                 <div
                   style={{
                     flexShrink: '0',
+                    display: 'flex',
                   }}
                 >
                   Make a donation to @{orgName} as a thank you

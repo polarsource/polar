@@ -9,6 +9,7 @@ const IssueBadge = ({
   upfront_split_to_contributors,
   orgName,
   issueIsClosed,
+  donationsEnabled,
 }: {
   showAmountRaised?: boolean
   darkmode: boolean
@@ -17,6 +18,7 @@ const IssueBadge = ({
   upfront_split_to_contributors?: number
   orgName: string
   issueIsClosed: boolean
+  donationsEnabled: boolean
 }) => {
   let showFundingGoal =
     funding &&
@@ -29,12 +31,16 @@ const IssueBadge = ({
     avatarsUrls.length > 4 ? avatarsUrls.slice(0, 3) : avatarsUrls
   let extraAvatarsCount = avatarsUrls.length - showAvatars.length
 
-  let title = showFundingGoal || showAmount ? 'Fund' : 'Fund this issue'
+  let action = showFundingGoal || showAmount ? 'Fund' : 'Fund this issue'
+  let actionBg = '#0062FF'
 
   if (issueIsClosed) {
-    title = 'Tip'
-    // showFundingGoal = false
-    // showAmount = false
+    if (donationsEnabled) {
+      action = 'Tip'
+    } else {
+      action = 'Closed'
+      actionBg = '#343748'
+    }
   }
 
   return (
@@ -73,7 +79,7 @@ const IssueBadge = ({
           >
             <div
               style={{
-                backgroundColor: '#0062FF',
+                backgroundColor: actionBg,
                 color: 'white',
                 padding: 4,
                 marginLeft: 6,
@@ -87,7 +93,7 @@ const IssueBadge = ({
                 flexShrink: '0',
               }}
             >
-              {title}
+              {action}
             </div>
 
             {showAmount && funding?.pledges_sum?.amount !== undefined ? (
@@ -124,15 +130,19 @@ const IssueBadge = ({
         </div>
 
         {issueIsClosed ? (
-          <BelowBox darkmode={darkmode}>
-            <div
-              style={{
-                flexShrink: '0',
-              }}
-            >
-              Make a donation to @{orgName} as a thank you
-            </div>
-          </BelowBox>
+          <>
+            {donationsEnabled ? (
+              <BelowBox darkmode={darkmode}>
+                <div
+                  style={{
+                    flexShrink: '0',
+                  }}
+                >
+                  Make a donation to @{orgName} as a thank you
+                </div>
+              </BelowBox>
+            ) : null}
+          </>
         ) : (
           <>
             {orgName &&

@@ -3,7 +3,7 @@ from datetime import date
 from typing import Annotated
 
 import structlog
-from fastapi import Body, Depends, Query, Response, UploadFile
+from fastapi import Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
@@ -15,8 +15,7 @@ from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Benefit, Repository, Subscription, SubscriptionTier
-from polar.models.benefit import BenefitType
+from polar.models import Repository, Subscription, SubscriptionTier
 from polar.models.organization import Organization
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.dependencies import (
@@ -31,9 +30,6 @@ from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
 
-from ..benefit.schemas import Benefit as BenefitSchema
-from ..benefit.schemas import BenefitCreate, BenefitUpdate, benefit_schema_map
-from ..benefit.service import benefit as benefit_service
 from . import auth
 from .schemas import (
     FreeSubscriptionCreate,
@@ -232,142 +228,6 @@ async def update_subscription_tier_benefits(
         session, authz, subscription_tier, benefits_update.benefits, auth.user
     )
     return subscription_tier
-
-
-@router.get(
-    "/benefits/search", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC]
-)
-async def search_subscription_benefits(
-    auth: auth.TiersWriteAuth,
-    pagination: PaginationParamsQuery,
-    organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
-    direct_organization: bool = Query(True),
-    type: BenefitType | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[BenefitSchema]:
-    organization_name, platform = organization_name_platform
-    organization = await organization_service.get_by_name(
-        session, platform, organization_name
-    )
-    if organization is None:
-        raise ResourceNotFound("Organization not found")
-
-    repository: Repository | None = None
-    if repository_name is not None:
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
-    results, count = await benefit_service.search(
-        session,
-        auth.subject,
-        type=type,
-        organization=organization,
-        repository=repository,
-        direct_organization=direct_organization,
-        pagination=pagination,
-    )
-
-    return ListResource.from_paginated_results(
-        [benefit_schema_map[result.type].model_validate(result) for result in results],
-        count,
-        pagination,
-    )
-
-
-@router.get("/benefits/lookup", response_model=BenefitSchema, tags=[Tags.PUBLIC])
-async def lookup_subscription_benefit(
-    subscription_benefit_id: UUID4,
-    auth: auth.TiersWriteAuth,
-    session: AsyncSession = Depends(get_db_session),
-) -> Benefit:
-    subscription_benefit = await benefit_service.get_by_id(
-        session, auth.subject, subscription_benefit_id
-    )
-
-    if subscription_benefit is None:
-        raise ResourceNotFound()
-
-    return subscription_benefit
-
-
-@router.post(
-    "/benefits/", response_model=BenefitSchema, status_code=201, tags=[Tags.PUBLIC]
-)
-async def create_subscription_benefit(
-    auth: auth.TiersWriteAuth,
-    subscription_benefit_create: BenefitCreate = Body(..., discriminator="type"),
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Benefit:
-    subscription_benefit = await benefit_service.user_create(
-        session, authz, subscription_benefit_create, auth.user
-    )
-
-    posthog.user_event(
-        auth.user,
-        "subscriptions",
-        "benefit",
-        "create",
-        {"subscription_benefit_id": subscription_benefit.id},
-    )
-
-    return subscription_benefit
-
-
-@router.post("/benefits/{id}", response_model=BenefitSchema, tags=[Tags.PUBLIC])
-async def update_subscription_benefit(
-    id: UUID4,
-    subscription_benefit_update: BenefitUpdate,
-    auth: auth.TiersWriteAuth,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Benefit:
-    subscription_benefit = await benefit_service.get_by_id(session, auth.subject, id)
-
-    if subscription_benefit is None:
-        raise ResourceNotFound()
-
-    if subscription_benefit_update.type != subscription_benefit.type:
-        raise BadRequest("The type of a benefit can't be changed.")
-
-    posthog.user_event(
-        auth.user,
-        "subscriptions",
-        "benefit",
-        "update",
-        {"subscription_benefit_id": subscription_benefit.id},
-    )
-
-    return await benefit_service.user_update(
-        session, authz, subscription_benefit, subscription_benefit_update, auth.user
-    )
-
-
-@router.delete("/benefits/{id}", status_code=204, tags=[Tags.PUBLIC])
-async def delete_subscription_benefit(
-    id: UUID4,
-    auth: auth.TiersWriteAuth,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> None:
-    subscription_benefit = await benefit_service.get_by_id(session, auth.subject, id)
-
-    if subscription_benefit is None:
-        raise ResourceNotFound()
-
-    posthog.user_event(
-        auth.user,
-        "subscriptions",
-        "benefit",
-        "delete",
-        {"subscription_benefit_id": subscription_benefit.id},
-    )
-
-    await benefit_service.user_delete(session, authz, subscription_benefit, auth.user)
 
 
 @router.post(

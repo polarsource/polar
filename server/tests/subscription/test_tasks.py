@@ -5,13 +5,13 @@ from arq import Retry
 from pytest_mock import MockerFixture
 
 from polar.models import (
+    Benefit,
     Subscription,
-    SubscriptionBenefit,
     SubscriptionBenefitGrant,
     SubscriptionTier,
     User,
 )
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.service.benefits import SubscriptionBenefitRetriableError
 from polar.subscription.service.subscription import SubscriptionService
@@ -124,7 +124,7 @@ class TestSubscriptionBenefitGrant:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user: User,
         session: AsyncSession,
     ) -> None:
@@ -145,7 +145,7 @@ class TestSubscriptionBenefitGrant:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -187,7 +187,7 @@ class TestSubscriptionBenefitGrant:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
@@ -216,7 +216,7 @@ class TestSubscriptionBenefitGrant:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
@@ -245,7 +245,7 @@ class TestSubscriptionBenefitRevoke:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user: User,
         session: AsyncSession,
     ) -> None:
@@ -266,7 +266,7 @@ class TestSubscriptionBenefitRevoke:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -308,7 +308,7 @@ class TestSubscriptionBenefitRevoke:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
@@ -337,7 +337,7 @@ class TestSubscriptionBenefitRevoke:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
@@ -366,7 +366,7 @@ class TestSubscriptionBenefitUpdate:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -386,7 +386,7 @@ class TestSubscriptionBenefitUpdate:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -418,7 +418,7 @@ class TestSubscriptionBenefitUpdate:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -450,7 +450,7 @@ class TestSubscriptionBenefitDelete:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -470,7 +470,7 @@ class TestSubscriptionBenefitDelete:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -502,7 +502,7 @@ class TestSubscriptionBenefitDelete:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
@@ -543,7 +543,7 @@ class TestSubscriptionBenefitPreconditionFulfilled:
             await subscription_benefit_precondition_fulfilled(
                 job_context,
                 uuid.uuid4(),
-                SubscriptionBenefitType.custom,
+                BenefitType.custom,
                 polar_worker_context,
             )
 
@@ -565,7 +565,7 @@ class TestSubscriptionBenefitPreconditionFulfilled:
         session.expunge_all()
 
         await subscription_benefit_precondition_fulfilled(
-            job_context, user.id, SubscriptionBenefitType.custom, polar_worker_context
+            job_context, user.id, BenefitType.custom, polar_worker_context
         )
 
         enqueue_grants_after_precondition_fulfilled_mock.assert_called_once()

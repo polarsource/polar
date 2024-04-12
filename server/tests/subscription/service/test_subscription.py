@@ -15,9 +15,9 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Account,
+    Benefit,
     Organization,
     Subscription,
-    SubscriptionBenefit,
     SubscriptionBenefitGrant,
     SubscriptionTier,
     Transaction,
@@ -795,7 +795,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
         enqueue_job_mock = mocker.patch(
@@ -826,7 +826,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
         enqueue_job_mock = mocker.patch(
@@ -872,7 +872,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
         enqueue_job_mock = mocker.patch(
@@ -909,7 +909,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         subscription: Subscription,
         user: User,
     ) -> None:
@@ -950,7 +950,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         subscription_organization: Subscription,
         organization_subscriber_admin: User,
         organization_subscriber_members: list[User],

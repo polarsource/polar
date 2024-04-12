@@ -5,8 +5,8 @@ from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models.advertisement_campaign import AdvertisementCampaign
+from polar.models.benefit import Benefit
 from polar.models.subscription import Subscription
-from polar.models.subscription_benefit import SubscriptionBenefit
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from tests.fixtures.database import SaveFixture
@@ -22,7 +22,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
         await create_subscription_benefit_grant(
@@ -54,7 +54,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         response = await client.post(
@@ -76,7 +76,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
         await create_subscription_benefit_grant(
@@ -119,7 +119,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
         await create_subscription_benefit_grant(
@@ -165,7 +165,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -194,7 +194,7 @@ class TestAdvertisementCampaign:
         user: User,
         user_second_auth_jwt: str,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -224,7 +224,7 @@ class TestAdvertisementCampaign:
         user: User,
         user_organization: UserOrganization,  # member
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -256,7 +256,7 @@ class TestAdvertisementCampaign:
         user: User,
         user_organization: UserOrganization,  # member
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -290,7 +290,7 @@ class TestAdvertisementCampaign:
         user: User,
         # user_organization: UserOrganization,  # no member
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -309,7 +309,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         session: AsyncSession,
         advertisement_campaign: AdvertisementCampaign,
         user_second_auth_jwt: str,
@@ -331,7 +331,7 @@ class TestAdvertisementCampaign:
         user: User,
         subscription: Subscription,
         user_organization: UserOrganization,  # member
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         advertisement_campaign: AdvertisementCampaign,
         auth_jwt: str,
         save_fixture: SaveFixture,

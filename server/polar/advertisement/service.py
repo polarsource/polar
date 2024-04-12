@@ -97,8 +97,8 @@ class AdvertisementCampaignService:
             .join(
                 SubscriptionBenefitGrant,
                 onclause=and_(
-                    SubscriptionBenefitGrant.subscription_benefit_id
-                    == AdvertisementCampaign.subscription_benefit_id,
+                    SubscriptionBenefitGrant.benefit_id
+                    == AdvertisementCampaign.benefit_id,
                     SubscriptionBenefitGrant.subscription_id
                     == AdvertisementCampaign.subscription_id,
                 ),
@@ -115,7 +115,7 @@ class AdvertisementCampaignService:
             )
         if subscription_benefit_id:
             statement = statement.where(
-                AdvertisementCampaign.subscription_benefit_id == subscription_benefit_id
+                AdvertisementCampaign.benefit_id == subscription_benefit_id
             )
 
         res = await session.execute(statement)

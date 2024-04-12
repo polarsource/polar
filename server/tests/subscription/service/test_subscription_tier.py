@@ -9,14 +9,14 @@ from polar.authz.service import Anonymous, Authz
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams
 from polar.models import (
+    Benefit,
     Organization,
     Repository,
-    SubscriptionBenefit,
     SubscriptionTier,
     User,
     UserOrganization,
 )
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.benefit import BenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 from polar.postgres import AsyncSession
@@ -1172,7 +1172,7 @@ class TestCreateFree:
         self,
         session: AsyncSession,
         enqueue_job_mock: AsyncMock,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         organization: Organization,
     ) -> None:
         # then
@@ -1230,7 +1230,7 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
@@ -1270,7 +1270,7 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         # then
         session.expunge_all()
@@ -1302,10 +1302,7 @@ class TestUpdateBenefits:
             subscription_tier_benefit,
         ) in enumerate(subscription_tier.subscription_tier_benefits):
             assert subscription_tier_benefit.order == i
-            assert (
-                subscription_benefits[i].id
-                == subscription_tier_benefit.subscription_benefit_id
-            )
+            assert subscription_benefits[i].id == subscription_tier_benefit.benefit_id
 
         assert len(added) == len(subscription_benefits)
         assert len(deleted) == 0
@@ -1323,7 +1320,7 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         # then
         session.expunge_all()
@@ -1356,8 +1353,7 @@ class TestUpdateBenefits:
         ) in enumerate(subscription_tier.subscription_tier_benefits):
             assert subscription_tier_benefit.order == i
             assert (
-                subscription_benefits[-i - 1].id
-                == subscription_tier_benefit.subscription_benefit_id
+                subscription_benefits[-i - 1].id == subscription_tier_benefit.benefit_id
             )
 
         assert len(added) == len(subscription_benefits)
@@ -1377,7 +1373,7 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
@@ -1421,7 +1417,7 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
@@ -1460,8 +1456,7 @@ class TestUpdateBenefits:
         ) in enumerate(subscription_tier.subscription_tier_benefits):
             assert subscription_tier_benefit.order == i
             assert (
-                subscription_benefits[-i - 1].id
-                == subscription_tier_benefit.subscription_benefit_id
+                subscription_benefits[-i - 1].id == subscription_tier_benefit.benefit_id
             )
 
         assert len(added) == 0
@@ -1484,7 +1479,7 @@ class TestUpdateBenefits:
     ) -> None:
         not_selectable_benefit = await create_subscription_benefit(
             save_fixture,
-            type=SubscriptionBenefitType.articles,
+            type=BenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
@@ -1520,7 +1515,7 @@ class TestUpdateBenefits:
     ) -> None:
         not_selectable_benefit = await create_subscription_benefit(
             save_fixture,
-            type=SubscriptionBenefitType.articles,
+            type=BenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
@@ -1563,14 +1558,14 @@ class TestUpdateBenefits:
     ) -> None:
         not_selectable_benefit = await create_subscription_benefit(
             save_fixture,
-            type=SubscriptionBenefitType.articles,
+            type=BenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
         )
         selectable_benefit = await create_subscription_benefit(
             save_fixture,
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             is_tax_applicable=True,
             organization=organization,
             description="SELECTABLE",

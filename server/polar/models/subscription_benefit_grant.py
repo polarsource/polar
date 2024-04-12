@@ -18,13 +18,18 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Subscription, SubscriptionBenefit, User
+    from polar.models import Benefit, Subscription, User
 
 
 class SubscriptionBenefitGrant(RecordModel):
     __tablename__ = "subscription_benefit_grants"
     __table_args__ = (
-        UniqueConstraint("subscription_id", "user_id", "subscription_benefit_id"),
+        UniqueConstraint(
+            "subscription_id",
+            "user_id",
+            "benefit_id",
+            name="subscription_benefit_grants_sbu_key",
+        ),
     )
 
     granted_at: Mapped[datetime | None] = mapped_column(
@@ -59,16 +64,16 @@ class SubscriptionBenefitGrant(RecordModel):
     def user(cls) -> Mapped["User"]:
         return relationship("User", lazy="raise")
 
-    subscription_benefit_id: Mapped[UUID] = mapped_column(
+    benefit_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_benefits.id", ondelete="cascade"),
+        ForeignKey("benefits.id", ondelete="cascade"),
         nullable=False,
         index=True,
     )
 
     @declared_attr
-    def subscription_benefit(cls) -> Mapped["SubscriptionBenefit"]:
-        return relationship("SubscriptionBenefit", lazy="raise")
+    def benefit(cls) -> Mapped["Benefit"]:
+        return relationship("Benefit", lazy="raise")
 
     @hybrid_property
     def is_granted(self) -> bool:

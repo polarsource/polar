@@ -13,9 +13,9 @@ from polar.integrations.github_repository_benefit.service import (
 )
 from polar.logging import Logger
 from polar.models import Subscription, User
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitGitHubRepository,
-    SubscriptionBenefitGitHubRepositoryProperties,
+from polar.models.benefit import (
+    BenefitGitHubRepository,
+    BenefitGitHubRepositoryProperties,
 )
 from polar.models.user import OAuthPlatform
 from polar.notifications.notification import (
@@ -70,14 +70,14 @@ https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
 
 class SubscriptionBenefitGitHubRepositoryService(
     SubscriptionBenefitServiceProtocol[
-        SubscriptionBenefitGitHubRepository,
-        SubscriptionBenefitGitHubRepositoryProperties,
+        BenefitGitHubRepository,
+        BenefitGitHubRepositoryProperties,
     ]
 ):
     async def _get_github_app_client(
         self,
         logger: Logger,
-        benefit: SubscriptionBenefitGitHubRepository,
+        benefit: BenefitGitHubRepository,
     ) -> GitHub[AppInstallationAuthStrategy]:
         # Old integrations, using the "Polar" GitHub App
         if benefit.properties["repository_id"]:
@@ -112,7 +112,7 @@ class SubscriptionBenefitGitHubRepositoryService(
 
     async def grant(
         self,
-        benefit: SubscriptionBenefitGitHubRepository,
+        benefit: BenefitGitHubRepository,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -197,7 +197,7 @@ class SubscriptionBenefitGitHubRepositoryService(
 
     async def revoke(
         self,
-        benefit: SubscriptionBenefitGitHubRepository,
+        benefit: BenefitGitHubRepository,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -255,8 +255,8 @@ class SubscriptionBenefitGitHubRepositoryService(
 
     async def requires_update(
         self,
-        benefit: SubscriptionBenefitGitHubRepository,
-        previous_properties: SubscriptionBenefitGitHubRepositoryProperties,
+        benefit: BenefitGitHubRepository,
+        previous_properties: BenefitGitHubRepositoryProperties,
     ) -> bool:
         new_properties = benefit.properties
         return (
@@ -269,7 +269,7 @@ class SubscriptionBenefitGitHubRepositoryService(
 
     async def validate_properties(
         self, user: User, properties: dict[str, Any]
-    ) -> SubscriptionBenefitGitHubRepositoryProperties:
+    ) -> BenefitGitHubRepositoryProperties:
         # old style
         if properties["repository_id"]:
             return await self._validate_properties_repository_id(user, properties)
@@ -352,7 +352,7 @@ class SubscriptionBenefitGitHubRepositoryService(
                 )
 
         return cast(
-            SubscriptionBenefitGitHubRepositoryProperties,
+            BenefitGitHubRepositoryProperties,
             {
                 **properties,
             },
@@ -360,7 +360,7 @@ class SubscriptionBenefitGitHubRepositoryService(
 
     async def _validate_properties_repository_id(
         self, user: User, properties: dict[str, Any]
-    ) -> SubscriptionBenefitGitHubRepositoryProperties:
+    ) -> BenefitGitHubRepositoryProperties:
         repository_id = properties["repository_id"]
 
         repository = await repository_service.get(
@@ -409,7 +409,7 @@ class SubscriptionBenefitGitHubRepositoryService(
                 )
 
         return cast(
-            SubscriptionBenefitGitHubRepositoryProperties,
+            BenefitGitHubRepositoryProperties,
             {
                 **properties,
                 "repository_owner": repository.organization.name,

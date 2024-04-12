@@ -1,8 +1,8 @@
 import pytest_asyncio
 
 from polar.models import (
+    Benefit,
     Subscription,
-    SubscriptionBenefit,
 )
 from polar.models.advertisement_campaign import AdvertisementCampaign
 from tests.fixtures.database import SaveFixture
@@ -12,7 +12,7 @@ from tests.fixtures.database import SaveFixture
 async def advertisement_campaign(
     save_fixture: SaveFixture,
     subscription: Subscription,
-    subscription_benefit_organization: SubscriptionBenefit,
+    subscription_benefit_organization: Benefit,
 ) -> AdvertisementCampaign:
     ad = AdvertisementCampaign(
         subscription_id=subscription.id,

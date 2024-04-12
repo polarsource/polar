@@ -11,10 +11,10 @@ from polar.enums import AccountType, Platforms
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
+    Benefit,
     Organization,
     Repository,
     Subscription,
-    SubscriptionBenefit,
     SubscriptionTier,
     SubscriptionTierBenefit,
     SubscriptionTierPrice,
@@ -22,14 +22,14 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.article import Article
+from polar.models.benefit import (
+    BenefitType,
+)
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.pull_request import PullRequest
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitType,
-)
 from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
@@ -472,7 +472,7 @@ async def create_subscription_tier_price(
 async def create_subscription_benefit(
     save_fixture: SaveFixture,
     *,
-    type: SubscriptionBenefitType = SubscriptionBenefitType.custom,
+    type: BenefitType = BenefitType.custom,
     is_tax_applicable: bool | None = None,
     organization: Organization | None = None,
     repository: Repository | None = None,
@@ -480,9 +480,9 @@ async def create_subscription_benefit(
     selectable: bool = True,
     deletable: bool = True,
     properties: dict[str, Any] = {"note": None},
-) -> SubscriptionBenefit:
+) -> Benefit:
     assert (organization is not None) != (repository is not None)
-    subscription_benefit = SubscriptionBenefit(
+    subscription_benefit = Benefit(
         type=type,
         description=description,
         is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
@@ -500,7 +500,7 @@ async def add_subscription_benefits(
     save_fixture: SaveFixture,
     *,
     subscription_tier: SubscriptionTier,
-    subscription_benefits: list[SubscriptionBenefit],
+    subscription_benefits: list[Benefit],
 ) -> SubscriptionTier:
     subscription_tier.subscription_tier_benefits = []
     for order, subscription_benefit in enumerate(subscription_benefits):
@@ -635,32 +635,32 @@ async def subscription_tiers(
 @pytest_asyncio.fixture
 async def subscription_benefit_organization(
     save_fixture: SaveFixture, organization: Organization
-) -> SubscriptionBenefit:
+) -> Benefit:
     return await create_subscription_benefit(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
 async def subscription_benefit_repository(
     save_fixture: SaveFixture, public_repository: Repository
-) -> SubscriptionBenefit:
+) -> Benefit:
     return await create_subscription_benefit(save_fixture, repository=public_repository)
 
 
 @pytest_asyncio.fixture
 async def subscription_benefit_private_repository(
     save_fixture: SaveFixture, repository: Repository
-) -> SubscriptionBenefit:
+) -> Benefit:
     return await create_subscription_benefit(
-        save_fixture, type=SubscriptionBenefitType.custom, repository=repository
+        save_fixture, type=BenefitType.custom, repository=repository
     )
 
 
 @pytest_asyncio.fixture
 async def subscription_benefits(
-    subscription_benefit_organization: SubscriptionBenefit,
-    subscription_benefit_repository: SubscriptionBenefit,
-    subscription_benefit_private_repository: SubscriptionBenefit,
-) -> list[SubscriptionBenefit]:
+    subscription_benefit_organization: Benefit,
+    subscription_benefit_repository: Benefit,
+    subscription_benefit_private_repository: Benefit,
+) -> list[Benefit]:
     return [
         subscription_benefit_organization,
         subscription_benefit_repository,
@@ -753,7 +753,7 @@ async def create_subscription_benefit_grant(
     save_fixture: SaveFixture,
     user: User,
     subscription: Subscription,
-    subscription_benefit: SubscriptionBenefit,
+    subscription_benefit: Benefit,
 ) -> SubscriptionBenefitGrant:
     grant = SubscriptionBenefitGrant(
         subscription=subscription,

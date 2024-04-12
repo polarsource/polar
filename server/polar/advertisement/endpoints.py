@@ -196,9 +196,7 @@ async def get_campaign(
     if not ad:
         raise ResourceNotFound()
 
-    grant = await _get_grant(
-        session, auth.user, ad.subscription_id, ad.subscription_benefit_id
-    )
+    grant = await _get_grant(session, auth.user, ad.subscription_id, ad.benefit_id)
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")
 
@@ -240,9 +238,7 @@ async def edit_campaign(
     if not ad:
         raise ResourceNotFound()
 
-    grant = await _get_grant(
-        session, auth.user, ad.subscription_id, ad.subscription_benefit_id
-    )
+    grant = await _get_grant(session, auth.user, ad.subscription_id, ad.benefit_id)
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")
 
@@ -269,9 +265,7 @@ async def delete_campaign(
     if not subscription:
         raise NotFound()
 
-    benefit = await subscription_benefit_service.get(
-        session, ad.subscription_benefit_id
-    )
+    benefit = await subscription_benefit_service.get(session, ad.benefit_id)
     if not benefit:
         raise NotFound()
 

@@ -16,9 +16,9 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.services import ResourceService
 from polar.models import (
     Account,
+    Benefit,
     Organization,
     Repository,
-    SubscriptionBenefit,
     SubscriptionTier,
     SubscriptionTierBenefit,
     SubscriptionTierPrice,
@@ -386,7 +386,7 @@ class SubscriptionTierService(
     async def create_free(
         self,
         session: AsyncSession,
-        benefits: list[SubscriptionBenefit],
+        benefits: list[Benefit],
         organization: Organization | None = None,
         repository: Repository | None = None,
     ) -> SubscriptionTier:
@@ -405,8 +405,7 @@ class SubscriptionTierService(
             )
 
         existing_benefits = [
-            str(b.subscription_benefit_id)
-            for b in free_subscription_tier.subscription_tier_benefits
+            str(b.benefit_id) for b in free_subscription_tier.subscription_tier_benefits
         ]
 
         for index, benefit in enumerate(benefits):
@@ -435,7 +434,7 @@ class SubscriptionTierService(
         subscription_tier: SubscriptionTier,
         benefits: list[uuid.UUID],
         user: User,
-    ) -> tuple[SubscriptionTier, set[SubscriptionBenefit], set[SubscriptionBenefit]]:
+    ) -> tuple[SubscriptionTier, set[Benefit], set[Benefit]]:
         subscription_tier = await self.with_organization_or_repository(
             session, subscription_tier
         )
@@ -443,7 +442,7 @@ class SubscriptionTierService(
             raise NotPermitted()
 
         previous_benefits = set(subscription_tier.benefits)
-        new_benefits: set[SubscriptionBenefit] = set()
+        new_benefits: set[Benefit] = set()
 
         nested = await session.begin_nested()
 

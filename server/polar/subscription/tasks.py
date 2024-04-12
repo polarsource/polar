@@ -8,7 +8,7 @@ from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.money import get_cents_in_dollar_string
 from polar.logging import Logger
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.benefit import BenefitType
 from polar.organization.service import organization as organization_service
 from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
@@ -245,7 +245,7 @@ async def subscription_benefit_delete(
 async def subscription_benefit_precondition_fulfilled(
     ctx: JobContext,
     user_id: uuid.UUID,
-    subscription_benefit_type: SubscriptionBenefitType,
+    subscription_benefit_type: BenefitType,
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:

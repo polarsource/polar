@@ -7,13 +7,13 @@ from fastapi import Depends
 from polar.issue.service import issue as issue_service
 from polar.models.account import Account
 from polar.models.article import Article
+from polar.models.benefit import Benefit
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.subscription import Subscription
-from polar.models.subscription_benefit import SubscriptionBenefit
 from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
@@ -45,7 +45,7 @@ Object = (
     | Issue
     | Pledge
     | SubscriptionTier
-    | SubscriptionBenefit
+    | Benefit
     | Subscription
     | Article
 )
@@ -200,12 +200,27 @@ class Authz:
             return await self._can_user_write_pledge(subject, object)
 
         #
-        # SubscriptionTier / SubscriptionBenefit
+        # Benefit
         #
         if (
             isinstance(subject, User)
             and accessType == AccessType.write
-            and isinstance(object, SubscriptionTier | SubscriptionBenefit)
+            and isinstance(object, Benefit)
+        ):
+            if object.organization:
+                return await self._can_user_write_organization(
+                    subject, object.organization
+                )
+            if object.repository:
+                return await self._can_user_write_repository(subject, object.repository)
+
+        #
+        # SubscriptionTier
+        #
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, SubscriptionTier)
         ):
             if object.organization:
                 return await self._can_user_write_organization(

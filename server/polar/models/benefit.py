@@ -15,13 +15,13 @@ if TYPE_CHECKING:
 
 
 class TaxApplicationMustBeSpecified(PolarError):
-    def __init__(self, type: "SubscriptionBenefitType") -> None:
+    def __init__(self, type: "BenefitType") -> None:
         self.type = type
         message = "The tax application should be specified for this type."
         super().__init__(message)
 
 
-class SubscriptionBenefitType(StrEnum):
+class BenefitType(StrEnum):
     custom = "custom"
     articles = "articles"
     ads = "ads"
@@ -30,38 +30,38 @@ class SubscriptionBenefitType(StrEnum):
 
     def is_tax_applicable(self) -> bool:
         try:
-            _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {
-                SubscriptionBenefitType.ads: True,
-                SubscriptionBenefitType.discord: True,
-                SubscriptionBenefitType.github_repository: True,
+            _is_tax_applicable_map: dict["BenefitType", bool] = {
+                BenefitType.ads: True,
+                BenefitType.discord: True,
+                BenefitType.github_repository: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:
             raise TaxApplicationMustBeSpecified(self) from e
 
 
-class SubscriptionBenefitProperties(TypedDict):
+class BenefitProperties(TypedDict):
     """Configurable properties for this benefit."""
 
 
-class SubscriptionBenefitCustomProperties(SubscriptionBenefitProperties):
+class BenefitCustomProperties(BenefitProperties):
     note: str | None
 
 
-class SubscriptionBenefitDiscordProperties(SubscriptionBenefitProperties):
+class BenefitDiscordProperties(BenefitProperties):
     guild_id: str
     role_id: str
 
 
-class SubscriptionBenefitArticlesProperties(SubscriptionBenefitProperties):
+class BenefitArticlesProperties(BenefitProperties):
     paid_articles: bool
 
 
-class SubscriptionBenefitAdsProperties(SubscriptionBenefitProperties):
+class BenefitAdsProperties(BenefitProperties):
     pass
 
 
-class SubscriptionBenefitGitHubRepositoryProperties(SubscriptionBenefitProperties):
+class BenefitGitHubRepositoryProperties(BenefitProperties):
     # repository_id was set previously (before 2024-13-15), for benefits using the "main"
     # Polar GitHub App for granting benefits. Benefits created after this date are using
     # the "Polar Repository Benefit" GitHub App, and only uses the repository_owner
@@ -72,19 +72,17 @@ class SubscriptionBenefitGitHubRepositoryProperties(SubscriptionBenefitPropertie
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
 
 
-class SubscriptionBenefit(RecordModel):
-    __tablename__ = "subscription_benefits"
+class Benefit(RecordModel):
+    __tablename__ = "benefits"
 
-    type: Mapped[SubscriptionBenefitType] = mapped_column(
-        String, nullable=False, index=True
-    )
+    type: Mapped[BenefitType] = mapped_column(String, nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
     selectable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     deletable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    properties: Mapped[SubscriptionBenefitProperties] = mapped_column(
+    properties: Mapped[BenefitProperties] = mapped_column(
         "properties", JSONB, nullable=False, default=dict
     )
 
@@ -109,56 +107,54 @@ class SubscriptionBenefit(RecordModel):
     }
 
 
-class SubscriptionBenefitCustom(SubscriptionBenefit):
-    properties: Mapped[SubscriptionBenefitCustomProperties] = mapped_column(
+class BenefitCustom(Benefit):
+    properties: Mapped[BenefitCustomProperties] = mapped_column(
         use_existing_column=True
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": SubscriptionBenefitType.custom,
+        "polymorphic_identity": BenefitType.custom,
         "polymorphic_load": "inline",
     }
 
 
-class SubscriptionBenefitArticles(SubscriptionBenefit):
-    properties: Mapped[SubscriptionBenefitArticlesProperties] = mapped_column(
+class BenefitArticles(Benefit):
+    properties: Mapped[BenefitArticlesProperties] = mapped_column(
         use_existing_column=True
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": SubscriptionBenefitType.articles,
+        "polymorphic_identity": BenefitType.articles,
         "polymorphic_load": "inline",
     }
 
 
-class SubscriptionBenefitAds(SubscriptionBenefit):
-    properties: Mapped[SubscriptionBenefitAdsProperties] = mapped_column(
-        use_existing_column=True
-    )
+class BenefitAds(Benefit):
+    properties: Mapped[BenefitAdsProperties] = mapped_column(use_existing_column=True)
 
     __mapper_args__ = {
-        "polymorphic_identity": SubscriptionBenefitType.ads,
+        "polymorphic_identity": BenefitType.ads,
         "polymorphic_load": "inline",
     }
 
 
-class SubscriptionBenefitDiscord(SubscriptionBenefit):
-    properties: Mapped[SubscriptionBenefitDiscordProperties] = mapped_column(
+class BenefitDiscord(Benefit):
+    properties: Mapped[BenefitDiscordProperties] = mapped_column(
         use_existing_column=True
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": SubscriptionBenefitType.discord,
+        "polymorphic_identity": BenefitType.discord,
         "polymorphic_load": "inline",
     }
 
 
-class SubscriptionBenefitGitHubRepository(SubscriptionBenefit):
-    properties: Mapped[SubscriptionBenefitGitHubRepositoryProperties] = mapped_column(
+class BenefitGitHubRepository(Benefit):
+    properties: Mapped[BenefitGitHubRepositoryProperties] = mapped_column(
         use_existing_column=True
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": SubscriptionBenefitType.github_repository,
+        "polymorphic_identity": BenefitType.github_repository,
         "polymorphic_load": "inline",
     }

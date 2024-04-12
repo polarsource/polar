@@ -36,7 +36,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/image.png",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -61,7 +61,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/image.png",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -90,7 +90,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/foobar2.jpg",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -133,7 +133,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/foobar.jpg",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -153,7 +153,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns/search",
             params={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
             },
         )
         assert searched.status_code == 200
@@ -181,7 +181,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns/search",
             params={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -210,7 +210,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns/search",
             params={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
             },
             cookies={settings.AUTH_COOKIE_KEY: user_second_auth_jwt},
         )
@@ -242,7 +242,7 @@ class TestAdvertisementCampaign:
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -276,7 +276,7 @@ class TestAdvertisementCampaign:
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -298,7 +298,7 @@ class TestAdvertisementCampaign:
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -318,7 +318,7 @@ class TestAdvertisementCampaign:
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(benefit_organization.id),
+                "benefit_id": str(benefit_organization.id),
             },
             cookies={settings.AUTH_COOKIE_KEY: user_second_auth_jwt},
         )

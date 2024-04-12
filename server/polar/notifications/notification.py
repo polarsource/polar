@@ -29,9 +29,7 @@ class NotificationType(StrEnum):
     maintainer_account_under_review = "MaintainerAccountUnderReviewNotification"
     maintainer_account_reviewed = "MaintainerAccountReviewedNotification"
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
-    subscription_benefit_precondition_error = (
-        "SubscriptionBenefitPreconditionErrorNotification"
-    )
+    benefit_precondition_error = "BenefitPreconditionErrorNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
     maintainer_donation_received = "MaintainerDonationReceived"
 
@@ -440,21 +438,20 @@ class MaintainerNewPaidSubscriptionNotification(NotificationBase):
     payload: MaintainerNewPaidSubscriptionNotificationPayload
 
 
-class SubscriptionBenefitPreconditionErrorNotificationContextualPayload(BaseModel):
+class BenefitPreconditionErrorNotificationContextualPayload(BaseModel):
     extra_context: dict[str, Any] = Field(default_factory=dict)
     subject_template: str
     body_template: str
 
 
-class SubscriptionBenefitPreconditionErrorNotificationPayload(
-    NotificationPayloadBase,
-    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+class BenefitPreconditionErrorNotificationPayload(
+    NotificationPayloadBase, BenefitPreconditionErrorNotificationContextualPayload
 ):
     subscription_id: UUID
     subscription_tier_name: str
     subscription_tier_id: UUID
-    subscription_benefit_id: UUID
-    subscription_benefit_description: str
+    benefit_id: UUID
+    benefit_description: str
     organization_name: str
 
     def subject(self) -> str:
@@ -464,9 +461,9 @@ class SubscriptionBenefitPreconditionErrorNotificationPayload(
         return self.body_template.format(**self.model_dump())
 
 
-class SubscriptionBenefitPreconditionErrorNotification(NotificationBase):
-    type: Literal[NotificationType.subscription_benefit_precondition_error]
-    payload: SubscriptionBenefitPreconditionErrorNotificationPayload
+class BenefitPreconditionErrorNotification(NotificationBase):
+    type: Literal[NotificationType.benefit_precondition_error]
+    payload: BenefitPreconditionErrorNotificationPayload
 
 
 class MaintainerCreateAccountNotificationPayload(NotificationPayloadBase):
@@ -553,7 +550,7 @@ NotificationPayload = (
     | MaintainerAccountUnderReviewNotificationPayload
     | MaintainerAccountReviewedNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
-    | SubscriptionBenefitPreconditionErrorNotificationPayload
+    | BenefitPreconditionErrorNotificationPayload
     | MaintainerCreateAccountNotificationPayload
     | MaintainerDonationReceivedNotificationPayload
 )
@@ -571,7 +568,7 @@ Notification = Annotated[
     | MaintainerAccountUnderReviewNotification
     | MaintainerAccountReviewedNotification
     | MaintainerNewPaidSubscriptionNotification
-    | SubscriptionBenefitPreconditionErrorNotification
+    | BenefitPreconditionErrorNotification
     | MaintainerCreateAccountNotification
     | MaintainerDonationReceivedNotification,
     Discriminator(discriminator="type"),

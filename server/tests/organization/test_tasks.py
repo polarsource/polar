@@ -43,7 +43,7 @@ class TestOrganizationPostInstall:
         organization: Organization,
         session: AsyncSession,
     ) -> None:
-        subscription_benefit = Benefit(
+        benefit = Benefit(
             type=BenefitType.articles,
             description="Public posts",
             is_tax_applicable=False,
@@ -55,10 +55,7 @@ class TestOrganizationPostInstall:
             "get_or_create_articles_benefits",
             spec=BenefitService.get_or_create_articles_benefits,
         )
-        get_or_create_articles_benefits_mock.return_value = (
-            subscription_benefit,
-            subscription_benefit,
-        )
+        get_or_create_articles_benefits_mock.return_value = (benefit, benefit)
         create_free_mock = mocker.patch.object(
             subscription_tier_service,
             "create_free",

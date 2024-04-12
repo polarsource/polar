@@ -851,7 +851,7 @@ class TestEnqueueBenefitsGrants:
                     "subscription.subscription_benefit.grant",
                     subscription_id=subscription.id,
                     user_id=subscription.user_id,
-                    subscription_benefit_id=benefit.id,
+                    benefit_id=benefit.id,
                 )
                 for benefit in benefits
             ]
@@ -897,7 +897,7 @@ class TestEnqueueBenefitsGrants:
                     "subscription.subscription_benefit.revoke",
                     subscription_id=subscription.id,
                     user_id=subscription.user_id,
-                    subscription_benefit_id=benefit.id,
+                    benefit_id=benefit.id,
                 )
                 for benefit in benefits
             ]
@@ -920,7 +920,7 @@ class TestEnqueueBenefitsGrants:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
-            subscription_benefit_id=benefits[0].id,
+            benefit_id=benefits[0].id,
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -941,7 +941,7 @@ class TestEnqueueBenefitsGrants:
             "subscription.subscription_benefit.revoke",
             subscription_id=subscription.id,
             user_id=subscription.user_id,
-            subscription_benefit_id=benefits[0].id,
+            benefit_id=benefits[0].id,
         )
 
     async def test_subscription_organization(
@@ -984,7 +984,7 @@ class TestEnqueueBenefitsGrants:
                         "subscription.subscription_benefit.grant",
                         subscription_id=subscription_organization.id,
                         user_id=user_id,
-                        subscription_benefit_id=benefit.id,
+                        benefit_id=benefit.id,
                     )
                     for user_id in [
                         organization_subscriber_admin.id,

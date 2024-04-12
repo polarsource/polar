@@ -53,13 +53,10 @@ class UserDoesNotExist(SubscriptionTaskError):
         super().__init__(message, 500)
 
 
-class SubscriptionBenefitDoesNotExist(SubscriptionTaskError):
-    def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
-        self.subscription_benefit_id = subscription_benefit_id
-        message = (
-            f"The subscription benefit with id {subscription_benefit_id} "
-            "does not exist."
-        )
+class BenefitDoesNotExist(SubscriptionTaskError):
+    def __init__(self, benefit_id: uuid.UUID) -> None:
+        self.benefit_id = benefit_id
+        message = f"The benefit with id {benefit_id} does not exist."
         super().__init__(message, 500)
 
 
@@ -106,7 +103,7 @@ async def subscription_benefit_grant(
     ctx: JobContext,
     subscription_id: uuid.UUID,
     user_id: uuid.UUID,
-    subscription_benefit_id: uuid.UUID,
+    benefit_id: uuid.UUID,
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
@@ -118,26 +115,20 @@ async def subscription_benefit_grant(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        subscription_benefit = await benefit_service.get(
-            session, subscription_benefit_id
-        )
-        if subscription_benefit is None:
-            raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
+        benefit = await benefit_service.get(session, benefit_id)
+        if benefit is None:
+            raise BenefitDoesNotExist(benefit_id)
 
         try:
             await subscription_benefit_grant_service.grant_benefit(
-                session,
-                subscription,
-                user,
-                subscription_benefit,
-                attempt=ctx["job_try"],
+                session, subscription, user, benefit, attempt=ctx["job_try"]
             )
         except SubscriptionBenefitRetriableError as e:
             log.warning(
                 "Retriable error encountered while granting benefit",
                 error=str(e),
                 defer_seconds=e.defer_seconds,
-                subscription_benefit_id=str(subscription_benefit_id),
+                benefit_id=str(benefit_id),
                 user_id=str(user_id),
             )
             raise Retry(e.defer_seconds) from e
@@ -148,7 +139,7 @@ async def subscription_benefit_revoke(
     ctx: JobContext,
     subscription_id: uuid.UUID,
     user_id: uuid.UUID,
-    subscription_benefit_id: uuid.UUID,
+    benefit_id: uuid.UUID,
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
@@ -160,26 +151,20 @@ async def subscription_benefit_revoke(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        subscription_benefit = await benefit_service.get(
-            session, subscription_benefit_id
-        )
-        if subscription_benefit is None:
-            raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
+        benefit = await benefit_service.get(session, benefit_id)
+        if benefit is None:
+            raise BenefitDoesNotExist(benefit_id)
 
         try:
             await subscription_benefit_grant_service.revoke_benefit(
-                session,
-                subscription,
-                user,
-                subscription_benefit,
-                attempt=ctx["job_try"],
+                session, subscription, user, benefit, attempt=ctx["job_try"]
             )
         except SubscriptionBenefitRetriableError as e:
             log.warning(
                 "Retriable error encountered while revoking benefit",
                 error=str(e),
                 defer_seconds=e.defer_seconds,
-                subscription_benefit_id=str(subscription_benefit_id),
+                benefit_id=str(benefit_id),
                 user_id=str(user_id),
             )
             raise Retry(e.defer_seconds) from e
@@ -243,7 +228,7 @@ async def subscription_benefit_delete(
 async def subscription_benefit_precondition_fulfilled(
     ctx: JobContext,
     user_id: uuid.UUID,
-    subscription_benefit_type: BenefitType,
+    benefit_type: BenefitType,
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
@@ -252,7 +237,7 @@ async def subscription_benefit_precondition_fulfilled(
             raise UserDoesNotExist(user_id)
 
         await subscription_benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
-            session, user, subscription_benefit_type
+            session, user, benefit_type
         )
 
 

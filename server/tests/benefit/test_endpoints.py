@@ -1,21 +1,13 @@
 import uuid
 from typing import Any
-from unittest.mock import MagicMock
 
 import pytest
 from httpx import AsyncClient
 
-from polar.models import (
-    Benefit,
-    Organization,
-    Repository,
-    UserOrganization,
-)
+from polar.models import Benefit, Organization, Repository, UserOrganization
 from polar.models.benefit import BenefitType
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import (
-    create_benefit,
-)
+from tests.fixtures.random_objects import create_benefit
 
 
 @pytest.mark.asyncio
@@ -157,7 +149,7 @@ class TestLookupBenefit:
     ) -> None:
         response = await client.get(
             "/api/v1/benefits/lookup",
-            params={"subscription_benefit_id": str(benefit_organization.id)},
+            params={"benefit_id": str(benefit_organization.id)},
         )
 
         assert response.status_code == 401
@@ -166,7 +158,7 @@ class TestLookupBenefit:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/benefits/lookup",
-            params={"subscription_benefit_id": str(uuid.uuid4())},
+            params={"benefit_id": str(uuid.uuid4())},
         )
 
         assert response.status_code == 404
@@ -180,7 +172,7 @@ class TestLookupBenefit:
     ) -> None:
         response = await client.get(
             "/api/v1/benefits/lookup",
-            params={"subscription_benefit_id": str(benefit_organization.id)},
+            params={"benefit_id": str(benefit_organization.id)},
         )
 
         assert response.status_code == 200
@@ -213,7 +205,6 @@ class TestCreateBenefit:
         organization: Organization,
         public_repository: Repository,
         user_organization_admin: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
         response = await client.post(
             "/api/v1/benefits/",
@@ -230,10 +221,7 @@ class TestCreateBenefit:
 
     @pytest.mark.authenticated
     async def test_neither_organization_nor_repository(
-        self,
-        client: AsyncClient,
-        user_organization_admin: UserOrganization,
-        stripe_service_mock: MagicMock,
+        self, client: AsyncClient, user_organization_admin: UserOrganization
     ) -> None:
         response = await client.post(
             "/api/v1/benefits/",

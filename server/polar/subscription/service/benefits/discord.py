@@ -14,7 +14,7 @@ from polar.models.benefit import (
     BenefitDiscordProperties,
 )
 from polar.notifications.notification import (
-    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+    BenefitPreconditionErrorNotificationContextualPayload,
 )
 
 from .base import (
@@ -104,7 +104,7 @@ class SubscriptionBenefitDiscordService(
         except DiscordAccountNotConnected as e:
             raise SubscriptionBenefitPreconditionError(
                 "Discord account not linked",
-                payload=SubscriptionBenefitPreconditionErrorNotificationContextualPayload(
+                payload=BenefitPreconditionErrorNotificationContextualPayload(
                     subject_template=precondition_error_subject_template,
                     body_template=precondition_error_body_template,
                     extra_context={"url": settings.generate_frontend_url("/settings")},

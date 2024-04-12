@@ -16,7 +16,7 @@ async def advertisement_campaign(
 ) -> AdvertisementCampaign:
     ad = AdvertisementCampaign(
         subscription_id=subscription.id,
-        subscription_benefit_id=benefit_organization.id,
+        benefit_id=benefit_organization.id,
         image_url="https://example.com/img.jpg",
         text="",
         link_url="https://example.com",

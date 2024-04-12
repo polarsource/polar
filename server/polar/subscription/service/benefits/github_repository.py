@@ -19,7 +19,7 @@ from polar.models.benefit import (
 )
 from polar.models.user import OAuthPlatform
 from polar.notifications.notification import (
-    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+    BenefitPreconditionErrorNotificationContextualPayload,
 )
 from polar.posthog import posthog
 from polar.repository.service import repository as repository_service
@@ -138,7 +138,7 @@ class SubscriptionBenefitGitHubRepositoryService(
         if oauth_account is None or oauth_account.account_username is None:
             raise SubscriptionBenefitPreconditionError(
                 "GitHub account not linked",
-                payload=SubscriptionBenefitPreconditionErrorNotificationContextualPayload(
+                payload=BenefitPreconditionErrorNotificationContextualPayload(
                     subject_template=precondition_error_subject_template,
                     body_template=precondition_error_body_template,
                     extra_context={

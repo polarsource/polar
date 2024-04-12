@@ -12,7 +12,7 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitProperties
 from polar.notifications.notification import (
-    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+    BenefitPreconditionErrorNotificationContextualPayload,
 )
 from polar.postgres import AsyncSession
 
@@ -86,8 +86,7 @@ class SubscriptionBenefitPreconditionError(SubscriptionBenefitServiceError):
         self,
         message: str,
         *,
-        payload: SubscriptionBenefitPreconditionErrorNotificationContextualPayload
-        | None = None,
+        payload: BenefitPreconditionErrorNotificationContextualPayload | None = None,
     ) -> None:
         """
         Args:

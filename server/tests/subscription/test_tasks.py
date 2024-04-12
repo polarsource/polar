@@ -19,7 +19,7 @@ from polar.subscription.service.subscription_benefit_grant import (
     SubscriptionBenefitGrantService,
 )
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
-    SubscriptionBenefitDoesNotExist,
+    BenefitDoesNotExist,
     SubscriptionBenefitGrantDoesNotExist,
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
@@ -160,7 +160,7 @@ class TestSubscriptionBenefitGrant:
                 polar_worker_context,
             )
 
-    async def test_not_existing_subscription_benefit(
+    async def test_not_existing_benefit(
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
@@ -171,7 +171,7 @@ class TestSubscriptionBenefitGrant:
         # then
         session.expunge_all()
 
-        with pytest.raises(SubscriptionBenefitDoesNotExist):
+        with pytest.raises(BenefitDoesNotExist):
             await subscription_benefit_grant(
                 job_context,
                 subscription.id,
@@ -281,7 +281,7 @@ class TestSubscriptionBenefitRevoke:
                 polar_worker_context,
             )
 
-    async def test_not_existing_subscription_benefit(
+    async def test_not_existing_benefit(
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
@@ -292,7 +292,7 @@ class TestSubscriptionBenefitRevoke:
         # then
         session.expunge_all()
 
-        with pytest.raises(SubscriptionBenefitDoesNotExist):
+        with pytest.raises(BenefitDoesNotExist):
             await subscription_benefit_revoke(
                 job_context,
                 subscription.id,
@@ -389,9 +389,7 @@ class TestSubscriptionBenefitUpdate:
         benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -421,9 +419,7 @@ class TestSubscriptionBenefitUpdate:
         benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -473,9 +469,7 @@ class TestSubscriptionBenefitDelete:
         benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -505,9 +499,7 @@ class TestSubscriptionBenefitDelete:
         benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)

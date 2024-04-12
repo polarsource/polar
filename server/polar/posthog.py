@@ -57,7 +57,9 @@ class Service:
         self,
         user: User,
         # strict typing in an attempt to force a common naming convention for events
-        category: Literal["articles", "subscriptions", "user", "organizations"],
+        category: Literal[
+            "articles", "benefits", "subscriptions", "user", "organizations"
+        ],
         noun: str,
         verb: Literal[
             "click",

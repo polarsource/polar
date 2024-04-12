@@ -1,15 +1,9 @@
-import random
-import string
 from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
-
-
-def rstr(prefix: str) -> str:
-    return f"{prefix}.{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}"
 
 
 @pytest.fixture(autouse=True)

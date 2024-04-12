@@ -5,6 +5,7 @@ from polar.advertisement.endpoints import router as advertisements_router
 from polar.article.endpoints import router as articles_router
 from polar.auth.endpoints import router as auth_router
 from polar.backoffice.endpoints import router as backoffice_router
+from polar.benefit.endpoints import router as benefits_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.donation.endpoints import router as donations_router
 from polar.eventstream.endpoints import router as stream_router
@@ -94,3 +95,5 @@ router.include_router(auth_router)
 router.include_router(donations_router)
 # /oauth2
 router.include_router(oauth2_router)
+# /benefits
+router.include_router(benefits_router)

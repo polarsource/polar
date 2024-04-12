@@ -795,7 +795,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
         enqueue_job_mock = mocker.patch(
@@ -805,7 +805,7 @@ class TestEnqueueBenefitsGrants:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
         subscription.status = status
 
@@ -826,7 +826,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
         enqueue_job_mock = mocker.patch(
@@ -836,7 +836,7 @@ class TestEnqueueBenefitsGrants:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
         subscription.status = status
 
@@ -853,7 +853,7 @@ class TestEnqueueBenefitsGrants:
                     user_id=subscription.user_id,
                     subscription_benefit_id=benefit.id,
                 )
-                for benefit in subscription_benefits
+                for benefit in benefits
             ]
         )
 
@@ -872,7 +872,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
         enqueue_job_mock = mocker.patch(
@@ -882,7 +882,7 @@ class TestEnqueueBenefitsGrants:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
         subscription.status = status
 
@@ -899,7 +899,7 @@ class TestEnqueueBenefitsGrants:
                     user_id=subscription.user_id,
                     subscription_benefit_id=benefit.id,
                 )
-                for benefit in subscription_benefits
+                for benefit in benefits
             ]
         )
 
@@ -909,7 +909,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
         subscription: Subscription,
         user: User,
     ) -> None:
@@ -920,7 +920,7 @@ class TestEnqueueBenefitsGrants:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
-            subscription_benefit_id=subscription_benefits[0].id,
+            subscription_benefit_id=benefits[0].id,
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -928,7 +928,7 @@ class TestEnqueueBenefitsGrants:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits[1:],
+            benefits=benefits[1:],
         )
         subscription.status = SubscriptionStatus.active
 
@@ -941,7 +941,7 @@ class TestEnqueueBenefitsGrants:
             "subscription.subscription_benefit.revoke",
             subscription_id=subscription.id,
             user_id=subscription.user_id,
-            subscription_benefit_id=subscription_benefits[0].id,
+            subscription_benefit_id=benefits[0].id,
         )
 
     async def test_subscription_organization(
@@ -950,7 +950,7 @@ class TestEnqueueBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
         subscription_organization: Subscription,
         organization_subscriber_admin: User,
         organization_subscriber_members: list[User],
@@ -962,7 +962,7 @@ class TestEnqueueBenefitsGrants:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
         subscription_organization.status = SubscriptionStatus.active
 
@@ -974,10 +974,10 @@ class TestEnqueueBenefitsGrants:
         )
 
         members_count = len(organization_subscriber_members) + 1  # Members + admin
-        benefits_count = len(subscription_benefits) + 1  # Benefits + articles
+        benefits_count = len(benefits) + 1  # Benefits + articles
         assert enqueue_job_mock.call_count == members_count * benefits_count
 
-        for benefit in subscription_benefits:
+        for benefit in benefits:
             enqueue_job_mock.assert_has_calls(
                 [
                     call(

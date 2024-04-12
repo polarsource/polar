@@ -31,13 +31,14 @@ from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
 
+from ..benefit.schemas import Benefit as BenefitSchema
+from ..benefit.schemas import BenefitCreate, BenefitUpdate, benefit_schema_map
+from ..benefit.service import benefit as benefit_service
 from . import auth
 from .schemas import (
     FreeSubscriptionCreate,
     SubscribeSession,
     SubscribeSessionCreate,
-    SubscriptionBenefitCreate,
-    SubscriptionBenefitUpdate,
     SubscriptionCreateEmail,
     SubscriptionsImported,
     SubscriptionsStatistics,
@@ -47,17 +48,12 @@ from .schemas import (
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
     SubscriptionUpgrade,
-    subscription_benefit_schema_map,
 )
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscribe_session import subscribe_session as subscribe_session_service
 from .service.subscription import AlreadySubscribed, SearchSortProperty
 from .service.subscription import subscription as subscription_service
-from .service.subscription_benefit import (
-    subscription_benefit as subscription_benefit_service,
-)
 from .service.subscription_tier import subscription_tier as subscription_tier_service
 
 log = structlog.get_logger()
@@ -239,9 +235,7 @@ async def update_subscription_tier_benefits(
 
 
 @router.get(
-    "/benefits/search",
-    response_model=ListResource[SubscriptionBenefitSchema],
-    tags=[Tags.PUBLIC],
+    "/benefits/search", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC]
 )
 async def search_subscription_benefits(
     auth: auth.TiersWriteAuth,
@@ -251,7 +245,7 @@ async def search_subscription_benefits(
     direct_organization: bool = Query(True),
     type: BenefitType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[SubscriptionBenefitSchema]:
+) -> ListResource[BenefitSchema]:
     organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
         session, platform, organization_name
@@ -267,7 +261,7 @@ async def search_subscription_benefits(
         if repository is None:
             raise ResourceNotFound("Repository not found")
 
-    results, count = await subscription_benefit_service.search(
+    results, count = await benefit_service.search(
         session,
         auth.subject,
         type=type,
@@ -278,26 +272,19 @@ async def search_subscription_benefits(
     )
 
     return ListResource.from_paginated_results(
-        [
-            subscription_benefit_schema_map[result.type].model_validate(result)
-            for result in results
-        ],
+        [benefit_schema_map[result.type].model_validate(result) for result in results],
         count,
         pagination,
     )
 
 
-@router.get(
-    "/benefits/lookup",
-    response_model=SubscriptionBenefitSchema,
-    tags=[Tags.PUBLIC],
-)
+@router.get("/benefits/lookup", response_model=BenefitSchema, tags=[Tags.PUBLIC])
 async def lookup_subscription_benefit(
     subscription_benefit_id: UUID4,
     auth: auth.TiersWriteAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    subscription_benefit = await subscription_benefit_service.get_by_id(
+    subscription_benefit = await benefit_service.get_by_id(
         session, auth.subject, subscription_benefit_id
     )
 
@@ -308,20 +295,15 @@ async def lookup_subscription_benefit(
 
 
 @router.post(
-    "/benefits/",
-    response_model=SubscriptionBenefitSchema,
-    status_code=201,
-    tags=[Tags.PUBLIC],
+    "/benefits/", response_model=BenefitSchema, status_code=201, tags=[Tags.PUBLIC]
 )
 async def create_subscription_benefit(
     auth: auth.TiersWriteAuth,
-    subscription_benefit_create: SubscriptionBenefitCreate = Body(
-        ..., discriminator="type"
-    ),
+    subscription_benefit_create: BenefitCreate = Body(..., discriminator="type"),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    subscription_benefit = await subscription_benefit_service.user_create(
+    subscription_benefit = await benefit_service.user_create(
         session, authz, subscription_benefit_create, auth.user
     )
 
@@ -336,19 +318,15 @@ async def create_subscription_benefit(
     return subscription_benefit
 
 
-@router.post(
-    "/benefits/{id}", response_model=SubscriptionBenefitSchema, tags=[Tags.PUBLIC]
-)
+@router.post("/benefits/{id}", response_model=BenefitSchema, tags=[Tags.PUBLIC])
 async def update_subscription_benefit(
     id: UUID4,
-    subscription_benefit_update: SubscriptionBenefitUpdate,
+    subscription_benefit_update: BenefitUpdate,
     auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    subscription_benefit = await subscription_benefit_service.get_by_id(
-        session, auth.subject, id
-    )
+    subscription_benefit = await benefit_service.get_by_id(session, auth.subject, id)
 
     if subscription_benefit is None:
         raise ResourceNotFound()
@@ -364,7 +342,7 @@ async def update_subscription_benefit(
         {"subscription_benefit_id": subscription_benefit.id},
     )
 
-    return await subscription_benefit_service.user_update(
+    return await benefit_service.user_update(
         session, authz, subscription_benefit, subscription_benefit_update, auth.user
     )
 
@@ -376,9 +354,7 @@ async def delete_subscription_benefit(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    subscription_benefit = await subscription_benefit_service.get_by_id(
-        session, auth.subject, id
-    )
+    subscription_benefit = await benefit_service.get_by_id(session, auth.subject, id)
 
     if subscription_benefit is None:
         raise ResourceNotFound()
@@ -391,9 +367,7 @@ async def delete_subscription_benefit(
         {"subscription_benefit_id": subscription_benefit.id},
     )
 
-    await subscription_benefit_service.user_delete(
-        session, authz, subscription_benefit, auth.user
-    )
+    await benefit_service.user_delete(session, authz, subscription_benefit, auth.user)
 
 
 @router.post(

@@ -24,7 +24,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
-    create_subscription_benefit,
+    create_benefit,
 )
 
 
@@ -392,13 +392,13 @@ class TestCreateSubscribeSession:
         organization: Organization,
         user: User,
     ) -> None:
-        applicable_tax_benefit = await create_subscription_benefit(
+        applicable_tax_benefit = await create_benefit(
             save_fixture, is_tax_applicable=True, organization=organization
         )
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=[applicable_tax_benefit],
+            benefits=[applicable_tax_benefit],
         )
 
         create_subscription_checkout_session_mock: MagicMock = (

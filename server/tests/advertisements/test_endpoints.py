@@ -22,21 +22,21 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
         await create_subscription_benefit_grant(
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
 
         response = await client.post(
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/image.png",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -54,14 +54,14 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         response = await client.post(
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/image.png",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -76,21 +76,21 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
         await create_subscription_benefit_grant(
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
 
         response = await client.post(
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/foobar2.jpg",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -119,21 +119,21 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
         await create_subscription_benefit_grant(
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
 
         response = await client.post(
             "/api/v1/advertisements/campaigns",
             json={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
                 "image_url": "https://example.com/foobar.jpg",
                 "text": "hello",
                 "link_url": "https://example.com/",
@@ -153,7 +153,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns/search",
             params={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
             },
         )
         assert searched.status_code == 200
@@ -165,7 +165,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -173,7 +173,7 @@ class TestAdvertisementCampaign:
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
 
         # appears in search
@@ -181,7 +181,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns/search",
             params={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -194,7 +194,7 @@ class TestAdvertisementCampaign:
         user: User,
         user_second_auth_jwt: str,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -202,7 +202,7 @@ class TestAdvertisementCampaign:
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
 
         # does not appear in search
@@ -210,7 +210,7 @@ class TestAdvertisementCampaign:
             "/api/v1/advertisements/campaigns/search",
             params={
                 "subscription_id": str(subscription.id),
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
             },
             cookies={settings.AUTH_COOKIE_KEY: user_second_auth_jwt},
         )
@@ -224,7 +224,7 @@ class TestAdvertisementCampaign:
         user: User,
         user_organization: UserOrganization,  # member
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -235,14 +235,14 @@ class TestAdvertisementCampaign:
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
 
         # appears in search
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -256,7 +256,7 @@ class TestAdvertisementCampaign:
         user: User,
         user_organization: UserOrganization,  # member
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -267,7 +267,7 @@ class TestAdvertisementCampaign:
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
         grant.revoked_at = utc_now()
         await save_fixture(grant)
@@ -276,7 +276,7 @@ class TestAdvertisementCampaign:
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -290,7 +290,7 @@ class TestAdvertisementCampaign:
         user: User,
         # user_organization: UserOrganization,  # no member
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
@@ -298,7 +298,7 @@ class TestAdvertisementCampaign:
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
             },
         )
 
@@ -309,7 +309,7 @@ class TestAdvertisementCampaign:
         client: AsyncClient,
         user: User,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
         advertisement_campaign: AdvertisementCampaign,
         user_second_auth_jwt: str,
@@ -318,7 +318,7 @@ class TestAdvertisementCampaign:
         searched = await client.get(
             "/api/v1/advertisements/campaigns/search",
             params={
-                "subscription_benefit_id": str(subscription_benefit_organization.id),
+                "subscription_benefit_id": str(benefit_organization.id),
             },
             cookies={settings.AUTH_COOKIE_KEY: user_second_auth_jwt},
         )
@@ -331,7 +331,7 @@ class TestAdvertisementCampaign:
         user: User,
         subscription: Subscription,
         user_organization: UserOrganization,  # member
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         advertisement_campaign: AdvertisementCampaign,
         auth_jwt: str,
         save_fixture: SaveFixture,
@@ -343,7 +343,7 @@ class TestAdvertisementCampaign:
             save_fixture,
             user,
             subscription,
-            subscription_benefit_organization,
+            benefit_organization,
         )
 
         track = await client.post(

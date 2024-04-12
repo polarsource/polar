@@ -5,6 +5,7 @@ from fastapi import Depends
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
+from polar.benefit.service import benefit as benefit_service
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unauthorized
 from polar.integrations.github.client import NotFound
 from polar.kit.pagination import ListResource, Pagination
@@ -17,9 +18,6 @@ from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.subscription.service.subscription import (
     subscription as subscription_service,
-)
-from polar.subscription.service.subscription_benefit import (
-    subscription_benefit as subscription_benefit_service,
 )
 from polar.subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
@@ -50,7 +48,7 @@ async def _get_grant(
     if not subscription:
         raise NotFound()
 
-    benefit = await subscription_benefit_service.get(session, subscription_benefit_id)
+    benefit = await benefit_service.get(session, subscription_benefit_id)
     if not benefit:
         raise NotFound()
 
@@ -93,7 +91,7 @@ async def search_campaigns(
             raise NotPermitted("This benefit does not exist or has been revoked")
     elif subscription_benefit_id:
         # searching by benefit, require user to be able to write the benefit
-        benefit = await subscription_benefit_service.get(
+        benefit = await benefit_service.get(
             session,
             subscription_benefit_id,
             loaded=True,
@@ -136,7 +134,7 @@ async def search_display(
         subscription_benefit_id=subscription_benefit_id,
     )
 
-    benefit = await subscription_benefit_service.get(session, subscription_benefit_id)
+    benefit = await benefit_service.get(session, subscription_benefit_id)
     if not benefit:
         raise ResourceNotFound()
 
@@ -265,7 +263,7 @@ async def delete_campaign(
     if not subscription:
         raise NotFound()
 
-    benefit = await subscription_benefit_service.get(session, ad.benefit_id)
+    benefit = await benefit_service.get(session, ad.benefit_id)
     if not benefit:
         raise NotFound()
 

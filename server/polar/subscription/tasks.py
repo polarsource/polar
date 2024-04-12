@@ -4,6 +4,8 @@ import structlog
 from arq import Retry
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
+from polar.benefit.benefits import BenefitRetriableError
+from polar.benefit.service import benefit as benefit_service
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.money import get_cents_in_dollar_string
@@ -13,8 +15,6 @@ from polar.organization.service import organization as organization_service
 from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
-from ..benefit.service import benefit as benefit_service
-from .service.benefits import SubscriptionBenefitRetriableError
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
@@ -123,7 +123,7 @@ async def subscription_benefit_grant(
             await subscription_benefit_grant_service.grant_benefit(
                 session, subscription, user, benefit, attempt=ctx["job_try"]
             )
-        except SubscriptionBenefitRetriableError as e:
+        except BenefitRetriableError as e:
             log.warning(
                 "Retriable error encountered while granting benefit",
                 error=str(e),
@@ -159,7 +159,7 @@ async def subscription_benefit_revoke(
             await subscription_benefit_grant_service.revoke_benefit(
                 session, subscription, user, benefit, attempt=ctx["job_try"]
             )
-        except SubscriptionBenefitRetriableError as e:
+        except BenefitRetriableError as e:
             log.warning(
                 "Retriable error encountered while revoking benefit",
                 error=str(e),
@@ -187,7 +187,7 @@ async def subscription_benefit_update(
             await subscription_benefit_grant_service.update_benefit_grant(
                 session, subscription_benefit_grant, attempt=ctx["job_try"]
             )
-        except SubscriptionBenefitRetriableError as e:
+        except BenefitRetriableError as e:
             log.warning(
                 "Retriable error encountered while updating benefit",
                 error=str(e),
@@ -214,7 +214,7 @@ async def subscription_benefit_delete(
             await subscription_benefit_grant_service.delete_benefit_grant(
                 session, subscription_benefit_grant, attempt=ctx["job_try"]
             )
-        except SubscriptionBenefitRetriableError as e:
+        except BenefitRetriableError as e:
             log.warning(
                 "Retriable error encountered while deleting benefit",
                 error=str(e),

@@ -25,10 +25,10 @@ from polar.posthog import posthog
 from polar.repository.service import repository as repository_service
 
 from .base import (
-    SubscriptionBenefitPreconditionError,
-    SubscriptionBenefitPropertiesValidationError,
-    SubscriptionBenefitRetriableError,
-    SubscriptionBenefitServiceProtocol,
+    BenefitPreconditionError,
+    BenefitPropertiesValidationError,
+    BenefitRetriableError,
+    BenefitServiceProtocol,
 )
 
 log: Logger = structlog.get_logger()
@@ -68,11 +68,8 @@ https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
 """
 
 
-class SubscriptionBenefitGitHubRepositoryService(
-    SubscriptionBenefitServiceProtocol[
-        BenefitGitHubRepository,
-        BenefitGitHubRepositoryProperties,
-    ]
+class BenefitGitHubRepositoryService(
+    BenefitServiceProtocol[BenefitGitHubRepository, BenefitGitHubRepositoryProperties]
 ):
     async def _get_github_app_client(
         self,
@@ -136,7 +133,7 @@ class SubscriptionBenefitGitHubRepositoryService(
         # When inviting users: Use the users identity from the "main" Polar GitHub App
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
         if oauth_account is None or oauth_account.account_username is None:
-            raise SubscriptionBenefitPreconditionError(
+            raise BenefitPreconditionError(
                 "GitHub account not linked",
                 payload=BenefitPreconditionErrorNotificationContextualPayload(
                     subject_template=precondition_error_subject_template,
@@ -180,11 +177,9 @@ class SubscriptionBenefitGitHubRepositoryService(
                 data={"permission": permission},
             )
         except RateLimitExceeded as e:
-            raise SubscriptionBenefitRetriableError(
-                int(e.retry_after.total_seconds())
-            ) from e
+            raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
         except (RequestTimeout, RequestError) as e:
-            raise SubscriptionBenefitRetriableError(2**attempt) from e
+            raise BenefitRetriableError(2**attempt) from e
 
         bound_logger.debug("Benefit granted")
 
@@ -243,11 +238,9 @@ class SubscriptionBenefitGitHubRepositoryService(
         try:
             await revoke_request
         except RateLimitExceeded as e:
-            raise SubscriptionBenefitRetriableError(
-                int(e.retry_after.total_seconds())
-            ) from e
+            raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
         except (RequestTimeout, RequestError) as e:
-            raise SubscriptionBenefitRetriableError(2**attempt) from e
+            raise BenefitRetriableError(2**attempt) from e
 
         bound_logger.debug("Benefit revoked")
 
@@ -282,7 +275,7 @@ class SubscriptionBenefitGitHubRepositoryService(
             self.session, user
         )
         if not oauth:
-            raise SubscriptionBenefitPropertiesValidationError(
+            raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "invalid_user_auth",
@@ -303,7 +296,7 @@ class SubscriptionBenefitGitHubRepositoryService(
         )
 
         if not has_access:
-            raise SubscriptionBenefitPropertiesValidationError(
+            raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "no_repository_acccess",
@@ -321,7 +314,7 @@ class SubscriptionBenefitGitHubRepositoryService(
             )
         )
         if not installation:
-            raise SubscriptionBenefitPropertiesValidationError(
+            raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "no_repository_installation_found",
@@ -339,7 +332,7 @@ class SubscriptionBenefitGitHubRepositoryService(
                 oauth, installation
             )
             if not plan or plan.is_personal:
-                raise SubscriptionBenefitPropertiesValidationError(
+                raise BenefitPropertiesValidationError(
                     [
                         {
                             "type": "personal_organization_repository",
@@ -368,7 +361,7 @@ class SubscriptionBenefitGitHubRepositoryService(
         )
 
         if repository is None:
-            raise SubscriptionBenefitPropertiesValidationError(
+            raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "invalid_repository",
@@ -381,7 +374,7 @@ class SubscriptionBenefitGitHubRepositoryService(
 
         authz = Authz(self.session)
         if not await authz.can(user, AccessType.write, repository):
-            raise SubscriptionBenefitPropertiesValidationError(
+            raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "no_repository_acccess",
@@ -396,7 +389,7 @@ class SubscriptionBenefitGitHubRepositoryService(
             "github-benefit-personal-org", user.posthog_distinct_id
         ):
             if repository.organization.is_personal:
-                raise SubscriptionBenefitPropertiesValidationError(
+                raise BenefitPropertiesValidationError(
                     [
                         {
                             "type": "personal_organization_repository",

@@ -4,6 +4,7 @@ import pytest
 from arq import Retry
 from pytest_mock import MockerFixture
 
+from polar.benefit.benefits import BenefitRetriableError
 from polar.models import (
     Benefit,
     Subscription,
@@ -13,7 +14,6 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
-from polar.subscription.service.benefits import SubscriptionBenefitRetriableError
 from polar.subscription.service.subscription import SubscriptionService
 from polar.subscription.service.subscription_benefit_grant import (
     SubscriptionBenefitGrantService,
@@ -224,7 +224,7 @@ class TestSubscriptionBenefitGrant:
             "grant_benefit",
             spec=SubscriptionBenefitGrantService.grant_benefit,
         )
-        grant_benefit_mock.side_effect = SubscriptionBenefitRetriableError(10)
+        grant_benefit_mock.side_effect = BenefitRetriableError(10)
 
         # then
         session.expunge_all()
@@ -345,7 +345,7 @@ class TestSubscriptionBenefitRevoke:
             "revoke_benefit",
             spec=SubscriptionBenefitGrantService.revoke_benefit,
         )
-        revoke_benefit_mock.side_effect = SubscriptionBenefitRetriableError(10)
+        revoke_benefit_mock.side_effect = BenefitRetriableError(10)
 
         # then
         session.expunge_all()
@@ -429,7 +429,7 @@ class TestSubscriptionBenefitUpdate:
             "update_benefit_grant",
             spec=SubscriptionBenefitGrantService.update_benefit_grant,
         )
-        update_benefit_grant_mock.side_effect = SubscriptionBenefitRetriableError(10)
+        update_benefit_grant_mock.side_effect = BenefitRetriableError(10)
 
         # then
         session.expunge_all()
@@ -509,7 +509,7 @@ class TestSubscriptionBenefitDelete:
             "delete_benefit_grant",
             spec=SubscriptionBenefitGrantService.delete_benefit_grant,
         )
-        delete_benefit_grant_mock.side_effect = SubscriptionBenefitRetriableError(10)
+        delete_benefit_grant_mock.side_effect = BenefitRetriableError(10)
 
         # then
         session.expunge_all()

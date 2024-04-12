@@ -6,11 +6,11 @@ from polar.models.benefit import (
     BenefitCustomProperties,
 )
 
-from .base import SubscriptionBenefitServiceProtocol
+from .base import BenefitServiceProtocol
 
 
-class SubscriptionBenefitCustomService(
-    SubscriptionBenefitServiceProtocol[BenefitCustom, BenefitCustomProperties]
+class BenefitCustomService(
+    BenefitServiceProtocol[BenefitCustom, BenefitCustomProperties]
 ):
     async def grant(
         self,

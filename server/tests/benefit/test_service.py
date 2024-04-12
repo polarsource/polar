@@ -6,6 +6,10 @@ from fastapi.exceptions import RequestValidationError
 from pytest_mock import MockerFixture
 
 from polar.authz.service import Authz
+from polar.benefit.benefits import (
+    BenefitPropertiesValidationError,
+    BenefitServiceProtocol,
+)
 from polar.benefit.schemas import (
     BenefitCustomCreate,
     BenefitCustomProperties,
@@ -28,10 +32,6 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
-from polar.subscription.service.benefits import (
-    SubscriptionBenefitPropertiesValidationError,
-    SubscriptionBenefitServiceProtocol,
-)
 from polar.subscription.service.subscription_benefit_grant import (
     SubscriptionBenefitGrantService,
 )
@@ -355,18 +355,16 @@ class TestUserCreate:
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
-        service_mock = MagicMock(spec=SubscriptionBenefitServiceProtocol)
-        service_mock.validate_properties.side_effect = (
-            SubscriptionBenefitPropertiesValidationError(
-                [
-                    {
-                        "type": "property_error",
-                        "message": "The property is invalid",
-                        "loc": ("key",),
-                        "input": "foobar",
-                    }
-                ]
-            )
+        service_mock = MagicMock(spec=BenefitServiceProtocol)
+        service_mock.validate_properties.side_effect = BenefitPropertiesValidationError(
+            [
+                {
+                    "type": "property_error",
+                    "message": "The property is invalid",
+                    "loc": ("key",),
+                    "input": "foobar",
+                }
+            ]
         )
         mock = mocker.patch("polar.benefit.service.get_benefit_service")
         mock.return_value = service_mock

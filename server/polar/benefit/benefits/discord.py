@@ -18,10 +18,10 @@ from polar.notifications.notification import (
 )
 
 from .base import (
-    SubscriptionBenefitPreconditionError,
-    SubscriptionBenefitPropertiesValidationError,
-    SubscriptionBenefitRetriableError,
-    SubscriptionBenefitServiceProtocol,
+    BenefitPreconditionError,
+    BenefitPropertiesValidationError,
+    BenefitRetriableError,
+    BenefitServiceProtocol,
 )
 
 log: Logger = structlog.get_logger()
@@ -63,8 +63,8 @@ https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
 """
 
 
-class SubscriptionBenefitDiscordService(
-    SubscriptionBenefitServiceProtocol[BenefitDiscord, BenefitDiscordProperties]
+class BenefitDiscordService(
+    BenefitServiceProtocol[BenefitDiscord, BenefitDiscordProperties]
 ):
     async def grant(
         self,
@@ -102,7 +102,7 @@ class SubscriptionBenefitDiscordService(
         try:
             account = await discord_user_service.get_oauth_account(self.session, user)
         except DiscordAccountNotConnected as e:
-            raise SubscriptionBenefitPreconditionError(
+            raise BenefitPreconditionError(
                 "Discord account not linked",
                 payload=BenefitPreconditionErrorNotificationContextualPayload(
                     subject_template=precondition_error_subject_template,
@@ -120,7 +120,7 @@ class SubscriptionBenefitDiscordService(
                     status_code=e.response.status_code, body=e.response.text
                 )
             error_bound_logger.warning("HTTP error while adding member")
-            raise SubscriptionBenefitRetriableError(5 * 2**attempt) from e
+            raise BenefitRetriableError(5 * 2**attempt) from e
 
         bound_logger.debug("Benefit granted")
 
@@ -161,7 +161,7 @@ class SubscriptionBenefitDiscordService(
                     status_code=e.response.status_code, body=e.response.text
                 )
             error_bound_logger.warning("HTTP error while adding member")
-            raise SubscriptionBenefitRetriableError(5 * 2**attempt) from e
+            raise BenefitRetriableError(5 * 2**attempt) from e
 
         bound_logger.debug("Benefit revoked")
 
@@ -188,7 +188,7 @@ class SubscriptionBenefitDiscordService(
         guild_roles = [role.id for role in guild.roles]
 
         if role_id not in guild_roles:
-            raise SubscriptionBenefitPropertiesValidationError(
+            raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "invalid_role",
@@ -200,7 +200,7 @@ class SubscriptionBenefitDiscordService(
             )
 
         if not await discord_bot_service.is_bot_role_above_role(guild_id, role_id):
-            raise SubscriptionBenefitPropertiesValidationError(
+            raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "invalid_role_position",

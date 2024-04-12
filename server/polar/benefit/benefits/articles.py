@@ -20,11 +20,11 @@ from polar.models.benefit import (
 )
 from polar.redis import redis
 
-from .base import SubscriptionBenefitServiceProtocol
+from .base import BenefitServiceProtocol
 
 
-class SubscriptionBenefitArticlesService(
-    SubscriptionBenefitServiceProtocol[BenefitArticles, BenefitArticlesProperties]
+class BenefitArticlesService(
+    BenefitServiceProtocol[BenefitArticles, BenefitArticlesProperties]
 ):
     async def grant(
         self,

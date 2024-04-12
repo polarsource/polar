@@ -95,7 +95,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       upfront_split_to_contributors={upfront_split_to_contributors}
       orgName={data.issue.repository.organization.name}
       issueIsClosed={
-        data.issue.issue_closed_at !== undefined ||
+        Boolean(data.issue.issue_closed_at) ||
         data.issue.state === IssueStateEnum.CLOSED
       }
       donationsEnabled={data.issue.repository.organization.donations_enabled}

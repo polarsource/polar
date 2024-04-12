@@ -30,12 +30,12 @@ from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 from polar.worker import enqueue_job
 
+from ...benefit.service import benefit as benefit_service
 from ..schemas import (
     ExistingSubscriptionTierPrice,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
 )
-from .subscription_benefit import subscription_benefit as subscription_benefit_service
 
 
 class SubscriptionTierError(PolarError): ...
@@ -450,7 +450,7 @@ class SubscriptionTierService(
         await session.flush()
 
         for order, subscription_benefit_id in enumerate(benefits):
-            subscription_benefit = await subscription_benefit_service.get_by_id(
+            subscription_benefit = await benefit_service.get_by_id(
                 session, user, subscription_benefit_id
             )
             if subscription_benefit is None:

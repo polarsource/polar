@@ -31,7 +31,7 @@ from polar.worker import enqueue_job
 
 from .benefits import (
     SubscriptionBenefitPreconditionError,
-    get_subscription_benefit_service,
+    get_benefit_service,
 )
 
 log: Logger = structlog.get_logger()
@@ -67,9 +67,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         elif grant.is_granted:
             return grant
 
-        benefit_service = get_subscription_benefit_service(
-            subscription_benefit.type, session
-        )
+        benefit_service = get_benefit_service(subscription_benefit.type, session)
         try:
             properties = await benefit_service.grant(
                 subscription_benefit,
@@ -137,9 +135,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         elif grant.is_revoked:
             return grant
 
-        benefit_service = get_subscription_benefit_service(
-            subscription_benefit.type, session
-        )
+        benefit_service = get_benefit_service(subscription_benefit.type, session)
         properties = await benefit_service.revoke(
             subscription_benefit, subscription, user, grant.properties, attempt=attempt
         )
@@ -174,9 +170,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         subscription_benefit: Benefit,
         previous_properties: BenefitProperties,
     ) -> None:
-        benefit_service = get_subscription_benefit_service(
-            subscription_benefit.type, session
-        )
+        benefit_service = get_benefit_service(subscription_benefit.type, session)
         if not await benefit_service.requires_update(
             subscription_benefit, previous_properties
         ):
@@ -207,9 +201,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         user = await user_service.get(session, grant.user_id)
         assert user is not None
 
-        benefit_service = get_subscription_benefit_service(
-            subscription_benefit.type, session
-        )
+        benefit_service = get_benefit_service(subscription_benefit.type, session)
         try:
             properties = await benefit_service.grant(
                 subscription_benefit,
@@ -260,9 +252,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         user = await user_service.get(session, grant.user_id)
         assert user is not None
 
-        benefit_service = get_subscription_benefit_service(
-            subscription_benefit.type, session
-        )
+        benefit_service = get_benefit_service(subscription_benefit.type, session)
         properties = await benefit_service.revoke(
             subscription_benefit, subscription, user, grant.properties, attempt=attempt
         )

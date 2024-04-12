@@ -39,7 +39,7 @@ from polar.subscription.service.subscription_tier import (
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
-    create_subscription_benefit,
+    create_benefit,
     create_subscription_tier,
 )
 
@@ -287,9 +287,7 @@ class TestSearch:
         benefits = []
         for _ in range(10):
             benefits.append(
-                await create_subscription_benefit(
-                    save_fixture, organization=organization
-                )
+                await create_benefit(save_fixture, organization=organization)
             )
 
         tiers = []
@@ -316,7 +314,7 @@ class TestSearch:
             await add_subscription_benefits(
                 save_fixture,
                 subscription_tier=t,
-                subscription_benefits=benefits,
+                benefits=benefits,
             )
 
         # then
@@ -379,9 +377,7 @@ class TestSearch:
 
         benefits = []
         for _ in range(10):
-            benefits.append(
-                await create_subscription_benefit(save_fixture, repository=repository)
-            )
+            benefits.append(await create_benefit(save_fixture, repository=repository))
 
         tiers = []
         for _ in range(3):
@@ -407,7 +403,7 @@ class TestSearch:
             await add_subscription_benefits(
                 save_fixture,
                 subscription_tier=t,
-                subscription_benefits=benefits,
+                benefits=benefits,
             )
 
         # then
@@ -447,9 +443,7 @@ class TestSearch:
         benefits = []
         for _ in range(10):
             benefits.append(
-                await create_subscription_benefit(
-                    save_fixture, organization=organization
-                )
+                await create_benefit(save_fixture, organization=organization)
             )
 
         tiers = []
@@ -484,7 +478,7 @@ class TestSearch:
             await add_subscription_benefits(
                 save_fixture,
                 subscription_tier=t,
-                subscription_benefits=benefits,
+                benefits=benefits,
             )
 
         # then
@@ -1172,7 +1166,7 @@ class TestCreateFree:
         self,
         session: AsyncSession,
         enqueue_job_mock: AsyncMock,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         organization: Organization,
     ) -> None:
         # then
@@ -1180,7 +1174,7 @@ class TestCreateFree:
 
         free_subscription_tier = await subscription_tier_service.create_free(
             session,
-            benefits=[subscription_benefit_organization],
+            benefits=[benefit_organization],
             organization=organization,
         )
 
@@ -1188,10 +1182,7 @@ class TestCreateFree:
         assert free_subscription_tier.organization_id == organization.id
         assert free_subscription_tier.prices == []
         assert len(free_subscription_tier.benefits) == 1
-        assert (
-            free_subscription_tier.benefits[0].id
-            == subscription_benefit_organization.id
-        )
+        assert free_subscription_tier.benefits[0].id == benefit_organization.id
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.subscription.update_subscription_tier_benefits_grants",
@@ -1230,12 +1221,12 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
 
         # then
@@ -1260,7 +1251,7 @@ class TestUpdateBenefits:
 
         assert len(
             subscription_tier_organization_loaded.subscription_tier_benefits
-        ) == len(subscription_benefits)
+        ) == len(benefits)
 
     async def test_added_benefits(
         self,
@@ -1270,7 +1261,7 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         # then
         session.expunge_all()
@@ -1289,22 +1280,20 @@ class TestUpdateBenefits:
             session,
             authz,
             subscription_tier_organization_loaded,
-            [benefit.id for benefit in subscription_benefits],
+            [benefit.id for benefit in benefits],
             user,
         )
         await session.flush()
 
-        assert len(subscription_tier.subscription_tier_benefits) == len(
-            subscription_benefits
-        )
+        assert len(subscription_tier.subscription_tier_benefits) == len(benefits)
         for (
             i,
             subscription_tier_benefit,
         ) in enumerate(subscription_tier.subscription_tier_benefits):
             assert subscription_tier_benefit.order == i
-            assert subscription_benefits[i].id == subscription_tier_benefit.benefit_id
+            assert benefits[i].id == subscription_tier_benefit.benefit_id
 
-        assert len(added) == len(subscription_benefits)
+        assert len(added) == len(benefits)
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
@@ -1320,7 +1309,7 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         # then
         session.expunge_all()
@@ -1339,24 +1328,20 @@ class TestUpdateBenefits:
             session,
             authz,
             subscription_tier_organization_loaded,
-            [benefit.id for benefit in subscription_benefits[::-1]],
+            [benefit.id for benefit in benefits[::-1]],
             user,
         )
         await session.flush()
 
-        assert len(subscription_tier.subscription_tier_benefits) == len(
-            subscription_benefits
-        )
+        assert len(subscription_tier.subscription_tier_benefits) == len(benefits)
         for (
             i,
             subscription_tier_benefit,
         ) in enumerate(subscription_tier.subscription_tier_benefits):
             assert subscription_tier_benefit.order == i
-            assert (
-                subscription_benefits[-i - 1].id == subscription_tier_benefit.benefit_id
-            )
+            assert benefits[-i - 1].id == subscription_tier_benefit.benefit_id
 
-        assert len(added) == len(subscription_benefits)
+        assert len(added) == len(benefits)
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
@@ -1373,12 +1358,12 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
 
         # then
@@ -1401,7 +1386,7 @@ class TestUpdateBenefits:
 
         assert len(subscription_tier.subscription_tier_benefits) == 0
         assert len(added) == 0
-        assert len(deleted) == len(subscription_benefits)
+        assert len(deleted) == len(benefits)
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.subscription.update_subscription_tier_benefits_grants",
@@ -1417,12 +1402,12 @@ class TestUpdateBenefits:
         user: User,
         user_organization_admin: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
 
         # then
@@ -1442,22 +1427,18 @@ class TestUpdateBenefits:
             session,
             authz,
             subscription_tier_organization_loaded,
-            [benefit.id for benefit in subscription_benefits[::-1]],
+            [benefit.id for benefit in benefits[::-1]],
             user,
         )
         await session.flush()
 
-        assert len(subscription_tier.subscription_tier_benefits) == len(
-            subscription_benefits
-        )
+        assert len(subscription_tier.subscription_tier_benefits) == len(benefits)
         for (
             i,
             subscription_tier_benefit,
         ) in enumerate(subscription_tier.subscription_tier_benefits):
             assert subscription_tier_benefit.order == i
-            assert (
-                subscription_benefits[-i - 1].id == subscription_tier_benefit.benefit_id
-            )
+            assert benefits[-i - 1].id == subscription_tier_benefit.benefit_id
 
         assert len(added) == 0
         assert len(deleted) == 0
@@ -1477,7 +1458,7 @@ class TestUpdateBenefits:
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        not_selectable_benefit = await create_subscription_benefit(
+        not_selectable_benefit = await create_benefit(
             save_fixture,
             type=BenefitType.articles,
             is_tax_applicable=True,
@@ -1513,7 +1494,7 @@ class TestUpdateBenefits:
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        not_selectable_benefit = await create_subscription_benefit(
+        not_selectable_benefit = await create_benefit(
             save_fixture,
             type=BenefitType.articles,
             is_tax_applicable=True,
@@ -1524,7 +1505,7 @@ class TestUpdateBenefits:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=[not_selectable_benefit],
+            benefits=[not_selectable_benefit],
         )
 
         # then
@@ -1556,14 +1537,14 @@ class TestUpdateBenefits:
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        not_selectable_benefit = await create_subscription_benefit(
+        not_selectable_benefit = await create_benefit(
             save_fixture,
             type=BenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
         )
-        selectable_benefit = await create_subscription_benefit(
+        selectable_benefit = await create_benefit(
             save_fixture,
             type=BenefitType.custom,
             is_tax_applicable=True,
@@ -1573,7 +1554,7 @@ class TestUpdateBenefits:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=[not_selectable_benefit],
+            benefits=[not_selectable_benefit],
         )
 
         # then

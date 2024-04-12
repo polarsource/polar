@@ -28,39 +28,37 @@ from polar.models.benefit import (
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 
-from ..schemas import (
-    SubscriptionBenefitCreate,
-    SubscriptionBenefitUpdate,
-)
-from .benefits import (
+from ..subscription.service.benefits import (
     SubscriptionBenefitPropertiesValidationError,
-    get_subscription_benefit_service,
+    get_benefit_service,
 )
-from .subscription_benefit_grant import (
+from ..subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
+from .schemas import (
+    BenefitCreate,
+    BenefitUpdate,
+)
 
 
-class SubscriptionBenefitError(PolarError): ...
+class BenefitError(PolarError): ...
 
 
-class OrganizationDoesNotExist(SubscriptionBenefitError):
+class OrganizationDoesNotExist(BenefitError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = f"Organization with id {organization_id} does not exist."
         super().__init__(message, 422)
 
 
-class RepositoryDoesNotExist(SubscriptionBenefitError):
+class RepositoryDoesNotExist(BenefitError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = f"Repository with id {organization_id} does not exist."
         super().__init__(message, 422)
 
 
-class SubscriptionBenefitService(
-    ResourceService[Benefit, SubscriptionBenefitCreate, SubscriptionBenefitUpdate]
-):
+class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
     async def get(
         self,
         session: AsyncSession,
@@ -134,7 +132,7 @@ class SubscriptionBenefitService(
         self,
         session: AsyncSession,
         authz: Authz,
-        create_schema: SubscriptionBenefitCreate,
+        create_schema: BenefitCreate,
         user: User,
     ) -> Benefit:
         organization: Organization | None = None
@@ -162,7 +160,7 @@ class SubscriptionBenefitService(
         except AttributeError:
             is_tax_applicable = create_schema.type.is_tax_applicable()
 
-        benefit_service = get_subscription_benefit_service(create_schema.type, session)
+        benefit_service = get_benefit_service(create_schema.type, session)
         try:
             properties = await benefit_service.validate_properties(
                 user, create_schema.properties.model_dump(mode="json", by_alias=True)
@@ -170,7 +168,7 @@ class SubscriptionBenefitService(
         except SubscriptionBenefitPropertiesValidationError as e:
             raise e.to_request_validation_error(("body", create_schema.type))
 
-        subscription_benefit = Benefit(
+        benefit = Benefit(
             organization=organization,
             repository=repository,
             is_tax_applicable=is_tax_applicable,
@@ -185,24 +183,22 @@ class SubscriptionBenefitService(
                 },
             ),
         )
-        session.add(subscription_benefit)
+        session.add(benefit)
         await session.flush()
 
-        return subscription_benefit
+        return benefit
 
     async def user_update(
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_benefit: Benefit,
-        update_schema: SubscriptionBenefitUpdate,
+        benefit: Benefit,
+        update_schema: BenefitUpdate,
         user: User,
     ) -> Benefit:
-        subscription_benefit = await self._with_organization_or_repository(
-            session, subscription_benefit
-        )
+        benefit = await self._with_organization_or_repository(session, benefit)
 
-        if not await authz.can(user, AccessType.write, subscription_benefit):
+        if not await authz.can(user, AccessType.write, benefit):
             raise NotPermitted()
 
         update_dict = update_schema.model_dump(
@@ -211,57 +207,53 @@ class SubscriptionBenefitService(
 
         properties_update: BaseModel | None = getattr(update_schema, "properties", None)
         if properties_update is not None:
-            benefit_service = get_subscription_benefit_service(
-                subscription_benefit.type, session
-            )
+            benefit_service = get_benefit_service(benefit.type, session)
             try:
                 update_dict["properties"] = await benefit_service.validate_properties(
                     user, properties_update.model_dump(mode="json", by_alias=True)
                 )
             except SubscriptionBenefitPropertiesValidationError as e:
-                raise e.to_request_validation_error(("body", subscription_benefit.type))
+                raise e.to_request_validation_error(("body", benefit.type))
 
-        previous_properties = subscription_benefit.properties
+        previous_properties = benefit.properties
 
         for key, value in update_dict.items():
-            setattr(subscription_benefit, key, value)
-        session.add(subscription_benefit)
+            setattr(benefit, key, value)
+        session.add(benefit)
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
-            session, subscription_benefit, previous_properties
+            session, benefit, previous_properties
         )
 
-        return subscription_benefit
+        return benefit
 
     async def user_delete(
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_benefit: Benefit,
+        benefit: Benefit,
         user: User,
     ) -> Benefit:
-        subscription_benefit = await self._with_organization_or_repository(
-            session, subscription_benefit
-        )
+        benefit = await self._with_organization_or_repository(session, benefit)
 
-        if not await authz.can(user, AccessType.write, subscription_benefit):
+        if not await authz.can(user, AccessType.write, benefit):
             raise NotPermitted()
 
-        if not subscription_benefit.deletable:
+        if not benefit.deletable:
             raise NotPermitted()
 
-        subscription_benefit.deleted_at = utc_now()
-        session.add(subscription_benefit)
+        benefit.deleted_at = utc_now()
+        session.add(benefit)
         statement = delete(SubscriptionTierBenefit).where(
-            SubscriptionTierBenefit.benefit_id == subscription_benefit.id
+            SubscriptionTierBenefit.benefit_id == benefit.id
         )
         await session.execute(statement)
 
         await subscription_benefit_grant_service.enqueue_benefit_grant_deletions(
-            session, subscription_benefit
+            session, benefit
         )
 
-        return subscription_benefit
+        return benefit
 
     async def get_or_create_articles_benefits(
         self,
@@ -314,14 +306,14 @@ class SubscriptionBenefitService(
         return (public_articles, premium_articles)
 
     async def _with_organization_or_repository(
-        self, session: AsyncSession, subscription_benefit: Benefit
+        self, session: AsyncSession, benefit: Benefit
     ) -> Benefit:
         try:
-            subscription_benefit.organization
-            subscription_benefit.repository
+            benefit.organization
+            benefit.repository
         except InvalidRequestError:
-            await session.refresh(subscription_benefit, {"organization", "repository"})
-        return subscription_benefit
+            await session.refresh(benefit, {"organization", "repository"})
+        return benefit
 
     def _get_readable_subscription_benefit_statement(self, user: User) -> Select[Any]:
         RepositoryOrganization = aliased(Organization)
@@ -359,4 +351,4 @@ class SubscriptionBenefitService(
         )
 
 
-subscription_benefit = SubscriptionBenefitService(Benefit)
+benefit = BenefitService(Benefit)

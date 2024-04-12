@@ -3,16 +3,14 @@ import uuid
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.benefit.service import BenefitService
+from polar.benefit.service import benefit as benefit_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Benefit, Organization
 from polar.models.benefit import BenefitType
 from polar.organization.tasks import (
     OrganizationDoesNotExist,
     organization_post_install,
-)
-from polar.subscription.service.subscription_benefit import SubscriptionBenefitService
-from polar.subscription.service.subscription_benefit import (
-    subscription_benefit as subscription_benefit_service,
 )
 from polar.subscription.service.subscription_tier import SubscriptionTierService
 from polar.subscription.service.subscription_tier import (
@@ -53,9 +51,9 @@ class TestOrganizationPostInstall:
             organization=organization,
         )
         get_or_create_articles_benefits_mock = mocker.patch.object(
-            subscription_benefit_service,
+            benefit_service,
             "get_or_create_articles_benefits",
-            spec=SubscriptionBenefitService.get_or_create_articles_benefits,
+            spec=BenefitService.get_or_create_articles_benefits,
         )
         get_or_create_articles_benefits_mock.return_value = (
             subscription_benefit,

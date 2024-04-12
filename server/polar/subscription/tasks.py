@@ -13,11 +13,9 @@ from polar.organization.service import organization as organization_service
 from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
+from ..benefit.service import benefit as benefit_service
 from .service.benefits import SubscriptionBenefitRetriableError
 from .service.subscription import subscription as subscription_service
-from .service.subscription_benefit import (
-    subscription_benefit as subscription_benefit_service,
-)
 from .service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
@@ -120,7 +118,7 @@ async def subscription_benefit_grant(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        subscription_benefit = await subscription_benefit_service.get(
+        subscription_benefit = await benefit_service.get(
             session, subscription_benefit_id
         )
         if subscription_benefit is None:
@@ -162,7 +160,7 @@ async def subscription_benefit_revoke(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        subscription_benefit = await subscription_benefit_service.get(
+        subscription_benefit = await benefit_service.get(
             session, subscription_benefit_id
         )
         if subscription_benefit is None:

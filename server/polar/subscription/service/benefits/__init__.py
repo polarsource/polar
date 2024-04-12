@@ -32,7 +32,7 @@ _SERVICE_CLASS_MAP: dict[
 }
 
 
-def get_subscription_benefit_service(
+def get_benefit_service(
     type: BenefitType, session: AsyncSession
 ) -> SubscriptionBenefitServiceProtocol[Benefit, BenefitProperties]:
     return _SERVICE_CLASS_MAP[type](session)
@@ -44,5 +44,5 @@ __all__ = [
     "SubscriptionBenefitPreconditionError",
     "SubscriptionBenefitRetriableError",
     "SubscriptionBenefitServiceError",
-    "get_subscription_benefit_service",
+    "get_benefit_service",
 ]

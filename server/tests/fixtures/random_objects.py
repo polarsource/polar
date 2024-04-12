@@ -469,7 +469,7 @@ async def create_subscription_tier_price(
     return price
 
 
-async def create_subscription_benefit(
+async def create_benefit(
     save_fixture: SaveFixture,
     *,
     type: BenefitType = BenefitType.custom,
@@ -482,7 +482,7 @@ async def create_subscription_benefit(
     properties: dict[str, Any] = {"note": None},
 ) -> Benefit:
     assert (organization is not None) != (repository is not None)
-    subscription_benefit = Benefit(
+    benefit = Benefit(
         type=type,
         description=description,
         is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
@@ -492,18 +492,18 @@ async def create_subscription_benefit(
         deletable=deletable,
         properties=properties,
     )
-    await save_fixture(subscription_benefit)
-    return subscription_benefit
+    await save_fixture(benefit)
+    return benefit
 
 
 async def add_subscription_benefits(
     save_fixture: SaveFixture,
     *,
     subscription_tier: SubscriptionTier,
-    subscription_benefits: list[Benefit],
+    benefits: list[Benefit],
 ) -> SubscriptionTier:
     subscription_tier.subscription_tier_benefits = []
-    for order, subscription_benefit in enumerate(subscription_benefits):
+    for order, subscription_benefit in enumerate(benefits):
         benefit = SubscriptionTierBenefit(
             subscription_tier_id=subscription_tier.id,
             subscription_benefit_id=subscription_benefit.id,
@@ -633,39 +633,35 @@ async def subscription_tiers(
 
 
 @pytest_asyncio.fixture
-async def subscription_benefit_organization(
+async def benefit_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Benefit:
-    return await create_subscription_benefit(save_fixture, organization=organization)
+    return await create_benefit(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
-async def subscription_benefit_repository(
+async def benefit_repository(
     save_fixture: SaveFixture, public_repository: Repository
 ) -> Benefit:
-    return await create_subscription_benefit(save_fixture, repository=public_repository)
+    return await create_benefit(save_fixture, repository=public_repository)
 
 
 @pytest_asyncio.fixture
-async def subscription_benefit_private_repository(
+async def benefit_private_repository(
     save_fixture: SaveFixture, repository: Repository
 ) -> Benefit:
-    return await create_subscription_benefit(
+    return await create_benefit(
         save_fixture, type=BenefitType.custom, repository=repository
     )
 
 
 @pytest_asyncio.fixture
-async def subscription_benefits(
-    subscription_benefit_organization: Benefit,
-    subscription_benefit_repository: Benefit,
-    subscription_benefit_private_repository: Benefit,
+async def benefits(
+    benefit_organization: Benefit,
+    benefit_repository: Benefit,
+    benefit_private_repository: Benefit,
 ) -> list[Benefit]:
-    return [
-        subscription_benefit_organization,
-        subscription_benefit_repository,
-        subscription_benefit_private_repository,
-    ]
+    return [benefit_organization, benefit_repository, benefit_private_repository]
 
 
 @pytest_asyncio.fixture

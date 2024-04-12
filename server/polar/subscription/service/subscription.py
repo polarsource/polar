@@ -78,12 +78,12 @@ from polar.user_organization.service import (
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 
+from ...benefit.service import benefit as benefit_service
 from ..schemas import (
     FreeSubscriptionCreate,
     SubscriptionsStatisticsPeriod,
     SubscriptionUpgrade,
 )
-from .subscription_benefit import subscription_benefit as subscription_benefit_service
 from .subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
@@ -889,7 +889,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 (
                     free_articles_benefit,
                     _,
-                ) = await subscription_benefit_service.get_or_create_articles_benefits(
+                ) = await benefit_service.get_or_create_articles_benefits(
                     session,
                     subscription_tier.organization,
                     subscription_tier.repository,

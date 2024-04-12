@@ -124,7 +124,7 @@ class TestSubscriptionBenefitGrant:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         user: User,
         session: AsyncSession,
     ) -> None:
@@ -136,7 +136,7 @@ class TestSubscriptionBenefitGrant:
                 job_context,
                 uuid.uuid4(),
                 user.id,
-                subscription_benefit_organization.id,
+                benefit_organization.id,
                 polar_worker_context,
             )
 
@@ -145,7 +145,7 @@ class TestSubscriptionBenefitGrant:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -156,7 +156,7 @@ class TestSubscriptionBenefitGrant:
                 job_context,
                 subscription.id,
                 uuid.uuid4(),
-                subscription_benefit_organization.id,
+                benefit_organization.id,
                 polar_worker_context,
             )
 
@@ -187,7 +187,7 @@ class TestSubscriptionBenefitGrant:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
@@ -203,7 +203,7 @@ class TestSubscriptionBenefitGrant:
             job_context,
             subscription.id,
             user.id,
-            subscription_benefit_organization.id,
+            benefit_organization.id,
             polar_worker_context,
         )
 
@@ -216,7 +216,7 @@ class TestSubscriptionBenefitGrant:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
@@ -234,7 +234,7 @@ class TestSubscriptionBenefitGrant:
                 job_context,
                 subscription.id,
                 user.id,
-                subscription_benefit_organization.id,
+                benefit_organization.id,
                 polar_worker_context,
             )
 
@@ -245,7 +245,7 @@ class TestSubscriptionBenefitRevoke:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         user: User,
         session: AsyncSession,
     ) -> None:
@@ -257,7 +257,7 @@ class TestSubscriptionBenefitRevoke:
                 job_context,
                 uuid.uuid4(),
                 user.id,
-                subscription_benefit_organization.id,
+                benefit_organization.id,
                 polar_worker_context,
             )
 
@@ -266,7 +266,7 @@ class TestSubscriptionBenefitRevoke:
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -277,7 +277,7 @@ class TestSubscriptionBenefitRevoke:
                 job_context,
                 subscription.id,
                 uuid.uuid4(),
-                subscription_benefit_organization.id,
+                benefit_organization.id,
                 polar_worker_context,
             )
 
@@ -308,7 +308,7 @@ class TestSubscriptionBenefitRevoke:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
@@ -324,7 +324,7 @@ class TestSubscriptionBenefitRevoke:
             job_context,
             subscription.id,
             user.id,
-            subscription_benefit_organization.id,
+            benefit_organization.id,
             polar_worker_context,
         )
 
@@ -337,7 +337,7 @@ class TestSubscriptionBenefitRevoke:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
@@ -355,7 +355,7 @@ class TestSubscriptionBenefitRevoke:
                 job_context,
                 subscription.id,
                 user.id,
-                subscription_benefit_organization.id,
+                benefit_organization.id,
                 polar_worker_context,
             )
 
@@ -366,7 +366,7 @@ class TestSubscriptionBenefitUpdate:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -386,12 +386,12 @@ class TestSubscriptionBenefitUpdate:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_benefit=benefit_organization,
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -418,12 +418,12 @@ class TestSubscriptionBenefitUpdate:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_benefit=benefit_organization,
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -450,7 +450,7 @@ class TestSubscriptionBenefitDelete:
         self,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
         # then
@@ -470,12 +470,12 @@ class TestSubscriptionBenefitDelete:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_benefit=benefit_organization,
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -502,12 +502,12 @@ class TestSubscriptionBenefitDelete:
         polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         user: User,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_benefit=benefit_organization,
         )
         grant.set_granted()
         await save_fixture(grant)

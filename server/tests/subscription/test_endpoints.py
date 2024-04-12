@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import AsyncClient
 
+from polar.benefit.service import benefit as benefit_service
 from polar.config import settings
 from polar.models import (
     Benefit,
@@ -20,15 +21,12 @@ from polar.models import (
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from polar.subscription.service.subscription_benefit import (
-    subscription_benefit as subscription_benefit_service,
-)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
     create_active_subscription,
+    create_benefit,
     create_organization,
-    create_subscription_benefit,
     create_subscription_tier,
 )
 
@@ -163,12 +161,12 @@ class TestSearchSubscriptionTiers:
         client: AsyncClient,
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
 
         # then
@@ -190,7 +188,7 @@ class TestSearchSubscriptionTiers:
         items = json["items"]
         item = items[0]
         assert item["id"] == str(subscription_tier_organization.id)
-        assert len(item["benefits"]) == len(subscription_benefits)
+        assert len(item["benefits"]) == len(benefits)
         for benefit in item["benefits"]:
             assert "properties" not in benefit
             assert "is_tax_applicable" not in benefit
@@ -229,12 +227,12 @@ class TestLookupSubscriptionTier:
         save_fixture: SaveFixture,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
             subscription_tier=subscription_tier_organization,
-            subscription_benefits=subscription_benefits,
+            benefits=benefits,
         )
 
         # then
@@ -249,7 +247,7 @@ class TestLookupSubscriptionTier:
 
         json = response.json()
         assert json["id"] == str(subscription_tier_organization.id)
-        assert len(json["benefits"]) == len(subscription_benefits)
+        assert len(json["benefits"]) == len(benefits)
         for benefit in json["benefits"]:
             assert "properties" not in benefit
             assert "is_tax_applicable" not in benefit
@@ -542,11 +540,11 @@ class TestUpdateSubscriptionTierBenefits:
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
         user_organization_admin: UserOrganization,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/benefits",
-            json={"benefits": [str(subscription_benefit_organization.id)]},
+            json={"benefits": [str(benefit_organization.id)]},
         )
 
         assert response.status_code == 200
@@ -636,7 +634,7 @@ class TestSearchSubscriptionBenefits:
         self,
         client: AsyncClient,
         organization: Organization,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -657,7 +655,7 @@ class TestSearchSubscriptionBenefits:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -673,7 +671,7 @@ class TestSearchSubscriptionBenefits:
         assert json["pagination"]["total_count"] == 1
 
         items = json["items"]
-        assert items[0]["id"] == str(subscription_benefits[0].id)
+        assert items[0]["id"] == str(benefits[0].id)
 
     @pytest.mark.authenticated
     async def test_indirect_organization(
@@ -681,7 +679,7 @@ class TestSearchSubscriptionBenefits:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -704,7 +702,7 @@ class TestSearchSubscriptionBenefits:
         organization: Organization,
         public_repository: Repository,
         user_organization: UserOrganization,
-        subscription_benefits: list[Benefit],
+        benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -731,13 +729,11 @@ class TestLookupSubscriptionBenefit:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/lookup",
-            params={
-                "subscription_benefit_id": str(subscription_benefit_organization.id)
-            },
+            params={"subscription_benefit_id": str(benefit_organization.id)},
         )
 
         assert response.status_code == 401
@@ -755,20 +751,18 @@ class TestLookupSubscriptionBenefit:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/lookup",
-            params={
-                "subscription_benefit_id": str(subscription_benefit_organization.id)
-            },
+            params={"subscription_benefit_id": str(benefit_organization.id)},
         )
 
         assert response.status_code == 200
 
         json = response.json()
-        assert json["id"] == str(subscription_benefit_organization.id)
+        assert json["id"] == str(benefit_organization.id)
         assert "properties" in json
 
 
@@ -904,12 +898,12 @@ class TestUpdateSubscriptionBenefit:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         response = await client.post(
-            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
+            f"/api/v1/subscriptions/benefits/{benefit_organization.id}",
             json={
-                "type": subscription_benefit_organization.type,
+                "type": benefit_organization.type,
                 "description": "Updated Name",
             },
         )
@@ -944,12 +938,12 @@ class TestUpdateSubscriptionBenefit:
         self,
         payload: dict[str, Any],
         client: AsyncClient,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
-            json={"type": subscription_benefit_organization.type, **payload},
+            f"/api/v1/subscriptions/benefits/{benefit_organization.id}",
+            json={"type": benefit_organization.type, **payload},
         )
 
         assert response.status_code == 422
@@ -958,13 +952,13 @@ class TestUpdateSubscriptionBenefit:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
+            f"/api/v1/subscriptions/benefits/{benefit_organization.id}",
             json={
-                "type": subscription_benefit_organization.type,
+                "type": benefit_organization.type,
                 "description": "Updated Description",
             },
         )
@@ -983,7 +977,7 @@ class TestUpdateSubscriptionBenefit:
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
-        benefit = await create_subscription_benefit(
+        benefit = await create_benefit(
             save_fixture,
             type=BenefitType.articles,
             organization=organization,
@@ -1013,7 +1007,7 @@ class TestUpdateSubscriptionBenefit:
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
-        benefit = await create_subscription_benefit(
+        benefit = await create_benefit(
             save_fixture,
             type=BenefitType.custom,
             organization=organization,
@@ -1043,10 +1037,10 @@ class TestDeleteSubscriptionBenefit:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
     ) -> None:
         response = await client.delete(
-            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}"
+            f"/api/v1/subscriptions/benefits/{benefit_organization.id}"
         )
 
         assert response.status_code == 401
@@ -1061,11 +1055,11 @@ class TestDeleteSubscriptionBenefit:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: Benefit,
+        benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.delete(
-            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}"
+            f"/api/v1/subscriptions/benefits/{benefit_organization.id}"
         )
 
         assert response.status_code == 204
@@ -1774,9 +1768,7 @@ class TestBenefitProperties:
         (
             free_benefit,
             paid_benefit,
-        ) = await subscription_benefit_service.get_or_create_articles_benefits(
-            session, organization
-        )
+        ) = await benefit_service.get_or_create_articles_benefits(session, organization)
         await session.flush()
 
         # then

@@ -4,6 +4,7 @@ from typing import cast
 import pytest
 
 from polar.article.service import article_service
+from polar.benefit.service import benefit as benefit_service
 from polar.models import Organization, Subscription, SubscriptionTier, User
 from polar.models.benefit import (
     BenefitArticles,
@@ -14,13 +15,10 @@ from polar.postgres import AsyncSession
 from polar.subscription.service.benefits.articles import (
     SubscriptionBenefitArticlesService,
 )
-from polar.subscription.service.subscription_benefit import (
-    subscription_benefit as subscription_benefit_service,
-)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_subscription,
-    create_subscription_benefit,
     create_subscription_benefit_grant,
 )
 
@@ -41,7 +39,7 @@ async def test_concurrent_subscription_upgrade(
         user=user,
         status=SubscriptionStatus.canceled,
     )
-    previous_benefit = await create_subscription_benefit(
+    previous_benefit = await create_benefit(
         save_fixture,
         type=BenefitType.articles,
         organization=organization,
@@ -57,7 +55,7 @@ async def test_concurrent_subscription_upgrade(
         user=user,
         status=SubscriptionStatus.active,
     )
-    new_benefit = await create_subscription_benefit(
+    new_benefit = await create_benefit(
         save_fixture,
         type=BenefitType.articles,
         organization=organization,
@@ -68,8 +66,7 @@ async def test_concurrent_subscription_upgrade(
 
     async def do_grant() -> None:
         _benefit = cast(
-            BenefitArticles,
-            await subscription_benefit_service.get(session, new_benefit.id),
+            BenefitArticles, await benefit_service.get(session, new_benefit.id)
         )
         _subscription = await session.get(Subscription, new_subscription.id)
         _user = await session.get(User, user.id)
@@ -81,8 +78,7 @@ async def test_concurrent_subscription_upgrade(
 
     async def do_revoke() -> None:
         _benefit = cast(
-            BenefitArticles,
-            await subscription_benefit_service.get(session, previous_benefit.id),
+            BenefitArticles, await benefit_service.get(session, previous_benefit.id)
         )
         _subscription = await session.get(Subscription, previous_subscription.id)
         _user = await session.get(User, user.id)

@@ -12,11 +12,11 @@ from tests.fixtures.database import SaveFixture
 async def advertisement_campaign(
     save_fixture: SaveFixture,
     subscription: Subscription,
-    subscription_benefit_organization: Benefit,
+    benefit_organization: Benefit,
 ) -> AdvertisementCampaign:
     ad = AdvertisementCampaign(
         subscription_id=subscription.id,
-        subscription_benefit_id=subscription_benefit_organization.id,
+        subscription_benefit_id=benefit_organization.id,
         image_url="https://example.com/img.jpg",
         text="",
         link_url="https://example.com",

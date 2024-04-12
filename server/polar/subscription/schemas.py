@@ -7,16 +7,12 @@ from pydantic import (
     UUID4,
     AnyHttpUrl,
     Field,
-    computed_field,
-    field_validator,
     model_validator,
 )
 
-from polar.config import settings
+from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
 from polar.enums import Platforms
-from polar.kit import jwt
 from polar.kit.schemas import EmailStrDNS, EmptyStrToNone, Schema, TimestampedSchema
-from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
@@ -28,306 +24,6 @@ from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringI
 TIER_NAME_MIN_LENGTH = 3
 TIER_NAME_MAX_LENGTH = 24
 TIER_DESCRIPTION_MAX_LENGTH = 240
-BENEFIT_DESCRIPTION_MIN_LENGTH = 3
-BENEFIT_DESCRIPTION_MAX_LENGTH = 42
-
-# SubscriptionBenefitProperties
-
-
-class SubscriptionBenefitProperties(Schema): ...
-
-
-## Custom
-
-
-class SubscriptionBenefitCustomProperties(Schema):
-    note: str | None = None
-
-
-class SubscriptionBenefitCustomSubscriberProperties(Schema):
-    note: str | None = None
-
-
-## Articles
-
-
-class SubscriptionBenefitArticlesProperties(Schema):
-    paid_articles: bool
-
-
-class SubscriptionBenefitArticlesSubscriberProperties(Schema):
-    paid_articles: bool
-
-
-## Ads
-
-
-class SubscriptionBenefitAdsProperties(Schema):
-    image_height: int = 400
-    image_width: int = 400
-
-
-## Discord
-
-
-class SubscriptionBenefitDiscordProperties(Schema):
-    guild_id: str
-    role_id: str
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def guild_token(self) -> str:
-        return jwt.encode(
-            data={"guild_id": self.guild_id},
-            secret=settings.SECRET,
-            type="discord_guild_token",
-        )
-
-
-class SubscriptionBenefitDiscordCreateProperties(Schema):
-    guild_token: str = Field(serialization_alias="guild_id")
-    role_id: str
-
-    @field_validator("guild_token")
-    @classmethod
-    def validate_guild_token(cls, v: str) -> str:
-        try:
-            guild_token_data = jwt.decode(
-                token=v, secret=settings.SECRET, type="discord_guild_token"
-            )
-            return guild_token_data["guild_id"]
-        except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError) as e:
-            raise ValueError(
-                "Invalid token. Please authenticate your Discord server again."
-            ) from e
-
-
-class SubscriptionBenefitDiscordSubscriberProperties(Schema):
-    guild_id: str
-
-
-## GitHub Repository
-
-
-class SubscriptionBenefitGitHubRepositoryCreateProperties(Schema):
-    # For benefits created before 2014-13-15 repository_id will be set
-    # no new benefits of this type are allowed to be created
-    repository_id: UUID4 | None = None
-    # For benefits created after 2014-13-15 both repository_owner and repository_name will be set
-    repository_owner: str | None = None
-    repository_name: str | None = None
-    permission: Literal["pull", "triage", "push", "maintain", "admin"]
-
-
-class SubscriptionBenefitGitHubRepositoryProperties(Schema):
-    # Is set to None for all benefits created after 2024-03-15
-    repository_id: UUID4 | None = None
-    repository_owner: str
-    repository_name: str
-    permission: Literal["pull", "triage", "push", "maintain", "admin"]
-
-
-class SubscriptionBenefitGitHubRepositorySubscriberProperties(Schema):
-    repository_owner: str
-    repository_name: str
-
-
-# SubscriptionBenefitCreate
-
-
-class SubscriptionBenefitCreateBase(Schema):
-    description: str = Field(
-        ...,
-        min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
-        max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
-    )
-    organization_id: UUID4 | None = None
-    repository_id: UUID4 | None = None
-
-    @model_validator(mode="after")
-    def check_either_organization_or_repository(self) -> Self:
-        if self.organization_id is not None and self.repository_id is not None:
-            raise ValueError(
-                "Subscription benefits should either be linked to "
-                "an Organization or a Repository, not both."
-            )
-        if self.organization_id is None and self.repository_id is None:
-            raise ValueError(
-                "Subscription benefits should be linked to "
-                "an Organization or a Repository."
-            )
-        return self
-
-
-class SubscriptionBenefitCustomCreate(SubscriptionBenefitCreateBase):
-    type: Literal[BenefitType.custom]
-    is_tax_applicable: bool
-    properties: SubscriptionBenefitCustomProperties
-
-
-class SubscriptionBenefitAdsCreate(SubscriptionBenefitCreateBase):
-    type: Literal[BenefitType.ads]
-    properties: SubscriptionBenefitAdsProperties
-
-
-class SubscriptionBenefitDiscordCreate(SubscriptionBenefitCreateBase):
-    type: Literal[BenefitType.discord]
-    properties: SubscriptionBenefitDiscordCreateProperties
-
-
-class SubscriptionBenefitGitHubRepositoryCreate(SubscriptionBenefitCreateBase):
-    type: Literal[BenefitType.github_repository]
-    properties: SubscriptionBenefitGitHubRepositoryCreateProperties
-
-
-SubscriptionBenefitCreate = (
-    SubscriptionBenefitCustomCreate
-    | SubscriptionBenefitAdsCreate
-    | SubscriptionBenefitDiscordCreate
-    | SubscriptionBenefitGitHubRepositoryCreate
-)
-
-
-# SubscriptionBenefitUpdate
-
-
-class SubscriptionBenefitUpdateBase(Schema):
-    description: str | None = Field(
-        None,
-        min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
-        max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
-    )
-
-
-class SubscriptionBenefitArticlesUpdate(SubscriptionBenefitUpdateBase):
-    # Don't allow to update properties, as both Free and Premium posts
-    # are pre-created by us and shouldn't change
-    type: Literal[BenefitType.articles]
-
-
-class SubscriptionBenefitAdsUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[BenefitType.ads]
-    properties: SubscriptionBenefitAdsProperties | None = None
-
-
-class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[BenefitType.custom]
-    properties: SubscriptionBenefitCustomProperties | None = None
-
-
-class SubscriptionBenefitDiscordUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[BenefitType.discord]
-    properties: SubscriptionBenefitDiscordCreateProperties | None = None
-
-
-class SubscriptionBenefitGitHubRepositoryUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[BenefitType.github_repository]
-    properties: SubscriptionBenefitGitHubRepositoryCreateProperties | None = None
-
-
-SubscriptionBenefitUpdate = (
-    SubscriptionBenefitArticlesUpdate
-    | SubscriptionBenefitAdsUpdate
-    | SubscriptionBenefitCustomUpdate
-    | SubscriptionBenefitDiscordUpdate
-    | SubscriptionBenefitGitHubRepositoryUpdate
-)
-
-
-# SubscriptionBenefit
-
-
-class SubscriptionBenefitBase(TimestampedSchema):
-    id: UUID4
-    type: BenefitType
-    description: str
-    selectable: bool
-    deletable: bool
-    organization_id: UUID4 | None = None
-    repository_id: UUID4 | None = None
-
-
-class SubscriptionBenefitCustom(SubscriptionBenefitBase):
-    type: Literal[BenefitType.custom]
-    properties: SubscriptionBenefitCustomProperties
-    is_tax_applicable: bool
-
-
-class SubscriptionBenefitArticles(SubscriptionBenefitBase):
-    type: Literal[BenefitType.articles]
-    properties: SubscriptionBenefitArticlesProperties
-
-
-class SubscriptionBenefitAds(SubscriptionBenefitBase):
-    type: Literal[BenefitType.ads]
-    properties: SubscriptionBenefitAdsProperties
-
-
-class SubscriptionBenefitDiscord(SubscriptionBenefitBase):
-    type: Literal[BenefitType.discord]
-    properties: SubscriptionBenefitDiscordProperties
-
-
-class SubscriptionBenefitGitHubRepository(SubscriptionBenefitBase):
-    type: Literal[BenefitType.github_repository]
-    properties: SubscriptionBenefitGitHubRepositoryProperties
-
-
-SubscriptionBenefit = (
-    SubscriptionBenefitArticles
-    | SubscriptionBenefitAds
-    | SubscriptionBenefitCustom
-    | SubscriptionBenefitDiscord
-    | SubscriptionBenefitGitHubRepository
-)
-
-subscription_benefit_schema_map: dict[BenefitType, type[SubscriptionBenefit]] = {
-    BenefitType.discord: SubscriptionBenefitDiscord,
-    BenefitType.articles: SubscriptionBenefitArticles,
-    BenefitType.ads: SubscriptionBenefitAds,
-    BenefitType.custom: SubscriptionBenefitCustom,
-    BenefitType.github_repository: SubscriptionBenefitGitHubRepository,
-}
-
-# SubscriptionBenefitSubscriber
-
-
-class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
-    type: Literal[BenefitType.custom]
-    properties: SubscriptionBenefitCustomSubscriberProperties
-
-
-class SubscriptionBenefitArticlesSubscriber(SubscriptionBenefitBase):
-    type: Literal[BenefitType.articles]
-    properties: SubscriptionBenefitArticlesSubscriberProperties
-
-
-class SubscriptionBenefitAdsSubscriber(SubscriptionBenefitBase):
-    type: Literal[BenefitType.ads]
-    properties: SubscriptionBenefitAdsProperties
-
-
-class SubscriptionBenefitDiscordSubscriber(SubscriptionBenefitBase):
-    type: Literal[BenefitType.discord]
-    properties: SubscriptionBenefitDiscordSubscriberProperties
-
-
-class SubscriptionBenefitGitHubRepositorySubscriber(SubscriptionBenefitBase):
-    type: Literal[BenefitType.github_repository]
-    properties: SubscriptionBenefitGitHubRepositorySubscriberProperties
-
-
-# Properties that are available to subscribers only
-SubscriptionBenefitSubscriber = (
-    SubscriptionBenefitArticlesSubscriber
-    | SubscriptionBenefitAdsSubscriber
-    | SubscriptionBenefitDiscordSubscriber
-    | SubscriptionBenefitCustomSubscriber
-    | SubscriptionBenefitGitHubRepositorySubscriber
-)
-
-# Properties that are public (included in Subscription Tier endpoints)
-SubscriptionBenefitPublic = SubscriptionBenefitBase | SubscriptionBenefitArticles
 
 # SubscriptionTier
 
@@ -393,9 +89,6 @@ class SubscriptionTierBenefitsUpdate(Schema):
     benefits: list[UUID4]
 
 
-class SubscriptionTierBenefit(SubscriptionBenefitBase): ...
-
-
 class SubscriptionTierPrice(TimestampedSchema):
     id: UUID4
     recurring_interval: SubscriptionTierPriceRecurringInterval
@@ -417,11 +110,11 @@ class SubscriptionTierBase(TimestampedSchema):
 
 
 class SubscriptionTier(SubscriptionTierBase):
-    benefits: list[SubscriptionBenefitPublic]
+    benefits: list[BenefitPublic]
 
 
 class SubscriptionTierSubscriber(SubscriptionTierBase):
-    benefits: list[SubscriptionBenefitSubscriber]
+    benefits: list[BenefitSubscriber]
 
 
 # SubscribeSession

@@ -16,8 +16,8 @@ from polar.config import settings
 from polar.enums import Platforms
 from polar.kit import jwt
 from polar.kit.schemas import EmailStrDNS, EmptyStrToNone, Schema, TimestampedSchema
+from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.subscription_tier_price import (
@@ -160,23 +160,23 @@ class SubscriptionBenefitCreateBase(Schema):
 
 
 class SubscriptionBenefitCustomCreate(SubscriptionBenefitCreateBase):
-    type: Literal[SubscriptionBenefitType.custom]
+    type: Literal[BenefitType.custom]
     is_tax_applicable: bool
     properties: SubscriptionBenefitCustomProperties
 
 
 class SubscriptionBenefitAdsCreate(SubscriptionBenefitCreateBase):
-    type: Literal[SubscriptionBenefitType.ads]
+    type: Literal[BenefitType.ads]
     properties: SubscriptionBenefitAdsProperties
 
 
 class SubscriptionBenefitDiscordCreate(SubscriptionBenefitCreateBase):
-    type: Literal[SubscriptionBenefitType.discord]
+    type: Literal[BenefitType.discord]
     properties: SubscriptionBenefitDiscordCreateProperties
 
 
 class SubscriptionBenefitGitHubRepositoryCreate(SubscriptionBenefitCreateBase):
-    type: Literal[SubscriptionBenefitType.github_repository]
+    type: Literal[BenefitType.github_repository]
     properties: SubscriptionBenefitGitHubRepositoryCreateProperties
 
 
@@ -202,26 +202,26 @@ class SubscriptionBenefitUpdateBase(Schema):
 class SubscriptionBenefitArticlesUpdate(SubscriptionBenefitUpdateBase):
     # Don't allow to update properties, as both Free and Premium posts
     # are pre-created by us and shouldn't change
-    type: Literal[SubscriptionBenefitType.articles]
+    type: Literal[BenefitType.articles]
 
 
 class SubscriptionBenefitAdsUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[SubscriptionBenefitType.ads]
+    type: Literal[BenefitType.ads]
     properties: SubscriptionBenefitAdsProperties | None = None
 
 
 class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[SubscriptionBenefitType.custom]
+    type: Literal[BenefitType.custom]
     properties: SubscriptionBenefitCustomProperties | None = None
 
 
 class SubscriptionBenefitDiscordUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[SubscriptionBenefitType.discord]
+    type: Literal[BenefitType.discord]
     properties: SubscriptionBenefitDiscordCreateProperties | None = None
 
 
 class SubscriptionBenefitGitHubRepositoryUpdate(SubscriptionBenefitUpdateBase):
-    type: Literal[SubscriptionBenefitType.github_repository]
+    type: Literal[BenefitType.github_repository]
     properties: SubscriptionBenefitGitHubRepositoryCreateProperties | None = None
 
 
@@ -239,7 +239,7 @@ SubscriptionBenefitUpdate = (
 
 class SubscriptionBenefitBase(TimestampedSchema):
     id: UUID4
-    type: SubscriptionBenefitType
+    type: BenefitType
     description: str
     selectable: bool
     deletable: bool
@@ -248,28 +248,28 @@ class SubscriptionBenefitBase(TimestampedSchema):
 
 
 class SubscriptionBenefitCustom(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.custom]
+    type: Literal[BenefitType.custom]
     properties: SubscriptionBenefitCustomProperties
     is_tax_applicable: bool
 
 
 class SubscriptionBenefitArticles(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.articles]
+    type: Literal[BenefitType.articles]
     properties: SubscriptionBenefitArticlesProperties
 
 
 class SubscriptionBenefitAds(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.ads]
+    type: Literal[BenefitType.ads]
     properties: SubscriptionBenefitAdsProperties
 
 
 class SubscriptionBenefitDiscord(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.discord]
+    type: Literal[BenefitType.discord]
     properties: SubscriptionBenefitDiscordProperties
 
 
 class SubscriptionBenefitGitHubRepository(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.github_repository]
+    type: Literal[BenefitType.github_repository]
     properties: SubscriptionBenefitGitHubRepositoryProperties
 
 
@@ -281,41 +281,39 @@ SubscriptionBenefit = (
     | SubscriptionBenefitGitHubRepository
 )
 
-subscription_benefit_schema_map: dict[
-    SubscriptionBenefitType, type[SubscriptionBenefit]
-] = {
-    SubscriptionBenefitType.discord: SubscriptionBenefitDiscord,
-    SubscriptionBenefitType.articles: SubscriptionBenefitArticles,
-    SubscriptionBenefitType.ads: SubscriptionBenefitAds,
-    SubscriptionBenefitType.custom: SubscriptionBenefitCustom,
-    SubscriptionBenefitType.github_repository: SubscriptionBenefitGitHubRepository,
+subscription_benefit_schema_map: dict[BenefitType, type[SubscriptionBenefit]] = {
+    BenefitType.discord: SubscriptionBenefitDiscord,
+    BenefitType.articles: SubscriptionBenefitArticles,
+    BenefitType.ads: SubscriptionBenefitAds,
+    BenefitType.custom: SubscriptionBenefitCustom,
+    BenefitType.github_repository: SubscriptionBenefitGitHubRepository,
 }
 
 # SubscriptionBenefitSubscriber
 
 
 class SubscriptionBenefitCustomSubscriber(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.custom]
+    type: Literal[BenefitType.custom]
     properties: SubscriptionBenefitCustomSubscriberProperties
 
 
 class SubscriptionBenefitArticlesSubscriber(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.articles]
+    type: Literal[BenefitType.articles]
     properties: SubscriptionBenefitArticlesSubscriberProperties
 
 
 class SubscriptionBenefitAdsSubscriber(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.ads]
+    type: Literal[BenefitType.ads]
     properties: SubscriptionBenefitAdsProperties
 
 
 class SubscriptionBenefitDiscordSubscriber(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.discord]
+    type: Literal[BenefitType.discord]
     properties: SubscriptionBenefitDiscordSubscriberProperties
 
 
 class SubscriptionBenefitGitHubRepositorySubscriber(SubscriptionBenefitBase):
-    type: Literal[SubscriptionBenefitType.github_repository]
+    type: Literal[BenefitType.github_repository]
     properties: SubscriptionBenefitGitHubRepositorySubscriberProperties
 
 

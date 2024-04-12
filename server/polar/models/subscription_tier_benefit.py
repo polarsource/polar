@@ -13,7 +13,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import SubscriptionBenefit
+    from polar.models import Benefit
 
 
 class SubscriptionTierBenefit(RecordModel):
@@ -25,14 +25,14 @@ class SubscriptionTierBenefit(RecordModel):
         ForeignKey("subscription_tiers.id", ondelete="cascade"),
         primary_key=True,
     )
-    subscription_benefit_id: Mapped[UUID] = mapped_column(
+    benefit_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_benefits.id", ondelete="cascade"),
+        ForeignKey("benefits.id", ondelete="cascade"),
         primary_key=True,
     )
     order: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
 
     @declared_attr
-    def subscription_benefit(cls) -> Mapped["SubscriptionBenefit"]:
+    def benefit(cls) -> Mapped["Benefit"]:
         # This is an association table, so eager loading makes sense
-        return relationship("SubscriptionBenefit", lazy="joined")
+        return relationship("Benefit", lazy="joined")

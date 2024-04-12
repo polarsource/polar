@@ -9,16 +9,16 @@ from httpx import AsyncClient
 
 from polar.config import settings
 from polar.models import (
+    Benefit,
     Organization,
     Repository,
     Subscription,
-    SubscriptionBenefit,
     SubscriptionTier,
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -163,7 +163,7 @@ class TestSearchSubscriptionTiers:
         client: AsyncClient,
         organization: Organization,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
@@ -229,7 +229,7 @@ class TestLookupSubscriptionTier:
         save_fixture: SaveFixture,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         subscription_tier_organization = await add_subscription_benefits(
             save_fixture,
@@ -542,7 +542,7 @@ class TestUpdateSubscriptionTierBenefits:
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
         user_organization_admin: UserOrganization,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/benefits",
@@ -636,7 +636,7 @@ class TestSearchSubscriptionBenefits:
         self,
         client: AsyncClient,
         organization: Organization,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -657,7 +657,7 @@ class TestSearchSubscriptionBenefits:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -681,7 +681,7 @@ class TestSearchSubscriptionBenefits:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -704,7 +704,7 @@ class TestSearchSubscriptionBenefits:
         organization: Organization,
         public_repository: Repository,
         user_organization: UserOrganization,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/search",
@@ -731,7 +731,7 @@ class TestLookupSubscriptionBenefit:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/benefits/lookup",
@@ -755,7 +755,7 @@ class TestLookupSubscriptionBenefit:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.get(
@@ -904,7 +904,7 @@ class TestUpdateSubscriptionBenefit:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
@@ -944,7 +944,7 @@ class TestUpdateSubscriptionBenefit:
         self,
         payload: dict[str, Any],
         client: AsyncClient,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -958,7 +958,7 @@ class TestUpdateSubscriptionBenefit:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -985,7 +985,7 @@ class TestUpdateSubscriptionBenefit:
     ) -> None:
         benefit = await create_subscription_benefit(
             save_fixture,
-            type=SubscriptionBenefitType.articles,
+            type=BenefitType.articles,
             organization=organization,
             properties={"paid_articles": False},
         )
@@ -1015,7 +1015,7 @@ class TestUpdateSubscriptionBenefit:
     ) -> None:
         benefit = await create_subscription_benefit(
             save_fixture,
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             organization=organization,
             properties={"note": "NOTE"},
         )
@@ -1043,7 +1043,7 @@ class TestDeleteSubscriptionBenefit:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         response = await client.delete(
             f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}"
@@ -1061,7 +1061,7 @@ class TestDeleteSubscriptionBenefit:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.delete(

@@ -9,13 +9,13 @@ from polar.authz.service import Authz
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams
 from polar.models import (
+    Benefit,
     Organization,
     Repository,
-    SubscriptionBenefit,
     User,
     UserOrganization,
 )
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import (
     SubscriptionBenefitCustomCreate,
@@ -51,7 +51,7 @@ class TestSearch:
     async def test_user(
         self,
         session: AsyncSession,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         user: User,
     ) -> None:
         # then
@@ -68,7 +68,7 @@ class TestSearch:
         self,
         session: AsyncSession,
         user: User,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         user_organization: UserOrganization,
     ) -> None:
         # then
@@ -90,7 +90,7 @@ class TestSearch:
         user_organization: UserOrganization,
     ) -> None:
         plain_subscription_benefit = await create_subscription_benefit(
-            save_fixture, type=SubscriptionBenefitType.custom, organization=organization
+            save_fixture, type=BenefitType.custom, organization=organization
         )
 
         # then
@@ -99,7 +99,7 @@ class TestSearch:
         results, count = await subscription_benefit_service.search(
             session,
             user,
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             pagination=PaginationParams(1, 10),
         )
 
@@ -112,8 +112,8 @@ class TestSearch:
         session: AsyncSession,
         user: User,
         organization: Organization,
-        subscription_benefits: list[SubscriptionBenefit],
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefits: list[Benefit],
+        subscription_benefit_organization: Benefit,
         user_organization: UserOrganization,
     ) -> None:
         # then
@@ -132,7 +132,7 @@ class TestSearch:
         session: AsyncSession,
         user: User,
         organization: Organization,
-        subscription_benefits: list[SubscriptionBenefit],
+        subscription_benefits: list[Benefit],
         user_organization: UserOrganization,
     ) -> None:
         # then
@@ -154,8 +154,8 @@ class TestSearch:
         session: AsyncSession,
         user: User,
         repository: Repository,
-        subscription_benefits: list[SubscriptionBenefit],
-        subscription_benefit_private_repository: SubscriptionBenefit,
+        subscription_benefits: list[Benefit],
+        subscription_benefit_private_repository: Benefit,
         user_organization: UserOrganization,
     ) -> None:
         # then
@@ -175,8 +175,8 @@ class TestGetById:
     async def test_user(
         self,
         session: AsyncSession,
-        subscription_benefit_private_repository: SubscriptionBenefit,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_private_repository: Benefit,
+        subscription_benefit_organization: Benefit,
         user: User,
     ) -> None:
         # then
@@ -202,8 +202,8 @@ class TestGetById:
     async def test_user_organization(
         self,
         session: AsyncSession,
-        subscription_benefit_private_repository: SubscriptionBenefit,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_private_repository: Benefit,
+        subscription_benefit_organization: Benefit,
         user: User,
         user_organization: UserOrganization,
     ) -> None:
@@ -241,7 +241,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionBenefitCustomCreate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
             properties=SubscriptionBenefitCustomProperties(),
@@ -264,7 +264,7 @@ class TestUserCreate:
         organization: Organization,
     ) -> None:
         create_schema = SubscriptionBenefitCustomCreate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
             properties=SubscriptionBenefitCustomProperties(),
@@ -288,7 +288,7 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
     ) -> None:
         create_schema = SubscriptionBenefitCustomCreate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
             properties=SubscriptionBenefitCustomProperties(),
@@ -307,7 +307,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionBenefitCustomCreate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
             properties=SubscriptionBenefitCustomProperties(),
@@ -330,7 +330,7 @@ class TestUserCreate:
         repository: Repository,
     ) -> None:
         create_schema = SubscriptionBenefitCustomCreate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
             properties=SubscriptionBenefitCustomProperties(),
@@ -354,7 +354,7 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
     ) -> None:
         create_schema = SubscriptionBenefitCustomCreate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
             properties=SubscriptionBenefitCustomProperties(),
@@ -398,7 +398,7 @@ class TestUserCreate:
         mock.return_value = service_mock
 
         create_schema = SubscriptionBenefitCustomCreate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
             properties=SubscriptionBenefitCustomProperties(),
@@ -421,10 +421,10 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         update_schema = SubscriptionBenefitCustomUpdate(
-            type=SubscriptionBenefitType.custom,
+            type=BenefitType.custom,
             description="Subscription Benefit Update",
         )
 
@@ -454,7 +454,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         enqueue_benefit_grant_updates_mock = mocker.patch.object(
@@ -464,7 +464,7 @@ class TestUserUpdate:
         )
 
         update_schema = SubscriptionBenefitCustomUpdate(
-            type=SubscriptionBenefitType.custom, description="Description update"
+            type=BenefitType.custom, description="Description update"
         )
 
         # then
@@ -497,7 +497,7 @@ class TestUserDelete:
         session: AsyncSession,
         authz: Authz,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
     ) -> None:
         # then
         session.expunge_all()
@@ -526,7 +526,7 @@ class TestUserDelete:
     ) -> None:
         subscription_benefit = await create_subscription_benefit(
             save_fixture,
-            type=SubscriptionBenefitType.articles,
+            type=BenefitType.articles,
             is_tax_applicable=True,
             organization=organization,
             deletable=False,
@@ -552,7 +552,7 @@ class TestUserDelete:
         session: AsyncSession,
         authz: Authz,
         user: User,
-        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
         enqueue_benefit_grant_updates_mock = mocker.patch.object(

@@ -4,8 +4,8 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Organization, SubscriptionBenefit
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models import Benefit, Organization
+from polar.models.benefit import BenefitType
 from polar.organization.tasks import (
     OrganizationDoesNotExist,
     organization_post_install,
@@ -45,8 +45,8 @@ class TestOrganizationPostInstall:
         organization: Organization,
         session: AsyncSession,
     ) -> None:
-        subscription_benefit = SubscriptionBenefit(
-            type=SubscriptionBenefitType.articles,
+        subscription_benefit = Benefit(
+            type=BenefitType.articles,
             description="Public posts",
             is_tax_applicable=False,
             properties={"paid_articles": False},

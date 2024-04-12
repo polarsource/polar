@@ -20,9 +20,9 @@ class AdvertisementCampaign(RecordModel):
         nullable=False,
     )
 
-    subscription_benefit_id: Mapped[UUID] = mapped_column(
+    benefit_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_benefits.id"),
+        ForeignKey("benefits.id"),
         nullable=False,
     )
 

@@ -4,22 +4,20 @@ from polar.models import (
     Subscription,
     User,
 )
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitAds,
-    SubscriptionBenefitAdsProperties,
+from polar.models.benefit import (
+    BenefitAds,
+    BenefitAdsProperties,
 )
 
 from .base import SubscriptionBenefitServiceProtocol
 
 
 class SubscriptionBenefitAdsService(
-    SubscriptionBenefitServiceProtocol[
-        SubscriptionBenefitAds, SubscriptionBenefitAdsProperties
-    ]
+    SubscriptionBenefitServiceProtocol[BenefitAds, BenefitAdsProperties]
 ):
     async def grant(
         self,
-        benefit: SubscriptionBenefitAds,
+        benefit: BenefitAds,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -32,7 +30,7 @@ class SubscriptionBenefitAdsService(
 
     async def revoke(
         self,
-        benefit: SubscriptionBenefitAds,
+        benefit: BenefitAds,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -44,12 +42,12 @@ class SubscriptionBenefitAdsService(
 
     async def requires_update(
         self,
-        benefit: SubscriptionBenefitAds,
-        previous_properties: SubscriptionBenefitAdsProperties,
+        benefit: BenefitAds,
+        previous_properties: BenefitAdsProperties,
     ) -> bool:
         return False
 
     async def validate_properties(
         self, user: User, properties: dict[str, Any]
-    ) -> SubscriptionBenefitAdsProperties:
-        return cast(SubscriptionBenefitAdsProperties, properties)
+    ) -> BenefitAdsProperties:
+        return cast(BenefitAdsProperties, properties)

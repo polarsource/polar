@@ -14,16 +14,16 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import (
+    Benefit,
     Organization,
     Repository,
-    SubscriptionBenefit,
     SubscriptionTierBenefit,
     User,
     UserOrganization,
 )
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitArticles,
-    SubscriptionBenefitType,
+from polar.models.benefit import (
+    BenefitArticles,
+    BenefitType,
 )
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
@@ -59,9 +59,7 @@ class RepositoryDoesNotExist(SubscriptionBenefitError):
 
 
 class SubscriptionBenefitService(
-    ResourceService[
-        SubscriptionBenefit, SubscriptionBenefitCreate, SubscriptionBenefitUpdate
-    ]
+    ResourceService[Benefit, SubscriptionBenefitCreate, SubscriptionBenefitUpdate]
 ):
     async def get(
         self,
@@ -69,15 +67,15 @@ class SubscriptionBenefitService(
         id: uuid.UUID,
         allow_deleted: bool = False,
         loaded: bool = False,
-    ) -> SubscriptionBenefit | None:
-        query = select(SubscriptionBenefit).where(SubscriptionBenefit.id == id)
+    ) -> Benefit | None:
+        query = select(Benefit).where(Benefit.id == id)
         if not allow_deleted:
-            query = query.where(SubscriptionBenefit.deleted_at.is_(None))
+            query = query.where(Benefit.deleted_at.is_(None))
 
         if loaded:
             query = query.options(
-                joinedload(SubscriptionBenefit.organization),
-                joinedload(SubscriptionBenefit.repository),
+                joinedload(Benefit.organization),
+                joinedload(Benefit.repository),
             )
 
         res = await session.execute(query)
@@ -88,31 +86,29 @@ class SubscriptionBenefitService(
         session: AsyncSession,
         user: User,
         *,
-        type: SubscriptionBenefitType | None = None,
+        type: BenefitType | None = None,
         organization: Organization | None = None,
         repository: Repository | None = None,
         direct_organization: bool = True,
         pagination: PaginationParams,
-    ) -> tuple[Sequence[SubscriptionBenefit], int]:
+    ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_subscription_benefit_statement(user)
 
         if type is not None:
-            statement = statement.where(SubscriptionBenefit.type == type)
+            statement = statement.where(Benefit.type == type)
 
         if organization is not None:
-            clauses = [SubscriptionBenefit.organization_id == organization.id]
+            clauses = [Benefit.organization_id == organization.id]
             if not direct_organization:
                 clauses.append(Repository.organization_id == organization.id)
             statement = statement.where(or_(*clauses))
 
         if repository is not None:
-            statement = statement.where(
-                SubscriptionBenefit.repository_id == repository.id
-            )
+            statement = statement.where(Benefit.repository_id == repository.id)
 
         statement = statement.order_by(
-            SubscriptionBenefit.type,
-            SubscriptionBenefit.created_at,
+            Benefit.type,
+            Benefit.created_at,
         )
 
         results, count = await paginate(session, statement, pagination=pagination)
@@ -121,15 +117,13 @@ class SubscriptionBenefitService(
 
     async def get_by_id(
         self, session: AsyncSession, user: User, id: uuid.UUID
-    ) -> SubscriptionBenefit | None:
+    ) -> Benefit | None:
         statement = (
             self._get_readable_subscription_benefit_statement(user)
-            .where(
-                SubscriptionBenefit.id == id, SubscriptionBenefit.deleted_at.is_(None)
-            )
+            .where(Benefit.id == id, Benefit.deleted_at.is_(None))
             .options(
-                contains_eager(SubscriptionBenefit.organization),
-                contains_eager(SubscriptionBenefit.repository),
+                contains_eager(Benefit.organization),
+                contains_eager(Benefit.repository),
             )
         )
 
@@ -142,7 +136,7 @@ class SubscriptionBenefitService(
         authz: Authz,
         create_schema: SubscriptionBenefitCreate,
         user: User,
-    ) -> SubscriptionBenefit:
+    ) -> Benefit:
         organization: Organization | None = None
         repository: Repository | None = None
         if create_schema.organization_id is not None:
@@ -176,7 +170,7 @@ class SubscriptionBenefitService(
         except SubscriptionBenefitPropertiesValidationError as e:
             raise e.to_request_validation_error(("body", create_schema.type))
 
-        subscription_benefit = SubscriptionBenefit(
+        subscription_benefit = Benefit(
             organization=organization,
             repository=repository,
             is_tax_applicable=is_tax_applicable,
@@ -200,10 +194,10 @@ class SubscriptionBenefitService(
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_benefit: SubscriptionBenefit,
+        subscription_benefit: Benefit,
         update_schema: SubscriptionBenefitUpdate,
         user: User,
-    ) -> SubscriptionBenefit:
+    ) -> Benefit:
         subscription_benefit = await self._with_organization_or_repository(
             session, subscription_benefit
         )
@@ -243,9 +237,9 @@ class SubscriptionBenefitService(
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_benefit: SubscriptionBenefit,
+        subscription_benefit: Benefit,
         user: User,
-    ) -> SubscriptionBenefit:
+    ) -> Benefit:
         subscription_benefit = await self._with_organization_or_repository(
             session, subscription_benefit
         )
@@ -259,7 +253,7 @@ class SubscriptionBenefitService(
         subscription_benefit.deleted_at = utc_now()
         session.add(subscription_benefit)
         statement = delete(SubscriptionTierBenefit).where(
-            SubscriptionTierBenefit.subscription_benefit_id == subscription_benefit.id
+            SubscriptionTierBenefit.benefit_id == subscription_benefit.id
         )
         await session.execute(statement)
 
@@ -274,21 +268,19 @@ class SubscriptionBenefitService(
         session: AsyncSession,
         organization: Organization | None = None,
         repository: Repository | None = None,
-    ) -> tuple[SubscriptionBenefitArticles, SubscriptionBenefitArticles]:
-        statement = select(SubscriptionBenefitArticles)
+    ) -> tuple[BenefitArticles, BenefitArticles]:
+        statement = select(BenefitArticles)
         if organization is not None:
             statement = statement.where(
-                SubscriptionBenefitArticles.organization_id == organization.id
+                BenefitArticles.organization_id == organization.id
             )
         if repository is not None:
-            statement = statement.where(
-                SubscriptionBenefitArticles.repository_id == repository.id
-            )
+            statement = statement.where(BenefitArticles.repository_id == repository.id)
 
         result = await session.execute(statement)
 
-        public_articles: SubscriptionBenefitArticles | None = None
-        premium_articles: SubscriptionBenefitArticles | None = None
+        public_articles: BenefitArticles | None = None
+        premium_articles: BenefitArticles | None = None
         for benefit in result.scalars().all():
             if benefit.properties["paid_articles"]:
                 premium_articles = benefit
@@ -296,7 +288,7 @@ class SubscriptionBenefitService(
                 public_articles = benefit
 
         if public_articles is None:
-            public_articles = SubscriptionBenefitArticles(
+            public_articles = BenefitArticles(
                 description="Public posts",
                 is_tax_applicable=False,
                 selectable=False,
@@ -308,7 +300,7 @@ class SubscriptionBenefitService(
             session.add(public_articles)
 
         if premium_articles is None:
-            premium_articles = SubscriptionBenefitArticles(
+            premium_articles = BenefitArticles(
                 description="Premium posts",
                 is_tax_applicable=True,
                 selectable=True,
@@ -322,8 +314,8 @@ class SubscriptionBenefitService(
         return (public_articles, premium_articles)
 
     async def _with_organization_or_repository(
-        self, session: AsyncSession, subscription_benefit: SubscriptionBenefit
-    ) -> SubscriptionBenefit:
+        self, session: AsyncSession, subscription_benefit: Benefit
+    ) -> Benefit:
         try:
             subscription_benefit.organization
             subscription_benefit.repository
@@ -336,13 +328,12 @@ class SubscriptionBenefitService(
         RepositoryUserOrganization = aliased(UserOrganization)
 
         return (
-            select(SubscriptionBenefit)
-            .join(SubscriptionBenefit.organization, full=True)
-            .join(SubscriptionBenefit.repository, full=True)
+            select(Benefit)
+            .join(Benefit.organization, full=True)
+            .join(Benefit.repository, full=True)
             .join(
                 UserOrganization,
-                onclause=UserOrganization.organization_id
-                == SubscriptionBenefit.organization_id,
+                onclause=UserOrganization.organization_id == Benefit.organization_id,
                 full=True,
             )
             .join(
@@ -358,8 +349,8 @@ class SubscriptionBenefitService(
             )
             .where(
                 # Prevent to return `None` objects due to the full outer join
-                SubscriptionBenefit.id.is_not(None),
-                SubscriptionBenefit.deleted_at.is_(None),
+                Benefit.id.is_not(None),
+                Benefit.deleted_at.is_(None),
                 or_(
                     UserOrganization.user_id == user.id,
                     RepositoryUserOrganization.user_id == user.id,
@@ -368,4 +359,4 @@ class SubscriptionBenefitService(
         )
 
 
-subscription_benefit = SubscriptionBenefitService(SubscriptionBenefit)
+subscription_benefit = SubscriptionBenefitService(Benefit)

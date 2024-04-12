@@ -5,7 +5,7 @@ from polar.config import settings
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.models import OAuthAccount, User
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.benefit import BenefitType
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
@@ -64,7 +64,7 @@ class DiscordUserService:
         enqueue_job(
             "subscription.subscription_benefit.precondition_fulfilled",
             user_id=user.id,
-            subscription_benefit_type=SubscriptionBenefitType.discord,
+            subscription_benefit_type=BenefitType.discord,
         )
 
         return oauth_account

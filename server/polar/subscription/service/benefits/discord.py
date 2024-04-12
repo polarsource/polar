@@ -9,9 +9,9 @@ from polar.integrations.discord.service import discord_bot as discord_bot_servic
 from polar.integrations.discord.service import discord_user as discord_user_service
 from polar.logging import Logger
 from polar.models import Subscription, User
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitDiscord,
-    SubscriptionBenefitDiscordProperties,
+from polar.models.benefit import (
+    BenefitDiscord,
+    BenefitDiscordProperties,
 )
 from polar.notifications.notification import (
     SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
@@ -64,13 +64,11 @@ https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
 
 
 class SubscriptionBenefitDiscordService(
-    SubscriptionBenefitServiceProtocol[
-        SubscriptionBenefitDiscord, SubscriptionBenefitDiscordProperties
-    ]
+    SubscriptionBenefitServiceProtocol[BenefitDiscord, BenefitDiscordProperties]
 ):
     async def grant(
         self,
-        benefit: SubscriptionBenefitDiscord,
+        benefit: BenefitDiscord,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -137,7 +135,7 @@ class SubscriptionBenefitDiscordService(
 
     async def revoke(
         self,
-        benefit: SubscriptionBenefitDiscord,
+        benefit: BenefitDiscord,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -171,8 +169,8 @@ class SubscriptionBenefitDiscordService(
 
     async def requires_update(
         self,
-        benefit: SubscriptionBenefitDiscord,
-        previous_properties: SubscriptionBenefitDiscordProperties,
+        benefit: BenefitDiscord,
+        previous_properties: BenefitDiscordProperties,
     ) -> bool:
         new_properties = benefit.properties
         return (
@@ -182,7 +180,7 @@ class SubscriptionBenefitDiscordService(
 
     async def validate_properties(
         self, user: User, properties: dict[str, Any]
-    ) -> SubscriptionBenefitDiscordProperties:
+    ) -> BenefitDiscordProperties:
         guild_id: str = properties["guild_id"]
         role_id: str = properties["role_id"]
 
@@ -213,4 +211,4 @@ class SubscriptionBenefitDiscordService(
                 ]
             )
 
-        return cast(SubscriptionBenefitDiscordProperties, properties)
+        return cast(BenefitDiscordProperties, properties)

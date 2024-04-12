@@ -5,11 +5,11 @@ import pytest
 
 from polar.article.service import article_service
 from polar.models import Organization, Subscription, SubscriptionTier, User
-from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitArticles,
-    SubscriptionBenefitType,
+from polar.models.benefit import (
+    BenefitArticles,
+    BenefitType,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service.benefits.articles import (
     SubscriptionBenefitArticlesService,
@@ -43,7 +43,7 @@ async def test_concurrent_subscription_upgrade(
     )
     previous_benefit = await create_subscription_benefit(
         save_fixture,
-        type=SubscriptionBenefitType.articles,
+        type=BenefitType.articles,
         organization=organization,
         properties={"paid_articles": False},
     )
@@ -59,7 +59,7 @@ async def test_concurrent_subscription_upgrade(
     )
     new_benefit = await create_subscription_benefit(
         save_fixture,
-        type=SubscriptionBenefitType.articles,
+        type=BenefitType.articles,
         organization=organization,
         properties={"paid_articles": True},
     )
@@ -68,7 +68,7 @@ async def test_concurrent_subscription_upgrade(
 
     async def do_grant() -> None:
         _benefit = cast(
-            SubscriptionBenefitArticles,
+            BenefitArticles,
             await subscription_benefit_service.get(session, new_benefit.id),
         )
         _subscription = await session.get(Subscription, new_subscription.id)
@@ -81,7 +81,7 @@ async def test_concurrent_subscription_upgrade(
 
     async def do_revoke() -> None:
         _benefit = cast(
-            SubscriptionBenefitArticles,
+            BenefitArticles,
             await subscription_benefit_service.get(session, previous_benefit.id),
         )
         _subscription = await session.get(Subscription, previous_subscription.id)

@@ -15,9 +15,9 @@ from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Repository, Subscription, SubscriptionBenefit, SubscriptionTier
+from polar.models import Benefit, Repository, Subscription, SubscriptionTier
+from polar.models.benefit import BenefitType
 from polar.models.organization import Organization
-from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.dependencies import (
     OptionalOrganizationNamePlatform,
@@ -249,7 +249,7 @@ async def search_subscription_benefits(
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
-    type: SubscriptionBenefitType | None = Query(None),
+    type: BenefitType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionBenefitSchema]:
     organization_name, platform = organization_name_platform
@@ -296,7 +296,7 @@ async def lookup_subscription_benefit(
     subscription_benefit_id: UUID4,
     auth: auth.TiersWriteAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionBenefit:
+) -> Benefit:
     subscription_benefit = await subscription_benefit_service.get_by_id(
         session, auth.subject, subscription_benefit_id
     )
@@ -320,7 +320,7 @@ async def create_subscription_benefit(
     ),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionBenefit:
+) -> Benefit:
     subscription_benefit = await subscription_benefit_service.user_create(
         session, authz, subscription_benefit_create, auth.user
     )
@@ -345,7 +345,7 @@ async def update_subscription_benefit(
     auth: auth.TiersWriteAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionBenefit:
+) -> Benefit:
     subscription_benefit = await subscription_benefit_service.get_by_id(
         session, auth.subject, id
     )

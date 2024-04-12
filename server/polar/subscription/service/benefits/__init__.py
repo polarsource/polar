@@ -1,9 +1,9 @@
 from typing import Any
 
-from polar.models import SubscriptionBenefit
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitProperties,
-    SubscriptionBenefitType,
+from polar.models import Benefit
+from polar.models.benefit import (
+    BenefitProperties,
+    BenefitType,
 )
 from polar.postgres import AsyncSession
 from polar.subscription.service.benefits.ads import SubscriptionBenefitAdsService
@@ -21,22 +21,20 @@ from .discord import SubscriptionBenefitDiscordService
 from .github_repository import SubscriptionBenefitGitHubRepositoryService
 
 _SERVICE_CLASS_MAP: dict[
-    SubscriptionBenefitType,
+    BenefitType,
     type[SubscriptionBenefitServiceProtocol[Any, Any]],
 ] = {
-    SubscriptionBenefitType.custom: SubscriptionBenefitCustomService,
-    SubscriptionBenefitType.articles: SubscriptionBenefitArticlesService,
-    SubscriptionBenefitType.ads: SubscriptionBenefitAdsService,
-    SubscriptionBenefitType.discord: SubscriptionBenefitDiscordService,
-    SubscriptionBenefitType.github_repository: SubscriptionBenefitGitHubRepositoryService,
+    BenefitType.custom: SubscriptionBenefitCustomService,
+    BenefitType.articles: SubscriptionBenefitArticlesService,
+    BenefitType.ads: SubscriptionBenefitAdsService,
+    BenefitType.discord: SubscriptionBenefitDiscordService,
+    BenefitType.github_repository: SubscriptionBenefitGitHubRepositoryService,
 }
 
 
 def get_subscription_benefit_service(
-    type: SubscriptionBenefitType, session: AsyncSession
-) -> SubscriptionBenefitServiceProtocol[
-    SubscriptionBenefit, SubscriptionBenefitProperties
-]:
+    type: BenefitType, session: AsyncSession
+) -> SubscriptionBenefitServiceProtocol[Benefit, BenefitProperties]:
     return _SERVICE_CLASS_MAP[type](session)
 
 

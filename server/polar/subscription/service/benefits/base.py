@@ -6,11 +6,11 @@ from pydantic_core import InitErrorDetails, PydanticCustomError
 
 from polar.exceptions import PolarError
 from polar.models import (
+    Benefit,
     Subscription,
-    SubscriptionBenefit,
     User,
 )
-from polar.models.subscription_benefit import SubscriptionBenefitProperties
+from polar.models.benefit import BenefitProperties
 from polar.notifications.notification import (
     SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
 )
@@ -98,11 +98,11 @@ class SubscriptionBenefitPreconditionError(SubscriptionBenefitServiceError):
         super().__init__(message)
 
 
-SB = TypeVar("SB", bound=SubscriptionBenefit, contravariant=True)
-SBP = TypeVar("SBP", bound=SubscriptionBenefitProperties)
+B = TypeVar("B", bound=Benefit, contravariant=True)
+BP = TypeVar("BP", bound=BenefitProperties)
 
 
-class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
+class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
     """
     Protocol that should be implemented by each benefit type service.
 
@@ -116,7 +116,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
 
     async def grant(
         self,
-        benefit: SB,
+        benefit: B,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -155,7 +155,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
 
     async def revoke(
         self,
-        benefit: SB,
+        benefit: B,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -186,7 +186,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
         """
         ...
 
-    async def requires_update(self, benefit: SB, previous_properties: SBP) -> bool:
+    async def requires_update(self, benefit: B, previous_properties: BP) -> bool:
         """
         Determines if a benefit update requires to trigger the granting logic again.
 
@@ -201,7 +201,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[SB, SBP]):
         """
         ...
 
-    async def validate_properties(self, user: User, properties: dict[str, Any]) -> SBP:
+    async def validate_properties(self, user: User, properties: dict[str, Any]) -> BP:
         """
         Validates the benefit properties before creation.
 

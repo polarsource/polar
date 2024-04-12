@@ -32,7 +32,7 @@ from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
 from polar.locker import Locker, get_locker
-from polar.models.subscription_benefit import SubscriptionBenefitType
+from polar.models.benefit import BenefitType
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
@@ -172,7 +172,7 @@ async def github_callback(
     enqueue_job(
         "subscription.subscription_benefit.precondition_fulfilled",
         user_id=user.id,
-        subscription_benefit_type=SubscriptionBenefitType.github_repository,
+        subscription_benefit_type=BenefitType.github_repository,
     )
 
     posthog.identify(user)

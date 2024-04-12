@@ -8,16 +8,16 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitArticles,
-    SubscriptionBenefitType,
+from polar.models.benefit import (
+    BenefitArticles,
+    BenefitType,
 )
 
 if TYPE_CHECKING:
     from polar.models import (
+        Benefit,
         Organization,
         Repository,
-        SubscriptionBenefit,
         SubscriptionTierBenefit,
         SubscriptionTierPrice,
     )
@@ -95,8 +95,8 @@ class SubscriptionTier(RecordModel):
         cascade="all, delete-orphan",
     )
 
-    benefits: AssociationProxy[list["SubscriptionBenefit"]] = association_proxy(
-        "subscription_tier_benefits", "subscription_benefit"
+    benefits: AssociationProxy[list["Benefit"]] = association_proxy(
+        "subscription_tier_benefits", "benefit"
     )
 
     @property
@@ -125,10 +125,10 @@ class SubscriptionTier(RecordModel):
             return f"{self.repository.name} - {self.name}"
         raise RuntimeError()
 
-    def get_articles_benefit(self) -> SubscriptionBenefitArticles | None:
+    def get_articles_benefit(self) -> BenefitArticles | None:
         for benefit in self.benefits:
-            if benefit.type == SubscriptionBenefitType.articles:
-                return cast(SubscriptionBenefitArticles, benefit)
+            if benefit.type == BenefitType.articles:
+                return cast(BenefitArticles, benefit)
         return None
 
     def get_price(self, id: UUID) -> "SubscriptionTierPrice | None":

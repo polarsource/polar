@@ -8,15 +8,15 @@ from sqlalchemy import select
 from polar.locker import Locker
 from polar.models import (
     ArticlesSubscription,
+    Benefit,
     Subscription,
-    SubscriptionBenefit,
     SubscriptionBenefitGrant,
     User,
 )
-from polar.models.subscription_benefit import (
-    SubscriptionBenefitArticles,
-    SubscriptionBenefitArticlesProperties,
-    SubscriptionBenefitType,
+from polar.models.benefit import (
+    BenefitArticles,
+    BenefitArticlesProperties,
+    BenefitType,
 )
 from polar.redis import redis
 
@@ -24,13 +24,11 @@ from .base import SubscriptionBenefitServiceProtocol
 
 
 class SubscriptionBenefitArticlesService(
-    SubscriptionBenefitServiceProtocol[
-        SubscriptionBenefitArticles, SubscriptionBenefitArticlesProperties
-    ]
+    SubscriptionBenefitServiceProtocol[BenefitArticles, BenefitArticlesProperties]
 ):
     async def grant(
         self,
-        benefit: SubscriptionBenefitArticles,
+        benefit: BenefitArticles,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -59,7 +57,7 @@ class SubscriptionBenefitArticlesService(
 
     async def revoke(
         self,
-        benefit: SubscriptionBenefitArticles,
+        benefit: BenefitArticles,
         subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
@@ -87,15 +85,15 @@ class SubscriptionBenefitArticlesService(
 
     async def requires_update(
         self,
-        benefit: SubscriptionBenefitArticles,
-        previous_properties: SubscriptionBenefitArticlesProperties,
+        benefit: BenefitArticles,
+        previous_properties: BenefitArticlesProperties,
     ) -> bool:
         return False
 
     async def validate_properties(
         self, user: User, properties: dict[str, Any]
-    ) -> SubscriptionBenefitArticlesProperties:
-        return cast(SubscriptionBenefitArticlesProperties, properties)
+    ) -> BenefitArticlesProperties:
+        return cast(BenefitArticlesProperties, properties)
 
     async def _get_articles_subscription(
         self, user_id: uuid.UUID, organization_id: uuid.UUID
@@ -112,12 +110,12 @@ class SubscriptionBenefitArticlesService(
     ) -> Sequence[SubscriptionBenefitGrant]:
         statement = (
             select(SubscriptionBenefitGrant)
-            .join(SubscriptionBenefitGrant.subscription_benefit)
+            .join(SubscriptionBenefitGrant.benefit)
             .where(
                 SubscriptionBenefitGrant.user_id == user_id,
                 SubscriptionBenefitGrant.is_granted.is_(True),
-                SubscriptionBenefit.type == SubscriptionBenefitType.articles,
-                SubscriptionBenefit.organization_id == organization_id,
+                Benefit.type == BenefitType.articles,
+                Benefit.organization_id == organization_id,
             )
         )
         result = await self.session.execute(statement)

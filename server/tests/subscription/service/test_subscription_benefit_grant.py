@@ -10,7 +10,7 @@ from polar.models import (
     User,
 )
 from polar.notifications.notification import (
-    SubscriptionBenefitPreconditionErrorNotificationContextualPayload,
+    BenefitPreconditionErrorNotificationContextualPayload,
 )
 from polar.notifications.service import NotificationsService
 from polar.postgres import AsyncSession
@@ -78,7 +78,7 @@ class TestGrantBenefit:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
-            subscription_benefit_id=benefit_organization.id,
+            benefit_id=benefit_organization.id,
         )
         await save_fixture(grant)
 
@@ -105,7 +105,7 @@ class TestGrantBenefit:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
-            subscription_benefit_id=benefit_organization.id,
+            benefit_id=benefit_organization.id,
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -182,7 +182,7 @@ class TestRevokeBenefit:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
-            subscription_benefit_id=benefit_organization.id,
+            benefit_id=benefit_organization.id,
             properties={"external_id": "abc"},
         )
         await save_fixture(grant)
@@ -208,7 +208,7 @@ class TestRevokeBenefit:
         grant = SubscriptionBenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
-            subscription_benefit_id=benefit_organization.id,
+            benefit_id=benefit_organization.id,
         )
         grant.set_revoked()
         await save_fixture(grant)
@@ -262,7 +262,7 @@ class TestEnqueueBenefitGrantUpdates:
         granted_grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
-            subscription_benefit=benefit_organization,
+            benefit=benefit_organization,
         )
         granted_grant.set_granted()
         await save_fixture(granted_grant)
@@ -270,7 +270,7 @@ class TestEnqueueBenefitGrantUpdates:
         other_benefit_grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
-            subscription_benefit=benefit_repository,
+            benefit=benefit_repository,
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)
@@ -304,17 +304,13 @@ class TestEnqueueBenefitGrantUpdates:
         benefit_service_mock: MagicMock,
     ) -> None:
         revoked_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         revoked_grant.set_revoked()
         await save_fixture(revoked_grant)
 
         other_benefit_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_repository,
+            subscription=subscription, user=user, benefit=benefit_repository
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)
@@ -346,9 +342,7 @@ class TestUpdateBenefitGrant:
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_revoked()
         await save_fixture(grant)
@@ -377,7 +371,7 @@ class TestUpdateBenefitGrant:
         grant = SubscriptionBenefitGrant(
             subscription=subscription,
             user=user,
-            subscription_benefit=benefit_organization,
+            benefit=benefit_organization,
             properties={"external_id": "abc"},
         )
         grant.set_granted()
@@ -410,9 +404,7 @@ class TestUpdateBenefitGrant:
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -448,17 +440,13 @@ class TestEnqueueBenefitGrantDeletions:
         benefit_repository: Benefit,
     ) -> None:
         granted_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         granted_grant.set_granted()
         await save_fixture(granted_grant)
 
         other_benefit_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_repository,
+            subscription=subscription, user=user, benefit=benefit_repository
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)
@@ -492,9 +480,7 @@ class TestDeleteBenefitGrant:
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_revoked()
         await save_fixture(grant)
@@ -519,9 +505,7 @@ class TestDeleteBenefitGrant:
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -580,7 +564,7 @@ class TestHandlePreconditionError:
     ) -> None:
         error = SubscriptionBenefitPreconditionError(
             "Error",
-            payload=SubscriptionBenefitPreconditionErrorNotificationContextualPayload(
+            payload=BenefitPreconditionErrorNotificationContextualPayload(
                 subject_template="Action required for granting {subscription_benefit_name}",
                 body_template="Go here to fix this: {extra_context[url]}",
                 extra_context={"url": "https://polar.sh"},
@@ -614,16 +598,12 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
         benefit_organization: Benefit,
     ) -> None:
         pending_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user, benefit=benefit_organization
         )
         await save_fixture(pending_grant)
 
         other_user_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            user=user_second,
-            subscription_benefit=benefit_organization,
+            subscription=subscription, user=user_second, benefit=benefit_organization
         )
         await save_fixture(other_user_grant)
 
@@ -642,5 +622,5 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
             "subscription.subscription_benefit.grant",
             subscription_id=pending_grant.subscription_id,
             user_id=user.id,
-            subscription_benefit_id=pending_grant.benefit_id,
+            benefit_id=pending_grant.benefit_id,
         )

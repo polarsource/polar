@@ -862,7 +862,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     f"subscription.subscription_benefit.{task}",
                     subscription_id=subscription.id,
                     user_id=subscription.user_id,
-                    subscription_benefit_id=benefit.id,
+                    benefit_id=benefit.id,
                 )
             else:
                 for user_id in users_ids:
@@ -870,7 +870,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                         f"subscription.subscription_benefit.{task}",
                         subscription_id=subscription.id,
                         user_id=user_id,
-                        subscription_benefit_id=benefit.id,
+                        benefit_id=benefit.id,
                     )
 
         for user_id in users_ids:
@@ -879,7 +879,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     "subscription.subscription_benefit.revoke",
                     subscription_id=subscription.id,
                     user_id=user_id,
-                    subscription_benefit_id=outdated_grant.benefit_id,
+                    benefit_id=outdated_grant.benefit_id,
                 )
 
             # Special hard-coded logic to make sure

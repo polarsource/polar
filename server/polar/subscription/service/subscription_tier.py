@@ -55,22 +55,17 @@ class RepositoryDoesNotExist(SubscriptionTierError):
         super().__init__(message, 422)
 
 
-class SubscriptionBenefitDoesNotExist(SubscriptionTierError):
-    def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
-        self.subscription_benefit_id = subscription_benefit_id
-        message = (
-            f"Subscription benefit with id {subscription_benefit_id} does not exist."
-        )
+class BenefitDoesNotExist(SubscriptionTierError):
+    def __init__(self, benefit_id: uuid.UUID) -> None:
+        self.benefit_id = benefit_id
+        message = f"Benefit with id {benefit_id} does not exist."
         super().__init__(message, 422)
 
 
-class SubscriptionBenefitIsNotSelectable(SubscriptionTierError):
-    def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
-        self.subscription_benefit_id = subscription_benefit_id
-        message = (
-            f"Subscription benefit with id {subscription_benefit_id} "
-            "cannot be added or removed."
-        )
+class BenefitIsNotSelectable(SubscriptionTierError):
+    def __init__(self, benefit_id: uuid.UUID) -> None:
+        self.benefit_id = benefit_id
+        message = f"Benefit with id {benefit_id} cannot be added or removed."
         super().__init__(message, 422)
 
 
@@ -414,7 +409,7 @@ class SubscriptionTierService(
                 continue
 
             free_subscription_tier.subscription_tier_benefits.append(
-                SubscriptionTierBenefit(subscription_benefit=benefit, order=index)
+                SubscriptionTierBenefit(benefit=benefit, order=index)
             )
 
         session.add(free_subscription_tier)
@@ -449,23 +444,16 @@ class SubscriptionTierService(
         subscription_tier.subscription_tier_benefits = []
         await session.flush()
 
-        for order, subscription_benefit_id in enumerate(benefits):
-            subscription_benefit = await benefit_service.get_by_id(
-                session, user, subscription_benefit_id
-            )
-            if subscription_benefit is None:
+        for order, benefit_id in enumerate(benefits):
+            benefit = await benefit_service.get_by_id(session, user, benefit_id)
+            if benefit is None:
                 await nested.rollback()
-                raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
-            if (
-                not subscription_benefit.selectable
-                and subscription_benefit not in previous_benefits
-            ):
-                raise SubscriptionBenefitIsNotSelectable(subscription_benefit_id)
-            new_benefits.add(subscription_benefit)
+                raise BenefitDoesNotExist(benefit_id)
+            if not benefit.selectable and benefit not in previous_benefits:
+                raise BenefitIsNotSelectable(benefit_id)
+            new_benefits.add(benefit)
             subscription_tier.subscription_tier_benefits.append(
-                SubscriptionTierBenefit(
-                    subscription_benefit=subscription_benefit, order=order
-                )
+                SubscriptionTierBenefit(benefit=benefit, order=order)
             )
 
         added_benefits = new_benefits - previous_benefits
@@ -473,7 +461,7 @@ class SubscriptionTierService(
 
         for deleted_benefit in deleted_benefits:
             if not deleted_benefit.selectable:
-                raise SubscriptionBenefitIsNotSelectable(deleted_benefit.id)
+                raise BenefitIsNotSelectable(deleted_benefit.id)
 
         session.add(subscription_tier)
 

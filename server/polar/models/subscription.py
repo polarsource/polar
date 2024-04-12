@@ -113,7 +113,7 @@ class Subscription(RecordModel):
         return relationship(
             "SubscriptionBenefitGrant",
             lazy="raise",
-            order_by="SubscriptionBenefitGrant.subscription_benefit_id",
+            order_by="SubscriptionBenefitGrant.benefit_id",
             back_populates="subscription",
         )
 

@@ -90,7 +90,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         direct_organization: bool = True,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Benefit], int]:
-        statement = self._get_readable_subscription_benefit_statement(user)
+        statement = self._get_readable_benefit_statement(user)
 
         if type is not None:
             statement = statement.where(Benefit.type == type)
@@ -117,7 +117,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         self, session: AsyncSession, user: User, id: uuid.UUID
     ) -> Benefit | None:
         statement = (
-            self._get_readable_subscription_benefit_statement(user)
+            self._get_readable_benefit_statement(user)
             .where(Benefit.id == id, Benefit.deleted_at.is_(None))
             .options(
                 contains_eager(Benefit.organization),
@@ -315,7 +315,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             await session.refresh(benefit, {"organization", "repository"})
         return benefit
 
-    def _get_readable_subscription_benefit_statement(self, user: User) -> Select[Any]:
+    def _get_readable_benefit_statement(self, user: User) -> Select[Any]:
         RepositoryOrganization = aliased(Organization)
         RepositoryUserOrganization = aliased(UserOrganization)
 

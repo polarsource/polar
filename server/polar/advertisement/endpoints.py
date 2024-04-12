@@ -42,23 +42,20 @@ async def _get_grant(
     session: AsyncSession,
     user: User,
     subscription_id: UUID,
-    subscription_benefit_id: UUID,
+    benefit_id: UUID,
 ) -> SubscriptionBenefitGrant | None:
     subscription = await subscription_service.get(session, subscription_id)
     if not subscription:
         raise NotFound()
 
-    benefit = await benefit_service.get(session, subscription_benefit_id)
+    benefit = await benefit_service.get(session, benefit_id)
     if not benefit:
         raise NotFound()
 
     # Verify that the authed user has been granted this benefit for this subscription
     grant = (
         await subscription_benefit_grant_service.get_by_subscription_user_and_benefit(
-            session,
-            subscription=subscription,
-            user=user,
-            subscription_benefit=benefit,
+            session, subscription=subscription, user=user, benefit=benefit
         )
     )
 
@@ -74,26 +71,24 @@ async def _get_grant(
 async def search_campaigns(
     auth: UserRequiredAuth,
     subscription_id: UUID | None = None,
-    subscription_benefit_id: UUID | None = None,
+    benefit_id: UUID | None = None,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[AdvertisementCampaign]:
-    if subscription_id is None and subscription_benefit_id is None:
+    if subscription_id is None and benefit_id is None:
         raise BadRequest("No search criteria specified")
 
     # Authz
-    # if searching by subscription_id and subscription_benefit_id, require an active grant
-    if subscription_id and subscription_benefit_id:
-        grant = await _get_grant(
-            session, auth.user, subscription_id, subscription_benefit_id
-        )
+    # if searching by subscription_id and benefit_id, require an active grant
+    if subscription_id and benefit_id:
+        grant = await _get_grant(session, auth.user, subscription_id, benefit_id)
         if not grant or grant.revoked_at is not None:
             raise NotPermitted("This benefit does not exist or has been revoked")
-    elif subscription_benefit_id:
+    elif benefit_id:
         # searching by benefit, require user to be able to write the benefit
         benefit = await benefit_service.get(
             session,
-            subscription_benefit_id,
+            benefit_id,
             loaded=True,
         )
         if not benefit:
@@ -107,7 +102,7 @@ async def search_campaigns(
     ads = await advertisement_campaign_service.search(
         session,
         subscription_id=subscription_id,
-        subscription_benefit_id=subscription_benefit_id,
+        benefit_id=benefit_id,
     )
 
     return ListResource(
@@ -123,18 +118,18 @@ async def search_campaigns(
     status_code=200,
 )
 async def search_display(
-    subscription_benefit_id: UUID,
+    benefit_id: UUID,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[AdvertisementDisplay]:
-    if subscription_benefit_id is None:
+    if benefit_id is None:
         raise BadRequest("No search criteria specified")
 
     ads = await advertisement_campaign_service.search(
         session,
-        subscription_benefit_id=subscription_benefit_id,
+        benefit_id=benefit_id,
     )
 
-    benefit = await benefit_service.get(session, subscription_benefit_id)
+    benefit = await benefit_service.get(session, benefit_id)
     if not benefit:
         raise ResourceNotFound()
 
@@ -170,7 +165,7 @@ async def create_campaign(
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignModel:
     grant = await _get_grant(
-        session, auth.user, create.subscription_id, create.subscription_benefit_id
+        session, auth.user, create.subscription_id, create.benefit_id
     )
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")
@@ -270,10 +265,7 @@ async def delete_campaign(
     # Verify that the authed user has been granted this benefit for this subscription
     grant = (
         await subscription_benefit_grant_service.get_by_subscription_user_and_benefit(
-            session,
-            subscription=subscription,
-            user=auth.user,
-            subscription_benefit=benefit,
+            session, subscription=subscription, user=auth.user, benefit=benefit
         )
     )
     if not grant or grant.revoked_at is not None:

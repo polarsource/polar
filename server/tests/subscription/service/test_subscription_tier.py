@@ -27,11 +27,11 @@ from polar.subscription.schemas import (
     SubscriptionTierUpdate,
 )
 from polar.subscription.service.subscription_tier import (
+    BenefitDoesNotExist,
+    BenefitIsNotSelectable,
     FreeTierIsNotArchivable,
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
-    SubscriptionBenefitDoesNotExist,
-    SubscriptionBenefitIsNotSelectable,
 )
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
@@ -1238,7 +1238,7 @@ class TestUpdateBenefits:
         )
         assert subscription_tier_organization_loaded
 
-        with pytest.raises(SubscriptionBenefitDoesNotExist):
+        with pytest.raises(BenefitDoesNotExist):
             await subscription_tier_service.update_benefits(
                 session,
                 authz,
@@ -1475,7 +1475,7 @@ class TestUpdateBenefits:
         )
         assert subscription_tier_organization_loaded
 
-        with pytest.raises(SubscriptionBenefitIsNotSelectable):
+        with pytest.raises(BenefitIsNotSelectable):
             await subscription_tier_service.update_benefits(
                 session,
                 authz,
@@ -1517,7 +1517,7 @@ class TestUpdateBenefits:
         )
         assert subscription_tier_organization_loaded
 
-        with pytest.raises(SubscriptionBenefitIsNotSelectable):
+        with pytest.raises(BenefitIsNotSelectable):
             await subscription_tier_service.update_benefits(
                 session,
                 authz,

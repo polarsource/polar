@@ -503,14 +503,14 @@ async def add_subscription_benefits(
     benefits: list[Benefit],
 ) -> SubscriptionTier:
     subscription_tier.subscription_tier_benefits = []
-    for order, subscription_benefit in enumerate(benefits):
-        benefit = SubscriptionTierBenefit(
+    for order, benefit in enumerate(benefits):
+        subscription_tier_benefit = SubscriptionTierBenefit(
             subscription_tier_id=subscription_tier.id,
-            subscription_benefit_id=subscription_benefit.id,
+            benefit_id=benefit.id,
             order=order,
         )
 
-        subscription_tier.subscription_tier_benefits.append(benefit)
+        subscription_tier.subscription_tier_benefits.append(subscription_tier_benefit)
     await save_fixture(subscription_tier)
     return subscription_tier
 
@@ -749,12 +749,10 @@ async def create_subscription_benefit_grant(
     save_fixture: SaveFixture,
     user: User,
     subscription: Subscription,
-    subscription_benefit: Benefit,
+    benefit: Benefit,
 ) -> SubscriptionBenefitGrant:
     grant = SubscriptionBenefitGrant(
-        subscription=subscription,
-        subscription_benefit=subscription_benefit,
-        user=user,
+        subscription=subscription, benefit=benefit, user=user
     )
     await save_fixture(grant)
     return grant

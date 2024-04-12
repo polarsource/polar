@@ -38,7 +38,7 @@ class AdvertisementCampaignService:
     ) -> AdvertisementCampaign:
         campaign = AdvertisementCampaign(
             subscription_id=create.subscription_id,
-            subscription_benefit_id=create.subscription_benefit_id,
+            benefit_id=create.benefit_id,
             image_url=str(create.image_url),
             image_url_dark=str(create.image_url_dark)
             if create.image_url_dark
@@ -90,7 +90,7 @@ class AdvertisementCampaignService:
         self,
         session: AsyncSession,
         subscription_id: uuid.UUID | None = None,
-        subscription_benefit_id: uuid.UUID | None = None,
+        benefit_id: uuid.UUID | None = None,
     ) -> Sequence[AdvertisementCampaign]:
         statement = (
             select(AdvertisementCampaign)
@@ -113,10 +113,8 @@ class AdvertisementCampaignService:
             statement = statement.where(
                 AdvertisementCampaign.subscription_id == subscription_id
             )
-        if subscription_benefit_id:
-            statement = statement.where(
-                AdvertisementCampaign.benefit_id == subscription_benefit_id
-            )
+        if benefit_id:
+            statement = statement.where(AdvertisementCampaign.benefit_id == benefit_id)
 
         res = await session.execute(statement)
         return res.scalars().unique().all()

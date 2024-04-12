@@ -8,7 +8,6 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import RedirectResponse
-from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 
@@ -29,7 +28,7 @@ from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from .service import github_repository_benefit_user_service
+from .service import github_oauth_client, github_repository_benefit_user_service
 
 log = structlog.get_logger()
 
@@ -67,10 +66,6 @@ def get_decoded_token_state(
 # User OAuth
 ###############################################################################
 
-github_oauth_client = GitHubOAuth2(
-    settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
-    settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
-)
 
 oauth2_authorize_callback = OAuth2AuthorizeCallback(
     github_oauth_client,
@@ -134,10 +129,9 @@ async def user_callback(
             token_data,
         )
     except ResourceAlreadyExists:
-        existing = await github_repository_benefit_user_service.get_oauth_account(
-            session, auth.user
+        await github_repository_benefit_user_service.update_oauth_account(
+            session, auth.user, token_data
         )
-        await github_repository_benefit_user_service.update_user_info(session, existing)
 
     return_to = state["return_to"]
     redirect_url = get_safe_return_url(add_query_parameters(return_to))

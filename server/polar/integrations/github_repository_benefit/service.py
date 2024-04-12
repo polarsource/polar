@@ -1,7 +1,5 @@
-import time
-
 import structlog
-from githubkit import GitHub
+from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.oauth2 import OAuth2Token
 
 import polar.integrations.github.client as github
@@ -23,6 +21,11 @@ from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 
 log: Logger = structlog.get_logger()
+
+github_oauth_client = GitHubOAuth2(
+    settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
+    settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
+)
 
 
 class GitHubError(PolarError): ...
@@ -92,29 +95,34 @@ class GitHubRepositoryBenefitUserService:
 
         return oauth_account
 
-    async def update_user_info(
-        self,
-        session: AsyncSession,
-        oauth_account: OAuthAccount,
+    async def update_oauth_account(
+        self, session: AsyncSession, user: User, oauth2_token_data: OAuth2Token
     ) -> OAuthAccount:
-        client = github.get_client(access_token=oauth_account.access_token)
+        account = user.get_oauth_account(OAuthPlatform.github_repository_benefit)
+        if account is None:
+            raise GitHubRepositoryBenefitAccountNotConnected(user)
+
+        account.access_token = oauth2_token_data["access_token"]
+        account.expires_at = oauth2_token_data["expires_at"]
+        account.refresh_token = oauth2_token_data["refresh_token"]
+
+        client = github.get_client(access_token=account.access_token)
         user_data = await client.rest.users.async_get_authenticated()
         github.ensure_expected_response(user_data)
 
-        oauth_account.account_username = user_data.parsed_data.login
-
         (
             account_email,
-            email_is_verified,
+            _,
         ) = await github_user_service.fetch_authenticated_user_primary_email(
             client=client
         )
 
-        oauth_account.account_email = account_email
+        account.account_email = account_email
+        account.account_username = user_data.parsed_data.login
 
-        session.add(oauth_account)
+        session.add(account)
 
-        return oauth_account
+        return account
 
     async def get_oauth_account(
         self, session: AsyncSession, user: User
@@ -123,39 +131,24 @@ class GitHubRepositoryBenefitUserService:
         if account is None:
             raise GitHubRepositoryBenefitAccountNotConnected(user)
 
-        # if token expires within 30 minutes, refresh it
-        if (
-            account.expires_at
-            and account.refresh_token
-            and account.expires_at <= (time.time() + 60 * 30)
-        ):
-            refresh = await GitHub().arequest(
-                method="POST",
-                url="https://github.com/login/oauth/access_token",
-                params={
-                    "client_id": settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
-                    "client_secret": settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
-                    "refresh_token": account.refresh_token,
-                    "grant_type": "refresh_token",
-                },
-                headers={"Accept": "application/json"},
-                response_model=github.RefreshAccessToken,
+        if account.is_access_token_expired():
+            if account.refresh_token is None:
+                raise GitHubRepositoryBenefitExpiredAccessToken(user)
+
+            refreshed_token_data = await github_oauth_client.refresh_token(
+                account.refresh_token
             )
+            account.access_token = refreshed_token_data["access_token"]
+            account.expires_at = refreshed_token_data["expires_at"]
+            account.refresh_token = refreshed_token_data["refresh_token"]
+            session.add(account)
+            await session.flush()
 
-            if refresh:
-                r = refresh.parsed_data
-                # update
-                account.access_token = r.access_token
-                account.expires_at = int(time.time()) + r.expires_in
-                if r.refresh_token:
-                    account.refresh_token = r.refresh_token
-
-                log.info(
-                    "github.auth.refresh.succeeded",
-                    user_id=account.user_id,
-                    platform=account.platform,
-                )
-                session.add(account)
+            log.info(
+                "github.auth.refresh.succeeded",
+                user_id=account.user_id,
+                platform=account.platform,
+            )
 
         return account
 

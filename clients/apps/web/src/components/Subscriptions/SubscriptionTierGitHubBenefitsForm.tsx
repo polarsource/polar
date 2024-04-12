@@ -164,39 +164,24 @@ export const GitHubRepositoryBenefitForm = ({
     (o) => o.platform === OAuthPlatform.GITHUB_REPOSITORY_BENEFIT,
   )
 
-  const [installationWindow, setInstallationWindow] = useState<Window | null>(
-    null,
-  )
+  const emitter = useSSE()
+
   const openInstallationURL = useCallback(() => {
     const installationWindow = window.open(
       `${defaultApiUrl}/api/v1/integrations/github_repository_benefit/installation/install`,
       '_blank',
     )
-    setInstallationWindow(installationWindow)
-  }, [])
 
-  const emitter = useSSE()
-
-  useEffect(() => {
-    const onAppInstalled = () => {
-      if (installationWindow) {
-        installationWindow.close()
-        setInstallationWindow(null)
-      }
+    const closeWindowListener = () => {
+      installationWindow && installationWindow.close()
       refetchRepositories()
     }
 
-    emitter.on(
+    emitter.once(
       'integrations.github_repository_benefit.installed',
-      onAppInstalled,
+      closeWindowListener,
     )
-    return () => {
-      emitter.off(
-        'integrations.github_repository_benefit.installed',
-        onAppInstalled,
-      )
-    }
-  }, [emitter, installationWindow])
+  }, [emitter, refetchRepositories])
 
   type GitHubInvitesBenefitRepositoryWithKey =
     GitHubInvitesBenefitRepository & {
@@ -222,12 +207,15 @@ export const GitHubRepositoryBenefitForm = ({
     GitHubInvitesBenefitRepositoryWithKey | undefined
   >()
 
-  const onRepositoryChange = (key: string) => {
-    const repo = repos.find((r) => r.key == key)
-    setSelectedRepository(repo)
-    setValue('properties.repository_owner', repo?.repository_owner)
-    setValue('properties.repository_name', repo?.repository_name)
-  }
+  const onRepositoryChange = useCallback(
+    (key: string) => {
+      const repo = repos.find((r) => r.key == key)
+      setSelectedRepository(repo)
+      setValue('properties.repository_owner', repo?.repository_owner)
+      setValue('properties.repository_name', repo?.repository_name)
+    },
+    [repos, setValue],
+  )
 
   const formRepoOwner = watch('properties.repository_owner')
 
@@ -244,7 +232,13 @@ export const GitHubRepositoryBenefitForm = ({
     } else {
       clearErrors('properties.repository_owner')
     }
-  }, [formRepoOwner, repositories, canConfigurePersonalOrg])
+  }, [
+    formRepoOwner,
+    repositories,
+    canConfigurePersonalOrg,
+    clearErrors,
+    setError,
+  ])
 
   // Set selected on load
   const didSetOnLoad = useRef(false)
@@ -263,7 +257,13 @@ export const GitHubRepositoryBenefitForm = ({
         onRepositoryChange(key)
       }
     }
-  }, [repositories?.repositories, isFetchingRepositories])
+  }, [
+    repositories?.repositories,
+    isFetchingRepositories,
+    defaultValues,
+    onRepositoryChange,
+    repos,
+  ])
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()
@@ -274,7 +274,7 @@ export const GitHubRepositoryBenefitForm = ({
     }
     const returnTo = `${pathname}?${searchParams}`
     return getGitHubRepositoryBenefitAuthorizeURL({ returnTo })
-  }, [pathname, description])
+  }, [pathname, description, update])
 
   // Show configuration for deprecated integration setup
   // Does not allow edits
@@ -346,7 +346,7 @@ export const GitHubRepositoryBenefitForm = ({
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      update
+                      update && defaultValues && defaultValues.properties
                         ? `${defaultValues?.properties?.repository_owner}/${defaultValues?.properties?.repository_name}`
                         : isFetchingRepositories
                           ? 'Loading repositories'

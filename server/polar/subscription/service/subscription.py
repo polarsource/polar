@@ -222,7 +222,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             query = query.where(Subscription.deleted_at.is_(None))
 
         query = query.options(
-            joinedload(Subscription.user), joinedload(Subscription.organization)
+            joinedload(Subscription.user),
+            joinedload(Subscription.organization),
+            joinedload(Subscription.price),
+            joinedload(Subscription.subscription_tier),
         )
 
         res = await session.execute(query)

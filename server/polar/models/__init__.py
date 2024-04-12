@@ -35,6 +35,9 @@ from .user import OAuthAccount, User
 from .user_notification import UserNotification
 from .user_organization import UserOrganization
 from .user_organization_settings import UserOrganizationSettings
+from .webhook_delivery import WebhookDelivery
+from .webhook_endpoint import WebhookEndpoint
+from .webhook_event import WebhookEvent
 from .webhook_notifications import WebhookNotification
 
 __all__ = [
@@ -54,11 +57,11 @@ __all__ = [
     "MagicLink",
     "Model",
     "Notification",
-    "OAuthAccount",
     "OAuth2AuthorizationCode",
     "OAuth2Client",
     "OAuth2Grant",
     "OAuth2Token",
+    "OAuthAccount",
     "Organization",
     "PersonalAccessToken",
     "Pledge",
@@ -70,11 +73,14 @@ __all__ = [
     "SubscriptionTierBenefit",
     "SubscriptionTierPrice",
     "TimestampedModel",
-    "Transaction",
     "Traffic",
+    "Transaction",
     "User",
     "UserNotification",
     "UserOrganization",
     "UserOrganizationSettings",
+    "WebhookDelivery",
+    "WebhookEndpoint",
+    "WebhookEvent",
     "WebhookNotification",
 ]

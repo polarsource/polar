@@ -4,6 +4,7 @@ from typing import cast
 import pytest
 
 from polar.article.service import article_service
+from polar.benefit.benefits.articles import BenefitArticlesService
 from polar.benefit.service import benefit as benefit_service
 from polar.models import Organization, Subscription, SubscriptionTier, User
 from polar.models.benefit import (
@@ -12,9 +13,6 @@ from polar.models.benefit import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from polar.subscription.service.benefits.articles import (
-    SubscriptionBenefitArticlesService,
-)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -73,7 +71,7 @@ async def test_concurrent_subscription_upgrade(
         assert _benefit is not None
         assert _subscription is not None
         assert _user is not None
-        service = SubscriptionBenefitArticlesService(session)
+        service = BenefitArticlesService(session)
         await service.grant(_benefit, _subscription, _user, {})
 
     async def do_revoke() -> None:
@@ -85,7 +83,7 @@ async def test_concurrent_subscription_upgrade(
         assert _benefit is not None
         assert _subscription is not None
         assert _user is not None
-        service = SubscriptionBenefitArticlesService(session)
+        service = BenefitArticlesService(session)
         await service.revoke(_benefit, _subscription, _user, {})
 
     # Mimic a race condition by running them concurrently

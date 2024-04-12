@@ -28,13 +28,10 @@ from polar.models.benefit import (
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 
-from ..subscription.service.benefits import (
-    SubscriptionBenefitPropertiesValidationError,
-    get_benefit_service,
-)
 from ..subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
+from .benefits import BenefitPropertiesValidationError, get_benefit_service
 from .schemas import (
     BenefitCreate,
     BenefitUpdate,
@@ -165,7 +162,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             properties = await benefit_service.validate_properties(
                 user, create_schema.properties.model_dump(mode="json", by_alias=True)
             )
-        except SubscriptionBenefitPropertiesValidationError as e:
+        except BenefitPropertiesValidationError as e:
             raise e.to_request_validation_error(("body", create_schema.type))
 
         benefit = Benefit(
@@ -212,7 +209,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
                 update_dict["properties"] = await benefit_service.validate_properties(
                     user, properties_update.model_dump(mode="json", by_alias=True)
                 )
-            except SubscriptionBenefitPropertiesValidationError as e:
+            except BenefitPropertiesValidationError as e:
                 raise e.to_request_validation_error(("body", benefit.type))
 
         previous_properties = benefit.properties

@@ -9,12 +9,10 @@ from polar.models.benefit import (
     BenefitAdsProperties,
 )
 
-from .base import SubscriptionBenefitServiceProtocol
+from .base import BenefitServiceProtocol
 
 
-class SubscriptionBenefitAdsService(
-    SubscriptionBenefitServiceProtocol[BenefitAds, BenefitAdsProperties]
-):
+class BenefitAdsService(BenefitServiceProtocol[BenefitAds, BenefitAdsProperties]):
     async def grant(
         self,
         benefit: BenefitAds,

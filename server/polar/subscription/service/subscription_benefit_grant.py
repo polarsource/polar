@@ -3,6 +3,7 @@ from collections.abc import Sequence
 import structlog
 from sqlalchemy import select
 
+from polar.benefit.benefits import BenefitPreconditionError, get_benefit_service
 from polar.eventstream.service import publish as eventstream_publish
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
@@ -28,11 +29,6 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
-
-from .benefits import (
-    SubscriptionBenefitPreconditionError,
-    get_benefit_service,
-)
 
 log: Logger = structlog.get_logger()
 
@@ -70,7 +66,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
                 grant.properties,
                 attempt=attempt,
             )
-        except SubscriptionBenefitPreconditionError as e:
+        except BenefitPreconditionError as e:
             await self.handle_precondition_error(
                 session, e, subscription, user, benefit
             )
@@ -191,7 +187,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
                 update=True,
                 attempt=attempt,
             )
-        except SubscriptionBenefitPreconditionError as e:
+        except BenefitPreconditionError as e:
             await self.handle_precondition_error(
                 session, e, subscription, user, benefit
             )
@@ -247,7 +243,7 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
     async def handle_precondition_error(
         self,
         session: AsyncSession,
-        error: SubscriptionBenefitPreconditionError,
+        error: BenefitPreconditionError,
         subscription: Subscription,
         user: User,
         benefit: Benefit,

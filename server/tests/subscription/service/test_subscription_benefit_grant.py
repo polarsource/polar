@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.benefit.benefits import BenefitPreconditionError, BenefitServiceProtocol
 from polar.models import (
     Benefit,
     Subscription,
@@ -14,10 +15,6 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import NotificationsService
 from polar.postgres import AsyncSession
-from polar.subscription.service.benefits import (
-    SubscriptionBenefitPreconditionError,
-    SubscriptionBenefitServiceProtocol,
-)
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.subscription.service.subscription_benefit_grant import (  # type: ignore[attr-defined]
     notification_service,
@@ -30,11 +27,11 @@ from tests.fixtures.database import SaveFixture
 
 @pytest.fixture(autouse=True)
 def benefit_service_mock(mocker: MockerFixture) -> MagicMock:
-    service_mock = MagicMock(spec=SubscriptionBenefitServiceProtocol)
+    service_mock = MagicMock(spec=BenefitServiceProtocol)
     service_mock.grant.return_value = {}
     service_mock.revoke.return_value = {}
     mock = mocker.patch(
-        "polar.subscription.service.subscription_benefit_grant" ".get_benefit_service"
+        "polar.subscription.service.subscription_benefit_grant.get_benefit_service"
     )
     mock.return_value = service_mock
     return service_mock
@@ -129,9 +126,7 @@ class TestGrantBenefit:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.grant.side_effect = SubscriptionBenefitPreconditionError(
-            "Error"
-        )
+        benefit_service_mock.grant.side_effect = BenefitPreconditionError("Error")
 
         # then
         session.expunge_all()
@@ -409,9 +404,7 @@ class TestUpdateBenefitGrant:
         grant.set_granted()
         await save_fixture(grant)
 
-        benefit_service_mock.grant.side_effect = SubscriptionBenefitPreconditionError(
-            "Error"
-        )
+        benefit_service_mock.grant.side_effect = BenefitPreconditionError("Error")
 
         # then
         session.expunge_all()
@@ -543,7 +536,7 @@ class TestHandlePreconditionError:
         user: User,
         notification_send_to_user_mock: MagicMock,
     ) -> None:
-        error = SubscriptionBenefitPreconditionError("Error")
+        error = BenefitPreconditionError("Error")
 
         # then
         session.expunge_all()
@@ -562,7 +555,7 @@ class TestHandlePreconditionError:
         user: User,
         notification_send_to_user_mock: MagicMock,
     ) -> None:
-        error = SubscriptionBenefitPreconditionError(
+        error = BenefitPreconditionError(
             "Error",
             payload=BenefitPreconditionErrorNotificationContextualPayload(
                 subject_template="Action required for granting {subscription_benefit_name}",

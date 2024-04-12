@@ -17,29 +17,27 @@ from polar.notifications.notification import (
 from polar.postgres import AsyncSession
 
 
-class SubscriptionBenefitServiceError(PolarError): ...
+class BenefitServiceError(PolarError): ...
 
 
-class SubscriptionBenefitPropertyValidationError(TypedDict):
+class BenefitPropertyValidationError(TypedDict):
     type: LiteralString
     message: LiteralString
     loc: tuple[int | str, ...]
     input: Any
 
 
-class SubscriptionBenefitPropertiesValidationError(SubscriptionBenefitServiceError):
+class BenefitPropertiesValidationError(BenefitServiceError):
     """
-    Subscription properties validation error.
+    Benefit properties validation error.
     """
 
-    errors: list[SubscriptionBenefitPropertyValidationError]
+    errors: list[BenefitPropertyValidationError]
     """List of errors."""
 
-    def __init__(
-        self, errors: list[SubscriptionBenefitPropertyValidationError]
-    ) -> None:
+    def __init__(self, errors: list[BenefitPropertyValidationError]) -> None:
         self.errors = errors
-        message = "Subscription benefit properties are invalid."
+        message = "Benefit properties are invalid."
         super().__init__(message, 422)
 
     def to_request_validation_error(
@@ -60,7 +58,7 @@ class SubscriptionBenefitPropertiesValidationError(SubscriptionBenefitServiceErr
         return RequestValidationError(pydantic_error.errors())
 
 
-class SubscriptionBenefitRetriableError(SubscriptionBenefitServiceError):
+class BenefitRetriableError(BenefitServiceError):
     """
     A retriable error occured while granting or revoking the benefit.
     """
@@ -74,7 +72,7 @@ class SubscriptionBenefitRetriableError(SubscriptionBenefitServiceError):
         super().__init__(message)
 
 
-class SubscriptionBenefitPreconditionError(SubscriptionBenefitServiceError):
+class BenefitPreconditionError(BenefitServiceError):
     """
     Some conditions are missing to grant the benefit.
 
@@ -101,7 +99,7 @@ B = TypeVar("B", bound=Benefit, contravariant=True)
 BP = TypeVar("BP", bound=BenefitProperties)
 
 
-class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
+class BenefitServiceProtocol(Protocol[B, BP]):
     """
     Protocol that should be implemented by each benefit type service.
 
@@ -127,7 +125,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
         Executes the logic to grant a benefit to a backer.
 
         Args:
-            benefit: The SubscriptionBenefit to grant.
+            benefit: The Benefit to grant.
             subscription: The Subscription we should grant this benefit to.
             user: The backer user.
             grant_properties: Stored properties for this specific benefit and user.
@@ -145,10 +143,9 @@ class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
             you want to keep.**
 
         Raises:
-            SubscriptionBenefitRetriableError: An temporary error occured,
+            BenefitRetriableError: An temporary error occured,
             we should be able to retry later.
-            SubscriptionBenefitPreconditionError: Some conditions are missing
-            to grant the benefit.
+            BenefitPreconditionError: Some conditions are missing to grant the benefit.
         """
         ...
 
@@ -165,7 +162,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
         Executes the logic to revoke a benefit from a backer.
 
         Args:
-            benefit: The SubscriptionBenefit to revoke.
+            benefit: The Benefit to revoke.
             subscription: The Subscription we should revoke this benefit from.
             user: The backer user.
             grant_properties: Stored properties for this specific benefit and user.
@@ -180,7 +177,7 @@ class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
             you want to keep.**
 
         Raises:
-            SubscriptionBenefitRetriableError: An temporary error occured,
+            BenefitRetriableError: An temporary error occured,
             we should be able to retry later.
         """
         ...
@@ -194,8 +191,8 @@ class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
         method will be called with the `update` argument set to `True`.
 
         Args:
-            benefit: The updated SubscriptionBenefit.
-            previous_properties: The SubscriptionBenefit properties before the update.
+            benefit: The updated Benefit.
+            previous_properties: The Benefit properties before the update.
             Use it to check which fields have been updated.
         """
         ...
@@ -211,11 +208,11 @@ class SubscriptionBenefitServiceProtocol(Protocol[B, BP]):
             properties: The input properties to validate.
 
         Returns:
-            The validated SubscriptionBenefit properties.
+            The validated Benefit properties.
             It can be different from the input if needed.
 
         Raises:
-            SubscriptionBenefitPropertiesValidationError: The subscription benefit
+            BenefitPropertiesValidationError: The subscription benefit
             properties are invalid.
         """
         ...

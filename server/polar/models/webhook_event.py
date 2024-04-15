@@ -27,11 +27,6 @@ class WebhookEvent(Model):
         TIMESTAMP(timezone=True), nullable=False, default=utc_now
     )
 
-    sent_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=True,
-    )
-
     webhook_endpoint_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("webhook_endpoints.id"),
@@ -43,7 +38,7 @@ class WebhookEvent(Model):
     def webhook_endpoint(cls) -> Mapped[WebhookEndpoint]:
         return relationship("WebhookEndpoint", lazy="raise")
 
-    http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     succeeded: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 

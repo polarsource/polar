@@ -125,7 +125,7 @@ class WebhookService:
                 webhook_endpoint_id=e.id, payload=payload.model_dump_json()
             )
             session.add(event)
-            await session.commit()
+            await session.flush()
 
             enqueue_job("webhook_event.send", webhook_event_id=event.id)
 

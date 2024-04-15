@@ -5,7 +5,7 @@ from arq import Retry
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.benefit.benefits import BenefitRetriableError
-from polar.benefit.service import benefit as benefit_service
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.money import get_cents_in_dollar_string

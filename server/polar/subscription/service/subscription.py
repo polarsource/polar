@@ -25,6 +25,7 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
@@ -78,7 +79,6 @@ from polar.user_organization.service import (
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 
-from ...benefit.service import benefit as benefit_service
 from ..schemas import (
     FreeSubscriptionCreate,
     SubscriptionsStatisticsPeriod,

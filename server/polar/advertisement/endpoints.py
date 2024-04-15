@@ -5,7 +5,7 @@ from fastapi import Depends
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
-from polar.benefit.service import benefit as benefit_service
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unauthorized
 from polar.integrations.github.client import NotFound
 from polar.kit.pagination import ListResource, Pagination

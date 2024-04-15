@@ -27,15 +27,12 @@ from polar.models.benefit import (
 )
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
-
-from ..subscription.service.subscription_benefit_grant import (
+from polar.subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
-from .benefits import BenefitPropertiesValidationError, get_benefit_service
-from .schemas import (
-    BenefitCreate,
-    BenefitUpdate,
-)
+
+from ..benefits import BenefitPropertiesValidationError, get_benefit_service
+from ..schemas import BenefitCreate, BenefitUpdate
 
 
 class BenefitError(PolarError): ...

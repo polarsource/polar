@@ -3,8 +3,8 @@ import uuid
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.benefit.service import BenefitService
-from polar.benefit.service import benefit as benefit_service
+from polar.benefit.service.benefit import BenefitService
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Benefit, Organization
 from polar.models.benefit import BenefitType

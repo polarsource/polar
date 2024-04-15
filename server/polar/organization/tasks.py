@@ -1,7 +1,7 @@
 import uuid
 
 from polar.account.service import account as account_service
-from polar.benefit.service import benefit as benefit_service
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.postgres import AsyncSession

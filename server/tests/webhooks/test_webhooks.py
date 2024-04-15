@@ -1,5 +1,6 @@
 import httpx
 import pytest
+from arq import Retry
 from pytest_mock import MockerFixture
 
 from polar.kit.db.postgres import AsyncSession
@@ -9,7 +10,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.webhook.service import WebhookEventType, webhook_service
-from polar.webhook.tasks import webhook_event_send
+from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.database import SaveFixture
 
@@ -86,4 +87,51 @@ async def test_webhook_delivery(
         job_context,
         webhook_event_id=event.id,
         polar_context=PolarWorkerContext(),
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_webhook_delivery_500(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    mocker: MockerFixture,
+    organization: Organization,
+    job_context: JobContext,
+) -> None:
+    def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
+        return httpx.Response(
+            status_code=500,
+        )
+
+    mocker.patch("httpx.post", new=httpx_post)
+
+    endpoint = WebhookEndpoint(
+        url="https://test.example.com/hook",
+        organization_id=organization.id,
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    await save_fixture(event)
+
+    # then
+    session.expunge_all()
+
+    # fails 4 times
+    for job_try in range(5):
+        with pytest.raises(Retry):
+            job_context["job_try"] = job_try
+            await _webhook_event_send(
+                session=session,
+                ctx=job_context,
+                webhook_event_id=event.id,
+            )
+
+    # does not raise on the 5th attempt
+    job_context["job_try"] = 5
+    await _webhook_event_send(
+        session=session,
+        ctx=job_context,
+        webhook_event_id=event.id,
     )

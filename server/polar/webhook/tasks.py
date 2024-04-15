@@ -3,9 +3,12 @@ from uuid import UUID
 
 import httpx
 import structlog
+from arq import Retry
 
+from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.models.webhook_delivery import WebhookDelivery
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,
@@ -17,35 +20,71 @@ from .service import webhook_service
 
 log: Logger = structlog.get_logger()
 
+MAX_RETRIES = 5
+DELAY = 10
+
 
 @task("webhook_event.send")
 async def webhook_event_send(
     ctx: JobContext,
     webhook_event_id: UUID,
-    # user_id: UUID,
-    # is_test: bool,
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        event = await webhook_service.get_event(session, webhook_event_id)
-        if not event:
-            return
+        return await _webhook_event_send(
+            session, ctx=ctx, webhook_event_id=webhook_event_id
+        )
 
-        # TODO: validate URL
 
-        headers: Mapping[str, str] = {
-            "user-agent": "polar.sh webhooks",
-            "webhook-id": str(event.id),
-            "webhook-timestamp": str(int(utc_now().timestamp())),
-            # SIGNATURE
-        }
+async def _webhook_event_send(
+    session: AsyncSession,
+    *,
+    ctx: JobContext,
+    webhook_event_id: UUID,
+) -> None:
+    event = await webhook_service.get_event(session, webhook_event_id)
+    if not event:
+        raise Exception(f"webhook event not found id={webhook_event_id}")
 
-        r = httpx.post(event.webhook_endpoint.url, json=event.payload, headers=headers)
+    # TODO: validate URL
 
-        if r.status_code >= 200 and r.status_code <= 299:
-            event.succeeded = True
-        else:
-            event.succeeded = False
+    headers: Mapping[str, str] = {
+        "user-agent": "polar.sh webhooks",
+        "webhook-id": str(event.id),
+        "webhook-timestamp": str(int(utc_now().timestamp())),
+        # SIGNATURE
+    }
 
-        event.http_code = r.status_code
+    r = httpx.post(
+        event.webhook_endpoint.url,
+        json=event.payload,
+        headers=headers,
+        timeout=20.0,
+    )
+
+    succeeded = r.status_code >= 200 and r.status_code <= 299
+
+    if succeeded:
+        event.succeeded = True
+
+    event.last_http_code = r.status_code
+
+    delivery = WebhookDelivery(
+        webhook_event_id=webhook_event_id,
+        webhook_endpoint_id=event.webhook_endpoint_id,
+        http_code=r.status_code,
+        succeeded=succeeded,
+    )
+    session.add(delivery)
+
+    if not succeeded and ctx["job_try"] >= MAX_RETRIES:
+        # Permanent failure
+        event.succeeded = False
         session.add(event)
+        return
+
+    # Retry
+    if not succeeded:
+        raise Retry(DELAY ** ctx["job_try"])
+
+    # Successful

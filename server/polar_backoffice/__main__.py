@@ -19,6 +19,7 @@ EnvVars: TypeAlias = dict[str, str]
 
 IGNORED_ENVIRONMENT_VARIABLES = {
     "POLAR_JWKS",
+    "POLAR_CURRENT_JWK_KID",
 }
 
 

@@ -14,8 +14,8 @@ import {
   CardTitle,
 } from 'polarkit/components/ui/atoms/card'
 import { useCallback, useState } from 'react'
+import { resolveBenefitIcon } from '../Benefit/utils'
 import SubscriptionTierCelebration from './SubscriptionTierCelebration'
-import { resolveBenefitIcon } from './utils'
 
 export const SubscriptionSuccess = (props: {
   subscribeSession: SubscribeSession

@@ -1,5 +1,5 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useSubscriptionBenefits } from '@/hooks/queries'
+import { useBenefits } from '@/hooks/queries'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -187,7 +187,7 @@ const Sidebar = () => {
 
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  const benefits = useSubscriptionBenefits(org?.name)
+  const benefits = useBenefits(org?.name)
   const benefitItems = benefits.data?.items ?? []
   const adBenefits = benefitItems.filter((b) => b.type === 'ads')
 

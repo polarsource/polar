@@ -3,8 +3,8 @@
 import revalidate from '@/app/actions'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
+  useBenefits,
   useCreateSubscriptionTier,
-  useSubscriptionBenefits,
   useSubscriptionTiers,
   useUpdateSubscriptionTierBenefits,
 } from '@/hooks/queries'
@@ -14,7 +14,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import {
   Organization,
   ResponseError,
-  SubscriptionTierCreate,
+  SubscriptionTierCreate as SubscriptionTierCreateSchema,
   SubscriptionTierCreateTypeEnum,
   SubscriptionTierPrice,
   ValidationError,
@@ -25,12 +25,11 @@ import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Benefit } from '../Benefit/Benefit'
+import { Benefit, isPremiumArticlesBenefit } from '../Benefit/utils'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
 import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
-import { SubscriptionBenefit, isPremiumArticlesBenefit } from './utils'
 
 interface SubscriptionTierCreatePageProps {
   type?: SubscriptionTierCreateTypeEnum
@@ -41,7 +40,7 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
   type,
   organization,
 }) => {
-  const organizationBenefits = useSubscriptionBenefits(organization.name)
+  const organizationBenefits = useBenefits(organization.name)
 
   if (!organizationBenefits.data) {
     return null
@@ -61,7 +60,7 @@ export default SubscriptionTierCreatePage
 interface SubscriptionTierCreateProps {
   type?: SubscriptionTierCreateTypeEnum
   organization: Organization
-  organizationBenefits: SubscriptionBenefit[]
+  organizationBenefits: Benefit[]
 }
 
 const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
@@ -87,7 +86,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 
   const shouldBeHighlighted = highlightedTiers.length < 1
 
-  const form = useForm<SubscriptionTierCreate>({
+  const form = useForm<SubscriptionTierCreateSchema>({
     defaultValues: {
       ...(type ? { type } : {}),
       ...(savedFormValues ? savedFormValues : {}),
@@ -114,7 +113,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   )
 
   const onSubmit = useCallback(
-    async (subscriptionTierCreate: SubscriptionTierCreate) => {
+    async (subscriptionTierCreate: SubscriptionTierCreateSchema) => {
       try {
         const tier = await createSubscriptionTier.mutateAsync(
           subscriptionTierCreate,

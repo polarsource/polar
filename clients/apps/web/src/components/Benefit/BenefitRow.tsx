@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useBenefitActions } from './useBenefitAction'
 import {
+  BenefitSubscriber,
   benefitsDisplayNames,
   resolveBenefitIcon,
-} from '../Subscriptions/utils'
-import { BenefitSubscriber } from './Benefit'
-import { useBenefitActions } from './useBenefitAction'
+} from './utils'
 
 interface BenefitRowProps {
   benefit: BenefitSubscriber

@@ -1,22 +1,22 @@
 import { queryClient } from '@/utils/api'
-import { SubscriptionBenefitType } from '@polar-sh/sdk'
+import { BenefitType } from '@polar-sh/sdk'
 
 export const onSubscriptionBenefitGrantGranted = async (payload: {
   subscription_benefit_id: string
-  subscription_benefit_type: SubscriptionBenefitType
+  benefit_type: BenefitType
 }) => {
   // Refresh articles feed when an articles benefit is granted
-  if (payload.subscription_benefit_type === 'articles') {
+  if (payload.benefit_type === 'articles') {
     await queryClient.invalidateQueries({ queryKey: ['article', 'list'] })
   }
 }
 
 export const onSubscriptionBenefitGrantRevoked = async (payload: {
   subscription_benefit_id: string
-  subscription_benefit_type: SubscriptionBenefitType
+  benefit_type: BenefitType
 }) => {
   // Refresh articles feed when an articles benefit is revoked
-  if (payload.subscription_benefit_type === 'articles') {
+  if (payload.benefit_type === 'articles') {
     await queryClient.invalidateQueries({ queryKey: ['article', 'list'] })
   }
 }

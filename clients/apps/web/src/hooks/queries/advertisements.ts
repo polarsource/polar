@@ -23,7 +23,7 @@ export const useAdvertisementCampaigns = (
     queryFn: () =>
       api.advertisements.searchCampaigns({
         subscriptionId: subscription_id,
-        subscriptionBenefitId: benefit_id,
+        benefitId: benefit_id,
       }),
     retry: defaultRetry,
   })
@@ -33,7 +33,7 @@ export const useAdvertisementDisplays = (benefit_id: string) =>
     queryKey: ['advertisements', 'displays', benefit_id],
     queryFn: () =>
       api.advertisements.searchDisplay({
-        subscriptionBenefitId: benefit_id,
+        benefitId: benefit_id,
       }),
     retry: defaultRetry,
   })

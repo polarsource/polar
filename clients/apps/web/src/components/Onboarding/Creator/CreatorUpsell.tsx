@@ -1,6 +1,6 @@
+import { DiscordIcon } from '@/components/Benefit/utils'
 import LogoIcon from '@/components/Brand/LogoIcon'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
-import { DiscordIcon } from '@/components/Subscriptions/utils'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useOrganizationArticles, useSubscriptionTiers } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'

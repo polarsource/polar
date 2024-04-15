@@ -6,12 +6,12 @@ import { defaultApiUrl } from '@/utils/domain'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { RefreshOutlined } from '@mui/icons-material'
 import {
+  BenefitGitHubRepositoryCreate,
+  BenefitGitHubRepositoryPropertiesPermissionEnum,
+  BenefitType,
   GitHubInvitesBenefitOrganization,
   GitHubInvitesBenefitRepository,
   OAuthPlatform,
-  SubscriptionBenefitGitHubRepositoryCreate,
-  SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum,
-  SubscriptionBenefitType,
 } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -41,7 +41,7 @@ interface GitHubRepositoryBenefitFormProps {
 const GitHubRepositoryBenefitFormForDeprecatedPolarApp = () => {
   const {
     formState: { defaultValues },
-  } = useFormContext<SubscriptionBenefitGitHubRepositoryCreate>()
+  } = useFormContext<BenefitGitHubRepositoryCreate>()
 
   return (
     <>
@@ -106,19 +106,19 @@ const GitHubRepositoryBenefitFormForDeprecatedPolarApp = () => {
                 <SelectItem value="role">
                   {
                     {
-                      [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.PULL]:
+                      [BenefitGitHubRepositoryPropertiesPermissionEnum.PULL]:
                         'Read',
-                      [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.TRIAGE]:
+                      [BenefitGitHubRepositoryPropertiesPermissionEnum.TRIAGE]:
                         'Triage',
-                      [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.PUSH]:
+                      [BenefitGitHubRepositoryPropertiesPermissionEnum.PUSH]:
                         'Write',
-                      [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.MAINTAIN]:
+                      [BenefitGitHubRepositoryPropertiesPermissionEnum.MAINTAIN]:
                         'Maintain',
-                      [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.ADMIN]:
+                      [BenefitGitHubRepositoryPropertiesPermissionEnum.ADMIN]:
                         'Admin',
                     }[
                       defaultValues?.properties?.permission ??
-                        SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.PULL
+                        BenefitGitHubRepositoryPropertiesPermissionEnum.PULL
                     ]
                   }
                 </SelectItem>
@@ -142,7 +142,7 @@ export const GitHubRepositoryBenefitForm = ({
     setValue,
     setError,
     clearErrors,
-  } = useFormContext<SubscriptionBenefitGitHubRepositoryCreate>()
+  } = useFormContext<BenefitGitHubRepositoryCreate>()
 
   const canConfigurePersonalOrg = isFeatureEnabled(
     'github-benefit-personal-org',
@@ -269,7 +269,7 @@ export const GitHubRepositoryBenefitForm = ({
     const searchParams = new URLSearchParams()
     if (!update) {
       searchParams.set('create_benefit', 'true')
-      searchParams.set('type', SubscriptionBenefitType.GITHUB_REPOSITORY)
+      searchParams.set('type', BenefitType.GITHUB_REPOSITORY)
       searchParams.set('description', description)
     }
     const returnTo = `${pathname}?${searchParams}`
@@ -456,20 +456,20 @@ export const GitHubRepositoryBenefitForm = ({
                   </SelectTrigger>
                   <SelectContent>
                     {Object.values(
-                      SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum,
+                      BenefitGitHubRepositoryPropertiesPermissionEnum,
                     ).map((permission) => (
                       <SelectItem key={permission} value={permission}>
                         {
                           {
-                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.PULL]:
+                            [BenefitGitHubRepositoryPropertiesPermissionEnum.PULL]:
                               'Read',
-                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.TRIAGE]:
+                            [BenefitGitHubRepositoryPropertiesPermissionEnum.TRIAGE]:
                               'Triage',
-                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.PUSH]:
+                            [BenefitGitHubRepositoryPropertiesPermissionEnum.PUSH]:
                               'Write',
-                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.MAINTAIN]:
+                            [BenefitGitHubRepositoryPropertiesPermissionEnum.MAINTAIN]:
                               'Maintain',
-                            [SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum.ADMIN]:
+                            [BenefitGitHubRepositoryPropertiesPermissionEnum.ADMIN]:
                               'Admin',
                           }[permission]
                         }

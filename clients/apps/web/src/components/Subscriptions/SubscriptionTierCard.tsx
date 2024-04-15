@@ -23,8 +23,9 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { resolveBenefitIcon } from '../Benefit/utils'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
-import { getSubscriptionColorByType, resolveBenefitIcon } from './utils'
+import { getSubscriptionColorByType } from './utils'
 
 export interface SubscriptionTierCardProps {
   subscriptionTier: Partial<SubscriptionTier>

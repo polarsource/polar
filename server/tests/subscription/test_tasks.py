@@ -5,6 +5,9 @@ from arq import Retry
 from pytest_mock import MockerFixture
 
 from polar.benefit.benefits import BenefitRetriableError
+from polar.benefit.service.benefit_grant import (
+    BenefitGrantService,
+)
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -15,18 +18,15 @@ from polar.models import (
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import SubscriptionService
-from polar.subscription.service.subscription_benefit_grant import (
-    SubscriptionBenefitGrantService,
-)
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     BenefitDoesNotExist,
     SubscriptionBenefitGrantDoesNotExist,
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
     UserDoesNotExist,
+    benefit_grant_service,
     subscription_benefit_delete,
     subscription_benefit_grant,
-    subscription_benefit_grant_service,
     subscription_benefit_precondition_fulfilled,
     subscription_benefit_revoke,
     subscription_benefit_update,
@@ -191,9 +191,9 @@ class TestSubscriptionBenefitGrant:
         session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "grant_benefit",
-            spec=SubscriptionBenefitGrantService.grant_benefit,
+            spec=BenefitGrantService.grant_benefit,
         )
 
         # then
@@ -220,9 +220,9 @@ class TestSubscriptionBenefitGrant:
         session: AsyncSession,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "grant_benefit",
-            spec=SubscriptionBenefitGrantService.grant_benefit,
+            spec=BenefitGrantService.grant_benefit,
         )
         grant_benefit_mock.side_effect = BenefitRetriableError(10)
 
@@ -312,9 +312,9 @@ class TestSubscriptionBenefitRevoke:
         session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "revoke_benefit",
-            spec=SubscriptionBenefitGrantService.revoke_benefit,
+            spec=BenefitGrantService.revoke_benefit,
         )
 
         # then
@@ -341,9 +341,9 @@ class TestSubscriptionBenefitRevoke:
         session: AsyncSession,
     ) -> None:
         revoke_benefit_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "revoke_benefit",
-            spec=SubscriptionBenefitGrantService.revoke_benefit,
+            spec=BenefitGrantService.revoke_benefit,
         )
         revoke_benefit_mock.side_effect = BenefitRetriableError(10)
 
@@ -395,9 +395,9 @@ class TestSubscriptionBenefitUpdate:
         await save_fixture(grant)
 
         update_benefit_grant_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "update_benefit_grant",
-            spec=SubscriptionBenefitGrantService.update_benefit_grant,
+            spec=BenefitGrantService.update_benefit_grant,
         )
 
         # then
@@ -425,9 +425,9 @@ class TestSubscriptionBenefitUpdate:
         await save_fixture(grant)
 
         update_benefit_grant_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "update_benefit_grant",
-            spec=SubscriptionBenefitGrantService.update_benefit_grant,
+            spec=BenefitGrantService.update_benefit_grant,
         )
         update_benefit_grant_mock.side_effect = BenefitRetriableError(10)
 
@@ -475,9 +475,9 @@ class TestSubscriptionBenefitDelete:
         await save_fixture(grant)
 
         delete_benefit_grant_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "delete_benefit_grant",
-            spec=SubscriptionBenefitGrantService.delete_benefit_grant,
+            spec=BenefitGrantService.delete_benefit_grant,
         )
 
         # then
@@ -505,9 +505,9 @@ class TestSubscriptionBenefitDelete:
         await save_fixture(grant)
 
         delete_benefit_grant_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "delete_benefit_grant",
-            spec=SubscriptionBenefitGrantService.delete_benefit_grant,
+            spec=BenefitGrantService.delete_benefit_grant,
         )
         delete_benefit_grant_mock.side_effect = BenefitRetriableError(10)
 
@@ -548,9 +548,9 @@ class TestSubscriptionBenefitPreconditionFulfilled:
         user: User,
     ) -> None:
         enqueue_grants_after_precondition_fulfilled_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "enqueue_grants_after_precondition_fulfilled",
-            spec=SubscriptionBenefitGrantService.enqueue_grants_after_precondition_fulfilled,
+            spec=BenefitGrantService.enqueue_grants_after_precondition_fulfilled,
         )
 
         # then

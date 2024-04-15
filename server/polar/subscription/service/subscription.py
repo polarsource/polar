@@ -26,6 +26,9 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
 from polar.benefit.service.benefit import benefit as benefit_service
+from polar.benefit.service.benefit_grant import (
+    benefit_grant as benefit_grant_service,
+)
 from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
@@ -83,9 +86,6 @@ from ..schemas import (
     FreeSubscriptionCreate,
     SubscriptionsStatisticsPeriod,
     SubscriptionUpgrade,
-)
-from .subscription_benefit_grant import (
-    subscription_benefit_grant as subscription_benefit_grant_service,
 )
 from .subscription_tier import subscription_tier as subscription_tier_service
 from .subscription_tier_price import (
@@ -838,7 +838,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Get granted benefits that are not part of this tier.
         # It happens if the subscription has been upgraded/downgraded.
-        outdated_grants = await subscription_benefit_grant_service.get_outdated_grants(
+        outdated_grants = await benefit_grant_service.get_outdated_grants(
             session, subscription, subscription_tier
         )
 

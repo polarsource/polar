@@ -6,6 +6,9 @@ from fastapi import Depends
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
+from polar.benefit.service.benefit_grant import (
+    benefit_grant as benefit_grant_service,
+)
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unauthorized
 from polar.integrations.github.client import NotFound
 from polar.kit.pagination import ListResource, Pagination
@@ -18,9 +21,6 @@ from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.subscription.service.subscription import (
     subscription as subscription_service,
-)
-from polar.subscription.service.subscription_benefit_grant import (
-    subscription_benefit_grant as subscription_benefit_grant_service,
 )
 from polar.tags.api import Tags
 
@@ -53,10 +53,8 @@ async def _get_grant(
         raise NotFound()
 
     # Verify that the authed user has been granted this benefit for this subscription
-    grant = (
-        await subscription_benefit_grant_service.get_by_subscription_user_and_benefit(
-            session, subscription=subscription, user=user, benefit=benefit
-        )
+    grant = await benefit_grant_service.get_by_subscription_user_and_benefit(
+        session, subscription=subscription, user=user, benefit=benefit
     )
 
     return grant
@@ -263,10 +261,8 @@ async def delete_campaign(
         raise NotFound()
 
     # Verify that the authed user has been granted this benefit for this subscription
-    grant = (
-        await subscription_benefit_grant_service.get_by_subscription_user_and_benefit(
-            session, subscription=subscription, user=auth.user, benefit=benefit
-        )
+    grant = await benefit_grant_service.get_by_subscription_user_and_benefit(
+        session, subscription=subscription, user=auth.user, benefit=benefit
     )
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")

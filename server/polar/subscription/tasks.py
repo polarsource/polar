@@ -6,6 +6,7 @@ from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.benefit.benefits import BenefitRetriableError
 from polar.benefit.service.benefit import benefit as benefit_service
+from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.money import get_cents_in_dollar_string
@@ -16,9 +17,6 @@ from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service.subscription import subscription as subscription_service
-from .service.subscription_benefit_grant import (
-    subscription_benefit_grant as subscription_benefit_grant_service,
-)
 from .service.subscription_tier import subscription_tier as subscription_tier_service
 from .service.subscription_tier_price import (
     subscription_tier_price as subscription_tier_price_service,
@@ -120,7 +118,7 @@ async def subscription_benefit_grant(
             raise BenefitDoesNotExist(benefit_id)
 
         try:
-            await subscription_benefit_grant_service.grant_benefit(
+            await benefit_grant_service.grant_benefit(
                 session, subscription, user, benefit, attempt=ctx["job_try"]
             )
         except BenefitRetriableError as e:
@@ -156,7 +154,7 @@ async def subscription_benefit_revoke(
             raise BenefitDoesNotExist(benefit_id)
 
         try:
-            await subscription_benefit_grant_service.revoke_benefit(
+            await benefit_grant_service.revoke_benefit(
                 session, subscription, user, benefit, attempt=ctx["job_try"]
             )
         except BenefitRetriableError as e:
@@ -177,14 +175,14 @@ async def subscription_benefit_update(
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        subscription_benefit_grant = await subscription_benefit_grant_service.get(
+        subscription_benefit_grant = await benefit_grant_service.get(
             session, subscription_benefit_grant_id
         )
         if subscription_benefit_grant is None:
             raise SubscriptionBenefitGrantDoesNotExist(subscription_benefit_grant_id)
 
         try:
-            await subscription_benefit_grant_service.update_benefit_grant(
+            await benefit_grant_service.update_benefit_grant(
                 session, subscription_benefit_grant, attempt=ctx["job_try"]
             )
         except BenefitRetriableError as e:
@@ -204,14 +202,14 @@ async def subscription_benefit_delete(
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        subscription_benefit_grant = await subscription_benefit_grant_service.get(
+        subscription_benefit_grant = await benefit_grant_service.get(
             session, subscription_benefit_grant_id
         )
         if subscription_benefit_grant is None:
             raise SubscriptionBenefitGrantDoesNotExist(subscription_benefit_grant_id)
 
         try:
-            await subscription_benefit_grant_service.delete_benefit_grant(
+            await benefit_grant_service.delete_benefit_grant(
                 session, subscription_benefit_grant, attempt=ctx["job_try"]
             )
         except BenefitRetriableError as e:
@@ -236,7 +234,7 @@ async def subscription_benefit_precondition_fulfilled(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        await subscription_benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
+        await benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
             session, user, benefit_type
         )
 

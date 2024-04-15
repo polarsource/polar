@@ -33,7 +33,7 @@ from polar.worker import enqueue_job
 log: Logger = structlog.get_logger()
 
 
-class SubscriptionBenefitGrantService(ResourceServiceReader[BenefitGrant]):
+class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def grant_benefit(
         self,
         session: AsyncSession,
@@ -384,4 +384,4 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         return result.scalars().all()
 
 
-subscription_benefit_grant = SubscriptionBenefitGrantService(BenefitGrant)
+benefit_grant = BenefitGrantService(BenefitGrant)

@@ -27,12 +27,10 @@ from polar.models.benefit import (
 )
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
-from polar.subscription.service.subscription_benefit_grant import (
-    subscription_benefit_grant as subscription_benefit_grant_service,
-)
 
 from ..benefits import BenefitPropertiesValidationError, get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate
+from .benefit_grant import benefit_grant as benefit_grant_service
 
 
 class BenefitError(PolarError): ...
@@ -215,7 +213,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             setattr(benefit, key, value)
         session.add(benefit)
 
-        await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
+        await benefit_grant_service.enqueue_benefit_grant_updates(
             session, benefit, previous_properties
         )
 
@@ -243,9 +241,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         )
         await session.execute(statement)
 
-        await subscription_benefit_grant_service.enqueue_benefit_grant_deletions(
-            session, benefit
-        )
+        await benefit_grant_service.enqueue_benefit_grant_deletions(session, benefit)
 
         return benefit
 

@@ -18,9 +18,12 @@ from polar.benefit.schemas import (
 from polar.benefit.service.benefit import (  # type: ignore[attr-defined]
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
-    subscription_benefit_grant_service,
+    benefit_grant_service,
 )
 from polar.benefit.service.benefit import benefit as benefit_service
+from polar.benefit.service.benefit_grant import (
+    BenefitGrantService,
+)
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -32,9 +35,6 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
-from polar.subscription.service.subscription_benefit_grant import (
-    SubscriptionBenefitGrantService,
-)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
 
@@ -426,9 +426,9 @@ class TestUserUpdate:
         user_organization_admin: UserOrganization,
     ) -> None:
         enqueue_benefit_grant_updates_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "enqueue_benefit_grant_updates",
-            spec=SubscriptionBenefitGrantService.enqueue_benefit_grant_updates,
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
         )
 
         update_schema = BenefitCustomUpdate(
@@ -516,9 +516,9 @@ class TestUserDelete:
         user_organization_admin: UserOrganization,
     ) -> None:
         enqueue_benefit_grant_updates_mock = mocker.patch.object(
-            subscription_benefit_grant_service,
+            benefit_grant_service,
             "enqueue_benefit_grant_deletions",
-            spec=SubscriptionBenefitGrantService.enqueue_benefit_grant_updates,
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
         )
 
         # then

@@ -172,7 +172,7 @@ async def github_callback(
     enqueue_job(
         "subscription.subscription_benefit.precondition_fulfilled",
         user_id=user.id,
-        subscription_benefit_type=BenefitType.github_repository,
+        benefit_type=BenefitType.github_repository,
     )
 
     posthog.identify(user)

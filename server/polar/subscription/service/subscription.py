@@ -859,7 +859,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # Remove this when we have proper per-seat support
             if benefit.type == BenefitType.github_repository:
                 enqueue_job(
-                    f"subscription.subscription_benefit.{task}",
+                    f"benefit.{task}",
                     subscription_id=subscription.id,
                     user_id=subscription.user_id,
                     benefit_id=benefit.id,
@@ -867,7 +867,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             else:
                 for user_id in users_ids:
                     enqueue_job(
-                        f"subscription.subscription_benefit.{task}",
+                        f"benefit.{task}",
                         subscription_id=subscription.id,
                         user_id=user_id,
                         benefit_id=benefit.id,
@@ -876,7 +876,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         for user_id in users_ids:
             for outdated_grant in outdated_grants:
                 enqueue_job(
-                    "subscription.subscription_benefit.revoke",
+                    "benefit.revoke",
                     subscription_id=subscription.id,
                     user_id=user_id,
                     benefit_id=outdated_grant.benefit_id,
@@ -895,7 +895,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     subscription_tier.repository,
                 )
                 enqueue_job(
-                    f"subscription.subscription_benefit.{task}",
+                    f"benefit.{task}",
                     subscription_id=subscription.id,
                     user_id=user_id,
                     subscription_benefit_id=free_articles_benefit.id,

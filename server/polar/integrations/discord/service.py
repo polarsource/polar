@@ -62,7 +62,7 @@ class DiscordUserService:
 
         # Make sure potential Discord benefits are granted
         enqueue_job(
-            "subscription.subscription_benefit.precondition_fulfilled",
+            "benefit.precondition_fulfilled",
             user_id=user.id,
             benefit_type=BenefitType.discord,
         )

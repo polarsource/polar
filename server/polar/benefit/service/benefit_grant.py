@@ -76,7 +76,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         await session.commit()
 
         await eventstream_publish(
-            "subscription.subscription_benefit_grant.granted",
+            "benefit.granted",
             {"benefit_id": benefit.id, "benefit_type": benefit.type},
             user_id=user.id,
         )
@@ -126,7 +126,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         await session.commit()
 
         await eventstream_publish(
-            "subscription.subscription_benefit_grant.revoked",
+            "benefit.revoked",
             {"benefit_id": benefit.id, "benefit_type": benefit.type},
             user_id=user.id,
         )
@@ -152,10 +152,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         grants = await self._get_granted_by_benefit(session, benefit)
         for grant in grants:
-            enqueue_job(
-                "subscription.subscription_benefit.update",
-                subscription_benefit_grant_id=grant.id,
-            )
+            enqueue_job("benefit.update", benefit_grant_id=grant.id)
 
     async def update_benefit_grant(
         self,
@@ -202,10 +199,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     ) -> None:
         grants = await self._get_granted_by_benefit(session, benefit)
         for grant in grants:
-            enqueue_job(
-                "subscription.subscription_benefit.delete",
-                subscription_benefit_grant_id=grant.id,
-            )
+            enqueue_job("benefit.delete", benefit_grant_id=grant.id)
 
     async def delete_benefit_grant(
         self,
@@ -305,7 +299,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         for grant in grants:
             if not grant.is_granted and not grant.is_revoked:
                 enqueue_job(
-                    "subscription.subscription_benefit.grant",
+                    "benefit.grant",
                     subscription_id=grant.subscription_id,
                     user_id=user.id,
                     benefit_id=grant.benefit_id,

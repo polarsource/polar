@@ -1,5 +1,6 @@
 from polar.account import tasks as account
 from polar.article import tasks as article
+from polar.benefit import tasks as benefit
 from polar.integrations.github import tasks as github
 from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
@@ -13,6 +14,7 @@ from polar.user import tasks as user
 __all__ = [
     "account",
     "article",
+    "benefit",
     "github",
     "loops",
     "stripe",

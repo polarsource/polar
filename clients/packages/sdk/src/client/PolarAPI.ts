@@ -6,6 +6,7 @@ import {
   BackofficeApi,
   Configuration,
   DashboardApi,
+  BenefitsApi,
   DonationsApi,
   FundingApi,
   HealthApi,
@@ -37,6 +38,7 @@ export class PolarAPI {
   public readonly articles: ArticlesApi
   public readonly auth: AuthApi
   public readonly backoffice: BackofficeApi
+  public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
   public readonly funding: FundingApi
   public readonly health: HealthApi
@@ -69,6 +71,7 @@ export class PolarAPI {
     this.articles = new ArticlesApi(config)
     this.auth = new AuthApi(config)
     this.backoffice = new BackofficeApi(config)
+    this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
     this.funding = new FundingApi(config)
     this.health = new HealthApi(config)

@@ -61,7 +61,6 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         try:
             properties = await benefit_service.grant(
                 benefit,
-                subscription,
                 user,
                 grant.properties,
                 attempt=attempt,
@@ -118,7 +117,10 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
 
         benefit_service = get_benefit_service(benefit.type, session)
         properties = await benefit_service.revoke(
-            benefit, subscription, user, grant.properties, attempt=attempt
+            benefit,
+            user,
+            grant.properties,
+            attempt=attempt,
         )
 
         grant.properties = properties
@@ -181,7 +183,6 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
         try:
             properties = await benefit_service.grant(
                 benefit,
-                subscription,
                 user,
                 grant.properties,
                 update=True,
@@ -222,7 +223,6 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
             return grant
 
         await session.refresh(grant, {"subscription", "benefit"})
-        subscription = grant.subscription
         benefit = grant.benefit
 
         user = await user_service.get(session, grant.user_id)
@@ -230,7 +230,10 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
 
         benefit_service = get_benefit_service(benefit.type, session)
         properties = await benefit_service.revoke(
-            benefit, subscription, user, grant.properties, attempt=attempt
+            benefit,
+            user,
+            grant.properties,
+            attempt=attempt,
         )
 
         grant.properties = properties

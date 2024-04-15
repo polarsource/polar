@@ -6,7 +6,7 @@ import pytest
 from polar.article.service import article_service
 from polar.benefit.benefits.articles import BenefitArticlesService
 from polar.benefit.service import benefit as benefit_service
-from polar.models import Organization, Subscription, SubscriptionTier, User
+from polar.models import Organization, SubscriptionTier, User
 from polar.models.benefit import (
     BenefitArticles,
     BenefitType,
@@ -47,12 +47,6 @@ async def test_concurrent_subscription_upgrade(
         save_fixture, user, previous_subscription, previous_benefit
     )
 
-    new_subscription = await create_subscription(
-        save_fixture,
-        subscription_tier=subscription_tier_organization,
-        user=user,
-        status=SubscriptionStatus.active,
-    )
     new_benefit = await create_benefit(
         save_fixture,
         type=BenefitType.articles,
@@ -66,25 +60,21 @@ async def test_concurrent_subscription_upgrade(
         _benefit = cast(
             BenefitArticles, await benefit_service.get(session, new_benefit.id)
         )
-        _subscription = await session.get(Subscription, new_subscription.id)
         _user = await session.get(User, user.id)
         assert _benefit is not None
-        assert _subscription is not None
         assert _user is not None
         service = BenefitArticlesService(session)
-        await service.grant(_benefit, _subscription, _user, {})
+        await service.grant(_benefit, _user, {})
 
     async def do_revoke() -> None:
         _benefit = cast(
             BenefitArticles, await benefit_service.get(session, previous_benefit.id)
         )
-        _subscription = await session.get(Subscription, previous_subscription.id)
         _user = await session.get(User, user.id)
         assert _benefit is not None
-        assert _subscription is not None
         assert _user is not None
         service = BenefitArticlesService(session)
-        await service.revoke(_benefit, _subscription, _user, {})
+        await service.revoke(_benefit, _user, {})
 
     # Mimic a race condition by running them concurrently
     async with asyncio.TaskGroup() as tg:

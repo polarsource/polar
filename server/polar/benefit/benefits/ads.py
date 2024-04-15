@@ -1,13 +1,7 @@
 from typing import Any, cast
 
-from polar.models import (
-    Subscription,
-    User,
-)
-from polar.models.benefit import (
-    BenefitAds,
-    BenefitAdsProperties,
-)
+from polar.models import User
+from polar.models.benefit import BenefitAds, BenefitAdsProperties
 
 from .base import BenefitServiceProtocol
 
@@ -16,7 +10,6 @@ class BenefitAdsService(BenefitServiceProtocol[BenefitAds, BenefitAdsProperties]
     async def grant(
         self,
         benefit: BenefitAds,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -29,7 +22,6 @@ class BenefitAdsService(BenefitServiceProtocol[BenefitAds, BenefitAdsProperties]
     async def revoke(
         self,
         benefit: BenefitAds,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,

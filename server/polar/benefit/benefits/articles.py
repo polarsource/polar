@@ -6,18 +6,8 @@ from typing import Any, cast
 from sqlalchemy import select
 
 from polar.locker import Locker
-from polar.models import (
-    ArticlesSubscription,
-    Benefit,
-    Subscription,
-    SubscriptionBenefitGrant,
-    User,
-)
-from polar.models.benefit import (
-    BenefitArticles,
-    BenefitArticlesProperties,
-    BenefitType,
-)
+from polar.models import ArticlesSubscription, Benefit, SubscriptionBenefitGrant, User
+from polar.models.benefit import BenefitArticles, BenefitArticlesProperties, BenefitType
 from polar.redis import redis
 
 from .base import BenefitServiceProtocol
@@ -29,7 +19,6 @@ class BenefitArticlesService(
     async def grant(
         self,
         benefit: BenefitArticles,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -37,8 +26,8 @@ class BenefitArticlesService(
         attempt: int = 1,
     ) -> dict[str, Any]:
         async with self._acquire_lock(user):
-            await self.session.refresh(subscription, {"subscription_tier"})
-            organization_id = subscription.subscription_tier.managing_organization_id
+            await self.session.refresh(benefit, {"repository"})
+            organization_id = benefit.managing_organization_id
 
             articles_subscription = await self._get_articles_subscription(
                 user.id, organization_id
@@ -58,15 +47,14 @@ class BenefitArticlesService(
     async def revoke(
         self,
         benefit: BenefitArticles,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
         attempt: int = 1,
     ) -> dict[str, Any]:
         async with self._acquire_lock(user):
-            await self.session.refresh(subscription, {"subscription_tier"})
-            organization_id = subscription.subscription_tier.managing_organization_id
+            await self.session.refresh(benefit, {"repository"})
+            organization_id = benefit.managing_organization_id
 
             articles_subscription = await self._get_articles_subscription(
                 user.id, organization_id

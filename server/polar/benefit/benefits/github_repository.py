@@ -12,7 +12,7 @@ from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
 from polar.logging import Logger
-from polar.models import Subscription, User
+from polar.models import User
 from polar.models.benefit import (
     BenefitGitHubRepository,
     BenefitGitHubRepositoryProperties,
@@ -71,46 +71,9 @@ https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
 class BenefitGitHubRepositoryService(
     BenefitServiceProtocol[BenefitGitHubRepository, BenefitGitHubRepositoryProperties]
 ):
-    async def _get_github_app_client(
-        self,
-        logger: Logger,
-        benefit: BenefitGitHubRepository,
-    ) -> GitHub[AppInstallationAuthStrategy]:
-        # Old integrations, using the "Polar" GitHub App
-        if benefit.properties["repository_id"]:
-            logger.debug("using legacy integration")
-            repository_id = benefit.properties["repository_id"]
-            repository = await repository_service.get(
-                self.session, repository_id, load_organization=True
-            )
-            assert repository is not None
-            organization = repository.organization
-            assert organization is not None
-            installation_id = organization.installation_id
-            assert installation_id is not None
-            return github.get_app_installation_client(
-                installation_id, app=github.GitHubApp.polar
-            )
-
-        # New integration, using the "Repository Benefit" GitHub App
-        logger.debug("using Repository Benefit app integration")
-
-        repository_owner = benefit.properties["repository_owner"]
-        repository_name = benefit.properties["repository_name"]
-        installation = (
-            await github_repository_benefit_user_service.get_repository_installation(
-                owner=repository_owner, name=repository_name
-            )
-        )
-        assert installation is not None
-        return github.get_app_installation_client(
-            installation.id, app=github.GitHubApp.repository_benefit
-        )
-
     async def grant(
         self,
         benefit: BenefitGitHubRepository,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -119,7 +82,6 @@ class BenefitGitHubRepositoryService(
     ) -> dict[str, Any]:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            subscription_id=str(subscription.id),
             user_id=str(user.id),
         )
         bound_logger.debug("Grant benefit")
@@ -161,9 +123,7 @@ class BenefitGitHubRepositoryService(
                 or repository_name != grant_properties["repository_name"]
                 or invitation is not None
             ):
-                await self.revoke(
-                    benefit, subscription, user, grant_properties, attempt=attempt
-                )
+                await self.revoke(benefit, user, grant_properties, attempt=attempt)
             # The permission changed, and the invitation is already accepted
             elif permission != grant_properties["permission"]:
                 # The permission change will be handled by the add_collaborator call
@@ -193,7 +153,6 @@ class BenefitGitHubRepositoryService(
     async def revoke(
         self,
         benefit: BenefitGitHubRepository,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -201,7 +160,6 @@ class BenefitGitHubRepositoryService(
     ) -> dict[str, Any]:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            subscription_id=str(subscription.id),
             user_id=str(user.id),
         )
 
@@ -427,3 +385,39 @@ class BenefitGitHubRepositoryService(
                 return invitation
 
         return None
+
+    async def _get_github_app_client(
+        self,
+        logger: Logger,
+        benefit: BenefitGitHubRepository,
+    ) -> GitHub[AppInstallationAuthStrategy]:
+        # Old integrations, using the "Polar" GitHub App
+        if benefit.properties["repository_id"]:
+            logger.debug("using legacy integration")
+            repository_id = benefit.properties["repository_id"]
+            repository = await repository_service.get(
+                self.session, repository_id, load_organization=True
+            )
+            assert repository is not None
+            organization = repository.organization
+            assert organization is not None
+            installation_id = organization.installation_id
+            assert installation_id is not None
+            return github.get_app_installation_client(
+                installation_id, app=github.GitHubApp.polar
+            )
+
+        # New integration, using the "Repository Benefit" GitHub App
+        logger.debug("using Repository Benefit app integration")
+
+        repository_owner = benefit.properties["repository_owner"]
+        repository_name = benefit.properties["repository_name"]
+        installation = (
+            await github_repository_benefit_user_service.get_repository_installation(
+                owner=repository_owner, name=repository_name
+            )
+        )
+        assert installation is not None
+        return github.get_app_installation_client(
+            installation.id, app=github.GitHubApp.repository_benefit
+        )

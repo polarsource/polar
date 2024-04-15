@@ -5,11 +5,7 @@ from pydantic import ValidationError
 from pydantic_core import InitErrorDetails, PydanticCustomError
 
 from polar.exceptions import PolarError
-from polar.models import (
-    Benefit,
-    Subscription,
-    User,
-)
+from polar.models import Benefit, User
 from polar.models.benefit import BenefitProperties
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
@@ -114,7 +110,6 @@ class BenefitServiceProtocol(Protocol[B, BP]):
     async def grant(
         self,
         benefit: B,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -126,7 +121,6 @@ class BenefitServiceProtocol(Protocol[B, BP]):
 
         Args:
             benefit: The Benefit to grant.
-            subscription: The Subscription we should grant this benefit to.
             user: The backer user.
             grant_properties: Stored properties for this specific benefit and user.
             Might be available at this stage if we're updating
@@ -152,7 +146,6 @@ class BenefitServiceProtocol(Protocol[B, BP]):
     async def revoke(
         self,
         benefit: B,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -163,7 +156,6 @@ class BenefitServiceProtocol(Protocol[B, BP]):
 
         Args:
             benefit: The Benefit to revoke.
-            subscription: The Subscription we should revoke this benefit from.
             user: The backer user.
             grant_properties: Stored properties for this specific benefit and user.
             attempt: Number of times we attempted to revoke the benefit.

@@ -8,11 +8,8 @@ from polar.integrations.discord.service import DiscordAccountNotConnected
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.integrations.discord.service import discord_user as discord_user_service
 from polar.logging import Logger
-from polar.models import Subscription, User
-from polar.models.benefit import (
-    BenefitDiscord,
-    BenefitDiscordProperties,
-)
+from polar.models import User
+from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
 )
@@ -69,7 +66,6 @@ class BenefitDiscordService(
     async def grant(
         self,
         benefit: BenefitDiscord,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -78,7 +74,6 @@ class BenefitDiscordService(
     ) -> dict[str, Any]:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            subscription_id=str(subscription.id),
             user_id=str(user.id),
         )
         bound_logger.debug("Grant benefit")
@@ -95,9 +90,7 @@ class BenefitDiscordService(
                 bound_logger.debug(
                     "Revoke before granting because guild or role have changed"
                 )
-                await self.revoke(
-                    benefit, subscription, user, grant_properties, attempt=attempt
-                )
+                await self.revoke(benefit, user, grant_properties, attempt=attempt)
 
         try:
             account = await discord_user_service.get_oauth_account(self.session, user)
@@ -136,7 +129,6 @@ class BenefitDiscordService(
     async def revoke(
         self,
         benefit: BenefitDiscord,
-        subscription: Subscription,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -144,7 +136,6 @@ class BenefitDiscordService(
     ) -> dict[str, Any]:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            subscription_id=str(subscription.id),
             user_id=str(user.id),
         )
 

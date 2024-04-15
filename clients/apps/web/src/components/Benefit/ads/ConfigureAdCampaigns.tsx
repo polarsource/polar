@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { useForm, useFormContext } from 'react-hook-form'
-import { BenefitSubscriber } from '../Benefit'
+import { BenefitSubscriber } from '../utils'
 
 const ConfigureAdCampaigns = ({
   benefit,
@@ -66,7 +66,7 @@ const CreateCampaign = ({
   const form = useForm<CreateAdvertisementCampaign>({
     defaultValues: {
       subscription_id: subscription.id,
-      subscription_benefit_id: benefit.id,
+      benefit_id: benefit.id,
     },
   })
   const { handleSubmit } = form

@@ -1,13 +1,15 @@
 'use client'
 
-import { BenefitSubscriber } from '@/components/Benefit/Benefit'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import ConfigureAdCampaigns from '@/components/Benefit/ads/ConfigureAdCampaigns'
+import {
+  BenefitSubscriber,
+  resolveBenefitIcon,
+} from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
-import { resolveBenefitIcon } from '@/components/Subscriptions/utils'
 import { useAuth } from '@/hooks'
 import { useOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'

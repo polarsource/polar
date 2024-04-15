@@ -1,6 +1,10 @@
 'use client'
 
-import { Benefit } from '@/components/Benefit/Benefit'
+import {
+  Benefit,
+  DiscordIcon,
+  resolveBenefitIcon,
+} from '@/components/Benefit/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
@@ -12,21 +16,13 @@ import {
   UpdateSubscriptionTierBenefitModalContent,
 } from '@/components/Subscriptions/SubscriptionTierBenefitsForm'
 import {
-  DiscordIcon,
-  resolveBenefitIcon,
-} from '@/components/Subscriptions/utils'
-import {
   useAdvertisementDisplays,
-  useDeleteSubscriptionBenefit,
-  useSubscriptionBenefits,
+  useBenefits,
+  useDeleteBenefit,
   useSubscriptionTiers,
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined, WebOutlined } from '@mui/icons-material'
-import {
-  BenefitsInner,
-  Organization,
-  SubscriptionBenefitType,
-} from '@polar-sh/sdk'
+import { BenefitType, BenefitsInner, Organization } from '@polar-sh/sdk'
 import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -44,8 +40,10 @@ import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>()
-  const { data: benefits, isFetched: benefitsIsFetched } =
-    useSubscriptionBenefits(organization.name, 100)
+  const { data: benefits, isFetched: benefitsIsFetched } = useBenefits(
+    organization.name,
+    100,
+  )
   const { data: subscriptionTiers } = useSubscriptionTiers(
     organization.name,
     100,
@@ -201,13 +199,11 @@ const BenefitRow = ({
     toggle: toggleDelete,
   } = useModal()
 
-  const deleteSubscriptionBenefit = useDeleteSubscriptionBenefit(
-    organization.name,
-  )
+  const deleteBenefit = useDeleteBenefit(organization.name)
 
-  const handleDeleteSubscriptionBenefit = useCallback(() => {
-    deleteSubscriptionBenefit.mutateAsync({ id: benefit.id })
-  }, [deleteSubscriptionBenefit, benefit])
+  const handleDeleteBenefit = useCallback(() => {
+    deleteBenefit.mutateAsync({ id: benefit.id })
+  }, [deleteBenefit, benefit])
 
   return (
     <div
@@ -268,7 +264,7 @@ const BenefitRow = ({
         hide={hideDelete}
         title="Delete Benefit"
         description={`Deleting a benefit will remove it from other Subscription tiers & revokes it for existing subscribers. Are you sure?`}
-        onConfirm={handleDeleteSubscriptionBenefit}
+        onConfirm={handleDeleteBenefit}
         destructive
       />
     </div>
@@ -397,7 +393,7 @@ const RecommendedBenefits = ({
           onClick={() => {
             setCreateModalDefaultValues({
               description: 'Invite to community Discord server',
-              type: SubscriptionBenefitType.DISCORD,
+              type: BenefitType.DISCORD,
             })
             openCreateBenefitModal()
           }}
@@ -412,7 +408,7 @@ const RecommendedBenefits = ({
           onClick={() => {
             setCreateModalDefaultValues({
               description: 'Logo in README',
-              type: SubscriptionBenefitType.ADS,
+              type: BenefitType.ADS,
             })
             openCreateBenefitModal()
           }}

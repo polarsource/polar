@@ -4,7 +4,7 @@ import { ArrowForwardOutlined, LinkOutlined } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
 import { useRouter } from 'next/navigation'
-import { BenefitSubscriber } from './Benefit'
+import { BenefitSubscriber } from './utils'
 
 interface BenefitAction {
   icon: OverridableComponent<SvgIconTypeMap<{}, 'svg'>> & {

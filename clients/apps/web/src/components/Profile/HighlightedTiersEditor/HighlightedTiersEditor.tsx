@@ -1,10 +1,11 @@
 import revalidate from '@/app/actions'
+import { isPremiumArticlesBenefit } from '@/components/Benefit/utils'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import {
+  useBenefits,
   useCreateSubscriptionTier,
-  useSubscriptionBenefits,
   useUpdateSubscriptionTierBenefits,
 } from '@/hooks/queries'
 import { useRecurringInterval } from '@/hooks/subscriptions'
@@ -21,10 +22,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
 import SubscriptionTierRecurringIntervalSwitch from '../../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '../../Subscriptions/SubscriptionTierSubscribeButton'
-import {
-  hasRecurringInterval,
-  isPremiumArticlesBenefit,
-} from '../../Subscriptions/utils'
+import { hasRecurringInterval } from '../../Subscriptions/utils'
 import { HighlightedTiersModal } from './HighlightedTiersModal'
 
 export interface HighlightedTiersEditorProps {
@@ -267,7 +265,7 @@ const useCreateBaselineTier = (
     }
   }, [])
 
-  const organizationBenefits = useSubscriptionBenefits(organization.name, 99)
+  const organizationBenefits = useBenefits(organization.name, 99)
   const premiumArticlesBenefit = organizationBenefits.data?.items?.filter(
     isPremiumArticlesBenefit,
   )[0]

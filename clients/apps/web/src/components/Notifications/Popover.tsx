@@ -14,6 +14,7 @@ import {
   VerifiedUser,
 } from '@mui/icons-material'
 import {
+  BenefitPreconditionErrorNotification,
   MaintainerAccountReviewedNotification,
   MaintainerAccountUnderReviewNotification,
   MaintainerCreateAccountNotification,
@@ -28,7 +29,6 @@ import {
   NotificationsInner,
   PledgerPledgePendingNotification,
   RewardPaidNotification,
-  SubscriptionBenefitPreconditionErrorNotification,
   TeamAdminMemberPledgedNotification,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -651,15 +651,15 @@ const MaintainerNewPaidSubscription = ({
   )
 }
 
-const SubscriptionBenefitPreconditionError = ({
+const BenefitPreconditionError = ({
   n,
 }: {
-  n: SubscriptionBenefitPreconditionErrorNotification
+  n: BenefitPreconditionErrorNotification
 }) => {
   const {
     payload: {
       subscription_tier_name,
-      subscription_benefit_description,
+      benefit_description,
       organization_name,
       extra_context,
     },
@@ -669,9 +669,8 @@ const SubscriptionBenefitPreconditionError = ({
       {{
         text: (
           <>
-            The benefit {subscription_benefit_description} from{' '}
-            {organization_name}&apos;s {subscription_tier_name} tier could not
-            be granted.{' '}
+            The benefit {benefit_description} from {organization_name}&apos;s{' '}
+            {subscription_tier_name} tier could not be granted.{' '}
             {extra_context && (extra_context as any).url && (
               <InternalLink href={(extra_context as any).url}>
                 <>Solve it</>
@@ -788,8 +787,8 @@ export const Notification = ({
     case 'MaintainerNewPaidSubscriptionNotification':
       return <MaintainerNewPaidSubscription n={n} />
 
-    case 'SubscriptionBenefitPreconditionErrorNotification':
-      return <SubscriptionBenefitPreconditionError n={n} />
+    case 'BenefitPreconditionErrorNotification':
+      return <BenefitPreconditionError n={n} />
 
     case 'MaintainerCreateAccountNotification':
       return <MaintainerCreateAccount n={n} />

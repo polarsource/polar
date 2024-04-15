@@ -1,8 +1,6 @@
 import {
   ListResourceSubscriptionTier,
   Platforms,
-  SubscriptionBenefitCreate,
-  SubscriptionBenefitUpdate,
   SubscriptionTier,
   SubscriptionTierBenefitsUpdate,
   SubscriptionTierCreate,
@@ -113,64 +111,6 @@ export const useArchiveSubscriptionTier = (orgName?: string) =>
     },
   })
 
-export const useSubscriptionBenefits = (
-  orgName?: string,
-  limit = 30,
-  platform: Platforms = Platforms.GITHUB,
-) =>
-  useQuery({
-    queryKey: ['subscriptionBenefits', 'organization', orgName],
-    queryFn: () =>
-      api.subscriptions.searchSubscriptionBenefits({
-        organizationName: orgName ?? '',
-        platform,
-        limit,
-      }),
-    retry: defaultRetry,
-    enabled: !!orgName,
-  })
-
-export const useSubscriptionBenefit = (id?: string) =>
-  useQuery({
-    queryKey: ['subscriptionBenefits', 'id', id],
-    queryFn: () => {
-      return api.subscriptions.lookupSubscriptionBenefit({
-        subscriptionBenefitId: id ?? '',
-      })
-    },
-    retry: defaultRetry,
-    enabled: !!id,
-  })
-
-export const useUpdateSubscriptionBenefit = (orgName?: string) =>
-  useMutation({
-    mutationFn: ({
-      id,
-      subscriptionBenefitUpdate,
-    }: {
-      id: string
-      subscriptionBenefitUpdate: SubscriptionBenefitUpdate
-    }) => {
-      return api.subscriptions.updateSubscriptionBenefit({
-        id,
-        subscriptionBenefitUpdate,
-      })
-    },
-    onSuccess: (result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'id', result.id],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'organization', orgName],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionTiers'],
-      })
-    },
-  })
-
 export const useUpdateSubscriptionTierBenefits = (orgName?: string) =>
   useMutation({
     mutationFn: ({
@@ -192,50 +132,6 @@ export const useUpdateSubscriptionTierBenefits = (orgName?: string) =>
 
       queryClient.invalidateQueries({
         queryKey: ['subscriptionTiers', 'organization', orgName],
-      })
-    },
-  })
-
-export const useCreateSubscriptionBenefit = (orgName?: string) =>
-  useMutation({
-    mutationFn: (subscriptionBenefitCreate: SubscriptionBenefitCreate) => {
-      return api.subscriptions.createSubscriptionBenefit({
-        subscriptionBenefitCreate,
-      })
-    },
-    onSuccess: (result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'id', result.id],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'organization', orgName],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionTiers'],
-      })
-    },
-  })
-
-export const useDeleteSubscriptionBenefit = (orgName?: string) =>
-  useMutation({
-    mutationFn: ({ id }: { id: string }) => {
-      return api.subscriptions.deleteSubscriptionBenefit({
-        id,
-      })
-    },
-    onSuccess: (_result, variables, _ctx) => {
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'id', variables.id],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'organization', orgName],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptionTiers'],
       })
     },
   })

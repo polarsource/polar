@@ -4,7 +4,7 @@ import revalidate from '@/app/actions'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   useArchiveSubscriptionTier,
-  useSubscriptionBenefits,
+  useBenefits,
   useSubscriptionStatistics,
   useSubscriptionTier,
   useUpdateSubscriptionTier,
@@ -27,14 +27,13 @@ import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Benefit } from '../Benefit/Benefit'
+import { Benefit, isPremiumArticlesBenefit } from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
 import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
-import { SubscriptionBenefit, isPremiumArticlesBenefit } from './utils'
 
 interface SubscriptionTierEditPageProps {
   organization: Organization
@@ -46,7 +45,7 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
   tier,
 }) => {
   const subscriptionTier = useSubscriptionTier(tier)
-  const organizationBenefits = useSubscriptionBenefits(organization.name)
+  const organizationBenefits = useBenefits(organization.name)
 
   if (!subscriptionTier.data || !organizationBenefits.data) {
     return null
@@ -66,7 +65,7 @@ export default SubscriptionTierEditPage
 interface SubscriptionTierEditProps {
   organization: Organization
   subscriptionTier: SubscriptionTier
-  organizationBenefits: SubscriptionBenefit[]
+  organizationBenefits: Benefit[]
 }
 
 const SubscriptionTierEdit = ({

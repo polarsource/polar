@@ -4,6 +4,7 @@ from uuid import UUID
 import httpx
 import structlog
 from arq import Retry
+from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
@@ -48,11 +49,17 @@ async def _webhook_event_send(
 
     # TODO: validate URL
 
+    ts = utc_now()
+
+    # Sign the payload
+    wh = StandardWebhook(event.webhook_endpoint.secret)
+    signature = wh.sign(str(event.id), ts, event.payload)
+
     headers: Mapping[str, str] = {
         "user-agent": "polar.sh webhooks",
         "webhook-id": str(event.id),
-        "webhook-timestamp": str(int(utc_now().timestamp())),
-        # SIGNATURE
+        "webhook-timestamp": str(int(ts.timestamp())),
+        "webhook-signature": signature,
     }
 
     r = httpx.post(

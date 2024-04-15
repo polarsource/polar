@@ -5,6 +5,7 @@ from .advertisement_campaign import AdvertisementCampaign
 from .article import Article
 from .articles_subscription import ArticlesSubscription
 from .benefit import Benefit
+from .benefit_grant import BenefitGrant
 from .donation import Donation
 from .held_balance import HeldBalance
 from .invites import Invite
@@ -25,7 +26,6 @@ from .pledge_transaction import PledgeTransaction
 from .pull_request import PullRequest
 from .repository import Repository
 from .subscription import Subscription
-from .subscription_benefit_grant import SubscriptionBenefitGrant
 from .subscription_tier import SubscriptionTier
 from .subscription_tier_benefit import SubscriptionTierBenefit
 from .subscription_tier_price import SubscriptionTierPrice
@@ -43,6 +43,7 @@ __all__ = [
     "Article",
     "ArticlesSubscription",
     "Benefit",
+    "BenefitGrant",
     "Donation",
     "HeldBalance",
     "Invite",
@@ -65,7 +66,6 @@ __all__ = [
     "PullRequest",
     "Repository",
     "Subscription",
-    "SubscriptionBenefitGrant",
     "SubscriptionTier",
     "SubscriptionTierBenefit",
     "SubscriptionTierPrice",

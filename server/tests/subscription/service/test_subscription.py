@@ -16,9 +16,9 @@ from polar.kit.pagination import PaginationParams
 from polar.models import (
     Account,
     Benefit,
+    BenefitGrant,
     Organization,
     Subscription,
-    SubscriptionBenefitGrant,
     SubscriptionTier,
     Transaction,
     User,
@@ -917,7 +917,7 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
             benefit_id=benefits[0].id,

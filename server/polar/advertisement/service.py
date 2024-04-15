@@ -13,8 +13,7 @@ from polar.advertisement.schemas import (
 )
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models.advertisement_campaign import AdvertisementCampaign
-from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
+from polar.models import AdvertisementCampaign, BenefitGrant
 
 
 class AdvertisementCampaignService:
@@ -95,17 +94,16 @@ class AdvertisementCampaignService:
         statement = (
             select(AdvertisementCampaign)
             .join(
-                SubscriptionBenefitGrant,
+                BenefitGrant,
                 onclause=and_(
-                    SubscriptionBenefitGrant.benefit_id
-                    == AdvertisementCampaign.benefit_id,
-                    SubscriptionBenefitGrant.subscription_id
+                    BenefitGrant.benefit_id == AdvertisementCampaign.benefit_id,
+                    BenefitGrant.subscription_id
                     == AdvertisementCampaign.subscription_id,
                 ),
             )
             .where(
                 AdvertisementCampaign.deleted_at.is_(None),
-                SubscriptionBenefitGrant.revoked_at.is_(None),
+                BenefitGrant.revoked_at.is_(None),
             )
         )
 

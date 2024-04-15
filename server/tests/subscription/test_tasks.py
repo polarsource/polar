@@ -7,8 +7,8 @@ from pytest_mock import MockerFixture
 from polar.benefit.benefits import BenefitRetriableError
 from polar.models import (
     Benefit,
+    BenefitGrant,
     Subscription,
-    SubscriptionBenefitGrant,
     SubscriptionTier,
     User,
 )
@@ -388,7 +388,7 @@ class TestSubscriptionBenefitUpdate:
         user: User,
         benefit_organization: Benefit,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
@@ -418,7 +418,7 @@ class TestSubscriptionBenefitUpdate:
         user: User,
         benefit_organization: Benefit,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
@@ -468,7 +468,7 @@ class TestSubscriptionBenefitDelete:
         user: User,
         benefit_organization: Benefit,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
@@ -498,7 +498,7 @@ class TestSubscriptionBenefitDelete:
         user: User,
         benefit_organization: Benefit,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()

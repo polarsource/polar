@@ -6,7 +6,7 @@ from typing import Any, cast
 from sqlalchemy import select
 
 from polar.locker import Locker
-from polar.models import ArticlesSubscription, Benefit, SubscriptionBenefitGrant, User
+from polar.models import ArticlesSubscription, Benefit, BenefitGrant, User
 from polar.models.benefit import BenefitArticles, BenefitArticlesProperties, BenefitType
 from polar.redis import redis
 
@@ -95,13 +95,13 @@ class BenefitArticlesService(
 
     async def _get_articles_grants(
         self, user_id: uuid.UUID, organization_id: uuid.UUID
-    ) -> Sequence[SubscriptionBenefitGrant]:
+    ) -> Sequence[BenefitGrant]:
         statement = (
-            select(SubscriptionBenefitGrant)
-            .join(SubscriptionBenefitGrant.benefit)
+            select(BenefitGrant)
+            .join(BenefitGrant.benefit)
             .where(
-                SubscriptionBenefitGrant.user_id == user_id,
-                SubscriptionBenefitGrant.is_granted.is_(True),
+                BenefitGrant.user_id == user_id,
+                BenefitGrant.is_granted.is_(True),
                 Benefit.type == BenefitType.articles,
                 Benefit.organization_id == organization_id,
             )

@@ -25,8 +25,8 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import (
+        BenefitGrant,
         Organization,
-        SubscriptionBenefitGrant,
         SubscriptionTier,
         SubscriptionTierPrice,
         User,
@@ -109,11 +109,11 @@ class Subscription(RecordModel):
         )
 
     @declared_attr
-    def grants(cls) -> Mapped[list["SubscriptionBenefitGrant"]]:
+    def grants(cls) -> Mapped[list["BenefitGrant"]]:
         return relationship(
-            "SubscriptionBenefitGrant",
+            "BenefitGrant",
             lazy="raise",
-            order_by="SubscriptionBenefitGrant.benefit_id",
+            order_by="BenefitGrant.benefit_id",
             back_populates="subscription",
         )
 

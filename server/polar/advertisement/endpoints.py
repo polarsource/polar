@@ -10,10 +10,10 @@ from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unautho
 from polar.integrations.github.client import NotFound
 from polar.kit.pagination import ListResource, Pagination
 from polar.kit.routing import APIRouter
+from polar.models import BenefitGrant
 from polar.models.advertisement_campaign import (
     AdvertisementCampaign as AdvertisementCampaignModel,
 )
-from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.subscription.service.subscription import (
@@ -43,7 +43,7 @@ async def _get_grant(
     user: User,
     subscription_id: UUID,
     benefit_id: UUID,
-) -> SubscriptionBenefitGrant | None:
+) -> BenefitGrant | None:
     subscription = await subscription_service.get(session, subscription_id)
     if not subscription:
         raise NotFound()

@@ -21,14 +21,11 @@ if TYPE_CHECKING:
     from polar.models import Benefit, Subscription, User
 
 
-class SubscriptionBenefitGrant(RecordModel):
-    __tablename__ = "subscription_benefit_grants"
+class BenefitGrant(RecordModel):
+    __tablename__ = "benefit_grants"
     __table_args__ = (
         UniqueConstraint(
-            "subscription_id",
-            "user_id",
-            "benefit_id",
-            name="subscription_benefit_grants_sbu_key",
+            "subscription_id", "user_id", "benefit_id", name="benefit_grants_sbu_key"
         ),
     )
 

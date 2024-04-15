@@ -10,7 +10,7 @@ from polar.models.subscription import Subscription
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_subscription_benefit_grant
+from tests.fixtures.random_objects import create_benefit_grant
 
 
 @pytest.mark.asyncio
@@ -25,11 +25,11 @@ class TestAdvertisementCampaign:
         benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
-        await create_subscription_benefit_grant(
+        await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
 
         response = await client.post(
@@ -79,11 +79,11 @@ class TestAdvertisementCampaign:
         benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
-        await create_subscription_benefit_grant(
+        await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
 
         response = await client.post(
@@ -122,11 +122,11 @@ class TestAdvertisementCampaign:
         benefit_organization: Benefit,
         save_fixture: SaveFixture,
     ) -> None:
-        await create_subscription_benefit_grant(
+        await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
 
         response = await client.post(
@@ -169,11 +169,11 @@ class TestAdvertisementCampaign:
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
-        await create_subscription_benefit_grant(
+        await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
 
         # appears in search
@@ -198,11 +198,11 @@ class TestAdvertisementCampaign:
         save_fixture: SaveFixture,
         advertisement_campaign: AdvertisementCampaign,
     ) -> None:
-        await create_subscription_benefit_grant(
+        await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
 
         # does not appear in search
@@ -231,11 +231,11 @@ class TestAdvertisementCampaign:
         user_organization.is_admin = True
         await save_fixture(user_organization)
 
-        await create_subscription_benefit_grant(
+        await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
 
         # appears in search
@@ -263,11 +263,11 @@ class TestAdvertisementCampaign:
         user_organization.is_admin = True
         await save_fixture(user_organization)
 
-        grant = await create_subscription_benefit_grant(
+        grant = await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
         grant.revoked_at = utc_now()
         await save_fixture(grant)
@@ -339,11 +339,11 @@ class TestAdvertisementCampaign:
         user_organization.is_admin = True
         await save_fixture(user_organization)
 
-        grant = await create_subscription_benefit_grant(
+        grant = await create_benefit_grant(
             save_fixture,
             user,
-            subscription,
             benefit_organization,
+            subscription=subscription,
         )
 
         track = await client.post(

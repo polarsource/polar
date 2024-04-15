@@ -25,12 +25,12 @@ from polar.models.article import Article
 from polar.models.benefit import (
     BenefitType,
 )
+from polar.models.benefit_grant import BenefitGrant
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.pull_request import PullRequest
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_benefit_grant import SubscriptionBenefitGrant
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 from polar.models.user import OAuthAccount, OAuthPlatform
@@ -745,15 +745,14 @@ async def subscription_organization(
     )
 
 
-async def create_subscription_benefit_grant(
+async def create_benefit_grant(
     save_fixture: SaveFixture,
     user: User,
-    subscription: Subscription,
     benefit: Benefit,
-) -> SubscriptionBenefitGrant:
-    grant = SubscriptionBenefitGrant(
-        subscription=subscription, benefit=benefit, user=user
-    )
+    *,
+    subscription: Subscription,
+) -> BenefitGrant:
+    grant = BenefitGrant(benefit=benefit, user=user, subscription=subscription)
     await save_fixture(grant)
     return grant
 

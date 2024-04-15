@@ -16,8 +16,8 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
+    create_benefit_grant,
     create_subscription,
-    create_subscription_benefit_grant,
 )
 
 
@@ -43,8 +43,11 @@ async def test_concurrent_subscription_upgrade(
         organization=organization,
         properties={"paid_articles": False},
     )
-    await create_subscription_benefit_grant(
-        save_fixture, user, previous_subscription, previous_benefit
+    await create_benefit_grant(
+        save_fixture,
+        user,
+        previous_benefit,
+        subscription=previous_subscription,
     )
 
     new_benefit = await create_benefit(

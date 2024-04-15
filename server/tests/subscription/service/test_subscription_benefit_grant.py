@@ -6,8 +6,8 @@ from pytest_mock import MockerFixture
 from polar.benefit.benefits import BenefitPreconditionError, BenefitServiceProtocol
 from polar.models import (
     Benefit,
+    BenefitGrant,
     Subscription,
-    SubscriptionBenefitGrant,
     User,
 )
 from polar.notifications.notification import (
@@ -72,7 +72,7 @@ class TestGrantBenefit:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
             benefit_id=benefit_organization.id,
@@ -99,7 +99,7 @@ class TestGrantBenefit:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
             benefit_id=benefit_organization.id,
@@ -174,7 +174,7 @@ class TestRevokeBenefit:
         # then
         session.expunge_all()
 
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
             benefit_id=benefit_organization.id,
@@ -200,7 +200,7 @@ class TestRevokeBenefit:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription_id=subscription.id,
             user_id=user.id,
             benefit_id=benefit_organization.id,
@@ -254,7 +254,7 @@ class TestEnqueueBenefitGrantUpdates:
         benefit_repository: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        granted_grant = SubscriptionBenefitGrant(
+        granted_grant = BenefitGrant(
             subscription=subscription,
             user=user,
             benefit=benefit_organization,
@@ -262,7 +262,7 @@ class TestEnqueueBenefitGrantUpdates:
         granted_grant.set_granted()
         await save_fixture(granted_grant)
 
-        other_benefit_grant = SubscriptionBenefitGrant(
+        other_benefit_grant = BenefitGrant(
             subscription=subscription,
             user=user,
             benefit=benefit_repository,
@@ -298,13 +298,13 @@ class TestEnqueueBenefitGrantUpdates:
         benefit_repository: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        revoked_grant = SubscriptionBenefitGrant(
+        revoked_grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         revoked_grant.set_revoked()
         await save_fixture(revoked_grant)
 
-        other_benefit_grant = SubscriptionBenefitGrant(
+        other_benefit_grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_repository
         )
         other_benefit_grant.set_granted()
@@ -336,7 +336,7 @@ class TestUpdateBenefitGrant:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_revoked()
@@ -363,7 +363,7 @@ class TestUpdateBenefitGrant:
     ) -> None:
         benefit_service_mock.grant.return_value = {"external_id": "xyz"}
 
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription,
             user=user,
             benefit=benefit_organization,
@@ -398,7 +398,7 @@ class TestUpdateBenefitGrant:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
@@ -432,13 +432,13 @@ class TestEnqueueBenefitGrantDeletions:
         benefit_organization: Benefit,
         benefit_repository: Benefit,
     ) -> None:
-        granted_grant = SubscriptionBenefitGrant(
+        granted_grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         granted_grant.set_granted()
         await save_fixture(granted_grant)
 
-        other_benefit_grant = SubscriptionBenefitGrant(
+        other_benefit_grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_repository
         )
         other_benefit_grant.set_granted()
@@ -472,7 +472,7 @@ class TestDeleteBenefitGrant:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_revoked()
@@ -497,7 +497,7 @@ class TestDeleteBenefitGrant:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        grant = SubscriptionBenefitGrant(
+        grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         grant.set_granted()
@@ -590,12 +590,12 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
         user_second: User,
         benefit_organization: Benefit,
     ) -> None:
-        pending_grant = SubscriptionBenefitGrant(
+        pending_grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
         )
         await save_fixture(pending_grant)
 
-        other_user_grant = SubscriptionBenefitGrant(
+        other_user_grant = BenefitGrant(
             subscription=subscription, user=user_second, benefit=benefit_organization
         )
         await save_fixture(other_user_grant)

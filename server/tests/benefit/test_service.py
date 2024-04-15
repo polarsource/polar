@@ -15,12 +15,12 @@ from polar.benefit.schemas import (
     BenefitCustomProperties,
     BenefitCustomUpdate,
 )
-from polar.benefit.service import (  # type: ignore[attr-defined]
+from polar.benefit.service.benefit import (  # type: ignore[attr-defined]
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
     subscription_benefit_grant_service,
 )
-from polar.benefit.service import benefit as benefit_service
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -366,7 +366,7 @@ class TestUserCreate:
                 }
             ]
         )
-        mock = mocker.patch("polar.benefit.service.get_benefit_service")
+        mock = mocker.patch("polar.benefit.service.benefit.get_benefit_service")
         mock.return_value = service_mock
 
         create_schema = BenefitCustomCreate(

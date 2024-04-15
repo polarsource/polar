@@ -5,7 +5,7 @@ import pytest
 
 from polar.article.service import article_service
 from polar.benefit.benefits.articles import BenefitArticlesService
-from polar.benefit.service import benefit as benefit_service
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.models import Organization, SubscriptionTier, User
 from polar.models.benefit import (
     BenefitArticles,

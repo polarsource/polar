@@ -8,6 +8,7 @@ from sqlalchemy.orm import aliased, contains_eager
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz, Subject
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.stripe.service import ProductUpdateKwargs
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -30,7 +31,6 @@ from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 from polar.worker import enqueue_job
 
-from ...benefit.service import benefit as benefit_service
 from ..schemas import (
     ExistingSubscriptionTierPrice,
     SubscriptionTierCreate,

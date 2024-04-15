@@ -21,7 +21,7 @@ from polar.tags.api import Tags
 from ..subscription import auth
 from .schemas import Benefit as BenefitSchema
 from .schemas import BenefitCreate, BenefitUpdate, benefit_schema_map
-from .service import benefit as benefit_service
+from .service.benefit import benefit as benefit_service
 
 log = structlog.get_logger()
 

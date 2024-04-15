@@ -37,7 +37,7 @@ precondition_error_subject_template = "Action required: get access to {extra_con
 precondition_error_body_template = """
 <h1>Hi,</h1>
 <p>You just subscribed to {organization_name}'s plan, <strong>{subscription_tier_name}</strong>. Thank you!</p>
-<p>As you may now, it includes an access to {extra_context[repository_owner]}/{extra_context[repository_name]} repository on GitHub. To grant you access, we need you to link your GitHub account on Polar.</p>
+<p>As you may know, it includes an access to {extra_context[repository_owner]}/{extra_context[repository_name]} repository on GitHub. To grant you access, we need you to link your GitHub account on Polar.</p>
 <p>Once done, you'll automatically be invited to the repository.</p>
 <!-- Action -->
 <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">

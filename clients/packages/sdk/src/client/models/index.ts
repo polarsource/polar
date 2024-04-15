@@ -133,7 +133,7 @@ export interface AdvertisementCampaign {
      * @type {string}
      * @memberof AdvertisementCampaign
      */
-    subscription_benefit_id: string;
+    benefit_id: string;
     /**
      * 
      * @type {number}
@@ -1810,16 +1810,1581 @@ export interface BackofficeReward {
     pledger_email?: string;
 }
 /**
+ * 
+ * @export
+ * @interface BenefitAds
+ */
+export interface BenefitAds {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAds
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAds
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAds
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAds
+     */
+    type: BenefitAdsTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAds
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitAds
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitAds
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAds
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAds
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitAdsProperties}
+     * @memberof BenefitAds
+     */
+    properties: BenefitAdsProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitAdsTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type BenefitAdsTypeEnum = typeof BenefitAdsTypeEnum[keyof typeof BenefitAdsTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitAdsCreate
+ */
+export interface BenefitAdsCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsCreate
+     */
+    type: BenefitAdsCreateTypeEnum;
+    /**
+     * 
+     * @type {BenefitAdsProperties}
+     * @memberof BenefitAdsCreate
+     */
+    properties: BenefitAdsProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitAdsCreateTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type BenefitAdsCreateTypeEnum = typeof BenefitAdsCreateTypeEnum[keyof typeof BenefitAdsCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitAdsProperties
+ */
+export interface BenefitAdsProperties {
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitAdsProperties
+     */
+    image_height?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitAdsProperties
+     */
+    image_width?: number;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitAdsSubscriber
+ */
+export interface BenefitAdsSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsSubscriber
+     */
+    type: BenefitAdsSubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsSubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitAdsSubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitAdsSubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsSubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitAdsProperties}
+     * @memberof BenefitAdsSubscriber
+     */
+    properties: BenefitAdsProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitAdsSubscriberTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type BenefitAdsSubscriberTypeEnum = typeof BenefitAdsSubscriberTypeEnum[keyof typeof BenefitAdsSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitAdsUpdate
+ */
+export interface BenefitAdsUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsUpdate
+     */
+    type: BenefitAdsUpdateTypeEnum;
+    /**
+     * 
+     * @type {BenefitAdsProperties}
+     * @memberof BenefitAdsUpdate
+     */
+    properties?: BenefitAdsProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitAdsUpdateTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type BenefitAdsUpdateTypeEnum = typeof BenefitAdsUpdateTypeEnum[keyof typeof BenefitAdsUpdateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitArticles
+ */
+export interface BenefitArticles {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticles
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticles
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticles
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticles
+     */
+    type: BenefitArticlesTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticles
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitArticles
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitArticles
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticles
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticles
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitArticlesProperties}
+     * @memberof BenefitArticles
+     */
+    properties: BenefitArticlesProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitArticlesTypeEnum = {
+    ARTICLES: 'articles'
+} as const;
+export type BenefitArticlesTypeEnum = typeof BenefitArticlesTypeEnum[keyof typeof BenefitArticlesTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitArticlesProperties
+ */
+export interface BenefitArticlesProperties {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitArticlesProperties
+     */
+    paid_articles: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitArticlesSubscriber
+ */
+export interface BenefitArticlesSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesSubscriber
+     */
+    type: BenefitArticlesSubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesSubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitArticlesSubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitArticlesSubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesSubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitArticlesSubscriberProperties}
+     * @memberof BenefitArticlesSubscriber
+     */
+    properties: BenefitArticlesSubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitArticlesSubscriberTypeEnum = {
+    ARTICLES: 'articles'
+} as const;
+export type BenefitArticlesSubscriberTypeEnum = typeof BenefitArticlesSubscriberTypeEnum[keyof typeof BenefitArticlesSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitArticlesSubscriberProperties
+ */
+export interface BenefitArticlesSubscriberProperties {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitArticlesSubscriberProperties
+     */
+    paid_articles: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitArticlesUpdate
+ */
+export interface BenefitArticlesUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitArticlesUpdate
+     */
+    type: BenefitArticlesUpdateTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitArticlesUpdateTypeEnum = {
+    ARTICLES: 'articles'
+} as const;
+export type BenefitArticlesUpdateTypeEnum = typeof BenefitArticlesUpdateTypeEnum[keyof typeof BenefitArticlesUpdateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitBase
+ */
+export interface BenefitBase {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitBase
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitBase
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitBase
+     */
+    id: string;
+    /**
+     * 
+     * @type {BenefitType}
+     * @memberof BenefitBase
+     */
+    type: BenefitType;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitBase
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitBase
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitBase
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitBase
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitBase
+     */
+    repository_id?: string;
+}
+/**
+ * @type BenefitCreate
+ * 
+ * @export
+ */
+export type BenefitCreate = { type: 'ads' } & BenefitAdsCreate | { type: 'custom' } & BenefitCustomCreate | { type: 'discord' } & BenefitDiscordCreate | { type: 'github_repository' } & BenefitGitHubRepositoryCreate;
+/**
+ * 
+ * @export
+ * @interface BenefitCustom
+ */
+export interface BenefitCustom {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustom
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustom
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustom
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustom
+     */
+    type: BenefitCustomTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustom
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustom
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustom
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustom
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustom
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitCustomProperties}
+     * @memberof BenefitCustom
+     */
+    properties: BenefitCustomProperties;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustom
+     */
+    is_tax_applicable: boolean;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitCustomTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type BenefitCustomTypeEnum = typeof BenefitCustomTypeEnum[keyof typeof BenefitCustomTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitCustomCreate
+ */
+export interface BenefitCustomCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomCreate
+     */
+    type: BenefitCustomCreateTypeEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustomCreate
+     */
+    is_tax_applicable: boolean;
+    /**
+     * 
+     * @type {BenefitCustomProperties}
+     * @memberof BenefitCustomCreate
+     */
+    properties: BenefitCustomProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitCustomCreateTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[keyof typeof BenefitCustomCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitCustomProperties
+ */
+export interface BenefitCustomProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomProperties
+     */
+    note?: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitCustomSubscriber
+ */
+export interface BenefitCustomSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriber
+     */
+    type: BenefitCustomSubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustomSubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustomSubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitCustomSubscriberProperties}
+     * @memberof BenefitCustomSubscriber
+     */
+    properties: BenefitCustomSubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitCustomSubscriberTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type BenefitCustomSubscriberTypeEnum = typeof BenefitCustomSubscriberTypeEnum[keyof typeof BenefitCustomSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitCustomSubscriberProperties
+ */
+export interface BenefitCustomSubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomSubscriberProperties
+     */
+    note?: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitCustomUpdate
+ */
+export interface BenefitCustomUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomUpdate
+     */
+    type: BenefitCustomUpdateTypeEnum;
+    /**
+     * 
+     * @type {BenefitCustomProperties}
+     * @memberof BenefitCustomUpdate
+     */
+    properties?: BenefitCustomProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitCustomUpdateTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type BenefitCustomUpdateTypeEnum = typeof BenefitCustomUpdateTypeEnum[keyof typeof BenefitCustomUpdateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDiscord
+ */
+export interface BenefitDiscord {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscord
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscord
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscord
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscord
+     */
+    type: BenefitDiscordTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscord
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitDiscord
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitDiscord
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscord
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscord
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitDiscordProperties}
+     * @memberof BenefitDiscord
+     */
+    properties: BenefitDiscordProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDiscordTypeEnum = {
+    DISCORD: 'discord'
+} as const;
+export type BenefitDiscordTypeEnum = typeof BenefitDiscordTypeEnum[keyof typeof BenefitDiscordTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDiscordCreate
+ */
+export interface BenefitDiscordCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordCreate
+     */
+    type: BenefitDiscordCreateTypeEnum;
+    /**
+     * 
+     * @type {BenefitDiscordCreateProperties}
+     * @memberof BenefitDiscordCreate
+     */
+    properties: BenefitDiscordCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDiscordCreateTypeEnum = {
+    DISCORD: 'discord'
+} as const;
+export type BenefitDiscordCreateTypeEnum = typeof BenefitDiscordCreateTypeEnum[keyof typeof BenefitDiscordCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDiscordCreateProperties
+ */
+export interface BenefitDiscordCreateProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordCreateProperties
+     */
+    guild_token: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordCreateProperties
+     */
+    role_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitDiscordProperties
+ */
+export interface BenefitDiscordProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordProperties
+     */
+    guild_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordProperties
+     */
+    role_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordProperties
+     */
+    readonly guild_token: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitDiscordSubscriber
+ */
+export interface BenefitDiscordSubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriber
+     */
+    type: BenefitDiscordSubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitDiscordSubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitDiscordSubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitDiscordSubscriberProperties}
+     * @memberof BenefitDiscordSubscriber
+     */
+    properties: BenefitDiscordSubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDiscordSubscriberTypeEnum = {
+    DISCORD: 'discord'
+} as const;
+export type BenefitDiscordSubscriberTypeEnum = typeof BenefitDiscordSubscriberTypeEnum[keyof typeof BenefitDiscordSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDiscordSubscriberProperties
+ */
+export interface BenefitDiscordSubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordSubscriberProperties
+     */
+    guild_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitDiscordUpdate
+ */
+export interface BenefitDiscordUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordUpdate
+     */
+    type: BenefitDiscordUpdateTypeEnum;
+    /**
+     * 
+     * @type {BenefitDiscordCreateProperties}
+     * @memberof BenefitDiscordUpdate
+     */
+    properties?: BenefitDiscordCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDiscordUpdateTypeEnum = {
+    DISCORD: 'discord'
+} as const;
+export type BenefitDiscordUpdateTypeEnum = typeof BenefitDiscordUpdateTypeEnum[keyof typeof BenefitDiscordUpdateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitGitHubRepository
+ */
+export interface BenefitGitHubRepository {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepository
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepository
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepository
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepository
+     */
+    type: BenefitGitHubRepositoryTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepository
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitGitHubRepository
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitGitHubRepository
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepository
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepository
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitGitHubRepositoryProperties}
+     * @memberof BenefitGitHubRepository
+     */
+    properties: BenefitGitHubRepositoryProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitGitHubRepositoryTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type BenefitGitHubRepositoryTypeEnum = typeof BenefitGitHubRepositoryTypeEnum[keyof typeof BenefitGitHubRepositoryTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitGitHubRepositoryCreate
+ */
+export interface BenefitGitHubRepositoryCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreate
+     */
+    type: BenefitGitHubRepositoryCreateTypeEnum;
+    /**
+     * 
+     * @type {BenefitGitHubRepositoryCreateProperties}
+     * @memberof BenefitGitHubRepositoryCreate
+     */
+    properties: BenefitGitHubRepositoryCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitGitHubRepositoryCreateTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type BenefitGitHubRepositoryCreateTypeEnum = typeof BenefitGitHubRepositoryCreateTypeEnum[keyof typeof BenefitGitHubRepositoryCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitGitHubRepositoryCreateProperties
+ */
+export interface BenefitGitHubRepositoryCreateProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreateProperties
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreateProperties
+     */
+    repository_owner?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreateProperties
+     */
+    repository_name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreateProperties
+     */
+    permission: BenefitGitHubRepositoryCreatePropertiesPermissionEnum;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitGitHubRepositoryCreatePropertiesPermissionEnum = {
+    PULL: 'pull',
+    TRIAGE: 'triage',
+    PUSH: 'push',
+    MAINTAIN: 'maintain',
+    ADMIN: 'admin'
+} as const;
+export type BenefitGitHubRepositoryCreatePropertiesPermissionEnum = typeof BenefitGitHubRepositoryCreatePropertiesPermissionEnum[keyof typeof BenefitGitHubRepositoryCreatePropertiesPermissionEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitGitHubRepositoryProperties
+ */
+export interface BenefitGitHubRepositoryProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryProperties
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryProperties
+     */
+    repository_owner: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryProperties
+     */
+    repository_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryProperties
+     */
+    permission: BenefitGitHubRepositoryPropertiesPermissionEnum;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitGitHubRepositoryPropertiesPermissionEnum = {
+    PULL: 'pull',
+    TRIAGE: 'triage',
+    PUSH: 'push',
+    MAINTAIN: 'maintain',
+    ADMIN: 'admin'
+} as const;
+export type BenefitGitHubRepositoryPropertiesPermissionEnum = typeof BenefitGitHubRepositoryPropertiesPermissionEnum[keyof typeof BenefitGitHubRepositoryPropertiesPermissionEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitGitHubRepositorySubscriber
+ */
+export interface BenefitGitHubRepositorySubscriber {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    type: BenefitGitHubRepositorySubscriberTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    description: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    selectable: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    deletable: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {BenefitGitHubRepositorySubscriberProperties}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    properties: BenefitGitHubRepositorySubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitGitHubRepositorySubscriberTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type BenefitGitHubRepositorySubscriberTypeEnum = typeof BenefitGitHubRepositorySubscriberTypeEnum[keyof typeof BenefitGitHubRepositorySubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitGitHubRepositorySubscriberProperties
+ */
+export interface BenefitGitHubRepositorySubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriberProperties
+     */
+    repository_owner: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositorySubscriberProperties
+     */
+    repository_name: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGitHubRepositoryUpdate
+ */
+export interface BenefitGitHubRepositoryUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryUpdate
+     */
+    type: BenefitGitHubRepositoryUpdateTypeEnum;
+    /**
+     * 
+     * @type {BenefitGitHubRepositoryCreateProperties}
+     * @memberof BenefitGitHubRepositoryUpdate
+     */
+    properties?: BenefitGitHubRepositoryCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitGitHubRepositoryUpdateTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type BenefitGitHubRepositoryUpdateTypeEnum = typeof BenefitGitHubRepositoryUpdateTypeEnum[keyof typeof BenefitGitHubRepositoryUpdateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitPreconditionErrorNotification
+ */
+export interface BenefitPreconditionErrorNotification {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotification
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotification
+     */
+    type: BenefitPreconditionErrorNotificationTypeEnum;
+    /**
+     * 
+     * @type {BenefitPreconditionErrorNotificationPayload}
+     * @memberof BenefitPreconditionErrorNotification
+     */
+    payload: BenefitPreconditionErrorNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitPreconditionErrorNotificationTypeEnum = {
+    BENEFIT_PRECONDITION_ERROR_NOTIFICATION: 'BenefitPreconditionErrorNotification'
+} as const;
+export type BenefitPreconditionErrorNotificationTypeEnum = typeof BenefitPreconditionErrorNotificationTypeEnum[keyof typeof BenefitPreconditionErrorNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitPreconditionErrorNotificationPayload
+ */
+export interface BenefitPreconditionErrorNotificationPayload {
+    /**
+     * 
+     * @type {object}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    extra_context?: object;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    subject_template: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    body_template: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    subscription_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    subscription_tier_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    subscription_tier_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    benefit_description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitPreconditionErrorNotificationPayload
+     */
+    organization_name: string;
+}
+
+/**
+ * 
+ * @export
+ */
+export const BenefitType = {
+    CUSTOM: 'custom',
+    ARTICLES: 'articles',
+    ADS: 'ads',
+    DISCORD: 'discord',
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type BenefitType = typeof BenefitType[keyof typeof BenefitType];
+
+/**
+ * @type BenefitUpdate
+ * @export
+ */
+export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitGitHubRepositoryUpdate;
+
+/**
  * @type BenefitsInner
  * @export
  */
-export type BenefitsInner = SubscriptionBenefitArticles | SubscriptionBenefitBase;
+export type BenefitsInner = BenefitArticles | BenefitBase;
 
 /**
  * @type BenefitsInner1
  * @export
  */
-export type BenefitsInner1 = SubscriptionBenefitAdsSubscriber | SubscriptionBenefitArticlesSubscriber | SubscriptionBenefitCustomSubscriber | SubscriptionBenefitDiscordSubscriber | SubscriptionBenefitGitHubRepositorySubscriber;
+export type BenefitsInner1 = BenefitAdsSubscriber | BenefitArticlesSubscriber | BenefitCustomSubscriber | BenefitDiscordSubscriber | BenefitGitHubRepositorySubscriber;
 
 /**
  * 
@@ -1895,7 +3460,7 @@ export interface CreateAdvertisementCampaign {
      * @type {string}
      * @memberof CreateAdvertisementCampaign
      */
-    subscription_benefit_id: string;
+    benefit_id: string;
     /**
      * 
      * @type {string}
@@ -3171,7 +4736,7 @@ export interface IssueUpdateBadgeMessage {
  * @type ItemsInner
  * @export
  */
-export type ItemsInner = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
+export type ItemsInner = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
  * 
@@ -3646,19 +5211,19 @@ export interface ListResourceTransaction {
 /**
  * 
  * @export
- * @interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository
+ * @interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
  */
-export interface ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository {
+export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository {
     /**
      * 
      * @type {Array<ItemsInner>}
-     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository
+     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
      */
     items?: Array<ItemsInner>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository
+     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
      */
     pagination: Pagination;
 }
@@ -4643,7 +6208,7 @@ export interface MaintainerPledgedIssuePendingNotificationPayload {
  * 
  * @export
  */
-export type NotificationsInner = { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerDonationReceived' } & MaintainerDonationReceivedNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'SubscriptionBenefitPreconditionErrorNotification' } & SubscriptionBenefitPreconditionErrorNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
+export type NotificationsInner = { type: 'BenefitPreconditionErrorNotification' } & BenefitPreconditionErrorNotification | { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerDonationReceived' } & MaintainerDonationReceivedNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
 /**
  * 
  * @export
@@ -6482,22 +8047,22 @@ export interface RepositoryUpdate {
     profile_settings?: RepositoryProfileSettingsUpdate;
 }
 /**
- * @type ResponseSubscriptionsCreateSubscriptionBenefit
+ * @type ResponseBenefitsCreateBenefit
  * @export
  */
-export type ResponseSubscriptionsCreateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
+export type ResponseBenefitsCreateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
- * @type ResponseSubscriptionsLookupSubscriptionBenefit
+ * @type ResponseBenefitsLookupBenefit
  * @export
  */
-export type ResponseSubscriptionsLookupSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
+export type ResponseBenefitsLookupBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
- * @type ResponseSubscriptionsUpdateSubscriptionBenefit
+ * @type ResponseBenefitsUpdateBenefit
  * @export
  */
-export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefitAds | SubscriptionBenefitArticles | SubscriptionBenefitCustom | SubscriptionBenefitDiscord | SubscriptionBenefitGitHubRepository;
+export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
  * 
@@ -6920,1571 +8485,6 @@ export interface Subscription {
      */
     price?: SubscriptionTierPrice;
 }
-/**
- * 
- * @export
- * @interface SubscriptionBenefitAds
- */
-export interface SubscriptionBenefitAds {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAds
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAds
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAds
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAds
-     */
-    type: SubscriptionBenefitAdsTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAds
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitAds
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitAds
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAds
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAds
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitAdsProperties}
-     * @memberof SubscriptionBenefitAds
-     */
-    properties: SubscriptionBenefitAdsProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitAdsTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type SubscriptionBenefitAdsTypeEnum = typeof SubscriptionBenefitAdsTypeEnum[keyof typeof SubscriptionBenefitAdsTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitAdsCreate
- */
-export interface SubscriptionBenefitAdsCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsCreate
-     */
-    description: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsCreate
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsCreate
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsCreate
-     */
-    type: SubscriptionBenefitAdsCreateTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitAdsProperties}
-     * @memberof SubscriptionBenefitAdsCreate
-     */
-    properties: SubscriptionBenefitAdsProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitAdsCreateTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type SubscriptionBenefitAdsCreateTypeEnum = typeof SubscriptionBenefitAdsCreateTypeEnum[keyof typeof SubscriptionBenefitAdsCreateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitAdsProperties
- */
-export interface SubscriptionBenefitAdsProperties {
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionBenefitAdsProperties
-     */
-    image_height?: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionBenefitAdsProperties
-     */
-    image_width?: number;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitAdsSubscriber
- */
-export interface SubscriptionBenefitAdsSubscriber {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    type: SubscriptionBenefitAdsSubscriberTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitAdsProperties}
-     * @memberof SubscriptionBenefitAdsSubscriber
-     */
-    properties: SubscriptionBenefitAdsProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitAdsSubscriberTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type SubscriptionBenefitAdsSubscriberTypeEnum = typeof SubscriptionBenefitAdsSubscriberTypeEnum[keyof typeof SubscriptionBenefitAdsSubscriberTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitAdsUpdate
- */
-export interface SubscriptionBenefitAdsUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsUpdate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitAdsUpdate
-     */
-    type: SubscriptionBenefitAdsUpdateTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitAdsProperties}
-     * @memberof SubscriptionBenefitAdsUpdate
-     */
-    properties?: SubscriptionBenefitAdsProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitAdsUpdateTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type SubscriptionBenefitAdsUpdateTypeEnum = typeof SubscriptionBenefitAdsUpdateTypeEnum[keyof typeof SubscriptionBenefitAdsUpdateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitArticles
- */
-export interface SubscriptionBenefitArticles {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticles
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticles
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticles
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticles
-     */
-    type: SubscriptionBenefitArticlesTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticles
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitArticles
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitArticles
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticles
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticles
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitArticlesProperties}
-     * @memberof SubscriptionBenefitArticles
-     */
-    properties: SubscriptionBenefitArticlesProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitArticlesTypeEnum = {
-    ARTICLES: 'articles'
-} as const;
-export type SubscriptionBenefitArticlesTypeEnum = typeof SubscriptionBenefitArticlesTypeEnum[keyof typeof SubscriptionBenefitArticlesTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitArticlesProperties
- */
-export interface SubscriptionBenefitArticlesProperties {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitArticlesProperties
-     */
-    paid_articles: boolean;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitArticlesSubscriber
- */
-export interface SubscriptionBenefitArticlesSubscriber {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    type: SubscriptionBenefitArticlesSubscriberTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitArticlesSubscriberProperties}
-     * @memberof SubscriptionBenefitArticlesSubscriber
-     */
-    properties: SubscriptionBenefitArticlesSubscriberProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitArticlesSubscriberTypeEnum = {
-    ARTICLES: 'articles'
-} as const;
-export type SubscriptionBenefitArticlesSubscriberTypeEnum = typeof SubscriptionBenefitArticlesSubscriberTypeEnum[keyof typeof SubscriptionBenefitArticlesSubscriberTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitArticlesSubscriberProperties
- */
-export interface SubscriptionBenefitArticlesSubscriberProperties {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitArticlesSubscriberProperties
-     */
-    paid_articles: boolean;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitArticlesUpdate
- */
-export interface SubscriptionBenefitArticlesUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesUpdate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitArticlesUpdate
-     */
-    type: SubscriptionBenefitArticlesUpdateTypeEnum;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitArticlesUpdateTypeEnum = {
-    ARTICLES: 'articles'
-} as const;
-export type SubscriptionBenefitArticlesUpdateTypeEnum = typeof SubscriptionBenefitArticlesUpdateTypeEnum[keyof typeof SubscriptionBenefitArticlesUpdateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitBase
- */
-export interface SubscriptionBenefitBase {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitBase
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitBase
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitBase
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitType}
-     * @memberof SubscriptionBenefitBase
-     */
-    type: SubscriptionBenefitType;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitBase
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitBase
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitBase
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitBase
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitBase
-     */
-    repository_id?: string;
-}
-/**
- * @type SubscriptionBenefitCreate
- * 
- * @export
- */
-export type SubscriptionBenefitCreate = { type: 'ads' } & SubscriptionBenefitAdsCreate | { type: 'custom' } & SubscriptionBenefitCustomCreate | { type: 'discord' } & SubscriptionBenefitDiscordCreate | { type: 'github_repository' } & SubscriptionBenefitGitHubRepositoryCreate;
-/**
- * 
- * @export
- * @interface SubscriptionBenefitCustom
- */
-export interface SubscriptionBenefitCustom {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustom
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustom
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustom
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustom
-     */
-    type: SubscriptionBenefitCustomTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustom
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitCustom
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitCustom
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustom
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustom
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitCustomProperties}
-     * @memberof SubscriptionBenefitCustom
-     */
-    properties: SubscriptionBenefitCustomProperties;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitCustom
-     */
-    is_tax_applicable: boolean;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitCustomTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type SubscriptionBenefitCustomTypeEnum = typeof SubscriptionBenefitCustomTypeEnum[keyof typeof SubscriptionBenefitCustomTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitCustomCreate
- */
-export interface SubscriptionBenefitCustomCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomCreate
-     */
-    description: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomCreate
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomCreate
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomCreate
-     */
-    type: SubscriptionBenefitCustomCreateTypeEnum;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitCustomCreate
-     */
-    is_tax_applicable: boolean;
-    /**
-     * 
-     * @type {SubscriptionBenefitCustomProperties}
-     * @memberof SubscriptionBenefitCustomCreate
-     */
-    properties: SubscriptionBenefitCustomProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitCustomCreateTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type SubscriptionBenefitCustomCreateTypeEnum = typeof SubscriptionBenefitCustomCreateTypeEnum[keyof typeof SubscriptionBenefitCustomCreateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitCustomProperties
- */
-export interface SubscriptionBenefitCustomProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomProperties
-     */
-    note?: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitCustomSubscriber
- */
-export interface SubscriptionBenefitCustomSubscriber {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    type: SubscriptionBenefitCustomSubscriberTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitCustomSubscriberProperties}
-     * @memberof SubscriptionBenefitCustomSubscriber
-     */
-    properties: SubscriptionBenefitCustomSubscriberProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitCustomSubscriberTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type SubscriptionBenefitCustomSubscriberTypeEnum = typeof SubscriptionBenefitCustomSubscriberTypeEnum[keyof typeof SubscriptionBenefitCustomSubscriberTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitCustomSubscriberProperties
- */
-export interface SubscriptionBenefitCustomSubscriberProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomSubscriberProperties
-     */
-    note?: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitCustomUpdate
- */
-export interface SubscriptionBenefitCustomUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomUpdate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitCustomUpdate
-     */
-    type: SubscriptionBenefitCustomUpdateTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitCustomProperties}
-     * @memberof SubscriptionBenefitCustomUpdate
-     */
-    properties?: SubscriptionBenefitCustomProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitCustomUpdateTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type SubscriptionBenefitCustomUpdateTypeEnum = typeof SubscriptionBenefitCustomUpdateTypeEnum[keyof typeof SubscriptionBenefitCustomUpdateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitDiscord
- */
-export interface SubscriptionBenefitDiscord {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    type: SubscriptionBenefitDiscordTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitDiscordProperties}
-     * @memberof SubscriptionBenefitDiscord
-     */
-    properties: SubscriptionBenefitDiscordProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitDiscordTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type SubscriptionBenefitDiscordTypeEnum = typeof SubscriptionBenefitDiscordTypeEnum[keyof typeof SubscriptionBenefitDiscordTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitDiscordCreate
- */
-export interface SubscriptionBenefitDiscordCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordCreate
-     */
-    description: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordCreate
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordCreate
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordCreate
-     */
-    type: SubscriptionBenefitDiscordCreateTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitDiscordCreateProperties}
-     * @memberof SubscriptionBenefitDiscordCreate
-     */
-    properties: SubscriptionBenefitDiscordCreateProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitDiscordCreateTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type SubscriptionBenefitDiscordCreateTypeEnum = typeof SubscriptionBenefitDiscordCreateTypeEnum[keyof typeof SubscriptionBenefitDiscordCreateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitDiscordCreateProperties
- */
-export interface SubscriptionBenefitDiscordCreateProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordCreateProperties
-     */
-    guild_token: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordCreateProperties
-     */
-    role_id: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitDiscordProperties
- */
-export interface SubscriptionBenefitDiscordProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordProperties
-     */
-    guild_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordProperties
-     */
-    role_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordProperties
-     */
-    readonly guild_token: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitDiscordSubscriber
- */
-export interface SubscriptionBenefitDiscordSubscriber {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    type: SubscriptionBenefitDiscordSubscriberTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitDiscordSubscriberProperties}
-     * @memberof SubscriptionBenefitDiscordSubscriber
-     */
-    properties: SubscriptionBenefitDiscordSubscriberProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitDiscordSubscriberTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type SubscriptionBenefitDiscordSubscriberTypeEnum = typeof SubscriptionBenefitDiscordSubscriberTypeEnum[keyof typeof SubscriptionBenefitDiscordSubscriberTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitDiscordSubscriberProperties
- */
-export interface SubscriptionBenefitDiscordSubscriberProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordSubscriberProperties
-     */
-    guild_id: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitDiscordUpdate
- */
-export interface SubscriptionBenefitDiscordUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordUpdate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitDiscordUpdate
-     */
-    type: SubscriptionBenefitDiscordUpdateTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitDiscordCreateProperties}
-     * @memberof SubscriptionBenefitDiscordUpdate
-     */
-    properties?: SubscriptionBenefitDiscordCreateProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitDiscordUpdateTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type SubscriptionBenefitDiscordUpdateTypeEnum = typeof SubscriptionBenefitDiscordUpdateTypeEnum[keyof typeof SubscriptionBenefitDiscordUpdateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitGitHubRepository
- */
-export interface SubscriptionBenefitGitHubRepository {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    type: SubscriptionBenefitGitHubRepositoryTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitGitHubRepositoryProperties}
-     * @memberof SubscriptionBenefitGitHubRepository
-     */
-    properties: SubscriptionBenefitGitHubRepositoryProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitGitHubRepositoryTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type SubscriptionBenefitGitHubRepositoryTypeEnum = typeof SubscriptionBenefitGitHubRepositoryTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositoryTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitGitHubRepositoryCreate
- */
-export interface SubscriptionBenefitGitHubRepositoryCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreate
-     */
-    description: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreate
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreate
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreate
-     */
-    type: SubscriptionBenefitGitHubRepositoryCreateTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitGitHubRepositoryCreateProperties}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreate
-     */
-    properties: SubscriptionBenefitGitHubRepositoryCreateProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitGitHubRepositoryCreateTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type SubscriptionBenefitGitHubRepositoryCreateTypeEnum = typeof SubscriptionBenefitGitHubRepositoryCreateTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositoryCreateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitGitHubRepositoryCreateProperties
- */
-export interface SubscriptionBenefitGitHubRepositoryCreateProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
-     */
-    repository_owner?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
-     */
-    repository_name?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryCreateProperties
-     */
-    permission: SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum = {
-    PULL: 'pull',
-    TRIAGE: 'triage',
-    PUSH: 'push',
-    MAINTAIN: 'maintain',
-    ADMIN: 'admin'
-} as const;
-export type SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum = typeof SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum[keyof typeof SubscriptionBenefitGitHubRepositoryCreatePropertiesPermissionEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitGitHubRepositoryProperties
- */
-export interface SubscriptionBenefitGitHubRepositoryProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryProperties
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryProperties
-     */
-    repository_owner: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryProperties
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryProperties
-     */
-    permission: SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum = {
-    PULL: 'pull',
-    TRIAGE: 'triage',
-    PUSH: 'push',
-    MAINTAIN: 'maintain',
-    ADMIN: 'admin'
-} as const;
-export type SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum = typeof SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum[keyof typeof SubscriptionBenefitGitHubRepositoryPropertiesPermissionEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitGitHubRepositorySubscriber
- */
-export interface SubscriptionBenefitGitHubRepositorySubscriber {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    type: SubscriptionBenefitGitHubRepositorySubscriberTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    description: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    selectable: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    deletable: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {SubscriptionBenefitGitHubRepositorySubscriberProperties}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriber
-     */
-    properties: SubscriptionBenefitGitHubRepositorySubscriberProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitGitHubRepositorySubscriberTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type SubscriptionBenefitGitHubRepositorySubscriberTypeEnum = typeof SubscriptionBenefitGitHubRepositorySubscriberTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositorySubscriberTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitGitHubRepositorySubscriberProperties
- */
-export interface SubscriptionBenefitGitHubRepositorySubscriberProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriberProperties
-     */
-    repository_owner: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositorySubscriberProperties
-     */
-    repository_name: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionBenefitGitHubRepositoryUpdate
- */
-export interface SubscriptionBenefitGitHubRepositoryUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryUpdate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitGitHubRepositoryUpdate
-     */
-    type: SubscriptionBenefitGitHubRepositoryUpdateTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitGitHubRepositoryCreateProperties}
-     * @memberof SubscriptionBenefitGitHubRepositoryUpdate
-     */
-    properties?: SubscriptionBenefitGitHubRepositoryCreateProperties;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitGitHubRepositoryUpdateTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type SubscriptionBenefitGitHubRepositoryUpdateTypeEnum = typeof SubscriptionBenefitGitHubRepositoryUpdateTypeEnum[keyof typeof SubscriptionBenefitGitHubRepositoryUpdateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitPreconditionErrorNotification
- */
-export interface SubscriptionBenefitPreconditionErrorNotification {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotification
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotification
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotification
-     */
-    type: SubscriptionBenefitPreconditionErrorNotificationTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionBenefitPreconditionErrorNotificationPayload}
-     * @memberof SubscriptionBenefitPreconditionErrorNotification
-     */
-    payload: SubscriptionBenefitPreconditionErrorNotificationPayload;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionBenefitPreconditionErrorNotificationTypeEnum = {
-    SUBSCRIPTION_BENEFIT_PRECONDITION_ERROR_NOTIFICATION: 'SubscriptionBenefitPreconditionErrorNotification'
-} as const;
-export type SubscriptionBenefitPreconditionErrorNotificationTypeEnum = typeof SubscriptionBenefitPreconditionErrorNotificationTypeEnum[keyof typeof SubscriptionBenefitPreconditionErrorNotificationTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionBenefitPreconditionErrorNotificationPayload
- */
-export interface SubscriptionBenefitPreconditionErrorNotificationPayload {
-    /**
-     * 
-     * @type {object}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    extra_context?: object;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    subject_template: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    body_template: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    subscription_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    subscription_tier_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    subscription_tier_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    subscription_benefit_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    subscription_benefit_description: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionBenefitPreconditionErrorNotificationPayload
-     */
-    organization_name: string;
-}
-
-/**
- * 
- * @export
- */
-export const SubscriptionBenefitType = {
-    CUSTOM: 'custom',
-    ARTICLES: 'articles',
-    ADS: 'ads',
-    DISCORD: 'discord',
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeof SubscriptionBenefitType];
-
-/**
- * @type SubscriptionBenefitUpdate
- * @export
- */
-export type SubscriptionBenefitUpdate = SubscriptionBenefitAdsUpdate | SubscriptionBenefitArticlesUpdate | SubscriptionBenefitCustomUpdate | SubscriptionBenefitDiscordUpdate | SubscriptionBenefitGitHubRepositoryUpdate;
-
 /**
  * 
  * @export

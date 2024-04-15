@@ -43,11 +43,11 @@ export interface AdvertisementsApiGetCampaignRequest {
 
 export interface AdvertisementsApiSearchCampaignsRequest {
     subscriptionId?: string;
-    subscriptionBenefitId?: string;
+    benefitId?: string;
 }
 
 export interface AdvertisementsApiSearchDisplayRequest {
-    subscriptionBenefitId: string;
+    benefitId: string;
 }
 
 export interface AdvertisementsApiTrackViewRequest {
@@ -246,8 +246,8 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             queryParameters['subscription_id'] = requestParameters['subscriptionId'];
         }
 
-        if (requestParameters['subscriptionBenefitId'] != null) {
-            queryParameters['subscription_benefit_id'] = requestParameters['subscriptionBenefitId'];
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -282,17 +282,17 @@ export class AdvertisementsApi extends runtime.BaseAPI {
      * Search Display
      */
     async searchDisplayRaw(requestParameters: AdvertisementsApiSearchDisplayRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAdvertisementDisplay>> {
-        if (requestParameters['subscriptionBenefitId'] == null) {
+        if (requestParameters['benefitId'] == null) {
             throw new runtime.RequiredError(
-                'subscriptionBenefitId',
-                'Required parameter "subscriptionBenefitId" was null or undefined when calling searchDisplay().'
+                'benefitId',
+                'Required parameter "benefitId" was null or undefined when calling searchDisplay().'
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters['subscriptionBenefitId'] != null) {
-            queryParameters['subscription_benefit_id'] = requestParameters['subscriptionBenefitId'];
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

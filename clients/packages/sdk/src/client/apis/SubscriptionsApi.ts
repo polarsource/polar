@@ -21,17 +21,10 @@ import type {
   ListResourceSubscriptionSubscriber,
   ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
-  ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository,
   Platforms,
-  ResponseSubscriptionsCreateSubscriptionBenefit,
-  ResponseSubscriptionsLookupSubscriptionBenefit,
-  ResponseSubscriptionsUpdateSubscriptionBenefit,
   SubscribeSession,
   SubscribeSessionCreate,
   Subscription,
-  SubscriptionBenefitCreate,
-  SubscriptionBenefitType,
-  SubscriptionBenefitUpdate,
   SubscriptionCreateEmail,
   SubscriptionTier,
   SubscriptionTierBenefitsUpdate,
@@ -66,16 +59,8 @@ export interface SubscriptionsApiCreateSubscribeSessionRequest {
     subscribeSessionCreate: SubscribeSessionCreate;
 }
 
-export interface SubscriptionsApiCreateSubscriptionBenefitRequest {
-    subscriptionBenefitCreate: SubscriptionBenefitCreate;
-}
-
 export interface SubscriptionsApiCreateSubscriptionTierRequest {
     subscriptionTierCreate: SubscriptionTierCreate;
-}
-
-export interface SubscriptionsApiDeleteSubscriptionBenefitRequest {
-    id: string;
 }
 
 export interface SubscriptionsApiGetSubscribeSessionRequest {
@@ -91,10 +76,6 @@ export interface SubscriptionsApiGetSubscriptionsStatisticsRequest {
     directOrganization?: boolean;
     types?: Array<SubscriptionTierType>;
     subscriptionTierId?: string;
-}
-
-export interface SubscriptionsApiLookupSubscriptionBenefitRequest {
-    subscriptionBenefitId: string;
 }
 
 export interface SubscriptionsApiLookupSubscriptionTierRequest {
@@ -113,16 +94,6 @@ export interface SubscriptionsApiSearchSubscribedSubscriptionsRequest {
     sorting?: Array<string>;
     organizationName?: string;
     platform?: Platforms;
-}
-
-export interface SubscriptionsApiSearchSubscriptionBenefitsRequest {
-    organizationName: string;
-    platform: Platforms;
-    repositoryName?: string;
-    directOrganization?: boolean;
-    type?: SubscriptionBenefitType;
-    page?: number;
-    limit?: number;
 }
 
 export interface SubscriptionsApiSearchSubscriptionTiersRequest {
@@ -170,11 +141,6 @@ export interface SubscriptionsApiSubscriptionsImportRequest {
     platform: Platforms;
     file: Blob;
     repositoryName?: string;
-}
-
-export interface SubscriptionsApiUpdateSubscriptionBenefitRequest {
-    id: string;
-    subscriptionBenefitUpdate: SubscriptionBenefitUpdate;
 }
 
 export interface SubscriptionsApiUpdateSubscriptionTierRequest {
@@ -438,50 +404,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create Subscription Benefit
-     */
-    async createSubscriptionBenefitRaw(requestParameters: SubscriptionsApiCreateSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseSubscriptionsCreateSubscriptionBenefit>> {
-        if (requestParameters['subscriptionBenefitCreate'] == null) {
-            throw new runtime.RequiredError(
-                'subscriptionBenefitCreate',
-                'Required parameter "subscriptionBenefitCreate" was null or undefined when calling createSubscriptionBenefit().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/benefits/`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['subscriptionBenefitCreate'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Create Subscription Benefit
-     */
-    async createSubscriptionBenefit(requestParameters: SubscriptionsApiCreateSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseSubscriptionsCreateSubscriptionBenefit> {
-        const response = await this.createSubscriptionBenefitRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Create Subscription Tier
      */
     async createSubscriptionTierRaw(requestParameters: SubscriptionsApiCreateSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
@@ -523,46 +445,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     async createSubscriptionTier(requestParameters: SubscriptionsApiCreateSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionTier> {
         const response = await this.createSubscriptionTierRaw(requestParameters, initOverrides);
         return await response.value();
-    }
-
-    /**
-     * Delete Subscription Benefit
-     */
-    async deleteSubscriptionBenefitRaw(requestParameters: SubscriptionsApiDeleteSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling deleteSubscriptionBenefit().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'DELETE',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.VoidApiResponse(response);
-    }
-
-    /**
-     * Delete Subscription Benefit
-     */
-    async deleteSubscriptionBenefit(requestParameters: SubscriptionsApiDeleteSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.deleteSubscriptionBenefitRaw(requestParameters, initOverrides);
     }
 
     /**
@@ -701,51 +583,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup Subscription Benefit
-     */
-    async lookupSubscriptionBenefitRaw(requestParameters: SubscriptionsApiLookupSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseSubscriptionsLookupSubscriptionBenefit>> {
-        if (requestParameters['subscriptionBenefitId'] == null) {
-            throw new runtime.RequiredError(
-                'subscriptionBenefitId',
-                'Required parameter "subscriptionBenefitId" was null or undefined when calling lookupSubscriptionBenefit().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['subscriptionBenefitId'] != null) {
-            queryParameters['subscription_benefit_id'] = requestParameters['subscriptionBenefitId'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/benefits/lookup`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Lookup Subscription Benefit
-     */
-    async lookupSubscriptionBenefit(requestParameters: SubscriptionsApiLookupSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseSubscriptionsLookupSubscriptionBenefit> {
-        const response = await this.lookupSubscriptionBenefitRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Lookup Subscription Tier
      */
     async lookupSubscriptionTierRaw(requestParameters: SubscriptionsApiLookupSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
@@ -865,82 +702,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async searchSubscribedSubscriptions(requestParameters: SubscriptionsApiSearchSubscribedSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSubscriber> {
         const response = await this.searchSubscribedSubscriptionsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Search Subscription Benefits
-     */
-    async searchSubscriptionBenefitsRaw(requestParameters: SubscriptionsApiSearchSubscriptionBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling searchSubscriptionBenefits().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling searchSubscriptionBenefits().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
-        if (requestParameters['directOrganization'] != null) {
-            queryParameters['direct_organization'] = requestParameters['directOrganization'];
-        }
-
-        if (requestParameters['type'] != null) {
-            queryParameters['type'] = requestParameters['type'];
-        }
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/benefits/search`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Search Subscription Benefits
-     */
-    async searchSubscriptionBenefits(requestParameters: SubscriptionsApiSearchSubscriptionBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionSubscriptionBenefitArticlesSubscriptionBenefitAdsSubscriptionBenefitCustomSubscriptionBenefitDiscordSubscriptionBenefitGitHubRepository> {
-        const response = await this.searchSubscriptionBenefitsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -1337,57 +1098,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async subscriptionsImport(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsImported> {
         const response = await this.subscriptionsImportRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Update Subscription Benefit
-     */
-    async updateSubscriptionBenefitRaw(requestParameters: SubscriptionsApiUpdateSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseSubscriptionsUpdateSubscriptionBenefit>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling updateSubscriptionBenefit().'
-            );
-        }
-
-        if (requestParameters['subscriptionBenefitUpdate'] == null) {
-            throw new runtime.RequiredError(
-                'subscriptionBenefitUpdate',
-                'Required parameter "subscriptionBenefitUpdate" was null or undefined when calling updateSubscriptionBenefit().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['subscriptionBenefitUpdate'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Update Subscription Benefit
-     */
-    async updateSubscriptionBenefit(requestParameters: SubscriptionsApiUpdateSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseSubscriptionsUpdateSubscriptionBenefit> {
-        const response = await this.updateSubscriptionBenefitRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

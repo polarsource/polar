@@ -2,6 +2,7 @@ import httpx
 import pytest
 from arq import Retry
 from pytest_mock import MockerFixture
+from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models.organization import Organization
@@ -38,6 +39,7 @@ async def test_webhook_send(
     endpoint = WebhookEndpoint(
         url="https://test.example.com/hook",
         organization_id=organization.id,
+        secret="mysecret",
     )
     await save_fixture(endpoint)
 
@@ -74,6 +76,7 @@ async def test_webhook_delivery(
     endpoint = WebhookEndpoint(
         url="https://test.example.com/hook",
         organization_id=organization.id,
+        secret="mysecret",
     )
     await save_fixture(endpoint)
 
@@ -109,6 +112,7 @@ async def test_webhook_delivery_500(
     endpoint = WebhookEndpoint(
         url="https://test.example.com/hook",
         organization_id=organization.id,
+        secret="mysecret",
     )
     await save_fixture(endpoint)
 
@@ -135,3 +139,50 @@ async def test_webhook_delivery_500(
         ctx=job_context,
         webhook_event_id=event.id,
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_webhook_standard_webhooks_compatible(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    mocker: MockerFixture,
+    organization: Organization,
+    job_context: JobContext,
+) -> None:
+    called = True
+
+    def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
+        nonlocal called
+        called = True
+        print(kwargs)
+
+        w = StandardWebhook("mysecret")
+        w.verify(kwargs["json"], kwargs["headers"])
+
+        return httpx.Response(
+            status_code=200,
+        )
+
+    mocker.patch("httpx.post", new=httpx_post)
+
+    endpoint = WebhookEndpoint(
+        url="https://test.example.com/hook",
+        organization_id=organization.id,
+        secret="mysecret",
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    await save_fixture(event)
+
+    # then
+    session.expunge_all()
+
+    await _webhook_event_send(
+        session=session,
+        ctx=job_context,
+        webhook_event_id=event.id,
+    )
+
+    assert called

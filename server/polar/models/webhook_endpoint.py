@@ -16,6 +16,8 @@ class WebhookEndpoint(RecordModel):
 
     url: Mapped[str] = mapped_column(String, nullable=False)
 
+    secret: Mapped[str] = mapped_column(String, nullable=False)
+
     event_subscription_created: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

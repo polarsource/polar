@@ -848,7 +848,7 @@ class TestEnqueueBenefitsGrants:
         enqueue_job_mock.assert_has_calls(
             [
                 call(
-                    "subscription.subscription_benefit.grant",
+                    "benefit.grant",
                     subscription_id=subscription.id,
                     user_id=subscription.user_id,
                     benefit_id=benefit.id,
@@ -894,7 +894,7 @@ class TestEnqueueBenefitsGrants:
         enqueue_job_mock.assert_has_calls(
             [
                 call(
-                    "subscription.subscription_benefit.revoke",
+                    "benefit.revoke",
                     subscription_id=subscription.id,
                     user_id=subscription.user_id,
                     benefit_id=benefit.id,
@@ -938,7 +938,7 @@ class TestEnqueueBenefitsGrants:
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
         enqueue_job_mock.assert_any_call(
-            "subscription.subscription_benefit.revoke",
+            "benefit.revoke",
             subscription_id=subscription.id,
             user_id=subscription.user_id,
             benefit_id=benefits[0].id,
@@ -981,7 +981,7 @@ class TestEnqueueBenefitsGrants:
             enqueue_job_mock.assert_has_calls(
                 [
                     call(
-                        "subscription.subscription_benefit.grant",
+                        "benefit.grant",
                         subscription_id=subscription_organization.id,
                         user_id=user_id,
                         benefit_id=benefit.id,

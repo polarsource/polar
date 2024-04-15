@@ -281,8 +281,8 @@ class TestEnqueueBenefitGrantUpdates:
         )
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription_benefit.update",
-            subscription_benefit_grant_id=granted_grant.id,
+            "benefit.update",
+            benefit_grant_id=granted_grant.id,
         )
 
     async def test_required_update_revoked(
@@ -452,8 +452,7 @@ class TestEnqueueBenefitGrantDeletions:
         )
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription_benefit.delete",
-            subscription_benefit_grant_id=granted_grant.id,
+            "benefit.delete", benefit_grant_id=granted_grant.id
         )
 
 
@@ -606,7 +605,7 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
         )
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription_benefit.grant",
+            "benefit.grant",
             subscription_id=pending_grant.subscription_id,
             user_id=user.id,
             benefit_id=pending_grant.benefit_id,

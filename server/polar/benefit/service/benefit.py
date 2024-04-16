@@ -249,15 +249,12 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         self,
         session: AsyncSession,
         organization: Organization | None = None,
-        repository: Repository | None = None,
     ) -> tuple[BenefitArticles, BenefitArticles]:
         statement = select(BenefitArticles)
         if organization is not None:
             statement = statement.where(
                 BenefitArticles.organization_id == organization.id
             )
-        if repository is not None:
-            statement = statement.where(BenefitArticles.repository_id == repository.id)
 
         result = await session.execute(statement)
 
@@ -277,7 +274,6 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
                 deletable=False,
                 properties={"paid_articles": False},
                 organization=organization,
-                repository=repository,
             )
             session.add(public_articles)
 
@@ -289,7 +285,6 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
                 deletable=False,
                 properties={"paid_articles": True},
                 organization=organization,
-                repository=repository,
             )
             session.add(premium_articles)
 

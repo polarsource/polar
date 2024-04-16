@@ -51,7 +51,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, subscription, user, benefit_organization
+            session, user, benefit_organization, subscription=subscription
         )
 
         assert grant.subscription_id == subscription.id
@@ -81,7 +81,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.grant_benefit(
-            session, subscription, user, benefit_organization
+            session, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -109,7 +109,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.grant_benefit(
-            session, subscription, user, benefit_organization
+            session, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -130,7 +130,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, subscription, user, benefit_organization
+            session, user, benefit_organization, subscription=subscription
         )
 
         assert not grant.is_granted
@@ -150,7 +150,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.revoke_benefit(
-            session, subscription, user, benefit_organization
+            session, user, benefit_organization, subscription=subscription
         )
 
         assert grant.subscription_id == subscription.id
@@ -181,7 +181,7 @@ class TestRevokeBenefit:
         await save_fixture(grant)
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, subscription, user, benefit_organization
+            session, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -210,7 +210,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, subscription, user, benefit_organization
+            session, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -535,7 +535,7 @@ class TestHandlePreconditionError:
         session.expunge_all()
 
         await benefit_grant_service.handle_precondition_error(
-            session, error, subscription, user, benefit_organization
+            session, error, user, benefit_organization, subscription=subscription
         )
 
         notification_send_to_user_mock.assert_not_called()
@@ -561,11 +561,15 @@ class TestHandlePreconditionError:
         session.expunge_all()
 
         # load
-        session_loaded = await subscription_service.get(session, subscription.id)
-        assert session_loaded
+        subscription_loaded = await subscription_service.get(session, subscription.id)
+        assert subscription_loaded
 
         await benefit_grant_service.handle_precondition_error(
-            session, error, session_loaded, user, benefit_organization
+            session,
+            error,
+            user,
+            benefit_organization,
+            subscription=subscription_loaded,
         )
 
         notification_send_to_user_mock.assert_called_once()
@@ -606,7 +610,7 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
 
         enqueue_job_mock.assert_called_once_with(
             "benefit.grant",
-            subscription_id=pending_grant.subscription_id,
             user_id=user.id,
             benefit_id=pending_grant.benefit_id,
+            **pending_grant.get_scope(),
         )

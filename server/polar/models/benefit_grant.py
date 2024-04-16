@@ -1,5 +1,6 @@
+import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -19,6 +20,14 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import Benefit, Subscription, User
+
+
+class BenefitGrantScope(TypedDict, total=False):
+    subscription: "Subscription"
+
+
+class BenefitGrantScopeArgs(TypedDict, total=False):
+    subscription_id: uuid.UUID
 
 
 class BenefitGrant(RecordModel):
@@ -97,3 +106,9 @@ class BenefitGrant(RecordModel):
     def set_revoked(self) -> None:
         self.granted_at = None
         self.revoked_at = datetime.now(UTC)
+
+    def get_scope(self) -> BenefitGrantScopeArgs:
+        scope: BenefitGrantScopeArgs = {}
+        if self.subscription_id:
+            scope["subscription_id"] = self.subscription_id
+        return scope

@@ -1,5 +1,8 @@
+import base64
+
 import httpx
 import pytest
+import standardwebhooks
 from arq import Retry
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
@@ -155,9 +158,8 @@ async def test_webhook_standard_webhooks_compatible(
     def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
         nonlocal called
         called = True
-        print(kwargs)
 
-        w = StandardWebhook("mysecret")
+        w = StandardWebhook(btoa("mysecret"))
         w.verify(kwargs["json"], kwargs["headers"])
 
         return httpx.Response(
@@ -186,3 +188,54 @@ async def test_webhook_standard_webhooks_compatible(
     )
 
     assert called
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_webhook_standard_webhooks_fails_unexpected_secret(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    mocker: MockerFixture,
+    organization: Organization,
+    job_context: JobContext,
+) -> None:
+    called = True
+
+    def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
+        nonlocal called
+        called = True
+
+        w = StandardWebhook(btoa("mysecret"))
+        w.verify(kwargs["json"], kwargs["headers"])
+
+        return httpx.Response(
+            status_code=200,
+        )
+
+    mocker.patch("httpx.post", new=httpx_post)
+
+    endpoint = WebhookEndpoint(
+        url="https://test.example.com/hook",
+        organization_id=organization.id,
+        secret="not-mysecret",
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    await save_fixture(event)
+
+    # then
+    session.expunge_all()
+
+    with pytest.raises(standardwebhooks.webhooks.WebhookVerificationError):
+        await _webhook_event_send(
+            session=session,
+            ctx=job_context,
+            webhook_event_id=event.id,
+        )
+
+    assert called
+
+
+def btoa(a: str) -> str:
+    return base64.b64encode(a.encode("utf-8")).decode("utf-8")

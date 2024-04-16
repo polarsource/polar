@@ -111,7 +111,7 @@ class GithubIssueService(IssueService):
             | types.Issue,
         ) -> bool:
             if issue.pull_request:
-                log.error(
+                log.info(
                     "refusing to save a pull_request as issue",
                     external_id=issue.id,
                 )

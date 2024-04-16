@@ -25,10 +25,6 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
-from polar.benefit.service.benefit import benefit as benefit_service
-from polar.benefit.service.benefit_grant import (
-    benefit_grant as benefit_grant_service,
-)
 from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
@@ -42,12 +38,15 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
+    Benefit,
+    BenefitGrant,
     HeldBalance,
     OAuthAccount,
     Organization,
     Repository,
     Subscription,
     SubscriptionTier,
+    SubscriptionTierBenefit,
     SubscriptionTierPrice,
     Transaction,
     User,
@@ -838,7 +837,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Get granted benefits that are not part of this tier.
         # It happens if the subscription has been upgraded/downgraded.
-        outdated_grants = await benefit_grant_service.get_outdated_grants(
+        outdated_grants = await self._get_outdated_grants(
             session, subscription, subscription_tier
         )
 
@@ -877,28 +876,21 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             for outdated_grant in outdated_grants:
                 enqueue_job(
                     "benefit.revoke",
-                    subscription_id=subscription.id,
                     user_id=user_id,
                     benefit_id=outdated_grant.benefit_id,
+                    subscription_id=subscription.id,
                 )
 
             # Special hard-coded logic to make sure
             # we always at least subscribe to public articles
             if subscription_tier.get_articles_benefit() is None:
                 await session.refresh(subscription_tier, {"organization", "repository"})
-                (
-                    free_articles_benefit,
-                    _,
-                ) = await benefit_service.get_or_create_articles_benefits(
-                    session,
-                    subscription_tier.organization,
-                    subscription_tier.repository,
-                )
                 enqueue_job(
-                    f"benefit.{task}",
-                    subscription_id=subscription.id,
+                    "benefit.force_free_articles",
+                    task=task,
                     user_id=user_id,
-                    subscription_benefit_id=free_articles_benefit.id,
+                    organization_id=subscription_tier.managing_organization_id,
+                    subscription_id=subscription.id,
                 )
 
     async def update_subscription_tier_benefits_grants(
@@ -1304,6 +1296,31 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 ),
             )
         )
+
+    async def _get_outdated_grants(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        current_subscription_tier: SubscriptionTier,
+    ) -> Sequence[BenefitGrant]:
+        subscription_tier_benefits_statement = (
+            select(Benefit.id)
+            .join(SubscriptionTierBenefit)
+            .where(
+                SubscriptionTierBenefit.subscription_tier_id
+                == current_subscription_tier.id
+            )
+        )
+
+        statement = select(BenefitGrant).where(
+            BenefitGrant.subscription_id == subscription.id,
+            BenefitGrant.benefit_id.not_in(subscription_tier_benefits_statement),
+            BenefitGrant.is_granted.is_(True),
+            BenefitGrant.deleted_at.is_(None),
+        )
+
+        result = await session.execute(statement)
+        return result.scalars().all()
 
 
 subscription = SubscriptionService(Subscription)

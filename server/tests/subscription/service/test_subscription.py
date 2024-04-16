@@ -849,9 +849,9 @@ class TestEnqueueBenefitsGrants:
             [
                 call(
                     "benefit.grant",
-                    subscription_id=subscription.id,
                     user_id=subscription.user_id,
                     benefit_id=benefit.id,
+                    subscription_id=subscription.id,
                 )
                 for benefit in benefits
             ]
@@ -895,9 +895,9 @@ class TestEnqueueBenefitsGrants:
             [
                 call(
                     "benefit.revoke",
-                    subscription_id=subscription.id,
                     user_id=subscription.user_id,
                     benefit_id=benefit.id,
+                    subscription_id=subscription.id,
                 )
                 for benefit in benefits
             ]
@@ -939,9 +939,9 @@ class TestEnqueueBenefitsGrants:
 
         enqueue_job_mock.assert_any_call(
             "benefit.revoke",
-            subscription_id=subscription.id,
             user_id=subscription.user_id,
             benefit_id=benefits[0].id,
+            subscription_id=subscription.id,
         )
 
     async def test_subscription_organization(
@@ -982,9 +982,9 @@ class TestEnqueueBenefitsGrants:
                 [
                     call(
                         "benefit.grant",
-                        subscription_id=subscription_organization.id,
                         user_id=user_id,
                         benefit_id=benefit.id,
+                        subscription_id=subscription_organization.id,
                     )
                     for user_id in [
                         organization_subscriber_admin.id,

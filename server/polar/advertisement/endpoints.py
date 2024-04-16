@@ -53,8 +53,8 @@ async def _get_grant(
         raise NotFound()
 
     # Verify that the authed user has been granted this benefit for this subscription
-    grant = await benefit_grant_service.get_by_subscription_user_and_benefit(
-        session, subscription=subscription, user=user, benefit=benefit
+    grant = await benefit_grant_service.get_by_benefit_and_scope(
+        session, user=user, benefit=benefit, subscription=subscription
     )
 
     return grant
@@ -261,8 +261,8 @@ async def delete_campaign(
         raise NotFound()
 
     # Verify that the authed user has been granted this benefit for this subscription
-    grant = await benefit_grant_service.get_by_subscription_user_and_benefit(
-        session, subscription=subscription, user=auth.user, benefit=benefit
+    grant = await benefit_grant_service.get_by_benefit_and_scope(
+        session, user=auth.user, benefit=benefit, subscription=subscription
     )
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")

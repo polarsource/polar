@@ -28,7 +28,7 @@ precondition_error_subject_template = (
 )
 precondition_error_body_template = """
 <h1>Hi,</h1>
-<p>You just subscribed to {organization_name}'s plan, <strong>{subscription_tier_name}</strong>. Thank you!</p>
+<p>You just subscribed to <strong>{scope_name}</strong> from {organization_name}. Thank you!</p>
 <p>As you may know, it includes an access to a private Discord server. To grant you access, we need you to link your Discord account on Polar.</p>
 <p>Once done, you'll automatically be added to {organization_name}'s Discord server.</p>
 <!-- Action -->

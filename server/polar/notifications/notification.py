@@ -447,9 +447,7 @@ class BenefitPreconditionErrorNotificationContextualPayload(BaseModel):
 class BenefitPreconditionErrorNotificationPayload(
     NotificationPayloadBase, BenefitPreconditionErrorNotificationContextualPayload
 ):
-    subscription_id: UUID
-    subscription_tier_name: str
-    subscription_tier_id: UUID
+    scope_name: str
     benefit_id: UUID
     benefit_description: str
     organization_name: str

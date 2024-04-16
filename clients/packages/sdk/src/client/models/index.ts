@@ -3322,19 +3322,7 @@ export interface BenefitPreconditionErrorNotificationPayload {
      * @type {string}
      * @memberof BenefitPreconditionErrorNotificationPayload
      */
-    subscription_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    subscription_tier_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    subscription_tier_id: string;
+    scope_name: string;
     /**
      * 
      * @type {string}

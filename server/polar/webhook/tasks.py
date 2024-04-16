@@ -1,3 +1,4 @@
+import base64
 from collections.abc import Mapping
 from uuid import UUID
 
@@ -51,8 +52,12 @@ async def _webhook_event_send(
 
     ts = utc_now()
 
+    b64secret = base64.b64encode(event.webhook_endpoint.secret.encode("utf-8")).decode(
+        "utf-8"
+    )
+
     # Sign the payload
-    wh = StandardWebhook(event.webhook_endpoint.secret)
+    wh = StandardWebhook(b64secret)
     signature = wh.sign(str(event.id), ts, event.payload)
 
     headers: Mapping[str, str] = {

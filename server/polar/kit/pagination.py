@@ -9,16 +9,28 @@ from sqlalchemy.sql._typing import _ColumnsClauseArgument
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import Model
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.schemas import Schema
 
 T = TypeVar("T", bound=Any)
-M = TypeVar("M", bound=RecordModel)
+RM = TypeVar("RM", bound=RecordModel)
+M = TypeVar("M", bound=Model)
 
 
 class PaginationParams(NamedTuple):
     page: int
     limit: int
+
+
+@overload
+async def paginate(
+    session: AsyncSession,
+    statement: Select[tuple[RM]],
+    *,
+    pagination: PaginationParams,
+    count_clause: _ColumnsClauseArgument[Any] | None = None,
+) -> tuple[Sequence[RM], int]: ...
 
 
 @overload

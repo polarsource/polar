@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Literal, Union
 from uuid import UUID
 
+from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 
 from polar.kit.db.postgres import AsyncSession
@@ -13,6 +14,7 @@ from polar.models.organization import Organization
 from polar.models.subscription import Subscription
 from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user import User
+from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.schemas import Subscription as SubscriptionSchema
@@ -89,6 +91,15 @@ class WebhookService:
                 WebhookEvent.id == id,
             )
             .options(joinedload(WebhookEvent.webhook_endpoint))
+        )
+        res = await session.execute(stmt)
+        return res.scalars().unique().one_or_none()
+
+    async def get_endpoint(
+        self, session: AsyncSession, id: UUID
+    ) -> WebhookEndpoint | None:
+        stmt = sql.select(WebhookEndpoint).where(
+            WebhookEndpoint.id == id,
         )
         res = await session.execute(stmt)
         return res.scalars().unique().one_or_none()
@@ -173,9 +184,28 @@ class WebhookService:
         if organization_id is not None:
             stmt = stmt.where(WebhookEndpoint.organization_id == organization_id)
 
-        statement = stmt.order_by(WebhookEndpoint.created_at)
+        stmt = stmt.order_by(desc(WebhookEndpoint.created_at))
 
-        results, count = await paginate(session, statement, pagination=pagination)
+        results, count = await paginate(session, stmt, pagination=pagination)
+
+        return results, count
+
+    async def search_deliveries(
+        self,
+        session: AsyncSession,
+        *,
+        endpoint_id: UUID,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[WebhookDelivery], int]:
+        stmt = sql.select(WebhookDelivery)
+
+        stmt = stmt.where(WebhookDelivery.webhook_endpoint_id == endpoint_id)
+
+        stmt = stmt.options(joinedload(WebhookDelivery.webhook_event))
+
+        stmt = stmt.order_by(desc(WebhookDelivery.created_at))
+
+        results, count = await paginate(session, stmt, pagination=pagination)
 
         return results, count
 

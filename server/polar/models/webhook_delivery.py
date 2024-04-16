@@ -7,11 +7,12 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import Model
 from polar.kit.extensions.sqlalchemy.types import PostgresUUID
 from polar.kit.utils import generate_uuid, utc_now
+from polar.models.webhook_event import WebhookEvent
 
 
 class WebhookDelivery(Model):
@@ -38,6 +39,10 @@ class WebhookDelivery(Model):
         nullable=False,
         index=True,
     )
+
+    @declared_attr
+    def webhook_event(cls) -> Mapped[WebhookEvent]:
+        return relationship("WebhookEvent", lazy="raise")
 
     http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

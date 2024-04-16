@@ -16,6 +16,7 @@ from polar.models.repository import Repository
 from polar.models.subscription import Subscription
 from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user import User
+from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.user_organization.service import (
@@ -48,6 +49,7 @@ Object = (
     | Benefit
     | Subscription
     | Article
+    | WebhookEndpoint
 )
 
 
@@ -249,6 +251,17 @@ class Authz:
             and isinstance(object, Article)
         ):
             return await self._can_user_write_article(subject, object)
+
+        #
+        # WebhookEndpoint
+        #
+
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, WebhookEndpoint)
+        ):
+            return await self._can_user_write_webhook_endpoint(subject, object)
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501
@@ -471,6 +484,24 @@ class Authz:
     # Article
     #
     async def _can_user_write_article(self, subject: User, object: Article) -> bool:
+        # If member and admin of org
+        if object.organization_id and await self._is_member_and_admin(
+            subject.id, object.organization_id
+        ):
+            return True
+
+        return False
+
+    #
+    # WebhookEndpoint
+    #
+    async def _can_user_write_webhook_endpoint(
+        self, subject: User, object: WebhookEndpoint
+    ) -> bool:
+        # if owned by user
+        if object.user_id and object.user_id == subject.id:
+            return True
+
         # If member and admin of org
         if object.organization_id and await self._is_member_and_admin(
             subject.id, object.organization_id

@@ -21,7 +21,6 @@ from polar.worker import enqueue_job
 class WebhookEventType(Enum):
     subscription_created = "subscription.created"
     subscription_updated = "subscription.updated"
-    subscription_deleted = "subscription.deleted"
     subscription_tier_created = "subscription_tier.created"
     subscription_tier_updated = "subscription_tier.updated"
     subscription_tier_deleted = "subscription_tier.deleted"
@@ -36,7 +35,6 @@ class WebhookEventType(Enum):
 WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.subscription_created], Subscription],
     tuple[Literal[WebhookEventType.subscription_updated], Subscription],
-    tuple[Literal[WebhookEventType.subscription_deleted], Subscription],
     tuple[Literal[WebhookEventType.subscription_tier_created], SubscriptionTier],
 ]
 
@@ -54,15 +52,9 @@ class WebhookSubscriptionUpdatedPayload(Schema):
     data: SubscriptionSchema
 
 
-class WebhookSubscriptionDeletedPayload(Schema):
-    type: Literal[WebhookEventType.subscription_deleted]
-    data: SubscriptionSchema
-
-
 WebhookPayload = Union[  # noqa: UP007
     WebhookSubscriptionCreatedPayload,
     WebhookSubscriptionUpdatedPayload,
-    WebhookSubscriptionDeletedPayload,
 ]
 
 
@@ -112,20 +104,11 @@ class WebhookService:
                     type=we[0],
                     data=SubscriptionSchema.model_validate(we[1]),
                 )
-            case WebhookEventType.subscription_deleted:
-                payload = WebhookSubscriptionDeletedPayload(
-                    type=we[0],
-                    data=SubscriptionSchema.model_validate(we[1]),
-                )
 
         if payload is None:
             raise Exception("no payload")
-            return
 
         for e in endpoints:
-            # TODO: filter
-            # if e.event_subscription_created...
-
             event = WebhookEvent(
                 webhook_endpoint_id=e.id, payload=payload.model_dump_json()
             )

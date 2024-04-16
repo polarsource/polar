@@ -709,13 +709,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, subscription, WebhookEventType.subscription_created
         )
 
+    async def _after_subscription_updated(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_updated
+        )
+
     async def _send_webhook(
         self,
         session: AsyncSession,
         subscription: Subscription,
         event_type: Literal[WebhookEventType.subscription_created]
-        | Literal[WebhookEventType.subscription_updated]
-        | Literal[WebhookEventType.subscription_deleted],
+        | Literal[WebhookEventType.subscription_updated],
     ) -> None:
         # load full subscription with relations
         full_subscription = await self.get(session, subscription.id)
@@ -729,8 +735,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             case WebhookEventType.subscription_created:
                 event = (event_type, full_subscription)
             case WebhookEventType.subscription_updated:
-                event = (event_type, full_subscription)
-            case WebhookEventType.subscription_deleted:
                 event = (event_type, full_subscription)
 
         # subscription created hooks for subscribing organization
@@ -803,6 +807,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         enqueue_job(
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
+
+        await self._after_subscription_updated(session, subscription)
 
         return subscription
 
@@ -1037,6 +1043,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.price = new_price
         session.add(subscription)
 
+        await self._after_subscription_updated(session, subscription)
+
         return subscription
 
     async def cancel_subscription(
@@ -1071,6 +1079,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         session.add(subscription)
+
+        await self._after_subscription_updated(session, subscription)
 
         return subscription
 

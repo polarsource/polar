@@ -160,7 +160,7 @@ async def test_webhook_standard_webhooks_compatible(
         called = True
 
         w = StandardWebhook(btoa("mysecret"))
-        w.verify(kwargs["json"], kwargs["headers"])
+        w.verify(kwargs["content"], kwargs["headers"])
 
         return httpx.Response(
             status_code=200,
@@ -206,7 +206,7 @@ async def test_webhook_standard_webhooks_fails_unexpected_secret(
         called = True
 
         w = StandardWebhook(btoa("mysecret"))
-        w.verify(kwargs["json"], kwargs["headers"])
+        w.verify(kwargs["content"], kwargs["headers"])
 
         return httpx.Response(
             status_code=200,

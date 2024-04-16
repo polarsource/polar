@@ -717,17 +717,21 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         | Literal[WebhookEventType.subscription_updated]
         | Literal[WebhookEventType.subscription_deleted],
     ) -> None:
+        # load full subscription with relations
+        full_subscription = await self.get(session, subscription.id)
+        assert full_subscription
+
         # mypy 1.9 is does not allow us to do
         #    event = (event_type, subscription)
         # directly, even if it could have...
         event: WebhookTypeObject | None = None
         match event_type:
             case WebhookEventType.subscription_created:
-                event = (event_type, subscription)
+                event = (event_type, full_subscription)
             case WebhookEventType.subscription_updated:
-                event = (event_type, subscription)
+                event = (event_type, full_subscription)
             case WebhookEventType.subscription_deleted:
-                event = (event_type, subscription)
+                event = (event_type, full_subscription)
 
         # subscription created hooks for subscribing organization
         if subscription.organization_id:

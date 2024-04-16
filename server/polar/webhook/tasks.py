@@ -62,6 +62,7 @@ async def _webhook_event_send(
 
     headers: Mapping[str, str] = {
         "user-agent": "polar.sh webhooks",
+        "content-type": "application/json",
         "webhook-id": str(event.id),
         "webhook-timestamp": str(int(ts.timestamp())),
         "webhook-signature": signature,
@@ -69,7 +70,7 @@ async def _webhook_event_send(
 
     r = httpx.post(
         event.webhook_endpoint.url,
-        json=event.payload,
+        content=event.payload,
         headers=headers,
         timeout=20.0,
     )

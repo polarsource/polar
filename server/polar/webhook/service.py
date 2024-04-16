@@ -11,6 +11,7 @@ from polar.kit.schemas import Schema
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
 from polar.models.subscription_tier import SubscriptionTier
+from polar.models.user import User
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.schemas import Subscription as SubscriptionSchema
@@ -67,11 +68,15 @@ WebhookPayload = Union[  # noqa: UP007
 
 class WebhookService:
     async def list_endpoints(
-        self, session: AsyncSession, target: Organization
+        self, session: AsyncSession, target: Organization | User
     ) -> Sequence[WebhookEndpoint]:
-        stmt = sql.select(WebhookEndpoint).where(
-            WebhookEndpoint.organization_id == target.id,
-        )
+        stmt = sql.select(WebhookEndpoint)
+
+        if isinstance(target, Organization):
+            stmt = stmt.where(WebhookEndpoint.organization_id == target.id)
+        else:
+            stmt = stmt.where(WebhookEndpoint.user_id == target.id)
+
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 
@@ -89,7 +94,7 @@ class WebhookService:
     async def send(
         self,
         session: AsyncSession,
-        target: Organization,
+        target: Organization | User,
         we: WebhookTypeObject,
     ) -> None:
         endpoints = await self.list_endpoints(session, target)

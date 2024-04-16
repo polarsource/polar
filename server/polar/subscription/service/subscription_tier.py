@@ -186,6 +186,22 @@ class SubscriptionTierService(
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_loaded(
+        self, session: AsyncSession, id: uuid.UUID
+    ) -> SubscriptionTier | None:
+        statement = (
+            select(SubscriptionTier)
+            .where(SubscriptionTier.id == id, SubscriptionTier.deleted_at.is_(None))
+            .options(
+                contains_eager(SubscriptionTier.organization),
+                contains_eager(SubscriptionTier.repository),
+            )
+            .limit(1)
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_free(
         self,
         session: AsyncSession,

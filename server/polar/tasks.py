@@ -10,6 +10,7 @@ from polar.organization import tasks as organization
 from polar.subscription import tasks as subscription
 from polar.transaction import tasks as transaction
 from polar.user import tasks as user
+from polar.webhook import tasks as webhook
 
 __all__ = [
     "account",
@@ -24,4 +25,5 @@ __all__ = [
     "subscription",
     "transaction",
     "user",
+    "webhook",
 ]

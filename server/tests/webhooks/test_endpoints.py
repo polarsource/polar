@@ -1,9 +1,12 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.kit.db.postgres import AsyncSession
 from polar.models import User
 from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
+from polar.models.webhook_delivery import WebhookDelivery
+from polar.models.webhook_endpoint import WebhookEndpoint
 from tests.fixtures.database import SaveFixture
 
 
@@ -205,3 +208,65 @@ class TestCreate:
         assert "https://example.com/hook" == json["url"]
         assert json["user_id"] is None
         assert str(organization.id) == json["organization_id"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestSearchDeliveries:
+    @pytest.mark.authenticated
+    async def test_search(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        user: User,
+        webhook_endpoint: WebhookEndpoint,
+        webhook_delivery: WebhookDelivery,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        params = {"webhook_endpoint_id": str(webhook_endpoint.id)}
+        response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
+
+        assert response.status_code == 200
+        search = response.json()
+
+        assert 1 == len(search["items"])
+        assert 1 == search["pagination"]["total_count"]
+
+        assert str(webhook_delivery.id) == search["items"][0]["id"]
+
+    @pytest.mark.authenticated
+    async def test_search_member_no_admin(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        user: User,
+        webhook_endpoint: WebhookEndpoint,
+        webhook_delivery: WebhookDelivery,
+        user_organization: UserOrganization,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        params = {"webhook_endpoint_id": str(webhook_endpoint.id)}
+        response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_search_no_member(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        webhook_endpoint: WebhookEndpoint,
+        webhook_delivery: WebhookDelivery,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        params = {"webhook_endpoint_id": str(webhook_endpoint.id)}
+        response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
+
+        assert response.status_code == 401

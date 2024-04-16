@@ -14,6 +14,9 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
 from .schemas import (
+    WebhookDelivery as WebhookDeliverySchema,
+)
+from .schemas import (
     WebhookEndpoint as WebhookEndpointSchema,
 )
 from .schemas import (
@@ -107,3 +110,35 @@ async def create_webhook_endpoint(
     )
 
     return WebhookEndpointSchema.model_validate(endpoint)
+
+
+@router.get(
+    "/deliveries/search",
+    response_model=ListResource[WebhookDeliverySchema],
+    tags=[Tags.PUBLIC],
+)
+async def search_webhook_deliveries(
+    pagination: PaginationParamsQuery,
+    webhook_endpoint_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
+) -> ListResource[WebhookDeliverySchema]:
+    endpoint = await webhook_service.get_endpoint(session, webhook_endpoint_id)
+    if not endpoint:
+        raise NotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, endpoint):
+        raise Unauthorized()
+
+    results, count = await webhook_service.search_deliveries(
+        session,
+        endpoint_id=webhook_endpoint_id,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [WebhookDeliverySchema.model_validate(result) for result in results],
+        count,
+        pagination,
+    )

@@ -48,4 +48,4 @@ class WebhookDelivery(Schema):
     id: UUID
     http_code: int | None
     succeeded: bool
-    event: WebhookEvent
+    webhook_event: WebhookEvent

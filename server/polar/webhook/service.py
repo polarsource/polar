@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.extensions.sqlalchemy import sql
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
@@ -137,6 +138,46 @@ class WebhookService:
             enqueue_job("webhook_event.send", webhook_event_id=event.id)
 
         return
+
+    async def create_endpoint(
+        self,
+        session: AsyncSession,
+        *,
+        url: str,
+        user_id: UUID | None,
+        organization_id: UUID | None,
+        secret: str,
+    ) -> WebhookEndpoint:
+        endpoint = WebhookEndpoint(
+            url=url,
+            user_id=user_id,
+            organization_id=organization_id,
+            secret=secret,
+        )
+        session.add(endpoint)
+        await session.flush()
+        return endpoint
+
+    async def search_endpoints(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: UUID | None,
+        organization_id: UUID | None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[WebhookEndpoint], int]:
+        stmt = sql.select(WebhookEndpoint)
+
+        if user_id is not None:
+            stmt = stmt.where(WebhookEndpoint.user_id == user_id)
+        if organization_id is not None:
+            stmt = stmt.where(WebhookEndpoint.organization_id == organization_id)
+
+        statement = stmt.order_by(WebhookEndpoint.created_at)
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
 
 
 webhook_service = WebhookService()

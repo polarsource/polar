@@ -15,6 +15,7 @@ from polar.models.user import User
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.schemas import Subscription as SubscriptionSchema
+from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchema
 from polar.worker import enqueue_job
 
 
@@ -23,10 +24,8 @@ class WebhookEventType(Enum):
     subscription_updated = "subscription.updated"
     subscription_tier_created = "subscription_tier.created"
     subscription_tier_updated = "subscription_tier.updated"
-    subscription_tier_deleted = "subscription_tier.deleted"
     benefit_created = "benefit.created"
     benefit_updated = "benefit.updated"
-    benefit_deleted = "benefit.deleted"
     organization_updated = "organization.updated"
     pledge_created = "pledge.created"
     donation_created = "donation.created"
@@ -36,10 +35,8 @@ WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.subscription_created], Subscription],
     tuple[Literal[WebhookEventType.subscription_updated], Subscription],
     tuple[Literal[WebhookEventType.subscription_tier_created], SubscriptionTier],
+    tuple[Literal[WebhookEventType.subscription_tier_updated], SubscriptionTier],
 ]
-
-
-# class WebhookPayload:
 
 
 class WebhookSubscriptionCreatedPayload(Schema):
@@ -52,9 +49,21 @@ class WebhookSubscriptionUpdatedPayload(Schema):
     data: SubscriptionSchema
 
 
+class WebhookSubscriptionTierCreatedPayload(Schema):
+    type: Literal[WebhookEventType.subscription_tier_created]
+    data: SubscriptionTierSchema
+
+
+class WebhookSubscriptionTierUpdatedPayload(Schema):
+    type: Literal[WebhookEventType.subscription_tier_updated]
+    data: SubscriptionTierSchema
+
+
 WebhookPayload = Union[  # noqa: UP007
     WebhookSubscriptionCreatedPayload,
     WebhookSubscriptionUpdatedPayload,
+    WebhookSubscriptionTierCreatedPayload,
+    WebhookSubscriptionTierUpdatedPayload,
 ]
 
 
@@ -103,6 +112,16 @@ class WebhookService:
                 payload = WebhookSubscriptionUpdatedPayload(
                     type=we[0],
                     data=SubscriptionSchema.model_validate(we[1]),
+                )
+            case WebhookEventType.subscription_tier_created:
+                payload = WebhookSubscriptionTierCreatedPayload(
+                    type=we[0],
+                    data=SubscriptionTierSchema.model_validate(we[1]),
+                )
+            case WebhookEventType.subscription_tier_updated:
+                payload = WebhookSubscriptionTierUpdatedPayload(
+                    type=we[0],
+                    data=SubscriptionTierSchema.model_validate(we[1]),
                 )
 
         if payload is None:

@@ -658,7 +658,7 @@ const BenefitPreconditionError = ({
 }) => {
   const {
     payload: {
-      subscription_tier_name,
+      scope_name,
       benefit_description,
       organization_name,
       extra_context,
@@ -670,7 +670,7 @@ const BenefitPreconditionError = ({
         text: (
           <>
             The benefit {benefit_description} from {organization_name}&apos;s{' '}
-            {subscription_tier_name} tier could not be granted.{' '}
+            {scope_name} could not be granted.{' '}
             {extra_context && (extra_context as any).url && (
               <InternalLink href={(extra_context as any).url}>
                 <>Solve it</>

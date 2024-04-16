@@ -1,7 +1,7 @@
 import { queryClient } from '@/utils/api'
 import { BenefitType } from '@polar-sh/sdk'
 
-export const onSubscriptionBenefitGrantGranted = async (payload: {
+export const onBenefitGranted = async (payload: {
   subscription_benefit_id: string
   benefit_type: BenefitType
 }) => {
@@ -11,7 +11,7 @@ export const onSubscriptionBenefitGrantGranted = async (payload: {
   }
 }
 
-export const onSubscriptionBenefitGrantRevoked = async (payload: {
+export const onBenefitRevoked = async (payload: {
   subscription_benefit_id: string
   benefit_type: BenefitType
 }) => {

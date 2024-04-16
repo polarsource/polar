@@ -1,10 +1,10 @@
 import uuid
 from collections.abc import Sequence
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from sqlalchemy import Select, and_, case, func, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import aliased, contains_eager
+from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz, Subject
@@ -29,6 +29,7 @@ from polar.models import (
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
+from polar.webhook.service import WebhookEventType, WebhookTypeObject, webhook_service
 from polar.worker import enqueue_job
 
 from ..schemas import (
@@ -187,19 +188,23 @@ class SubscriptionTierService(
         return result.scalar_one_or_none()
 
     async def get_loaded(
-        self, session: AsyncSession, id: uuid.UUID
+        self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
     ) -> SubscriptionTier | None:
         statement = (
             select(SubscriptionTier)
-            .where(SubscriptionTier.id == id, SubscriptionTier.deleted_at.is_(None))
+            .where(SubscriptionTier.id == id)
             .options(
-                contains_eager(SubscriptionTier.organization),
-                contains_eager(SubscriptionTier.repository),
+                joinedload(SubscriptionTier.organization),
+                joinedload(SubscriptionTier.repository),
             )
             .limit(1)
         )
 
+        if not allow_deleted:
+            statement = statement.where(SubscriptionTier.deleted_at.is_(None))
+
         result = await session.execute(statement)
+
         return result.scalar_one_or_none()
 
     async def get_free(
@@ -295,6 +300,8 @@ class SubscriptionTierService(
 
         await session.flush()
         await session.refresh(subscription_tier, {"prices"})
+
+        await self._after_tier_created(session, subscription_tier)
 
         return subscription_tier
 
@@ -392,6 +399,8 @@ class SubscriptionTierService(
         await session.flush()
         await session.refresh(subscription_tier, {"prices"})
 
+        await self._after_tier_updated(session, subscription_tier)
+
         return subscription_tier
 
     async def create_free(
@@ -435,6 +444,8 @@ class SubscriptionTierService(
             "subscription.subscription.update_subscription_tier_benefits_grants",
             free_subscription_tier.id,
         )
+
+        await self._after_tier_created(session, free_subscription_tier)
 
         return free_subscription_tier
 
@@ -486,6 +497,8 @@ class SubscriptionTierService(
             subscription_tier.id,
         )
 
+        await self._after_tier_updated(session, subscription_tier)
+
         return subscription_tier, added_benefits, deleted_benefits
 
     async def archive(
@@ -509,6 +522,9 @@ class SubscriptionTierService(
 
         subscription_tier.is_archived = True
         session.add(subscription_tier)
+
+        await self._after_tier_updated(session, subscription_tier)
+
         return subscription_tier
 
     async def with_organization_or_repository(
@@ -640,6 +656,46 @@ class SubscriptionTierService(
             statement = statement.where(SubscriptionTier.repository_id == repository_id)
 
         await session.execute(statement)
+
+    async def _after_tier_created(
+        self, session: AsyncSession, tier: SubscriptionTier
+    ) -> None:
+        await self._send_webhook(
+            session, tier, WebhookEventType.subscription_tier_created
+        )
+
+    async def _after_tier_updated(
+        self, session: AsyncSession, tier: SubscriptionTier
+    ) -> None:
+        await self._send_webhook(
+            session, tier, WebhookEventType.subscription_tier_updated
+        )
+
+    async def _send_webhook(
+        self,
+        session: AsyncSession,
+        tier: SubscriptionTier,
+        event_type: Literal[WebhookEventType.subscription_tier_created]
+        | Literal[WebhookEventType.subscription_tier_updated],
+    ) -> None:
+        # load full tier with relations
+        full_tier = await self.get_loaded(session, tier.id, allow_deleted=True)
+        assert full_tier
+
+        # mypy 1.9 is does not allow us to do
+        #    event = (event_type, subscription)
+        # directly, even if it could have...
+        event: WebhookTypeObject | None = None
+        match event_type:
+            case WebhookEventType.subscription_tier_created:
+                event = (event_type, full_tier)
+            case WebhookEventType.subscription_tier_updated:
+                event = (event_type, full_tier)
+
+        if managing_org := await organization_service.get(
+            session, tier.managing_organization_id
+        ):
+            await webhook_service.send(session, target=managing_org, we=event)
 
 
 subscription_tier = SubscriptionTierService(SubscriptionTier)

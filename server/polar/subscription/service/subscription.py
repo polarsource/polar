@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
 from enum import StrEnum
-from typing import Any, cast, overload
+from typing import Any, Literal, cast, overload
 
 import stripe as stripe_lib
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
@@ -78,6 +78,7 @@ from polar.user.service import user as user_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.webhook.service import WebhookEventType, WebhookTypeObject, webhook_service
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 
@@ -570,6 +571,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
+        await self._after_subscription_created(session, subscription)
+
         return subscription
 
     async def create_subscription_from_stripe(
@@ -695,7 +698,59 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             "subscription.user_webhook_notifications", subscription_id=subscription.id
         )
 
+        await self._after_subscription_created(session, subscription)
+
         return subscription
+
+    async def _after_subscription_created(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_created
+        )
+
+    async def _send_webhook(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        event_type: Literal[WebhookEventType.subscription_created]
+        | Literal[WebhookEventType.subscription_updated]
+        | Literal[WebhookEventType.subscription_deleted],
+    ) -> None:
+        # mypy 1.9 is does not allow us to do
+        #    event = (event_type, subscription)
+        # directly, even if it could have...
+        event: WebhookTypeObject | None = None
+        match event_type:
+            case WebhookEventType.subscription_created:
+                event = (event_type, subscription)
+            case WebhookEventType.subscription_updated:
+                event = (event_type, subscription)
+            case WebhookEventType.subscription_deleted:
+                event = (event_type, subscription)
+
+        # subscription created hooks for subscribing organization
+        if subscription.organization_id:
+            if subscribing_org := await organization_service.get(
+                session, subscription.organization_id
+            ):
+                await webhook_service.send(session, target=subscribing_org, we=event)
+
+        # subscription events for subscribing user
+        if subscription.user_id:
+            if subscribing_user := await user_service.get(
+                session, subscription.user_id
+            ):
+                await webhook_service.send(session, target=subscribing_user, we=event)
+
+        # subscribed to org
+        if tier := await subscription_tier_service.get_loaded(
+            session, subscription.subscription_tier_id
+        ):
+            if subscribed_to_org := await organization_service.get(
+                session, tier.managing_organization_id
+            ):
+                await webhook_service.send(session, target=subscribed_to_org, we=event)
 
     async def update_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription

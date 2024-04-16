@@ -29,7 +29,7 @@ class WebhookEvent(Model):
 
     webhook_endpoint_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("webhook_endpoints.id"),
+        ForeignKey("webhook_endpoints.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

@@ -26,7 +26,11 @@ export interface WebhooksApiCreateWebhookEndpointRequest {
     webhookEndpointCreate: WebhookEndpointCreate;
 }
 
-export interface WebhooksApiLookupWebhookEndpointRequest {
+export interface WebhooksApiDeleteWebhookEndpointRequest {
+    id: string;
+}
+
+export interface WebhooksApiGetWebhookEndpointRequest {
     id: string;
 }
 
@@ -93,21 +97,17 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup Webhook Endpoint
+     * Delete Webhook Endpoint
      */
-    async lookupWebhookEndpointRaw(requestParameters: WebhooksApiLookupWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
+    async deleteWebhookEndpointRaw(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling lookupWebhookEndpoint().'
+                'Required parameter "id" was null or undefined when calling deleteWebhookEndpoint().'
             );
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['id'] != null) {
-            queryParameters['id'] = requestParameters['id'];
-        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -120,7 +120,48 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/endpoints/lookup`,
+            path: `/api/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Delete Webhook Endpoint
+     */
+    async deleteWebhookEndpoint(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
+        const response = await this.deleteWebhookEndpointRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get Webhook Endpoint
+     */
+    async getWebhookEndpointRaw(requestParameters: WebhooksApiGetWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getWebhookEndpoint().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -130,10 +171,10 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup Webhook Endpoint
+     * Get Webhook Endpoint
      */
-    async lookupWebhookEndpoint(requestParameters: WebhooksApiLookupWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
-        const response = await this.lookupWebhookEndpointRaw(requestParameters, initOverrides);
+    async getWebhookEndpoint(requestParameters: WebhooksApiGetWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
+        const response = await this.getWebhookEndpointRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -16,7 +16,7 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
 
-  const endpoint = await api.webhooks.lookupWebhookEndpoint({
+  const endpoint = await api.webhooks.getWebhookEndpoint({
     id: params.id,
   })
 

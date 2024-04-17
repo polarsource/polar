@@ -10,6 +10,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.schemas import Schema
+from polar.kit.utils import utc_now
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
 from polar.models.subscription_tier import SubscriptionTier
@@ -74,7 +75,9 @@ class WebhookService:
     async def list_endpoints(
         self, session: AsyncSession, target: Organization | User
     ) -> Sequence[WebhookEndpoint]:
-        stmt = sql.select(WebhookEndpoint)
+        stmt = sql.select(WebhookEndpoint).where(
+            WebhookEndpoint.deleted_at.is_(None),
+        )
 
         if isinstance(target, Organization):
             stmt = stmt.where(WebhookEndpoint.organization_id == target.id)
@@ -100,9 +103,20 @@ class WebhookService:
     ) -> WebhookEndpoint | None:
         stmt = sql.select(WebhookEndpoint).where(
             WebhookEndpoint.id == id,
+            WebhookEndpoint.deleted_at.is_(None),
         )
         res = await session.execute(stmt)
         return res.scalars().unique().one_or_none()
+
+    async def delete_endpoint(self, session: AsyncSession, id: UUID) -> None:
+        stmt = (
+            sql.update(WebhookEndpoint)
+            .where(
+                WebhookEndpoint.id == id,
+            )
+            .values(deleted_at=utc_now())
+        )
+        await session.execute(stmt)
 
     async def send(
         self,

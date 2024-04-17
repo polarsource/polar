@@ -26,6 +26,10 @@ export interface WebhooksApiCreateWebhookEndpointRequest {
     webhookEndpointCreate: WebhookEndpointCreate;
 }
 
+export interface WebhooksApiLookupWebhookEndpointRequest {
+    id: string;
+}
+
 export interface WebhooksApiSearchWebhookDeliveriesRequest {
     webhookEndpointId: string;
     page?: number;
@@ -85,6 +89,51 @@ export class WebhooksApi extends runtime.BaseAPI {
      */
     async createWebhookEndpoint(requestParameters: WebhooksApiCreateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
         const response = await this.createWebhookEndpointRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Lookup Webhook Endpoint
+     */
+    async lookupWebhookEndpointRaw(requestParameters: WebhooksApiLookupWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling lookupWebhookEndpoint().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['id'] != null) {
+            queryParameters['id'] = requestParameters['id'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/webhooks/endpoints/lookup`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Lookup Webhook Endpoint
+     */
+    async lookupWebhookEndpoint(requestParameters: WebhooksApiLookupWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
+        const response = await this.lookupWebhookEndpointRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

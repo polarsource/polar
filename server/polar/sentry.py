@@ -115,7 +115,7 @@ def configure_sentry() -> None:
         dsn=settings.SENTRY_DSN,
         traces_sample_rate=0.1,
         profiles_sample_rate=0.1,
-        release=os.environ.get("RENDER_GIT_COMMIT", "development"),
+        release=os.environ.get("RELEASE_VERSION", "development"),
         server_name=os.environ.get("RENDER_INSTANCE_ID", "localhost"),
         environment="production" if os.environ.get("RENDER", False) else "development",
         integrations=[

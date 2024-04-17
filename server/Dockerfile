@@ -44,4 +44,7 @@ ADD alembic.ini .
 
 COPY --from=grafana-agent /usr/bin/grafana-agent /usr/bin/grafana-agent
 
+ARG RELEASE_VERSION
+ENV RELEASE_VERSION=${RELEASE_VERSION}
+
 CMD ["poetry", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000"]

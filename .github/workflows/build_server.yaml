@@ -52,6 +52,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           context: ./server
           platforms: linux/amd64,linux/arm64/v8
+          build-args: |
+            RELEASE_VERSION=${{ github.sha }}
 
       - name: Deploy
         if: github.ref == 'refs/heads/main'
@@ -59,3 +61,15 @@ jobs:
         env:
           RENDER_DEPLOY_KEY_WORKER: ${{ secrets.RENDER_DEPLOY_KEY_WORKER }}
           RENDER_DEPLOY_KEY_API: ${{ secrets.RENDER_DEPLOY_KEY_API }}
+
+      - name: Sentry Release
+        uses: getsentry/action-release@v1.7.0
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        with:
+          environment: production
+          dist: ${{ steps.push.outputs.digest }}
+          version: ${{ github.sha }}
+          projects: server
+          working_directory: ./server

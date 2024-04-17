@@ -1,6 +1,6 @@
 import structlog
 from httpx_oauth.clients.github import GitHubOAuth2
-from httpx_oauth.oauth2 import OAuth2Token
+from httpx_oauth.oauth2 import OAuth2Token, RefreshTokenError
 
 import polar.integrations.github.client as github
 from polar.config import settings
@@ -42,6 +42,15 @@ class GitHubRepositoryBenefitExpiredAccessToken(GitHubError):
     def __init__(self, user: User) -> None:
         self.user = user
         message = "The access token is expired and no refresh token is available."
+        super().__init__(message, 401)
+
+
+class GitHubRepositoryRefreshTokenError(GitHubError):
+    def __init__(self) -> None:
+        message = (
+            "An error occurred while refreshing the access token. "
+            "Please reconnect your account."
+        )
         super().__init__(message, 401)
 
 
@@ -135,9 +144,13 @@ class GitHubRepositoryBenefitUserService:
             if account.refresh_token is None:
                 raise GitHubRepositoryBenefitExpiredAccessToken(user)
 
-            refreshed_token_data = await github_oauth_client.refresh_token(
-                account.refresh_token
-            )
+            try:
+                refreshed_token_data = await github_oauth_client.refresh_token(
+                    account.refresh_token
+                )
+            except RefreshTokenError as e:
+                raise GitHubRepositoryRefreshTokenError() from e
+
             account.access_token = refreshed_token_data["access_token"]
             account.expires_at = refreshed_token_data["expires_at"]
             account.refresh_token = refreshed_token_data["refresh_token"]

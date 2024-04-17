@@ -1,5 +1,6 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import Link from 'next/link'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Separator } from 'polarkit/components/ui/separator'
 import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -69,9 +70,9 @@ const HeroSection = () => {
 
 const BenefitUpsell = () => {
   return (
-    <div className="flex flex-row">
+    <div className="flex flex-row py-16">
       <div className="dark:bg-polar-900 flex w-3/5 flex-col bg-gray-100"></div>
-      <div className="flex w-2/5 flex-col gap-y-12 px-12 py-16">
+      <div className="flex w-2/5 flex-col gap-y-12 px-12">
         <div className="flex flex-col gap-y-8">
           <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
             Powerful & built-in subscription benefits
@@ -80,6 +81,44 @@ const BenefitUpsell = () => {
             Polar is built open source & in public. We&apos;re just getting
             started.
           </p>
+        </div>
+        <div className="flex flex-col gap-y-8">
+          <ul className="flex flex-col gap-y-4">
+            <li>
+              <span className="font-medium">Premium posts & newsletter</span>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                Offer your paid subscribers early sneak peaks, educational
+                content, code examples and more.
+              </p>
+            </li>
+            <li>
+              <span className="font-medium">
+                Access to private GitHub repositories
+              </span>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                Enabling early access, sponsorware, self-hosted products,
+                starter kits, courses and so much more.
+              </p>
+            </li>
+            <li>
+              <span className="font-medium">Discord invites</span>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                Setup custom roles per tier. Enabling membership channels to
+                individuals & support for businesses.
+              </p>
+            </li>
+            <li>
+              <span className="font-medium">Sponsorship 2.0</span>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                Offer logo promotions on README, sites and posts. Polar will
+                automate it. No more manual overhead.
+              </p>
+            </li>
+          </ul>
+        </div>
+        <div className="flex flex-row items-center gap-x-4">
+          <Button>GitHub</Button>
+          <Button>Join our Discord</Button>
         </div>
       </div>
     </div>

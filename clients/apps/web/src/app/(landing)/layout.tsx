@@ -17,7 +17,7 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="dark:border-polar-700 flex flex-row items-center justify-between border-b border-blue-100 p-8">
+    <div className="dark:border-polar-700 flex flex-row items-center justify-between border-b border-blue-100 px-8 py-6">
       <LogoType width={80} />
       <div className="flex flex-row items-center gap-x-6">
         <Button className="rounded-lg bg-blue-50 px-3 py-4" variant="secondary">

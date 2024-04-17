@@ -72,7 +72,7 @@ const DashboardTopbar = ({
   const isOrgAdmin = adminOrgs.some((o) => org && o.id === org.id)
   const isPersonal = Boolean(org && personalOrg && org.id === personalOrg.id)
 
-  const maintainerRoutes = useMaintainerRoutes(org)
+  const maintainerRoutes = useMaintainerRoutes(org, true)
   const dashboardRoutes = useDashboardRoutes(
     org,
     org ? isPersonal : true,

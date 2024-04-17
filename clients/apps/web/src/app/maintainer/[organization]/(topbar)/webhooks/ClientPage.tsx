@@ -28,19 +28,20 @@ export default function ClientPage({
           <Button asChild>New</Button>
         </Link>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex w-full flex-col gap-2">
           {endpoints.map((e) => (
             <div
-              className="space-between flex w-full items-center gap-2"
+              className="flex w-full items-center justify-between gap-2"
               key={e.id}
             >
               <span className="font-mono">{e.url}</span>
-
               <Link
                 href={`/maintainer/${organization.name}/webhooks/endpoints/${e.id}`}
                 className="shrink-0"
               >
-                <Button asChild>Events</Button>
+                <Button size={'sm'} asChild variant={'secondary'}>
+                  Events
+                </Button>
               </Link>
             </div>
           ))}

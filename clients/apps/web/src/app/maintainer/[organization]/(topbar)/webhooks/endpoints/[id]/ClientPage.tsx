@@ -26,7 +26,10 @@ export default function ClientPage({
           <h2 className="text-xl">Webhook deliveries</h2>
         </div>
 
-        <pre>{JSON.stringify(endpoint, undefined, 2)}</pre>
+        <div>
+          <h3 className="text-lg">Endpoint</h3>
+          <pre className="text-gray-600">{endpoint.url}</pre>
+        </div>
 
         <DeliveriesTable
           endpoint={endpoint}

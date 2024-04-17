@@ -33,23 +33,6 @@ const nextConfig = {
 
   async rewrites() {
     return [
-      // Framer site rewrites
-      {
-        source: '/',
-        destination: 'https://splendid-help-401117.framer.app/',
-        missing: [
-          // Do not rewrite for polar.new, polar.new has another rule below
-          {
-            type: 'host',
-            value: 'polar.new',
-          },
-          // Do not rewrite if user is logged in, they'll be redirected to the app
-          {
-            type: 'cookie',
-            key: POLAR_AUTH_COOKIE_KEY,
-          },
-        ],
-      },
       {
         source: '/careers',
         destination: 'https://splendid-help-401117.framer.app/careers',

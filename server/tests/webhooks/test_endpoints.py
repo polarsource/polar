@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import generate_uuid
 from polar.models import User
 from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
@@ -69,6 +70,24 @@ class TestSearchOrganization:
 
         assert {"items": [], "pagination": {"total_count": 0, "max_page": 0}} == json
 
+    @pytest.mark.authenticated
+    async def test_not_found(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        user_organization.is_admin = True
+        await save_fixture(user_organization)
+
+        params = {"organization_id": str(generate_uuid())}
+        response = await client.get("/api/v1/webhooks/endpoints/search", params=params)
+
+        assert response.status_code == 404
+        json = response.json()
+
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
@@ -134,7 +153,7 @@ class TestSearchUser:
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-class TestCreate:
+class TestCreateEndpoint:
     @pytest.mark.authenticated
     async def test_create_user(
         self,
@@ -209,6 +228,26 @@ class TestCreate:
         assert json["user_id"] is None
         assert str(organization.id) == json["organization_id"]
 
+        # get endpoint
+        get_response = await client.get(
+            f"/api/v1/webhooks/endpoints/{json["id"]}",
+        )
+        assert get_response.status_code == 200
+        assert get_response.json()["id"] == json["id"]
+
+        # delete
+        delete_response = await client.delete(
+            f"/api/v1/webhooks/endpoints/{json["id"]}",
+        )
+        assert delete_response.status_code == 200
+        assert delete_response.json()["id"] == json["id"]
+
+        # get after delete
+        get_response = await client.get(
+            f"/api/v1/webhooks/endpoints/{json["id"]}",
+        )
+        assert get_response.status_code == 404
+
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
@@ -270,3 +309,21 @@ class TestSearchDeliveries:
         response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
 
         assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_found(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        user_organization.is_admin = True
+        await save_fixture(user_organization)
+
+        params = {"webhook_endpoint_id": str(generate_uuid())}
+        response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
+
+        assert response.status_code == 404
+        json = response.json()

@@ -30,6 +30,7 @@ import {
   TransactionsApi,
   UsersApi,
   WebhookNotificationsApi,
+  WebhooksApi,
 } from '.'
 
 export class PolarAPI {
@@ -40,6 +41,7 @@ export class PolarAPI {
   public readonly backoffice: BackofficeApi
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
+  public readonly donations: DonationsApi
   public readonly funding: FundingApi
   public readonly health: HealthApi
   public readonly integrationsDiscord: IntegrationsDiscordApi;
@@ -62,7 +64,7 @@ export class PolarAPI {
   public readonly transactions: TransactionsApi
   public readonly users: UsersApi
   public readonly webhookNotifications: WebhookNotificationsApi
-  public readonly donations: DonationsApi
+  public readonly webhooks: WebhooksApi
 
 
   constructor(config: Configuration) {
@@ -73,6 +75,7 @@ export class PolarAPI {
     this.backoffice = new BackofficeApi(config)
     this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
+    this.donations = new DonationsApi(config)
     this.funding = new FundingApi(config)
     this.health = new HealthApi(config)
     this.integrationsDiscord= new IntegrationsDiscordApi(config)
@@ -95,6 +98,6 @@ export class PolarAPI {
     this.transactions = new TransactionsApi(config)
     this.users = new UsersApi(config)
     this.webhookNotifications = new WebhookNotificationsApi(config)
-    this.donations = new DonationsApi(config)
+    this.webhooks = new WebhooksApi(config)
   }
 }

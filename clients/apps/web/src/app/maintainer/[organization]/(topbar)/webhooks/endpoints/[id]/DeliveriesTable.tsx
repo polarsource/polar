@@ -11,7 +11,7 @@ import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
 } from '@mui/icons-material'
-import { Organization, WebhookDelivery } from '@polar-sh/sdk'
+import { Organization, WebhookDelivery, WebhookEndpoint } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import {
@@ -24,6 +24,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface DeliveriesTableProps {
   organization: Organization
+  endpoint: WebhookEndpoint
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }
@@ -34,6 +35,7 @@ type DeliveryRow = WebhookDelivery & {
 
 const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   organization,
+  endpoint,
   pagination,
   sorting,
 }) => {
@@ -58,7 +60,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/webhooks?${getSearchParams(
+      `/maintainer/${organization.name}/webhooks/endpoints/${endpoint.id}?${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -76,7 +78,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/webhooks?${getSearchParams(
+      `/maintainer/${organization.name}/webhooks/endpoints/${endpoint.id}?${getSearchParams(
         pagination,
         updatedSorting,
       )}`,
@@ -84,7 +86,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   }
 
   const deliveriesHook = useSearchWebhooksDeliveries({
-    webhookEndpointId: '3f4e8245-af94-4393-92f1-1726395499c1',
+    webhookEndpointId: endpoint.id,
     ...getAPIParams(pagination, sorting),
   })
 

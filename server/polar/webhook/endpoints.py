@@ -30,6 +30,27 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
 @router.get(
+    "/endpoints/lookup",
+    response_model=WebhookEndpointSchema,
+    tags=[Tags.PUBLIC],
+)
+async def lookup_webhook_endpoint(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
+) -> WebhookEndpointSchema:
+    endpoint = await webhook_service.get_endpoint(session, id)
+    if not endpoint:
+        raise NotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, endpoint):
+        raise Unauthorized()
+
+    return WebhookEndpointSchema.model_validate(endpoint)
+
+
+@router.get(
     "/endpoints/search",
     response_model=ListResource[WebhookEndpointSchema],
     tags=[Tags.PUBLIC],

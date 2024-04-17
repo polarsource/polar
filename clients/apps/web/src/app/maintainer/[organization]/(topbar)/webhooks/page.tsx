@@ -1,14 +1,11 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { Platforms } from '@polar-sh/sdk'
 import ClientPage from './ClientPage'
 
 export default async function Page({
   params,
-  searchParams,
 }: {
   params: { organization: string }
-  searchParams: DataTableSearchParams
 }) {
   const api = getServerSideAPI()
   const organization = await api.organizations.lookup({
@@ -16,15 +13,14 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
 
-  const { pagination, sorting } = parseSearchParams(searchParams, [
-    { id: 'created_at', desc: true },
-  ])
+  const endpoints = await api.webhooks.searchWebhookEndpoints({
+    organizationId: organization.id,
+  })
 
   return (
     <ClientPage
+      endpoints={endpoints?.items ?? []}
       organization={organization}
-      pagination={pagination}
-      sorting={sorting}
     />
   )
 }

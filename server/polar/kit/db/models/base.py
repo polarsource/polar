@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, MetaData
+from sqlalchemy import TIMESTAMP, MetaData, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -52,4 +52,12 @@ class RecordModel(TimestampedModel):
         return self.id.int
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(id={self.id!r})"
+        # We do this complex thing because we might be outside a session with
+        # an expired object; typically when Sentry tries to serialize the object for
+        # error reporting.
+        # But basically, we want to show the ID if we have it.
+        insp = inspect(self)
+        if insp.identity is not None:
+            id_value = insp.identity[0]
+            return f"{self.__class__.__name__}(id={id_value!r})"
+        return f"{self.__class__.__name__}(id=None)"

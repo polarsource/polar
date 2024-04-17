@@ -10,7 +10,11 @@ export default function Page() {
     <div className="flex flex-col">
       <HeroSection />
       <AnimatedSeparator />
-      <BenefitUpsell />
+      <BenefitsUpsell />
+      <AnimatedSeparator />
+      <FeaturesUpsell />
+      <AnimatedSeparator />
+      <DevelopersUpsell />
     </div>
   )
 }
@@ -68,7 +72,7 @@ const HeroSection = () => {
   )
 }
 
-const BenefitUpsell = () => {
+const BenefitsUpsell = () => {
   return (
     <div className="flex flex-row py-16">
       <div className="dark:bg-polar-900 flex w-3/5 flex-col bg-gray-100"></div>
@@ -119,6 +123,73 @@ const BenefitUpsell = () => {
         <div className="flex flex-row items-center gap-x-4">
           <Button>GitHub</Button>
           <Button>Join our Discord</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const FeaturesUpsell = () => {
+  return (
+    <div className="dark:divide-polar-700 grid grid-cols-3 divide-x divide-y divide-blue-100">
+      <div className="col-span-1 flex min-h-96 flex-col items-center justify-center gap-y-2 p-12 text-center">
+        <h3 className="text-lg text-blue-500">
+          Individual & Business subscriptions
+        </h3>
+        <p className="dark:text-polar-500 text-gray-500">
+          Separate membership perks & commercial offerings.
+        </p>
+      </div>
+      <div className="col-span-2 flex min-h-52 flex-col items-center justify-center gap-y-2 p-12 text-center">
+        <h3 className="text-lg text-blue-500">Posts & Newletter</h3>
+        <p className="dark:text-polar-500 text-gray-500">
+          Write posts in an editor designed for developers. Share them with
+          everyone, paid subscribers or a mix (paywalled sections).
+        </p>
+      </div>
+      <div className="col-start-2 col-end-3 flex min-h-52 flex-col items-center justify-center gap-y-2 p-12 text-center">
+        <h3 className="text-lg text-blue-500">API & SDK</h3>
+        <p className="dark:text-polar-500 text-gray-500">
+          Integrate it all on your own docs, sites or services using our API &
+          SDK.
+        </p>
+      </div>
+      <div className="col-start-3 col-end-4 flex min-h-52 flex-col items-center justify-center gap-y-2 p-12 text-center">
+        <h3 className="text-lg text-blue-500">Value-add taxes handled</h3>
+        <p className="dark:text-polar-500 text-gray-500">
+          We handle it as the merchant of record.
+        </p>
+      </div>
+      <div className="col-start-1 col-end-2 flex min-h-52 flex-col items-center justify-center gap-y-2 p-12 text-center">
+        <h3 className="text-lg text-blue-500">Get a funded backlog</h3>
+        <p className="dark:text-polar-500 text-gray-500">
+          Built for open source maintainers, not bounty hunters. Empower your
+          community to pool funding toward issues.
+        </p>
+      </div>
+      <div className="col-span-2 flex min-h-52 flex-col items-center justify-center gap-y-2 p-12 text-center">
+        <h3 className="text-lg text-blue-500">Reward contributors</h3>
+        <p className="dark:text-polar-500 text-gray-500">
+          Share issue funding with contributors easily.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+const DevelopersUpsell = () => {
+  return (
+    <div className="flex flex-row py-16">
+      <div className="dark:bg-polar-900 flex w-3/5 flex-col bg-gray-100"></div>
+      <div className="flex w-2/5 flex-col gap-y-12 px-12">
+        <div className="flex flex-col gap-y-8">
+          <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
+            Serving world-class developers
+          </h1>
+          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-400">
+            We&apos;re proud to support incredible developers and open source
+            initiatives that are shaping the future. Join us today.
+          </p>
         </div>
       </div>
     </div>

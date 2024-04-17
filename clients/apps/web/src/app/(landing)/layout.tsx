@@ -6,8 +6,8 @@ import { PropsWithChildren } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="flex h-full w-full flex-col items-center">
-      <div className="dark:border-polar-700 flex h-full w-full max-w-7xl flex-col border-l border-r border-blue-100">
+    <div className="flex w-full flex-col items-center">
+      <div className="dark:border-polar-700 flex w-full max-w-7xl flex-col border-l border-r border-blue-100">
         <LandingPageTopbar />
         {children}
       </div>

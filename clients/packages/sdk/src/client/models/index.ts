@@ -10616,6 +10616,12 @@ export interface WebhookDelivery {
     id: string;
     /**
      * 
+     * @type {string}
+     * @memberof WebhookDelivery
+     */
+    created_at: string;
+    /**
+     * 
      * @type {number}
      * @memberof WebhookDelivery
      */

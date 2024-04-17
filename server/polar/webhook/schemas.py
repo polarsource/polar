@@ -46,6 +46,7 @@ class WebhookEvent(Schema):
 
 class WebhookDelivery(Schema):
     id: UUID
+    created_at: datetime
     http_code: int | None
     succeeded: bool
     webhook_event: WebhookEvent

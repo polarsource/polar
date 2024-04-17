@@ -15,6 +15,7 @@ import {
   TuneOutlined,
   ViewDayOutlined,
   VolunteerActivism,
+  Webhook,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
@@ -79,7 +80,10 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
   }
 }
 
-export const useMaintainerRoutes = (org?: Organization): RouteWithActive[] => {
+export const useMaintainerRoutes = (
+  org?: Organization,
+  allowAll?: boolean,
+): RouteWithActive[] => {
   const path = usePathname()
 
   const r = useMemo(() => {
@@ -88,7 +92,7 @@ export const useMaintainerRoutes = (org?: Organization): RouteWithActive[] => {
     }
 
     return maintainerRoutesList(org)
-      .filter((o) => o.if)
+      .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
   }, [org, path])
 
@@ -253,6 +257,21 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     link: `/maintainer/${org.name}/promote`,
     if: true,
     subs: undefined,
+  },
+  {
+    id: 'webhooks',
+    title: 'Webhooks',
+    icon: <Webhook fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/webhooks`,
+    if: false,
+    subs: [
+      {
+        title: 'Endpoints',
+        link: `/maintainer/${org.name}/webhooks`,
+        icon: <Webhook fontSize="inherit" />,
+      },
+    ],
   },
 ]
 

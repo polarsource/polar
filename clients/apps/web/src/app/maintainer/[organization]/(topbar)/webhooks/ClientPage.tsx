@@ -21,6 +21,13 @@ export default function ClientPage({
           <h2 className="text-xl">Webhooks</h2>
         </div>
 
+        <Link
+          href={`/maintainer/${organization.name}/webhooks/new`}
+          className="shrink-0"
+        >
+          <Button asChild>New</Button>
+        </Link>
+
         <div className="flex flex-col gap-2">
           {endpoints.map((e) => (
             <div

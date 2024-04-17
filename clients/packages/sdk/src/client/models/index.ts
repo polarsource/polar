@@ -5218,6 +5218,44 @@ export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitD
 /**
  * 
  * @export
+ * @interface ListResourceWebhookDelivery
+ */
+export interface ListResourceWebhookDelivery {
+    /**
+     * 
+     * @type {Array<WebhookDelivery>}
+     * @memberof ListResourceWebhookDelivery
+     */
+    items?: Array<WebhookDelivery>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceWebhookDelivery
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceWebhookEndpoint
+ */
+export interface ListResourceWebhookEndpoint {
+    /**
+     * 
+     * @type {Array<WebhookEndpoint>}
+     * @memberof ListResourceWebhookEndpoint
+     */
+    items?: Array<WebhookEndpoint>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceWebhookEndpoint
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceWebhookIntegration
  */
 export interface ListResourceWebhookIntegration {
@@ -10564,6 +10602,136 @@ export const Visibility = {
 } as const;
 export type Visibility = typeof Visibility[keyof typeof Visibility];
 
+/**
+ * 
+ * @export
+ * @interface WebhookDelivery
+ */
+export interface WebhookDelivery {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookDelivery
+     */
+    id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof WebhookDelivery
+     */
+    http_code: number | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookDelivery
+     */
+    succeeded: boolean;
+    /**
+     * 
+     * @type {WebhookEvent}
+     * @memberof WebhookDelivery
+     */
+    webhook_event: WebhookEvent;
+}
+/**
+ * 
+ * @export
+ * @interface WebhookEndpoint
+ */
+export interface WebhookEndpoint {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpoint
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpoint
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpoint
+     */
+    user_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpoint
+     */
+    organization_id: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface WebhookEndpointCreate
+ */
+export interface WebhookEndpointCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpointCreate
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpointCreate
+     */
+    secret: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpointCreate
+     */
+    user_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpointCreate
+     */
+    organization_id?: string;
+}
+/**
+ * 
+ * @export
+ * @interface WebhookEvent
+ */
+export interface WebhookEvent {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEvent
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEvent
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof WebhookEvent
+     */
+    last_http_code: number | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEvent
+     */
+    succeeded: boolean | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEvent
+     */
+    payload: string;
+}
 /**
  * 
  * @export

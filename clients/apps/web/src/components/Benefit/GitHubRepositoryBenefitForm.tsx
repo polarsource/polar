@@ -158,7 +158,21 @@ export const GitHubRepositoryBenefitForm = ({
     data: repositories,
     refetch: refetchRepositories,
     isFetching: isFetchingRepositories,
+    error: repositoriesError,
   } = useListIntegrationsGithubRepositoryBenefitUserRepositories()
+
+  useEffect(() => {
+    if (repositoriesError) {
+      repositoriesError.response.json().then((data) => {
+        setError('properties.repository_owner', {
+          message: data['detail'],
+          type: data['type'],
+        })
+      })
+    } else {
+      clearErrors('properties.repository_owner')
+    }
+  }, [repositoriesError, setError, clearErrors])
 
   const userGitHubBenefitOauth = currentUser?.oauth_accounts.find(
     (o) => o.platform === OAuthPlatform.GITHUB_REPOSITORY_BENEFIT,

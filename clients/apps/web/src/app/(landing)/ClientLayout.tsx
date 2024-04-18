@@ -13,14 +13,22 @@ export default function Layout({ children }: PropsWithChildren) {
   return (
     <div className="flex w-full flex-col items-center dark:bg-gray-50 dark:text-gray-950">
       <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch md:max-w-7xl">
-        <AnimatedSeparator orientation="vertical" whileInView={false} />
+        <AnimatedSeparator
+          className="hidden md:block"
+          orientation="vertical"
+          whileInView={false}
+        />
         <div className="flex w-full flex-grow flex-col">
           <LandingPageTopbar />
           <AnimatedSeparator />
           {children}
           <LandingPageFooter />
         </div>
-        <AnimatedSeparator orientation="vertical" whileInView={false} />
+        <AnimatedSeparator
+          className="hidden md:block"
+          orientation="vertical"
+          whileInView={false}
+        />
       </div>
     </div>
   )
@@ -28,8 +36,8 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="flex flex-row items-center justify-between px-8 py-6">
-      <LogoType width={80} />
+    <div className="flex flex-row items-center justify-between px-8 py-6 md:px-12">
+      <LogoType className="-ml-2 md:ml-0" width={80} />
       <div className="flex flex-row items-center gap-x-6">
         <Link href="https://github.com/polarsource/polar" target="_blank">
           <Button

@@ -90,7 +90,7 @@ const HeroSection = () => {
 
         <div className="flex flex-col items-start gap-y-8">
           <GithubLoginButton size="large" text="Sign up with GitHub" />
-          <p className="text-xs text-gray-400">
+          <p className="text-xs leading-normal text-gray-400">
             By using Polar you agree to our{' '}
             <BlueLink href="/legal/terms" target="_blank">
               Terms of Service
@@ -326,7 +326,7 @@ const FeaturesUpsell = () => {
         className="col-span-2 border-t"
       >
         <Image
-          className="h-48 w-fit rounded-xl object-contain shadow-md"
+          className="h-fit w-96 rounded-xl object-contain shadow-md"
           src="/assets/landing/rewards.webp"
           alt="Polar Issue Rewards"
           width={800}
@@ -361,7 +361,7 @@ const DevelopersUpsell = () => {
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">
           <h3 className="font-medium text-blue-500">{name}</h3>
-          <p className="text-sm text-gray-400">{description}</p>
+          <p className="text-sm text-gray-500">{description}</p>
         </div>
       </Link>
     )
@@ -472,7 +472,7 @@ const Pricing = () => {
     description: string
   }>) => {
     return (
-      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-12 shadow-sm">
+      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-12 shadow-sm ring-1 ring-gray-100">
         <span className="text-blue-500">{children}</span>
         <div className="flex flex-col gap-2">
           <h1 className="text-xl font-semibold leading-snug">{title}</h1>
@@ -507,7 +507,7 @@ We're in this together. We earn when you do."
           <PercentOutlined fontSize="large" />
         </PriceCard>
         <PriceCard
-          title="+ Stripe Fees"
+          title="Stripe Fees"
           description="Stripe transaction- and payout fees apply before transfers."
         >
           <SyncAltOutlined fontSize="large" />

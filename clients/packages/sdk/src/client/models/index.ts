@@ -10693,6 +10693,18 @@ export interface WebhookEndpoint {
      * @memberof WebhookEndpoint
      */
     event_subscription_tier_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_pledge_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_pledge_updated?: boolean;
 }
 /**
  * 
@@ -10748,6 +10760,18 @@ export interface WebhookEndpointCreate {
      * @memberof WebhookEndpointCreate
      */
     event_subscription_tier_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_pledge_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_pledge_updated?: boolean;
 }
 /**
  * 
@@ -10791,6 +10815,18 @@ export interface WebhookEndpointUpdate {
      * @memberof WebhookEndpointUpdate
      */
     event_subscription_tier_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_pledge_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_pledge_updated?: boolean;
 }
 /**
  * 

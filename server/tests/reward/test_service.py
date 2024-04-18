@@ -13,6 +13,7 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import OAuthAccount, User
+from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.reward.endpoints import to_resource
@@ -29,6 +30,9 @@ async def test_list_rewards(
     user: User,
     mocker: MockerFixture,
 ) -> None:
+    # then
+    session.expunge_all()
+
     await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
@@ -48,12 +52,14 @@ async def test_list_rewards(
         country="SE",
         currency="USD",
     )
-    organization.account = account
-    await save_fixture(account)
-    await save_fixture(organization)
 
-    # then
-    session.expunge_all()
+    # the session has been flushed, "organization" is no longer mutable
+    org = await organization_service.get(session, organization.id)
+    assert org
+    org.account = account
+
+    await save_fixture(account)
+    await save_fixture(org)
 
     splits = await pledge_service.create_issue_rewards(
         session,

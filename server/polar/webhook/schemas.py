@@ -27,6 +27,8 @@ class WebhookEndpoint(Schema):
     event_subscription_updated: bool = False
     event_subscription_tier_created: bool = False
     event_subscription_tier_updated: bool = False
+    event_pledge_created: bool = False
+    event_pledge_updated: bool = False
 
 
 class WebhookEndpointUpdate(Schema):
@@ -37,6 +39,8 @@ class WebhookEndpointUpdate(Schema):
     event_subscription_updated: bool | None = None
     event_subscription_tier_created: bool | None = None
     event_subscription_tier_updated: bool | None = None
+    event_pledge_created: bool | None = None
+    event_pledge_updated: bool | None = None
 
 
 class WebhookEndpointCreate(Schema):
@@ -49,6 +53,8 @@ class WebhookEndpointCreate(Schema):
     event_subscription_updated: bool | None = None
     event_subscription_tier_created: bool | None = None
     event_subscription_tier_updated: bool | None = None
+    event_pledge_created: bool | None = None
+    event_pledge_updated: bool | None = None
 
 
 class WebhookEvent(Schema):

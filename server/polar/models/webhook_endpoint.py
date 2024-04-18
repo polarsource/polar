@@ -59,3 +59,13 @@ class WebhookEndpoint(RecordModel):
         nullable=False,
         server_default="false",
     )
+    event_pledge_created: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+    )
+    event_pledge_updated: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+    )

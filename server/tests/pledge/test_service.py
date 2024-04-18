@@ -28,6 +28,7 @@ from polar.models.transaction import Transaction
 from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
 from polar.notifications.service import PartialNotification
+from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
@@ -275,6 +276,9 @@ async def test_transfer_org(
     user: User,
     mocker: MockerFixture,
 ) -> None:
+    # then
+    session.expunge_all()
+
     paid_notification = mocker.patch(
         "polar.pledge.service.PledgeService.transfer_created_notification"
     )
@@ -297,9 +301,14 @@ async def test_transfer_org(
         country="SE",
         currency="USD",
     )
-    organization.account = account
+
+    # the session has been flushed, "organization" is no longer mutable
+    org = await organization_service.get(session, organization.id)
+    assert org
+    org.account = account
+
     await save_fixture(account)
-    await save_fixture(organization)
+    await save_fixture(org)
 
     reward = IssueReward(
         issue_id=pledge.issue_id,

@@ -12,12 +12,14 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
+from polar.models.pledge import Pledge
 from polar.models.subscription import Subscription
 from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user import User
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
+from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchema
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
@@ -32,7 +34,8 @@ class WebhookEventType(Enum):
     # benefit_created = "benefit.created"
     # benefit_updated = "benefit.updated"
     # organization_updated = "organization.updated"
-    # pledge_created = "pledge.created"
+    pledge_created = "pledge.created"
+    pledge_updated = "pledge.updated"
     # donation_created = "donation.created"
 
 
@@ -41,6 +44,8 @@ WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.subscription_updated], Subscription],
     tuple[Literal[WebhookEventType.subscription_tier_created], SubscriptionTier],
     tuple[Literal[WebhookEventType.subscription_tier_updated], SubscriptionTier],
+    tuple[Literal[WebhookEventType.pledge_created], Pledge],
+    tuple[Literal[WebhookEventType.pledge_updated], Pledge],
 ]
 
 
@@ -64,11 +69,23 @@ class WebhookSubscriptionTierUpdatedPayload(Schema):
     data: SubscriptionTierSchema
 
 
+class WebhookPledgeCreatedPayload(Schema):
+    type: Literal[WebhookEventType.pledge_created]
+    data: PledgeSchema
+
+
+class WebhookPledgeUpdatedPayload(Schema):
+    type: Literal[WebhookEventType.pledge_updated]
+    data: PledgeSchema
+
+
 WebhookPayload = Union[  # noqa: UP007
     WebhookSubscriptionCreatedPayload,
     WebhookSubscriptionUpdatedPayload,
     WebhookSubscriptionTierCreatedPayload,
     WebhookSubscriptionTierUpdatedPayload,
+    WebhookPledgeCreatedPayload,
+    WebhookPledgeUpdatedPayload,
 ]
 
 
@@ -107,8 +124,12 @@ class WebhookService:
                 stmt = stmt.where(
                     WebhookEndpoint.event_subscription_tier_updated.is_(True)
                 )
+            case WebhookEventType.pledge_created:
+                stmt = stmt.where(WebhookEndpoint.event_pledge_created.is_(True))
+            case WebhookEventType.pledge_updated:
+                stmt = stmt.where(WebhookEndpoint.event_pledge_updated.is_(True))
             case x:
-                assert_never(x)
+                assert_never(x)  # asserts that the match above is exhaustive
 
         res = await session.execute(stmt)
         return res.scalars().unique().all()
@@ -175,8 +196,32 @@ class WebhookService:
                     type=we[0],
                     data=SubscriptionTierSchema.model_validate(we[1]),
                 )
+            case WebhookEventType.pledge_created:
+                # mypy is not able to deduce this by itself
+                if isinstance(we[1], Pledge):
+                    payload = WebhookPledgeCreatedPayload(
+                        type=we[0],
+                        data=PledgeSchema.from_db(
+                            we[1],
+                            include_receiver_admin_fields=True,
+                            include_sender_admin_fields=False,
+                            include_sender_fields=False,
+                        ),
+                    )
+            case WebhookEventType.pledge_updated:
+                # mypy is not able to deduce this by itself
+                if isinstance(we[1], Pledge):
+                    payload = WebhookPledgeUpdatedPayload(
+                        type=we[0],
+                        data=PledgeSchema.from_db(
+                            we[1],
+                            include_receiver_admin_fields=True,
+                            include_sender_admin_fields=False,
+                            include_sender_fields=False,
+                        ),
+                    )
             case x:
-                assert_never(x)
+                assert_never(x)  # asserts that the match is exhaustive
 
         if payload is None:
             raise Exception("no payload")
@@ -207,6 +252,8 @@ class WebhookService:
             event_subscription_updated=create.event_subscription_updated,
             event_subscription_tier_created=create.event_subscription_tier_created,
             event_subscription_tier_updated=create.event_subscription_tier_updated,
+            event_pledge_created=create.event_pledge_created,
+            event_pledge_updated=create.event_pledge_updated,
         )
         session.add(endpoint)
         await session.flush()
@@ -237,6 +284,10 @@ class WebhookService:
             endpoint.event_subscription_tier_updated = (
                 update.event_subscription_tier_updated
             )
+        if update.event_pledge_created is not None:
+            endpoint.event_pledge_created = update.event_pledge_created
+        if update.event_pledge_updated is not None:
+            endpoint.event_pledge_updated = update.event_pledge_updated
 
         session.add(endpoint)
         await session.flush()

@@ -68,6 +68,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service import user as user_service
+from polar.webhook.service import WebhookEventType, webhook_service
 
 from .hooks import (
     PledgeHook,
@@ -293,7 +294,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
             # FIXME: it would be cool if we could only trigger these events if the
             # update statement above modified the record
-            await pledge_updated.call(PledgeHook(session, pledge))
+            await self.after_pledge_updated(session, pledge)
 
             if hook:
                 await hook.call(PledgeHook(session, pledge))
@@ -725,7 +726,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge_updated.call(PledgeHook(session, pledge))
+        await self.after_pledge_updated(session, pledge)
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -754,7 +755,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge_updated.call(PledgeHook(session, pledge))
+        await self.after_pledge_updated(session, pledge)
 
     async def mark_charge_disputed_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -777,7 +778,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge_updated.call(PledgeHook(session, pledge))
+        await self.after_pledge_updated(session, pledge)
 
     async def get_reward(
         self, session: AsyncSession, split_id: UUID
@@ -997,7 +998,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.commit()
 
         await pledge_disputed.call(PledgeHook(session, pledge))
-        await pledge_updated.call(PledgeHook(session, pledge))
+        await self.after_pledge_updated(session, pledge)
 
     async def create_pay_on_completion(
         self,
@@ -1076,6 +1077,39 @@ class PledgeService(ResourceServiceReader[Pledge]):
                     session,
                     issue.id,
                 )
+
+        full_pledge = await self.get_with_loaded(session, pledge.id)
+        assert full_pledge
+
+        # send webhooks to receiving organization
+        if receiving_org := await organization_service.get(
+            session, pledge.organization_id
+        ):
+            await webhook_service.send(
+                session,
+                receiving_org,
+                (WebhookEventType.pledge_created, full_pledge),
+            )
+
+    async def after_pledge_updated(
+        self,
+        session: AsyncSession,
+        pledge: Pledge,
+    ) -> None:
+        full_pledge = await self.get_with_loaded(session, pledge.id)
+        assert full_pledge
+
+        await pledge_updated.call(PledgeHook(session, full_pledge))
+
+        # send webhooks to receiving organization
+        if receiving_org := await organization_service.get(
+            session, pledge.organization_id
+        ):
+            await webhook_service.send(
+                session,
+                receiving_org,
+                (WebhookEventType.pledge_updated, full_pledge),
+            )
 
     async def send_invoices(
         self,

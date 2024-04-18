@@ -271,7 +271,7 @@ const FeaturesUpsell = () => {
         icon={Bolt}
         title="Individual & Business Subscriptions"
         description="Separate membership perks & commercial offerings."
-        className="col-span-1 row-span-2 gap-16 border-b border-r md:border-b-0"
+        className="col-span-1 row-span-2 gap-16 border-b md:border-b-0 md:border-r"
       >
         <div className="animate-infinite-scroll flex h-fit flex-row items-start justify-stretch gap-x-8 self-start text-left">
           {[...MOCKED_SUBSCRIPTION_TIERS, ...MOCKED_SUBSCRIPTION_TIERS].map(
@@ -304,13 +304,13 @@ const FeaturesUpsell = () => {
         icon={AttachMoneyOutlined}
         title="Value-add taxes handled"
         description="We handle it as the merchant of record."
-        className="col-start-3 col-end-4 border-l border-t"
+        className="col-start-3 col-end-4 border-t md:border-l"
       />
       <Feature
         icon={HowToVoteOutlined}
         title="Get a funded backlog"
         description="Built for open source maintainers, not bounty hunters. Empower your community to pool funding toward issues."
-        className="col-start-1 col-end-2 border-r border-t"
+        className="col-start-1 col-end-2 border-t md:border-r"
       >
         <Image
           src="/assets/landing/fund.png"
@@ -472,7 +472,7 @@ const Pricing = () => {
     description: string
   }>) => {
     return (
-      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-12 shadow-sm ring-1 ring-gray-100">
+      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-100 md:p-12">
         <span className="text-blue-500">{children}</span>
         <div className="flex flex-col gap-2">
           <h1 className="text-xl font-semibold leading-snug">{title}</h1>

@@ -278,7 +278,7 @@ const FeaturesUpsell = () => {
             (tier) => (
               <SubscriptionTierCard
                 key={tier.id}
-                className="dark- h-full w-[280px] border-none"
+                className="h-full w-[280px] border-none ring-1 ring-gray-100"
                 variant="small"
                 subscriptionTier={tier}
               >

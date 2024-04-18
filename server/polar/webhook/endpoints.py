@@ -103,10 +103,7 @@ async def create_webhook_endpoint(
 
     endpoint = await webhook_service.create_endpoint(
         session,
-        url=str(create.url),
-        secret=create.secret,
-        user_id=create.user_id,
-        organization_id=create.organization_id,
+        create=create,
     )
 
     return WebhookEndpointSchema.model_validate(endpoint)

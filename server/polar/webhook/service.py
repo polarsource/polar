@@ -20,7 +20,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchema
-from polar.webhook.schemas import WebhookEndpointUpdate
+from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.worker import enqueue_job
 
 
@@ -196,24 +196,17 @@ class WebhookService:
         self,
         session: AsyncSession,
         *,
-        url: str,
-        user_id: UUID | None,
-        organization_id: UUID | None,
-        secret: str,
-        event_subscription_created: bool = False,
-        event_subscription_updated: bool = False,
-        event_subscription_tier_created: bool = False,
-        event_subscription_tier_updated: bool = False,
+        create: WebhookEndpointCreate,
     ) -> WebhookEndpoint:
         endpoint = WebhookEndpoint(
-            url=url,
-            user_id=user_id,
-            organization_id=organization_id,
-            secret=secret,
-            event_subscription_created=event_subscription_created,
-            event_subscription_updated=event_subscription_updated,
-            event_subscription_tier_created=event_subscription_tier_created,
-            event_subscription_tier_updated=event_subscription_tier_updated,
+            url=str(create.url),
+            user_id=create.user_id,
+            organization_id=create.organization_id,
+            secret=create.secret,
+            event_subscription_created=create.event_subscription_created,
+            event_subscription_updated=create.event_subscription_updated,
+            event_subscription_tier_created=create.event_subscription_tier_created,
+            event_subscription_tier_updated=create.event_subscription_tier_updated,
         )
         session.add(endpoint)
         await session.flush()

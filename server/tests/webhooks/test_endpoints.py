@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import generate_uuid
 from polar.models import User
 from polar.models.organization import Organization

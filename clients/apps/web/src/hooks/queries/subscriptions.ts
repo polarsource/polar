@@ -207,6 +207,7 @@ export const useSearchSubscriptions = (variables: {
   platform: Platforms
   limit: number
   page: number
+  sorting?: string[]
   subscriptionTierId?: string
   type?: SubscriptionTierType
   active?: boolean
@@ -219,6 +220,7 @@ export const useSearchSubscriptions = (variables: {
         platform: variables.platform,
         limit: variables.limit,
         page: variables.page,
+        sorting: variables.sorting,
         subscriptionTierId: variables.subscriptionTierId,
         type: variables.type,
         active: variables.active,

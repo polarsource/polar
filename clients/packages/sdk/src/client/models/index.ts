@@ -8091,6 +8091,12 @@ export type ResponseBenefitsLookupBenefit = BenefitAds | BenefitArticles | Benef
 export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
+ * @type ResponseWebhooksDummyOpenapiSpec
+ * @export
+ */
+export type ResponseWebhooksDummyOpenapiSpec = WebhookPledgeCreatedPayload | WebhookPledgeUpdatedPayload | WebhookSubscriptionCreatedPayload | WebhookSubscriptionTierCreatedPayload | WebhookSubscriptionTierUpdatedPayload | WebhookSubscriptionUpdatedPayload;
+
+/**
  * 
  * @export
  * @interface Reward
@@ -10965,6 +10971,64 @@ export interface WebhookIntegrationUpdate {
 /**
  * 
  * @export
+ * @interface WebhookPledgeCreatedPayload
+ */
+export interface WebhookPledgeCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookPledgeCreatedPayload
+     */
+    type: WebhookPledgeCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Pledge}
+     * @memberof WebhookPledgeCreatedPayload
+     */
+    data: Pledge;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookPledgeCreatedPayloadTypeEnum = {
+    PLEDGE_CREATED: 'pledge.created'
+} as const;
+export type WebhookPledgeCreatedPayloadTypeEnum = typeof WebhookPledgeCreatedPayloadTypeEnum[keyof typeof WebhookPledgeCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookPledgeUpdatedPayload
+ */
+export interface WebhookPledgeUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookPledgeUpdatedPayload
+     */
+    type: WebhookPledgeUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Pledge}
+     * @memberof WebhookPledgeUpdatedPayload
+     */
+    data: Pledge;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookPledgeUpdatedPayloadTypeEnum = {
+    PLEDGE_UPDATED: 'pledge.updated'
+} as const;
+export type WebhookPledgeUpdatedPayloadTypeEnum = typeof WebhookPledgeUpdatedPayloadTypeEnum[keyof typeof WebhookPledgeUpdatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface WebhookResponse
  */
 export interface WebhookResponse {
@@ -10987,3 +11051,119 @@ export interface WebhookResponse {
      */
     job_id?: string;
 }
+/**
+ * 
+ * @export
+ * @interface WebhookSubscriptionCreatedPayload
+ */
+export interface WebhookSubscriptionCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionCreatedPayload
+     */
+    type: WebhookSubscriptionCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionCreatedPayload
+     */
+    data: Subscription;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionCreatedPayloadTypeEnum = {
+    SUBSCRIPTION_CREATED: 'subscription.created'
+} as const;
+export type WebhookSubscriptionCreatedPayloadTypeEnum = typeof WebhookSubscriptionCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookSubscriptionTierCreatedPayload
+ */
+export interface WebhookSubscriptionTierCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionTierCreatedPayload
+     */
+    type: WebhookSubscriptionTierCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {SubscriptionTier}
+     * @memberof WebhookSubscriptionTierCreatedPayload
+     */
+    data: SubscriptionTier;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionTierCreatedPayloadTypeEnum = {
+    SUBSCRIPTION_TIER_CREATED: 'subscription_tier.created'
+} as const;
+export type WebhookSubscriptionTierCreatedPayloadTypeEnum = typeof WebhookSubscriptionTierCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionTierCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookSubscriptionTierUpdatedPayload
+ */
+export interface WebhookSubscriptionTierUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionTierUpdatedPayload
+     */
+    type: WebhookSubscriptionTierUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {SubscriptionTier}
+     * @memberof WebhookSubscriptionTierUpdatedPayload
+     */
+    data: SubscriptionTier;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionTierUpdatedPayloadTypeEnum = {
+    SUBSCRIPTION_TIER_UPDATED: 'subscription_tier.updated'
+} as const;
+export type WebhookSubscriptionTierUpdatedPayloadTypeEnum = typeof WebhookSubscriptionTierUpdatedPayloadTypeEnum[keyof typeof WebhookSubscriptionTierUpdatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookSubscriptionUpdatedPayload
+ */
+export interface WebhookSubscriptionUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionUpdatedPayload
+     */
+    type: WebhookSubscriptionUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionUpdatedPayload
+     */
+    data: Subscription;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionUpdatedPayloadTypeEnum = {
+    SUBSCRIPTION_UPDATED: 'subscription.updated'
+} as const;
+export type WebhookSubscriptionUpdatedPayloadTypeEnum = typeof WebhookSubscriptionUpdatedPayloadTypeEnum[keyof typeof WebhookSubscriptionUpdatedPayloadTypeEnum];
+

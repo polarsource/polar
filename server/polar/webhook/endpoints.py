@@ -20,6 +20,7 @@ from .schemas import (
 )
 from .schemas import (
     WebhookEndpointCreate,
+    WebhookEndpointUpdate,
 )
 from .service import webhook_service
 
@@ -151,6 +152,32 @@ async def get_webhook_endpoint(
 
     if not await authz.can(auth.subject, AccessType.write, endpoint):
         raise Unauthorized()
+
+    return WebhookEndpointSchema.model_validate(endpoint)
+
+
+@router.put(
+    "/endpoints/{id}",
+    response_model=WebhookEndpointSchema,
+    tags=[Tags.PUBLIC],
+)
+async def update_webhook_endpoint(
+    id: UUID,
+    update: WebhookEndpointUpdate,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
+) -> WebhookEndpointSchema:
+    endpoint = await webhook_service.get_endpoint(session, id)
+    if not endpoint:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, endpoint):
+        raise Unauthorized()
+
+    endpoint = await webhook_service.update_endpoint(
+        session, endpoint=endpoint, update=update
+    )
 
     return WebhookEndpointSchema.model_validate(endpoint)
 

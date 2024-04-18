@@ -20,6 +20,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchema
+from polar.webhook.schemas import WebhookEndpointUpdate
 from polar.worker import enqueue_job
 
 
@@ -172,13 +173,51 @@ class WebhookService:
         user_id: UUID | None,
         organization_id: UUID | None,
         secret: str,
+        event_subscription_created: bool = False,
+        event_subscription_updated: bool = False,
+        event_subscription_tier_created: bool = False,
+        event_subscription_tier_updated: bool = False,
     ) -> WebhookEndpoint:
         endpoint = WebhookEndpoint(
             url=url,
             user_id=user_id,
             organization_id=organization_id,
             secret=secret,
+            event_subscription_created=event_subscription_created,
+            event_subscription_updated=event_subscription_updated,
+            event_subscription_tier_created=event_subscription_tier_created,
+            event_subscription_tier_updated=event_subscription_tier_updated,
         )
+        session.add(endpoint)
+        await session.flush()
+        return endpoint
+
+    async def update_endpoint(
+        self,
+        session: AsyncSession,
+        *,
+        endpoint: WebhookEndpoint,
+        update: WebhookEndpointUpdate,
+    ) -> WebhookEndpoint:
+        if update.url is not None:
+            endpoint.url = update.url
+
+        if update.secret is not None:
+            endpoint.secret = update.secret
+
+        if update.event_subscription_created is not None:
+            endpoint.event_subscription_created = update.event_subscription_created
+        if update.event_subscription_updated is not None:
+            endpoint.event_subscription_updated = update.event_subscription_updated
+        if update.event_subscription_tier_created is not None:
+            endpoint.event_subscription_tier_created = (
+                update.event_subscription_tier_created
+            )
+        if update.event_subscription_tier_updated is not None:
+            endpoint.event_subscription_tier_updated = (
+                update.event_subscription_tier_updated
+            )
+
         session.add(endpoint)
         await session.flush()
         return endpoint

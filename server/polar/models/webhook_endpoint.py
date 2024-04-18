@@ -18,18 +18,6 @@ class WebhookEndpoint(RecordModel):
 
     secret: Mapped[str] = mapped_column(String, nullable=False)
 
-    event_subscription_created: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-
-    event_subscription_updated: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-
     organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("organizations.id", ondelete="CASCADE"),
@@ -48,4 +36,26 @@ class WebhookEndpoint(RecordModel):
         PostgresUUID,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=True,
+    )
+
+    # Events
+    event_subscription_created: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+    )
+    event_subscription_updated: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+    )
+    event_subscription_tier_created: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+    )
+    event_subscription_tier_updated: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
     )

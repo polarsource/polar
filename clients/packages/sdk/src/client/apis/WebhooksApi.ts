@@ -20,6 +20,7 @@ import type {
   ListResourceWebhookEndpoint,
   WebhookEndpoint,
   WebhookEndpointCreate,
+  WebhookEndpointUpdate,
 } from '../models/index';
 
 export interface WebhooksApiCreateWebhookEndpointRequest {
@@ -45,6 +46,11 @@ export interface WebhooksApiSearchWebhookEndpointsRequest {
     userId?: string;
     page?: number;
     limit?: number;
+}
+
+export interface WebhooksApiUpdateWebhookEndpointRequest {
+    id: string;
+    webhookEndpointUpdate: WebhookEndpointUpdate;
 }
 
 /**
@@ -278,6 +284,57 @@ export class WebhooksApi extends runtime.BaseAPI {
      */
     async searchWebhookEndpoints(requestParameters: WebhooksApiSearchWebhookEndpointsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceWebhookEndpoint> {
         const response = await this.searchWebhookEndpointsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update Webhook Endpoint
+     */
+    async updateWebhookEndpointRaw(requestParameters: WebhooksApiUpdateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateWebhookEndpoint().'
+            );
+        }
+
+        if (requestParameters['webhookEndpointUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'webhookEndpointUpdate',
+                'Required parameter "webhookEndpointUpdate" was null or undefined when calling updateWebhookEndpoint().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'PUT',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['webhookEndpointUpdate'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update Webhook Endpoint
+     */
+    async updateWebhookEndpoint(requestParameters: WebhooksApiUpdateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
+        const response = await this.updateWebhookEndpointRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

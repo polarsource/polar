@@ -21,10 +21,7 @@ from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.models.user import OAuthPlatform
-from polar.organization.schemas import (
-    OrganizationCreateFromGitHubInstallation,
-    OrganizationCreateFromGitHubUser,
-)
+from polar.organization.schemas import OrganizationCreateFromGitHubInstallation
 from polar.organization.service import OrganizationService
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -190,7 +187,7 @@ class GithubOrganizationService(OrganizationService):
         if not user.avatar_url:
             raise InternalServerError("user has no avatar_url")
 
-        new = OrganizationCreateFromGitHubUser(
+        org = Organization(
             platform=Platforms.github,
             name=oauth.account_username,
             avatar_url=user.avatar_url,
@@ -198,8 +195,9 @@ class GithubOrganizationService(OrganizationService):
             is_personal=True,
             created_from_user_maintainer_upgrade=True,
         )
+        session.add(org)
+        await session.flush()
 
-        org = await organization_service.create_or_update(session, new)
         await organization_service.add_user(
             session, organization=org, user=user, is_admin=True
         )

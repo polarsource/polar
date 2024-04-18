@@ -1,3 +1,5 @@
+const createMDX = require('@next/mdx')
+
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
@@ -9,6 +11,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   transpilePackages: ['polarkit'],
+  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 
   // Do not do any fiddling with trailing slashes
   trailingSlash: undefined,
@@ -33,10 +36,6 @@ const nextConfig = {
 
   async rewrites() {
     return [
-      {
-        source: '/careers',
-        destination: 'https://splendid-help-401117.framer.app/careers',
-      },
       {
         source: '/404',
         destination: 'https://splendid-help-401117.framer.app/404',
@@ -184,7 +183,7 @@ const nextConfig = {
             type: 'header',
             key: 'x-forwarded-host',
             value: defaultFrontendHostname,
-          }
+          },
         ],
         permanent: false,
       },
@@ -375,7 +374,9 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+const withMDX = createMDX()
+
+module.exports = withMDX(nextConfig)
 
 // Injected content via Sentry wizard below
 

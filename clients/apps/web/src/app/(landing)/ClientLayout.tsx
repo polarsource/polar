@@ -11,7 +11,7 @@ import { PropsWithChildren } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="flex w-full flex-col items-center dark:bg-gray-50 dark:text-gray-950">
+    <div className="flex w-full flex-col items-center">
       <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch md:max-w-7xl">
         <AnimatedSeparator
           className="hidden md:block"
@@ -20,7 +20,6 @@ export default function Layout({ children }: PropsWithChildren) {
         />
         <div className="flex w-full flex-grow flex-col">
           <LandingPageTopbar />
-          <AnimatedSeparator />
           {children}
           <LandingPageFooter />
         </div>
@@ -36,24 +35,27 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="flex flex-row items-center justify-between px-8 py-6 md:px-12">
-      <LogoType className="-ml-2 md:ml-0" width={80} />
-      <div className="flex flex-row items-center gap-x-6">
-        <Link href="https://github.com/polarsource/polar" target="_blank">
-          <Button
-            className="rounded-lg bg-blue-50 px-3 py-4"
-            variant="secondary"
-          >
-            <div className="flex flex-row items-center gap-x-2">
-              <StarOutlineOutlined fontSize="small" />
-              <span>Star on GitHub</span>
-            </div>
-          </Button>
-        </Link>
-        <Link href="/login" className="text-blue-500 hover:text-blue-400">
-          Login
-        </Link>
+    <div className="sticky top-0 z-50">
+      <div className="flex flex-row items-center justify-between bg-gray-50 px-8 py-6 md:px-12">
+        <LogoType className="-ml-2 md:ml-0" width={80} />
+        <div className="flex flex-row items-center gap-x-6">
+          <Link href="https://github.com/polarsource/polar" target="_blank">
+            <Button
+              className="rounded-lg bg-blue-50 px-3 py-4"
+              variant="secondary"
+            >
+              <div className="flex flex-row items-center gap-x-2">
+                <StarOutlineOutlined fontSize="small" />
+                <span>Star on GitHub</span>
+              </div>
+            </Button>
+          </Link>
+          <Link href="/login" className="text-blue-500 hover:text-blue-400">
+            Login
+          </Link>
+        </div>
       </div>
+      <AnimatedSeparator />
     </div>
   )
 }

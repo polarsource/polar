@@ -23,10 +23,20 @@ class WebhookEndpoint(Schema):
     user_id: UUID | None
     organization_id: UUID | None
 
+    event_subscription_created: bool = False
+    event_subscription_updated: bool = False
+    event_subscription_tier_created: bool = False
+    event_subscription_tier_updated: bool = False
+
 
 class WebhookEndpointUpdate(Schema):
     url: str | None = None
     secret: str | None = None
+
+    event_subscription_created: bool | None = None
+    event_subscription_updated: bool | None = None
+    event_subscription_tier_created: bool | None = None
+    event_subscription_tier_updated: bool | None = None
 
 
 class WebhookEndpointCreate(Schema):
@@ -34,6 +44,11 @@ class WebhookEndpointCreate(Schema):
     secret: str
     user_id: UUID | None = None
     organization_id: UUID | None = None
+
+    event_subscription_created: bool | None = None
+    event_subscription_updated: bool | None = None
+    event_subscription_tier_created: bool | None = None
+    event_subscription_tier_updated: bool | None = None
 
 
 class WebhookEvent(Schema):

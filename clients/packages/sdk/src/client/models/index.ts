@@ -10669,6 +10669,30 @@ export interface WebhookEndpoint {
      * @memberof WebhookEndpoint
      */
     organization_id: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_subscription_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_subscription_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_subscription_tier_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_subscription_tier_updated?: boolean;
 }
 /**
  * 
@@ -10700,6 +10724,73 @@ export interface WebhookEndpointCreate {
      * @memberof WebhookEndpointCreate
      */
     organization_id?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_subscription_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_subscription_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_subscription_tier_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_subscription_tier_updated?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface WebhookEndpointUpdate
+ */
+export interface WebhookEndpointUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpointUpdate
+     */
+    url?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpointUpdate
+     */
+    secret?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_subscription_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_subscription_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_subscription_tier_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_subscription_tier_updated?: boolean;
 }
 /**
  * 

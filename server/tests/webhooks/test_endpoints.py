@@ -256,15 +256,11 @@ class TestSearchDeliveries:
     async def test_search(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         user: User,
         webhook_endpoint: WebhookEndpoint,
         webhook_delivery: WebhookDelivery,
         user_organization_admin: UserOrganization,
     ) -> None:
-        # then
-        session.expunge_all()
-
         params = {"webhook_endpoint_id": str(webhook_endpoint.id)}
         response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
 
@@ -280,15 +276,11 @@ class TestSearchDeliveries:
     async def test_search_member_no_admin(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         user: User,
         webhook_endpoint: WebhookEndpoint,
         webhook_delivery: WebhookDelivery,
         user_organization: UserOrganization,
     ) -> None:
-        # then
-        session.expunge_all()
-
         params = {"webhook_endpoint_id": str(webhook_endpoint.id)}
         response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
 
@@ -298,13 +290,9 @@ class TestSearchDeliveries:
     async def test_search_no_member(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         webhook_endpoint: WebhookEndpoint,
         webhook_delivery: WebhookDelivery,
     ) -> None:
-        # then
-        session.expunge_all()
-
         params = {"webhook_endpoint_id": str(webhook_endpoint.id)}
         response = await client.get("/api/v1/webhooks/deliveries/search", params=params)
 
@@ -327,3 +315,67 @@ class TestSearchDeliveries:
 
         assert response.status_code == 404
         json = response.json()
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestUpdateEndpoints:
+    @pytest.mark.authenticated
+    async def test_update(
+        self,
+        client: AsyncClient,
+        webhook_endpoint: WebhookEndpoint,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        data = {
+            "event_subscription_created": True,
+            "event_subscription_updated": True,
+        }
+
+        response = await client.put(
+            f"/api/v1/webhooks/endpoints/{webhook_endpoint.id}", json=data
+        )
+
+        assert response.status_code == 200
+        updated = response.json()
+
+        assert updated["event_subscription_created"] is True
+        assert updated["event_subscription_updated"] is True
+        assert updated["event_subscription_tier_created"] is False  # not updated
+        assert updated["event_subscription_tier_updated"] is False  # not updated
+
+    @pytest.mark.authenticated
+    async def test_search_member_no_admin(
+        self,
+        client: AsyncClient,
+        user: User,
+        webhook_endpoint: WebhookEndpoint,
+        user_organization: UserOrganization,
+    ) -> None:
+        data = {
+            "event_subscription_created": True,
+            "event_subscription_updated": True,
+        }
+
+        response = await client.put(
+            f"/api/v1/webhooks/endpoints/{webhook_endpoint.id}", json=data
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_search_no_member(
+        self,
+        client: AsyncClient,
+        webhook_endpoint: WebhookEndpoint,
+    ) -> None:
+        data = {
+            "event_subscription_created": True,
+            "event_subscription_updated": True,
+        }
+
+        response = await client.put(
+            f"/api/v1/webhooks/endpoints/{webhook_endpoint.id}", json=data
+        )
+
+        assert response.status_code == 401

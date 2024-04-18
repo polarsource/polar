@@ -45,7 +45,18 @@ export function PolarThemeProvider({
 }: {
   children: React.ReactElement
 }) {
-  return <ThemeProvider attribute="class">{children}</ThemeProvider>
+  const pathname = usePathname()
+  const PAGES_WITH_FORCED_LIGHT_THEME = ['/']
+
+  const forcedTheme = PAGES_WITH_FORCED_LIGHT_THEME.includes(pathname)
+    ? 'light'
+    : undefined
+
+  return (
+    <ThemeProvider forcedTheme={forcedTheme} attribute="class">
+      {children}
+    </ThemeProvider>
+  )
 }
 
 export function PolarQueryClientProvider({

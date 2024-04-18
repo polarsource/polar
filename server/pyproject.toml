@@ -18,7 +18,7 @@ githubkit = "^0.11.1"
 redis = "^5.0.0"
 sse-starlette = "^2.0.0"
 arq = "^0.25.0"
-stripe = "=7.4.0" # strictly pinned stripe version as different versions of stripe can be incompatible with each other
+stripe = "9.2.0" # strictly pinned stripe version as different versions of stripe can be incompatible with each other
 pyjwt = "^2.6.0"
 pydantic = { version = "^2.7.0b1", allow-prereleases = true}
 jinja2 = "^3.1.2"

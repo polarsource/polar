@@ -3,7 +3,6 @@ from collections.abc import Iterator
 from typing import Literal, TypedDict, Unpack, cast
 
 import stripe as stripe_lib
-from stripe import error as stripe_lib_error
 
 from polar.account.schemas import AccountCreate
 from polar.config import settings
@@ -18,8 +17,6 @@ from polar.models.user import User
 from polar.postgres import AsyncSession, sql
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
-
-StripeError = stripe_lib_error.StripeError
 
 
 class ProductUpdateKwargs(TypedDict, total=False):
@@ -505,7 +502,7 @@ class StripeService:
     ) -> Iterator[stripe_lib.Refund]:
         params: stripe_lib.Refund.ListParams = {"limit": 100}
         if charge is not None:
-            params["charge"] = charge  # type: ignore
+            params["charge"] = charge
 
         return stripe_lib.Refund.list(**params).auto_paging_iter()
 

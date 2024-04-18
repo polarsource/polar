@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Literal, Union
+from typing import Literal, NoReturn, Union
 from uuid import UUID
 
 from sqlalchemy import desc
@@ -29,11 +29,11 @@ class WebhookEventType(Enum):
     subscription_updated = "subscription.updated"
     subscription_tier_created = "subscription_tier.created"
     subscription_tier_updated = "subscription_tier.updated"
-    benefit_created = "benefit.created"
-    benefit_updated = "benefit.updated"
-    organization_updated = "organization.updated"
-    pledge_created = "pledge.created"
-    donation_created = "donation.created"
+    # benefit_created = "benefit.created"
+    # benefit_updated = "benefit.updated"
+    # organization_updated = "organization.updated"
+    # pledge_created = "pledge.created"
+    # donation_created = "donation.created"
 
 
 WebhookTypeObject = Union[  # noqa: UP007
@@ -72,9 +72,16 @@ WebhookPayload = Union[  # noqa: UP007
 ]
 
 
+def assert_never(value: NoReturn) -> NoReturn:
+    assert False, f"Unhandled value: {value} ({type(value).__name__})"
+
+
 class WebhookService:
     async def list_endpoints(
-        self, session: AsyncSession, target: Organization | User
+        self,
+        session: AsyncSession,
+        target: Organization | User,
+        event: WebhookEventType | None = None,
     ) -> Sequence[WebhookEndpoint]:
         stmt = sql.select(WebhookEndpoint).where(
             WebhookEndpoint.deleted_at.is_(None),
@@ -84,6 +91,24 @@ class WebhookService:
             stmt = stmt.where(WebhookEndpoint.organization_id == target.id)
         else:
             stmt = stmt.where(WebhookEndpoint.user_id == target.id)
+
+        match event:
+            case None:
+                ...
+            case WebhookEventType.subscription_created:
+                stmt = stmt.where(WebhookEndpoint.event_subscription_created.is_(True))
+            case WebhookEventType.subscription_updated:
+                stmt = stmt.where(WebhookEndpoint.event_subscription_updated.is_(True))
+            case WebhookEventType.subscription_tier_created:
+                stmt = stmt.where(
+                    WebhookEndpoint.event_subscription_tier_created.is_(True)
+                )
+            case WebhookEventType.subscription_tier_updated:
+                stmt = stmt.where(
+                    WebhookEndpoint.event_subscription_tier_updated.is_(True)
+                )
+            case x:
+                assert_never(x)
 
         res = await session.execute(stmt)
         return res.scalars().unique().all()
@@ -125,7 +150,7 @@ class WebhookService:
         target: Organization | User,
         we: WebhookTypeObject,
     ) -> None:
-        endpoints = await self.list_endpoints(session, target)
+        endpoints = await self.list_endpoints(session, target, event=we[0])
 
         payload: WebhookPayload | None = None
 
@@ -150,6 +175,8 @@ class WebhookService:
                     type=we[0],
                     data=SubscriptionTierSchema.model_validate(we[1]),
                 )
+            case x:
+                assert_never(x)
 
         if payload is None:
             raise Exception("no payload")

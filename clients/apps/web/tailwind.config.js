@@ -208,28 +208,6 @@ module.exports = {
     require('tailwindcss-radix')(),
     require('tailwindcss-animate'),
     require('@tailwindcss/typography'),
-    plugin(function ({ addUtilities }) {
-      const utilityStyles = {
-        '.text-4xl': {
-          fontWeight: '400',
-          fontFamily: [
-            'var(--font-inter)',
-            defaultTheme.fontFamily.sans,
-          ].toString(),
-        },
-      }
-      utilityStyles['.text-5xl'] = utilityStyles['.text-4xl']
-      utilityStyles['.text-6xl'] = utilityStyles['.text-4xl']
-      utilityStyles['.text-7xl'] = utilityStyles['.text-4xl']
-      utilityStyles['.text-8xl'] = utilityStyles['.text-4xl']
-      utilityStyles['.text-9xl'] = utilityStyles['.text-4xl']
-
-      utilityStyles['.bg-grid-pattern'] = {
-        backgroundSize: '19px 19px',
-      }
-
-      addUtilities(utilityStyles)
-    }),
 
     // Striped backgrounds
     function ({ addUtilities, theme }) {

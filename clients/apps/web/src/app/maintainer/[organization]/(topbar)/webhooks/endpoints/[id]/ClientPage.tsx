@@ -6,6 +6,8 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { Organization, WebhookEndpoint } from '@polar-sh/sdk'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
+import { events } from '../../events'
 import DeliveriesTable from './DeliveriesTable'
 
 export default function ClientPage({
@@ -27,8 +29,29 @@ export default function ClientPage({
         </div>
 
         <div>
-          <h3 className="text-lg">Endpoint</h3>
+          <h3>Endpoint</h3>
           <pre className="text-gray-600">{endpoint.url}</pre>
+        </div>
+
+        <div>
+          <h3>Events</h3>
+
+          <div className="flex flex-col space-y-2">
+            {events.map((e) => {
+              if (endpoint[e[0]]) {
+                return (
+                  <div
+                    className="flex flex-row items-center space-x-3 space-y-0"
+                    key={e[0]}
+                  >
+                    <Checkbox checked={true} disabled={true} />
+                    <span className="text-sm leading-none">{e[1]}</span>
+                  </div>
+                )
+              }
+              return null
+            })}
+          </div>
         </div>
 
         <DeliveriesTable

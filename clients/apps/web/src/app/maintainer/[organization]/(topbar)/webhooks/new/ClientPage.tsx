@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -23,6 +24,7 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
+import { events } from '../events'
 
 export default function ClientPage({
   organization,
@@ -127,6 +129,32 @@ export default function ClientPage({
                 )
               }}
             />
+
+            <h2>Events</h2>
+
+            {events.map((e) => (
+              <FormField
+                key={e[0]}
+                control={form.control}
+                name={e[0]}
+                render={({ field }) => {
+                  return (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          defaultChecked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm leading-none">
+                        {e[1]}
+                      </FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
+              />
+            ))}
 
             <Button
               type="submit"

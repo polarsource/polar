@@ -43,6 +43,7 @@ async def test_webhook_send(
         url="https://test.example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
+        event_subscription_created=True,  # subscribe to event
     )
     await save_fixture(endpoint)
 
@@ -58,6 +59,48 @@ async def test_webhook_send(
     )
 
     assert called
+
+
+@pytest.mark.asyncio
+async def test_webhook_send_not_subscribed_to_event(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    mocker: MockerFixture,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    called = False
+
+    def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
+        nonlocal called
+        if name == "webhook_event.send":
+            called = True
+            assert kwargs["webhook_event_id"]
+            return
+        raise Exception(f"unexpected job: {name}")
+
+    mocker.patch("polar.webhook.service.enqueue_job", new=in_process_enqueue_job)
+
+    endpoint = WebhookEndpoint(
+        url="https://test.example.com/hook",
+        organization_id=organization.id,
+        secret="mysecret",
+        event_subscription_created=False,  # not subscribing
+    )
+    await save_fixture(endpoint)
+
+    # then
+    session.expunge_all()
+
+    # get full subscription, with relations
+    full_sub = await subscription_service.get(session, subscription.id)
+    assert full_sub
+
+    await webhook_service.send(
+        session, organization, (WebhookEventType.subscription_created, full_sub)
+    )
+
+    assert called is False
 
 
 @pytest.mark.asyncio

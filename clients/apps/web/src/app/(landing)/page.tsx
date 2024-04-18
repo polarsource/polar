@@ -1,26 +1,40 @@
 'use client'
 
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
+import GitHubIcon from '@/components/Icons/GitHubIcon'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import { DiscordIcon } from '@/components/Subscriptions/utils'
 import {
   ApiOutlined,
   AttachMoneyOutlined,
   Bolt,
+  BoltOutlined,
   FaceOutlined,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
+  PercentOutlined,
+  SyncAltOutlined,
+  TextSnippet,
   TextSnippetOutlined,
 } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
-import { motion } from 'framer-motion'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Separator } from 'polarkit/components/ui/separator'
-import { ComponentProps, PropsWithChildren } from 'react'
+import { ComponentProps, PropsWithChildren, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function Page() {
+  const pathname = usePathname()
+
+  useEffect(() => {
+    window.scroll(0, 0)
+  }, [pathname])
+
   return (
     <div className="flex flex-col">
       <HeroSection />
@@ -30,6 +44,9 @@ export default function Page() {
       <FeaturesUpsell />
       <AnimatedSeparator />
       <DevelopersUpsell />
+      <AnimatedSeparator />
+      <Pricing />
+      <SignUpBanner />
     </div>
   )
 }
@@ -42,7 +59,7 @@ export const AnimatedSeparator = ({
 }: ComponentProps<typeof Separator> & { whileInView?: boolean }) => {
   return (
     <motion.div
-      className="min-h-0 min-w-0 flex-shrink-0 origin-top-left"
+      className="min-h-0 min-w-0 flex-shrink-0 origin-center"
       initial="initial"
       variants={{
         initial: {
@@ -64,10 +81,7 @@ export const AnimatedSeparator = ({
         : { animate: 'animate' })}
     >
       <Separator
-        className={twMerge(
-          'dark:bg-polar-700 h-full w-full bg-blue-100',
-          className,
-        )}
+        className={twMerge('h-full w-full bg-blue-100', className)}
         orientation={orientation}
         {...props}
       />
@@ -78,10 +92,7 @@ export const AnimatedSeparator = ({
 const BlueLink = ({ className, ...props }: ComponentProps<typeof Link>) => {
   return (
     <Link
-      className={twMerge(
-        'text-blue-400 hover:text-blue-300 dark:text-blue-300 dark:hover:text-blue-200',
-        className,
-      )}
+      className={twMerge('text-blue-400 hover:text-blue-300', className)}
       {...props}
     />
   )
@@ -109,7 +120,7 @@ const HeroSection = () => {
           <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
             Get paid coding on your passion
           </h1>
-          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-400">
+          <p className="text-xl leading-relaxed text-gray-500">
             Polar is the creator platform for developers. Offer your supporters
             & customers a subscription designed for the developer ecosystem.
           </p>
@@ -117,7 +128,7 @@ const HeroSection = () => {
 
         <div className="flex flex-col items-start gap-y-8">
           <GithubLoginButton size="large" text="Sign up with GitHub" />
-          <p className="dark:text-polar-500 text-xs text-gray-400">
+          <p className="text-xs text-gray-400">
             By using Polar you agree to our{' '}
             <BlueLink href="/legal/terms" target="_blank">
               Terms of Service
@@ -138,7 +149,7 @@ const HeroSection = () => {
         className="flex-grow md:hidden"
         orientation="horizontal"
       />
-      <div className="dark:bg-polar-900 flex flex-col items-center justify-center bg-gray-50 p-12 md:w-3/5">
+      <div className="flex flex-col items-center justify-center bg-gray-50 p-12 md:w-3/5">
         <Image
           src="/assets/landing/subscriptions_view.webp"
           alt="Polar Subscriptions Page"
@@ -167,12 +178,12 @@ const BenefitsUpsell = () => {
         width={1800}
         height={1200}
       />
-      <div className="flex flex-col gap-y-12 pr-12 md:w-1/2">
+      <div className="flex flex-col gap-y-12 pr-6 md:w-1/2 md:pr-24">
         <div className="flex flex-col gap-y-8">
           <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
             Powerful & built-in subscription benefits
           </h1>
-          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-400">
+          <p className="text-xl leading-relaxed text-gray-500">
             Polar is built open source & in public.
             <br />
             We&apos;re just getting started.
@@ -180,41 +191,73 @@ const BenefitsUpsell = () => {
         </div>
         <div className="flex flex-col gap-y-8">
           <ul className="flex flex-col gap-y-4">
-            <li>
-              <span className="font-medium">Premium posts & newsletter</span>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                Offer your paid subscribers early sneak peaks, educational
-                content, code examples and more.
-              </p>
+            <li className="flex flex-row gap-x-4">
+              <TextSnippet className="text-blue-500" />
+              <div className="flex flex-col">
+                <span className="font-medium text-blue-500">
+                  Premium posts & newsletter
+                </span>
+                <p className="text-sm text-gray-500">
+                  Offer your paid subscribers early sneak peaks, educational
+                  content, code examples and more.
+                </p>
+              </div>
             </li>
-            <li>
-              <span className="font-medium">
-                Access to private GitHub repositories
-              </span>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                Enabling early access, sponsorware, self-hosted products,
-                starter kits, courses and so much more.
-              </p>
+            <li className="flex flex-row gap-x-4">
+              <GitHubIcon width={30} height={30} className="text-blue-500" />
+              <div className="flex flex-col">
+                <span className="font-medium text-blue-500">
+                  Access to private GitHub repositories
+                </span>
+                <p className="text-sm text-gray-500">
+                  Enabling early access, sponsorware, self-hosted products,
+                  starter kits, courses and so much more.
+                </p>
+              </div>
             </li>
-            <li>
-              <span className="font-medium">Discord invites</span>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                Setup custom roles per tier. Enabling membership channels to
-                individuals & support for businesses.
-              </p>
+            <li className="flex flex-row gap-x-4">
+              <DiscordIcon size={30} className="text-blue-500" />
+              <div className="flex flex-col">
+                <span className="font-medium text-blue-500">
+                  Discord invites
+                </span>
+                <p className="text-sm text-gray-500">
+                  Setup custom roles per tier. Enabling membership channels to
+                  individuals & support for businesses.
+                </p>
+              </div>
             </li>
-            <li>
-              <span className="font-medium">Sponsorship 2.0</span>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                Offer logo promotions on README, sites and posts. Polar will
-                automate it. No more manual overhead.
-              </p>
+            <li className="flex flex-row gap-x-4">
+              <BoltOutlined className="text-blue-500" />
+              <div className="flex flex-col">
+                <span className="font-medium text-blue-500">
+                  Sponsorship 2.0
+                </span>
+                <p className="text-sm text-gray-500">
+                  Offer logo promotions on README, sites and posts. Polar will
+                  automate it. No more manual overhead.
+                </p>
+              </div>
             </li>
           </ul>
         </div>
         <div className="flex flex-row items-center gap-x-4">
-          <Button>GitHub</Button>
-          <Button>Join our Discord</Button>
+          <Link href="https://github.com/polarsource/polar" target="_blank">
+            <Button className="bg-blue-50" size="lg" variant="secondary">
+              <div className="flex flex-row items-center gap-x-3">
+                <GitHubIcon width={16} />
+                <span>GitHub</span>
+              </div>
+            </Button>
+          </Link>
+          <Link href="https://discord.gg/zneAsTPUt7" target="_blank">
+            <Button className="bg-blue-50" size="lg" variant="secondary">
+              <div className="flex flex-row items-center gap-x-3">
+                <DiscordIcon />
+                <span>Join our Discord</span>
+              </div>
+            </Button>
+          </Link>
         </div>
       </div>
     </motion.div>
@@ -237,18 +280,16 @@ const FeaturesUpsell = () => {
     return (
       <div
         className={twMerge(
-          'dark:border-polar-700 flex flex-col items-center justify-center gap-12 overflow-hidden border-blue-100 p-12 text-center',
+          'flex flex-col items-center justify-center gap-12 overflow-hidden border-blue-100 p-12 text-center',
           className,
         )}
       >
         <div className="flex w-full flex-col items-center justify-center gap-y-4">
           <Icon className="text-blue-500" fontSize="large" />
-          <h3 className="text-pretty text-lg font-medium text-blue-500">
+          <h3 className="text-pretty text-xl font-medium text-blue-500">
             {title}
           </h3>
-          <p className="dark:text-polar-500 max-w-[90%] text-pretty text-gray-500">
-            {description}
-          </p>
+          <p className="text-pretty text-gray-500">{description}</p>
         </div>
         {children}
       </div>
@@ -275,7 +316,7 @@ const FeaturesUpsell = () => {
             (tier) => (
               <SubscriptionTierCard
                 key={tier.id}
-                className="h-full w-[280px]"
+                className="dark- h-full w-[280px] border-none"
                 variant="small"
                 subscriptionTier={tier}
               >
@@ -289,7 +330,7 @@ const FeaturesUpsell = () => {
         icon={TextSnippetOutlined}
         title="Posts & Newletter"
         description="Write posts in an editor designed for developers. Share them with everyone, paid subscribers or a mix (paywalled sections)."
-        className="col-span-2 flex-row"
+        className="col-span-2 md:px-32"
       />
       <Feature
         icon={ApiOutlined}
@@ -308,7 +349,14 @@ const FeaturesUpsell = () => {
         title="Get a funded backlog"
         description="Built for open source maintainers, not bounty hunters. Empower your community to pool funding toward issues."
         className="col-start-1 col-end-2 border-r border-t"
-      />
+      >
+        <Image
+          src="/assets/landing/fund.png"
+          alt="Polar Funding Badge"
+          width={800}
+          height={640}
+        />
+      </Feature>
       <Feature
         icon={FavoriteBorderOutlined}
         title="Reward contributors"
@@ -328,22 +376,201 @@ const FeaturesUpsell = () => {
 }
 
 const DevelopersUpsell = () => {
+  const { scrollYProgress } = useScroll()
+  const leftListY = useTransform(scrollYProgress, [0, 1], ['0%', '-25%'])
+  const rightListY = useTransform(scrollYProgress, [0, 1], ['0%', '25%'])
+
+  const DeveloperCard = ({
+    avatarUrl,
+    name,
+    description,
+    href,
+  }: {
+    avatarUrl: string
+    name: string
+    description: string
+    href: string
+  }) => {
+    return (
+      <Link
+        href={href}
+        className="flex flex-col items-center gap-y-6 rounded-3xl bg-white p-8 shadow-sm"
+      >
+        <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
+        <div className="flex flex-col items-center gap-y-2 text-center">
+          <h3 className="font-medium text-blue-500">{name}</h3>
+          <p className="text-sm text-gray-400">{description}</p>
+        </div>
+      </Link>
+    )
+  }
+
   return (
-    <div className="flex flex-1 flex-row">
-      <div className="flex h-[540px] w-1/2 flex-col px-12"></div>
-      <AnimatedSeparator className="h-auto min-h-0" orientation="vertical" />
-      <div className="flex w-1/2 flex-col gap-y-12 px-12 py-16">
+    <motion.div
+      className="flex flex-1 flex-col md:flex-row"
+      initial="initial"
+      variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      whileInView="animate"
+      viewport={{ once: true }}
+    >
+      <div className="flex h-full max-h-[400px] flex-row items-center justify-center gap-6 overflow-hidden px-6 md:max-h-[540px] md:w-1/2">
+        <motion.div className="flex flex-col gap-y-6" style={{ y: leftListY }}>
+          <DeveloperCard
+            name="Tuist"
+            description="Supercharge your Xcode development workflows"
+            avatarUrl="https://avatars.githubusercontent.com/u/38419084?v=4"
+            href="/tuist"
+          />
+          <DeveloperCard
+            name="Emil Widlund"
+            description="Creative Technologist. Writing about creative coding adventures."
+            avatarUrl="https://avatars.githubusercontent.com/u/10053249?v=4"
+            href="/emilwidlund"
+          />
+          <DeveloperCard
+            name="Iconoir"
+            description="An open source icons library with 1500+ icons, supporting React, React Native, Flutter, Vue, Figma, and Framer."
+            avatarUrl="https://avatars.githubusercontent.com/u/109069170?v=4"
+            href="/iconoir-icons"
+          />
+          <DeveloperCard
+            name="TRPC"
+            description="Move Fast and Break Nothing"
+            avatarUrl="https://avatars.githubusercontent.com/u/78011399?v=4"
+            href="/trpc"
+          />
+          <DeveloperCard
+            name="Strawberry GraphQL"
+            description="A Python library for creating GraphQL APIs"
+            avatarUrl="https://avatars.githubusercontent.com/u/48071860?v=4"
+            href="/strawberry-graphql"
+          />
+        </motion.div>
+        <motion.div className="flex flex-col gap-y-6" style={{ y: rightListY }}>
+          <DeveloperCard
+            name="Your Next Store"
+            description="YourNextStore (YNS) is a modern storefront boilerplate built with Next.js App Router using modern practices."
+            avatarUrl="https://avatars.githubusercontent.com/u/159799280?v=4"
+            href="/yournextstore"
+          />
+          <DeveloperCard
+            name="SerenityOS"
+            description="The Serenity Operating System"
+            avatarUrl="https://avatars.githubusercontent.com/u/50811782?v=4"
+            href="/SerenityOS"
+          />
+          <DeveloperCard
+            name="David Hewitt"
+            description="Uniting Python & Rust. Core maintainer of PyO3. Full-stack developer; other than Rust you'll find me using Python and Typescript."
+            avatarUrl="https://avatars.githubusercontent.com/u/1939362?v=4"
+            href="/davidhewitt"
+          />
+          <DeveloperCard
+            name="Yagiz Nizipli"
+            description="@nodejs technical steering committee, @openjs-foundation member"
+            avatarUrl="https://avatars.githubusercontent.com/u/1935246?v=4"
+            href="/anonrig"
+          />
+          <DeveloperCard
+            name="Isaac Harris-Holt"
+            description="Founding Engineer @ Pluto. Technology journalist and content creator. Avid Pythonista and hopefully future billionaire."
+            avatarUrl="https://avatars.githubusercontent.com/u/47423046?v=4"
+            href="/isaacharrisholt"
+          />
+        </motion.div>
+      </div>
+      <AnimatedSeparator className="hidden md:block" orientation="vertical" />
+      <AnimatedSeparator className="md:hidden" orientation="horizontal" />
+      <div className="flex flex-col gap-y-12 px-6 py-16 md:w-1/2 md:px-12">
         <div className="flex flex-col gap-y-8">
           <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
             Serving world-class developers
           </h1>
-          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-400">
+          <p className="text-xl leading-relaxed text-gray-400">
             We&apos;re proud to support incredible developers and open source
-            initiatives that are shaping the future. Join us today.
+            initiatives that are shaping the future.
+          </p>
+          <p className="text-xl leading-relaxed text-gray-400">
+            Join us today.
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
+  )
+}
+
+export const Pricing = () => {
+  const PriceCard = ({
+    children,
+    title,
+    description,
+  }: PropsWithChildren<{
+    title: string
+    description: string
+  }>) => {
+    return (
+      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-12 shadow-sm">
+        <span className="text-blue-500">{children}</span>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-xl font-semibold leading-snug">{title}</h1>
+          <p className="text-lg text-gray-500">{description}</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <motion.div
+      className="flex flex-col gap-12 px-6 py-12 md:px-12 md:py-24"
+      initial="initial"
+      variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      whileInView="animate"
+      viewport={{ once: true }}
+    >
+      <h1 className="text-4xl !font-semibold text-blue-500">Pricing</h1>
+      <div className="flex flex-col gap-8 md:flex-row">
+        <PriceCard
+          title="Zero Fixed Costs"
+          description="No hidden or monthly costs."
+        >
+          <FavoriteBorderOutlined fontSize="large" />
+        </PriceCard>
+        <PriceCard
+          title="5% Revenue Share"
+          description="
+We're in this together. We earn when you do."
+        >
+          <PercentOutlined fontSize="large" />
+        </PriceCard>
+        <PriceCard
+          title="+ Stripe Fees"
+          description="Stripe transaction- and payout fees apply before transfers."
+        >
+          <SyncAltOutlined fontSize="large" />
+        </PriceCard>
+      </div>
+    </motion.div>
+  )
+}
+
+const SignUpBanner = () => {
+  return (
+    <motion.div
+      className="flex flex-col items-center gap-12 bg-blue-50 px-12 py-24"
+      initial="initial"
+      variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      whileInView="animate"
+      viewport={{ once: true }}
+    >
+      <h1 className="text-center text-4xl leading-snug text-blue-500">
+        We&apos;ve run out of sales pitches
+      </h1>
+
+      <GithubLoginButton size="large" text="Sign up with GitHub" />
+    </motion.div>
   )
 }
 
@@ -374,7 +601,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
       {
         id: '123',
         created_at: new Date().toDateString(),
-        price_amount: 299900,
+        price_amount: 1900,
         price_currency: 'usd',
         recurring_interval: 'month',
         is_archived: false,

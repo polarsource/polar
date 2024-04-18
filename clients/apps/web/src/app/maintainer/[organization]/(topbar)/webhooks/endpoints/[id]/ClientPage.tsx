@@ -6,6 +6,8 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { Organization, WebhookEndpoint } from '@polar-sh/sdk'
+import Link from 'next/link'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { events } from '../../events'
 import DeliveriesTable from './DeliveriesTable'
@@ -53,6 +55,15 @@ export default function ClientPage({
             })}
           </div>
         </div>
+
+        <Link
+          href={`/maintainer/${organization.name}/webhooks/endpoints/${endpoint.id}/edit`}
+          className="shrink-0"
+        >
+          <Button size={'sm'} asChild variant={'secondary'}>
+            Edit
+          </Button>
+        </Link>
 
         <DeliveriesTable
           endpoint={endpoint}

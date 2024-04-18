@@ -82,7 +82,7 @@ module.exports = {
           700: '#0047B8',
           800: '#003994',
           900: '#002B70',
-          950: '#00245E'
+          950: '#00245E',
         },
         gray: {
           50: '#FCFCFE',
@@ -96,7 +96,7 @@ module.exports = {
           700: '#4A5363',
           800: '#343B46',
           900: '#1E2229',
-          950: '#13161A'
+          950: '#13161A',
         },
         green: {
           50: '#f0faf0',
@@ -135,7 +135,7 @@ module.exports = {
           700: '#1D1E27',
           800: '#16171F',
           900: '#101116',
-          950: '#0C0D11'
+          950: '#0C0D11',
         },
 
         // chadcn/ui start
@@ -190,10 +190,15 @@ module.exports = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: 0 },
         },
+        'infinite-scroll': {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'infinite-scroll': 'infinite-scroll 40s linear infinite',
       },
       // chadcn/ui end
     },
@@ -207,7 +212,10 @@ module.exports = {
       const utilityStyles = {
         '.text-4xl': {
           fontWeight: '400',
-          fontFamily: ['var(--font-inter)', defaultTheme.fontFamily.sans].toString(),
+          fontFamily: [
+            'var(--font-inter)',
+            defaultTheme.fontFamily.sans,
+          ].toString(),
         },
       }
       utilityStyles['.text-5xl'] = utilityStyles['.text-4xl']

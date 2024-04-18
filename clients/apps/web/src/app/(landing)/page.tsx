@@ -19,7 +19,6 @@ import {
 } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -28,10 +27,6 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Separator } from 'polarkit/components/ui/separator'
 import { ComponentProps, PropsWithChildren, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-export const metadata: Metadata = {
-  title: 'A creator platform for developers',
-}
 
 export default function Page() {
   const pathname = usePathname()

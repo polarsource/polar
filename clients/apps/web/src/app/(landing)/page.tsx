@@ -22,19 +22,12 @@ import { SubscriptionTier } from '@polar-sh/sdk'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import { ComponentProps, PropsWithChildren, useEffect } from 'react'
+import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function Page() {
-  const pathname = usePathname()
-
-  useEffect(() => {
-    window.scroll(0, 0)
-  }, [pathname])
-
   return (
     <div className="flex flex-col">
       <HeroSection />

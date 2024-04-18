@@ -1,9 +1,9 @@
 'use client'
 
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
+import { DiscordIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { DiscordIcon } from '@/components/Subscriptions/utils'
 import {
   ApiOutlined,
   AttachMoneyOutlined,

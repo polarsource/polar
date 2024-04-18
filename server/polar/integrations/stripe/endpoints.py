@@ -1,6 +1,4 @@
 import stripe
-import stripe.error
-import stripe.webhook
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from starlette.responses import RedirectResponse
@@ -52,12 +50,10 @@ class WebhookEventGetter:
         sig_header = request.headers["Stripe-Signature"]
 
         try:
-            return stripe.webhook.Webhook.construct_event(
-                payload, sig_header, self.secret
-            )
+            return stripe.Webhook.construct_event(payload, sig_header, self.secret)
         except ValueError as e:
             raise HTTPException(status_code=400) from e
-        except stripe.error.SignatureVerificationError as e:
+        except stripe.SignatureVerificationError as e:
             raise HTTPException(status_code=401) from e
 
 

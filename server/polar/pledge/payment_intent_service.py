@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-import stripe.error as stripe_lib_error
+import stripe as stripe_lib
 import structlog
 
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
@@ -84,7 +84,7 @@ class PaymentIntentService:
                 pledge_issue_repo=pledge_issue_repo,
                 anonymous_email=intent.email,
             )
-        except stripe_lib_error.InvalidRequestError as e:
+        except stripe_lib.InvalidRequestError as e:
             raise StripeError("Invalid Stripe Request") from e
 
         return PledgeStripePaymentIntentMutationResponse(

@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import stripe as stripe_lib
-import stripe.error as stripe_lib_error
 import structlog
 from sqlalchemy import Select, and_, select
 from sqlalchemy.orm import joinedload
@@ -184,7 +183,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             stripe_account = stripe.create_account(
                 account_create, name=None
             )  # TODO: name
-        except stripe_lib_error.StripeError as e:
+        except stripe_lib.StripeError as e:
             if e.user_message:
                 raise AccountServiceError(e.user_message) from e
             else:

@@ -349,7 +349,7 @@ const DevelopersUpsell = () => {
     return (
       <Link
         href={href}
-        className="flex flex-col items-center gap-y-6 rounded-3xl bg-white p-8 shadow-sm"
+        className="flex flex-col items-center gap-y-6 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-100"
       >
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">

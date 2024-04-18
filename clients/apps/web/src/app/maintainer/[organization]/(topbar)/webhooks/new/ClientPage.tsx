@@ -80,7 +80,10 @@ export default function ClientPage({
         ) : null}
 
         <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="max-w-[700px] space-y-8"
+          >
             <FormField
               control={form.control}
               name="url"
@@ -94,7 +97,7 @@ export default function ClientPage({
                 },
               }}
               render={({ field }) => (
-                <FormItem className="max-w-[300px]">
+                <FormItem className="flex flex-col gap-1">
                   <div className="flex flex-row items-center justify-between">
                     <FormLabel>URL</FormLabel>
                   </div>
@@ -114,47 +117,67 @@ export default function ClientPage({
               }}
               render={({ field }) => {
                 return (
-                  <FormItem className="max-w-[300px]">
+                  <FormItem className="flex flex-col gap-1">
                     <div className="flex flex-row items-center justify-between">
                       <FormLabel>Secret</FormLabel>
                     </div>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <Button onClick={generateSecret} disabled={isCreating}>
-                      Generate
-                    </Button>
+                    <div className="flex flex-row items-center gap-2">
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <Button onClick={generateSecret} disabled={isCreating}>
+                        Generate
+                      </Button>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Polar will sign all webhook payloads with this secret
+                      (following the{' '}
+                      <a
+                        href="https://www.standardwebhooks.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium"
+                      >
+                        Standard Webhooks
+                      </a>{' '}
+                      specification) so that you can validate that the request
+                      is coming from us.
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )
               }}
             />
 
-            <h2>Events</h2>
+            <div className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Events
+              </h2>
 
-            {events.map((e) => (
-              <FormField
-                key={e[0]}
-                control={form.control}
-                name={e[0]}
-                render={({ field }) => {
-                  return (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          defaultChecked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm leading-none">
-                        {e[1]}
-                      </FormLabel>
-                      <FormMessage />
-                    </FormItem>
-                  )
-                }}
-              />
-            ))}
+              {events.map((e) => (
+                <FormField
+                  key={e[0]}
+                  control={form.control}
+                  name={e[0]}
+                  render={({ field }) => {
+                    return (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            defaultChecked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm leading-none">
+                          {e[1]}
+                        </FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
+                />
+              ))}
+            </div>
 
             <Button
               type="submit"

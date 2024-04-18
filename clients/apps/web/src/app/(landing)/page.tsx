@@ -465,7 +465,7 @@ const Pricing = () => {
     description: string
   }>) => {
     return (
-      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-100 md:p-12">
+      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-100">
         <span className="text-blue-500">{children}</span>
         <div className="flex flex-col gap-2">
           <h1 className="text-xl font-semibold leading-snug">{title}</h1>

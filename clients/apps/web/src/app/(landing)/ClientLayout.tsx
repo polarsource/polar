@@ -2,12 +2,12 @@
 
 import LogoIcon from '@/components/Brand/LogoIcon'
 import LogoType from '@/components/Brand/LogoType'
+import { AnimatedSeparator } from '@/components/Landing/AnimatedSeparator'
 import { StarOutlineOutlined } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren } from 'react'
-import { AnimatedSeparator } from './page'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (

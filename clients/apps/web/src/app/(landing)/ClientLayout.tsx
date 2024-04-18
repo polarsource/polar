@@ -6,13 +6,16 @@ import { AnimatedSeparator } from '@/components/Landing/AnimatedSeparator'
 import { StarOutlineOutlined } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren, useEffect } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
+  const pathname = usePathname()
+
   useEffect(() => {
     window.scroll(0, 0)
-  }, [])
+  }, [pathname])
 
   return (
     <div className="flex w-full flex-col items-center">

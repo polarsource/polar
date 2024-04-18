@@ -7,9 +7,13 @@ import { StarOutlineOutlined } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useEffect } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
+  useEffect(() => {
+    window.scroll(0, 0)
+  }, [])
+
   return (
     <div className="flex w-full flex-col items-center">
       <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch md:max-w-7xl">

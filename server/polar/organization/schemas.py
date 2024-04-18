@@ -245,7 +245,6 @@ class OrganizationCreateFromGitHubUser(Schema):
     avatar_url: str
     external_id: int
     is_personal: bool
-    created_from_user_maintainer_upgrade: bool
 
     @classmethod
     def from_github(
@@ -259,7 +258,6 @@ class OrganizationCreateFromGitHubUser(Schema):
             external_id=user.id,
             avatar_url=user.avatar_url,
             is_personal=user.type.lower() == "user",
-            created_from_user_maintainer_upgrade=False,
         )
 
 

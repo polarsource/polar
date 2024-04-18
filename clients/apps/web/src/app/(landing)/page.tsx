@@ -462,7 +462,7 @@ const DevelopersUpsell = () => {
   )
 }
 
-export const Pricing = () => {
+const Pricing = () => {
   const PriceCard = ({
     children,
     title,

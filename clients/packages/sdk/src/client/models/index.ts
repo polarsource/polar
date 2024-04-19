@@ -8094,7 +8094,7 @@ export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | Benef
  * @type ResponseWebhooksDummyOpenapiSpec
  * @export
  */
-export type ResponseWebhooksDummyOpenapiSpec = WebhookPledgeCreatedPayload | WebhookPledgeUpdatedPayload | WebhookSubscriptionCreatedPayload | WebhookSubscriptionTierCreatedPayload | WebhookSubscriptionTierUpdatedPayload | WebhookSubscriptionUpdatedPayload;
+export type ResponseWebhooksDummyOpenapiSpec = WebhookDonationCreatedPayload | WebhookOrganizationUpdatedPayload | WebhookPledgeCreatedPayload | WebhookPledgeUpdatedPayload | WebhookSubscriptionCreatedPayload | WebhookSubscriptionTierCreatedPayload | WebhookSubscriptionTierUpdatedPayload | WebhookSubscriptionUpdatedPayload;
 
 /**
  * 
@@ -10648,6 +10648,35 @@ export interface WebhookDelivery {
 /**
  * 
  * @export
+ * @interface WebhookDonationCreatedPayload
+ */
+export interface WebhookDonationCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookDonationCreatedPayload
+     */
+    type: WebhookDonationCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Donation}
+     * @memberof WebhookDonationCreatedPayload
+     */
+    data: Donation;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookDonationCreatedPayloadTypeEnum = {
+    DONATION_CREATED: 'donation.created'
+} as const;
+export type WebhookDonationCreatedPayloadTypeEnum = typeof WebhookDonationCreatedPayloadTypeEnum[keyof typeof WebhookDonationCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface WebhookEndpoint
  */
 export interface WebhookEndpoint {
@@ -10711,6 +10740,18 @@ export interface WebhookEndpoint {
      * @memberof WebhookEndpoint
      */
     event_pledge_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_donation_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_organization_updated?: boolean;
 }
 /**
  * 
@@ -10778,6 +10819,18 @@ export interface WebhookEndpointCreate {
      * @memberof WebhookEndpointCreate
      */
     event_pledge_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_donation_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_organization_updated?: boolean;
 }
 /**
  * 
@@ -10833,6 +10886,18 @@ export interface WebhookEndpointUpdate {
      * @memberof WebhookEndpointUpdate
      */
     event_pledge_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_donation_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_organization_updated?: boolean;
 }
 /**
  * 
@@ -10968,6 +11033,35 @@ export interface WebhookIntegrationUpdate {
      */
     url: string;
 }
+/**
+ * 
+ * @export
+ * @interface WebhookOrganizationUpdatedPayload
+ */
+export interface WebhookOrganizationUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookOrganizationUpdatedPayload
+     */
+    type: WebhookOrganizationUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof WebhookOrganizationUpdatedPayload
+     */
+    data: Organization;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookOrganizationUpdatedPayloadTypeEnum = {
+    ORGANIZATION_UPDATED: 'organization.updated'
+} as const;
+export type WebhookOrganizationUpdatedPayloadTypeEnum = typeof WebhookOrganizationUpdatedPayloadTypeEnum[keyof typeof WebhookOrganizationUpdatedPayloadTypeEnum];
+
 /**
  * 
  * @export

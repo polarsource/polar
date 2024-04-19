@@ -10,7 +10,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Select
 
-from polar.worker import WorkerSettings, enqueue_job
+from polar.worker import WorkerSettings, enqueue_job, flush_enqueued_jobs
 
 
 def get_function_arguments(f: Callable[..., Any]) -> Iterator[tuple[str, Any]]:
@@ -136,5 +136,6 @@ class NewTaskModal(ModalScreen[bool]):
             )
         else:
             enqueue_job(self._selected_task, **job_kwargs.model_dump())
+            await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
             self.app.notify("Task successfully enqueued")
             self.dismiss(True)

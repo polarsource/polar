@@ -210,7 +210,7 @@ async def benefit_force_free_articles(
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        resolved_scope = await resolve_scope(session, scope)
+        await resolve_scope(session, scope)
 
         (
             free_articles_benefit,
@@ -221,5 +221,5 @@ async def benefit_force_free_articles(
             f"benefit.{task}",
             user_id=user_id,
             benefit_id=free_articles_benefit.id,
-            **resolved_scope,
+            **scope,
         )

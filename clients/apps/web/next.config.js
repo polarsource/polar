@@ -37,20 +37,12 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/404',
-        destination: 'https://splendid-help-401117.framer.app/404',
-      },
-      {
-        source: '/request',
-        destination: 'https://splendid-help-401117.framer.app/request',
-      },
-      {
         source: '/legal/privacy',
-        destination: 'https://splendid-help-401117.framer.app/legal/privacy',
+        destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
       },
       {
         source: '/legal/terms',
-        destination: 'https://splendid-help-401117.framer.app/legal/terms',
+        destination: 'https://polarsource.github.io/legal/terms.pdf',
       },
 
       // polar.new rewrite

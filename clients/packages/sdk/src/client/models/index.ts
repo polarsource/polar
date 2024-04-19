@@ -3675,6 +3675,12 @@ export interface CustomDomainForwardResponse {
     token: string;
 }
 /**
+ * @type Data
+ * @export
+ */
+export type Data = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
+
+/**
  * 
  * @export
  * @interface DiscordGuild
@@ -8094,7 +8100,7 @@ export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | Benef
  * @type ResponseWebhooksDummyOpenapiSpec
  * @export
  */
-export type ResponseWebhooksDummyOpenapiSpec = WebhookDonationCreatedPayload | WebhookOrganizationUpdatedPayload | WebhookPledgeCreatedPayload | WebhookPledgeUpdatedPayload | WebhookSubscriptionCreatedPayload | WebhookSubscriptionTierCreatedPayload | WebhookSubscriptionTierUpdatedPayload | WebhookSubscriptionUpdatedPayload;
+export type ResponseWebhooksDummyOpenapiSpec = WebhookBenefitCreatedPayload | WebhookBenefitUpdatedPayload | WebhookDonationCreatedPayload | WebhookOrganizationUpdatedPayload | WebhookPledgeCreatedPayload | WebhookPledgeUpdatedPayload | WebhookSubscriptionCreatedPayload | WebhookSubscriptionTierCreatedPayload | WebhookSubscriptionTierUpdatedPayload | WebhookSubscriptionUpdatedPayload;
 
 /**
  * 
@@ -10611,6 +10617,64 @@ export type Visibility = typeof Visibility[keyof typeof Visibility];
 /**
  * 
  * @export
+ * @interface WebhookBenefitCreatedPayload
+ */
+export interface WebhookBenefitCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookBenefitCreatedPayload
+     */
+    type: WebhookBenefitCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Data}
+     * @memberof WebhookBenefitCreatedPayload
+     */
+    data: Data;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookBenefitCreatedPayloadTypeEnum = {
+    BENEFIT_CREATED: 'benefit.created'
+} as const;
+export type WebhookBenefitCreatedPayloadTypeEnum = typeof WebhookBenefitCreatedPayloadTypeEnum[keyof typeof WebhookBenefitCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookBenefitUpdatedPayload
+ */
+export interface WebhookBenefitUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookBenefitUpdatedPayload
+     */
+    type: WebhookBenefitUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Data}
+     * @memberof WebhookBenefitUpdatedPayload
+     */
+    data: Data;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookBenefitUpdatedPayloadTypeEnum = {
+    BENEFIT_UPDATED: 'benefit.updated'
+} as const;
+export type WebhookBenefitUpdatedPayloadTypeEnum = typeof WebhookBenefitUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitUpdatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface WebhookDelivery
  */
 export interface WebhookDelivery {
@@ -10752,6 +10816,18 @@ export interface WebhookEndpoint {
      * @memberof WebhookEndpoint
      */
     event_organization_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_benefit_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpoint
+     */
+    event_benefit_updated?: boolean;
 }
 /**
  * 
@@ -10831,6 +10907,18 @@ export interface WebhookEndpointCreate {
      * @memberof WebhookEndpointCreate
      */
     event_organization_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_benefit_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointCreate
+     */
+    event_benefit_updated?: boolean;
 }
 /**
  * 
@@ -10898,6 +10986,18 @@ export interface WebhookEndpointUpdate {
      * @memberof WebhookEndpointUpdate
      */
     event_organization_updated?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_benefit_created?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEndpointUpdate
+     */
+    event_benefit_updated?: boolean;
 }
 /**
  * 

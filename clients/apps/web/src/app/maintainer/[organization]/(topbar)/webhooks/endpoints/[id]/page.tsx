@@ -16,9 +16,12 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
 
-  const endpoint = await api.webhooks.getWebhookEndpoint({
-    id: params.id,
-  })
+  const endpoint = await api.webhooks.getWebhookEndpoint(
+    {
+      id: params.id,
+    },
+    { cache: 'no-cache' },
+  )
 
   const { pagination, sorting } = parseSearchParams(searchParams, [
     { id: 'created_at', desc: true },

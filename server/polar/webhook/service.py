@@ -322,7 +322,7 @@ class WebhookService:
         organization_id: UUID | None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
-        stmt = sql.select(WebhookEndpoint)
+        stmt = sql.select(WebhookEndpoint).where(WebhookEndpoint.deleted_at.is_(None))
 
         if user_id is not None:
             stmt = stmt.where(WebhookEndpoint.user_id == user_id)

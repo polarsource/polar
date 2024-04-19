@@ -13,9 +13,12 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
 
-  const endpoints = await api.webhooks.searchWebhookEndpoints({
-    organizationId: organization.id,
-  })
+  const endpoints = await api.webhooks.searchWebhookEndpoints(
+    {
+      organizationId: organization.id,
+    },
+    { cache: 'no-cache' },
+  )
 
   return (
     <ClientPage

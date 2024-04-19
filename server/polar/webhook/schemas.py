@@ -30,6 +30,7 @@ class WebhookEndpoint(Schema):
     event_pledge_created: bool = False
     event_pledge_updated: bool = False
     event_donation_created: bool = False
+    event_organization_updated: bool = False
 
 
 class WebhookEndpointUpdate(Schema):
@@ -43,6 +44,7 @@ class WebhookEndpointUpdate(Schema):
     event_pledge_created: bool | None = None
     event_pledge_updated: bool | None = None
     event_donation_created: bool | None = None
+    event_organization_updated: bool | None = None
 
 
 class WebhookEndpointCreate(Schema):
@@ -58,6 +60,7 @@ class WebhookEndpointCreate(Schema):
     event_pledge_created: bool | None = None
     event_pledge_updated: bool | None = None
     event_donation_created: bool | None = None
+    event_organization_updated: bool | None = None
 
 
 class WebhookEvent(Schema):

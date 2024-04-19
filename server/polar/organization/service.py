@@ -16,6 +16,7 @@ from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.webhook.service import WebhookEventType, webhook_service
 from polar.worker import enqueue_job
 
 from .schemas import (
@@ -241,6 +242,8 @@ class OrganizationService(ResourceServiceReader[Organization]):
             settings=settings.model_dump(mode="json"),
         )
 
+        await self._after_update(session, organization)
+
         return organization
 
     async def set_account(
@@ -267,6 +270,8 @@ class OrganizationService(ResourceServiceReader[Organization]):
         if first_account_set:
             enqueue_job("organization.account_set", organization.id)
 
+        await self._after_update(session, organization)
+
         return organization
 
     async def set_personal_account(
@@ -282,6 +287,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
                     organization.account_id = user_admin.user.account_id
                     session.add(organization)
                     await session.commit()
+
+        await self._after_update(session, organization)
+
         return organization
 
     async def set_default_issue_badge_custom_message(
@@ -297,6 +305,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         # update the in memory version as well
         org.default_badge_custom_content = message
+
+        await self._after_update(session, org)
+
         return org
 
     async def create_or_update(
@@ -319,7 +330,22 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         res = await session.execute(stmt)
         await session.commit()
-        return res.scalars().one()
+        org = res.scalars().one()
+
+        await self._after_update(session, org)
+
+        return org
+
+    async def _after_update(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await webhook_service.send(
+            session,
+            target=organization,
+            we=(WebhookEventType.organization_updated, organization),
+        )
 
 
 organization = OrganizationService(Organization)

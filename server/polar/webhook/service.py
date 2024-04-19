@@ -6,12 +6,15 @@ from uuid import UUID
 from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 
+from polar.benefit.schemas import Benefit as BenefitSchema
+from polar.benefit.schemas import benefit_schema_map
 from polar.donation.schemas import Donation as DonationSchema
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now
+from polar.models.benefit import Benefit
 from polar.models.donation import Donation
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -34,8 +37,8 @@ class WebhookEventType(Enum):
     subscription_updated = "subscription.updated"
     subscription_tier_created = "subscription_tier.created"
     subscription_tier_updated = "subscription_tier.updated"
-    # benefit_created = "benefit.created"
-    # benefit_updated = "benefit.updated"
+    benefit_created = "benefit.created"
+    benefit_updated = "benefit.updated"
     organization_updated = "organization.updated"
     pledge_created = "pledge.created"
     pledge_updated = "pledge.updated"
@@ -51,6 +54,8 @@ WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.pledge_updated], Pledge],
     tuple[Literal[WebhookEventType.donation_created], Donation],
     tuple[Literal[WebhookEventType.organization_updated], Organization],
+    tuple[Literal[WebhookEventType.benefit_created], Benefit],
+    tuple[Literal[WebhookEventType.benefit_updated], Benefit],
 ]
 
 
@@ -94,6 +99,16 @@ class WebhookOrganizationUpdatedPayload(Schema):
     data: OrganizationSchema
 
 
+class WebhookBenefitCreatedPayload(Schema):
+    type: Literal[WebhookEventType.benefit_created]
+    data: BenefitSchema
+
+
+class WebhookBenefitUpdatedPayload(Schema):
+    type: Literal[WebhookEventType.benefit_updated]
+    data: BenefitSchema
+
+
 WebhookPayload = Union[  # noqa: UP007
     WebhookSubscriptionCreatedPayload,
     WebhookSubscriptionUpdatedPayload,
@@ -103,6 +118,8 @@ WebhookPayload = Union[  # noqa: UP007
     WebhookPledgeUpdatedPayload,
     WebhookDonationCreatedPayload,
     WebhookOrganizationUpdatedPayload,
+    WebhookBenefitCreatedPayload,
+    WebhookBenefitUpdatedPayload,
 ]
 
 
@@ -149,6 +166,10 @@ class WebhookService:
                 stmt = stmt.where(WebhookEndpoint.event_donation_created.is_(True))
             case WebhookEventType.organization_updated:
                 stmt = stmt.where(WebhookEndpoint.event_organization_updated.is_(True))
+            case WebhookEventType.benefit_created:
+                stmt = stmt.where(WebhookEndpoint.event_benefit_created.is_(True))
+            case WebhookEventType.benefit_updated:
+                stmt = stmt.where(WebhookEndpoint.event_benefit_updated.is_(True))
             case x:
                 assert_never(x)  # asserts that the match above is exhaustive
 
@@ -255,6 +276,22 @@ class WebhookService:
                         type=we[0],
                         data=OrganizationSchema.from_db(we[1]),
                     )
+            case WebhookEventType.benefit_created:
+                # mypy is not able to deduce this by itself
+                if isinstance(we[1], Benefit):
+                    t = benefit_schema_map[we[1].type]
+                    payload = WebhookBenefitCreatedPayload(
+                        type=we[0],
+                        data=t.model_validate(we[1]),
+                    )
+            case WebhookEventType.benefit_updated:
+                # mypy is not able to deduce this by itself
+                if isinstance(we[1], Benefit):
+                    t = benefit_schema_map[we[1].type]
+                    payload = WebhookBenefitUpdatedPayload(
+                        type=we[0],
+                        data=t.model_validate(we[1]),
+                    )
             case x:
                 assert_never(x)  # asserts that the match is exhaustive
 
@@ -291,6 +328,8 @@ class WebhookService:
             event_pledge_updated=create.event_pledge_updated,
             event_donation_created=create.event_donation_created,
             event_organization_updated=create.event_organization_updated,
+            event_benefit_created=create.event_benefit_created,
+            event_benefit_updated=create.event_benefit_updated,
         )
         session.add(endpoint)
         await session.flush()
@@ -329,6 +368,10 @@ class WebhookService:
             endpoint.event_donation_created = update.event_donation_created
         if update.event_organization_updated is not None:
             endpoint.event_organization_updated = update.event_organization_updated
+        if update.event_benefit_created is not None:
+            endpoint.event_benefit_created = update.event_benefit_created
+        if update.event_benefit_updated is not None:
+            endpoint.event_benefit_updated = update.event_benefit_updated
 
         session.add(endpoint)
         await session.flush()

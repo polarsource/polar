@@ -1,6 +1,6 @@
 import importlib
 from collections.abc import Callable, Iterator
-from typing import Any, cast, get_type_hints
+from typing import Any, Unpack, cast, get_args, get_origin, get_type_hints, is_typeddict
 
 from arq.worker import Function as WorkerFunction
 from pydantic import ValidationError, create_model
@@ -17,6 +17,11 @@ def get_function_arguments(f: Callable[..., Any]) -> Iterator[tuple[str, Any]]:
     for key, type_hint in get_type_hints(f).items():
         if key in {"ctx", "polar_context", "return"}:
             continue
+        if get_origin(type_hint) is Unpack:
+            type_hints_args = get_args(type_hint)
+            if is_typeddict(type_hints_args[0]):
+                yield from get_type_hints(type_hints_args[0]).items()
+                return
         yield key, type_hint
 
 

@@ -74,3 +74,8 @@ class WebhookEndpoint(RecordModel):
         nullable=False,
         server_default="false",
     )
+    event_organization_updated: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+    )

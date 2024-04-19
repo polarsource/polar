@@ -27,6 +27,7 @@ from polar.models.benefit import (
 )
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
+from polar.webhook.service import WebhookEventType, webhook_service
 
 from ..benefits import BenefitPropertiesValidationError, get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate
@@ -178,6 +179,13 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         session.add(benefit)
         await session.flush()
 
+        if organization:
+            await webhook_service.send(
+                session,
+                target=organization,
+                we=(WebhookEventType.benefit_created, benefit),
+            )
+
         return benefit
 
     async def user_update(
@@ -217,6 +225,13 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             session, benefit, previous_properties
         )
 
+        if benefit.organization:
+            await webhook_service.send(
+                session,
+                target=benefit.organization,
+                we=(WebhookEventType.benefit_updated, benefit),
+            )
+
         return benefit
 
     async def user_delete(
@@ -242,6 +257,13 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         await session.execute(statement)
 
         await benefit_grant_service.enqueue_benefit_grant_deletions(session, benefit)
+
+        if benefit.organization:
+            await webhook_service.send(
+                session,
+                target=benefit.organization,
+                we=(WebhookEventType.benefit_updated, benefit),
+            )
 
         return benefit
 

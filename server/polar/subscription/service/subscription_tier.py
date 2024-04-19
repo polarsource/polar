@@ -29,7 +29,8 @@ from polar.models import (
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
-from polar.webhook.service import WebhookEventType, WebhookTypeObject, webhook_service
+from polar.webhook.service import webhook_service
+from polar.webhook.webhooks import WebhookEventType, WebhookTypeObject
 from polar.worker import enqueue_job
 
 from ..schemas import (

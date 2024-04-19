@@ -22,7 +22,7 @@ from .schemas import (
     WebhookEndpointCreate,
     WebhookEndpointUpdate,
 )
-from .service import WebhookPayload, webhook_service
+from .service import webhook_service
 
 log = structlog.get_logger()
 
@@ -209,13 +209,3 @@ async def search_webhook_deliveries(
         count,
         pagination,
     )
-
-
-@router.get(
-    "/openapi",
-    description="Dummy endpoint to expose OpenAPI types for webhook payloads.",
-    response_model=WebhookPayload,
-    tags=[Tags.PUBLIC],
-)
-async def dummy_openapi_spec() -> WebhookPayload:
-    raise ResourceNotFound("This is a dummy endpoint")

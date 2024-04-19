@@ -13,8 +13,9 @@ from polar.models.subscription import Subscription
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.service.subscription import subscription as subscription_service
-from polar.webhook.service import WebhookEventType, webhook_service
+from polar.webhook.service import webhook_service
 from polar.webhook.tasks import _webhook_event_send, webhook_event_send
+from polar.webhook.webhooks import WebhookEventType
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.database import SaveFixture
 

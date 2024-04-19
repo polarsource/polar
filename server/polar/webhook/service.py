@@ -1,25 +1,20 @@
 from collections.abc import Sequence
-from enum import Enum
-from typing import Literal, NoReturn, Union
+from typing import NoReturn
 from uuid import UUID
 
 from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 
-from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import benefit_schema_map
 from polar.donation.schemas import Donation as DonationSchema
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now
 from polar.models.benefit import Benefit
 from polar.models.donation import Donation
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.subscription import Subscription
-from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user import User
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint
@@ -31,96 +26,21 @@ from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchem
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.worker import enqueue_job
 
-
-class WebhookEventType(Enum):
-    subscription_created = "subscription.created"
-    subscription_updated = "subscription.updated"
-    subscription_tier_created = "subscription_tier.created"
-    subscription_tier_updated = "subscription_tier.updated"
-    benefit_created = "benefit.created"
-    benefit_updated = "benefit.updated"
-    organization_updated = "organization.updated"
-    pledge_created = "pledge.created"
-    pledge_updated = "pledge.updated"
-    donation_created = "donation.created"
-
-
-WebhookTypeObject = Union[  # noqa: UP007
-    tuple[Literal[WebhookEventType.subscription_created], Subscription],
-    tuple[Literal[WebhookEventType.subscription_updated], Subscription],
-    tuple[Literal[WebhookEventType.subscription_tier_created], SubscriptionTier],
-    tuple[Literal[WebhookEventType.subscription_tier_updated], SubscriptionTier],
-    tuple[Literal[WebhookEventType.pledge_created], Pledge],
-    tuple[Literal[WebhookEventType.pledge_updated], Pledge],
-    tuple[Literal[WebhookEventType.donation_created], Donation],
-    tuple[Literal[WebhookEventType.organization_updated], Organization],
-    tuple[Literal[WebhookEventType.benefit_created], Benefit],
-    tuple[Literal[WebhookEventType.benefit_updated], Benefit],
-]
-
-
-class WebhookSubscriptionCreatedPayload(Schema):
-    type: Literal[WebhookEventType.subscription_created]
-    data: SubscriptionSchema
-
-
-class WebhookSubscriptionUpdatedPayload(Schema):
-    type: Literal[WebhookEventType.subscription_updated]
-    data: SubscriptionSchema
-
-
-class WebhookSubscriptionTierCreatedPayload(Schema):
-    type: Literal[WebhookEventType.subscription_tier_created]
-    data: SubscriptionTierSchema
-
-
-class WebhookSubscriptionTierUpdatedPayload(Schema):
-    type: Literal[WebhookEventType.subscription_tier_updated]
-    data: SubscriptionTierSchema
-
-
-class WebhookPledgeCreatedPayload(Schema):
-    type: Literal[WebhookEventType.pledge_created]
-    data: PledgeSchema
-
-
-class WebhookPledgeUpdatedPayload(Schema):
-    type: Literal[WebhookEventType.pledge_updated]
-    data: PledgeSchema
-
-
-class WebhookDonationCreatedPayload(Schema):
-    type: Literal[WebhookEventType.donation_created]
-    data: DonationSchema
-
-
-class WebhookOrganizationUpdatedPayload(Schema):
-    type: Literal[WebhookEventType.organization_updated]
-    data: OrganizationSchema
-
-
-class WebhookBenefitCreatedPayload(Schema):
-    type: Literal[WebhookEventType.benefit_created]
-    data: BenefitSchema
-
-
-class WebhookBenefitUpdatedPayload(Schema):
-    type: Literal[WebhookEventType.benefit_updated]
-    data: BenefitSchema
-
-
-WebhookPayload = Union[  # noqa: UP007
-    WebhookSubscriptionCreatedPayload,
-    WebhookSubscriptionUpdatedPayload,
-    WebhookSubscriptionTierCreatedPayload,
-    WebhookSubscriptionTierUpdatedPayload,
-    WebhookPledgeCreatedPayload,
-    WebhookPledgeUpdatedPayload,
-    WebhookDonationCreatedPayload,
-    WebhookOrganizationUpdatedPayload,
+from .webhooks import (
     WebhookBenefitCreatedPayload,
     WebhookBenefitUpdatedPayload,
-]
+    WebhookDonationCreatedPayload,
+    WebhookEventType,
+    WebhookOrganizationUpdatedPayload,
+    WebhookPayload,
+    WebhookPledgeCreatedPayload,
+    WebhookPledgeUpdatedPayload,
+    WebhookSubscriptionCreatedPayload,
+    WebhookSubscriptionTierCreatedPayload,
+    WebhookSubscriptionTierUpdatedPayload,
+    WebhookSubscriptionUpdatedPayload,
+    WebhookTypeObject,
+)
 
 
 def assert_never(value: NoReturn) -> NoReturn:

@@ -27,7 +27,8 @@ from polar.models.benefit import (
 )
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
-from polar.webhook.service import WebhookEventType, webhook_service
+from polar.webhook.service import webhook_service
+from polar.webhook.webhooks import WebhookEventType
 
 from ..benefits import BenefitPropertiesValidationError, get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate

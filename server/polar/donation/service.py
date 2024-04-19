@@ -55,6 +55,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service import user as user_service
+from polar.webhook.service import WebhookEventType, webhook_service
 from polar.webhook_notifications.service import webhook_notifications_service
 
 
@@ -65,15 +66,32 @@ class SearchSortProperty(StrEnum):
 
 class DonationService:
     async def get_by_payment_id(
-        self, session: AsyncSession, id: str
+        self, session: AsyncSession, payment_id: str
     ) -> Donation | None:
         stmt = (
             sql.select(Donation)
-            .where(Donation.payment_id == id)
+            .where(Donation.payment_id == payment_id)
             .options(joinedload(Donation.to_organization))
         )
         res = await session.execute(stmt)
-        return res.scalar_one_or_none()
+        return res.scalars().unique().one_or_none()
+
+    async def get_loaded(self, session: AsyncSession, id: UUID) -> Donation | None:
+        stmt = (
+            sql.select(Donation)
+            .where(Donation.id == id)
+            .options(
+                joinedload(Donation.to_organization),
+                joinedload(Donation.by_organization),
+                joinedload(Donation.on_behalf_of_organization),
+                joinedload(Donation.by_user),
+                joinedload(Donation.issue)
+                .joinedload(Issue.repository)
+                .joinedload(Repository.organization),
+            )
+        )
+        res = await session.execute(stmt)
+        return res.scalars().unique().one_or_none()
 
     async def search(
         self,
@@ -243,6 +261,7 @@ class DonationService:
 
         await self.backoffice_discord_notification(session, d)
         await self.user_webhook_notifications(session, d)
+        await self.send_webhook(session, d)
 
         return None
 
@@ -464,6 +483,16 @@ class DonationService:
                         },
                     ],
                 )
+
+    async def send_webhook(self, session: AsyncSession, donation: Donation) -> None:
+        full_donation = await self.get_loaded(session, donation.id)
+        assert full_donation
+
+        await webhook_service.send(
+            session,
+            target=full_donation.to_organization,
+            we=(WebhookEventType.donation_created, full_donation),
+        )
 
 
 donation_service = DonationService()

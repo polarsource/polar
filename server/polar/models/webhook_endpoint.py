@@ -69,3 +69,8 @@ class WebhookEndpoint(RecordModel):
         nullable=False,
         server_default="false",
     )
+    event_donation_created: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+    )

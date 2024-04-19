@@ -55,7 +55,8 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service import user as user_service
-from polar.webhook.service import WebhookEventType, webhook_service
+from polar.webhook.service import webhook_service
+from polar.webhook.webhooks import WebhookEventType
 from polar.webhook_notifications.service import webhook_notifications_service
 
 

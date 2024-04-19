@@ -49,6 +49,7 @@ from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
 from polar.tags.api import Tags
+from polar.webhook.webhooks import app as webhooks_app
 from polar.worker import ArqRedis
 from polar.worker import lifespan as worker_lifespan
 
@@ -199,6 +200,7 @@ We'd love to see what you've built with the API and to get your thoughts on how 
 The Polar API is online at `https://api.polar.sh`.
 """,  # noqa: E501
         routes=[format(r) for r in app.routes if show(r)],
+        webhooks=webhooks_app.webhooks.routes,
         servers=[{"url": "https://api.polar.sh"}],
     )
     openapi_schema["info"]["x-logo"] = {

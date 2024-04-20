@@ -19,6 +19,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ContextView, ContextViewProvider } from '../Common/ContextView'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
@@ -114,7 +115,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
   const marginTop = layoutContext.isMD ? layoutContext.topbarHeight || 79 : 0
 
   return (
-    <>
+    <ContextViewProvider>
       <div className="relative flex h-full w-full flex-col md:flex-row">
         <MobileNav />
         <div className="hidden md:flex">
@@ -128,16 +129,23 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
         >
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
           <main
-            className="relative w-full md:overflow-auto"
+            className="flex w-full flex-row"
             style={{
               marginTop,
             }}
           >
-            <Suspense>{props.children}</Suspense>
+            <Suspense>
+              <>
+                <div className="relative flex w-full flex-grow flex-col md:overflow-auto">
+                  {props.children}
+                </div>
+                <ContextView />
+              </>
+            </Suspense>
           </main>
         </div>
       </div>
-    </>
+    </ContextViewProvider>
   )
 }
 
@@ -227,7 +235,7 @@ export const DashboardBody = (props: {
   return (
     <div
       className={twMerge(
-        'relative mx-auto mt-8 max-w-screen-xl px-4 pb-6 sm:px-6 md:px-8',
+        'relative mx-auto mt-8 w-full max-w-screen-xl px-4 pb-6 sm:px-6 md:px-8',
         props.className,
       )}
     >

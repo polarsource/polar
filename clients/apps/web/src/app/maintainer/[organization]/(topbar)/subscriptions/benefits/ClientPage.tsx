@@ -6,8 +6,8 @@ import {
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Modal } from '@/components/Modal'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import {
@@ -155,8 +155,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
           </ShadowBoxOnMd>
         )}
 
-        <Modal
-          className="overflow-visible"
+        <InlineModal
           isShown={isShown}
           hide={toggle}
           modalContent={
@@ -247,8 +246,7 @@ const BenefitRow = ({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Modal
-        className="overflow-visible"
+      <InlineModal
         isShown={isEditShown}
         hide={hideEdit}
         modalContent={

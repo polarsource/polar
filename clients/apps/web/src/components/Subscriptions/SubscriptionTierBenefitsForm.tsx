@@ -326,7 +326,7 @@ export const NewSubscriptionTierBenefitModalContent = ({
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
         <h2 className="text-lg">Create Subscription Benefit</h2>
-        <p className="dark:text-polar-400 mt-2 text-sm text-gray-400">
+        <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
           Created benefits will be available for use in all tiers of your
           organization
         </p>
@@ -412,7 +412,7 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
         <h2 className="text-lg">Update Subscription Benefit</h2>
-        <p className="dark:text-polar-400 mt-2 text-sm text-gray-400">
+        <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
           Tax applicability and Benefit type cannot be updated
         </p>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { DiscordIcon, resolveBenefitIcon } from '@/components/Benefit/utils'
+import { useContextView } from '@/components/Common/ContextView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
@@ -77,6 +78,58 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     [],
   )
 
+  const selectedView = useMemo(() => {
+    if (!selectedBenefit) return null
+
+    return (
+      <div>
+        <div className="flex flex-row items-center gap-x-3">
+          <div
+            className={twMerge(
+              'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
+            )}
+          >
+            {resolveBenefitIcon(selectedBenefit, 'inherit')}
+          </div>
+          <span className="text-sm">{selectedBenefit.description}</span>
+        </div>
+
+        <div className="flex flex-col gap-y-4">
+          <h3 className="font-medium">Subscription Tiers</h3>
+          <div className="flex flex-col gap-y-2">
+            {(benefitSubscriptionTiers?.length ?? 0) > 0 ? (
+              benefitSubscriptionTiers?.map((tier) => (
+                <Link
+                  key={tier.id}
+                  href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
+                  className="dark:hover:bg-polar-800 -mx-2 flex flex-row items-center gap-x-2 rounded-lg px-4 py-2 hover:bg-gray-100"
+                >
+                  <SubscriptionGroupIcon
+                    className="h-4! w-4! text-lg"
+                    type={tier.type}
+                  />
+                  <span>{tier.name}</span>
+                </Link>
+              ))
+            ) : (
+              <span className="text-sm text-gray-500">
+                Benefit not tied to any subscription tier
+              </span>
+            )}
+          </div>
+        </div>
+
+        {selectedBenefit.type === 'ads' ? (
+          <AdsBenefitContent benefit={selectedBenefit} />
+        ) : null}
+      </div>
+    )
+  }, [benefitSubscriptionTiers, organization, selectedBenefit])
+
+  const { setContent } = useContextView()
+
+  setContent(selectedView)
+
   return (
     <DashboardBody className="flex flex-col gap-y-8">
       <div className="flex flex-row items-center justify-between">
@@ -109,49 +162,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             />
           ) : null}
         </div>
-        {selectedBenefit && (
-          <ShadowBoxOnMd className="sticky top-8 flex w-1/3 flex-col gap-y-8">
-            <div className="flex flex-row items-center gap-x-3">
-              <div
-                className={twMerge(
-                  'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
-                )}
-              >
-                {resolveBenefitIcon(selectedBenefit, 'inherit')}
-              </div>
-              <span className="text-sm">{selectedBenefit.description}</span>
-            </div>
-
-            <div className="flex flex-col gap-y-4">
-              <h3 className="font-medium">Subscription Tiers</h3>
-              <div className="flex flex-col gap-y-2">
-                {(benefitSubscriptionTiers?.length ?? 0) > 0 ? (
-                  benefitSubscriptionTiers?.map((tier) => (
-                    <Link
-                      key={tier.id}
-                      href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
-                      className="dark:hover:bg-polar-800 -mx-2 flex flex-row items-center gap-x-2 rounded-lg px-4 py-2 hover:bg-gray-100"
-                    >
-                      <SubscriptionGroupIcon
-                        className="h-4! w-4! text-lg"
-                        type={tier.type}
-                      />
-                      <span>{tier.name}</span>
-                    </Link>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    Benefit not tied to any subscription tier
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {selectedBenefit.type === 'ads' ? (
-              <AdsBenefitContent benefit={selectedBenefit} />
-            ) : null}
-          </ShadowBoxOnMd>
-        )}
 
         <InlineModal
           isShown={isShown}

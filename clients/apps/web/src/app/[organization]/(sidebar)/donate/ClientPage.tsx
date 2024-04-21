@@ -34,20 +34,21 @@ const ClientPage = ({
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
           <div className="flex w-full flex-col gap-y-6">
-            <ShadowBoxOnMd>
+            <ShadowBoxOnMd className="flex flex-col gap-y-8">
               <div className="flex flex-col gap-y-2">
                 <h2 className="text-xl">Donate</h2>
 
                 {issue ? (
                   <p className="dark:text-polar-500 text-gray-500">
-                    Donate to {organization.pretty_name ?? organization.name} as
-                    a thank you for fixing {issue.repository.organization.name}/
-                    {issue.repository.name}#{issue.number}
+                    Say thanks with a donation to{' '}
+                    {organization.pretty_name ?? organization.name} for fixing{' '}
+                    {issue.repository.organization.name}/{issue.repository.name}
+                    #{issue.number}
                   </p>
                 ) : (
                   <p className="dark:text-polar-500 text-gray-500">
-                    Donate to {organization.pretty_name ?? organization.name} as
-                    a thank you
+                    Say thanks with a donation to{' '}
+                    {organization.pretty_name ?? organization.name}
                   </p>
                 )}
               </div>

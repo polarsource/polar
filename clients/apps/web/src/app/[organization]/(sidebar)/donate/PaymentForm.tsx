@@ -187,7 +187,6 @@ const PaymentForm = ({
           disabled={!canSubmit}
           loading={isSyncing || stripeSyncing}
           onClick={onSubmit}
-          fullWidth
         >
           Donate
         </Button>

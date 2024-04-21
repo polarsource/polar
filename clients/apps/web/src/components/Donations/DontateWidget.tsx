@@ -12,7 +12,7 @@ export interface DonateWidgetProps {
 }
 
 export const DonateWidget = ({ organization }: DonateWidgetProps) => {
-  const [amount, setAmount] = useState<number>(1000)
+  const [amount, setAmount] = useState<number>(2000)
 
   const getCents = (event: ChangeEvent<HTMLInputElement>) => {
     let newAmount = parseInt(event.target.value)

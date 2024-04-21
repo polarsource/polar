@@ -169,7 +169,7 @@ export default async function Page({
       organization={organization}
       adminOrganizations={listAdminOrganizations?.items ?? []}
       subscriptionTiers={subscriptionTiers?.items ?? []}
-      defaultAmount={parseInt(amount ?? '1000')}
+      defaultAmount={parseInt(amount ?? '2000')}
       issue={issue}
     />
   )

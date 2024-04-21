@@ -51,7 +51,7 @@ type DonateFormState = DonationCreateStripePaymentIntent &
 const Checkout = ({
   organization,
   issue,
-  defaultAmount = 1000,
+  defaultAmount = 2000,
 }: {
   organization: Organization
   issue: Issue | undefined
@@ -239,7 +239,7 @@ const Checkout = ({
 
   return (
     <>
-      <div className="dark:text-polar-500 space-y-2 p-4 text-sm text-gray-500">
+      <div className="dark:text-polar-500 space-y-2 text-sm text-gray-500">
         <Form {...form}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <DonationAmount />
@@ -253,7 +253,7 @@ const Checkout = ({
                 polarPaymentIntent={polarPaymentIntent}
               />
             ) : (
-              <div className="flex flex-col space-y-4">
+              <div className="flex flex-col items-start space-y-4">
                 {isSyncing ? (
                   <>
                     <Skeleton className="h-[40px] w-full" />
@@ -261,7 +261,7 @@ const Checkout = ({
                   </>
                 ) : null}
 
-                <Button size="lg" disabled={true} fullWidth>
+                <Button size="lg" disabled={true}>
                   Donate
                 </Button>
               </div>

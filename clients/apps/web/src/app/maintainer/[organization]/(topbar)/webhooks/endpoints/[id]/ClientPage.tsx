@@ -23,6 +23,8 @@ export default function ClientPage({
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }) {
+  const subscribedEvents = events.filter(([k, _]) => endpoint[k])
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
@@ -39,9 +41,9 @@ export default function ClientPage({
           <h3>Events</h3>
 
           <div className="flex flex-col space-y-2">
-            {events.map((e) => {
-              if (endpoint[e[0]]) {
-                return (
+            {subscribedEvents.length > 0 ? (
+              <>
+                {subscribedEvents.map((e) => (
                   <div
                     className="flex flex-row items-center space-x-3 space-y-0"
                     key={e[0]}
@@ -49,10 +51,11 @@ export default function ClientPage({
                     <Checkbox checked={true} disabled={true} />
                     <span className="text-sm leading-none">{e[1]}</span>
                   </div>
-                )
-              }
-              return null
-            })}
+                ))}
+              </>
+            ) : (
+              <span>This endpoint is not subscribing to any events</span>
+            )}
           </div>
         </div>
 
@@ -60,7 +63,7 @@ export default function ClientPage({
           href={`/maintainer/${organization.name}/webhooks/endpoints/${endpoint.id}/edit`}
           className="shrink-0"
         >
-          <Button size={'sm'} asChild variant={'secondary'}>
+          <Button size={'sm'} asChild variant={'outline'}>
             Edit
           </Button>
         </Link>

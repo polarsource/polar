@@ -2,10 +2,7 @@
 
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import ConfigureAdCampaigns from '@/components/Benefit/ads/ConfigureAdCampaigns'
-import {
-  BenefitSubscriber,
-  resolveBenefitIcon,
-} from '@/components/Benefit/utils'
+import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
@@ -15,7 +12,7 @@ import { useOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
 import { BoltOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { SubscriptionSubscriber } from '@polar-sh/sdk'
+import { BenefitSubscriberInner, SubscriptionSubscriber } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -45,7 +42,7 @@ const ClientPage = ({
   }, [])
 
   const [selectedBenefit, setSelectedBenefit] = useState<
-    BenefitSubscriber | undefined
+    BenefitSubscriberInner | undefined
   >()
   const [selectedBenefitSubscription, setSelectedBenefitSubscription] =
     useState<SubscriptionSubscriber | undefined>(subscriptions[0])
@@ -95,8 +92,8 @@ export default ClientPage
 
 interface SubscriptionOrganizationProps {
   subscription: SubscriptionSubscriber
-  selectedBenefit: BenefitSubscriber | undefined
-  onSelectBenefit: (benefit: BenefitSubscriber) => void
+  selectedBenefit: BenefitSubscriberInner | undefined
+  onSelectBenefit: (benefit: BenefitSubscriberInner) => void
 }
 
 const Subscription = ({
@@ -253,7 +250,7 @@ const Subscription = ({
 }
 
 interface BenefitContextWidgetProps {
-  benefit: BenefitSubscriber
+  benefit: BenefitSubscriberInner
   subscription: SubscriptionSubscriber
 }
 

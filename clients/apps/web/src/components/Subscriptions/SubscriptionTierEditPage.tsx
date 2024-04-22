@@ -13,6 +13,7 @@ import {
 import { useRecurringInterval } from '@/hooks/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
+  BenefitPublicInner,
   Organization,
   ResponseError,
   SubscriptionTier,
@@ -27,7 +28,7 @@ import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Benefit, isPremiumArticlesBenefit } from '../Benefit/utils'
+import { isPremiumArticlesBenefit } from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
@@ -65,7 +66,7 @@ export default SubscriptionTierEditPage
 interface SubscriptionTierEditProps {
   organization: Organization
   subscriptionTier: SubscriptionTier
-  organizationBenefits: Benefit[]
+  organizationBenefits: BenefitPublicInner[]
 }
 
 const SubscriptionTierEdit = ({
@@ -74,9 +75,9 @@ const SubscriptionTierEdit = ({
   organizationBenefits,
 }: SubscriptionTierEditProps) => {
   const router = useRouter()
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
-    subscriptionTier.benefits.map((benefit) => benefit.id) ?? [],
-  )
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
+    BenefitPublicInner['id'][]
+  >(subscriptionTier.benefits.map((benefit) => benefit.id) ?? [])
   const isFreeTier = subscriptionTier.type === SubscriptionTierType.FREE
   const [recurringInterval, setRecurringInterval] = useRecurringInterval([])
 
@@ -153,14 +154,14 @@ const SubscriptionTierEdit = ({
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: BenefitPublicInner) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: BenefitPublicInner) => {
       setEnabledBenefitIds((benefits) =>
         benefits.filter((b) => b !== benefit.id),
       )

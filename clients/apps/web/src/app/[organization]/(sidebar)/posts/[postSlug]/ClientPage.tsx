@@ -7,7 +7,7 @@ import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowBackOutlined } from '@mui/icons-material'
 
 import { useListAllOrganizations, useUserSubscriptions } from '@/hooks/queries'
-import { Article, BenefitsInner, SubscriptionTier } from '@polar-sh/sdk'
+import { Article, BenefitPublicInner, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 
@@ -50,7 +50,7 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
     (b) => 'paid_articles' in b.properties && b.properties['paid_articles'],
   )
 
-  const isPaidBenefit = (b: BenefitsInner) =>
+  const isPaidBenefit = (b: BenefitPublicInner) =>
     b.type === 'articles' &&
     'properties' in b &&
     'paid_articles' in b.properties &&

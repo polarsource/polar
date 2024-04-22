@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  Benefit,
-  DiscordIcon,
-  resolveBenefitIcon,
-} from '@/components/Benefit/utils'
+import { DiscordIcon, resolveBenefitIcon } from '@/components/Benefit/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
@@ -22,7 +18,7 @@ import {
   useSubscriptionTiers,
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined, WebOutlined } from '@mui/icons-material'
-import { BenefitType, BenefitsInner, Organization } from '@polar-sh/sdk'
+import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
 import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -39,7 +35,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
-  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>()
+  const [selectedBenefit, setSelectedBenefit] = useState<
+    BenefitPublicInner | undefined
+  >()
   const { data: benefits, isFetched: benefitsIsFetched } = useBenefits(
     organization.name,
     100,
@@ -73,7 +71,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   }, [benefits])
 
   const handleSelectBenefit = useCallback(
-    (benefit: Benefit) => () => {
+    (benefit: BenefitPublicInner) => () => {
       setSelectedBenefit(benefit)
     },
     [],
@@ -175,10 +173,10 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 export default ClientPage
 
 interface BenefitRowProps {
-  benefit: Benefit
+  benefit: BenefitPublicInner
   organization: Organization
   selected: boolean
-  handleSelectBenefit: (benefit: Benefit) => () => void
+  handleSelectBenefit: (benefit: BenefitPublicInner) => () => void
 }
 
 const BenefitRow = ({
@@ -269,7 +267,7 @@ const BenefitRow = ({
   )
 }
 
-const AdsBenefitContent = ({ benefit }: { benefit: BenefitsInner }) => {
+const AdsBenefitContent = ({ benefit }: { benefit: BenefitPublicInner }) => {
   const shortID = benefit.id.substring(benefit.id.length - 6)
 
   const height =
@@ -370,7 +368,7 @@ const RecommendedBenefits = ({
   openCreateBenefitModal,
   setCreateModalDefaultValues,
 }: {
-  existingBenefits: BenefitsInner[]
+  existingBenefits: BenefitPublicInner[]
   openCreateBenefitModal: () => void
   setCreateModalDefaultValues: (v: NewSubscriptionsModalParams) => void
 }) => {

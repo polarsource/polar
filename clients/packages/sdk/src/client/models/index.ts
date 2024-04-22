@@ -3342,6 +3342,18 @@ export interface BenefitPreconditionErrorNotificationPayload {
      */
     organization_name: string;
 }
+/**
+ * @type BenefitPublicInner
+ * @export
+ */
+export type BenefitPublicInner = BenefitArticles | BenefitBase;
+
+/**
+ * @type BenefitSubscriberInner
+ * @export
+ */
+export type BenefitSubscriberInner = BenefitAdsSubscriber | BenefitArticlesSubscriber | BenefitCustomSubscriber | BenefitDiscordSubscriber | BenefitGitHubRepositorySubscriber;
+
 
 /**
  * 
@@ -3361,18 +3373,6 @@ export type BenefitType = typeof BenefitType[keyof typeof BenefitType];
  * @export
  */
 export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitGitHubRepositoryUpdate;
-
-/**
- * @type BenefitsInner
- * @export
- */
-export type BenefitsInner = BenefitArticles | BenefitBase;
-
-/**
- * @type BenefitsInner1
- * @export
- */
-export type BenefitsInner1 = BenefitAdsSubscriber | BenefitArticlesSubscriber | BenefitCustomSubscriber | BenefitDiscordSubscriber | BenefitGitHubRepositorySubscriber;
 
 /**
  * 
@@ -8097,12 +8097,6 @@ export type ResponseBenefitsLookupBenefit = BenefitAds | BenefitArticles | Benef
 export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
- * @type ResponseWebhooksDummyOpenapiSpec
- * @export
- */
-export type ResponseWebhooksDummyOpenapiSpec = WebhookBenefitCreatedPayload | WebhookBenefitUpdatedPayload | WebhookDonationCreatedPayload | WebhookOrganizationUpdatedPayload | WebhookPledgeCreatedPayload | WebhookPledgeUpdatedPayload | WebhookSubscriptionCreatedPayload | WebhookSubscriptionTierCreatedPayload | WebhookSubscriptionTierUpdatedPayload | WebhookSubscriptionUpdatedPayload;
-
-/**
  * 
  * @export
  * @interface Reward
@@ -8810,10 +8804,10 @@ export interface SubscriptionTier {
     prices: Array<SubscriptionTierPrice>;
     /**
      * 
-     * @type {Array<BenefitsInner>}
+     * @type {Array<BenefitPublicInner>}
      * @memberof SubscriptionTier
      */
-    benefits: Array<BenefitsInner>;
+    benefits: Array<BenefitPublicInner>;
 }
 /**
  * 
@@ -9047,10 +9041,10 @@ export interface SubscriptionTierSubscriber {
     prices: Array<SubscriptionTierPrice>;
     /**
      * 
-     * @type {Array<BenefitsInner1>}
+     * @type {Array<BenefitSubscriberInner>}
      * @memberof SubscriptionTierSubscriber
      */
-    benefits: Array<BenefitsInner1>;
+    benefits: Array<BenefitSubscriberInner>;
 }
 
 /**

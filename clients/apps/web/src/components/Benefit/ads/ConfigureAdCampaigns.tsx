@@ -7,6 +7,7 @@ import {
 } from '@/hooks/queries'
 import {
   AdvertisementCampaign,
+  BenefitSubscriberInner,
   CreateAdvertisementCampaign,
   EditAdvertisementCampaign,
   SubscriptionSubscriber,
@@ -22,13 +23,12 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { useForm, useFormContext } from 'react-hook-form'
-import { BenefitSubscriber } from '../utils'
 
 const ConfigureAdCampaigns = ({
   benefit,
   subscription,
 }: {
-  benefit: BenefitSubscriber
+  benefit: BenefitSubscriberInner
   subscription: SubscriptionSubscriber
 }) => {
   const campaigns = useAdvertisementCampaigns(subscription.id, benefit.id)
@@ -58,7 +58,7 @@ const CreateCampaign = ({
   benefit,
   subscription,
 }: {
-  benefit: BenefitSubscriber
+  benefit: BenefitSubscriberInner
   subscription: SubscriptionSubscriber
 }) => {
   const create = useCreateAdvertisementCampaigns()
@@ -128,7 +128,7 @@ const EditCampaign = ({
   benefit,
 }: {
   campaign: AdvertisementCampaign
-  benefit: BenefitSubscriber
+  benefit: BenefitSubscriberInner
 }) => {
   const edit = useEditAdvertisementCampaigns()
   const deleteAd = useDeleteAdvertisementCampaigns()

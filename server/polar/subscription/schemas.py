@@ -110,11 +110,11 @@ class SubscriptionTierBase(TimestampedSchema):
 
 
 class SubscriptionTier(SubscriptionTierBase):
-    benefits: list[BenefitPublic]
+    benefits: list[BenefitPublic] = Field(title="BenefitPublic")
 
 
 class SubscriptionTierSubscriber(SubscriptionTierBase):
-    benefits: list[BenefitSubscriber]
+    benefits: list[BenefitSubscriber] = Field(title="BenefitSubscriber")
 
 
 # SubscribeSession

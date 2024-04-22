@@ -11033,6 +11033,19 @@ export interface WebhookEvent {
 /**
  * 
  * @export
+ * @interface WebhookEventRedeliver
+ */
+export interface WebhookEventRedeliver {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WebhookEventRedeliver
+     */
+    ok: boolean;
+}
+/**
+ * 
+ * @export
  * @interface WebhookIntegration
  */
 export interface WebhookIntegration {

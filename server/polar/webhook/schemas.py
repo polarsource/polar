@@ -83,3 +83,7 @@ class WebhookDelivery(Schema):
     http_code: int | None
     succeeded: bool
     webhook_event: WebhookEvent
+
+
+class WebhookEventRedeliver(Schema):
+    ok: bool

@@ -42,6 +42,11 @@ prometheus-client = "^0.20.0"
 authlib = "^1.3.0"
 standardwebhooks = "^1.0.0"
 typer = "^0.12.3"
+logfire = "^0.25.0"
+opentelemetry-instrumentation-fastapi = "^0.45b0"
+opentelemetry-instrumentation-httpx = "^0.45b0"
+opentelemetry-instrumentation-sqlalchemy = "^0.45b0"
+opentelemetry-instrumentation-redis = "^0.45b0"
 
 [tool.poetry.group.backoffice]
 optional = true

@@ -3,6 +3,7 @@ import uuid
 from typing import Any, Generic, TypeVar
 
 import structlog
+from logfire.integrations.structlog import LogfireProcessor
 
 from polar.config import settings
 
@@ -26,7 +27,7 @@ class Logging(Generic[RendererType]):
         return settings.LOG_LEVEL
 
     @classmethod
-    def get_processors(cls) -> list[Any]:
+    def get_processors(cls, *, logfire: bool) -> list[Any]:
         return [
             structlog.contextvars.merge_contextvars,
             structlog.stdlib.add_log_level,
@@ -36,6 +37,7 @@ class Logging(Generic[RendererType]):
             structlog.processors.UnicodeDecoder(),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
+            *([LogfireProcessor()] if logfire else []),
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ]
 
@@ -44,7 +46,7 @@ class Logging(Generic[RendererType]):
         raise NotImplementedError()
 
     @classmethod
-    def configure_stdlib(cls) -> None:
+    def configure_stdlib(cls, *, logfire: bool) -> None:
         level = cls.get_level()
         logging.config.dictConfig(
             {
@@ -66,6 +68,7 @@ class Logging(Generic[RendererType]):
                             cls.timestamper,
                             structlog.processors.UnicodeDecoder(),
                             structlog.processors.StackInfoRenderer(),
+                            *([LogfireProcessor()] if logfire else []),
                             structlog.processors.format_exc_info,
                         ],
                     },
@@ -89,25 +92,31 @@ class Logging(Generic[RendererType]):
                             "handlers": [],
                             "propagate": True,
                         }
-                        for logger in ["uvicorn", "sqlalchemy", "arq", "authlib"]
+                        for logger in [
+                            "uvicorn",
+                            "sqlalchemy",
+                            "arq",
+                            "authlib",
+                            "logfire",
+                        ]
                     },
                 },
             }
         )
 
     @classmethod
-    def configure_structlog(cls) -> None:
+    def configure_structlog(cls, *, logfire: bool = False) -> None:
         structlog.configure_once(
-            processors=cls.get_processors(),
+            processors=cls.get_processors(logfire=logfire),
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,
             cache_logger_on_first_use=True,
         )
 
     @classmethod
-    def configure(cls) -> None:
-        cls.configure_stdlib()
-        cls.configure_structlog()
+    def configure(cls, *, logfire: bool = False) -> None:
+        cls.configure_stdlib(logfire=logfire)
+        cls.configure_structlog(logfire=logfire)
 
 
 class Development(Logging[structlog.dev.ConsoleRenderer]):
@@ -122,11 +131,13 @@ class Production(Logging[structlog.processors.JSONRenderer]):
         return structlog.processors.JSONRenderer()
 
 
-def configure() -> None:
-    if settings.is_development() or settings.is_testing():
-        Development.configure()
+def configure(*, logfire: bool = False) -> None:
+    if settings.is_testing():
+        Development.configure(logfire=False)
+    elif settings.is_development():
+        Development.configure(logfire=logfire)
     else:
-        Production.configure()
+        Production.configure(logfire=logfire)
 
 
 def generate_correlation_id() -> str:

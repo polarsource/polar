@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Cell,
   ColumnDef,
   OnChangeFn,
   PaginationState,
@@ -11,6 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   Table,
@@ -41,6 +43,7 @@ interface DataTableProps<TData, TValue> {
   getSubRows?: (row: TData) => TData[] | undefined
   className?: string
   isLoading: boolean | ReactQueryLoading
+  getCellColSpan?: (cell: Cell<TData, unknown>) => number
 }
 
 export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
@@ -69,6 +72,7 @@ export function DataTable<TData, TValue>({
   getSubRows,
   className,
   isLoading,
+  getCellColSpan,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -133,14 +137,24 @@ export function DataTable<TData, TValue>({
                       key={row.id}
                       data-state={row.getIsSelected() && 'selected'}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const colSpan = getCellColSpan
+                          ? getCellColSpan(cell)
+                          : 1
+
+                        return (
+                          <React.Fragment key={cell.id}>
+                            {colSpan ? (
+                              <TableCell colSpan={colSpan}>
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext(),
+                                )}
+                              </TableCell>
+                            ) : null}
+                          </React.Fragment>
+                        )
+                      })}
                     </TableRow>
                   ))
                 ) : (

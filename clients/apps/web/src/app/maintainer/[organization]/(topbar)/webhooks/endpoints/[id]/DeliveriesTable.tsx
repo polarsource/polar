@@ -1,6 +1,9 @@
 'use client'
 
-import { useSearchWebhooksDeliveries } from '@/hooks/queries'
+import {
+  useRedeliverWebhookEvent,
+  useSearchWebhooksDeliveries,
+} from '@/hooks/queries'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -12,8 +15,9 @@ import {
   KeyboardArrowRightOutlined,
 } from '@mui/icons-material'
 import { Organization, WebhookDelivery, WebhookEndpoint } from '@polar-sh/sdk'
+import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,
@@ -97,6 +101,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     {
       id: 'expand',
       enableSorting: false,
+      size: 50,
       cell: ({ row }) => {
         if (!row.getCanExpand()) return null
 
@@ -117,27 +122,28 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
       },
     },
     {
-      accessorKey: 'created_at',
-      enableSorting: true,
+      accessorKey: 'id',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Date" />
+        <DataTableColumnHeader column={column} title="ID" />
       ),
+
       cell: (props) => {
         const { row } = props
+
         const { original: delivery } = row
 
         if (delivery.isSubRow) {
-          return null
+          return <ExpandedRow {...props} />
         }
 
-        return (
-          <FormattedDateTime datetime={delivery.created_at} resolution="time" />
-        )
+        return <span className="text-xs">{delivery.id}</span>
       },
     },
     {
       id: 'http_code',
       enableSorting: false,
+      size: 50,
+
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
@@ -174,13 +180,14 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Data" />
       ),
+
       cell: (props) => {
         const { row } = props
         const { original: delivery } = row
         const payload = JSON.parse(delivery.webhook_event.payload)
 
         if (delivery.isSubRow) {
-          return <pre>{JSON.stringify(payload, undefined, 2)}</pre>
+          return null
         }
 
         return <pre>{payload['type']}</pre>
@@ -199,11 +206,20 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
           onPaginationChange={setPagination}
           sorting={sorting}
           onSortingChange={setSorting}
+          getCellColSpan={(cell) => {
+            if (cell.row.original.isSubRow) {
+              if (cell.column.id === 'id') {
+                return 4
+              }
+              // hide cell
+              return 0
+            }
+            return 1
+          }}
           getSubRows={(row) => {
             if (row.isSubRow) {
               return undefined
             }
-            console.log('sub row', row)
             return [{ ...row, isSubRow: true }]
           }}
           isLoading={deliveriesHook}
@@ -214,3 +230,46 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
 }
 
 export default DeliveriesTable
+
+const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
+  const { row } = props
+
+  const { original: delivery } = row
+  const payload = JSON.parse(delivery.webhook_event.payload)
+
+  const redeliver = useRedeliverWebhookEvent()
+
+  return (
+    <div className="flex flex-col space-y-2">
+      <div className="grid w-fit grid-cols-2 gap-2">
+        <div>Event ID</div>
+        <code>{delivery.webhook_event.id}</code>
+
+        <div>Delivery ID</div>
+        <code>{delivery.id}</code>
+
+        <div>Sent at</div>
+        <code>{delivery.created_at}</code>
+      </div>
+      <div>
+        <Button
+          variant={'default'}
+          onClick={async (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            await redeliver.mutateAsync({
+              id: delivery.webhook_event.id,
+            })
+          }}
+          loading={redeliver.isPending}
+        >
+          Redeliver
+        </Button>
+      </div>
+      <hr />
+      <pre className="whitespace-pre-wrap">
+        {JSON.stringify(payload, undefined, 2)}
+      </pre>
+    </div>
+  )
+}

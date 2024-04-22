@@ -1,6 +1,7 @@
 import contextlib
 from collections.abc import AsyncIterator
 from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
 from arq import ArqRedis
@@ -24,6 +25,8 @@ def job_context(engine: AsyncEngine, session: AsyncSession) -> JobContext:
         "job_try": 1,
         "enqueue_time": utc_now(),
         "score": 0,
+        "exit_stack": contextlib.ExitStack(),
+        "logfire_span": MagicMock(),
     }
 
 

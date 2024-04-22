@@ -124,6 +124,10 @@ class Settings(BaseSettings):
     # Prometheus
     PROMETHEUS_EXPORTER_HTTP_PASSWORD: str = ""
 
+    # Logfire
+    LOGFIRE_TOKEN: str | None = None
+    LOGFIRE_PROJECT_NAME: str = "polar"
+
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 

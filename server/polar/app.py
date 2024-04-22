@@ -29,6 +29,12 @@ from polar.kit.db.postgres import (
     create_sync_sessionmaker,
 )
 from polar.kit.prometheus.http import PrometheusHttpMiddleware
+from polar.logfire import (
+    configure_logfire,
+    instrument_fastapi,
+    instrument_httpx,
+    instrument_sqlalchemy,
+)
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.metrics.endpoints import router as metrics_router
@@ -80,9 +86,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     async with worker_lifespan() as arq_pool:
         async_engine = create_async_engine("app")
         async_sessionmaker = create_async_sessionmaker(async_engine)
+        instrument_sqlalchemy(async_engine.sync_engine)
 
         sync_engine = create_sync_engine("app")
         sync_sessionmaker = create_sync_sessionmaker(sync_engine)
+        instrument_sqlalchemy(sync_engine)
 
         log.info("Polar API started")
 
@@ -136,12 +144,15 @@ def create_app() -> FastAPI:
     return app
 
 
-configure_logging()
-configure_posthog()
 configure_sentry()
+configure_logfire("server")
+configure_logging(logfire=True)
+configure_posthog()
 
 log.info("Starting Polar API")
 app = create_app()
+instrument_fastapi(app)
+instrument_httpx()
 
 
 def configure_openapi() -> None:

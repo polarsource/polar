@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import datetime
 from typing import Any, ParamSpec, TypeAlias, TypedDict, TypeVar, cast
 
+import logfire
 import structlog
 from arq import cron, func
 from arq.connections import ArqRedis, RedisSettings
@@ -25,6 +26,7 @@ from polar.kit.db.postgres import (
 from polar.kit.db.postgres import (
     AsyncSessionMaker as AsyncSessionMakerType,
 )
+from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import generate_correlation_id
 from polar.postgres import create_async_engine
 
@@ -47,6 +49,8 @@ class JobContext(WorkerContext):
     job_try: int
     enqueue_time: datetime
     score: int
+    exit_stack: contextlib.ExitStack
+    logfire_span: logfire.LogfireSpan
 
 
 class PolarWorkerContext(BaseModel):
@@ -68,6 +72,9 @@ class WorkerSettings:
 
         async_engine = create_async_engine("worker")
         async_sessionmaker = create_async_sessionmaker(async_engine)
+        instrument_sqlalchemy(async_engine.sync_engine)
+        instrument_httpx()
+
         ctx.update(
             {"async_engine": async_engine, "async_sessionmaker": async_sessionmaker}
         )
@@ -90,6 +97,12 @@ class WorkerSettings:
         To circumvent this limitation, we implement this behavior
         through the `task_hooks` decorator.
         """
+        exit_stack = contextlib.ExitStack()
+        function_name = ":".join(ctx["job_id"].split(":")[0:-1])
+        logfire_span = exit_stack.enter_context(
+            logfire.span("TASK {function_name}", function_name=function_name)
+        )
+        ctx.update({"exit_stack": exit_stack, "logfire_span": logfire_span})
 
     @staticmethod
     async def on_job_end(ctx: JobContext) -> None:
@@ -102,6 +115,8 @@ class WorkerSettings:
         To circumvent this limitation, we implement this behavior
         through the `task_hooks` decorator.
         """
+        exit_stack = ctx["exit_stack"]
+        exit_stack.close()
 
 
 @contextlib.asynccontextmanager
@@ -159,22 +174,22 @@ def task_hooks(
     @functools.wraps(f)
     async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
         job_context = cast(JobContext, args[0])
-        structlog.contextvars.bind_contextvars(
-            correlation_id=generate_correlation_id(),
-            job_id=job_context["job_id"],
-            job_try=job_context["job_try"],
-            enqueue_time=job_context["enqueue_time"].isoformat(),
-            score=job_context["score"],
-        )
+        log_context: dict[str, Any] = {
+            "correlation_id": generate_correlation_id(),
+            "job_id": job_context["job_id"],
+            "job_try": job_context["job_try"],
+            "enqueue_time": job_context["enqueue_time"].isoformat(),
+            "score": job_context["score"],
+        }
 
         request_correlation_id = kwargs.pop("request_correlation_id", None)
         if request_correlation_id is not None:
-            structlog.contextvars.bind_contextvars(
-                request_correlation_id=request_correlation_id
-            )
+            log_context["request_correlation_id"] = request_correlation_id
+
+        structlog.contextvars.bind_contextvars(**log_context)
+        job_context["logfire_span"].set_attributes(log_context)
 
         log.info("polar.worker.job_started")
-
         r = await f(*args, **kwargs)
 
         arq_pool = job_context["redis"]

@@ -1,10 +1,10 @@
-import { api } from '@/utils/api'
+import { api, queryClient } from '@/utils/api'
 import {
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
   ResponseError,
 } from '@polar-sh/sdk'
-import { UseQueryResult, useQuery } from '@tanstack/react-query'
+import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useSearchWebhooksDeliveries = (variables: {
@@ -33,4 +33,17 @@ export const useSearchWebhooksEndpoints = (variables: {
         ...variables,
       }),
     retry: defaultRetry,
+  })
+
+export const useRedeliverWebhookEvent = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) =>
+      api.webhooks.eventRedeliver({
+        id: variables.id,
+      }),
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['webhookDeliveries', 'search'],
+      })
+    },
   })

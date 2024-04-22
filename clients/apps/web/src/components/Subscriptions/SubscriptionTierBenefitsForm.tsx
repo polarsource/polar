@@ -11,6 +11,7 @@ import {
 } from '@mui/icons-material'
 import {
   BenefitCreate,
+  BenefitPublicInner,
   BenefitUpdate,
   Organization,
   ResponseError,
@@ -31,7 +32,6 @@ import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { NewBenefitForm, UpdateBenefitForm } from '../Benefit/BenefitForm'
 import {
-  Benefit,
   CreatableBenefit,
   isPremiumArticlesBenefit,
   resolveBenefitIcon,
@@ -42,7 +42,7 @@ import { useModal } from '../Modal/useModal'
 
 interface BenefitRowProps {
   organization: Organization
-  benefit: Benefit
+  benefit: BenefitPublicInner
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }
@@ -153,10 +153,10 @@ const BenefitRow = ({
 
 interface SubscriptionTierBenefitsFormProps {
   organization: Organization
-  benefits: Benefit[]
-  organizationBenefits: Benefit[]
-  onSelectBenefit: (benefit: Benefit) => void
-  onRemoveBenefit: (benefit: Benefit) => void
+  benefits: BenefitPublicInner[]
+  organizationBenefits: BenefitPublicInner[]
+  onSelectBenefit: (benefit: BenefitPublicInner) => void
+  onRemoveBenefit: (benefit: BenefitPublicInner) => void
   className?: string
 }
 
@@ -174,7 +174,7 @@ const SubscriptionTierBenefitsForm = ({
   )
 
   const handleCheckedChange = useCallback(
-    (benefit: Benefit) => (checked: boolean) => {
+    (benefit: BenefitPublicInner) => (checked: boolean) => {
       if (checked) {
         onSelectBenefit(benefit)
       } else {
@@ -254,7 +254,7 @@ export type NewSubscriptionsModalParams = {
 
 interface NewSubscriptionTierBenefitModalContentProps {
   organization: Organization
-  onSelectBenefit: (benefit: Benefit) => void
+  onSelectBenefit: (benefit: BenefitPublicInner) => void
   hideModal: () => void
   defaultValues?: NewSubscriptionsModalParams
 }
@@ -364,7 +364,7 @@ export const NewSubscriptionTierBenefitModalContent = ({
 
 interface UpdateSubscriptionTierBenefitModalContentProps {
   organization: Organization
-  benefit: Benefit
+  benefit: BenefitPublicInner
   hideModal: () => void
 }
 

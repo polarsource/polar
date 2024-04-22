@@ -3,8 +3,8 @@ import { useOrganization } from '@/hooks/queries'
 import { ArrowForwardOutlined, LinkOutlined } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
+import { BenefitSubscriberInner } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { BenefitSubscriber } from './utils'
 
 interface BenefitAction {
   icon: OverridableComponent<SvgIconTypeMap<{}, 'svg'>> & {
@@ -15,7 +15,7 @@ interface BenefitAction {
 }
 
 export const useBenefitActions = (
-  benefit: BenefitSubscriber,
+  benefit: BenefitSubscriberInner,
 ): BenefitAction[] => {
   const router = useRouter()
   const { data: organization } = useOrganization(benefit.organization_id ?? '')

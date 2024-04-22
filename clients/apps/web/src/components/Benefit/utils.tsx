@@ -4,21 +4,13 @@ import {
   ShortTextOutlined,
   WebOutlined,
 } from '@mui/icons-material'
-import {
-  BenefitArticles,
-  BenefitType,
-  BenefitsInner,
-  BenefitsInner1,
-} from '@polar-sh/sdk'
+import { BenefitArticles, BenefitPublicInner, BenefitType } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
-
-export type Benefit = BenefitsInner
-export type BenefitSubscriber = BenefitsInner1
 
 export type CreatableBenefit = Exclude<BenefitType, 'articles'>
 
 export const resolveBenefitIcon = (
-  benefit?: BenefitsInner,
+  benefit?: BenefitPublicInner,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
 ) => {
   const className = twMerge('h-4 w-4')
@@ -71,8 +63,11 @@ export const benefitsDisplayNames: {
   [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
 }
 
-const isArticleBenefit = (benefit: Benefit): benefit is BenefitArticles =>
-  benefit.type === BenefitType.ARTICLES
+const isArticleBenefit = (
+  benefit: BenefitPublicInner,
+): benefit is BenefitArticles => benefit.type === BenefitType.ARTICLES
 
-export const isPremiumArticlesBenefit = (benefit: Benefit): boolean =>
+export const isPremiumArticlesBenefit = (
+  benefit: BenefitPublicInner,
+): boolean =>
   isArticleBenefit(benefit) && benefit.properties.paid_articles === true

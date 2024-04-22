@@ -18,7 +18,6 @@ import type {
   HTTPValidationError,
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
-  ResponseWebhooksDummyOpenapiSpec,
   WebhookEndpoint,
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
@@ -141,42 +140,6 @@ export class WebhooksApi extends runtime.BaseAPI {
      */
     async deleteWebhookEndpoint(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
         const response = await this.deleteWebhookEndpointRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Dummy endpoint to expose OpenAPI types for webhook payloads.
-     * Dummy Openapi Spec
-     */
-    async dummyOpenapiSpecRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseWebhooksDummyOpenapiSpec>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/webhooks/openapi`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Dummy endpoint to expose OpenAPI types for webhook payloads.
-     * Dummy Openapi Spec
-     */
-    async dummyOpenapiSpec(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseWebhooksDummyOpenapiSpec> {
-        const response = await this.dummyOpenapiSpecRaw(initOverrides);
         return await response.value();
     }
 

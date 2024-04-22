@@ -198,6 +198,17 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     ],
   },
   {
+    id: 'products',
+    title: 'Products',
+    icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/products/overview`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.name}/products`)
+    },
+    if: true,
+  },
+  {
     id: 'donations',
     title: 'Donations',
     icon: <VolunteerActivism className="h-5 w-5" fontSize="inherit" />,

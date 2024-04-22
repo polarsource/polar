@@ -139,11 +139,11 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
                 <div className="relative flex w-full flex-grow flex-col md:overflow-auto">
                   {props.children}
                 </div>
-                <ContextView />
               </>
             </Suspense>
           </main>
         </div>
+        <ContextView />
       </div>
     </ContextViewProvider>
   )
@@ -235,7 +235,7 @@ export const DashboardBody = (props: {
   return (
     <div
       className={twMerge(
-        'relative mx-auto mt-8 w-full max-w-screen-xl px-4 pb-6 sm:px-6 md:px-8',
+        'relative mx-auto mt-8 w-full max-w-screen-xl px-4 pb-6 sm:px-6 md:px-12',
         props.className,
       )}
     >

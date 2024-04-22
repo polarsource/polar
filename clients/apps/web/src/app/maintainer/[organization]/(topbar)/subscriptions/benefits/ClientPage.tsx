@@ -82,16 +82,16 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     if (!selectedBenefit) return null
 
     return (
-      <div>
+      <div className="flex flex-col gap-8">
         <div className="flex flex-row items-center gap-x-3">
           <div
             className={twMerge(
-              'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
             )}
           >
             {resolveBenefitIcon(selectedBenefit, 'inherit')}
           </div>
-          <span className="text-sm">{selectedBenefit.description}</span>
+          <span className="text-lg">{selectedBenefit.description}</span>
         </div>
 
         <div className="flex flex-col gap-y-4">
@@ -139,7 +139,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
         </Button>
       </div>
       <div className="flex flex-row items-start gap-x-8">
-        <div className="flex w-2/3 flex-col gap-y-8">
+        <div className="flex w-full flex-col gap-y-8">
           <ShadowBoxOnMd className="flex  flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">
               {benefits?.items?.map((benefit) => (

@@ -13,7 +13,7 @@ export const ContextView = () => {
   if (!content) return null
 
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-800 flex w-[420px] flex-col border-l border-gray-100 bg-white p-12">
+    <div className="dark:bg-polar-900 dark:border-polar-800 flex w-[640px] flex-col border-l border-gray-100 bg-white px-8 py-7">
       {content}
     </div>
   )

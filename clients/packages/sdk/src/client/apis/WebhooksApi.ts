@@ -21,6 +21,7 @@ import type {
   WebhookEndpoint,
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
+  WebhookEventRedeliver,
 } from '../models/index';
 
 export interface WebhooksApiCreateWebhookEndpointRequest {
@@ -28,6 +29,10 @@ export interface WebhooksApiCreateWebhookEndpointRequest {
 }
 
 export interface WebhooksApiDeleteWebhookEndpointRequest {
+    id: string;
+}
+
+export interface WebhooksApiEventRedeliverRequest {
     id: string;
 }
 
@@ -140,6 +145,47 @@ export class WebhooksApi extends runtime.BaseAPI {
      */
     async deleteWebhookEndpoint(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
         const response = await this.deleteWebhookEndpointRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Event Redeliver
+     */
+    async eventRedeliverRaw(requestParameters: WebhooksApiEventRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEventRedeliver>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling eventRedeliver().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/webhooks/events/{id}/redeliver`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Event Redeliver
+     */
+    async eventRedeliver(requestParameters: WebhooksApiEventRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEventRedeliver> {
+        const response = await this.eventRedeliverRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

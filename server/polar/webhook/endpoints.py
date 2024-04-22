@@ -11,6 +11,7 @@ from polar.kit.routing import APIRouter
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
+from polar.worker import enqueue_job
 
 from .schemas import (
     WebhookDelivery as WebhookDeliverySchema,
@@ -21,6 +22,7 @@ from .schemas import (
 from .schemas import (
     WebhookEndpointCreate,
     WebhookEndpointUpdate,
+    WebhookEventRedeliver,
 )
 from .service import webhook_service
 
@@ -209,3 +211,30 @@ async def search_webhook_deliveries(
         count,
         pagination,
     )
+
+
+@router.post(
+    "/events/{id}/redeliver",
+    response_model=WebhookEventRedeliver,
+    tags=[Tags.PUBLIC],
+)
+async def event_redeliver(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
+) -> WebhookEventRedeliver:
+    event = await webhook_service.get_event(session, id)
+    if not event:
+        raise ResourceNotFound()
+
+    endpoint = await webhook_service.get_endpoint(session, event.webhook_endpoint_id)
+    if not endpoint:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, endpoint):
+        raise Unauthorized()
+
+    enqueue_job("webhook_event.send", webhook_event_id=event.id)
+
+    return WebhookEventRedeliver(ok=True)

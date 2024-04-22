@@ -179,11 +179,12 @@ def configure_openapi() -> None:
 
     openapi_schema = get_openapi(
         title="Polar API",
+        summary="Polar HTTP and Webhooks API",
         version="0.1.0",
         description="""
 Welcome to the **Polar API** for [polar.sh](https://polar.sh).
 
-The Public API is currently a [work in progress](https://github.com/polarsource/polar/issues/834) and is in active development. 🚀
+This specification contains both the definitions of the Polar HTTP API and the Webhook API.
 
 #### Authentication
 

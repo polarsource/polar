@@ -126,7 +126,7 @@ const DashboardTopbar = ({
   return (
     <>
       <div className={className} ref={onRefChange}>
-        <div className="mx-auto flex w-full max-w-screen-xl flex-row flex-wrap items-center justify-start gap-x-4 gap-y-2 px-4 py-4 sm:px-6 md:gap-x-12 md:px-12 xl:gap-x-24">
+        <div className="mx-auto flex w-full max-w-screen-xl flex-row flex-wrap items-center justify-start gap-x-4 gap-y-2 px-4 py-4 sm:px-6 md:gap-x-12 md:px-8 xl:gap-x-24">
           <h4 className="dark:text-polar-100 whitespace-nowrap  text-lg font-medium ">
             {title ?? currentRoute?.title}
           </h4>

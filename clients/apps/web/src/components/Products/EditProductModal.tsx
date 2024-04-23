@@ -5,6 +5,7 @@ import { BenefitPublicInner } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
   Form,
   FormControl,
@@ -13,7 +14,6 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { Textarea } from 'polarkit/components/ui/textarea'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import ImageUpload from '../Form/ImageUpload'
@@ -117,7 +117,7 @@ export const EditProductModal = ({ product, hide }: EditProductModalProps) => {
                       <FormLabel>Description</FormLabel>
                     </div>
                     <FormControl>
-                      <Textarea
+                      <TextArea
                         className="resize-none rounded-2xl"
                         {...field}
                       />
@@ -187,7 +187,7 @@ export const EditProductModal = ({ product, hide }: EditProductModalProps) => {
           </Form>
         </div>
       </div>
-      <div className="flex flex-row items-center gap-2 border-t border-gray-100 bg-gray-50 p-8">
+      <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row items-center gap-2 border-t border-gray-100 bg-gray-50 p-8">
         <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
         <Button variant="secondary" onClick={hide}>
           Cancel

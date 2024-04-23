@@ -1,4 +1,5 @@
 import { getCentsInDollarString } from '@/utils/money'
+import { AttachMoneyOutlined } from '@mui/icons-material'
 import { ChangeEvent, FocusEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'
@@ -57,12 +58,12 @@ const MoneyInput = (props: Props) => {
       id={id}
       name={name}
       className={twMerge(
-        'block w-full px-4 pl-8 text-base',
+        'dark:placeholder:text-polar-500 block w-full px-4 pl-8 text-base placeholder:text-gray-400',
         props.className ?? '',
       )}
       onChange={onChanged}
       placeholder={getCentsInDollarString(props.placeholder)}
-      preSlot={<span className="text-lg">$</span>}
+      preSlot={<AttachMoneyOutlined className="text-lg" fontSize="inherit" />}
       postSlot={props.postSlot}
       {...other}
     />

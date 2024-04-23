@@ -8,6 +8,7 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    QueueName,
     enqueue_job,
     interval,
     task,
@@ -31,6 +32,7 @@ async def cron_org_members_schedule(ctx: JobContext) -> None:
             enqueue_job(
                 "github.organization.synchronize_members",
                 organization_id=org.id,
+                queue_name=QueueName.github_crawl,
             )
 
 
@@ -67,6 +69,7 @@ async def cron_org_metadata(ctx: JobContext) -> None:
             enqueue_job(
                 "github.organization.populate_org_metadata",
                 organization_id=org.id,
+                queue_name=QueueName.github_crawl,
             )
 
 

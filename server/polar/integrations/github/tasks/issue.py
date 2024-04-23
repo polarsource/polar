@@ -12,6 +12,7 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    QueueName,
     enqueue_job,
     interval,
     task,
@@ -181,6 +182,7 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
                     issue.id,
                     _job_id=f"github.issue.sync:{issue.id}",
                     _defer_by=random.randint(0, 60 * 5),
+                    queue_name=QueueName.github_crawl,
                 )
 
 
@@ -242,4 +244,5 @@ async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
                     issue.id,
                     _job_id=f"github.issue.sync.issue_references:{issue.id}",
                     _defer_by=random.randint(0, 60 * 5),
+                    queue_name=QueueName.github_crawl,
                 )

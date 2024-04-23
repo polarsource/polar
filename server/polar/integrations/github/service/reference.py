@@ -28,7 +28,7 @@ from polar.models.issue_reference import (
     ReferenceType,
 )
 from polar.postgres import AsyncSession, sql
-from polar.worker import enqueue_job
+from polar.worker import QueueName, enqueue_job
 
 from .. import client as github
 from .. import types
@@ -164,6 +164,7 @@ class GitHubIssueReferencesService:
                 enqueue_job(
                     "github.issue.sync.issue_references",
                     issue.id,
+                    queue_name=QueueName.github_crawl,
                     crawl_with_installation_id=installation_id,
                 )
 

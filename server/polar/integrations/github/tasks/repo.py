@@ -7,6 +7,7 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    QueueName,
     enqueue_job,
     task,
 )
@@ -83,6 +84,7 @@ async def sync_repository_pull_requests(
                 "github.repo.sync.issue_references",
                 organization.id,
                 repository.id,
+                queue_name=QueueName.github_crawl,
                 crawl_with_installation_id=crawl_with_installation_id,
             )
 

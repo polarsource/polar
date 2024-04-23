@@ -20,6 +20,7 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    QueueName,
     enqueue_job,
     task,
 )
@@ -531,7 +532,10 @@ async def handle_issue(
 
     # Trigger references sync job for entire repository
     enqueue_job(
-        "github.repo.sync.issue_references", issue.organization_id, issue.repository_id
+        "github.repo.sync.issue_references",
+        issue.organization_id,
+        issue.repository_id,
+        queue_name=QueueName.github_crawl,
     )
 
     return issue

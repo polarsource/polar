@@ -14,7 +14,7 @@ from polar.integrations.github.service import (
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Issue, Organization, Repository
 from polar.postgres import AsyncSession, create_async_engine, sql
-from polar.worker import enqueue_job
+from polar.worker import QueueName, enqueue_job
 from polar.worker import lifespan as worker_lifespan
 
 cli = typer.Typer()
@@ -69,7 +69,11 @@ async def do_delete_issues(session: AsyncSession, org: Organization) -> None:
 async def trigger_issue_sync(
     session: AsyncSession, org: Organization, repo: Repository, issue: Issue
 ) -> None:
-    enqueue_job("github.issue.sync", issue.id)
+    enqueue_job(
+        "github.issue.sync",
+        issue.id,
+        queue_name=QueueName.github_crawl,
+    )
     typer.echo(f"Triggered issue sync for {org.name}/{repo.name}/{issue.number}")
 
 
@@ -79,8 +83,18 @@ async def trigger_issues_sync(session: AsyncSession, org: Organization) -> None:
         raise RuntimeError(f"No repositories found for {org.name}")
 
     for repository in repositories:
-        enqueue_job("github.repo.sync.issues", org.id, repository.id)
-        enqueue_job("github.repo.sync.pull_requests", org.id, repository.id)
+        enqueue_job(
+            "github.repo.sync.issues",
+            org.id,
+            repository.id,
+            queue_name=QueueName.github_crawl,
+        )
+        enqueue_job(
+            "github.repo.sync.pull_requests",
+            org.id,
+            repository.id,
+            queue_name=QueueName.github_crawl,
+        )
         typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
 
 
@@ -92,12 +106,21 @@ async def trigger_issue_references_sync(
         raise RuntimeError(f"No repositories found for {org.name}")
 
     for repository in repositories:
-        enqueue_job("github.repo.sync.issue_references", org.id, repository.id)
+        enqueue_job(
+            "github.repo.sync.issue_references",
+            org.id,
+            repository.id,
+            queue_name=QueueName.github_crawl,
+        )
         typer.echo(f"Triggered issue references sync for {org.name}/{repository.name}")
 
 
 async def trigger_repositories_sync(session: AsyncSession, org: Organization) -> None:
-    enqueue_job("github.repo.sync.repositories", org.id)
+    enqueue_job(
+        "github.repo.sync.repositories",
+        org.id,
+        queue_name=QueueName.github_crawl,
+    )
     typer.echo(f"Triggered repo sync for {org.name}")
 
 
@@ -109,7 +132,11 @@ async def trigger_issue_dependencies_sync(
         raise RuntimeError(f"No issues found for {org.name}")
 
     for issue in issues:
-        enqueue_job("github.issue.sync.issue_dependencies", issue.id)
+        enqueue_job(
+            "github.issue.sync.issue_dependencies",
+            issue.id,
+            queue_name=QueueName.github_crawl,
+        )
         typer.echo(
             f"Triggered issue dependencies sync for {org.name}/{issue.repository.name}/#{issue.number}"
         )

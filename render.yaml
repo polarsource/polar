@@ -61,7 +61,7 @@ services:
 
   # Worker
   - type: worker
-    name: worker-image
+    name: worker-default
     env: image
     image:
       url: ghcr.io/polarsource/polar:latest
@@ -69,6 +69,58 @@ services:
         fromRegistryCreds:
           name: polarsource
     dockerCommand: "poetry run arq run_worker.WorkerSettings --custom-log-dict run_worker.silent_logger_config_dict"
+    region: ohio
+    plan: standard
+    numInstances: 1
+    autoDeploy: false # deploys are triggered by github actions
+    envVars:
+      # PostgreSQL
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: polar
+          property: user
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: polar
+          property: password
+      - key: POLAR_POSTGRES_DATABASE
+        fromDatabase:
+          name: polar
+          property: database
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: polar
+          property: port
+      - key: POLAR_POSTGRES_HOST
+        fromDatabase:
+          name: polar
+          property: host
+
+      # Redis
+      - key: POLAR_REDIS_HOST
+        fromService:
+          type: redis
+          name: polar-tasks
+          property: host
+      - key: POLAR_REDIS_PORT
+        fromService:
+          type: redis
+          name: polar-tasks
+          property: port
+
+      - fromGroup: github-production
+      - fromGroup: server-common
+      - fromGroup: server-stripe
+
+  - type: worker
+    name: worker-github
+    env: image
+    image:
+      url: ghcr.io/polarsource/polar:latest
+      creds:
+        fromRegistryCreds:
+          name: polarsource
+    dockerCommand: "poetry run arq run_worker.WorkerSettingsGitHubCrawl --custom-log-dict run_worker.silent_logger_config_dict"
     region: ohio
     plan: standard
     numInstances: 1
@@ -129,51 +181,50 @@ databases:
         description: mason_app_2
     plan: standard
 
-
 envVarGroups:
-- name: github-production
-  envVars:
-    - key: POLAR_GITHUB_APP_IDENTIFIER
-      sync: false
-    - key: POLAR_GITHUB_APP_PRIVATE_KEY
-      sync: false
-    - key: POLAR_GITHUB_APP_WEBHOOK_SECRET
-      sync: false
-    - key: POLAR_GITHUB_CLIENT_ID
-      sync: false
-    - key: POLAR_GITHUB_CLIENT_SECRET
-      sync: false
+  - name: github-production
+    envVars:
+      - key: POLAR_GITHUB_APP_IDENTIFIER
+        sync: false
+      - key: POLAR_GITHUB_APP_PRIVATE_KEY
+        sync: false
+      - key: POLAR_GITHUB_APP_WEBHOOK_SECRET
+        sync: false
+      - key: POLAR_GITHUB_CLIENT_ID
+        sync: false
+      - key: POLAR_GITHUB_CLIENT_SECRET
+        sync: false
 
-- name: server-common
-  envVars:
-  - key: POLAR_GITHUB_BADGE_EMBED
-    value: 1
-  - key: POLAR_ENV
-    value: production
-  - key: POLAR_LOG_LEVEL
-    value: INFO
-  - key: POLAR_TESTING
-    value: 0
-  - key: POLAR_DEBUG
-    value: 0
-  - key: POLAR_FRONTEND_BASE_URL
-    value: "https://polar.sh"
-  - key: POLAR_SENTRY_DSN
-    sync: false
-  - key: POLAR_EMAIL_SENDER
-    value: "sendgrid"
-  - key: POLAR_SENDGRID_API_KEY
-    sync: false
-  - key: POLAR_BASE_URL
-    value: "https://api.polar.sh/api/v1"
-  - key: POLAR_DISCORD_WEBHOOK_URL
-    sync: false
-  - key: POLAR_POSTHOG_PROJECT_API_KEY
-    sync: false
+  - name: server-common
+    envVars:
+      - key: POLAR_GITHUB_BADGE_EMBED
+        value: 1
+      - key: POLAR_ENV
+        value: production
+      - key: POLAR_LOG_LEVEL
+        value: INFO
+      - key: POLAR_TESTING
+        value: 0
+      - key: POLAR_DEBUG
+        value: 0
+      - key: POLAR_FRONTEND_BASE_URL
+        value: "https://polar.sh"
+      - key: POLAR_SENTRY_DSN
+        sync: false
+      - key: POLAR_EMAIL_SENDER
+        value: "sendgrid"
+      - key: POLAR_SENDGRID_API_KEY
+        sync: false
+      - key: POLAR_BASE_URL
+        value: "https://api.polar.sh/api/v1"
+      - key: POLAR_DISCORD_WEBHOOK_URL
+        sync: false
+      - key: POLAR_POSTHOG_PROJECT_API_KEY
+        sync: false
 
-- name: server-stripe
-  envVars:
-  - key: POLAR_STRIPE_SECRET_KEY
-    sync: false
-  - key: POLAR_STRIPE_WEBHOOK_SECRET
-    sync: false
+  - name: server-stripe
+    envVars:
+      - key: POLAR_STRIPE_SECRET_KEY
+        sync: false
+      - key: POLAR_STRIPE_WEBHOOK_SECRET
+        sync: false

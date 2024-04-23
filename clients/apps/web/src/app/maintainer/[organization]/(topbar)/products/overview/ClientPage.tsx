@@ -39,7 +39,7 @@ export default function ClientPage() {
     } else {
       hideEditProductModal()
     }
-  }, [searchParams, showEditProductModal])
+  }, [searchParams, showEditProductModal, hideEditProductModal])
 
   const { data: product } = useProduct(searchParams.get('product') ?? undefined)
   const products = useProducts(org?.name)

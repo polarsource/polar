@@ -9,18 +9,12 @@ from authlib.oauth2.rfc6749.errors import (
 from authlib.oauth2.rfc6749.grants import (
     AuthorizationCodeGrant as _AuthorizationCodeGrant,
 )
-from authlib.oauth2.rfc6749.grants import (
-    RefreshTokenGrant as _RefreshTokenGrant,
-)
+from authlib.oauth2.rfc6749.grants import RefreshTokenGrant as _RefreshTokenGrant
 from authlib.oauth2.rfc6749.requests import OAuth2Request
 from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
-from authlib.oidc.core.grants import (
-    OpenIDCode as _OpenIDCode,
-)
-from authlib.oidc.core.grants import (
-    OpenIDToken as _OpenIDToken,
-)
+from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
+from authlib.oidc.core.grants import OpenIDToken as _OpenIDToken
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
@@ -38,7 +32,7 @@ from polar.models import (
 from .constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
 from .requests import StarletteOAuth2Request
 from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
-from .sub_type import SubType
+from .sub_type import SubType, SubTypeValue
 from .userinfo import UserInfo, generate_user_info
 
 if typing.TYPE_CHECKING:
@@ -104,12 +98,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
             code_challenge=code_challenge,
             code_challenge_method=code_challenge_method,
         )
-        if self.sub_type == SubType.user:
-            authorization_code.user_id = self.sub.id
-        elif self.sub_type == SubType.organization:
-            authorization_code.organization_id = self.sub.id
-        else:
-            raise NotImplementedError()
+        authorization_code.sub = self.sub
 
         self.server.session.add(authorization_code)
         self.server.session.flush()
@@ -139,10 +128,8 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
 
     def authenticate_user(
         self, authorization_code: OAuth2AuthorizationCode
-    ) -> User | None:
-        statement = select(User).where(User.id == authorization_code.user_id)
-        result = self.server.session.execute(statement)
-        return result.unique().scalar_one_or_none()
+    ) -> SubTypeValue | None:
+        return authorization_code.get_sub_type_value()
 
 
 class CodeChallenge(_CodeChallenge):
@@ -160,7 +147,7 @@ class OpenIDCode(_OpenIDCode):
     def get_jwt_config(self, grant: AuthorizationCodeGrant) -> dict[str, typing.Any]:
         return JWT_CONFIG
 
-    def generate_user_info(self, user: User, scope: str) -> UserInfo:
+    def generate_user_info(self, user: SubTypeValue, scope: str) -> UserInfo:
         return generate_user_info(user, scope)
 
 
@@ -168,7 +155,7 @@ class OpenIDToken(_OpenIDToken):
     def get_jwt_config(self, grant: AuthorizationCodeGrant) -> dict[str, typing.Any]:
         return JWT_CONFIG
 
-    def generate_user_info(self, user: User, scope: str) -> UserInfo:
+    def generate_user_info(self, user: SubTypeValue, scope: str) -> UserInfo:
         return generate_user_info(user, scope)
 
 
@@ -298,6 +285,7 @@ class RefreshTokenGrant(_RefreshTokenGrant):
     server: "AuthorizationServer"
 
     INCLUDE_NEW_REFRESH_TOKEN = True
+    TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
 
     def authenticate_refresh_token(self, refresh_token: str) -> OAuth2Token | None:
         refresh_token_hash = get_token_hash(refresh_token, secret=settings.SECRET)
@@ -310,10 +298,8 @@ class RefreshTokenGrant(_RefreshTokenGrant):
             return token
         return None
 
-    def authenticate_user(self, refresh_token: OAuth2Token) -> User | None:
-        statement = select(User).where(User.id == refresh_token.user_id)
-        result = self.server.session.execute(statement)
-        return result.unique().scalar_one_or_none()
+    def authenticate_user(self, refresh_token: OAuth2Token) -> SubTypeValue | None:
+        return refresh_token.get_sub_type_value()
 
     def revoke_old_credential(self, refresh_token: OAuth2Token) -> None:
         refresh_token.refresh_token_revoked_at = int(time.time())  # pyright: ignore

@@ -1,5 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
@@ -95,7 +96,7 @@ export const useMaintainerRoutes = (
     return maintainerRoutesList(org)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
-  }, [org, path])
+  }, [org, path, allowAll])
 
   return r
 }
@@ -207,7 +208,9 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/products`)
     },
-    if: true,
+    get if() {
+      return isFeatureEnabled('products')
+    },
   },
   {
     id: 'donations',

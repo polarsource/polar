@@ -52,7 +52,7 @@ export default function ClientPage() {
           <AddOutlined className="h-4 w-4" />
         </Button>
       </div>
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {products.data?.items.map((product) => (
           <ProductTile key={product.id} product={product} />
         ))}

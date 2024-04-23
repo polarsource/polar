@@ -29,7 +29,7 @@ Get a stack ranked & funded backlog based on what drives the most impact across 
 * Reward contributors once issues are completed a percentage of received funding
   (more below)
 
-**Polar by example:** [tRPC](https://polar.sh/trpc?tab=issues), [SerenityOS](https://polar.sh/serenityos?tab=issues), [Sindre Sorhus](https://polar.sh/sindresorhus?tab=issues), [Encode](https://polar.sh/encode?tab=issues) and hundreds more.
+**Polar by example:** [tRPC](https://polar.sh/trpc/issues), [SerenityOS](https://polar.sh/serenityos/issues), [Sindre Sorhus](https://polar.sh/sindresorhus/issues), [Encode](https://polar.sh/encode/issues) and hundreds more.
 
 ## Reward Contributors
 

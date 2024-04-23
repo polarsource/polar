@@ -15,15 +15,15 @@ const BenefitRow = ({ benefit, checked, onCheckedChange }: BenefitRowProps) => {
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center justify-between rounded-xl bg-gray-100 px-4 py-3',
-        checked && 'bg-blue-50',
+        'dark:bg-polar-700 flex flex-row items-center justify-between rounded-xl bg-gray-100 px-4 py-3',
+        checked && 'bg-blue-50 dark:bg-blue-950',
       )}
     >
       <div className="flex flex-row items-center gap-x-4">
         <div
           className={twMerge(
             checked
-              ? 'text-blue-500 dark:text-blue-400'
+              ? 'text-blue-500 dark:text-blue-300'
               : 'dark:text-polar-500 text-gray-500',
           )}
         >
@@ -33,7 +33,7 @@ const BenefitRow = ({ benefit, checked, onCheckedChange }: BenefitRowProps) => {
           className={twMerge(
             'text-sm font-medium',
             checked
-              ? 'text-blue-500 dark:text-blue-400'
+              ? 'text-blue-500 dark:text-blue-300'
               : 'dark:text-polar-500 text-gray-400',
           )}
         >

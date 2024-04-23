@@ -39,7 +39,7 @@ export const useProduct = (id?: string) =>
   useQuery({
     queryKey: ['products', 'id', id],
     queryFn: () => {
-      return new Promise((resolve) => {
+      return new Promise<Product | undefined>((resolve) => {
         resolve(products.find((product) => product.id === id))
       })
     },
@@ -69,6 +69,40 @@ export const useCreateProduct = (orgName?: string) =>
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['products', 'organization', orgName],
+      })
+    },
+  })
+
+export const useUpdateProduct = (orgName?: string) =>
+  useMutation({
+    mutationFn: ({
+      id,
+      productUpdate,
+    }: {
+      id: string
+      productUpdate: Omit<Product, 'id' | 'created_at' | 'updated_at'>
+    }) => {
+      return new Promise((resolve) => {
+        products = [
+          ...products.filter((product) => product.id !== id),
+          {
+            id: (Math.random() * 1000).toString(),
+            ...productUpdate,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]
+
+        resolve(productUpdate)
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['products', 'organization', orgName],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['products', 'id', _variables.id],
       })
     },
   })

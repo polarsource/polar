@@ -4,6 +4,7 @@ import functools
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import datetime
+from enum import Enum
 from typing import Any, ParamSpec, TypeAlias, TypedDict, TypeVar, cast
 
 import logfire
@@ -60,9 +61,15 @@ class PolarWorkerContext(BaseModel):
         return ExecutionContext(is_during_installation=self.is_during_installation)
 
 
+class QueueName(Enum):
+    default = "arq:queue"
+    github_crawl = "arq:queue:github_crawl"
+
+
 class WorkerSettings:
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
+    queue_name: str = QueueName.default.value
 
     redis_settings = RedisSettings().from_dsn(settings.redis_url)
 
@@ -119,6 +126,12 @@ class WorkerSettings:
         exit_stack.close()
 
 
+class WorkerSettingsGitHubCrawl(WorkerSettings):
+    queue_name: str = QueueName.github_crawl.value
+    functions: list[Function] = []
+    cron_jobs: list[CronJob] = []
+
+
 @contextlib.asynccontextmanager
 async def lifespan() -> AsyncIterator[ArqRedis]:
     arq_pool = await arq_create_pool(WorkerSettings.redis_settings)
@@ -128,7 +141,12 @@ async def lifespan() -> AsyncIterator[ArqRedis]:
         await arq_pool.close(True)
 
 
-def enqueue_job(name: str, *args: Any, **kwargs: Any) -> None:
+def enqueue_job(
+    name: str,
+    *args: Any,
+    queue_name: QueueName = QueueName.default,
+    **kwargs: Any,
+) -> None:
     ctx = ExecutionContext.current()
     polar_context = PolarWorkerContext(
         is_during_installation=ctx.is_during_installation,
@@ -146,6 +164,7 @@ def enqueue_job(name: str, *args: Any, **kwargs: Any) -> None:
         "polar_context": polar_context,
         **kwargs,
         "_job_id": _job_id,
+        "_queue_name": queue_name.value,
     }
 
     _jobs_to_enqueue_list = _jobs_to_enqueue.get([])
@@ -233,7 +252,10 @@ def task(
             keep_result_forever=keep_result_forever,
             max_tries=max_tries,
         )
+
+        # all tasks are registered on both workers
         WorkerSettings.functions.append(new_task)
+        WorkerSettingsGitHubCrawl.functions.append(new_task)
 
         return wrapped
 
@@ -266,6 +288,8 @@ def interval(
             second=second,
             run_at_startup=False,
         )
+
+        # All crontabs are running on the "default" worker
         WorkerSettings.cron_jobs.append(new_cron)
 
         return wrapped
@@ -288,10 +312,12 @@ async def AsyncSessionMaker(ctx: JobContext) -> AsyncIterator[AsyncSession]:
 
 __all__ = [
     "WorkerSettings",
+    "WorkerSettingsGitHubCrawl",
     "task",
     "lifespan",
     "enqueue_job",
     "JobContext",
     "AsyncSessionMaker",
     "ArqRedis",
+    "QueueName",
 ]

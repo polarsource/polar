@@ -3,7 +3,7 @@ import structlog
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
-from polar.worker import enqueue_job
+from polar.worker import QueueName, enqueue_job
 
 from .badge import GithubBadge
 
@@ -36,8 +36,16 @@ async def schedule_embed_badge_task(
 async def schedule_fetch_references_and_dependencies(
     hook: IssueHook,
 ) -> None:
-    enqueue_job("github.issue.sync.issue_references", hook.issue.id)
-    enqueue_job("github.issue.sync.issue_dependencies", hook.issue.id)
+    enqueue_job(
+        "github.issue.sync.issue_references",
+        hook.issue.id,
+        queue_name=QueueName.github_crawl,
+    )
+    enqueue_job(
+        "github.issue.sync.issue_dependencies",
+        hook.issue.id,
+        queue_name=QueueName.github_crawl,
+    )
 
 
 issue_upserted.add(schedule_fetch_references_and_dependencies)

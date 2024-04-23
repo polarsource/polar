@@ -4,7 +4,7 @@ from polar.issue.service import issue as issue_service
 from polar.organization.service import organization as organization_service
 from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.repository.service import repository as repository_service
-from polar.worker import enqueue_job
+from polar.worker import QueueName, enqueue_job
 
 
 async def pull_request_find_reverse_references(
@@ -53,7 +53,11 @@ async def pull_request_find_reverse_references(
             continue
 
         # Schedule sync for this issue
-        enqueue_job("github.issue.sync.issue_references", linked_issue.id)
+        enqueue_job(
+            "github.issue.sync.issue_references",
+            linked_issue.id,
+            queue_name=QueueName.github_crawl,
+        )
 
 
 pull_request_upserted.add(pull_request_find_reverse_references)

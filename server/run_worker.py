@@ -12,4 +12,4 @@ configure_logging(logfire=True)
 
 from polar.receivers import *  # noqa
 from polar.tasks import *  # noqa
-from polar.worker import WorkerSettings  # noqa
+from polar.worker import WorkerSettings, WorkerSettingsGitHubCrawl  # noqa

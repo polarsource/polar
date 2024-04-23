@@ -1,5 +1,5 @@
 import { queryClient } from '@/utils/api'
-import { BenefitPublicInner, Platforms } from '@polar-sh/sdk'
+import { BenefitPublicInner } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -16,11 +16,7 @@ export interface Product {
 
 let products: Product[] = []
 
-export const useProducts = (
-  orgName?: string,
-  limit = 30,
-  platform: Platforms = Platforms.GITHUB,
-) =>
+export const useProducts = (orgName?: string) =>
   useQuery({
     queryKey: ['products', 'organization', orgName],
     queryFn: () => {

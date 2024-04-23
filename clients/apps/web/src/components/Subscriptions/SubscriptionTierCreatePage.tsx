@@ -213,7 +213,12 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
               onRemoveBenefit={onRemoveBenefit}
             />
             <div className="flex flex-row gap-2">
-              <Button onClick={handleSubmit(onSubmit)}>Save Tier</Button>
+              <Button
+                onClick={handleSubmit(onSubmit)}
+                loading={createSubscriptionTier.isPending}
+              >
+                Save Tier
+              </Button>
               <Button
                 type="button"
                 variant="ghost"

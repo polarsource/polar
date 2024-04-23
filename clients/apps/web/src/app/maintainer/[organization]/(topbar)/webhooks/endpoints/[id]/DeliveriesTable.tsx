@@ -206,6 +206,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
           onPaginationChange={setPagination}
           sorting={sorting}
           onSortingChange={setSorting}
+          getRowId={(row) => row.id}
           getCellColSpan={(cell) => {
             if (cell.row.original.isSubRow) {
               if (cell.column.id === 'id') {

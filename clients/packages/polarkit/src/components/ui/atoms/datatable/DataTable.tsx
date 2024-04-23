@@ -5,6 +5,7 @@ import {
   ColumnDef,
   OnChangeFn,
   PaginationState,
+  Row,
   SortingState,
   flexRender,
   getCoreRowModel,
@@ -44,6 +45,7 @@ interface DataTableProps<TData, TValue> {
   className?: string
   isLoading: boolean | ReactQueryLoading
   getCellColSpan?: (cell: Cell<TData, unknown>) => number
+  getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
 }
 
 export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
@@ -73,6 +75,7 @@ export function DataTable<TData, TValue>({
   className,
   isLoading,
   getCellColSpan,
+  getRowId,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -85,6 +88,8 @@ export function DataTable<TData, TValue>({
     onSortingChange,
     getSubRows,
     getExpandedRowModel: getExpandedRowModel(),
+    getRowId,
+
     state: {
       pagination,
       sorting,

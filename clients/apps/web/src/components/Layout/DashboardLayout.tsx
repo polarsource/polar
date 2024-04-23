@@ -114,28 +114,30 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
   const marginTop = layoutContext.isMD ? layoutContext.topbarHeight || 79 : 0
 
   return (
-    <div className="relative flex h-full w-full flex-col md:flex-row">
-      <MobileNav />
-      <div className="hidden md:flex">
-        <DashboardSidebar />
-      </div>
-      <div
-        className={twMerge(
-          'dark:bg-polar-950 relative flex h-full w-full translate-x-0 flex-row overflow-hidden bg-gray-50 pt-8 md:pt-0',
-          props.className,
-        )}
-      >
-        {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-        <main
-          className="relative w-full md:overflow-auto"
-          style={{
-            marginTop,
-          }}
+    <>
+      <div className="relative flex h-full w-full flex-col md:flex-row">
+        <MobileNav />
+        <div className="hidden md:flex">
+          <DashboardSidebar />
+        </div>
+        <div
+          className={twMerge(
+            'dark:bg-polar-950 relative flex h-full w-full translate-x-0 flex-row overflow-hidden bg-gray-50 pt-8 md:pt-0',
+            props.className,
+          )}
         >
-          <Suspense>{props.children}</Suspense>
-        </main>
+          {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
+          <main
+            className="relative w-full md:overflow-auto"
+            style={{
+              marginTop,
+            }}
+          >
+            <Suspense>{props.children}</Suspense>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

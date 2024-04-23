@@ -1,5 +1,7 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useBenefits } from '@/hooks/queries'
+import { useCreateProduct } from '@/hooks/queries/products'
+import { BenefitPublicInner } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -23,7 +25,7 @@ interface CreateProductForm {
   description: string
   media?: string
   price: number
-  benefitIds: string[]
+  benefits: BenefitPublicInner[]
 }
 
 export interface CreateProductModalProps {
@@ -31,7 +33,7 @@ export interface CreateProductModalProps {
 }
 
 export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
-  const [benefitIds, setBenefitIds] = useState<string[]>([])
+  const [selectedBenefits, setBenefits] = useState<BenefitPublicInner[]>([])
   const { org } = useCurrentOrgAndRepoFromURL()
   const { data } = useBenefits(org?.name, 999)
 
@@ -41,12 +43,19 @@ export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
 
   const { handleSubmit } = form
 
+  const { mutate: createProductMutation } = useCreateProduct(org?.name)
+
   const onSubmit = useCallback(
     async (createProductParams: CreateProductForm) => {
       // Execute the mutation
-      console.log(createProductParams)
+      await createProductMutation({
+        ...createProductParams,
+        benefits: selectedBenefits,
+      })
+
+      hide()
     },
-    [],
+    [createProductMutation, hide, selectedBenefits],
   )
 
   if (!org) {
@@ -139,9 +148,6 @@ export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
               <FormField
                 control={form.control}
                 name="media"
-                rules={{
-                  required: 'This field is required',
-                }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col gap-2">
                     <div className="flex flex-row items-center justify-between">
@@ -160,18 +166,14 @@ export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
               />
               <ProductBenefitsSelector
                 organization={org}
-                selectedBenefits={benefits.filter((b) =>
-                  benefitIds.includes(b.id),
-                )}
+                selectedBenefits={selectedBenefits}
                 benefits={benefits}
                 onSelectBenefit={(benefit) =>
-                  setBenefitIds((benefitIds) => [
-                    ...new Set([...benefitIds, benefit.id]).values(),
-                  ])
+                  setBenefits((benefits) => [...benefits, benefit])
                 }
                 onRemoveBenefit={(benefit) => {
-                  setBenefitIds((benefitIds) =>
-                    benefitIds.filter((b) => b !== benefit.id),
+                  setBenefits((benefits) =>
+                    benefits.filter((b) => b.id !== benefit.id),
                   )
                 }}
               />
@@ -180,7 +182,7 @@ export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
         </div>
       </div>
       <div className="flex flex-row items-center gap-2 border-t border-gray-100 bg-gray-50 p-8">
-        <Button>Create Product</Button>
+        <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
         <Button variant="secondary" onClick={hide}>
           Cancel
         </Button>

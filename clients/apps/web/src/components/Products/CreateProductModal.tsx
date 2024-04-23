@@ -70,9 +70,9 @@ export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
             <h3>Create Product</h3>
           </InlineModalHeader>
           <p className="dark:text-polar-500 px-8 text-sm leading-relaxed text-gray-500">
-            Products are benefits that can be purchased at a fixed price.
-            Configure the product metadata and select the benefits you want to
-            grant below.
+            Products are benefits which can be purchased at a fixed price.
+            Configure the product metadata and select benefits you want to grant
+            below.
           </p>
         </div>
         <div className="flex flex-col p-8">

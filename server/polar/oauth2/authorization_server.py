@@ -5,6 +5,7 @@ import typing
 import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
+from authlib.oauth2.rfc6749.errors import UnsupportedResponseTypeError
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
 from authlib.oauth2.rfc7591 import (
@@ -28,9 +29,10 @@ from .constants import (
     ACCESS_TOKEN_PREFIX,
     CLIENT_ID_PREFIX,
     CLIENT_SECRET_PREFIX,
+    ISSUER,
     REFRESH_TOKEN_PREFIX,
 )
-from .grants import CodeChallenge, register_grants
+from .grants import AuthorizationCodeGrant, CodeChallenge, register_grants
 from .metadata import get_server_metadata
 from .requests import StarletteJsonRequest, StarletteOAuth2Request
 from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
@@ -193,21 +195,10 @@ class IntrospectionEndpoint(_QueryTokenMixin, _IntrospectionEndpoint):
     def check_permission(
         self, token: OAuth2Token, client: OAuth2Client, request: StarletteOAuth2Request
     ) -> bool:
-        return token.check_client(client)
+        return token.check_client(client)  # pyright: ignore
 
     def introspect_token(self, token: OAuth2Token) -> dict[str, typing.Any]:
-        return {
-            "active": True,
-            "client_id": token.client_id,
-            "token_type": token.token_type,
-            "username": token.user.username,
-            "scope": token.get_scope(),
-            "sub": str(token.user_id),
-            "aud": token.client_id,
-            "iss": "https://server.example.com/",
-            "exp": token.get_expires_at(),
-            "iat": token.issued_at,
-        }
+        return token.get_introspection_data(ISSUER)
 
 
 class AuthorizationServer(_AuthorizationServer):
@@ -326,20 +317,41 @@ class AuthorizationServer(_AuthorizationServer):
         grant_user: User | None = None,
         save_consent: bool = False,
     ) -> typing.Any:
-        response: Response = super().create_authorization_response(request, grant_user)
+        if not isinstance(request, StarletteOAuth2Request):
+            oauth2_request = self.create_oauth2_request(request)
+        else:
+            oauth2_request = request
 
-        if save_consent and grant_user is not None and response.status_code < 400:
-            self._save_consent(request, grant_user)
+        try:
+            grant: AuthorizationCodeGrant = self.get_authorization_grant(oauth2_request)
+        except UnsupportedResponseTypeError as error:
+            return self.handle_error_response(oauth2_request, error)
 
-        return response
+        try:
+            redirect_uri = grant.validate_authorization_request()
+            status_code, body, headers = grant.create_authorization_response(
+                redirect_uri, grant_user
+            )
+        except OAuth2Error as error:
+            return self.handle_error_response(oauth2_request, error)
 
-    def _save_consent(self, request: Request, grant_user: User) -> None:
-        oauth2_request = self.create_oauth2_request(request)
+        if save_consent:
+            self._save_consent(oauth2_request, grant)
+
+        return self.handle_response(status_code, body, headers)
+
+    def _save_consent(
+        self, request: StarletteOAuth2Request, grant: AuthorizationCodeGrant
+    ) -> None:
+        assert grant.sub_type is not None
+        assert grant.sub is not None
+        assert grant.client is not None
         oauth2_grant_service.create_or_update_grant(
             self.session,
-            user_id=grant_user.id,
-            client_id=oauth2_request.client_id,
-            scope=oauth2_request.scope,
+            sub_type=grant.sub_type,
+            sub_id=grant.sub.id,
+            client_id=grant.client.client_id,
+            scope=request.scope,
         )
 
     @property

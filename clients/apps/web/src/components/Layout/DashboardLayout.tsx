@@ -19,7 +19,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ContextView, ContextViewProvider } from '../Common/ContextView'
+import { ContextViewProvider } from '../Common/ContextView'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
@@ -143,7 +143,6 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
             </Suspense>
           </main>
         </div>
-        <ContextView />
       </div>
     </ContextViewProvider>
   )

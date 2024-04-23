@@ -8,6 +8,7 @@ import {
   Bolt,
   BoltOutlined,
   CropFreeOutlined,
+  DiamondOutlined,
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
@@ -200,7 +201,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
   {
     id: 'products',
     title: 'Products',
-    icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
+    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     link: `/maintainer/${org.name}/products/overview`,
     checkIsActive: (currentRoute: string): boolean => {

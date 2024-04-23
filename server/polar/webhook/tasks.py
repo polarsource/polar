@@ -1,10 +1,13 @@
 import base64
+import socket
 from collections.abc import Mapping
+from urllib.parse import urlparse
 from uuid import UUID
 
 import httpx
 import structlog
 from arq import Retry
+from netaddr import IPAddress
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.kit.db.postgres import AsyncSession
@@ -38,6 +41,46 @@ async def webhook_event_send(
         )
 
 
+def allowed_url(url: str) -> bool:
+    """
+    Webhooks can only be sent over HTTPS, to global IPs.
+    Webhooks can not be sent to loopback or "internal" or "reserved" ranges
+    """
+
+    parsed = urlparse(url)
+
+    if parsed.scheme != "https":
+        return False
+
+    try:
+        info = socket.getaddrinfo(
+            parsed.hostname,
+            0,
+            # 0  # port, required
+        )
+    except:  # noqa: E722
+        return False
+
+    # must resolve to at least one address
+    if len(info) == 0:
+        return False
+
+    for family, type, proto, canonname, sockaddr in info:
+        if (
+            family != socket.AddressFamily.AF_INET
+            and family != socket.AddressFamily.AF_INET6
+        ):
+            return False
+
+        ip = sockaddr[0]
+
+        ipp = IPAddress(ip)
+        if not ipp.is_global():
+            return False
+
+    return True
+
+
 async def _webhook_event_send(
     session: AsyncSession,
     *,
@@ -48,7 +91,10 @@ async def _webhook_event_send(
     if not event:
         raise Exception(f"webhook event not found id={webhook_event_id}")
 
-    # TODO: validate URL
+    if not allowed_url(event.webhook_endpoint.url):
+        raise Exception(
+            f"invalid webhook url id={webhook_event_id} url={event.webhook_endpoint.url}"
+        )
 
     ts = utc_now()
 
@@ -89,6 +135,9 @@ async def _webhook_event_send(
         succeeded=succeeded,
     )
     session.add(delivery)
+
+    # save delivery even if job fails
+    await session.commit()
 
     if not succeeded and ctx["job_try"] >= MAX_RETRIES:
         # Permanent failure

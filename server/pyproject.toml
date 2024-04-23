@@ -47,6 +47,7 @@ opentelemetry-instrumentation-fastapi = "^0.45b0"
 opentelemetry-instrumentation-httpx = "^0.45b0"
 opentelemetry-instrumentation-sqlalchemy = "^0.45b0"
 opentelemetry-instrumentation-redis = "^0.45b0"
+netaddr = "^1.2.1"
 
 [tool.poetry.group.backoffice]
 optional = true

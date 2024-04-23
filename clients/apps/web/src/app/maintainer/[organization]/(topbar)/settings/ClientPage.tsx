@@ -10,6 +10,7 @@ import { api } from '@/utils/api'
 import { getCentsInDollarString } from '@/utils/money'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { CreditBalance, Organization } from '@polar-sh/sdk'
+import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -56,6 +57,18 @@ export default function ClientPage() {
             description={`Send a incoming webhook to Discord or Slack when ${org.name} receives a new pledge`}
           />
           <WebhookNotificationSettings org={org} />
+        </Section>
+        <Section>
+          <SectionDescription
+            title="Webhooks"
+            description={`Configure and send webhooks to custom URLs.`}
+          />
+
+          <div className="flex w-full flex-col overflow-hidden">
+            <Link href={`/maintainer/${org.name}/webhooks`}>
+              <Button asChild>Go to webhook settings</Button>
+            </Link>
+          </div>
         </Section>
       </div>
     </DashboardBody>

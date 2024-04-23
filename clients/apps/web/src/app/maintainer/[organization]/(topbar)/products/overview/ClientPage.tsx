@@ -4,16 +4,22 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { CreateProductModal } from '@/components/Products/CreateProductModal'
+import { EditProductModal } from '@/components/Products/EditProductModal'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { Product, useProducts } from '@/hooks/queries/products'
+import { Product, useProduct, useProducts } from '@/hooks/queries/products'
 import { getCentsInDollarString } from '@/utils/money'
 import { AddOutlined, PanoramaOutlined } from '@mui/icons-material'
 import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { useEffect } from 'react'
 
 export default function ClientPage() {
   const { org } = useCurrentOrgAndRepoFromURL()
+  const searchParams = useSearchParams()
+  const router = useRouter()
 
   const {
     isShown: isCreateProductModalShown,
@@ -21,6 +27,21 @@ export default function ClientPage() {
     show: showCreateProductModal,
   } = useModal()
 
+  const {
+    isShown: isEditProductModalShown,
+    hide: hideEditProductModal,
+    show: showEditProductModal,
+  } = useModal()
+
+  useEffect(() => {
+    if (searchParams.has('product')) {
+      showEditProductModal()
+    } else {
+      hideEditProductModal()
+    }
+  }, [searchParams, showEditProductModal])
+
+  const { data: product } = useProduct(searchParams.get('product') ?? undefined)
   const products = useProducts(org?.name)
 
   return (
@@ -41,6 +62,24 @@ export default function ClientPage() {
         hide={hideCreateProductModal}
         modalContent={<CreateProductModal hide={hideCreateProductModal} />}
       />
+      <InlineModal
+        isShown={isEditProductModalShown}
+        hide={() => {
+          router.replace(`/maintainer/${org?.name}/products/overview`)
+        }}
+        modalContent={
+          product ? (
+            <EditProductModal
+              product={product}
+              hide={() => {
+                router.replace(`/maintainer/${org?.name}/products/overview`)
+              }}
+            />
+          ) : (
+            <></>
+          )
+        }
+      />
     </DashboardBody>
   )
 }
@@ -50,8 +89,13 @@ interface ProductTileProps {
 }
 
 const ProductTile = ({ product }: ProductTileProps) => {
+  const { org } = useCurrentOrgAndRepoFromURL()
+
   return (
-    <div className="flex w-full flex-col gap-8 rounded-3xl bg-white p-6 shadow-sm">
+    <Link
+      className="flex w-full flex-col gap-8 rounded-3xl bg-white p-6 shadow-sm transition-colors hover:bg-gray-50"
+      href={`/maintainer/${org?.name}/products/overview?product=${product.id}`}
+    >
       {product.media ? (
         <Image
           className="aspect-square w-full rounded-2xl bg-gray-100 object-cover"
@@ -83,6 +127,6 @@ const ProductTile = ({ product }: ProductTileProps) => {
             : `${product.benefits.length} Benefits`}{' '}
         </Pill>
       </div>
-    </div>
+    </Link>
   )
 }

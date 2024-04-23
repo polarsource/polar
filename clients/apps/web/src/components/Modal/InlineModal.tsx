@@ -80,11 +80,11 @@ export const InlineModalHeader = (props: {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 dark:text-polar-100 flex w-full items-center justify-between border-b px-5 py-3',
+        'flex w-full items-center justify-between px-8 py-6',
         props.className,
       )}
     >
-      <div>{props.children}</div>
+      <div className="text-lg">{props.children}</div>
       <CloseButton hide={props.hide} />
     </div>
   )

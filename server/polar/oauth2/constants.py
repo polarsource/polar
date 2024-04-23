@@ -1,3 +1,5 @@
+from polar.config import settings
+
 CLIENT_ID_PREFIX = "polar_ci_"
 CLIENT_SECRET_PREFIX = "polar_cs_"
 AUTHORIZATION_CODE_PREFIX = "polar_ac_"
@@ -9,3 +11,10 @@ SERVICE_DOCUMENTATION = "https://docs.polar.sh"
 SUBJECT_TYPES_SUPPORTED = ["public"]
 ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED = ["RS256"]
 CLAIMS_SUPPORTED = ["sub", "name", "email", "email_verified"]
+
+JWT_CONFIG = {
+    "key": settings.JWKS.find_by_kid(settings.CURRENT_JWK_KID),
+    "alg": "RS256",
+    "iss": ISSUER,
+    "exp": 3600,
+}

@@ -5,6 +5,8 @@ from pydantic import UUID4, BeforeValidator
 from polar.authz.scope import Scope, scope_to_list
 from polar.kit.schemas import Schema, TimestampedSchema
 
+from .sub_type import SubType
+
 
 class OAuth2ClientMetadata(Schema):
     client_name: str | None = None
@@ -25,4 +27,5 @@ Scopes = Annotated[list[Scope], BeforeValidator(scope_to_list)]
 
 class AuthorizeResponse(Schema):
     client: OAuth2Client
+    sub_type: SubType
     scopes: Scopes

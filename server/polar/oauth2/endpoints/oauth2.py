@@ -15,7 +15,7 @@ from ..authorization_server import (
     RevocationEndpoint,
 )
 from ..dependencies import get_authorization_server, get_token
-from ..grants import BaseGrant
+from ..grants import AuthorizationCodeGrant
 from ..schemas import AuthorizeResponse
 from ..userinfo import UserInfo, generate_user_info
 
@@ -60,7 +60,7 @@ async def oauth2_authorize(
 ) -> AuthorizeResponse:
     user = auth.user
     await request.form()
-    grant: BaseGrant = authorization_server.get_consent_grant(
+    grant: AuthorizationCodeGrant = authorization_server.get_consent_grant(
         request=request, end_user=user
     )
 
@@ -72,7 +72,11 @@ async def oauth2_authorize(
         )
 
     return AuthorizeResponse.model_validate(
-        {"client": grant.client, "scopes": grant.request.scope}
+        {
+            "client": grant.client,
+            "scopes": grant.request.scope,
+            "sub_type": grant.sub_type,
+        }
     )
 
 

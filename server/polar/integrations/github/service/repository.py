@@ -9,7 +9,7 @@ from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate, RepositoryGitHubUpdate
 from polar.repository.service import RepositoryService
-from polar.worker import enqueue_job
+from polar.worker import QueueName, enqueue_job
 
 from .. import client as github
 from .. import types
@@ -35,12 +35,14 @@ class GithubRepositoryService(RepositoryService):
             "github.repo.sync.issues",
             repository.organization_id,
             repository.id,
+            queue_name=QueueName.github_crawl,
             crawl_with_installation_id=crawl_with_installation_id,
         )
         enqueue_job(
             "github.repo.sync.pull_requests",
             repository.organization_id,
             repository.id,
+            queue_name=QueueName.github_crawl,
             crawl_with_installation_id=crawl_with_installation_id,
         )
 

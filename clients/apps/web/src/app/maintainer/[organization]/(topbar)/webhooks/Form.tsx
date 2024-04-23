@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 
+import Link from 'next/link'
 import { useFormContext } from 'react-hook-form'
 import { events } from './events'
 
@@ -125,6 +126,12 @@ export const FieldEvents = () => {
           control={form.control}
           name={e[0]}
           render={({ field }) => {
+            const docsKey = e[1].replaceAll('.', '_')
+
+            // Example: https://api.polar.sh/docs#/webhooks/subscription_tier_updatedsubscription_tier_updated_post
+            // yes, docsKey is repeated twice
+            const href = `https://api.polar.sh/docs#/webhooks/${docsKey}${docsKey}_post`
+
             return (
               <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                 <FormControl>
@@ -134,6 +141,9 @@ export const FieldEvents = () => {
                   />
                 </FormControl>
                 <FormLabel className="text-sm leading-none">{e[1]}</FormLabel>
+                <Link className="text-xs text-blue-400" href={href}>
+                  Schema
+                </Link>
                 <FormMessage />
               </FormItem>
             )

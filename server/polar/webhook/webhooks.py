@@ -52,7 +52,10 @@ class WebhookSubscriptionCreatedPayload(Schema):
     data: SubscriptionSchema
 
 
-@app.webhooks.post(WebhookEventType.subscription_created.value)
+@app.webhooks.post(
+    WebhookEventType.subscription_created.value,
+    description="Sent when a new subscription is created.",
+)
 async def subscription_created(body: WebhookSubscriptionCreatedPayload) -> None:
     return None
 
@@ -62,7 +65,10 @@ class WebhookSubscriptionUpdatedPayload(Schema):
     data: SubscriptionSchema
 
 
-@app.webhooks.post(WebhookEventType.subscription_updated.value)
+@app.webhooks.post(
+    WebhookEventType.subscription_updated.value,
+    description="Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.",
+)
 async def subscription_updated(body: WebhookSubscriptionUpdatedPayload) -> None:
     return None
 
@@ -72,7 +78,10 @@ class WebhookSubscriptionTierCreatedPayload(Schema):
     data: SubscriptionTierSchema
 
 
-@app.webhooks.post(WebhookEventType.subscription_tier_created.value)
+@app.webhooks.post(
+    WebhookEventType.subscription_tier_created.value,
+    description="Sent when a new subscription tier is created.",
+)
 async def subscription_tier_created(
     body: WebhookSubscriptionTierCreatedPayload,
 ) -> None:
@@ -84,7 +93,10 @@ class WebhookSubscriptionTierUpdatedPayload(Schema):
     data: SubscriptionTierSchema
 
 
-@app.webhooks.post(WebhookEventType.subscription_tier_updated.value)
+@app.webhooks.post(
+    WebhookEventType.subscription_tier_updated.value,
+    description="Sent when a new subscription tier is updated.",
+)
 async def subscription_tier_updated(
     body: WebhookSubscriptionTierUpdatedPayload,
 ) -> None:
@@ -96,7 +108,10 @@ class WebhookPledgeCreatedPayload(Schema):
     data: PledgeSchema
 
 
-@app.webhooks.post(WebhookEventType.pledge_created.value)
+@app.webhooks.post(
+    WebhookEventType.pledge_created.value,
+    description="Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.",
+)
 async def pledge_created(body: WebhookPledgeCreatedPayload) -> None:
     return None
 
@@ -106,7 +121,10 @@ class WebhookPledgeUpdatedPayload(Schema):
     data: PledgeSchema
 
 
-@app.webhooks.post(WebhookEventType.pledge_updated.value)
+@app.webhooks.post(
+    WebhookEventType.pledge_updated.value,
+    description="Sent when a pledge is updated.",
+)
 async def pledge_updated(body: WebhookPledgeUpdatedPayload) -> None:
     return None
 
@@ -116,7 +134,10 @@ class WebhookDonationCreatedPayload(Schema):
     data: DonationSchema
 
 
-@app.webhooks.post(WebhookEventType.donation_created.value)
+@app.webhooks.post(
+    WebhookEventType.donation_created.value,
+    description="Sent when a new donation is created.",
+)
 async def donation_created(body: WebhookDonationCreatedPayload) -> None:
     return None
 
@@ -126,7 +147,10 @@ class WebhookOrganizationUpdatedPayload(Schema):
     data: OrganizationSchema
 
 
-@app.webhooks.post(WebhookEventType.organization_updated.value)
+@app.webhooks.post(
+    WebhookEventType.organization_updated.value,
+    description="Sent when a organization is updated.",
+)
 async def organization_updated(body: WebhookOrganizationUpdatedPayload) -> None:
     return None
 
@@ -136,7 +160,10 @@ class WebhookBenefitCreatedPayload(Schema):
     data: BenefitSchema
 
 
-@app.webhooks.post(WebhookEventType.benefit_created.value)
+@app.webhooks.post(
+    WebhookEventType.benefit_created.value,
+    description="Sent when a new benefit is created",
+)
 async def benefit_created(body: WebhookBenefitCreatedPayload) -> None:
     return None
 
@@ -146,7 +173,10 @@ class WebhookBenefitUpdatedPayload(Schema):
     data: BenefitSchema
 
 
-@app.webhooks.post(WebhookEventType.benefit_updated.value)
+@app.webhooks.post(
+    WebhookEventType.benefit_updated.value,
+    description="Sent when a benefit is updated",
+)
 async def benefit_updated(body: WebhookBenefitUpdatedPayload) -> None:
     return None
 

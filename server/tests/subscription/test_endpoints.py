@@ -502,6 +502,32 @@ class TestUpdateSubscriptionTier:
         json = response.json()
         assert json["name"] == "Updated Name"
 
+    @pytest.mark.authenticated
+    async def test_paid_tier_no_prices(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}",
+            json={"prices": []},
+        )
+        assert response.status_code == 400
+
+    @pytest.mark.authenticated
+    async def test_free_tier_no_prices(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization_free: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization_free.id}",
+            json={"prices": []},
+        )
+        assert response.status_code == 200
+
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge

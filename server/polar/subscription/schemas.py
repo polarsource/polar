@@ -81,7 +81,7 @@ class SubscriptionTierUpdate(Schema):
     )
     is_highlighted: bool | None = None
     prices: list[ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate] | None = (
-        Field(default=None, min_length=1)
+        Field(default=None)
     )
 
 

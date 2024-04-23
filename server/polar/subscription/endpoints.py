@@ -157,6 +157,13 @@ async def update_subscription_tier(
     if subscription_tier is None:
         raise ResourceNotFound()
 
+    if subscription_tier.type != SubscriptionTierType.free:
+        if (
+            subscription_tier_update.prices is not None
+            and len(subscription_tier_update.prices) < 1
+        ):
+            raise BadRequest("Paid tiers must have at least one price")
+
     posthog.user_event(
         auth.user,
         "subscriptions",

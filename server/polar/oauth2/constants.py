@@ -1,10 +1,18 @@
 from polar.config import settings
 
+from .sub_type import SubType
+
 CLIENT_ID_PREFIX = "polar_ci_"
 CLIENT_SECRET_PREFIX = "polar_cs_"
 AUTHORIZATION_CODE_PREFIX = "polar_ac_"
-ACCESS_TOKEN_PREFIX = "polar_at_"
-REFRESH_TOKEN_PREFIX = "polar_rt_"
+ACCESS_TOKEN_PREFIX: dict[SubType, str] = {
+    SubType.user: "polar_at_u_",
+    SubType.organization: "polar_at_o_",
+}
+REFRESH_TOKEN_PREFIX: dict[SubType, str] = {
+    SubType.user: "polar_rt_u_",
+    SubType.organization: "polar_rt_o_",
+}
 
 ISSUER = "https://polar.sh"
 SERVICE_DOCUMENTATION = "https://docs.polar.sh"

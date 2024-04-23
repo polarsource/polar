@@ -24,6 +24,7 @@ from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
+from polar.oauth2.sub_type import SubTypeValue
 
 from .constants import (
     ACCESS_TOKEN_PREFIX,
@@ -266,9 +267,11 @@ class AuthorizationServer(_AuthorizationServer):
             "access_token": access_token_hash,
             "refresh_token": refresh_token_hash,
         }
+        sub_type, sub = typing.cast(SubTypeValue, request.user)
         oauth2_token = OAuth2Token(
-            **token_data, client_id=request.client_id, user=request.user
+            **token_data, client_id=request.client_id, sub_type=sub_type
         )
+        oauth2_token.sub = sub
         self.session.add(oauth2_token)
         self.session.flush()
 
@@ -300,14 +303,16 @@ class AuthorizationServer(_AuthorizationServer):
 
     def create_bearer_token_generator(self) -> BearerTokenGenerator:
         def _access_token_generator(
-            client: OAuth2Client, grant_type: str, user: User, scope: str
+            client: OAuth2Client, grant_type: str, user: SubTypeValue, scope: str
         ) -> str:
-            return generate_token(prefix=ACCESS_TOKEN_PREFIX)
+            sub_type, _ = user
+            return generate_token(prefix=ACCESS_TOKEN_PREFIX[sub_type])
 
         def _refresh_token_generator(
-            client: OAuth2Client, grant_type: str, user: User, scope: str
+            client: OAuth2Client, grant_type: str, user: SubTypeValue, scope: str
         ) -> str:
-            return generate_token(prefix=REFRESH_TOKEN_PREFIX)
+            sub_type, _ = user
+            return generate_token(prefix=REFRESH_TOKEN_PREFIX[sub_type])
 
         return BearerTokenGenerator(_access_token_generator, _refresh_token_generator)
 

@@ -133,4 +133,4 @@ async def oauth2_introspect(
     tags=[Tags.PUBLIC],
 )
 async def oauth2_userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
-    return generate_user_info(token.user, cast(str, token.scope))
+    return generate_user_info(token.get_sub_type_value(), cast(str, token.scope))

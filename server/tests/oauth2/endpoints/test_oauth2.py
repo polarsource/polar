@@ -4,8 +4,18 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.config import settings
+from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Session
-from polar.models import OAuth2Client, OAuth2Grant, Organization, User, UserOrganization
+from polar.models import (
+    OAuth2AuthorizationCode,
+    OAuth2Client,
+    OAuth2Grant,
+    OAuth2Token,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.database import SaveFixture
@@ -46,6 +56,59 @@ async def create_oauth2_grant(
     )
     await save_fixture(oauth2_grant)
     return oauth2_grant
+
+
+async def create_oauth2_authorization_code(
+    save_fixture: SaveFixture,
+    *,
+    client: OAuth2Client,
+    code: str,
+    scopes: list[str],
+    redirect_uri: str,
+    user: User | None = None,
+    organization: Organization | None = None,
+) -> OAuth2AuthorizationCode:
+    authorization_code = OAuth2AuthorizationCode(
+        code=get_token_hash(code, secret=settings.SECRET),
+        client_id=client.client_id,
+        scope=" ".join(scopes),
+        redirect_uri=redirect_uri,
+    )
+    if user is not None:
+        authorization_code.user_id = user.id
+        authorization_code.sub_type = SubType.user
+    if organization is not None:
+        authorization_code.organization_id = organization.id
+        authorization_code.sub_type = SubType.organization
+    await save_fixture(authorization_code)
+    return authorization_code
+
+
+async def create_oauth2_token(
+    save_fixture: SaveFixture,
+    *,
+    client: OAuth2Client,
+    access_token: str,
+    refresh_token: str,
+    scopes: list[str],
+    user: User | None = None,
+    organization: Organization | None = None,
+) -> OAuth2Token:
+    token = OAuth2Token(
+        client_id=client.client_id,
+        token_type="bearer",
+        access_token=get_token_hash(access_token, secret=settings.SECRET),
+        refresh_token=get_token_hash(refresh_token, secret=settings.SECRET),
+        scope=" ".join(scopes),
+    )
+    if user is not None:
+        token.user_id = user.id
+        token.sub_type = SubType.user
+    if organization is not None:
+        token.organization_id = organization.id
+        token.sub_type = SubType.organization
+    await save_fixture(token)
+    return token
 
 
 @pytest.mark.asyncio
@@ -462,3 +525,141 @@ class TestOAuth2Consent:
         )
         assert grant is not None
         assert grant.scopes == ["openid", "profile", "email"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestOAuth2Token:
+    async def test_authorization_code_sub_user(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+
+        response = await client.post("/api/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_u_")
+        refresh_token = json["refresh_token"]
+        assert refresh_token.startswith("polar_rt_u_")
+
+    async def test_authorization_code_sub_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            organization=organization,
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+
+        response = await client.post("/api/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_o_")
+        refresh_token = json["refresh_token"]
+        assert refresh_token.startswith("polar_rt_o_")
+
+    async def test_refresh_token_sub_user(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            user=user,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+        }
+
+        response = await client.post("/api/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_u_")
+        refresh_token = json["refresh_token"]
+        assert refresh_token.startswith("polar_rt_u_")
+
+    async def test_refresh_token_sub_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            organization=organization,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+        }
+
+        response = await client.post("/api/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_o_")
+        refresh_token = json["refresh_token"]
+        assert refresh_token.startswith("polar_rt_o_")

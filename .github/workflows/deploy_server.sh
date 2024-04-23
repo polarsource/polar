@@ -4,10 +4,15 @@ set -euo pipefail
 
 IMG="ghcr.io/polarsource/polar@${1}"
 
-# Deploy Worker
+# Deploy worker-default
 curl -X POST \
     --silent --show-error --fail-with-body \
-    "https://api.render.com/deploy/srv-chsugv9mbg57s5u31btg?key=${RENDER_DEPLOY_KEY_WORKER}&imgURL=${IMG}"
+    "https://api.render.com/deploy/srv-cojpsb0cmk4c73c0pndg?key=${RENDER_DEPLOY_KEY_WORKER_DEFAULT}&imgURL=${IMG}"
+
+# Deploy worker-github
+curl -X POST \
+    --silent --show-error --fail-with-body \
+    "https://api.render.com/deploy/srv-cojpsb0cmk4c73c0pne0?key=${RENDER_DEPLOY_KEY_WORKER_GITHUB}&imgURL=${IMG}"
 
 # Deploy API
 curl -X POST \

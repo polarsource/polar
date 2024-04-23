@@ -131,6 +131,60 @@ class WorkerSettingsGitHubCrawl(WorkerSettings):
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
 
+    redis_settings = RedisSettings().from_dsn(settings.redis_url)
+
+    @staticmethod
+    async def on_startup(ctx: WorkerContext) -> None:
+        log.info("polar.worker.startup")
+
+        async_engine = create_async_engine("worker")
+        async_sessionmaker = create_async_sessionmaker(async_engine)
+        instrument_sqlalchemy(async_engine.sync_engine)
+        instrument_httpx()
+
+        ctx.update(
+            {"async_engine": async_engine, "async_sessionmaker": async_sessionmaker}
+        )
+
+    @staticmethod
+    async def on_shutdown(ctx: WorkerContext) -> None:
+        engine = ctx["async_engine"]
+        await engine.dispose()
+
+        log.info("polar.worker.shutdown")
+
+    @staticmethod
+    async def on_job_start(ctx: JobContext) -> None:
+        """
+        Unfortunately, we don't have access to task arguments in this hook.
+
+        This prevents us to implement things like common arguments handling, as we
+        do for `request_correlation_id`.
+
+        To circumvent this limitation, we implement this behavior
+        through the `task_hooks` decorator.
+        """
+        exit_stack = contextlib.ExitStack()
+        function_name = ":".join(ctx["job_id"].split(":")[0:-1])
+        logfire_span = exit_stack.enter_context(
+            logfire.span("TASK {function_name}", function_name=function_name)
+        )
+        ctx.update({"exit_stack": exit_stack, "logfire_span": logfire_span})
+
+    @staticmethod
+    async def on_job_end(ctx: JobContext) -> None:
+        """
+        Unfortunately, we don't have access to task arguments in this hook.
+
+        This prevents us to implement things like common arguments handling, as we
+        do for `request_correlation_id`.
+
+        To circumvent this limitation, we implement this behavior
+        through the `task_hooks` decorator.
+        """
+        exit_stack = ctx["exit_stack"]
+        exit_stack.close()
+
 
 @contextlib.asynccontextmanager
 async def lifespan() -> AsyncIterator[ArqRedis]:

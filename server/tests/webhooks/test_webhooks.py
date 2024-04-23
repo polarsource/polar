@@ -14,7 +14,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.webhook.service import webhook_service
-from polar.webhook.tasks import _webhook_event_send, webhook_event_send
+from polar.webhook.tasks import _webhook_event_send, allowed_url, webhook_event_send
 from polar.webhook.webhooks import WebhookEventType
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.database import SaveFixture
@@ -41,7 +41,7 @@ async def test_webhook_send(
     mocker.patch("polar.webhook.service.enqueue_job", new=in_process_enqueue_job)
 
     endpoint = WebhookEndpoint(
-        url="https://test.example.com/hook",
+        url="https://example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
         event_subscription_created=True,  # subscribe to event
@@ -83,7 +83,7 @@ async def test_webhook_send_not_subscribed_to_event(
     mocker.patch("polar.webhook.service.enqueue_job", new=in_process_enqueue_job)
 
     endpoint = WebhookEndpoint(
-        url="https://test.example.com/hook",
+        url="https://example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
         event_subscription_created=False,  # not subscribing
@@ -121,7 +121,7 @@ async def test_webhook_delivery(
     mocker.patch("httpx.post", new=httpx_post)
 
     endpoint = WebhookEndpoint(
-        url="https://test.example.com/hook",
+        url="https://example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
     )
@@ -157,7 +157,7 @@ async def test_webhook_delivery_500(
     mocker.patch("httpx.post", new=httpx_post)
 
     endpoint = WebhookEndpoint(
-        url="https://test.example.com/hook",
+        url="https://example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
     )
@@ -213,7 +213,7 @@ async def test_webhook_standard_webhooks_compatible(
     mocker.patch("httpx.post", new=httpx_post)
 
     endpoint = WebhookEndpoint(
-        url="https://test.example.com/hook",
+        url="https://example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
     )
@@ -259,7 +259,7 @@ async def test_webhook_standard_webhooks_fails_unexpected_secret(
     mocker.patch("httpx.post", new=httpx_post)
 
     endpoint = WebhookEndpoint(
-        url="https://test.example.com/hook",
+        url="https://example.com/hook",
         organization_id=organization.id,
         secret="not-mysecret",
     )
@@ -283,3 +283,13 @@ async def test_webhook_standard_webhooks_fails_unexpected_secret(
 
 def btoa(a: str) -> str:
     return base64.b64encode(a.encode("utf-8")).decode("utf-8")
+
+
+@pytest.mark.asyncio
+async def test_allowed_url() -> None:
+    assert allowed_url("https://example.com/webhooks")
+    assert allowed_url("https://example.com:5000/webhooks")
+    assert allowed_url("http://example.com:5000/webhooks") is False  # http
+    assert allowed_url("https://127.0.0.1:5000/webhooks") is False  # loopback
+    assert allowed_url("https://::1/webhooks") is False  # loopback
+    assert allowed_url("https://foo.invalid:5000/webhooks") is False  # does not resolve

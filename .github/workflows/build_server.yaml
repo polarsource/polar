@@ -59,7 +59,8 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: "./.github/workflows/deploy_server.sh ${{ steps.push.outputs.digest }}"
         env:
-          RENDER_DEPLOY_KEY_WORKER: ${{ secrets.RENDER_DEPLOY_KEY_WORKER }}
+          RENDER_DEPLOY_KEY_WORKER_DEFAULT: ${{ secrets.RENDER_DEPLOY_KEY_WORKER_DEFAULT }}
+          RENDER_DEPLOY_KEY_WORKER_GITHUB: ${{ secrets.RENDER_DEPLOY_KEY_WORKER_GITHUB }}
           RENDER_DEPLOY_KEY_API: ${{ secrets.RENDER_DEPLOY_KEY_API }}
 
       - name: Sentry Release

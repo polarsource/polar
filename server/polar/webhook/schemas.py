@@ -22,6 +22,7 @@ class WebhookEndpoint(Schema):
     url: str
     user_id: UUID | None
     organization_id: UUID | None
+    created_at: datetime
 
     event_subscription_created: bool = False
     event_subscription_updated: bool = False

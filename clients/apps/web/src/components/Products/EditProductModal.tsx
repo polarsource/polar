@@ -24,7 +24,7 @@ interface EditProductForm {
   id: string
   name: string
   description: string
-  media?: string
+  media: string[]
   price: number
   benefits: BenefitPublicInner[]
 }

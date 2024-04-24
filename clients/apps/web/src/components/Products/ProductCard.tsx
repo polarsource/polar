@@ -1,8 +1,12 @@
+'use client'
+
 import { Product } from '@/hooks/queries/products'
 import { getCentsInDollarString } from '@/utils/money'
 import { PanoramaOutlined } from '@mui/icons-material'
+import Markdown from 'markdown-to-jsx'
 import Image from 'next/image'
 import { Pill } from 'polarkit/components/ui/atoms'
+import { markdownOpts } from '../Feed/Markdown/markdown'
 
 interface ProductCardProps {
   product: Product
@@ -29,7 +33,23 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           {product.name}
         </h3>
         <p className="dark:text-polar-400 line-clamp-2 text-sm text-gray-600">
-          {product.description}
+          <Markdown
+            options={{
+              ...markdownOpts,
+              overrides: {
+                ...markdownOpts.overrides,
+                p: (args: any) => <>{args.children} </>, // Note the space
+                div: (args: any) => <>{args.children} </>, // Note the space
+                img: () => <></>,
+                a: (args: any) => <>{args.children}</>,
+                strong: (args: any) => <>{args.children}</>,
+                em: (args: any) => <>{args.children}</>,
+                defaultOverride: (args: any) => <>{args.children}</>,
+              },
+            }}
+          >
+            {product.description.substring(0, 100)}
+          </Markdown>
         </p>
       </div>
       <div className="flex flex-row items-center justify-between">

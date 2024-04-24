@@ -8,9 +8,8 @@ import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
+import WebhookSettings from '@/components/Settings/WebhookSettings'
 import { useListAdminOrganizations } from '@/hooks/queries'
-import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
 
 export default function Page() {
   const orgs = useListAdminOrganizations()
@@ -79,11 +78,7 @@ export default function Page() {
                 description={`Configure and send webhooks to custom URLs.`}
               />
 
-              <div className="flex w-full flex-col overflow-hidden">
-                <Link href={`/maintainer/${org.name}/webhooks`}>
-                  <Button asChild>Go to webhook settings</Button>
-                </Link>
-              </div>
+              <WebhookSettings org={org} />
             </Section>
           </>
         ) : null}

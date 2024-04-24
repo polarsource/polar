@@ -10764,6 +10764,12 @@ export interface WebhookEndpoint {
     organization_id: string | null;
     /**
      * 
+     * @type {string}
+     * @memberof WebhookEndpoint
+     */
+    created_at: string;
+    /**
+     * 
      * @type {boolean}
      * @memberof WebhookEndpoint
      */

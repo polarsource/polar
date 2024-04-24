@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
+import WebhookSettings from '@/components/Settings/WebhookSettings'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { useOrganizationCredits, useUpdateOrganization } from '@/hooks/queries'
@@ -10,7 +11,6 @@ import { api } from '@/utils/api'
 import { getCentsInDollarString } from '@/utils/money'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { CreditBalance, Organization } from '@polar-sh/sdk'
-import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -64,11 +64,7 @@ export default function ClientPage() {
             description={`Configure and send webhooks to custom URLs.`}
           />
 
-          <div className="flex w-full flex-col overflow-hidden">
-            <Link href={`/maintainer/${org.name}/webhooks`}>
-              <Button asChild>Go to webhook settings</Button>
-            </Link>
-          </div>
+          <WebhookSettings org={org} />
         </Section>
       </div>
     </DashboardBody>

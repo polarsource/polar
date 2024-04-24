@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from polar.authz.scope import SCOPES_SUPPORTED
+from polar.auth.scope import SCOPES_SUPPORTED
 from polar.config import settings
 
 from . import constants

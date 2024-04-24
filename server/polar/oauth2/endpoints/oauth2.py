@@ -2,7 +2,8 @@ from typing import Literal, cast
 
 from fastapi import Depends, Form, HTTPException, Request, Response
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.models import is_user
 from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token
 from polar.tags.api import Tags
@@ -25,11 +26,11 @@ router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 @router.post("/register", name="oauth2.register")
 async def oauth2_register(
     request: Request,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: WebUser,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
     await request.json()
-    request.state.user = auth.user
+    request.state.user = auth_subject.subject
     return authorization_server.create_endpoint_response(
         ClientRegistrationEndpoint.ENDPOINT_NAME, request
     )
@@ -41,12 +42,13 @@ async def oauth2_register(
 async def oauth2_configure(
     client_id: str,
     request: Request,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: WebUser,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    raise NotImplementedError("TODO: proper access control")
     if request.method == "PUT":
         await request.json()
-    request.state.user = auth.user
+    request.state.user = auth_subject.subject
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request
     )
@@ -55,10 +57,10 @@ async def oauth2_configure(
 @router.get("/authorize", name="oauth2.authorize")
 async def oauth2_authorize(
     request: Request,
-    auth: Auth = Depends(Auth.optional_user),
+    auth_subject: WebOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> AuthorizeResponse:
-    user = auth.user
+    user = auth_subject.subject if is_user(auth_subject) else None
     await request.form()
     grant: AuthorizationCodeGrant = authorization_server.get_consent_grant(
         request=request, end_user=user
@@ -83,12 +85,12 @@ async def oauth2_authorize(
 @router.post("/consent", name="oauth2.consent")
 async def oauth2_consent(
     request: Request,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     action: Literal["allow", "deny"] = Form(...),
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
     await request.form()
-    grant_user = auth.user if action == "allow" else None
+    grant_user = auth_subject.subject if action == "allow" else None
     return authorization_server.create_authorization_response(
         request=request, grant_user=grant_user, save_consent=True
     )

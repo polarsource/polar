@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import Depends
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -38,19 +38,17 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 )
 async def search_webhook_endpoints(
     pagination: PaginationParamsQuery,
+    auth_subject: WebUser,
     organization_id: UUID | None = None,
     user_id: UUID | None = None,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[WebhookEndpointSchema]:
     if not user_id and not organization_id:
         raise BadRequest("neither user_id nor organization_id provided")
 
-    assert auth.user
-
     if user_id:
-        if user_id != auth.user.id:
+        if user_id != auth_subject.subject.id:
             raise BadRequest("user_id is not the current users ID")
 
     if organization_id:
@@ -58,7 +56,7 @@ async def search_webhook_endpoints(
         if not org:
             raise ResourceNotFound("organization not found")
 
-        if not await authz.can(auth.subject, AccessType.write, org):
+        if not await authz.can(auth_subject.subject, AccessType.write, org):
             raise Unauthorized()
 
     results, count = await webhook_service.search_endpoints(
@@ -82,17 +80,15 @@ async def search_webhook_endpoints(
 )
 async def create_webhook_endpoint(
     create: WebhookEndpointCreate,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpointSchema:
     if not create.user_id and not create.organization_id:
         raise BadRequest("neither user_id nor organization_id is set")
 
-    assert auth.user
-
     if create.user_id:
-        if create.user_id != auth.user.id:
+        if create.user_id != auth_subject.subject.id:
             raise BadRequest("user_id is not the current users ID")
 
     if create.organization_id:
@@ -100,7 +96,7 @@ async def create_webhook_endpoint(
         if not org:
             raise ResourceNotFound("organization not found")
 
-        if not await authz.can(auth.subject, AccessType.write, org):
+        if not await authz.can(auth_subject.subject, AccessType.write, org):
             raise Unauthorized()
 
     endpoint = await webhook_service.create_endpoint(
@@ -118,15 +114,15 @@ async def create_webhook_endpoint(
 )
 async def delete_webhook_endpoint(
     id: UUID,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpointSchema:
     endpoint = await webhook_service.get_endpoint(session, id)
     if not endpoint:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, endpoint):
+    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
         raise Unauthorized()
 
     await webhook_service.delete_endpoint(session, id)
@@ -141,15 +137,15 @@ async def delete_webhook_endpoint(
 )
 async def get_webhook_endpoint(
     id: UUID,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpointSchema:
     endpoint = await webhook_service.get_endpoint(session, id)
     if not endpoint:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, endpoint):
+    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
         raise Unauthorized()
 
     return WebhookEndpointSchema.model_validate(endpoint)
@@ -163,15 +159,15 @@ async def get_webhook_endpoint(
 async def update_webhook_endpoint(
     id: UUID,
     update: WebhookEndpointUpdate,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpointSchema:
     endpoint = await webhook_service.get_endpoint(session, id)
     if not endpoint:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, endpoint):
+    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
         raise Unauthorized()
 
     endpoint = await webhook_service.update_endpoint(
@@ -189,15 +185,15 @@ async def update_webhook_endpoint(
 async def search_webhook_deliveries(
     pagination: PaginationParamsQuery,
     webhook_endpoint_id: UUID,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[WebhookDeliverySchema]:
     endpoint = await webhook_service.get_endpoint(session, webhook_endpoint_id)
     if not endpoint:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, endpoint):
+    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
         raise Unauthorized()
 
     results, count = await webhook_service.search_deliveries(
@@ -220,8 +216,8 @@ async def search_webhook_deliveries(
 )
 async def event_redeliver(
     id: UUID,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEventRedeliver:
     event = await webhook_service.get_event(session, id)
@@ -232,7 +228,7 @@ async def event_redeliver(
     if not endpoint:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, endpoint):
+    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
         raise Unauthorized()
 
     enqueue_job("webhook_event.send", webhook_event_id=event.id)

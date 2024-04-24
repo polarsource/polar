@@ -15,7 +15,8 @@ from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 from pydantic import UUID4, BaseModel, ValidationError
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.models import is_user
 from polar.auth.service import AuthService
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
@@ -80,10 +81,10 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
 @router.get("/authorize", name="integrations.github.authorize", tags=[Tags.INTERNAL])
 async def github_authorize(
     request: Request,
+    auth_subject: WebOrAnonymous,
     return_to: ReturnTo,
     payment_intent_id: str | None = None,
     user_signup_type: UserSignupType | None = None,
-    auth: Auth = Depends(Auth.optional_user),
 ) -> RedirectResponse:
     state = {}
     if payment_intent_id:
@@ -94,8 +95,8 @@ async def github_authorize(
     if user_signup_type:
         state["user_signup_type"] = user_signup_type
 
-    if auth.user is not None:
-        state["user_id"] = str(auth.user.id)
+    if is_user(auth_subject):
+        state["user_id"] = str(auth_subject.subject.id)
 
     encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="github_oauth")
     authorization_url = await github_oauth_client.get_authorization_url(
@@ -109,11 +110,11 @@ async def github_authorize(
 @router.get("/callback", name="integrations.github.callback", tags=[Tags.INTERNAL])
 async def github_callback(
     request: Request,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback
     ),
-    auth: Auth = Depends(Auth.optional_user),
     locker: Locker = Depends(get_locker),
 ) -> RedirectResponse:
     token_data, state = access_token_state
@@ -144,12 +145,12 @@ async def github_callback(
 
     try:
         if (
-            auth.user is not None
+            is_user(auth_subject)
             and state_user_id is not None
-            and auth.user.id == UUID(state_user_id)
+            and auth_subject.subject.id == UUID(state_user_id)
         ):
             user = await github_user.link_existing_user(
-                session, user=auth.user, tokens=tokens
+                session, user=auth_subject.subject, tokens=tokens
             )
         else:
             user = await github_user.login_or_signup(
@@ -195,7 +196,7 @@ class SynchronizeMembersResponse(BaseModel):
 @router.post("/synchronize_members", response_model=SynchronizeMembersResponse)
 async def synchronize_members(
     organization_id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> SynchronizeMembersResponse:
@@ -203,7 +204,7 @@ async def synchronize_members(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     await github_members_service.synchronize_members(session, org)
@@ -218,12 +219,12 @@ class LookupUserRequest(BaseModel):
 @router.post("/lookup_user", response_model=GithubUser)
 async def lookup_user(
     body: LookupUserRequest,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> GithubUser:
     try:
-        client = await github.get_user_client(session, locker, auth.user)
+        client = await github.get_user_client(session, locker, auth_subject.subject)
         github_user = await client.rest.users.async_get_by_username(
             username=body.username
         )
@@ -245,7 +246,7 @@ async def lookup_user(
 async def redirect_to_organization_installation(
     id: UUID4,
     return_to: ReturnTo,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
@@ -254,7 +255,7 @@ async def redirect_to_organization_installation(
     if organization is None:
         raise PolarRedirectionError("Organization not found", return_to=return_to)
 
-    if not await authz.can(auth.user, AccessType.write, organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise PolarRedirectionError(
             "You don't have access to this organization", return_to=return_to
         )
@@ -283,7 +284,7 @@ async def redirect_to_organization_installation(
 async def check_organization_permissions(
     id: UUID4,
     input: OrganizationCheckPermissionsInput,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
@@ -292,7 +293,7 @@ async def check_organization_permissions(
     if organization is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.user, AccessType.write, organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise NotPermitted()
 
     if organization.installation_id is None:
@@ -312,7 +313,7 @@ async def check_organization_permissions(
 @router.get("/organizations/{id}/billing", tags=[Tags.INTERNAL])
 async def get_organization_billing_plan(
     id: UUID4,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
@@ -322,11 +323,13 @@ async def get_organization_billing_plan(
     if organization is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.user, AccessType.write, organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise NotPermitted()
 
     if organization.is_personal:
-        user_client = await github.get_user_client(session, locker, auth.user)
+        user_client = await github.get_user_client(
+            session, locker, auth_subject.subject
+        )
         user_response = await user_client.rest.users.async_get_authenticated()
         plan = user_response.parsed_data.plan
     else:
@@ -362,19 +365,22 @@ class InstallationCreate(BaseModel):
 @router.post("/installations", response_model=OrganizationSchema)
 async def install(
     installation: InstallationCreate,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> OrganizationSchema:
     with ExecutionContext(is_during_installation=True):
         organization = await github_organization.install_from_user_browser(
-            session, locker, auth.user, installation_id=installation.external_id
+            session,
+            locker,
+            auth_subject.subject,
+            installation_id=installation.external_id,
         )
         if not organization:
             raise ResourceNotFound()
 
         posthog.user_event(
-            auth.user,
+            auth_subject.subject,
             "organizations",
             "github_install",
             "submit",

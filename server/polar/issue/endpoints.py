@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebOrAnonymous, WebUser
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
@@ -51,6 +51,7 @@ router = APIRouter(tags=["issues"])
     responses={404: {}},
 )
 async def search(
+    auth_subject: WebOrAnonymous,
     platform: Platforms,
     organization_name: str,
     repository_name: str | None = None,
@@ -70,7 +71,6 @@ async def search(
         description="Filter to only return issues connected to this GitHub milestone.",
     ),
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[IssueSchema]:
     org = await organization_service.get_by_name(session, platform, organization_name)
@@ -124,7 +124,7 @@ async def search(
         items=[
             IssueSchema.from_db(i)
             for i in issues
-            if await authz.can(auth.subject, AccessType.read, i)
+            if await authz.can(auth_subject.subject, AccessType.read, i)
         ],
         pagination=Pagination(total_count=count, max_page=1),
     )
@@ -136,13 +136,13 @@ async def search(
     tags=[Tags.PUBLIC],
 )
 async def lookup(
+    auth_subject: WebOrAnonymous,
     external_url: str | None = Query(
         default=None,
         description="URL to issue on external source",
         examples=["https://github.com/polarsource/polar/issues/897"],
     ),
     authz: Authz = Depends(Authz.authz),
-    auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> IssueSchema:
@@ -190,7 +190,7 @@ async def lookup(
         if not issue:
             raise ResourceNotFound("Issue not found")
 
-        if not await authz.can(auth.subject, AccessType.read, issue):
+        if not await authz.can(auth_subject.subject, AccessType.read, issue):
             raise Unauthorized()
 
         return IssueSchema.from_db(issue)
@@ -204,8 +204,8 @@ async def lookup(
 )
 async def get_body(
     id: UUID,
+    auth_subject: WebOrAnonymous,
     authz: Authz = Depends(Authz.authz),
-    auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
     issue_body_renderer: IssueBodyRenderer = Depends(get_issue_body_renderer),
 ) -> HTMLResponse:
@@ -213,7 +213,7 @@ async def get_body(
     if issue is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, issue):
+    if not await authz.can(auth_subject.subject, AccessType.read, issue):
         raise Unauthorized()
 
     content = await issue_body_renderer.render(
@@ -229,13 +229,13 @@ async def get_body(
     tags=[Tags.INTERNAL],
 )
 async def for_you(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
     locker: Locker = Depends(get_locker),
 ) -> ListResource[IssueSchema]:
     issues = await github_issue_service.list_issues_from_starred(
-        session, locker, sessionmaker, auth.user
+        session, locker, sessionmaker, auth_subject.subject
     )
 
     # get loaded
@@ -295,8 +295,8 @@ async def for_you(
 )
 async def get(
     id: UUID,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
     issue = await issue_service.get_loaded(session, id)
@@ -307,7 +307,7 @@ async def get(
             detail="Issue not found",
         )
 
-    if not await authz.can(auth.subject, AccessType.read, issue):
+    if not await authz.can(auth_subject.subject, AccessType.read, issue):
         raise HTTPException(
             status_code=404,
             detail="Issue not found",
@@ -326,7 +326,7 @@ async def get(
 async def update(
     id: UUID,
     update: UpdateIssue,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
@@ -338,7 +338,7 @@ async def update(
             detail="Issue not found",
         )
 
-    if not await authz.can(auth.subject, AccessType.write, issue):
+    if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
@@ -376,7 +376,7 @@ async def update(
 async def confirm(
     id: UUID,
     body: ConfirmIssue,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
@@ -387,15 +387,14 @@ async def confirm(
             detail="Issue not found",
         )
 
-    if not await authz.can(auth.subject, AccessType.write, issue):
+    if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
         )
 
     user_memberships = await user_organization_service.list_by_user_id(
-        session,
-        auth.user.id,
+        session, auth_subject.subject.id
     )
 
     if not pledge_service.user_can_admin_received_pledge_on_issue(
@@ -418,7 +417,7 @@ async def confirm(
 
     # mark issue as confirmed
     await issue_service.mark_confirmed_solved(
-        session, issue_id=issue.id, by_user_id=auth.user.id
+        session, issue_id=issue.id, by_user_id=auth_subject.subject.id
     )
 
     # mark pledges as PENDING
@@ -450,7 +449,7 @@ async def confirm(
 )
 async def add_polar_badge(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueSchema:
@@ -458,7 +457,7 @@ async def add_polar_badge(
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, issue):
+    if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
     org = await organization_service.get(session, issue.organization_id)
@@ -485,7 +484,7 @@ async def add_polar_badge(
 )
 async def remove_polar_badge(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueSchema:
@@ -493,7 +492,7 @@ async def remove_polar_badge(
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, issue):
+    if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
     org = await organization_service.get(session, issue.organization_id)
@@ -522,7 +521,7 @@ async def remove_polar_badge(
 async def add_issue_comment(
     id: UUID,
     comment: PostIssueComment,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
     locker: Locker = Depends(get_locker),
@@ -531,7 +530,7 @@ async def add_issue_comment(
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, issue):
+    if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
     org = await organization_service.get(session, issue.organization_id)
@@ -555,13 +554,7 @@ async def add_issue_comment(
         message += badge.badge_markdown("")
 
     await github_issue_service.add_comment_as_user(
-        session,
-        locker,
-        org,
-        repo,
-        issue,
-        auth.user,
-        message,
+        session, locker, org, repo, issue, auth_subject.subject, message
     )
 
     # get for return
@@ -580,7 +573,7 @@ async def add_issue_comment(
 async def badge_with_message(
     id: UUID,
     badge_message: IssueUpdateBadgeMessage,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
@@ -588,7 +581,7 @@ async def badge_with_message(
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, issue):
+    if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
     org = await organization_service.get(session, issue.organization_id)

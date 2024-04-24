@@ -1,9 +1,11 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
-from polar.authz.scope import Scope
+from polar.auth.dependencies import Authenticator, WebOrAnonymous, WebUser
+from polar.auth.models import Anonymous, AuthSubject, User
+from polar.auth.scope import Scope
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -35,11 +37,13 @@ from .service import article_service
 
 router = APIRouter(tags=["articles"])
 
-OptionalUserArticleRead = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.articles_read],
-    allow_anonymous=True,
-    fallback_to_anonymous=True,
+_ArticlesReadOrAnonymous = Authenticator(
+    allowed_subjects={User, Anonymous},
+    required_scopes={Scope.web_default, Scope.articles_read},
 )
+ArticlesReadOrAnonymous = Annotated[
+    AuthSubject[Anonymous | User], Depends(_ArticlesReadOrAnonymous)
+]
 
 
 @router.get(
@@ -70,12 +74,12 @@ async def email_unsubscribe(
 )
 async def list(
     pagination: PaginationParamsQuery,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[ArticleSchema]:
     results, count = await article_service.list(
-        session, auth.subject, pagination=pagination
+        session, auth_subject.subject, pagination=pagination
     )
 
     return ListResource.from_paginated_results(
@@ -83,7 +87,7 @@ async def list(
             ArticleSchema.from_db(
                 art,
                 include_admin_fields=await authz.can(
-                    auth.subject, AccessType.write, art
+                    auth_subject.subject, AccessType.write, art
                 ),
                 is_paid_subscriber=is_paid_subscriber,
             )
@@ -106,6 +110,7 @@ async def list(
 async def search(
     organization_name_platform: OrganizationNamePlatform,
     pagination: PaginationParamsQuery,
+    auth_subject: ArticlesReadOrAnonymous,
     show_unpublished: bool = Query(
         default=False,
         description="Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization.",
@@ -115,7 +120,6 @@ async def search(
         description="Set to true or false to include or exclude pinned articles",
     ),
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(OptionalUserArticleRead),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[ArticleSchema]:
     (organization_name, platform) = organization_name_platform
@@ -125,7 +129,7 @@ async def search(
 
     results, count = await article_service.search(
         session,
-        auth.subject,
+        auth_subject.subject,
         pagination=pagination,
         show_unpublished=show_unpublished,
         organization_id=org.id,
@@ -137,7 +141,7 @@ async def search(
             ArticleSchema.from_db(
                 art,
                 include_admin_fields=await authz.can(
-                    auth.subject, AccessType.write, art
+                    auth_subject.subject, AccessType.write, art
                 ),
                 is_paid_subscriber=is_paid_subscriber,
             )
@@ -160,8 +164,8 @@ async def search(
 async def lookup(
     slug: str,
     organization_name_platform: OrganizationNamePlatform,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
     (organization_name, platform) = organization_name_platform
@@ -170,7 +174,7 @@ async def lookup(
         raise ResourceNotFound()
 
     result = await article_service.get_readable_by_organization_and_slug(
-        session, auth.subject, organization_id=org.id, slug=slug
+        session, auth_subject.subject, organization_id=org.id, slug=slug
     )
     if not result:
         raise ResourceNotFound()
@@ -179,7 +183,9 @@ async def lookup(
 
     return ArticleSchema.from_db(
         art,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        include_admin_fields=await authz.can(
+            auth_subject.subject, AccessType.write, art
+        ),
         is_paid_subscriber=is_paid_subscriber,
     )
 
@@ -195,7 +201,7 @@ async def lookup(
 )
 async def create(
     create: ArticleCreate,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
@@ -203,17 +209,21 @@ async def create(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
-    art = await article_service.create(session, auth.subject, create)
+    art = await article_service.create(session, auth_subject.subject, create)
     await session.refresh(art, {"created_by_user", "organization"})
 
-    posthog.user_event(auth.user, "articles", "api", "create", {"article_id": art.id})
+    posthog.user_event(
+        auth_subject.subject, "articles", "api", "create", {"article_id": art.id}
+    )
 
     return ArticleSchema.from_db(
         art,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        include_admin_fields=await authz.can(
+            auth_subject.subject, AccessType.write, art
+        ),
         is_paid_subscriber=True,
     )
 
@@ -229,7 +239,7 @@ async def create(
 )
 async def receivers(
     organization_name_platform: OrganizationNamePlatform,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     paid_subscribers_only: bool = Query(...),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -240,7 +250,7 @@ async def receivers(
         raise ResourceNotFound()
 
     # admin required
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     (
@@ -267,11 +277,13 @@ async def receivers(
 )
 async def get(
     id: UUID,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-    auth: Auth = Depends(Auth.optional_user),
 ) -> ArticleSchema:
-    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    result = await article_service.get_readable_by_id(
+        session, auth_subject.subject, id=id
+    )
     if not result:
         raise ResourceNotFound()
 
@@ -279,7 +291,9 @@ async def get(
 
     return ArticleSchema.from_db(
         art,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        include_admin_fields=await authz.can(
+            auth_subject.subject, AccessType.write, art
+        ),
         is_paid_subscriber=is_paid_subscriber,
     )
 
@@ -295,10 +309,12 @@ async def get(
 )
 async def viewed(
     id: UUID,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
 ) -> ArticleViewedResponse:
-    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    result = await article_service.get_readable_by_id(
+        session, auth_subject.subject, id=id
+    )
     if not result:
         raise ResourceNotFound()
 
@@ -324,18 +340,20 @@ async def viewed(
 async def send_preview(
     id: UUID,
     preview: ArticlePreview,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticlePreviewResponse:
-    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    result = await article_service.get_readable_by_id(
+        session, auth_subject.subject, id=id
+    )
     if not result:
         raise ResourceNotFound()
 
     art, _ = result
 
     # admin required
-    if not await authz.can(auth.subject, AccessType.write, art):
+    if not await authz.can(auth_subject.subject, AccessType.write, art):
         raise Unauthorized()
 
     send_to_user = await user_service.get_by_email(session, preview.email)
@@ -343,7 +361,11 @@ async def send_preview(
         raise ResourceNotFound()
 
     posthog.user_event(
-        auth.user, "articles", "email_preview", "send", {"article_id": art.id}
+        auth_subject.subject,
+        "articles",
+        "email_preview",
+        "send",
+        {"article_id": art.id},
     )
 
     enqueue_job(
@@ -367,21 +389,25 @@ async def send_preview(
 )
 async def send(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSentResponse:
-    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    result = await article_service.get_readable_by_id(
+        session, auth_subject.subject, id=id
+    )
     if not result:
         raise ResourceNotFound()
 
     art, _ = result
 
     # admin required
-    if not await authz.can(auth.subject, AccessType.write, art):
+    if not await authz.can(auth_subject.subject, AccessType.write, art):
         raise Unauthorized()
 
-    posthog.user_event(auth.user, "articles", "email", "send", {"article_id": art.id})
+    posthog.user_event(
+        auth_subject.subject, "articles", "email", "send", {"article_id": art.id}
+    )
 
     await article_service.send_to_subscribers(session, art)
     return ArticleSentResponse(ok=True)
@@ -399,17 +425,19 @@ async def send(
 async def update(
     id: UUID,
     update: ArticleUpdate,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
-    result = await article_service.get_readable_by_id(session, auth.subject, id=id)
+    result = await article_service.get_readable_by_id(
+        session, auth_subject.subject, id=id
+    )
     if not result:
         raise ResourceNotFound()
 
     article, _ = result
 
-    if not await authz.can(auth.subject, AccessType.write, article):
+    if not await authz.can(auth_subject.subject, AccessType.write, article):
         raise Unauthorized()
 
     await article_service.update(session, article, update)
@@ -419,13 +447,17 @@ async def update(
     if not art:
         raise ResourceNotFound()
 
-    posthog.user_event(auth.user, "articles", "api", "update", {"article_id": art.id})
+    posthog.user_event(
+        auth_subject.subject, "articles", "api", "update", {"article_id": art.id}
+    )
 
     return ArticleSchema.from_db(
         art,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, art),
+        include_admin_fields=await authz.can(
+            auth_subject.subject, AccessType.write, art
+        ),
         # TODO
-        is_paid_subscriber=await authz.can(auth.subject, AccessType.write, art),
+        is_paid_subscriber=await authz.can(auth_subject.subject, AccessType.write, art),
     )
 
 
@@ -440,7 +472,7 @@ async def update(
 )
 async def delete(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleDeleteResponse:
@@ -448,12 +480,14 @@ async def delete(
     if not art:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, art):
+    if not await authz.can(auth_subject.subject, AccessType.write, art):
         raise Unauthorized()
 
     art.deleted_at = utc_now()
     session.add(art)
 
-    posthog.user_event(auth.user, "articles", "api", "delete", {"article_id": art.id})
+    posthog.user_event(
+        auth_subject.subject, "articles", "api", "delete", {"article_id": art.id}
+    )
 
     return ArticleDeleteResponse(ok=True)

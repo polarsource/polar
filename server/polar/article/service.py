@@ -11,7 +11,7 @@ from slugify import slugify
 from sqlalchemy import Select, desc, false, func, nullsfirst, select, update
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.authz.service import Subject
+from polar.auth.models import Subject
 from polar.config import settings
 from polar.exceptions import BadRequest
 from polar.kit.pagination import PaginationParams, paginate

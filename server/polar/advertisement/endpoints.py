@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import Depends
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.benefit.service.benefit_grant import (
@@ -67,7 +67,7 @@ async def _get_grant(
     status_code=200,
 )
 async def search_campaigns(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     subscription_id: UUID | None = None,
     benefit_id: UUID | None = None,
     session: AsyncSession = Depends(get_db_session),
@@ -79,7 +79,9 @@ async def search_campaigns(
     # Authz
     # if searching by subscription_id and benefit_id, require an active grant
     if subscription_id and benefit_id:
-        grant = await _get_grant(session, auth.user, subscription_id, benefit_id)
+        grant = await _get_grant(
+            session, auth_subject.subject, subscription_id, benefit_id
+        )
         if not grant or grant.revoked_at is not None:
             raise NotPermitted("This benefit does not exist or has been revoked")
     elif benefit_id:
@@ -92,7 +94,7 @@ async def search_campaigns(
         if not benefit:
             raise NotFound()
 
-        if not await authz.can(auth.subject, AccessType.write, benefit):
+        if not await authz.can(auth_subject.subject, AccessType.write, benefit):
             raise Unauthorized()
     else:
         raise BadRequest()
@@ -159,11 +161,11 @@ async def search_display(
 )
 async def create_campaign(
     create: CreateAdvertisementCampaign,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignModel:
     grant = await _get_grant(
-        session, auth.user, create.subscription_id, create.benefit_id
+        session, auth_subject.subject, create.subscription_id, create.benefit_id
     )
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")
@@ -180,14 +182,16 @@ async def create_campaign(
 )
 async def get_campaign(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignModel:
     ad = await advertisement_campaign_service.get(session, id)
     if not ad:
         raise ResourceNotFound()
 
-    grant = await _get_grant(session, auth.user, ad.subscription_id, ad.benefit_id)
+    grant = await _get_grant(
+        session, auth_subject.subject, ad.subscription_id, ad.benefit_id
+    )
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")
 
@@ -222,14 +226,16 @@ async def track_view(
 async def edit_campaign(
     id: UUID,
     campaign: EditAdvertisementCampaign,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignModel:
     ad = await advertisement_campaign_service.get(session, id)
     if not ad:
         raise ResourceNotFound()
 
-    grant = await _get_grant(session, auth.user, ad.subscription_id, ad.benefit_id)
+    grant = await _get_grant(
+        session, auth_subject.subject, ad.subscription_id, ad.benefit_id
+    )
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")
 
@@ -245,7 +251,7 @@ async def edit_campaign(
 )
 async def delete_campaign(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignModel:
     ad = await advertisement_campaign_service.get(session, id)
@@ -262,7 +268,7 @@ async def delete_campaign(
 
     # Verify that the authed user has been granted this benefit for this subscription
     grant = await benefit_grant_service.get_by_benefit_and_scope(
-        session, user=auth.user, benefit=benefit, subscription=subscription
+        session, user=auth_subject.subject, benefit=benefit, subscription=subscription
     )
     if not grant or grant.revoked_at is not None:
         raise NotPermitted("This benefit does not exist or has been revoked")

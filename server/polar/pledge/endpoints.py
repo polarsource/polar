@@ -3,8 +3,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar import locker
-from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.authz.service import AccessType, Authz, Subject
+from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.models import Subject, is_user
+from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
@@ -146,6 +147,7 @@ async def to_schema(session: AsyncSession, subject: Subject, p: Pledge) -> Pledg
     status_code=200,
 )
 async def search(
+    auth_subject: WebOrAnonymous,
     platform: Platforms | None = None,
     organization_name: str | None = Query(
         default=None,
@@ -169,7 +171,6 @@ async def search(
         default=None, description="Search pledges made by this user."
     ),
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[PledgeSchema]:
     list_by_orgs: list[UUID] = []
@@ -231,9 +232,7 @@ async def search(
 
     # must be currently authenticated user
     if by_user_id:
-        if not auth.user:
-            raise BadRequest("by_user_id must be the current authenticated users id")
-        if auth.user.id != by_user_id:
+        if not is_user(auth_subject) or auth_subject.subject.id != by_user_id:
             raise BadRequest("by_user_id must be the current authenticated users id")
 
     if issue_id:
@@ -263,9 +262,9 @@ async def search(
     )
 
     items = [
-        await to_schema(session, auth.subject, p)
+        await to_schema(session, auth_subject.subject, p)
         for p in pledges
-        if await authz.can(auth.subject, AccessType.read, p)
+        if await authz.can(auth_subject.subject, AccessType.read, p)
     ]
 
     return ListResource(
@@ -283,15 +282,15 @@ async def search(
 )
 async def summary(
     issue_id: UUID,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgePledgesSummary:
     issue = await issue_service.get(session, issue_id)
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, issue):
+    if not await authz.can(auth_subject.subject, AccessType.read, issue):
         raise Unauthorized()
 
     return await pledge_service.issue_pledge_summary(session, issue)
@@ -306,14 +305,14 @@ async def summary(
     status_code=200,
 )
 async def spending(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     organization_id: UUID = Query(
         description="Spending in this organization. Required."
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeSpending:
     res = await pledge_service.sum_pledges_period(
-        session, organization_id, user_id=auth.user.id
+        session, organization_id, user_id=auth_subject.subject.id
     )
     return PledgeSpending(amount=CurrencyAmount(currency="USD", amount=res))
 
@@ -328,7 +327,7 @@ async def spending(
 )
 async def get(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
@@ -336,10 +335,10 @@ async def get(
     if not pledge:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, pledge):
+    if not await authz.can(auth_subject.subject, AccessType.read, pledge):
         raise Unauthorized()
 
-    return await to_schema(session, auth.subject, pledge)
+    return await to_schema(session, auth_subject.subject, pledge)
 
 
 # Internal APIs below
@@ -354,8 +353,8 @@ async def get(
 )
 async def create(
     create: CreatePledgeFromPaymentIntent,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
     locker: locker.Locker = Depends(locker.get_locker),
 ) -> PledgeSchema:
@@ -373,7 +372,7 @@ async def create(
     if not ret:
         raise ResourceNotFound()
 
-    return await to_schema(session, auth.subject, ret)
+    return await to_schema(session, auth_subject.subject, ret)
 
 
 @router.post(
@@ -385,7 +384,7 @@ async def create(
 )
 async def create_pay_on_completion(
     create: CreatePledgePayLater,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
@@ -396,19 +395,19 @@ async def create_pay_on_completion(
         session=session,
         issue_id=create.issue_id,
         amount=create.amount,
-        by_user=auth.user if is_user_pledge else None,
+        by_user=auth_subject.subject if is_user_pledge else None,
         on_behalf_of_organization_id=create.on_behalf_of_organization_id
         if is_user_pledge
         else None,
         by_organization_id=create.by_organization_id if is_org_pledge else None,
-        authenticated_user=auth.user,
+        authenticated_user=auth_subject.subject,
     )
 
     ret = await pledge_service.get_with_loaded(session, pledge.id)
     if not ret:
         raise ResourceNotFound()
 
-    return await to_schema(session, auth.subject, ret)
+    return await to_schema(session, auth_subject.subject, ret)
 
 
 @router.post(
@@ -420,7 +419,7 @@ async def create_pay_on_completion(
 )
 async def create_invoice(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
@@ -428,7 +427,7 @@ async def create_invoice(
     if not pledge:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, pledge):
+    if not await authz.can(auth_subject.subject, AccessType.write, pledge):
         raise Unauthorized()
 
     await pledge_service.send_invoice(session, id)
@@ -437,7 +436,7 @@ async def create_invoice(
     if not ret:
         raise ResourceNotFound()
 
-    return await to_schema(session, auth.subject, ret)
+    return await to_schema(session, auth_subject.subject, ret)
 
 
 @router.post(
@@ -452,23 +451,23 @@ async def create_invoice(
 )
 async def create_payment_intent(
     intent: PledgeStripePaymentIntentCreate,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeStripePaymentIntentMutationResponse:
     issue = await issue_service.get(session, intent.issue_id)
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, issue):
+    if not await authz.can(auth_subject.subject, AccessType.read, issue):
         raise Unauthorized()
 
     # If on behalf of org, check that user is member of this org.
     if intent.on_behalf_of_organization_id:
-        if not auth.user:
+        if not is_user(auth_subject):
             raise Unauthorized()
         member = await user_organization_service.get_by_user_and_org(
-            session, auth.user.id, intent.on_behalf_of_organization_id
+            session, auth_subject.subject.id, intent.on_behalf_of_organization_id
         )
         if not member:
             raise Unauthorized()
@@ -484,7 +483,7 @@ async def create_payment_intent(
 
     return await payment_intent_service.create_payment_intent(
         session=session,
-        user=auth.user,
+        user=auth_subject.subject if is_user(auth_subject) else None,
         pledge_issue=issue,
         pledge_issue_org=pledge_issue_org,
         pledge_issue_repo=pledge_issue_repo,
@@ -498,16 +497,16 @@ async def create_payment_intent(
 )
 async def update_payment_intent(
     id: str,
+    auth_subject: WebOrAnonymous,
     updates: PledgeStripePaymentIntentUpdate,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
 ) -> PledgeStripePaymentIntentMutationResponse:
     # If on behalf of org, check that user is member of this org.
     if updates.on_behalf_of_organization_id:
-        if not auth.user:
+        if not is_user(auth_subject):
             raise Unauthorized()
         member = await user_organization_service.get_by_user_and_org(
-            session, auth.user.id, updates.on_behalf_of_organization_id
+            session, auth_subject.subject.id, updates.on_behalf_of_organization_id
         )
         if not member:
             raise Unauthorized()
@@ -525,7 +524,7 @@ async def update_payment_intent(
 async def dispute_pledge(
     pledge_id: UUID,
     reason: str,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
@@ -535,12 +534,11 @@ async def dispute_pledge(
 
     # authorize
     user_memberships = await user_organization_service.list_by_user_id(
-        session,
-        auth.user.id,
+        session, auth_subject.subject.id
     )
 
     if not pledge_service.user_can_admin_sender_pledge(
-        auth.user, pledge, user_memberships
+        auth_subject.subject, pledge, user_memberships
     ):
         raise HTTPException(
             status_code=403,
@@ -548,7 +546,7 @@ async def dispute_pledge(
         )
 
     await pledge_service.mark_disputed(
-        session, pledge_id=pledge_id, by_user_id=auth.user.id, reason=reason
+        session, pledge_id=pledge_id, by_user_id=auth_subject.subject.id, reason=reason
     )
 
     # get pledge again
@@ -556,4 +554,4 @@ async def dispute_pledge(
     if not pledge:
         raise HTTPException(status_code=404, detail="Pledge not found")
 
-    return await to_schema(session, auth.subject, pledge)
+    return await to_schema(session, auth_subject.subject, pledge)

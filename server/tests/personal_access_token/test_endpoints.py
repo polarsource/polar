@@ -143,28 +143,6 @@ async def test_incorrect_scope(auth_jwt: str, client: AsyncClient) -> None:
 
     assert (
         response.text
-        == '{"detail":"Missing required scope: have=articles:read requires=web_default,user:read"}'
+        == '{"detail":"Missing required scope: have=articles:read requires=web_default"}'
     )
     assert response.status_code == 403
-
-
-@pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
-async def test_correct_scope(auth_jwt: str, client: AsyncClient) -> None:
-    response = await client.post(
-        "/api/v1/personal_access_tokens",
-        json={"comment": "rss", "scopes": ["user:read"]},
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
-
-    assert response.status_code == 200
-    assert response.json()["expires_at"] is not None
-    assert len(response.json()["token"]) > 20
-    assert response.json()["comment"] == "rss"
-
-    response = await client.get(
-        "/api/v1/users/me",
-        headers={"Authorization": "Bearer " + response.json()["token"]},
-    )
-
-    assert response.status_code == 200

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import RedirectResponse
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import WebOrAnonymous
+from polar.auth.models import is_user
 from polar.auth.service import AuthService
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo
-from polar.models.user import User
 from polar.postgres import get_db_session
 from polar.posthog import posthog
 from polar.tags.api import Tags
@@ -47,11 +47,11 @@ async def request_magic_link(
 async def authenticate_magic_link(
     request: Request,
     return_to: ReturnTo,
+    auth_subject: WebOrAnonymous,
     token: str = Query(),
-    auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    if isinstance(auth.subject, User):
+    if is_user(auth_subject):
         return RedirectResponse(return_to, 303)
 
     try:

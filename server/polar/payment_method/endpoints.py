@@ -1,15 +1,13 @@
 import structlog
 from fastapi import APIRouter, Depends
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from .schemas import (
-    PaymentMethod,
-)
+from .schemas import PaymentMethod
 
 log = structlog.get_logger()
 
@@ -23,10 +21,10 @@ router = APIRouter(tags=["payment_methods"])
     status_code=200,
 )
 async def list(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PaymentMethod]:
-    pms = await stripe_service.list_user_payment_methods(session, auth.user)
+    pms = await stripe_service.list_user_payment_methods(session, auth_subject.subject)
 
     return ListResource(
         items=[PaymentMethod.from_stripe(pm) for pm in pms],
@@ -40,9 +38,6 @@ async def list(
     tags=[Tags.INTERNAL],
     status_code=200,
 )
-async def detach(
-    id: str,
-    auth: UserRequiredAuth,
-) -> PaymentMethod:
+async def detach(id: str, auth_subject: WebUser) -> PaymentMethod:
     pm = stripe_service.detach_payment_method(id)
     return PaymentMethod.from_stripe(pm)

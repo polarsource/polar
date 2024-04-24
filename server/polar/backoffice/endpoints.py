@@ -4,9 +4,9 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import AdminUser
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import ResourceNotFound
 from polar.integrations.github.service.issue import github_issue
 from polar.issue.schemas import Issue
 from polar.issue.service import issue as issue_service
@@ -39,7 +39,7 @@ log = structlog.get_logger()
 
 @router.get("/pledges", response_model=list[BackofficePledge], tags=[Tags.INTERNAL])
 async def pledges(
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> list[BackofficePledge]:
     return await bo_pledges_service.list_pledges(session)
@@ -76,8 +76,8 @@ def r(
     tags=[Tags.INTERNAL],
 )
 async def rewards(
+    auth_subject: AdminUser,
     issue_id: UUID | None = None,
-    auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BackofficeReward]:
     rewards = await reward_service.list(session, issue_id=issue_id)
@@ -96,7 +96,7 @@ async def rewards(
     tags=[Tags.INTERNAL],
 )
 async def rewards_pending(
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BackofficeReward]:
     rewards = await reward_service.list(session, is_transfered=False)
@@ -112,7 +112,7 @@ async def rewards_pending(
 @router.get("/issue/{id}", response_model=Issue, tags=[Tags.INTERNAL])
 async def issue(
     id: UUID,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> Issue:
     i = await issue_service.get_loaded(session, id)
@@ -145,7 +145,7 @@ class PledgeRewardTransfer(Schema):
 @router.post("/pledges/approve", response_model=BackofficeReward, tags=[Tags.INTERNAL])
 async def pledge_reward_transfer(
     body: PledgeRewardTransfer,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficeReward:
     await pledge_service.transfer(session, body.pledge_id, body.issue_reward_id)
@@ -172,7 +172,7 @@ async def pledge_reward_transfer(
 )
 async def pledge_create_invoice(
     pledge_id: UUID,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficePledge:
     await pledge_service.send_invoice(session, pledge_id)
@@ -186,14 +186,14 @@ async def pledge_create_invoice(
 )
 async def pledge_mark_disputed(
     pledge_id: UUID,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficePledge:
-    if not auth.user:
-        raise Unauthorized()
-
     await pledge_service.mark_disputed(
-        session, pledge_id, by_user_id=auth.user.id, reason="Disputed via Backoffice"
+        session,
+        pledge_id,
+        by_user_id=auth_subject.subject.id,
+        reason="Disputed via Backoffice",
     )
     return await get_pledge(session, pledge_id)
 
@@ -201,16 +201,13 @@ async def pledge_mark_disputed(
 @router.post("/badge", response_model=BackofficeBadgeResponse, tags=[Tags.INTERNAL])
 async def manage_badge(
     badge: BackofficeBadge,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficeBadgeResponse:
-    if not auth.user:
-        raise Unauthorized()
-
     log.info(
         "backoffice.badge",
         badge=badge.model_dump(mode="json"),
-        admin=auth.user.email,
+        admin=auth_subject.subject.email,
     )
 
     org = await organization_service.get_by_name(
@@ -268,12 +265,9 @@ async def manage_badge(
 async def update_badge_contents(
     org_slug: str,
     repo_slug: str,
-    auth: Auth = Depends(Auth.backoffice_user),
+    auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> dict[Any, Any]:
-    if not auth.user:
-        raise Unauthorized()
-
     org = await organization_service.get_by_name(session, Platforms.github, org_slug)
     if not org:
         raise ResourceNotFound()

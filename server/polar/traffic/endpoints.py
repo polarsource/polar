@@ -6,7 +6,7 @@ import structlog
 from fastapi import APIRouter, Depends, Query
 
 from polar.article.service import article_service
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -59,7 +59,7 @@ async def track_page_view(
     tags=[Tags.PUBLIC],
 )
 async def statistics(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     organization_name_platform: OptionalOrganizationNamePlatform,
     article_id: UUID | None = Query(None),
     start_date: datetime.date = Query(...),
@@ -78,7 +78,7 @@ async def statistics(
         if not article:
             raise ResourceNotFound()
 
-        if not await authz.can(auth.subject, AccessType.write, article):
+        if not await authz.can(auth_subject.subject, AccessType.write, article):
             raise Unauthorized()
 
         article_ids = [article.id]
@@ -90,7 +90,7 @@ async def statistics(
         if not org:
             raise ResourceNotFound()
 
-        if not await authz.can(auth.subject, AccessType.write, org):
+        if not await authz.can(auth_subject.subject, AccessType.write, org):
             raise Unauthorized()
 
         # all articles by org
@@ -123,7 +123,7 @@ async def statistics(
 )
 async def referrers(
     pagination: PaginationParamsQuery,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     organization_name_platform: OrganizationNamePlatform,
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
@@ -139,7 +139,7 @@ async def referrers(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     # all articles by org

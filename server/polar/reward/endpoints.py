@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebOrAnonymous, WebUser
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import ResourceNotFound, Unauthorized
@@ -32,7 +32,7 @@ router = APIRouter(tags=["rewards"])
     status_code=200,
 )
 async def search(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     pledges_to_organization: UUID | None = Query(
         default=None,
         description="Search rewards for pledges in this organization.",  # noqa: E501
@@ -67,11 +67,11 @@ async def search(
             reward,
             transaction,
             include_receiver_admin_fields=await authz.can(
-                auth.subject, AccessType.write, pledge
+                auth_subject.subject, AccessType.write, pledge
             ),
         )
         for pledge, reward, transaction in rewards
-        if await authz.can(auth.subject, AccessType.read, reward)
+        if await authz.can(auth_subject.subject, AccessType.read, reward)
     ]
 
     return ListResource(
@@ -129,15 +129,15 @@ def to_resource(
 )
 async def summary(
     issue_id: UUID,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> RewardsSummary:
     issue = await issue_service.get(session, issue_id)
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, issue):
+    if not await authz.can(auth_subject.subject, AccessType.read, issue):
         raise Unauthorized()
 
     rewards = await reward_service.list(session, issue_id=issue_id)

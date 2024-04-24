@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.config import settings
 from polar.exceptions import ResourceAlreadyExists, Unauthorized
 from polar.kit import jwt
@@ -64,9 +64,13 @@ oauth2_bot_authorize_callback = OAuth2AuthorizeCallback(
     tags=[Tags.INTERNAL],
 )
 async def discord_bot_authorize(
-    return_to: ReturnTo, request: Request, auth: UserRequiredAuth
+    return_to: ReturnTo, request: Request, auth_subject: WebUser
 ) -> RedirectResponse:
-    state = {"auth_type": "bot", "user_id": str(auth.user.id), "return_to": return_to}
+    state = {
+        "auth_type": "bot",
+        "user_id": str(auth_subject.subject.id),
+        "return_to": return_to,
+    }
 
     encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="discord_oauth")
 
@@ -84,7 +88,7 @@ async def discord_bot_authorize(
     "/bot/callback", name="integrations.discord.bot_callback", tags=[Tags.INTERNAL]
 )
 async def discord_bot_callback(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_bot_authorize_callback
     ),
@@ -92,7 +96,7 @@ async def discord_bot_callback(
     data, state = get_decoded_token_state(access_token_state)
 
     user_id = UUID(state["user_id"])
-    if user_id != auth.user.id or state["auth_type"] != "bot":
+    if user_id != auth_subject.subject.id or state["auth_type"] != "bot":
         raise Unauthorized()
 
     guild_id = data["guild"]["id"]
@@ -129,9 +133,13 @@ oauth2_user_authorize_callback = OAuth2AuthorizeCallback(
     tags=[Tags.INTERNAL],
 )
 async def discord_user_authorize(
-    return_to: ReturnTo, request: Request, auth: UserRequiredAuth
+    return_to: ReturnTo, request: Request, auth_subject: WebUser
 ) -> RedirectResponse:
-    state = {"auth_type": "user", "user_id": str(auth.user.id), "return_to": return_to}
+    state = {
+        "auth_type": "user",
+        "user_id": str(auth_subject.subject.id),
+        "return_to": return_to,
+    }
     encoded_state = jwt.encode(
         data=state,
         secret=settings.SECRET,
@@ -149,7 +157,7 @@ async def discord_user_authorize(
     "/user/callback", name="integrations.discord.user_callback", tags=[Tags.INTERNAL]
 )
 async def discord_user_callback(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_user_authorize_callback
@@ -158,13 +166,17 @@ async def discord_user_callback(
     data, state = get_decoded_token_state(access_token_state)
 
     user_id = UUID(state["user_id"])
-    if user_id != auth.user.id or state["auth_type"] != "user":
+    if user_id != auth_subject.subject.id or state["auth_type"] != "user":
         raise Unauthorized()
 
     try:
-        await discord_user_service.create_oauth_account(session, auth.user, data)
+        await discord_user_service.create_oauth_account(
+            session, auth_subject.subject, data
+        )
     except ResourceAlreadyExists:
-        existing = await discord_user_service.get_oauth_account(session, auth.user)
+        existing = await discord_user_service.get_oauth_account(
+            session, auth_subject.subject
+        )
         await discord_user_service.update_user_info(session, existing)
 
     redirect_to = get_safe_return_url(state["return_to"])
@@ -176,13 +188,8 @@ async def discord_user_callback(
 ###############################################################################
 
 
-@router.get(
-    "/guild/lookup",
-    response_model=DiscordGuild,
-    tags=[Tags.INTERNAL],
-    dependencies=[Depends(Auth.current_user)],
-)
-async def discord_guild_lookup(guild_token: str) -> DiscordGuild:
+@router.get("/guild/lookup", response_model=DiscordGuild, tags=[Tags.INTERNAL])
+async def discord_guild_lookup(guild_token: str, auth_subject: WebUser) -> DiscordGuild:
     try:
         guild_token_data = jwt.decode(
             token=guild_token,

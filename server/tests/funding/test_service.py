@@ -3,7 +3,7 @@ import uuid
 import pytest
 from sqlalchemy import select
 
-from polar.authz.service import Anonymous
+from polar.auth.models import Anonymous
 from polar.funding.schemas import FundingResultType, IssueFunding
 from polar.funding.service import ListFundingSortBy
 from polar.funding.service import funding as funding_service

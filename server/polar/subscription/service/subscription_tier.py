@@ -7,7 +7,8 @@ from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
-from polar.authz.service import AccessType, Authz, Subject
+from polar.auth.models import Subject
+from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.stripe.service import ProductUpdateKwargs

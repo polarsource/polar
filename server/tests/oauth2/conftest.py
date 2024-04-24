@@ -13,9 +13,9 @@ from collections.abc import Iterator
 import pytest
 
 from polar.app import app
-from polar.auth.dependencies import Auth
-from polar.authz.scope import SCOPES_SUPPORTED, Scope
-from polar.authz.service import ScopedSubject
+from polar.auth.dependencies import _authenticate
+from polar.auth.models import AuthMethod, AuthSubject
+from polar.auth.scope import SCOPES_SUPPORTED, Scope
 from polar.kit.db.postgres import Engine, Session
 from polar.models import Model, User
 from polar.oauth2.authorization_server import AuthorizationServer
@@ -95,14 +95,11 @@ def override_current_user(request: pytest.FixtureRequest, user: User) -> Iterato
         "override_current_user"
     )
     if override_current_user_marker is not None:
-        auth = Auth(
-            scoped_subject=ScopedSubject(subject=user, scopes=[Scope.web_default]),
-            auth_method=None,
+        auth_subject = AuthSubject(
+            user, scopes={Scope.web_default}, method=AuthMethod.COOKIE
         )
-        app.dependency_overrides[Auth.current_user] = lambda: auth
-        app.dependency_overrides[Auth.optional_user] = lambda: auth
+        app.dependency_overrides[_authenticate] = lambda: auth_subject
 
     yield
 
-    app.dependency_overrides.pop(Auth.current_user, None)
-    app.dependency_overrides.pop(Auth.optional_user, None)
+    app.dependency_overrides.pop(_authenticate, None)

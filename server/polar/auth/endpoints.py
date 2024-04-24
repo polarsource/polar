@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.auth.schemas import (
     CustomDomainExchangeRequest,
     CustomDomainExchangeResponse,
@@ -25,7 +25,7 @@ router = APIRouter(tags=["auth"])
     "/auth/custom_domain_forward",
 )
 async def custom_domain_forward(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     organization_id: UUID,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomDomainForwardResponse:
@@ -39,7 +39,7 @@ async def custom_domain_forward(
     token = jwt.encode(
         type="custom_domain_forward",
         data={
-            "user_id": str(auth.subject.id),
+            "user_id": str(auth_subject.subject.id),
             "domain": org.custom_domain,
         },
         secret=settings.CUSTOM_DOMAIN_JWT_KEY,

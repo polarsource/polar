@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 
 from polar.article.service import article_service
-from polar.authz.service import Anonymous, Subject
+from polar.auth.models import Anonymous, Subject
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (

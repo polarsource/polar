@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebOrAnonymous, WebUser
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
@@ -37,13 +37,11 @@ router = APIRouter(tags=["repositories"])
     status_code=200,
 )
 async def list(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[RepositorySchema]:
     orgs = await organization_service.list_all_orgs_by_user_id(
-        session,
-        auth.user.id,
-        is_admin_only=True,
+        session, auth_subject.subject.id, is_admin_only=True
     )
 
     repos = await repository.list_by(
@@ -65,10 +63,10 @@ async def list(
     responses={404: {}},
 )
 async def search(
+    auth_subject: WebOrAnonymous,
     platform: Platforms,
     organization_name: str,
     repository_name: str | None = None,
-    auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[RepositorySchema]:
@@ -92,7 +90,9 @@ async def search(
     # Anonymous requests can only see public repositories,
     # authed users can also see private repositories in orgs that they are a
     # member of
-    repos = [r for r in repos if await authz.can(auth.subject, AccessType.read, r)]
+    repos = [
+        r for r in repos if await authz.can(auth_subject.subject, AccessType.read, r)
+    ]
 
     return ListResource(
         items=[RepositorySchema.from_db(r) for r in repos],
@@ -110,10 +110,10 @@ async def search(
     responses={404: {}},
 )
 async def lookup(
+    auth_subject: WebOrAnonymous,
     platform: Platforms,
     organization_name: str,
     repository_name: str,
-    auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> RepositorySchema:
@@ -135,7 +135,7 @@ async def lookup(
         load_organization=True,
     )
 
-    if not repo or not await authz.can(auth.subject, AccessType.read, repo):
+    if not repo or not await authz.can(auth_subject.subject, AccessType.read, repo):
         raise HTTPException(
             status_code=404,
             detail="Repository not found",
@@ -155,7 +155,7 @@ async def lookup(
 )
 async def get(
     id: UUID,
-    auth: Auth = Depends(Auth.optional_user),
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> RepositorySchema:
@@ -167,7 +167,7 @@ async def get(
             detail="Repository not found",
         )
 
-    if not await authz.can(auth.subject, AccessType.read, repo):
+    if not await authz.can(auth_subject.subject, AccessType.read, repo):
         raise HTTPException(
             status_code=404,
             detail="Repository not found",
@@ -194,7 +194,7 @@ async def get(
 async def update(
     id: UUID,
     update: RepositoryUpdate,
-    auth: Auth = Depends(Auth.current_user),
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> RepositorySchema:
@@ -203,7 +203,7 @@ async def update(
     if not repo:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, repo):
+    if not await authz.can(auth_subject.subject, AccessType.write, repo):
         raise Unauthorized()
 
     if update.profile_settings is not None:
@@ -217,7 +217,7 @@ async def update(
         if update.profile_settings.highlighted_subscription_tiers is not None:
             for tier_id in update.profile_settings.highlighted_subscription_tiers:
                 tier = await subscription_tier_service.get_by_id(
-                    session, auth.subject, tier_id
+                    session, auth_subject.subject, tier_id
                 )
                 if not tier or tier.organization_id != repo.organization_id:
                     raise ResourceNotFound()

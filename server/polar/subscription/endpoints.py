@@ -7,7 +7,8 @@ from fastapi import Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from polar.auth.dependencies import Auth, WebOrAnonymous
+from polar.auth.dependencies import WebOrAnonymous
+from polar.auth.models import is_user
 from polar.authz.service import AccessType, Authz
 from polar.enums import UserSignupType
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
@@ -65,7 +66,7 @@ router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 async def search_subscription_tiers(
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
-    auth: auth.TiersReadOrAnonymousAuth,
+    auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
     include_archived: bool = Query(False),
@@ -89,7 +90,7 @@ async def search_subscription_tiers(
 
     results, count = await subscription_tier_service.search(
         session,
-        auth.subject,
+        auth_subject.subject,
         type=type,
         organization=organization,
         repository=repository,
@@ -112,11 +113,11 @@ async def search_subscription_tiers(
 )
 async def lookup_subscription_tier(
     subscription_tier_id: UUID4,
-    auth: auth.TiersReadOrAnonymousAuth,
+    auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth.subject, subscription_tier_id
+        session, auth_subject.subject, subscription_tier_id
     )
 
     if subscription_tier is None:
@@ -133,12 +134,12 @@ async def lookup_subscription_tier(
 )
 async def create_subscription_tier(
     subscription_tier_create: SubscriptionTierCreate,
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     return await subscription_tier_service.user_create(
-        session, authz, subscription_tier_create, auth.user
+        session, authz, subscription_tier_create, auth_subject.subject
     )
 
 
@@ -146,12 +147,12 @@ async def create_subscription_tier(
 async def update_subscription_tier(
     id: UUID4,
     subscription_tier_update: SubscriptionTierUpdate,
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth.subject, id
+        session, auth_subject.subject, id
     )
 
     if subscription_tier is None:
@@ -165,7 +166,7 @@ async def update_subscription_tier(
             raise BadRequest("Paid tiers must have at least one price")
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "subscriptions",
         "tier",
         "update",
@@ -173,7 +174,11 @@ async def update_subscription_tier(
     )
 
     return await subscription_tier_service.user_update(
-        session, authz, subscription_tier, subscription_tier_update, auth.user
+        session,
+        authz,
+        subscription_tier,
+        subscription_tier_update,
+        auth_subject.subject,
     )
 
 
@@ -182,19 +187,19 @@ async def update_subscription_tier(
 )
 async def archive_subscription_tier(
     id: UUID4,
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth.subject, id
+        session, auth_subject.subject, id
     )
 
     if subscription_tier is None:
         raise ResourceNotFound()
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "subscriptions",
         "tier",
         "archive",
@@ -202,7 +207,7 @@ async def archive_subscription_tier(
     )
 
     return await subscription_tier_service.archive(
-        session, authz, subscription_tier, auth.user
+        session, authz, subscription_tier, auth_subject.subject
     )
 
 
@@ -212,19 +217,19 @@ async def archive_subscription_tier(
 async def update_subscription_tier_benefits(
     id: UUID4,
     benefits_update: SubscriptionTierBenefitsUpdate,
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth.subject, id
+        session, auth_subject.subject, id
     )
 
     if subscription_tier is None:
         raise ResourceNotFound()
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "subscriptions",
         "tier_benefits",
         "update",
@@ -232,7 +237,11 @@ async def update_subscription_tier_benefits(
     )
 
     subscription_tier, _, _ = await subscription_tier_service.update_benefits(
-        session, authz, subscription_tier, benefits_update.benefits, auth.user
+        session,
+        authz,
+        subscription_tier,
+        benefits_update.benefits,
+        auth_subject.subject,
     )
     return subscription_tier
 
@@ -245,12 +254,12 @@ async def update_subscription_tier_benefits(
 )
 async def create_subscribe_session(
     session_create: SubscribeSessionCreate,
-    auth: Auth = Depends(WebOrAnonymous),
+    auth_subject: WebOrAnonymous,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth.subject, session_create.tier_id
+        session, auth_subject.subject, session_create.tier_id
     )
 
     if subscription_tier is None:
@@ -260,9 +269,9 @@ async def create_subscribe_session(
     if price is None:
         raise ResourceNotFound()
 
-    if auth.user:
+    if is_user(auth_subject):
         posthog.user_event(
-            auth.user,
+            auth_subject.subject,
             "subscriptions",
             "subscribe_session",
             "create",
@@ -274,8 +283,8 @@ async def create_subscribe_session(
         subscription_tier,
         price,
         str(session_create.success_url),
-        auth.subject,
-        auth.auth_method,
+        auth_subject.subject,
+        auth_subject.method,
         authz,
         customer_email=session_create.customer_email,
         organization_id=session_create.organization_subscriber_id,
@@ -300,7 +309,7 @@ async def get_subscribe_session(
     tags=[Tags.PUBLIC],
 )
 async def get_subscriptions_statistics(
-    auth: auth.SubscriptionsRead,
+    auth_subject: auth.CreatorSubscriptionsRead,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     start_date: date = Query(...),
@@ -327,7 +336,7 @@ async def get_subscriptions_statistics(
 
     periods = await subscription_service.get_statistics_periods(
         session,
-        auth.user,
+        auth_subject.subject,
         start_date=start_date,
         end_date=end_date,
         organization=organization,
@@ -351,7 +360,7 @@ SearchSorting = Annotated[
     tags=[Tags.PUBLIC],
 )
 async def search_subscriptions(
-    auth: auth.SubscriptionsRead,
+    auth_subject: auth.CreatorSubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     organization_name_platform: OrganizationNamePlatform,
@@ -385,7 +394,7 @@ async def search_subscriptions(
 
     results, count = await subscription_service.search(
         session,
-        auth.user,
+        auth_subject.subject,
         type=type,
         organization=organization,
         repository=repository,
@@ -411,7 +420,7 @@ async def search_subscriptions(
     tags=[Tags.PUBLIC],
 )
 async def search_subscribed_subscriptions(
-    auth: auth.SubscriptionsRead,
+    auth_subject: auth.BackerSubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     organization_name_platform: OptionalOrganizationNamePlatform,
@@ -446,7 +455,7 @@ async def search_subscribed_subscriptions(
 
     results, count = await subscription_service.search_subscribed(
         session,
-        auth.user,
+        auth_subject.subject,
         type=type,
         organization=organization,
         repository=repository,
@@ -474,19 +483,19 @@ async def search_subscribed_subscriptions(
 )
 async def create_free_subscription(
     free_subscription_create: FreeSubscriptionCreate,
-    auth: Auth = Depends(WebOrAnonymous),
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     subscription = await subscription_service.create_free_subscription(
         session,
         free_subscription_create=free_subscription_create,
-        auth_subject=auth.subject,
-        auth_method=auth.auth_method,
+        auth_subject=auth_subject.subject,
+        auth_method=auth_subject.method,
     )
 
-    if auth.user:
+    if is_user(auth_subject):
         posthog.user_event(
-            auth.user,
+            auth_subject.subject,
             "subscriptions",
             "free_subscription",
             "create",
@@ -507,7 +516,7 @@ async def create_free_subscription(
 )
 async def create_email_subscription(
     subscription_create: SubscriptionCreateEmail,
-    auth: auth.SubscriptionsWrite,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     authz: Authz = Depends(Authz.authz),
@@ -535,7 +544,7 @@ async def create_email_subscription(
             raise ResourceNotFound("Repository not found")
 
     # authz
-    if not await authz.can(auth.subject, AccessType.write, organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise Unauthorized()
 
     # find free tier
@@ -553,7 +562,7 @@ async def create_email_subscription(
     )
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "subscriptions",
         "email_import",
         "create",
@@ -569,7 +578,7 @@ async def create_email_subscription(
     tags=[Tags.PUBLIC],
 )
 async def subscriptions_import(
-    auth: auth.SubscriptionsWrite,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     file: UploadFile,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
@@ -605,7 +614,7 @@ async def subscriptions_import(
         raise ResourceNotFound("No free tier found")
 
     # authz
-    if not await authz.can(auth.subject, AccessType.write, organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise Unauthorized()
 
     emails = get_emails_from_csv(get_iterable_from_binary_io(file.file))
@@ -627,7 +636,7 @@ async def subscriptions_import(
             log.error("subscriptions_import.failed", e=e)
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "subscriptions",
         "import",
         "create",
@@ -645,7 +654,7 @@ async def subscriptions_import(
     tags=[Tags.PUBLIC],
 )
 async def subscriptions_export(
-    auth: auth.SubscriptionsRead,
+    auth_subject: auth.CreatorSubscriptionsRead,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     authz: Authz = Depends(Authz.authz),
@@ -673,7 +682,7 @@ async def subscriptions_export(
             raise ResourceNotFound("Repository not found")
 
     # authz
-    if not await authz.can(auth.subject, AccessType.write, organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise Unauthorized()
 
     async def create_csv() -> AsyncGenerator[str, None]:
@@ -682,7 +691,7 @@ async def subscriptions_export(
 
         (subscribers, _) = await subscription_service.search(
             session,
-            user=auth.subject,
+            user=auth_subject.subject,
             organization=organization,
             repository=repository,
             pagination=PaginationParams(limit=1000000, page=1),
@@ -702,7 +711,7 @@ async def subscriptions_export(
 
             yield ",".join(fields) + "\n"
 
-    posthog.user_event(auth.user, "subscriptions", "export", "create")
+    posthog.user_event(auth_subject.subject, "subscriptions", "export", "create")
 
     name = f"{organization.name}_subscribers.csv"
     headers = {"Content-Disposition": f'attachment; filename="{name}"'}
@@ -715,7 +724,7 @@ async def subscriptions_export(
 async def upgrade_subscription(
     id: UUID4,
     subscription_upgrade: SubscriptionUpgrade,
-    auth: auth.SubscriptionsWrite,
+    auth_subject: auth.BackerSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
@@ -723,14 +732,16 @@ async def upgrade_subscription(
     if subscription is None:
         raise ResourceNotFound()
 
-    posthog.user_event(auth.user, "subscriptions", "upgrade_subscription", "submit")
+    posthog.user_event(
+        auth_subject.subject, "subscriptions", "upgrade_subscription", "submit"
+    )
 
     return await subscription_service.upgrade_subscription(
         session,
         subscription=subscription,
         subscription_upgrade=subscription_upgrade,
         authz=authz,
-        user=auth.subject,
+        user=auth_subject.subject,
     )
 
 
@@ -739,7 +750,7 @@ async def upgrade_subscription(
 )
 async def cancel_subscription(
     id: UUID4,
-    auth: auth.SubscriptionsWrite,
+    auth_subject: auth.BackerSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
@@ -747,10 +758,10 @@ async def cancel_subscription(
     if subscription is None:
         raise ResourceNotFound()
 
-    posthog.user_event(auth.user, "subscriptions", "subscription", "cancel")
+    posthog.user_event(auth_subject.subject, "subscriptions", "subscription", "cancel")
 
     return await subscription_service.cancel_subscription(
-        session, subscription=subscription, authz=authz, user=auth.subject
+        session, subscription=subscription, authz=authz, user=auth_subject.subject
     )
 
 

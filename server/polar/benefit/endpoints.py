@@ -30,7 +30,7 @@ router = APIRouter(prefix="/benefits", tags=["benefits"])
 
 @router.get("/search", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC])
 async def search_benefits(
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsRead,
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
@@ -55,7 +55,7 @@ async def search_benefits(
 
     results, count = await benefit_service.search(
         session,
-        auth.subject,
+        auth_subject.subject,
         type=type,
         organization=organization,
         repository=repository,
@@ -73,10 +73,10 @@ async def search_benefits(
 @router.get("/lookup", response_model=BenefitSchema, tags=[Tags.PUBLIC])
 async def lookup_benefit(
     benefit_id: UUID4,
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    benefit = await benefit_service.get_by_id(session, auth.subject, benefit_id)
+    benefit = await benefit_service.get_by_id(session, auth_subject.subject, benefit_id)
 
     if benefit is None:
         raise ResourceNotFound()
@@ -86,17 +86,17 @@ async def lookup_benefit(
 
 @router.post("/", response_model=BenefitSchema, status_code=201, tags=[Tags.PUBLIC])
 async def create_benefit(
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     benefit_create: BenefitCreate = Body(..., discriminator="type"),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
     benefit = await benefit_service.user_create(
-        session, authz, benefit_create, auth.user
+        session, authz, benefit_create, auth_subject.subject
     )
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "benefits",
         "api",
         "create",
@@ -110,11 +110,11 @@ async def create_benefit(
 async def update_benefit(
     id: UUID4,
     benefit_update: BenefitUpdate,
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    benefit = await benefit_service.get_by_id(session, auth.subject, id)
+    benefit = await benefit_service.get_by_id(session, auth_subject.subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
@@ -123,7 +123,7 @@ async def update_benefit(
         raise BadRequest("The type of a benefit can't be changed.")
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "benefits",
         "api",
         "update",
@@ -131,28 +131,28 @@ async def update_benefit(
     )
 
     return await benefit_service.user_update(
-        session, authz, benefit, benefit_update, auth.user
+        session, authz, benefit, benefit_update, auth_subject.subject
     )
 
 
 @router.delete("/{id}", status_code=204, tags=[Tags.PUBLIC])
 async def delete_benefit(
     id: UUID4,
-    auth: auth.TiersWriteAuth,
+    auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    benefit = await benefit_service.get_by_id(session, auth.subject, id)
+    benefit = await benefit_service.get_by_id(session, auth_subject.subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
 
     posthog.user_event(
-        auth.user,
+        auth_subject.subject,
         "benefits",
         "api",
         "delete",
         {"benefit_id": benefit.id},
     )
 
-    await benefit_service.user_delete(session, authz, benefit, auth.user)
+    await benefit_service.user_delete(session, authz, benefit, auth_subject.subject)

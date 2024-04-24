@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
 
-from polar.authz.scope import Scope, scope_to_list
+from polar.auth.scope import Scope, scope_to_set
 from polar.kit.db.models import RecordModel
 from polar.oauth2.sub_type import SubTypeModelMixin
 
@@ -13,8 +13,8 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
     def get_expires_at(self) -> int:
         return cast(int, self.issued_at) + cast(int, self.expires_in)
 
-    def get_scopes(self) -> list[Scope]:
-        return scope_to_list(cast(str, self.get_scope()))
+    def get_scopes(self) -> set[Scope]:
+        return scope_to_set(cast(str, self.get_scope()))
 
     def get_introspection_data(self, issuer: str) -> dict[str, Any]:
         return {

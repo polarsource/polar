@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination
@@ -32,8 +32,8 @@ router = APIRouter(tags=["webhook_notifications"])
 )
 async def search(
     organization_name_platform: OrganizationNamePlatform,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[WebhookIntegrationSchema]:
     (organization_name, platform) = organization_name_platform
@@ -41,7 +41,7 @@ async def search(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     results = await webhook_notifications_service.search(
@@ -66,15 +66,15 @@ async def search(
 )
 async def create(
     create: WebhookIntegrationCreate,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookIntegrationSchema:
     org = await organization_service.get(session, create.organization_id)
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     res = await webhook_notifications_service.create(session, create_schema=create)
@@ -94,8 +94,8 @@ async def create(
 async def update(
     id: UUID,
     update: WebhookIntegrationUpdate,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookIntegrationSchema:
     wn = await webhook_notifications_service.get(session, id)
@@ -106,7 +106,7 @@ async def update(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     res = await webhook_notifications_service.update(session, webhook=wn, update=update)
@@ -125,8 +125,8 @@ async def update(
 )
 async def delete(
     id: UUID,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookIntegrationSchema:
     wn = await webhook_notifications_service.get(session, id)
@@ -137,7 +137,7 @@ async def delete(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     res = await webhook_notifications_service.delete(session, webhook=wn)

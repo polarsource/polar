@@ -4,7 +4,8 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query
 from pydantic import UUID4
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.models import is_user
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
@@ -48,14 +49,14 @@ async def search_donations(
     pagination: PaginationParamsQuery,
     to_organization_id: UUID4,
     sorting: SearchSorting,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[Donation]:
     to_organization = await organization_service.get(session, to_organization_id)
     if not to_organization:
         raise ResourceNotFound("Organization not found")
-    if not await authz.can(auth.subject, AccessType.write, to_organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, to_organization):
         raise Unauthorized()
 
     results, count = await donation_service.search(
@@ -78,8 +79,8 @@ async def search_donations(
 )
 async def create_payment_intent(
     intent: DonationCreateStripePaymentIntent,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
 ) -> DonationStripePaymentIntentMutationResponse:
     to_organization = await organization_service.get(session, intent.to_organization_id)
     if not to_organization:
@@ -91,10 +92,10 @@ async def create_payment_intent(
     # If on behalf of org, check that user is member of this org.
     on_behalf_of_organization: Organization | None = None
     if intent.on_behalf_of_organization_id:
-        if not auth.user:
+        if not is_user(auth_subject):
             raise Unauthorized()
         member = await user_organization_service.get_by_user_and_org(
-            session, auth.user.id, intent.on_behalf_of_organization_id
+            session, auth_subject.subject.id, intent.on_behalf_of_organization_id
         )
         if not member:
             raise Unauthorized()
@@ -120,7 +121,7 @@ async def create_payment_intent(
         receipt_email=intent.email,
         to_organization=to_organization,
         message=intent.message,
-        by_user=auth.user,
+        by_user=auth_subject.subject if is_user(auth_subject) else None,
         by_organization=None,
         on_behalf_of_organization=on_behalf_of_organization,
         issue_id=intent.issue_id,
@@ -142,16 +143,16 @@ async def create_payment_intent(
 async def update_payment_intent(
     id: str,
     updates: DonationUpdateStripePaymentIntent,
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.optional_user),
 ) -> DonationStripePaymentIntentMutationResponse:
     # If on behalf of org, check that user is member of this org.
     on_behalf_of_organization: Organization | None = None
     if updates.on_behalf_of_organization_id:
-        if not auth.user:
+        if not is_user(auth_subject):
             raise Unauthorized()
         member = await user_organization_service.get_by_user_and_org(
-            session, auth.user.id, updates.on_behalf_of_organization_id
+            session, auth_subject.subject.id, updates.on_behalf_of_organization_id
         )
         if not member:
             raise Unauthorized()
@@ -170,7 +171,7 @@ async def update_payment_intent(
         receipt_email=updates.email,
         setup_future_usage=updates.setup_future_usage,
         message=updates.message,
-        by_user=auth.user,
+        by_user=auth_subject.subject if is_user(auth_subject) else None,
         by_organization=None,
         on_behalf_of_organization=on_behalf_of_organization,
     )
@@ -190,7 +191,7 @@ async def update_payment_intent(
     tags=[Tags.PUBLIC],
 )
 async def statistics(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     to_organization_id: UUID4,
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
@@ -202,7 +203,7 @@ async def statistics(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     res = await donation_service.statistics(

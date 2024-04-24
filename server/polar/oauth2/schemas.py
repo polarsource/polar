@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import UUID4, BeforeValidator
 
-from polar.authz.scope import Scope, scope_to_list
+from polar.auth.scope import Scope, scope_to_list
 from polar.kit.schemas import Schema, TimestampedSchema
 
 from .sub_type import SubType

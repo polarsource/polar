@@ -5,8 +5,7 @@ import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
-from polar.authz.scope import Scope
-from polar.authz.service import ScopedSubject
+from polar.auth.scope import Scope
 from polar.config import settings
 from polar.exceptions import BadRequest
 from polar.kit import jwt
@@ -109,7 +108,7 @@ class AuthService:
     @classmethod
     async def get_user_from_auth_header(
         cls, session: AsyncSession, *, token: str
-    ) -> ScopedSubject | None:
+    ) -> tuple[User, set[Scope]] | None:
         try:
             decoded = jwt.decode_unsafe(token=token, secret=settings.SECRET)
 
@@ -122,12 +121,8 @@ class AuthService:
             if "user_id" in decoded:
                 user = await user_service.get(session, id=decoded["user_id"])
                 if user:
-                    return ScopedSubject(
-                        subject=user,
-                        scopes=[
-                            Scope.web_default
-                        ],  # cookie based auth, has full admin scope
-                    )
+                    # cookie based auth, has full admin scope
+                    return user, {Scope.web_default}
 
             # Personal Access Token in the Authorization header.
             if "pat_id" in decoded:
@@ -138,13 +133,13 @@ class AuthService:
                     return None
 
                 if "scopes" in decoded:
-                    scopes = [Scope(x) for x in decoded["scopes"].split(",")]
+                    scopes = {Scope(x) for x in decoded["scopes"].split(",")}
                 else:
-                    scopes = [Scope.web_default]
+                    scopes = {Scope.web_default}
 
                 await personal_access_token_service.record_usage(session, id=pat.id)
 
-                return ScopedSubject(subject=pat.user, scopes=scopes)
+                return pat.user, scopes
 
             raise Exception("failed to decode token")
         except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):

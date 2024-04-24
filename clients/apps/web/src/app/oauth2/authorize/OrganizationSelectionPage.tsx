@@ -1,7 +1,10 @@
 import LogoType from '@/components/Brand/LogoType'
 import { getServerURL } from '@/utils/api'
 import { AddOutlined } from '@mui/icons-material'
-import { AuthorizeResponseOrganization } from '@polar-sh/sdk'
+import {
+  AuthorizeOrganization,
+  AuthorizeResponseOrganization,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -16,11 +19,23 @@ const OrganizationSelectionPage = ({
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
   const actionURL = `${getServerURL()}/api/v1/oauth2/consent?${serializedSearchParams}`
 
-  const buildOrganizationSelectionURL = (organizationId: string) => {
-    const serializedSearchParams = new URLSearchParams({
-      ...searchParams,
-      sub: organizationId,
-    }).toString()
+  const buildOrganizationSelectionURL = (
+    organization: AuthorizeOrganization,
+  ) => {
+    const updatedSearchParams = organization.is_personal
+      ? {
+          // For personal organization, we issue a user token
+          // The backend should handle this automatically, but we still change the query for clarity
+          ...searchParams,
+          sub_type: 'user',
+        }
+      : {
+          ...searchParams,
+          sub: organization.id,
+        }
+    const serializedSearchParams = new URLSearchParams(
+      updatedSearchParams,
+    ).toString()
     return `?${serializedSearchParams}`
   }
 
@@ -60,7 +75,7 @@ const OrganizationSelectionPage = ({
             {organizations.map((organization) => (
               <Link
                 key={organization.id}
-                href={buildOrganizationSelectionURL(organization.id)}
+                href={buildOrganizationSelectionURL(organization)}
               >
                 <div className="hover:bg-polar-600 flex w-full flex-row items-center gap-2 rounded-md border px-4 py-3 text-sm transition-colors">
                   <Avatar

@@ -8,6 +8,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -28,6 +29,7 @@ class Repository(RecordModel):
     __table_args__ = (
         UniqueConstraint("external_id"),
         UniqueConstraint("organization_id", "name"),
+        Index("idx_deleted_at_is_private", "deleted_at", "is_private"),
     )
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)

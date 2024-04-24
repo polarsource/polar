@@ -152,6 +152,13 @@ class Issue(IssueFields, RecordModel):
             "idx_issues_positive_total_engagement_count",
             "total_engagement_count",
         ),
+        Index(
+            "idx_default_search",
+            "pledged_amount_sum",
+            "last_pledged_at",
+            "total_engagement_count",
+            "created_at",
+        ),
     )
 
     TRANSFERRABLE_PROPERTIES: ClassVar[set[str]] = {

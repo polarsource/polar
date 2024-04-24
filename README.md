@@ -66,7 +66,7 @@ Start building, engaging & converting your own community into free- and paid sub
 _Subscribe to us on Polar [here](https://polar.sh/polarsource). We ship features & improvements fast._
 
 ### Polar API & SDK
-You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api) and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
+You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api), [Webhook API](https://api.polar.sh/docs#/webhooks), and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
 
 ## Pricing
 

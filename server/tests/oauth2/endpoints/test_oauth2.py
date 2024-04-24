@@ -360,6 +360,35 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert "error=consent_required" in location
 
+    @pytest.mark.override_current_user
+    async def test_organization_personal(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+        user: User,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        organization.is_personal = True
+        await save_fixture(organization)
+
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+        response = await client.get("/api/v1/oauth2/authorize", params=params)
+
+        json = response.json()
+        assert json["client"]["client_id"] == oauth2_client.client_id
+        assert set(json["scopes"]) == {"openid", "profile", "email"}
+        assert json["sub_type"] == SubType.user
+        assert json["sub"]["id"] == str(user.id)
+
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
@@ -521,6 +550,46 @@ class TestOAuth2Consent:
             sync_session,
             sub_type=SubType.organization,
             sub_id=organization.id,
+            client_id=cast(str, oauth2_client.client_id),
+        )
+        assert grant is not None
+        assert grant.scopes == ["openid", "profile", "email"]
+
+    @pytest.mark.override_current_user
+    async def test_organization_personal(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user: User,
+        user_organization_admin: UserOrganization,
+        oauth2_client: OAuth2Client,
+        sync_session: Session,
+    ) -> None:
+        organization.is_personal = True
+        await save_fixture(organization)
+
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+        response = await client.post(
+            "/api/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        assert location.startswith(params["redirect_uri"])
+        assert "code=" in location
+
+        grant = oauth2_grant_service._get_by_sub_and_client_id(
+            sync_session,
+            sub_type=SubType.user,
+            sub_id=user.id,
             client_id=cast(str, oauth2_client.client_id),
         )
         assert grant is not None

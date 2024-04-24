@@ -32,7 +32,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         <h3 className="dark:text-polar-50 line-clamp-2 font-medium leading-snug text-gray-950">
           {product.name}
         </h3>
-        <p className="dark:text-polar-400 line-clamp-2 text-sm text-gray-600">
+        <div className="dark:text-polar-400 line-clamp-2 text-sm text-gray-600">
           <Markdown
             options={{
               ...markdownOpts,
@@ -50,7 +50,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           >
             {product.description.substring(0, 100)}
           </Markdown>
-        </p>
+        </div>
       </div>
       <div className="flex flex-row items-center justify-between">
         <h3 className="text-lg leading-snug text-blue-500 dark:text-blue-400">

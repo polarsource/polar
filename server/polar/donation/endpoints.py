@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query
 from pydantic import UUID4
 
-from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
@@ -79,7 +79,7 @@ async def search_donations(
 )
 async def create_payment_intent(
     intent: DonationCreateStripePaymentIntent,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> DonationStripePaymentIntentMutationResponse:
     to_organization = await organization_service.get(session, intent.to_organization_id)
@@ -143,7 +143,7 @@ async def create_payment_intent(
 async def update_payment_intent(
     id: str,
     updates: DonationUpdateStripePaymentIntent,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> DonationStripePaymentIntentMutationResponse:
     # If on behalf of org, check that user is member of this org.

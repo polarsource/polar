@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import RedirectResponse
 
-from polar.auth.dependencies import WebOrAnonymous
+from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import AuthService
 from polar.config import settings
@@ -47,7 +47,7 @@ async def request_magic_link(
 async def authenticate_magic_link(
     request: Request,
     return_to: ReturnTo,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     token: str = Query(),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:

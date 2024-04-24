@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from polar.auth.dependencies import WebOrAnonymous
+from polar.auth.dependencies import WebUserOrAnonymous
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
@@ -29,7 +29,7 @@ router = APIRouter(tags=["pull_requests"])
     responses={404: {}},
 )
 async def search(
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     references_issue_id: UUID | None = Query(
         default=None, description="Search pull requests that are mentioning this issue"
     ),

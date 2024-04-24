@@ -3,7 +3,7 @@ from typing import Literal, cast
 
 from fastapi import Depends, Form, HTTPException, Request, Response
 
-from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token, Organization
@@ -61,7 +61,7 @@ async def oauth2_configure(
 @router.get("/authorize", name="oauth2.authorize")
 async def oauth2_authorize(
     request: Request,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
     session: AsyncSession = Depends(get_db_session),
 ) -> AuthorizeResponse:

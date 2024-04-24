@@ -15,7 +15,7 @@ from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 from pydantic import UUID4, BaseModel, ValidationError
 
-from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import AuthService
 from polar.authz.service import AccessType, Authz
@@ -81,7 +81,7 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
 @router.get("/authorize", name="integrations.github.authorize", tags=[Tags.INTERNAL])
 async def github_authorize(
     request: Request,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
     payment_intent_id: str | None = None,
     user_signup_type: UserSignupType | None = None,
@@ -110,7 +110,7 @@ async def github_authorize(
 @router.get("/callback", name="integrations.github.callback", tags=[Tags.INTERNAL])
 async def github_callback(
     request: Request,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback

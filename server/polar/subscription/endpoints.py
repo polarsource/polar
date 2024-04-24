@@ -7,7 +7,7 @@ from fastapi import Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from polar.auth.dependencies import WebOrAnonymous
+from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.authz.service import AccessType, Authz
 from polar.enums import UserSignupType
@@ -254,7 +254,7 @@ async def update_subscription_tier_benefits(
 )
 async def create_subscribe_session(
     session_create: SubscribeSessionCreate,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
@@ -483,7 +483,7 @@ async def search_subscribed_subscriptions(
 )
 async def create_free_subscription(
     free_subscription_create: FreeSubscriptionCreate,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     subscription = await subscription_service.create_free_subscription(

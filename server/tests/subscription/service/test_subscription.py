@@ -6,8 +6,8 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
-from polar.auth.dependencies import AuthMethod
-from polar.authz.service import Anonymous, Authz
+from polar.auth.models import Anonymous, AuthMethod
+from polar.authz.service import Authz
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.held_balance.service import held_balance as held_balance_service

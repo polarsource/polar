@@ -2,42 +2,71 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from polar.auth.dependencies import Auth, AuthenticatedWithScope, AuthRequired
-from polar.authz.scope import Scope
+from polar.auth.dependencies import Authenticator
+from polar.auth.models import Anonymous, AuthSubject, User
+from polar.auth.scope import Scope
 
-_TiersReadOrAnonymousAuth = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.subscription_tiers_read],
-    allow_anonymous=True,
-    fallback_to_anonymous=True,
+_CreatorSubscriptionsReadOrAnonymous = Authenticator(
+    required_scopes={
+        Scope.web_default,
+        Scope.creator_subscriptions_read,
+        Scope.creator_subscriptions_write,
+    },
+    allowed_subjects={Anonymous, User},
 )
-TiersReadOrAnonymousAuth = Annotated[Auth, Depends(_TiersReadOrAnonymousAuth)]
-
-_TiersReadAuth = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.subscription_tiers_read]
-)
-TiersReadAuth = Annotated[AuthRequired, Depends(_TiersReadAuth)]
-
-_TiersWriteAuth = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.subscription_tiers_write]
-)
-TiersWriteAuth = Annotated[AuthRequired, Depends(_TiersWriteAuth)]
-
-
-_SubscriptionsReadOrAnonymousAuth = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.subscriptions_read],
-    allow_anonymous=True,
-    fallback_to_anonymous=True,
-)
-SubscriptionsReadOrAnonymousAuth = Annotated[
-    Auth, Depends(_SubscriptionsReadOrAnonymousAuth)
+CreatorSubscriptionsReadOrAnonymous = Annotated[
+    AuthSubject[Anonymous | User], Depends(_CreatorSubscriptionsReadOrAnonymous)
 ]
 
-_SubscriptionsRead = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.subscriptions_read]
+_CreatorSubscriptionsRead = Authenticator(
+    required_scopes={
+        Scope.web_default,
+        Scope.creator_subscriptions_read,
+        Scope.creator_subscriptions_write,
+    },
+    allowed_subjects={User},
 )
-SubscriptionsRead = Annotated[AuthRequired, Depends(_SubscriptionsRead)]
+CreatorSubscriptionsRead = Annotated[
+    AuthSubject[User], Depends(_CreatorSubscriptionsRead)
+]
 
-_SubscriptionsWrite = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.subscriptions_write]
+
+_CreatorSubscriptionsWrite = Authenticator(
+    required_scopes={Scope.web_default, Scope.creator_subscriptions_write},
+    allowed_subjects={User},
 )
-SubscriptionsWrite = Annotated[AuthRequired, Depends(_SubscriptionsWrite)]
+CreatorSubscriptionsWrite = Annotated[
+    AuthSubject[User], Depends(_CreatorSubscriptionsWrite)
+]
+
+_BackerSubscriptionsReadOrAnonymous = Authenticator(
+    required_scopes={
+        Scope.web_default,
+        Scope.backer_subscriptions_read,
+        Scope.backer_subscriptions_write,
+    },
+    allowed_subjects={Anonymous, User},
+)
+BackerSubscriptionsReadOrAnonymous = Annotated[
+    AuthSubject[Anonymous | User], Depends(_BackerSubscriptionsReadOrAnonymous)
+]
+
+_BackerSubscriptionsRead = Authenticator(
+    required_scopes={
+        Scope.web_default,
+        Scope.backer_subscriptions_read,
+        Scope.backer_subscriptions_write,
+    },
+    allowed_subjects={User},
+)
+BackerSubscriptionsRead = Annotated[
+    AuthSubject[User], Depends(_BackerSubscriptionsRead)
+]
+
+_BackerSubscriptionsWrite = Authenticator(
+    required_scopes={Scope.web_default, Scope.backer_subscriptions_write},
+    allowed_subjects={User},
+)
+BackerSubscriptionsWrite = Annotated[
+    AuthSubject[User], Depends(_BackerSubscriptionsWrite)
+]

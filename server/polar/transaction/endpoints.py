@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.account.service import account as account_service
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
@@ -40,7 +40,7 @@ SearchSorting = Annotated[
 async def search_transactions(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     type: TransactionType | None = Query(None),
     account_id: UUID4 | None = Query(None),
     payment_user_id: UUID4 | None = Query(None),
@@ -50,7 +50,7 @@ async def search_transactions(
 ) -> ListResource[Transaction]:
     results, count = await transaction_service.search(
         session,
-        auth.subject,
+        auth_subject.subject,
         type=type,
         account_id=account_id,
         payment_user_id=payment_user_id,
@@ -70,17 +70,17 @@ async def search_transactions(
 @router.get("/lookup", response_model=TransactionDetails, tags=[Tags.PUBLIC])
 async def lookup_transaction(
     transaction_id: UUID4,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> TransactionDetails:
     return TransactionDetails.model_validate(
-        await transaction_service.lookup(session, transaction_id, auth.subject)
+        await transaction_service.lookup(session, transaction_id, auth_subject.subject)
     )
 
 
 @router.get("/summary", response_model=TransactionsSummary, tags=[Tags.PUBLIC])
 async def get_summary(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     account_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -89,12 +89,14 @@ async def get_summary(
     if account is None:
         raise ResourceNotFound("Account not found")
 
-    return await transaction_service.get_summary(session, auth.subject, account, authz)
+    return await transaction_service.get_summary(
+        session, auth_subject.subject, account, authz
+    )
 
 
 @router.get("/payouts", response_model=PayoutEstimate, tags=[Tags.PUBLIC])
 async def get_payout_estimate(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     account_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -103,7 +105,7 @@ async def get_payout_estimate(
     if account is None:
         raise ResourceNotFound("Account not found")
 
-    if not await authz.can(auth.user, AccessType.write, account):
+    if not await authz.can(auth_subject.subject, AccessType.write, account):
         raise NotPermitted()
 
     return await payout_transaction_service.get_payout_estimate(
@@ -115,7 +117,7 @@ async def get_payout_estimate(
     "/payouts", response_model=Transaction, status_code=201, tags=[Tags.PUBLIC]
 )
 async def create_payout(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     payout_create: PayoutCreate,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -125,7 +127,7 @@ async def create_payout(
     if account is None:
         raise ResourceNotFound("Account not found")
 
-    if not await authz.can(auth.user, AccessType.write, account):
+    if not await authz.can(auth_subject.subject, AccessType.write, account):
         raise NotPermitted()
 
     return await payout_transaction_service.create_payout(session, account=account)
@@ -134,7 +136,7 @@ async def create_payout(
 @router.get("/payouts/{id}/csv", tags=[Tags.PUBLIC])
 async def get_payout_csv(
     id: UUID4,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
     authz: Authz = Depends(Authz.authz),
@@ -148,7 +150,7 @@ async def get_payout_csv(
     account = await account_service.get(session, payout.account_id)
     assert account is not None
 
-    if not await authz.can(auth.user, AccessType.write, account):
+    if not await authz.can(auth_subject.subject, AccessType.write, account):
         raise NotPermitted()
 
     content = payout_transaction_service.get_payout_csv(

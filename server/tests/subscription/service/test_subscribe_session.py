@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from polar.auth.dependencies import AuthMethod
-from polar.authz.service import Anonymous, Authz
+from polar.auth.models import Anonymous, AuthMethod
+from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.models import Organization, SubscriptionTier, SubscriptionTierPrice, User
 from polar.postgres import AsyncSession

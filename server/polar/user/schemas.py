@@ -3,6 +3,7 @@ from typing import Any, Self
 
 from pydantic import UUID4, EmailStr, Field
 
+from polar.auth.scope import Scope
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.user import OAuthPlatform
 from polar.models.user import User as UserModel
@@ -68,4 +69,4 @@ class UserStripePortalSession(Schema):
 
 
 class UserScopes(Schema):
-    scopes: list[str]
+    scopes: list[Scope]

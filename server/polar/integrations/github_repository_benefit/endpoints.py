@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.config import settings
 from polar.eventstream.service import publish
 from polar.exceptions import (
@@ -88,9 +88,7 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
     tags=[Tags.INTERNAL],
 )
 async def user_authorize(
-    request: Request,
-    return_to: ReturnTo,
-    auth: UserRequiredAuth,
+    request: Request, return_to: ReturnTo, auth_subject: WebUser
 ) -> RedirectResponse:
     state = {"return_to": return_to}
 
@@ -114,7 +112,7 @@ async def user_authorize(
     tags=[Tags.INTERNAL],
 )
 async def user_callback(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback
@@ -125,12 +123,12 @@ async def user_callback(
     try:
         await github_repository_benefit_user_service.create_oauth_account(
             session,
-            auth.user,
+            auth_subject.subject,
             token_data,
         )
     except ResourceAlreadyExists:
         await github_repository_benefit_user_service.update_oauth_account(
-            session, auth.user, token_data
+            session, auth_subject.subject, token_data
         )
 
     return_to = state["return_to"]
@@ -146,11 +144,11 @@ async def user_callback(
     tags=[Tags.INTERNAL],
 )
 async def user_repositories(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> GitHubInvitesBenefitRepositories:
     oauth = await github_repository_benefit_user_service.get_oauth_account(
-        session, auth.user
+        session, auth_subject.subject
     )
 
     installations = (
@@ -183,8 +181,7 @@ async def user_repositories(
     tags=[Tags.INTERNAL],
 )
 async def installation_install(
-    request: Request,
-    auth: UserRequiredAuth,
+    request: Request, auth_subject: WebUser
 ) -> RedirectResponse:
     return RedirectResponse(
         f"https://github.com/apps/{settings.GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE}/installations/new",
@@ -197,14 +194,11 @@ async def installation_install(
     name="integrations.github_repository_benefit.installation_callback",
     tags=[Tags.INTERNAL],
 )
-async def installation_callback(
-    request: Request,
-    auth: UserRequiredAuth,
-) -> Response:
+async def installation_callback(request: Request, auth_subject: WebUser) -> Response:
     await publish(
         "integrations.github_repository_benefit.installed",
         payload={},
-        user_id=auth.user.id,
+        user_id=auth_subject.subject.id,
     )
 
     return Response("Installation successful, you can close this page.")

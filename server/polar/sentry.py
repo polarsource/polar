@@ -11,7 +11,8 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.scope import add_global_event_processor
 from sentry_sdk.utils import Dsn
 
-from polar.auth.dependencies import Auth, AuthenticatedWithScope
+from polar.auth.dependencies import Authenticator
+from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
 from polar.posthog import posthog
 
@@ -126,18 +127,9 @@ def configure_sentry() -> None:
 
 
 async def set_sentry_user(
-    auth: Auth = Depends(
-        AuthenticatedWithScope(
-            allow_anonymous=True,
-            fallback_to_anonymous=True,
-        )
-    ),
+    auth_subject: AuthSubject[Subject] = Depends(Authenticator()),
 ) -> None:
-    if auth.user is not None:
-        sentry_sdk.set_user(
-            {
-                "id": str(auth.user.id),
-                "email": auth.user.email,
-            }
-        )
-        sentry_sdk.set_tag(POSTHOG_ID_TAG, auth.user.posthog_distinct_id)
+    if is_user(auth_subject):
+        user = auth_subject.subject
+        sentry_sdk.set_user({"id": str(user.id), "email": user.email})
+        sentry_sdk.set_tag(POSTHOG_ID_TAG, user.posthog_distinct_id)

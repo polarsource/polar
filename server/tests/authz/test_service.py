@@ -3,7 +3,8 @@ from typing import Any
 
 import pytest
 
-from polar.authz.service import AccessType, Anonymous, Authz, Subject
+from polar.auth.models import Anonymous, Subject
+from polar.authz.service import AccessType, Authz
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization

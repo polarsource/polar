@@ -1,7 +1,7 @@
 import uuid
 
-from polar.auth.dependencies import AuthMethod
-from polar.authz.service import AccessType, Anonymous, Authz, Subject
+from polar.auth.models import Anonymous, AuthMethod, Subject
+from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound, Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession

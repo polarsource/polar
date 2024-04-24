@@ -15,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import contains_eager, load_only
 
-from polar.authz.service import Anonymous, Subject
+from polar.auth.models import Anonymous, Subject
 from polar.funding.schemas import FundingResultType
 from polar.issue.search import search_query
 from polar.kit.pagination import PaginationParams

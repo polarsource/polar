@@ -23,8 +23,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
-from polar.auth.dependencies import AuthMethod
-from polar.authz.service import AccessType, Authz, Subject
+from polar.auth.models import AuthMethod, Subject
+from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound

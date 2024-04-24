@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, NotPermitted, ResourceNotFound
@@ -21,13 +21,13 @@ router = APIRouter(tags=["accounts"])
     "/accounts/search", response_model=ListResource[Account], tags=[Tags.PUBLIC]
 )
 async def search(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[Account]:
     results, count = await account_service.search(
         session,
-        auth.subject,
+        auth_subject.subject,
         pagination=pagination,
     )
 
@@ -41,7 +41,7 @@ async def search(
 @router.get("/accounts/{id}", tags=[Tags.PUBLIC], response_model=Account)
 async def get(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> Account:
@@ -49,7 +49,7 @@ async def get(
     if not acc:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.read, acc):
+    if not await authz.can(auth_subject.subject, AccessType.read, acc):
         raise NotPermitted()
 
     return Account.from_db(acc)
@@ -60,7 +60,7 @@ async def get(
 )
 async def onboarding_link(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     return_path: str = Query(...),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -69,7 +69,7 @@ async def onboarding_link(
     if not acc:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, acc):
+    if not await authz.can(auth_subject.subject, AccessType.write, acc):
         raise NotPermitted()
 
     if acc.account_type == AccountType.open_collective:
@@ -87,7 +87,7 @@ async def onboarding_link(
 )
 async def dashboard_link(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> AccountLink:
@@ -95,7 +95,7 @@ async def dashboard_link(
     if not acc:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, acc):
+    if not await authz.can(auth_subject.subject, AccessType.write, acc):
         raise NotPermitted()
 
     # update stripe account details
@@ -111,11 +111,11 @@ async def dashboard_link(
 @router.post("/accounts", tags=[Tags.PUBLIC], response_model=Account)
 async def create(
     account_create: AccountCreate,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
     created = await account_service.create_account(
-        session, admin=auth.user, account_create=account_create
+        session, admin=auth_subject.subject, account_create=account_create
     )
 
     await session.flush()

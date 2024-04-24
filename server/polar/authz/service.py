@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import Depends
 
+from polar.auth.models import Anonymous, Subject
 from polar.issue.service import issue as issue_service
 from polar.models.account import Account
 from polar.models.article import Article
@@ -22,14 +23,6 @@ from polar.repository.service import repository as repository_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-
-from .scope import Scope
-
-
-class Anonymous: ...
-
-
-Subject = User | Anonymous
 
 
 class AccessType(StrEnum):
@@ -51,15 +44,6 @@ Object = (
     | Article
     | WebhookEndpoint
 )
-
-
-class ScopedSubject:
-    subject: Subject
-    scopes: list[Scope]
-
-    def __init__(self, *, subject: Subject, scopes: list[Scope] = []):
-        self.subject = subject
-        self.scopes = scopes
 
 
 class Authz:

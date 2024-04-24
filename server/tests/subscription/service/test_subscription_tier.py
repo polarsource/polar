@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.authz.service import Anonymous, Authz
+from polar.auth.models import Anonymous
+from polar.authz.service import Authz
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams
 from polar.models import (

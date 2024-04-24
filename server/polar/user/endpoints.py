@@ -1,11 +1,11 @@
 import structlog
 from fastapi import APIRouter, Depends, Response
 
-from polar.auth.dependencies import Auth, AuthenticatedWithScope, UserRequiredAuth
+from polar.auth.dependencies import Authenticator, WebUser
+from polar.auth.models import AuthSubject
 from polar.auth.service import AuthService, LogoutResponse
-from polar.authz.scope import Scope
 from polar.authz.service import Authz
-from polar.exceptions import InternalServerError, Unauthorized
+from polar.exceptions import InternalServerError
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
@@ -30,71 +30,58 @@ log = structlog.get_logger()
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-AuthUserRead = AuthenticatedWithScope(
-    required_scopes=[Scope.web_default, Scope.user_read],
-    allow_anonymous=False,
-    fallback_to_anonymous=False,
-)
-
-
 @router.get("/me", response_model=UserRead)
-async def get_authenticated(auth: Auth = Depends(AuthUserRead)) -> User:
-    if not auth.user:
-        raise Unauthorized()
-    return auth.user
+async def get_authenticated(auth_subject: WebUser) -> User:
+    return auth_subject.subject
 
 
 @router.get("/me/scopes", response_model=UserScopes)
 async def scopes(
-    auth: Auth = Depends(
-        AuthenticatedWithScope(
-            # require auth, but don't check scopes
-            fallback_to_anonymous=False,
-            allow_anonymous=False,
-        )
-    ),
+    auth_subject: AuthSubject[User] = Depends(Authenticator(allowed_subjects={User})),
 ) -> UserScopes:
-    return UserScopes(scopes=[s.value for s in auth.scoped_subject.scopes])
+    return UserScopes(scopes=list(auth_subject.scopes))
 
 
 @router.put("/me", response_model=UserRead)
 async def update_preferences(
     settings: UserUpdateSettings,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
-    return await user_service.update_preferences(session, auth.user, settings)
+    return await user_service.update_preferences(
+        session, auth_subject.subject, settings
+    )
 
 
 @router.post("/me/upgrade", response_model=Organization)
 async def maintainer_upgrade(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Organization:
-    log.info("user.maintainer_upgrade", user_id=auth.user.id)
+    user = auth_subject.subject
+    log.info("user.maintainer_upgrade", user_id=user.id)
     personal_org = await github_organization_service.create_for_user(
-        session, locker, user=auth.user
+        session, locker, user=user
     )
-    posthog.user_event(auth.user, "user", "maintainer_upgrade", "submit")
+    posthog.user_event(user, "user", "maintainer_upgrade", "submit")
 
-    log.info(
-        "user.maintainer_upgrade",
-        user_id=auth.user.id,
-        new_org_id=personal_org.id,
-    )
+    log.info("user.maintainer_upgrade", user_id=user.id, new_org_id=personal_org.id)
     return Organization.from_db(personal_org)
 
 
 @router.patch("/me/account", response_model=UserRead)
 async def set_account(
     set_account: UserSetAccount,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
     return await user_service.set_account(
-        session, authz=authz, user=auth.user, account_id=set_account.account_id
+        session,
+        authz=authz,
+        user=auth_subject.subject,
+        account_id=set_account.account_id,
     )
 
 
@@ -102,10 +89,7 @@ async def set_account(
     "/logout",
     deprecated=True,  # Use /api/v1/auth/logout instead, which also has support for custom domains
 )
-async def logout(
-    response: Response,
-    auth: UserRequiredAuth,
-) -> LogoutResponse:
+async def logout(response: Response, auth_subject: WebUser) -> LogoutResponse:
     return AuthService.generate_logout_response(response=response)
 
 
@@ -114,10 +98,12 @@ async def logout(
     response_model=UserStripePortalSession,
 )
 async def create_stripe_customer_portal(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> UserStripePortalSession:
-    portal = await stripe_service.create_user_portal_session(session, auth.subject)
+    portal = await stripe_service.create_user_portal_session(
+        session, auth_subject.subject
+    )
     if not portal:
         raise InternalServerError()
 

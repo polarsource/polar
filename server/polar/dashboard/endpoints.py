@@ -3,7 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import Auth, UserRequiredAuth
+from polar.auth.dependencies import WebUser
+from polar.auth.models import AuthSubject
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import (
     Entry,
@@ -45,7 +46,7 @@ router = APIRouter(tags=["dashboard"])
     response_model=IssueListResponse,
 )
 async def get_personal_dashboard(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
     status: list[IssueStatus] | None = Query(
         default=None
@@ -60,13 +61,13 @@ async def get_personal_dashboard(
 ) -> IssueListResponse:
     return await dashboard(
         session=session,
-        auth=auth,
+        auth_subject=auth_subject,
         authz=authz,
         q=q,
         sort=sort,
         in_repos=[],
         page=page,
-        for_user=auth.user,
+        for_user=auth_subject.subject,
         only_pledged=only_pledged,
         only_badged=only_badged,
         show_closed=status is not None and IssueStatus.closed in status,
@@ -78,6 +79,7 @@ async def get_personal_dashboard(
     response_model=IssueListResponse,
 )
 async def get_dashboard(
+    auth_subject: WebUser,
     platform: Platforms,
     org_name: str,
     repo_name: str | None = Query(default=None),
@@ -90,22 +92,16 @@ async def get_dashboard(
     only_pledged: bool = Query(default=False),
     only_badged: bool = Query(default=False),
     page: int = Query(default=1),
-    auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueListResponse:
-    if not auth.user:
-        raise Unauthorized()
-
     org = await organization_service.get_by_name(session, platform, org_name)
     if not org:
         raise ResourceNotFound()
 
     # only if user is a member of this org
     if not await user_organization_service.get_by_user_and_org(
-        session,
-        auth.user.id,
-        organization_id=org.id,
+        session, auth_subject.subject.id, organization_id=org.id
     ):
         raise Unauthorized()
 
@@ -134,7 +130,9 @@ async def get_dashboard(
 
     # Limit to repositories that the authed subject can read
     repositories = [
-        r for r in repositories if await authz.can(auth.subject, AccessType.read, r)
+        r
+        for r in repositories
+        if await authz.can(auth_subject.subject, AccessType.read, r)
     ]
 
     if not repositories:
@@ -145,7 +143,7 @@ async def get_dashboard(
 
     return await dashboard(
         session=session,
-        auth=auth,
+        auth_subject=auth_subject,
         authz=authz,
         in_repos=repositories,
         q=q,
@@ -176,7 +174,7 @@ def default_sort(
 
 async def dashboard(
     session: AsyncSession,
-    auth: Auth,
+    auth_subject: AuthSubject[User],
     authz: Authz,
     in_repos: Sequence[Repository] = [],
     issue_list_type: IssueListType = IssueListType.issues,
@@ -189,6 +187,7 @@ async def dashboard(
     show_closed: bool = False,
     page: int = 1,
 ) -> IssueListResponse:
+    user = auth_subject.subject
     # Default sorting
     if not sort:
         sort = default_sort(issue_list_type, q)
@@ -227,11 +226,7 @@ async def dashboard(
 
     # load user memberships
     user_memberships: Sequence[UserOrganization] = []
-    if auth.user:
-        user_memberships = await user_organization_service.list_by_user_id(
-            session,
-            auth.user.id,
-        )
+    user_memberships = await user_organization_service.list_by_user_id(session, user.id)
 
     # add pledges to included
     issue_pledges: dict[UUID, list[PledgeSchema]] = {}
@@ -241,20 +236,17 @@ async def dashboard(
             if pled.state not in pledge_statuses:
                 continue
 
-            pledge_schema = await pledge_to_schema(session, auth.subject, pled)
+            pledge_schema = await pledge_to_schema(session, user, pled)
 
             # Add user-specific metadata
-            if auth.user:
-                pledge_schema.authed_can_admin_sender = (
-                    pledge_service.user_can_admin_sender_pledge(
-                        auth.user, pled, user_memberships
-                    )
+            pledge_schema.authed_can_admin_sender = (
+                pledge_service.user_can_admin_sender_pledge(
+                    user, pled, user_memberships
                 )
-                pledge_schema.authed_can_admin_received = (
-                    pledge_service.user_can_admin_received_pledge(
-                        pled, user_memberships
-                    )
-                )
+            )
+            pledge_schema.authed_can_admin_received = (
+                pledge_service.user_can_admin_received_pledge(pled, user_memberships)
+            )
 
             irefs = issue_pledges.get(i.id, [])
             irefs.append(pledge_schema)
@@ -288,7 +280,7 @@ async def dashboard(
                 reward,
                 transaction,
                 include_receiver_admin_fields=await authz.can(
-                    auth.subject, AccessType.write, pledge
+                    user, AccessType.write, pledge
                 ),
             )
 

@@ -3,8 +3,9 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import Auth, UserRequiredAuth, WebOrAnonymous
-from polar.authz.service import AccessType, Authz, Subject
+from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.models import Subject
+from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
@@ -71,7 +72,7 @@ async def to_schema(
     status_code=200,
 )
 async def list(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     is_admin_only: bool = Query(
         default=True,
         description="Include only organizations that the user is an admin of.",
@@ -79,11 +80,11 @@ async def list(
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
     orgs = await organization.list_all_orgs_by_user_id(
-        session, auth.user.id, is_admin_only
+        session, auth_subject.subject.id, is_admin_only
     )
 
     return ListResource(
-        items=[await to_schema(session, auth.subject, o) for o in orgs],
+        items=[await to_schema(session, auth_subject.subject, o) for o in orgs],
         pagination=Pagination(total_count=len(orgs), max_page=1),
     )
 
@@ -97,10 +98,10 @@ async def list(
     status_code=200,
 )
 async def search(
+    auth_subject: WebOrAnonymous,
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(WebOrAnonymous),
 ) -> ListResource[OrganizationSchema]:
     # Search by platform and organization name.
     # Currently the only way to search
@@ -108,7 +109,7 @@ async def search(
         org = await organization.get_by_name(session, platform, organization_name)
         if org:
             return ListResource(
-                items=[await to_schema(session, auth.subject, org)],
+                items=[await to_schema(session, auth_subject.subject, org)],
                 pagination=Pagination(total_count=0, max_page=1),
             )
 
@@ -129,17 +130,17 @@ async def search(
     responses={404: {}},
 )
 async def lookup(
+    auth_subject: WebOrAnonymous,
     platform: Platforms | None = None,
     organization_name: str | None = None,
     custom_domain: str | None = None,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(WebOrAnonymous),
 ) -> OrganizationSchema:
     # Search by platform and organization name.
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
         if org:
-            return await to_schema(session, auth.subject, org)
+            return await to_schema(session, auth_subject.subject, org)
 
     # Search by custom domain
     if custom_domain:
@@ -147,7 +148,7 @@ async def lookup(
             session, custom_domain=custom_domain
         )
         if org:
-            return await to_schema(session, auth.subject, org)
+            return await to_schema(session, auth_subject.subject, org)
 
     raise HTTPException(
         status_code=404,
@@ -166,7 +167,7 @@ async def lookup(
 )
 async def get(
     id: UUID,
-    auth: Auth = Depends(Auth.optional_user),
+    auth_subject: WebOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
     org = await organization.get(session, id=id)
@@ -177,7 +178,7 @@ async def get(
             detail="Organization not found",
         )
 
-    return await to_schema(session, auth.subject, org)
+    return await to_schema(session, auth_subject.subject, org)
 
 
 @router.patch(
@@ -192,7 +193,7 @@ async def get(
 async def update(
     id: UUID,
     update: OrganizationUpdate,
-    auth: Auth = Depends(Auth.current_user),
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
@@ -200,7 +201,7 @@ async def update(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     # validate featured organizations and featured projects
@@ -216,7 +217,7 @@ async def update(
 
     org = await organization.update_settings(session, org, update)
 
-    return await to_schema(session, auth.subject, org)
+    return await to_schema(session, auth_subject.subject, org)
 
 
 @router.patch(
@@ -231,7 +232,7 @@ async def update(
 async def set_account(
     id: UUID,
     set_account: OrganizationSetAccount,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
@@ -239,18 +240,18 @@ async def set_account(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     org = await organization.set_account(
         session,
         authz=authz,
-        user=auth.user,
+        user=auth_subject.subject,
         organization=org,
         account_id=set_account.account_id,
     )
 
-    return await to_schema(session, auth.subject, org)
+    return await to_schema(session, auth_subject.subject, org)
 
 
 @router.get(
@@ -262,7 +263,7 @@ async def set_account(
     status_code=200,
 )
 async def list_members(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     id: UUID | None = None,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -276,7 +277,7 @@ async def list_members(
 
     # if user is member
     self_member = await user_organization_service.get_by_user_and_org(
-        session, auth.user.id, id
+        session, auth_subject.subject.id, id
     )
     if not self_member:
         raise Unauthorized()
@@ -295,7 +296,7 @@ async def list_members(
 )
 async def create_stripe_customer_portal(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> OrganizationStripePortalSession:
@@ -303,7 +304,7 @@ async def create_stripe_customer_portal(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     portal = await stripe_service.create_org_portal_session(session, org)
@@ -319,7 +320,7 @@ async def create_stripe_customer_portal(
 )
 async def get_credits(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> CreditBalance:
@@ -327,7 +328,7 @@ async def get_credits(
     if not org:
         raise ResourceNotFound()
 
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     balance = await stripe_service.get_organization_credit_balance(session, org)
@@ -354,14 +355,14 @@ async def get_credits(
 )
 async def get_badge_settings(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsRead:
     org = await organization.get(session, id)
     if not org:
         raise ResourceNotFound()
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     repositories = await repository_service.list_by(
@@ -426,14 +427,14 @@ async def get_badge_settings(
 async def update_badge_settings(
     id: UUID,
     settings: OrganizationBadgeSettingsUpdate,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
     org = await organization.get(session, id)
     if not org:
         raise ResourceNotFound()
-    if not await authz.can(auth.subject, AccessType.write, org):
+    if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
     # convert payload into OrganizationUpdate format
@@ -473,4 +474,4 @@ async def update_badge_settings(
     if not org:
         raise ResourceNotFound()
 
-    return await to_schema(session, auth.subject, org)
+    return await to_schema(session, auth_subject.subject, org)

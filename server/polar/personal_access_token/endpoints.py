@@ -3,9 +3,9 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import UserRequiredAuth
+from polar.auth.dependencies import WebUser
+from polar.auth.scope import Scope
 from polar.auth.service import AuthService
-from polar.authz.scope import Scope
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
@@ -32,14 +32,14 @@ router = APIRouter(tags=["personal_access_token"])
 )
 async def delete(
     id: UUID,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> PersonalAccessToken:
     pat = await personal_access_token_service.get(session, id)
     if not pat:
         raise HTTPException(status_code=404, detail="PAT not found")
 
-    if pat.user_id != auth.user.id:
+    if pat.user_id != auth_subject.subject.id:
         raise HTTPException(status_code=403, detail="PAT not owned by this user")
 
     await personal_access_token_service.delete(session, id)
@@ -56,10 +56,12 @@ async def delete(
     status_code=200,
 )
 async def list(
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PersonalAccessToken]:
-    pats = await personal_access_token_service.list_for_user(session, auth.user.id)
+    pats = await personal_access_token_service.list_for_user(
+        session, auth_subject.subject.id
+    )
 
     return ListResource(
         items=[PersonalAccessToken.from_db(p) for p in pats],
@@ -77,12 +79,12 @@ async def list(
 )
 async def create(
     payload: CreatePersonalAccessToken,
-    auth: UserRequiredAuth,
+    auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> CreatePersonalAccessTokenResponse:
     pat = await personal_access_token_service.create(
         session,
-        user_id=auth.user.id,
+        user_id=auth_subject.subject.id,
         comment=payload.comment,
     )
 

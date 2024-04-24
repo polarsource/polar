@@ -184,7 +184,7 @@ class TestOAuth2Authorize:
 
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
-        assert json["scopes"] == ["openid", "profile", "email"]
+        assert set(json["scopes"]) == {"openid", "profile", "email"}
         assert json["sub_type"] == expected_sub_type
 
     @pytest.mark.override_current_user
@@ -256,7 +256,7 @@ class TestOAuth2Authorize:
 
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
-        assert json["scopes"] == ["openid", "profile", "email"]
+        assert set(json["scopes"]) == {"openid", "profile", "email"}
 
     @pytest.mark.override_current_user
     async def test_not_granted_prompt_none(
@@ -335,7 +335,7 @@ class TestOAuth2Authorize:
 
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
-        assert json["scopes"] == ["openid", "profile", "email"]
+        assert set(json["scopes"]) == {"openid", "profile", "email"}
 
     @pytest.mark.override_current_user
     async def test_not_granted_organization_prompt_none(

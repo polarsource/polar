@@ -2,7 +2,7 @@ import typing
 
 from authlib.oidc.core import UserInfo
 
-from polar.authz.scope import Scope, scope_to_list
+from polar.auth.scope import Scope, scope_to_list
 
 from .sub_type import SubTypeValue, is_sub_organization, is_sub_user
 

@@ -15,13 +15,13 @@ interface ProductCardProps {
 export const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex h-full w-full flex-col gap-6 rounded-3xl border border-transparent bg-white p-6 shadow-sm transition-colors hover:bg-gray-50">
-      {product.media ? (
+      {product.media.length > 0 ? (
         <Image
           className="aspect-square w-full rounded-2xl bg-gray-100 object-cover"
           alt={`${product.name} product image`}
-          width={400}
-          height={400}
-          src={product.media ?? ''}
+          width={600}
+          height={600}
+          src={product.media[0]}
         />
       ) : (
         <div className="dark:bg-polar-900 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">

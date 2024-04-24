@@ -7,7 +7,7 @@ export interface Product {
   id: string
   name: string
   description: string
-  media?: string
+  media: string[]
   price: number
   benefits: BenefitPublicInner[]
   created_at: string
@@ -72,8 +72,10 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
       },
     ],
-    media:
+    media: [
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
+      'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
+    ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -92,8 +94,10 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
       },
     ],
-    media:
+    media: [
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
+      'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
+    ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -103,8 +107,11 @@ export let products: Product[] = [
     description,
     price: 500,
     benefits: [],
-    media:
+    media: [
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-rW1yo7hHm6Os3twnNKtrcVfoxeBYFf.png',
+      'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
+      'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
+    ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },

@@ -155,8 +155,8 @@ export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
                     </div>
                     <FormControl>
                       <ImageUpload
-                        width={1000}
-                        height={1000}
+                        width={1280}
+                        height={720}
                         onUploaded={field.onChange}
                       />
                     </FormControl>

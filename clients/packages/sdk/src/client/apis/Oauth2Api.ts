@@ -15,8 +15,8 @@
 
 import * as runtime from '../runtime';
 import type {
-  AuthorizeResponse,
   HTTPValidationError,
+  ResponseOauth2Oauth2Authorize,
 } from '../models/index';
 
 export interface Oauth2ApiOauth2ConfigureRequest {
@@ -43,7 +43,7 @@ export class Oauth2Api extends runtime.BaseAPI {
     /**
      * Oauth2.Authorize
      */
-    async oauth2AuthorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuthorizeResponse>> {
+    async oauth2AuthorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseOauth2Oauth2Authorize>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -69,7 +69,7 @@ export class Oauth2Api extends runtime.BaseAPI {
     /**
      * Oauth2.Authorize
      */
-    async oauth2Authorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthorizeResponse> {
+    async oauth2Authorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseOauth2Oauth2Authorize> {
         const response = await this.oauth2AuthorizeRaw(initOverrides);
         return await response.value();
     }

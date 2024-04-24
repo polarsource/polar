@@ -1521,21 +1521,158 @@ export interface Author {
 /**
  * 
  * @export
- * @interface AuthorizeResponse
+ * @interface AuthorizeOrganization
  */
-export interface AuthorizeResponse {
+export interface AuthorizeOrganization {
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeOrganization
+     */
+    id: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof AuthorizeOrganization
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeOrganization
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeOrganization
+     */
+    avatar_url: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof AuthorizeOrganization
+     */
+    is_personal: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface AuthorizeResponseOrganization
+ */
+export interface AuthorizeResponseOrganization {
     /**
      * 
      * @type {OAuth2Client}
-     * @memberof AuthorizeResponse
+     * @memberof AuthorizeResponseOrganization
      */
     client: OAuth2Client;
     /**
      * 
+     * @type {string}
+     * @memberof AuthorizeResponseOrganization
+     */
+    sub_type: AuthorizeResponseOrganizationSubTypeEnum;
+    /**
+     * 
+     * @type {AuthorizeOrganization}
+     * @memberof AuthorizeResponseOrganization
+     */
+    sub?: AuthorizeOrganization;
+    /**
+     * 
      * @type {Array<Scope>}
-     * @memberof AuthorizeResponse
+     * @memberof AuthorizeResponseOrganization
      */
     scopes: Array<Scope>;
+    /**
+     * 
+     * @type {Array<AuthorizeOrganization>}
+     * @memberof AuthorizeResponseOrganization
+     */
+    organizations: Array<AuthorizeOrganization>;
+}
+
+
+/**
+ * @export
+ */
+export const AuthorizeResponseOrganizationSubTypeEnum = {
+    ORGANIZATION: 'organization'
+} as const;
+export type AuthorizeResponseOrganizationSubTypeEnum = typeof AuthorizeResponseOrganizationSubTypeEnum[keyof typeof AuthorizeResponseOrganizationSubTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface AuthorizeResponseUser
+ */
+export interface AuthorizeResponseUser {
+    /**
+     * 
+     * @type {OAuth2Client}
+     * @memberof AuthorizeResponseUser
+     */
+    client: OAuth2Client;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeResponseUser
+     */
+    sub_type: AuthorizeResponseUserSubTypeEnum;
+    /**
+     * 
+     * @type {AuthorizeUser}
+     * @memberof AuthorizeResponseUser
+     */
+    sub?: AuthorizeUser;
+    /**
+     * 
+     * @type {Array<Scope>}
+     * @memberof AuthorizeResponseUser
+     */
+    scopes: Array<Scope>;
+}
+
+
+/**
+ * @export
+ */
+export const AuthorizeResponseUserSubTypeEnum = {
+    USER: 'user'
+} as const;
+export type AuthorizeResponseUserSubTypeEnum = typeof AuthorizeResponseUserSubTypeEnum[keyof typeof AuthorizeResponseUserSubTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface AuthorizeUser
+ */
+export interface AuthorizeUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeUser
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeUser
+     */
+    username: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeUser
+     */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeUser
+     */
+    avatar_url?: string;
 }
 /**
  * 
@@ -8097,6 +8234,12 @@ export type ResponseBenefitsLookupBenefit = BenefitAds | BenefitArticles | Benef
 export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
+ * @type ResponseOauth2Oauth2Authorize
+ * 
+ * @export
+ */
+export type ResponseOauth2Oauth2Authorize = { sub_type: 'organization' } & AuthorizeResponseOrganization | { sub_type: 'user' } & AuthorizeResponseUser;
+/**
  * 
  * @export
  * @interface Reward
@@ -8287,13 +8430,14 @@ export const Scope = {
     OPENID: 'openid',
     PROFILE: 'profile',
     EMAIL: 'email',
-    WEB_DEFAULT: 'web_default',
     ARTICLESREAD: 'articles:read',
     USERREAD: 'user:read',
-    SUBSCRIPTION_TIERSREAD: 'subscription_tiers:read',
-    SUBSCRIPTION_TIERSWRITE: 'subscription_tiers:write',
-    SUBSCRIPTIONSREAD: 'subscriptions:read',
-    SUBSCRIPTIONSWRITE: 'subscriptions:write'
+    ADMIN: 'admin',
+    WEB_DEFAULT: 'web_default',
+    CREATORSUBSCRIPTIONSREAD: 'creator:subscriptions:read',
+    CREATORSUBSCRIPTIONSWRITE: 'creator:subscriptions:write',
+    BACKERSUBSCRIPTIONSREAD: 'backer:subscriptions:read',
+    BACKERSUBSCRIPTIONSWRITE: 'backer:subscriptions:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 
@@ -10510,10 +10654,10 @@ export interface UserRead {
 export interface UserScopes {
     /**
      * 
-     * @type {Array<string>}
+     * @type {Array<Scope>}
      * @memberof UserScopes
      */
-    scopes: Array<string>;
+    scopes: Array<Scope>;
 }
 /**
  * 

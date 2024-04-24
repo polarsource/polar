@@ -1,34 +1,28 @@
 import LogoType from '@/components/Brand/LogoType'
 import { getServerURL } from '@/utils/api'
 import { AddOutlined } from '@mui/icons-material'
-import {
-  AuthorizeOrganization,
-  AuthorizeResponseOrganization,
-  AuthorizeResponseUser,
-  AuthorizeUser,
-} from '@polar-sh/sdk'
+import { AuthorizeResponseOrganization } from '@polar-sh/sdk'
+import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 
-const isSubTypeOrganization = (
-  sub_type: string,
-  _sub: AuthorizeUser | AuthorizeOrganization,
-): _sub is AuthorizeOrganization => sub_type === 'organization'
-
-const isSubTypeUser = (
-  sub_type: string,
-  _sub: AuthorizeUser | AuthorizeOrganization,
-): _sub is AuthorizeUser => sub_type === 'user'
-
-const AuthorizePage = ({
-  authorizeResponse: { client, scopes, sub_type, sub },
+const OrganizationSelectionPage = ({
+  authorizeResponse: { client, organizations },
   searchParams,
 }: {
-  authorizeResponse: AuthorizeResponseUser | AuthorizeResponseOrganization
+  authorizeResponse: AuthorizeResponseOrganization
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
   const actionURL = `${getServerURL()}/api/v1/oauth2/consent?${serializedSearchParams}`
+
+  const buildOrganizationSelectionURL = (organizationId: string) => {
+    const serializedSearchParams = new URLSearchParams({
+      ...searchParams,
+      sub: organizationId,
+    }).toString()
+    return `?${serializedSearchParams}`
+  }
 
   const clientName = client.client_metadata.client_name || client.client_id
   const hasTerms =
@@ -55,52 +49,31 @@ const AuthorizePage = ({
               </div>
             )}
           </div>
-          {sub && isSubTypeOrganization(sub_type, sub) && (
-            <>
-              <div className="w-full text-center">
-                <span className="font-medium">{clientName}</span> wants to
-                access one of your Polar&apos;s organization.
-              </div>
-              <div className="flex w-full flex-row items-center justify-center gap-2 text-sm">
-                <Avatar
-                  className="h-8 w-8"
-                  avatar_url={sub.avatar_url}
-                  name={sub.name}
-                />
-                {sub.name}
-              </div>
-            </>
-          )}
-          {sub && isSubTypeUser(sub_type, sub) && (
-            <>
-              <div className="w-full text-center">
-                <span className="font-medium">{clientName}</span> wants to
-                access your personal Polar account.
-              </div>
-              <div className="flex w-full flex-row items-center justify-center gap-2 text-sm">
-                <Avatar
-                  className="h-8 w-8"
-                  avatar_url={sub.avatar_url}
-                  name={sub.username}
-                />
-                {sub.username}
-              </div>
-            </>
-          )}
           <div className="w-full text-center">
-            They&apos;ll get access to the following data:
+            <span className="font-medium">{clientName}</span> wants to access
+            one of your Polar&apos;s organization.
+          </div>
+          <div className="w-full text-center">
+            Select one of your organization:
           </div>
           <div className="flex w-full flex-col gap-2">
-            {scopes.map((scope) => (
-              <div
-                key={scope}
-                className="w-full rounded-md border px-4 py-3 text-center font-mono text-sm"
+            {organizations.map((organization) => (
+              <Link
+                key={organization.id}
+                href={buildOrganizationSelectionURL(organization.id)}
               >
-                {scope}
-              </div>
+                <div className="hover:bg-polar-600 flex w-full flex-row items-center gap-2 rounded-md border px-4 py-3 text-sm transition-colors">
+                  <Avatar
+                    className="h-8 w-8"
+                    avatar_url={organization.avatar_url}
+                    name={organization.name}
+                  />
+                  {organization.name}
+                </div>
+              </Link>
             ))}
           </div>
-          <div className="grid w-full grid-cols-2 gap-2">
+          <div className="grid w-full">
             <Button
               variant="outline"
               className="grow"
@@ -109,10 +82,6 @@ const AuthorizePage = ({
               value="deny"
             >
               Deny
-            </Button>
-
-            <Button className="grow" type="submit" name="action" value="allow">
-              Allow
             </Button>
           </div>
           {hasTerms && (
@@ -146,4 +115,4 @@ const AuthorizePage = ({
   )
 }
 
-export default AuthorizePage
+export default OrganizationSelectionPage

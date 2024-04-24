@@ -34,7 +34,6 @@ from .transaction import Transaction
 from .user import OAuthAccount, User
 from .user_notification import UserNotification
 from .user_organization import UserOrganization
-from .user_organization_settings import UserOrganizationSettings
 from .webhook_delivery import WebhookDelivery
 from .webhook_endpoint import WebhookEndpoint
 from .webhook_event import WebhookEvent
@@ -78,7 +77,6 @@ __all__ = [
     "User",
     "UserNotification",
     "UserOrganization",
-    "UserOrganizationSettings",
     "WebhookDelivery",
     "WebhookEndpoint",
     "WebhookEvent",

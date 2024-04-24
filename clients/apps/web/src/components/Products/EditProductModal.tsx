@@ -118,7 +118,7 @@ export const EditProductModal = ({ product, hide }: EditProductModalProps) => {
                     </div>
                     <FormControl>
                       <TextArea
-                        className="resize-none rounded-2xl"
+                        className="min-h-44 resize-none rounded-2xl"
                         {...field}
                       />
                     </FormControl>

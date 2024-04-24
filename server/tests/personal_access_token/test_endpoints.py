@@ -141,8 +141,9 @@ async def test_incorrect_scope(auth_jwt: str, client: AsyncClient) -> None:
         headers={"Authorization": "Bearer " + response.json()["token"]},
     )
 
-    assert (
-        response.text
-        == '{"detail":"Missing required scope: have=articles:read requires=web_default"}'
-    )
     assert response.status_code == 403
+    json = response.json()
+    assert (
+        json["detail"]
+        == "Missing required scope: have=articles:read requires=web_default"
+    )

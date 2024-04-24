@@ -2,11 +2,11 @@
 
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
+import { Slideshow } from '@/components/Products/Slideshow'
 import { Product } from '@/hooks/queries/products'
 import { getCentsInDollarString } from '@/utils/money'
 import { Organization } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
-import Image from 'next/image'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -21,15 +21,7 @@ export default function ClientPage({
   return (
     <div className="flex flex-row items-start gap-12">
       <div className="flex w-2/3 flex-col gap-8">
-        {product.media && (
-          <Image
-            className="aspect-video rounded-3xl border border-gray-100 object-cover"
-            width={1280}
-            height={720}
-            alt={`${product.name} product image`}
-            src={product.media}
-          />
-        )}
+        {product.media.length && <Slideshow images={product.media} />}
         <ShadowBoxOnMd className="flex flex-col gap-6 md:ring-gray-100">
           <h1 className="text-2xl font-medium">{product.name}</h1>
           <div className="flex flex-row items-center gap-2 self-start rounded-full bg-blue-50 p-1 pr-4 dark:bg-blue-950">

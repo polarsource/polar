@@ -23,7 +23,7 @@ import ProductBenefitsSelector from './ProductBenefitsSelector'
 interface CreateProductForm {
   name: string
   description: string
-  media?: string
+  media: string[]
   price: number
   benefits: BenefitPublicInner[]
 }
@@ -157,7 +157,9 @@ export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
                       <ImageUpload
                         width={1280}
                         height={720}
-                        onUploaded={field.onChange}
+                        onUploaded={(image) => {
+                          field.onChange([image])
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

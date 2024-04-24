@@ -215,7 +215,12 @@ class ValidateSubAndPrompt:
             organization = self._get_organization_admin(sub_uuid, user)
             if organization is None:
                 raise InvalidSubError()
-            grant.sub = organization
+            # If personal organization, switch to user sub
+            elif organization.is_personal:
+                grant.sub_type = SubType.user
+                grant.sub = user
+            else:
+                grant.sub = organization
 
     def _validate_scope_consent(
         self,

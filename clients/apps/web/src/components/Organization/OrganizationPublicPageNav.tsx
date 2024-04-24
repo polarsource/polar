@@ -1,5 +1,6 @@
 'use client'
 
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -33,15 +34,23 @@ export const OrganizationPublicPageNav = ({
           </TabsTrigger>
         </Link>
 
-        <Link href={organizationPageLink(organization, 'posts')}>
-          <TabsTrigger value="posts" size="small">
-            Posts
-          </TabsTrigger>
-        </Link>
+        {isFeatureEnabled('products') && (
+          <Link href={organizationPageLink(organization, 'products')}>
+            <TabsTrigger value="products" size="small">
+              Products
+            </TabsTrigger>
+          </Link>
+        )}
 
         <Link href={organizationPageLink(organization, 'subscriptions')}>
           <TabsTrigger value="subscriptions" size="small">
             Subscriptions
+          </TabsTrigger>
+        </Link>
+
+        <Link href={organizationPageLink(organization, 'posts')}>
+          <TabsTrigger value="posts" size="small">
+            Posts
           </TabsTrigger>
         </Link>
 

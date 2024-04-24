@@ -14,7 +14,41 @@ export interface Product {
   updated_at: string
 }
 
-let products: Product[] = []
+export let products: Product[] = [
+  {
+    id: '1',
+    name: 'Bitspace Alpha Access',
+    description: 'This is some kind of product with a nice description',
+    price: 1500,
+    benefits: [],
+    media:
+      'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    name: 'Bitspace Repository Access',
+    description: 'This is a short description',
+    price: 9900,
+    benefits: [],
+    media:
+      'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: '3',
+    name: 'A very precious product',
+    description: 'This is some kind of product with a nice description',
+    price: 500,
+    benefits: [],
+    media:
+      'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-rW1yo7hHm6Os3twnNKtrcVfoxeBYFf.png',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+]
 
 export const useProducts = (orgName?: string) =>
   useQuery({

@@ -54,7 +54,6 @@ export const useProducts = (orgName?: string) =>
   useQuery({
     queryKey: ['products', 'organization', orgName],
     queryFn: () => {
-      console.log('runnnnnn')
       return new Promise<{ items: Product[] }>((resolve) => {
         resolve({
           items: products,

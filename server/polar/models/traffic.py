@@ -37,8 +37,8 @@ class Traffic(Model):
             name="traffic_unique_key",
             postgresql_nulls_not_distinct=True,
         ),
-        Index("article_id", "date"),
-        Index("organization_id", "date"),
+        Index("idx_article_id_date", "article_id", "date"),
+        Index("idx_organization_id_date", "organization_id", "date"),
     )
 
     id: Mapped[UUID] = mapped_column(

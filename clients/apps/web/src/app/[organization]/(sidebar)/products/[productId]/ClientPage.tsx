@@ -1,7 +1,11 @@
+'use client'
+
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
+import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
 import { Product } from '@/hooks/queries/products'
 import { getCentsInDollarString } from '@/utils/money'
 import { Organization } from '@polar-sh/sdk'
+import Markdown from 'markdown-to-jsx'
 import Image from 'next/image'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -36,9 +40,21 @@ export default function ClientPage({
             />
             <span className="text-sm text-blue-500">{organization.name}</span>
           </div>
-          <p className="dark:text-polar-500 text-gray-500">
-            {product.description}
-          </p>
+          <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-white max-w-4xl text-gray-800">
+            <Markdown
+              options={{
+                ...previewOpts,
+                overrides: {
+                  ...previewOpts.overrides,
+                  a: (props) => (
+                    <a {...props} rel="noopener noreferrer nofollow" />
+                  ),
+                },
+              }}
+            >
+              {product.description}
+            </Markdown>
+          </div>
         </ShadowBoxOnMd>
       </div>
       <div className="flex w-1/3 flex-col gap-8">

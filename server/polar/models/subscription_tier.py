@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, Index, String, Text
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -31,6 +31,8 @@ class SubscriptionTierType(StrEnum):
 
 class SubscriptionTier(RecordModel):
     __tablename__ = "subscription_tiers"
+
+    __table_args__ = (Index("idx_organization_id_type", "organization_id", "type"),)
 
     type: Mapped[SubscriptionTierType] = mapped_column(
         String, nullable=False, index=True

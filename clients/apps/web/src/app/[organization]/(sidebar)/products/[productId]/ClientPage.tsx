@@ -11,7 +11,6 @@ import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
-  organization,
   product,
 }: {
   organization: Organization

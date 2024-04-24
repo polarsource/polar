@@ -14,12 +14,53 @@ export interface Product {
   updated_at: string
 }
 
+const description = `# Faciat postquam populare eadem sceleratus rapuere quod
+
+## Coniuge ignis rarescit
+
+Lorem markdownum altera comes gravemque non quo atque perpessi in sinus, oris
+serta, lucus in. Moverat sub cum aurum reserata iter, cuius, Lydas illi sentit
+erigimur sonitu diro lacrimas Danai!
+
+> Medere saevis, fortibus datum: captus, mersaeque Cithaeron? Dixerat *index et*
+> eadem. Et aures nepos spectata celerique scelerata oscula inque, ora? Cur nisi
+> hastae: tepere vocibus: mutati certa, faciem, in superi caput bracchia et
+> vale. Bos potentia dare postquam, in sitis felices iuvenis inmunitamque
+> silentia.
+
+Vultu est est canebat in tempore cadmus. Cum fugit, grata; te a spoliis atque.
+Precor corporis, miseram corpore hasta, et perque dextra, corpus. Nec parentur,
+atlas, corymbis illi. Nam metalla, lentis, Bacchus falcato nec
+[ingenti](http://www.vestraeut.org/), remotam famem.
+
+## Neve nec Cecropis vultus ramis et rudis
+
+[Excidit sulphura](http://mihi.net/) quoque Alcyone moderere sanguine sub, pete
+mihi telum, de quo tuo manebit atras: ipse. Volans freta meus avibus.
+
+> Oro nigrum urbes **mihi**, non, conplexibus genitor retia imperio pectora
+> dedit: est regem Sparte canis dum. Nunc vestrae, tamen sucis. Ora adhuc
+> totoque!
+
+## Achille sit
+
+Possidet adiit. Rector quam nec superest manus quas *quis Procrin* equidem.
+Poenam lege.
+
+    dv_dialog = only.dualVectorScalable(2 - map_x) / nativeAclNamespace;
+    refresh = clean + ctr;
+    safeDvd = 4;
+
+Eburnea veneris. Circes efficerentque arte vultum finxit? Pondus modo,
+[mea](http://parsque.org/), et Cecropio tereti et suos voti artes, possit:
+silvas percepto quorum, relicta. Mora cum dedit mille dedit gemmae et poenam
+rogando pascua, viridi malis fugit lanificae vulnere arsit, neci!`
+
 export let products: Product[] = [
   {
     id: '1',
     name: 'Bitspace Alpha Access',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin tristique nisi et sem elementum, ac suscipit nisl tempor. Nam vitae nibh at ipsum luctus varius. Nulla metus lorem, interdum eget luctus ultrices, luctus a erat. Morbi velit ex, cursus ac consequat eget, tristique finibus elit. Quisque fringilla magna suscipit ullamcorper lobortis. ',
+    description,
     price: 1500,
     benefits: [
       {
@@ -39,8 +80,7 @@ export let products: Product[] = [
   {
     id: '2',
     name: 'Bitspace Repository Access',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin tristique nisi et sem elementum, ac suscipit nisl tempor. Nam vitae nibh at ipsum luctus varius. Nulla metus lorem, interdum eget luctus ultrices, luctus a erat. Morbi velit ex, cursus ac consequat eget, tristique finibus elit. Quisque fringilla magna suscipit ullamcorper lobortis. ',
+    description,
     price: 9900,
     benefits: [
       {
@@ -60,8 +100,7 @@ export let products: Product[] = [
   {
     id: '3',
     name: 'A very precious product',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin tristique nisi et sem elementum, ac suscipit nisl tempor. Nam vitae nibh at ipsum luctus varius. Nulla metus lorem, interdum eget luctus ultrices, luctus a erat. Morbi velit ex, cursus ac consequat eget, tristique finibus elit. Quisque fringilla magna suscipit ullamcorper lobortis. ',
+    description,
     price: 500,
     benefits: [],
     media:

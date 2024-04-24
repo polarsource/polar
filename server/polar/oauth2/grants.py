@@ -1,5 +1,6 @@
 import time
 import typing
+import uuid
 
 from authlib.oauth2.rfc6749.errors import (
     AccessDeniedError,
@@ -207,7 +208,11 @@ class ValidateSubAndPrompt:
             and sub is not None
             and user is not None
         ):
-            organization = self._get_organization_admin(sub, user)
+            try:
+                sub_uuid = uuid.UUID(sub)
+            except ValueError as e:
+                raise InvalidSubError() from e
+            organization = self._get_organization_admin(sub_uuid, user)
             if organization is None:
                 raise InvalidSubError()
             grant.sub = organization
@@ -264,7 +269,7 @@ class ValidateSubAndPrompt:
             raise InvalidSubError()
 
     def _get_organization_admin(
-        self, organization_id: str, user: User
+        self, organization_id: uuid.UUID, user: User
     ) -> Organization | None:
         statement = (
             select(Organization)
@@ -278,7 +283,7 @@ class ValidateSubAndPrompt:
             .where(Organization.id == organization_id)
         )
         result = self._session.execute(statement)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
 
 class RefreshTokenGrant(_RefreshTokenGrant):

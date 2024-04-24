@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import Subject
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
@@ -98,7 +98,7 @@ async def list(
     status_code=200,
 )
 async def search(
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
@@ -130,7 +130,7 @@ async def search(
     responses={404: {}},
 )
 async def lookup(
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     platform: Platforms | None = None,
     organization_name: str | None = None,
     custom_domain: str | None = None,
@@ -167,7 +167,7 @@ async def lookup(
 )
 async def get(
     id: UUID,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
     org = await organization.get(session, id=id)

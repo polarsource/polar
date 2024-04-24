@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
-from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
@@ -51,7 +51,7 @@ router = APIRouter(tags=["issues"])
     responses={404: {}},
 )
 async def search(
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     platform: Platforms,
     organization_name: str,
     repository_name: str | None = None,
@@ -136,7 +136,7 @@ async def search(
     tags=[Tags.PUBLIC],
 )
 async def lookup(
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     external_url: str | None = Query(
         default=None,
         description="URL to issue on external source",
@@ -204,7 +204,7 @@ async def lookup(
 )
 async def get_body(
     id: UUID,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     issue_body_renderer: IssueBodyRenderer = Depends(get_issue_body_renderer),
@@ -295,7 +295,7 @@ async def for_you(
 )
 async def get(
     id: UUID,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:

@@ -120,10 +120,12 @@ class Authenticator:
         )
 
 
-_WebOrAnonymous = Authenticator(
+_WebUserOrAnonymous = Authenticator(
     allowed_subjects={Anonymous, User}, required_scopes={Scope.web_default}
 )
-WebOrAnonymous = Annotated[AuthSubject[Anonymous | User], Depends(_WebOrAnonymous)]
+WebUserOrAnonymous = Annotated[
+    AuthSubject[Anonymous | User], Depends(_WebUserOrAnonymous)
+]
 
 _WebUser = Authenticator(allowed_subjects={User}, required_scopes={Scope.web_default})
 WebUser = Annotated[AuthSubject[User], Depends(_WebUser)]

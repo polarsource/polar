@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from polar.auth.dependencies import Authenticator, WebOrAnonymous, WebUser
+from polar.auth.dependencies import Authenticator, WebUser, WebUserOrAnonymous
 from polar.auth.models import Anonymous, AuthSubject, User
 from polar.auth.scope import Scope
 from polar.authz.service import AccessType, Authz
@@ -164,7 +164,7 @@ async def search(
 async def lookup(
     slug: str,
     organization_name_platform: OrganizationNamePlatform,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
@@ -277,7 +277,7 @@ async def receivers(
 )
 async def get(
     id: UUID,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
@@ -309,7 +309,7 @@ async def get(
 )
 async def viewed(
     id: UUID,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> ArticleViewedResponse:
     result = await article_service.get_readable_by_id(

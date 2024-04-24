@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar import locker
-from polar.auth.dependencies import WebOrAnonymous, WebUser
+from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import Subject, is_user
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
@@ -147,7 +147,7 @@ async def to_schema(session: AsyncSession, subject: Subject, p: Pledge) -> Pledg
     status_code=200,
 )
 async def search(
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     platform: Platforms | None = None,
     organization_name: str | None = Query(
         default=None,
@@ -282,7 +282,7 @@ async def search(
 )
 async def summary(
     issue_id: UUID,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgePledgesSummary:
@@ -353,7 +353,7 @@ async def get(
 )
 async def create(
     create: CreatePledgeFromPaymentIntent,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
     locker: locker.Locker = Depends(locker.get_locker),
@@ -451,7 +451,7 @@ async def create_invoice(
 )
 async def create_payment_intent(
     intent: PledgeStripePaymentIntentCreate,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeStripePaymentIntentMutationResponse:
@@ -497,7 +497,7 @@ async def create_payment_intent(
 )
 async def update_payment_intent(
     id: str,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     updates: PledgeStripePaymentIntentUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeStripePaymentIntentMutationResponse:

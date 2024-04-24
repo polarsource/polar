@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from polar.auth.dependencies import WebOrAnonymous
+from polar.auth.dependencies import WebUserOrAnonymous
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Repository
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/funding", tags=["funding"])
 async def search(
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     repository_name: OptionalRepositoryNameQuery = None,
     query: str | None = Query(None),
     badged: bool | None = Query(None),
@@ -75,7 +75,7 @@ async def search(
 )
 async def lookup(
     issue_id: UUID,
-    auth_subject: WebOrAnonymous,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueFunding:
     result = await funding_service.get_by_issue_id(

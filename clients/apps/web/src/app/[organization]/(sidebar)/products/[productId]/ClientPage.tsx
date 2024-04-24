@@ -32,15 +32,17 @@ export default function ClientPage({
         )}
         <ShadowBoxOnMd className="flex flex-col gap-6 md:ring-gray-100">
           <h1 className="text-2xl font-medium">{product.name}</h1>
-          <div className="flex flex-row items-center gap-2 self-start rounded-full bg-blue-50 p-1 pr-4">
+          <div className="flex flex-row items-center gap-2 self-start rounded-full bg-blue-50 p-1 pr-4 dark:bg-blue-950">
             <Avatar
               className="h-6 w-6"
               avatar_url={organization.avatar_url}
               name={organization.name}
             />
-            <span className="text-sm text-blue-500">{organization.name}</span>
+            <span className="text-sm text-blue-500 dark:text-blue-200">
+              {organization.name}
+            </span>
           </div>
-          <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-white max-w-4xl text-gray-800">
+          <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
             <Markdown
               options={{
                 ...previewOpts,
@@ -57,43 +59,37 @@ export default function ClientPage({
           </div>
         </ShadowBoxOnMd>
       </div>
-      <div className="flex w-1/3 flex-col gap-8">
+      <div className="sticky top-16 flex w-1/3 flex-col gap-8">
         <ShadowBoxOnMd className="flex flex-col gap-8 md:ring-gray-100">
           <h3 className="font-medium">{product.name}</h3>
           <div className="flex flex-col gap-4">
             <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
               ${getCentsInDollarString(product.price)}
             </h1>
-            <p className="dark:text-polar-600 text-sm text-gray-400">
-              Including VAT and taxes
+            <p className="dark:text-polar-500 text-sm text-gray-400">
+              Before VAT and taxes
             </p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <h1 className="dark:text-polar-50 font-medium">You get</h1>
+            </div>
+            <div className="flex flex-col gap-2">
+              {product.benefits.map((benefit) => (
+                <div
+                  key={benefit.id}
+                  className="flex flex-row items-center gap-3 text-blue-500 dark:text-blue-400"
+                >
+                  {resolveBenefitIcon(benefit, 'small', 'h-5 w-5')}
+                  <span className="text-sm">{benefit.description}</span>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <Button size="lg" fullWidth>
               Buy Now
             </Button>
-            <Button size="lg" variant="ghost" fullWidth>
-              Add to Wishlist
-            </Button>
-          </div>
-        </ShadowBoxOnMd>
-        <ShadowBoxOnMd className="flex flex-col gap-6 md:ring-gray-100">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-lg font-medium">Included</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
-              This product will grant you the following benefits
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            {product.benefits.map((benefit) => (
-              <div
-                key={benefit.id}
-                className="dark:bg-polar-700 flex flex-row items-center gap-3 rounded-2xl bg-gray-100 p-4"
-              >
-                {resolveBenefitIcon(benefit, 'small', 'h-5 w-5')}
-                <span className="text-sm">{benefit.description}</span>
-              </div>
-            ))}
           </div>
         </ShadowBoxOnMd>
       </div>

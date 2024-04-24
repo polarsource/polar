@@ -1,10 +1,11 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from polar.auth.scope import Scope
 from polar.config import settings
+from polar.exceptions import NotPermitted, PolarError, Unauthorized
 from polar.models import OAuth2Token
 from polar.oauth2.dependencies import get_optional_token
 from polar.postgres import AsyncSession, get_db_session
@@ -20,6 +21,13 @@ from .models import (
     is_anonymous,
 )
 from .service import AuthService
+
+
+class UnsupportedSubjectType(PolarError):
+    def __init__(self, subject_type: SubjectType) -> None:
+        message = f"This endpoint does not support {subject_type.__name__} tokens."
+        return super().__init__(message, 400)
+
 
 auth_header_scheme = HTTPBearer(
     auto_error=False,
@@ -90,15 +98,12 @@ class Authenticator:
             if Anonymous in self.allowed_subjects:
                 return auth_subject
             else:
-                raise HTTPException(status_code=401, detail="Not authenticated")
+                raise Unauthorized()
 
         # Not allowed subject
         subject_type = type(auth_subject.subject)
         if subject_type not in self.allowed_subjects:
-            raise HTTPException(
-                status_code=400,
-                detail=f"This endpoint does not support {subject_type.__name__} tokens",
-            )
+            raise UnsupportedSubjectType(subject_type)
 
         # No required scopes
         if not self.required_scopes:
@@ -108,13 +113,10 @@ class Authenticator:
         if auth_subject.scopes & self.required_scopes:
             return auth_subject
 
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "Missing required scope: "
-                f"have={','.join(auth_subject.scopes)} "
-                f"requires={','.join(self.required_scopes)}"
-            ),
+        raise NotPermitted(
+            "Missing required scope: "
+            f"have={','.join(auth_subject.scopes)} "
+            f"requires={','.join(self.required_scopes)}"
         )
 
 

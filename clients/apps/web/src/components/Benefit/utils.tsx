@@ -12,19 +12,20 @@ export type CreatableBenefit = Exclude<BenefitType, 'articles'>
 export const resolveBenefitIcon = (
   benefit?: BenefitPublicInner,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
+  className?: string,
 ) => {
-  const className = twMerge('h-4 w-4')
+  const cn = twMerge('h-4 w-4', className)
   switch (benefit?.type) {
     case BenefitType.ARTICLES:
-      return <ShortTextOutlined className={className} fontSize={fontSize} />
+      return <ShortTextOutlined className={cn} fontSize={fontSize} />
     case BenefitType.ADS:
-      return <WebOutlined className={className} fontSize={fontSize} />
+      return <WebOutlined className={cn} fontSize={fontSize} />
     case BenefitType.DISCORD:
       return <DiscordIcon />
     case BenefitType.GITHUB_REPOSITORY:
-      return <GitHub className={className} fontSize={fontSize} />
+      return <GitHub className={cn} fontSize={fontSize} />
     default:
-      return <CheckOutlined className={className} fontSize={fontSize} />
+      return <CheckOutlined className={cn} fontSize={fontSize} />
   }
 }
 

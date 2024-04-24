@@ -18,9 +18,19 @@ export let products: Product[] = [
   {
     id: '1',
     name: 'Bitspace Alpha Access',
-    description: 'This is some kind of product with a nice description',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin tristique nisi et sem elementum, ac suscipit nisl tempor. Nam vitae nibh at ipsum luctus varius. Nulla metus lorem, interdum eget luctus ultrices, luctus a erat. Morbi velit ex, cursus ac consequat eget, tristique finibus elit. Quisque fringilla magna suscipit ullamcorper lobortis. ',
     price: 1500,
-    benefits: [],
+    benefits: [
+      {
+        id: '123',
+        description: 'Bitspace Alpha License Key',
+        deletable: true,
+        selectable: true,
+        type: 'custom',
+        created_at: new Date().toISOString(),
+      },
+    ],
     media:
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
     created_at: new Date().toISOString(),
@@ -29,9 +39,19 @@ export let products: Product[] = [
   {
     id: '2',
     name: 'Bitspace Repository Access',
-    description: 'This is a short description',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin tristique nisi et sem elementum, ac suscipit nisl tempor. Nam vitae nibh at ipsum luctus varius. Nulla metus lorem, interdum eget luctus ultrices, luctus a erat. Morbi velit ex, cursus ac consequat eget, tristique finibus elit. Quisque fringilla magna suscipit ullamcorper lobortis. ',
     price: 9900,
-    benefits: [],
+    benefits: [
+      {
+        id: '123',
+        description: 'Bitspace Repository Access',
+        deletable: true,
+        selectable: true,
+        type: 'github_repository',
+        created_at: new Date().toISOString(),
+      },
+    ],
     media:
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
     created_at: new Date().toISOString(),
@@ -40,7 +60,8 @@ export let products: Product[] = [
   {
     id: '3',
     name: 'A very precious product',
-    description: 'This is some kind of product with a nice description',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin tristique nisi et sem elementum, ac suscipit nisl tempor. Nam vitae nibh at ipsum luctus varius. Nulla metus lorem, interdum eget luctus ultrices, luctus a erat. Morbi velit ex, cursus ac consequat eget, tristique finibus elit. Quisque fringilla magna suscipit ullamcorper lobortis. ',
     price: 500,
     benefits: [],
     media:

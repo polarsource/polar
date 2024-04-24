@@ -29,6 +29,7 @@ class OAuthAccount(RecordModel):
             "platform",
             "account_id",
         ),
+        Index("idx_user_id_platform", "user_id", "platform"),
     )
 
     platform: Mapped[OAuthPlatform] = mapped_column(String(32), nullable=False)

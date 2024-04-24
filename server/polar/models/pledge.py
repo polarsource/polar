@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Index,
     String,
     and_,
     or_,
@@ -135,6 +136,8 @@ class PledgeType(StrEnum):
 
 class Pledge(RecordModel):
     __tablename__ = "pledges"
+
+    __table_args__ = (Index("idx_issue_id_state", "issue_id", "state"),)
 
     issue_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("issues.id"), nullable=False, index=True

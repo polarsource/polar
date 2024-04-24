@@ -65,9 +65,9 @@ class SubTypeModelMixin:
     @sub.inplace.setter
     def _sub_setter(self, value: "User | Organization") -> None:
         if self.sub_type == SubType.user:
-            self.user = value
+            self.user_id = value.id
         elif self.sub_type == SubType.organization:
-            self.organization = value
+            self.organization_id = value.id
         else:
             raise NotImplementedError()
 

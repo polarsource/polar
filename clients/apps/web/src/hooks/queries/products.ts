@@ -106,7 +106,24 @@ export let products: Product[] = [
     name: 'A very precious product',
     description,
     price: 500,
-    benefits: [],
+    benefits: [
+      {
+        id: '123',
+        description: 'Bitspace Repository Access',
+        deletable: true,
+        selectable: true,
+        type: 'github_repository',
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '456',
+        description: 'Bitspace Alpha License Key',
+        deletable: true,
+        selectable: true,
+        type: 'custom',
+        created_at: new Date().toISOString(),
+      },
+    ],
     media: [
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-rW1yo7hHm6Os3twnNKtrcVfoxeBYFf.png',
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',

@@ -9,7 +9,7 @@ import { Organization } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
   organization,
@@ -19,10 +19,10 @@ export default function ClientPage({
   product: Product
 }) {
   return (
-    <div className="flex flex-row items-start gap-12">
-      <div className="flex w-2/3 flex-col gap-8">
+    <div className="flex flex-col items-start gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
+      <div className="flex flex-col gap-8 md:w-2/3">
         {product.media.length && <Slideshow images={product.media} />}
-        <ShadowBoxOnMd className="flex flex-col gap-6 md:ring-gray-100">
+        <ShadowBox className="flex flex-col gap-6 ring-gray-100">
           <h1 className="text-2xl font-medium">{product.name}</h1>
           <div className="flex flex-row items-center gap-2 self-start rounded-full bg-blue-50 p-1 pr-4 dark:bg-blue-950">
             <Avatar
@@ -49,10 +49,10 @@ export default function ClientPage({
               {product.description}
             </Markdown>
           </div>
-        </ShadowBoxOnMd>
+        </ShadowBox>
       </div>
-      <div className="sticky top-16 flex w-1/3 flex-col gap-8">
-        <ShadowBoxOnMd className="flex flex-col gap-8 md:ring-gray-100">
+      <div className="flex w-full flex-col gap-8 md:sticky md:top-16 md:w-1/3">
+        <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
           <h3 className="font-medium">{product.name}</h3>
           <div className="flex flex-col gap-4">
             <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
@@ -83,7 +83,7 @@ export default function ClientPage({
               Buy Now
             </Button>
           </div>
-        </ShadowBoxOnMd>
+        </ShadowBox>
       </div>
     </div>
   )

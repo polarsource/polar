@@ -108,7 +108,7 @@ export const LinksEditor = ({
               variant === 'grid'
                 ? 'gap-6 md:grid md:grid-cols-2 lg:grid-cols-3'
                 : 'flex gap-y-4 md:flex-col',
-              '-mx-4 flex-row justify-start gap-6 overflow-x-auto px-4 pb-4 md:mx-0 md:p-0',
+              '-mx-4 flex-row justify-start gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:p-0',
             )}
           >
             {selectedLinks.map((link) => (

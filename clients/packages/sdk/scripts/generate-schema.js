@@ -45,56 +45,6 @@ const convert = (schema) => {
   // Hack! Pretend the schema is OpenAPI 3.0
   schema.openapi = '3.0.3'
 
-  // Hack! Replace the backends JSONAny with ts any
-  // Only done for PullRequests and Issues
-  console.log('🛠️  JSONAny -> Any')
-  for (const [key, value] of Object.entries(schema.components.schemas)) {
-    if (!['IssueRead', 'PullRequestRead'].includes(key)) {
-      continue
-    }
-
-    for (const [property, propVal] of Object.entries(value.properties)) {
-      if ('anyOf' in propVal) {
-        console.log(`${key}.${property}: JSONAny -> Any`)
-        propVal.type = 'any'
-        delete propVal['anyOf']
-      }
-    }
-  }
-  console.log()
-
-  // Hack! Downgrade schema to be compatible with the schema geneated by FastAPI v0.95.2 (pre Pydantic v2)
-  walk(schema, (key, value) => {
-    // Remove consts
-    //
-    // Input: (FastAPI v0.100 and later)
-    //
-    //    "setup_future_usage": {
-    //      "title": "Setup Future Usage",
-    //      "description": "If the payment method should be saved for future usage.",
-    //      "const": "on_session"
-    //  },
-    //
-    //
-    // Output
-    // "setup_future_usage": {
-    //   "description": "If the payment method should be saved for future usage.",
-    //   "enum": ["on_session"],
-    //   "title": "Setup Future Usage",
-    //   "type": "string"
-    // }
-
-    if (value && typeof value === 'object' && 'const' in value) {
-      return {
-        ...value,
-        enum: [value['const']],
-        const: undefined,
-      }
-    }
-
-    return value
-  })
-
   delete schema['webhooks']
 
   // Hack! Rewrite "-Input" and "-Output" names
@@ -105,8 +55,6 @@ const convert = (schema) => {
     }
     return value
   })
-
-  console.log({ inputOutputs })
 
   // Hack! To keep the schema consistent to what FastAPI generated _before_ introducing webhooks to the schema.
   // For some reason existing models where given "-Input" and "-Output" suffixes, breaking the generated code.

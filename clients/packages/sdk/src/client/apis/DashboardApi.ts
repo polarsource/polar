@@ -17,7 +17,6 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   IssueListResponse,
-  IssueListType,
   IssueSortBy,
   IssueStatus,
   Platforms,
@@ -28,7 +27,6 @@ export interface DashboardApiGetDashboardRequest {
     platform: Platforms;
     orgName: string;
     repoName?: string;
-    issueListType?: IssueListType;
     status?: Array<IssueStatus>;
     q?: string;
     sort?: IssueSortBy;
@@ -38,7 +36,6 @@ export interface DashboardApiGetDashboardRequest {
 }
 
 export interface DashboardApiGetPersonalDashboardRequest {
-    issueListType?: IssueListType;
     status?: Array<IssueStatus>;
     q?: string;
     sort?: IssueSortBy;
@@ -110,10 +107,6 @@ export class DashboardApi extends runtime.BaseAPI {
             queryParameters['repo_name'] = requestParameters['repoName'];
         }
 
-        if (requestParameters['issueListType'] != null) {
-            queryParameters['issue_list_type'] = requestParameters['issueListType'];
-        }
-
         if (requestParameters['status'] != null) {
             queryParameters['status'] = requestParameters['status'];
         }
@@ -171,10 +164,6 @@ export class DashboardApi extends runtime.BaseAPI {
      */
     async getPersonalDashboardRaw(requestParameters: DashboardApiGetPersonalDashboardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IssueListResponse>> {
         const queryParameters: any = {};
-
-        if (requestParameters['issueListType'] != null) {
-            queryParameters['issue_list_type'] = requestParameters['issueListType'];
-        }
 
         if (requestParameters['status'] != null) {
             queryParameters['status'] = requestParameters['status'];

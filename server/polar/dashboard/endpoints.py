@@ -9,7 +9,6 @@ from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
-    IssueListType,
     IssueSortBy,
     IssueStatus,
     PaginationResponse,
@@ -47,7 +46,6 @@ router = APIRouter(tags=["dashboard"])
 )
 async def get_personal_dashboard(
     auth_subject: WebUser,
-    issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
     status: list[IssueStatus] | None = Query(
         default=None
     ),  # TODO: remove, replace with show_closed
@@ -83,7 +81,6 @@ async def get_dashboard(
     platform: Platforms,
     org_name: str,
     repo_name: str | None = Query(default=None),
-    issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
     status: list[IssueStatus] | None = Query(
         default=None
     ),  # TODO: remove, replace with show_closed
@@ -156,28 +153,11 @@ async def get_dashboard(
     )
 
 
-def default_sort(
-    issue_list_type: IssueListType,
-    q: str | None = None,
-) -> IssueSortBy:
-    if q:
-        return IssueSortBy.relevance
-
-    if issue_list_type == IssueListType.issues:
-        return IssueSortBy.issues_default
-
-    if issue_list_type == IssueListType.dependencies:
-        return IssueSortBy.dependencies_default
-
-    return IssueSortBy.newest
-
-
 async def dashboard(
     session: AsyncSession,
     auth_subject: AuthSubject[User],
     authz: Authz,
     in_repos: Sequence[Repository] = [],
-    issue_list_type: IssueListType = IssueListType.issues,
     q: str | None = None,
     sort: IssueSortBy | None = None,
     for_org: Organization | None = None,
@@ -190,7 +170,7 @@ async def dashboard(
     user = auth_subject.subject
     # Default sorting
     if not sort:
-        sort = default_sort(issue_list_type, q)
+        sort = IssueSortBy.issues_default
 
     # Pagination.
     # Page 1 is the first page
@@ -205,9 +185,7 @@ async def dashboard(
         [r.id for r in in_repos],
         text=q,
         pledged_by_org=None,
-        pledged_by_user=for_user.id
-        if for_user and IssueListType.dependencies
-        else None,
+        pledged_by_user=for_user.id if for_user else None,
         have_pledge=True if only_pledged else None,
         have_polar_badge=True if only_badged else None,
         load_references=True,

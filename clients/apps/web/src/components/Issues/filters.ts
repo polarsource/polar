@@ -1,8 +1,7 @@
-import { IssueListType, IssueSortBy } from '@polar-sh/sdk'
+import { IssueSortBy } from '@polar-sh/sdk'
 
 export type DashboardFilters = {
   q: string
-  tab: IssueListType
   statusBacklog: boolean
   statusTriaged: boolean
   statusInProgress: boolean
@@ -14,7 +13,6 @@ export type DashboardFilters = {
 }
 
 export const DefaultFilters: DashboardFilters = {
-  tab: IssueListType.ISSUES,
   q: '',
   statusBacklog: true,
   statusTriaged: true,

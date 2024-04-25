@@ -68,7 +68,7 @@ const BenefitRow = ({
         'flex flex-row items-center justify-between rounded-xl px-3 py-2',
         checked
           ? 'bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-200'
-          : 'dark:text-polar-500 bg-gray-100 text-gray-500 dark:bg-gray-700',
+          : 'dark:text-polar-500 dark:bg-polar-700 bg-gray-100 text-gray-500',
       )}
     >
       <div className={twMerge('flex flex-row items-center gap-x-3')}>
@@ -165,7 +165,7 @@ const SubscriptionTierBenefitsForm = ({
     <>
       <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
         <div className="flex flex-row items-center justify-between">
-          <h2 className="dark:text-polar-50 text-lg text-gray-950">Benefits</h2>
+          <h2 className="dark:text-polar-50 text-gray-950">Benefits</h2>
           <Button
             size="sm"
             variant="secondary"

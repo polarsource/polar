@@ -86,6 +86,7 @@ const HeroSection = () => {
             size="large"
             text="Sign up with GitHub"
             userSignupType={UserSignupType.MAINTAINER}
+            returnTo="/maintainer"
           />
           <p className="text-xs leading-normal text-gray-400">
             By using Polar you agree to our{' '}
@@ -532,6 +533,7 @@ const SignUpBanner = () => {
         size="large"
         text="Sign up with GitHub"
         userSignupType={UserSignupType.MAINTAINER}
+        returnTo="/maintainer"
       />
     </motion.div>
   )

@@ -9,17 +9,6 @@ from polar.pledge.schemas import Pledge
 from polar.reward.schemas import Reward
 
 
-class IssueStatus(str, Enum):
-    backlog = "backlog"
-    triaged = "triaged"
-    in_progress = "in_progress"
-    pull_request = "pull_request"
-    closed = "closed"
-
-    # deprecated
-    building = "building"
-
-
 # Public API
 class IssueSortBy(str, Enum):
     newest = "newest"

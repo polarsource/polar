@@ -1,10 +1,5 @@
 import { api } from '@/utils/api'
-import {
-  IssueListResponse,
-  IssueSortBy,
-  IssueStatus,
-  Platforms,
-} from '@polar-sh/sdk'
+import { IssueListResponse, IssueSortBy, Platforms } from '@polar-sh/sdk'
 import {
   InfiniteData,
   UseInfiniteQueryResult,
@@ -12,39 +7,34 @@ import {
 } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useDashboard = (
-  orgName: string,
-  repoName?: string,
-  q?: string,
-  status?: Array<IssueStatus>,
-  sort?: IssueSortBy,
-  onlyPledged?: boolean,
-  onlyBadged?: boolean,
-  hasAppInstalled?: boolean,
-): UseInfiniteQueryResult<InfiniteData<IssueListResponse, unknown>> =>
+export const useDashboard = (vars: {
+  orgName: string
+  repoName?: string
+  q?: string
+  sort?: IssueSortBy
+  onlyPledged?: boolean
+  onlyBadged?: boolean
+  hasAppInstalled?: boolean
+  showClosed: boolean
+}): UseInfiniteQueryResult<InfiniteData<IssueListResponse, unknown>> =>
   useInfiniteQuery({
     queryKey: [
       'dashboard',
       'repo',
-      orgName,
-      repoName,
-      q,
-      JSON.stringify(status), // Array as cache key,
-      sort,
-      onlyPledged,
-      onlyBadged,
-      hasAppInstalled,
+      vars.orgName,
+      vars.repoName,
+      JSON.stringify(vars),
     ],
     queryFn: ({ signal, pageParam = 1 }) => {
       const promise = api.dashboard.getDashboard({
         platform: Platforms.GITHUB,
-        orgName: orgName,
-        repoName: repoName,
-        q: q,
-        status: status,
-        sort: sort,
-        onlyPledged: onlyPledged,
-        onlyBadged: onlyBadged,
+        orgName: vars.orgName,
+        repoName: vars.repoName,
+        q: vars.q,
+        sort: vars.sort,
+        onlyPledged: vars.onlyPledged,
+        onlyBadged: vars.onlyBadged,
+        showClosed: vars.showClosed,
         page: pageParam,
       })
 
@@ -59,35 +49,27 @@ export const useDashboard = (
       return lastPage.pagination.next_page
     },
     initialPageParam: 1,
-    enabled: !!orgName && !!hasAppInstalled,
+    enabled: !!vars.orgName && !!vars.hasAppInstalled,
     retry: defaultRetry,
   })
 
-export const usePersonalDashboard = (
-  q?: string,
-  status?: Array<IssueStatus>,
-  sort?: IssueSortBy,
-  onlyPledged?: boolean,
-  onlyBadged?: boolean,
-) =>
+export const usePersonalDashboard = (vars: {
+  q?: string
+  sort?: IssueSortBy
+  onlyPledged?: boolean
+  onlyBadged?: boolean
+  showClosed?: boolean
+}) =>
   useInfiniteQuery({
-    queryKey: [
-      'dashboard',
-      'personal',
-      q,
-      JSON.stringify(status), // Array as cache key,
-      sort,
-      onlyPledged,
-      onlyBadged,
-    ],
+    queryKey: ['dashboard', 'personal', JSON.stringify(vars)],
     queryFn: ({ signal, pageParam }) => {
       const promise = api.dashboard.getPersonalDashboard({
-        q: q,
-        status: status,
-        sort: sort,
-        onlyPledged,
-        onlyBadged: onlyBadged,
+        q: vars.q,
+        sort: vars.sort,
+        onlyPledged: vars.onlyPledged,
+        onlyBadged: vars.onlyBadged,
         page: pageParam,
+        showClosed: vars.showClosed,
       })
 
       signal?.addEventListener('abort', () => {

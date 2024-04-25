@@ -10,7 +10,6 @@ import {
   useListRewardsToUser,
   usePersonalDashboard,
 } from '@/hooks/queries'
-import { IssueStatus } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -25,20 +24,13 @@ const FundingPage = () => {
     onlyPledged: true,
   }
 
-  const dashboardQuery = usePersonalDashboard(
-    filters.q,
-    [
-      IssueStatus.BACKLOG,
-      IssueStatus.BUILDING,
-      IssueStatus.CLOSED,
-      IssueStatus.IN_PROGRESS,
-      IssueStatus.PULL_REQUEST,
-      IssueStatus.TRIAGED,
-    ],
-    filters.sort,
-    filters.onlyPledged,
-    filters.onlyBadged,
-  )
+  const dashboardQuery = usePersonalDashboard({
+    q: filters.q,
+    sort: filters.sort,
+    onlyPledged: filters.onlyPledged,
+    onlyBadged: filters.onlyBadged,
+    showClosed: filters.showClosed,
+  })
 
   const dashboard = dashboardQuery.data
   const totalCount = dashboard?.pages[0].pagination.total_count ?? undefined

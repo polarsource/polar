@@ -49,7 +49,7 @@ const IssueBadge = ({
         style={{
           display: 'flex',
           marginBottom: 2,
-          maxWidth: '600px',
+          maxWidth: '500px',
           flexDirection: 'column',
           borderRadius: 11,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',

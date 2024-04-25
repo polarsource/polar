@@ -1,4 +1,10 @@
-import React, { FunctionComponent, MouseEvent, useEffect } from 'react'
+import React, {
+  FunctionComponent,
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
@@ -16,22 +22,24 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
   modalContent,
   className,
 }) => {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.keyCode === 27 && isShown) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      const contains = ref.current?.contains(event.target as Node)
+
+      if (event.keyCode === 27 && isShown && contains) {
         hide()
       }
-    }
+    },
+    [hide, isShown],
+  )
 
+  useEffect(() => {
     isShown
       ? (document.body.style.overflow = 'hidden')
       : (document.body.style.overflow = 'unset')
-
-    document.addEventListener('keydown', onKeyDown, false)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown, false)
-    }
-  }, [isShown, hide])
+  }, [isShown])
 
   const onInnerClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -41,10 +49,12 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
     <React.Fragment>
       <FocusLock>
         <div
+          ref={ref}
           className="fixed inset-0 z-50 overflow-hidden focus-within:outline-none"
           aria-modal
           tabIndex={-1}
           role="dialog"
+          onKeyDown={onKeyDown}
         >
           <div
             className="flex h-screen flex-col items-center bg-black/50 md:w-full md:flex-row md:items-start md:justify-end"

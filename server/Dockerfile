@@ -22,8 +22,6 @@ ADD polar polar
 ADD scripts scripts
 ADD run_worker.py .
 
-ADD bin bin
-
 ADD migrations migrations
 ADD alembic.ini .
 

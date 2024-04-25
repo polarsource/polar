@@ -552,7 +552,8 @@ class GitHubIssueReferencesService:
             await session.commit()
             log.info(
                 "issue.create_reference.created",
-                ref=ref,
+                issue_id=ref.issue_id,
+                pull_request_id=ref.pull_request_id,
             )
 
             await issue_reference_created.call(IssueReferenceHook(session, ref))
@@ -560,7 +561,8 @@ class GitHubIssueReferencesService:
         except IntegrityError:
             log.info(
                 "issue.create_reference.already_exists",
-                ref=ref,
+                issue_id=ref.issue_id,
+                pull_request_id=ref.pull_request_id,
             )
             await nested.rollback()
 

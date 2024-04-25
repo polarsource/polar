@@ -129,7 +129,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                   benefitSubscriptionTiers?.map((tier) => (
                     <Link
                       key={tier.id}
-                      href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
+                      href={`/maintainer/${organization.name}/subscriptions/tiers?tierId=${tier.id}`}
                       className="dark:hover:bg-polar-800 -mx-2 flex flex-row items-center gap-x-2 rounded-lg px-4 py-2 hover:bg-gray-100"
                     >
                       <SubscriptionGroupIcon

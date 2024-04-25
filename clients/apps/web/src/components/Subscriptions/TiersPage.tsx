@@ -6,13 +6,14 @@ import { useRecurringInterval } from '@/hooks/subscriptions'
 import { Add, Bolt } from '@mui/icons-material'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import React, { useEffect, useMemo } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import CreateSubscriptionTierModal from './CreateSubscriptionTierModal'
+import EditSubscriptionTierModal from './EditSubscriptionTierModal'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
 
@@ -26,6 +27,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
     useRecurringInterval(subscriptionTiers?.items || [])
 
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   const {
     isShown: isCreateSubscriptionTierModalShown,
@@ -33,11 +35,23 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
     hide: hideCreateSubscriptionTierModal,
   } = useModal()
 
+  const {
+    isShown: isEditSubscriptionTierModalShown,
+    show: showEditSubscriptionTierModal,
+    hide: hideEditSubscriptionTierModal,
+  } = useModal()
+
   useEffect(() => {
     if (searchParams.has('new')) {
       showCreateSubscriptionTierModal()
     } else {
       hideCreateSubscriptionTierModal()
+    }
+
+    if (searchParams.has('tierId')) {
+      showEditSubscriptionTierModal()
+    } else {
+      hideEditSubscriptionTierModal()
     }
   }, [searchParams])
 
@@ -51,6 +65,8 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
         return undefined
     }
   }, [searchParams])
+
+  const subscriptionTierId = searchParams.get('tierId')
 
   if (!subscriptionTiers?.items?.length) {
     return (
@@ -106,7 +122,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
             >
               <Link
                 key={tier.id}
-                href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
+                href={`/maintainer/${organization.name}/subscriptions/tiers?tierId=${tier.id}`}
                 className="w-full"
               >
                 <Button variant="outline" fullWidth>
@@ -122,11 +138,46 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
           <CreateSubscriptionTierModal
             type={defaultSubscriptionType}
             organization={organization}
-            hide={hideCreateSubscriptionTierModal}
+            hide={() => {
+              router.replace(
+                `/maintainer/${organization?.name}/subscriptions/tiers`,
+              )
+              hideCreateSubscriptionTierModal()
+            }}
           />
         }
         isShown={isCreateSubscriptionTierModalShown}
-        hide={hideCreateSubscriptionTierModal}
+        hide={() => {
+          router.replace(
+            `/maintainer/${organization?.name}/subscriptions/tiers`,
+          )
+          hideCreateSubscriptionTierModal()
+        }}
+      />
+      <InlineModal
+        modalContent={
+          subscriptionTierId ? (
+            <EditSubscriptionTierModal
+              tier={subscriptionTierId}
+              organization={organization}
+              hide={() => {
+                router.replace(
+                  `/maintainer/${organization?.name}/subscriptions/tiers`,
+                )
+                hideEditSubscriptionTierModal()
+              }}
+            />
+          ) : (
+            <></>
+          )
+        }
+        isShown={isEditSubscriptionTierModalShown}
+        hide={() => {
+          router.replace(
+            `/maintainer/${organization?.name}/subscriptions/tiers`,
+          )
+          hideEditSubscriptionTierModal()
+        }}
       />
     </DashboardBody>
   )

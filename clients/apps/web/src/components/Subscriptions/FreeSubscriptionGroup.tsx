@@ -30,7 +30,7 @@ const FreeSubscriptionGroup: React.FC<FreeSubscriptionGroupProps> = ({
           </p>
         </div>
         <Link
-          href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
+          href={`/maintainer/${organization.name}/subscriptions/tiers?tierId=${tier.id}`}
         >
           <Button>
             <Edit className="mr-2" fontSize="small" />

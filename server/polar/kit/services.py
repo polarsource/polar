@@ -75,22 +75,6 @@ class ResourceService(
             autocommit=autocommit,
         )
 
-    async def upsert(
-        self,
-        session: AsyncSession,
-        create_schema: CreateSchemaType,
-        constraints: list[InstrumentedAttribute[Any]],
-        mutable_keys: set[str],
-        autocommit: bool = True,
-    ) -> ModelType:
-        return await self._db_upsert(
-            session,
-            create_schema,
-            constraints=constraints,
-            mutable_keys=mutable_keys,
-            autocommit=autocommit,
-        )
-
     async def _db_upsert_many(
         self,
         session: AsyncSession,
@@ -120,26 +104,3 @@ class ResourceService(
         if autocommit:
             await session.commit()
         return instances
-
-    async def _db_upsert(
-        self,
-        session: AsyncSession,
-        obj: CreateSchemaType,
-        constraints: list[InstrumentedAttribute[Any]],
-        mutable_keys: set[str],
-        autocommit: bool = True,
-    ) -> ModelType:
-        """
-        Usage of upsert is deprecated.
-        If you need an upsert, add the functionality in the service instead of relying
-        active record.
-        """
-
-        upserted: Sequence[ModelType] = await self._db_upsert_many(
-            session,
-            [obj],
-            constraints=constraints,
-            mutable_keys=mutable_keys,
-            autocommit=autocommit,
-        )
-        return upserted[0]

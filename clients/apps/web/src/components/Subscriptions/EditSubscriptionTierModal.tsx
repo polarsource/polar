@@ -197,7 +197,7 @@ const SubscriptionTierEditModalContent = ({
   )
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <h1 className="text-lg font-medium">Edit Subscription Tier</h1>
       </InlineModalHeader>

@@ -177,7 +177,7 @@ const CreateSubscriptionTierModalContent: React.FC<
   }, [newSubscriptionTier, saveDraft])
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <h1 className="text-lg font-medium">New Subscription Tier</h1>
       </InlineModalHeader>

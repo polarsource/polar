@@ -121,7 +121,7 @@ export const PublicPagePostWizard = ({
   organization: Organization
 }) => {
   return (
-    <div className="flex flex-col gap-8 xl:flex-row">
+    <div className="flex flex-col gap-6 xl:flex-row">
       {postTemplates(organization, true).map((template) => (
         <PostCard key={template.title} {...template} />
       ))}

@@ -79,15 +79,15 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
   return (
     <DashboardBody className="flex flex-col gap-y-8">
-      <div className="flex flex-row items-center justify-between">
-        <h2 className="text-lg font-medium">Benefits</h2>
-        <Button className="h-8 w-8 rounded-full" onClick={toggle}>
-          <AddOutlined fontSize="inherit" />
-        </Button>
-      </div>
       <div className="flex flex-row items-start gap-x-8">
-        <div className="flex w-2/3 flex-col gap-y-8">
-          <ShadowBoxOnMd className="flex  flex-col gap-y-6">
+        <div className="flex w-2/3 flex-col gap-y-6">
+          <div className="flex flex-row items-center justify-between">
+            <h2 className="text-lg font-medium">Benefits</h2>
+            <Button className="h-8 w-8 rounded-full" onClick={toggle}>
+              <AddOutlined fontSize="inherit" />
+            </Button>
+          </div>
+          <ShadowBoxOnMd className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">
               {benefits?.items?.map((benefit) => (
                 <BenefitRow
@@ -100,7 +100,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               ))}
             </div>
           </ShadowBoxOnMd>
-
           {benefitsIsFetched ? (
             <RecommendedBenefits
               existingBenefits={benefits?.items ?? []}
@@ -119,7 +118,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               >
                 {resolveBenefitIcon(selectedBenefit, 'inherit')}
               </div>
-              <span className="text-sm">{selectedBenefit.description}</span>
+              <span className="font-medium">{selectedBenefit.description}</span>
             </div>
 
             <div className="flex flex-col gap-y-4">
@@ -130,13 +129,13 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                     <Link
                       key={tier.id}
                       href={`/maintainer/${organization.name}/subscriptions/tiers?tierId=${tier.id}`}
-                      className="dark:hover:bg-polar-800 -mx-2 flex flex-row items-center gap-x-2 rounded-lg px-4 py-2 hover:bg-gray-100"
+                      className="dark:bg-polar-800 dark:hover:bg-polar-700 -mx-2 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 px-4 py-3 transition-colors hover:bg-blue-50 hover:text-blue-500"
                     >
                       <SubscriptionGroupIcon
                         className="h-4! w-4! text-lg"
                         type={tier.type}
                       />
-                      <span>{tier.name}</span>
+                      <span className="text-sm">{tier.name}</span>
                     </Link>
                   ))
                 ) : (
@@ -205,20 +204,21 @@ const BenefitRow = ({
   return (
     <div
       className={twMerge(
-        'dark:hover:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 px-4 py-3 transition-colors hover:border-blue-100 hover:bg-blue-50 dark:border-transparent',
+        'dark:hover:bg-polar-700 dark:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-gray-100 px-4 py-3 transition-colors hover:bg-blue-50',
         selected &&
-          'dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 border-blue-100 bg-blue-50 hover:bg-blue-100',
+          'bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900',
       )}
       onClick={handleSelectBenefit(benefit)}
     >
-      <div className="flex flex-row items-center gap-x-3">
-        <div
-          className={twMerge(
-            'flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400',
-          )}
-        >
-          {resolveBenefitIcon(benefit, 'inherit')}
-        </div>
+      <div
+        className={twMerge(
+          'flex flex-row items-center gap-x-3',
+          selected
+            ? 'text-blue-500 dark:text-blue-400'
+            : 'dark:text-polar-500 text-gray-500',
+        )}
+      >
+        {resolveBenefitIcon(benefit, 'inherit')}
         <span className="text-sm">{benefit.description}</span>
       </div>
 
@@ -383,35 +383,37 @@ const RecommendedBenefits = ({
   return (
     <div className="flex flex-col gap-y-2">
       <h2 className="text-md font-medium">Recommended benefits</h2>
-      {!hasDiscord && (
-        <BenefitSuggestionRow
-          icon={<DiscordIcon />}
-          onClick={() => {
-            setCreateModalDefaultValues({
-              description: 'Invite to community Discord server',
-              type: BenefitType.DISCORD,
-            })
-            openCreateBenefitModal()
-          }}
-        >
-          Invite to community Discord server
-        </BenefitSuggestionRow>
-      )}
+      <ShadowBoxOnMd className="flex flex-col gap-y-4">
+        {!hasDiscord && (
+          <BenefitSuggestionRow
+            icon={<DiscordIcon />}
+            onClick={() => {
+              setCreateModalDefaultValues({
+                description: 'Invite to community Discord server',
+                type: BenefitType.DISCORD,
+              })
+              openCreateBenefitModal()
+            }}
+          >
+            Invite to community Discord server
+          </BenefitSuggestionRow>
+        )}
 
-      {!hasAds && (
-        <BenefitSuggestionRow
-          icon={<WebOutlined className="h-4 w-4" fontSize="inherit" />}
-          onClick={() => {
-            setCreateModalDefaultValues({
-              description: 'Logo in README',
-              type: BenefitType.ADS,
-            })
-            openCreateBenefitModal()
-          }}
-        >
-          Logo in README
-        </BenefitSuggestionRow>
-      )}
+        {!hasAds && (
+          <BenefitSuggestionRow
+            icon={<WebOutlined className="h-4 w-4" fontSize="inherit" />}
+            onClick={() => {
+              setCreateModalDefaultValues({
+                description: 'Logo in README',
+                type: BenefitType.ADS,
+              })
+              openCreateBenefitModal()
+            }}
+          >
+            Logo in README
+          </BenefitSuggestionRow>
+        )}
+      </ShadowBoxOnMd>
     </div>
   )
 }
@@ -427,13 +429,11 @@ const BenefitSuggestionRow = ({
 }) => {
   return (
     <div
-      className="dark:hover:bg-polar-800 dark:bg-polar-900 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-4 py-3 transition-colors hover:border-blue-100 hover:bg-blue-50 dark:border-transparent"
+      className="dark:hover:bg-polar-700 dark:bg-polar-800 dark:text-polar-500 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-gray-100 p-5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-500 dark:hover:text-blue-400"
       onClick={onClick}
     >
       <div className="flex flex-row items-center gap-x-3">
-        <div className="flex h-8 w-8 shrink-0  items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400">
-          {icon}
-        </div>
+        {icon}
         <span className="text-sm">{children}</span>
       </div>
     </div>

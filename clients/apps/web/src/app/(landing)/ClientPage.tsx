@@ -18,7 +18,7 @@ import {
   TextSnippet,
   TextSnippetOutlined,
 } from '@mui/icons-material'
-import { SubscriptionTier } from '@polar-sh/sdk'
+import { SubscriptionTier, UserSignupType } from '@polar-sh/sdk'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -82,7 +82,11 @@ const HeroSection = () => {
         </div>
 
         <div className="flex flex-col items-start gap-y-8">
-          <GithubLoginButton size="large" text="Sign up with GitHub" />
+          <GithubLoginButton
+            size="large"
+            text="Sign up with GitHub"
+            userSignupType={UserSignupType.MAINTAINER}
+          />
           <p className="text-xs leading-normal text-gray-400">
             By using Polar you agree to our{' '}
             <BlueLink href="/legal/terms" target="_blank">
@@ -524,7 +528,11 @@ const SignUpBanner = () => {
         We&apos;ve run out of sales pitches
       </h1>
 
-      <GithubLoginButton size="large" text="Sign up with GitHub" />
+      <GithubLoginButton
+        size="large"
+        text="Sign up with GitHub"
+        userSignupType={UserSignupType.MAINTAINER}
+      />
     </motion.div>
   )
 }

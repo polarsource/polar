@@ -4,7 +4,7 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
-import { IssueListResponse, IssueListType, IssueSortBy } from '@polar-sh/sdk'
+import { IssueListResponse, IssueSortBy } from '@polar-sh/sdk'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -36,7 +36,7 @@ const IssueList = (props: {
 }) => {
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = props
 
-  const canAddRemovePolarLabel = props.filters.tab === IssueListType.ISSUES
+  const canAddRemovePolarLabel = true
 
   return (
     <div>
@@ -182,14 +182,7 @@ export const Header = (props: {
     return 'Most wanted'
   }
 
-  const tabFilters: IssueSortBy[] = useMemo(() => {
-    const issuesTabFilters = [IssueSortBy.ISSUES_DEFAULT]
-    const dependenciesTabFilters = [IssueSortBy.DEPENDENCIES_DEFAULT]
-
-    return props.filters.tab === IssueListType.ISSUES
-      ? issuesTabFilters
-      : dependenciesTabFilters
-  }, [props.filters.tab])
+  const tabFilters = [IssueSortBy.ISSUES_DEFAULT]
 
   const options: IssueSortBy[] = useMemo(() => {
     return [
@@ -251,7 +244,7 @@ export const Header = (props: {
     navigate(f)
   }
 
-  const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
+  const canFilterByBadged = true
 
   return (
     <div className="flex w-full flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap md:gap-4">

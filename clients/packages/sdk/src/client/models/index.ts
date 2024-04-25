@@ -4755,17 +4755,6 @@ export interface IssueListResponse {
      */
     pagination: PaginationResponse;
 }
-
-/**
- * 
- * @export
- */
-export const IssueListType = {
-    ISSUES: 'issues',
-    DEPENDENCIES: 'dependencies'
-} as const;
-export type IssueListType = typeof IssueListType[keyof typeof IssueListType];
-
 /**
  * 
  * @export

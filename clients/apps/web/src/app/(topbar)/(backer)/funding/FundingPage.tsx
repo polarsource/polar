@@ -10,7 +10,7 @@ import {
   useListRewardsToUser,
   usePersonalDashboard,
 } from '@/hooks/queries'
-import { IssueListType, IssueStatus } from '@polar-sh/sdk'
+import { IssueStatus } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -21,12 +21,11 @@ const FundingPage = () => {
 
   const filters: DashboardFilters = {
     ...DefaultFilters,
-    tab: IssueListType.DEPENDENCIES,
+
     onlyPledged: true,
   }
 
   const dashboardQuery = usePersonalDashboard(
-    filters.tab,
     filters.q,
     [
       IssueStatus.BACKLOG,

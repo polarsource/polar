@@ -12,7 +12,6 @@ import { useDashboard, useListRepositories } from '@/hooks/queries'
 import { useSSE } from '@/hooks/sse'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import {
-  IssueListType,
   IssueSortBy,
   IssueStatus,
   Organization,
@@ -132,7 +131,6 @@ const Issues = ({
       const f: DashboardFilters = {
         ...DefaultFilters,
         q: s?.get('q') || '',
-        tab: IssueListType.ISSUES,
       }
       if (s?.has('statuses')) {
         const stat = s.get('statuses')
@@ -199,7 +197,6 @@ const OrganizationIssues = ({
   const dashboardQuery = useDashboard(
     orgName,
     repoName,
-    filters.tab,
     filters.q,
     statuses,
     filters.sort,
@@ -232,7 +229,6 @@ const OrganizationIssues = ({
 
   const showAddBadgeBanner = useMemo(() => {
     return (
-      filters.tab === IssueListType.ISSUES &&
       dashboardQuery.isLoading === false &&
       haveIssues &&
       anyIssueHasPledgeOrBadge === false &&

@@ -9,11 +9,6 @@ from polar.pledge.schemas import Pledge
 from polar.reward.schemas import Reward
 
 
-class IssueListType(str, Enum):
-    issues = "issues"
-    dependencies = "dependencies"
-
-
 class IssueStatus(str, Enum):
     backlog = "backlog"
     triaged = "triaged"

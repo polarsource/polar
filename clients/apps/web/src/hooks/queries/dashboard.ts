@@ -1,7 +1,6 @@
 import { api } from '@/utils/api'
 import {
   IssueListResponse,
-  IssueListType,
   IssueSortBy,
   IssueStatus,
   Platforms,
@@ -16,7 +15,6 @@ import { defaultRetry } from './retry'
 export const useDashboard = (
   orgName: string,
   repoName?: string,
-  tab?: IssueListType,
   q?: string,
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
@@ -30,7 +28,6 @@ export const useDashboard = (
       'repo',
       orgName,
       repoName,
-      tab,
       q,
       JSON.stringify(status), // Array as cache key,
       sort,
@@ -43,7 +40,6 @@ export const useDashboard = (
         platform: Platforms.GITHUB,
         orgName: orgName,
         repoName: repoName,
-        issueListType: tab,
         q: q,
         status: status,
         sort: sort,
@@ -68,7 +64,6 @@ export const useDashboard = (
   })
 
 export const usePersonalDashboard = (
-  tab?: IssueListType,
   q?: string,
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
@@ -79,7 +74,6 @@ export const usePersonalDashboard = (
     queryKey: [
       'dashboard',
       'personal',
-      tab,
       q,
       JSON.stringify(status), // Array as cache key,
       sort,
@@ -88,7 +82,6 @@ export const usePersonalDashboard = (
     ],
     queryFn: ({ signal, pageParam }) => {
       const promise = api.dashboard.getPersonalDashboard({
-        issueListType: tab,
         q: q,
         status: status,
         sort: sort,

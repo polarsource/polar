@@ -114,24 +114,9 @@ export const Header = (props: {
   const navigate = (filters: DashboardFilters) => {
     const params = new URLSearchParams()
 
-    const statuses = []
-    if (filters.statusBacklog) {
-      statuses.push('backlog')
+    if (filters.showClosed) {
+      params.set('showClosed', '1')
     }
-    if (filters.statusTriaged) {
-      statuses.push('triaged')
-    }
-    if (filters.statusInProgress) {
-      statuses.push('in_progress')
-    }
-    if (filters.statusPullRequest) {
-      statuses.push('pull_request')
-    }
-    if (filters.statusClosed) {
-      statuses.push('closed')
-    }
-
-    params.set('statuses', statuses.join(','))
 
     if (filters.q) {
       params.set('q', filters.q)
@@ -227,7 +212,7 @@ export const Header = (props: {
   const onShowClosedChanged = (value: boolean) => {
     const f: DashboardFilters = {
       ...props.filters,
-      statusClosed: value,
+      showClosed: value,
     }
 
     props.onSetFilters(f)
@@ -292,7 +277,7 @@ export const Header = (props: {
                   Only badged
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
-                  checked={props.filters.statusClosed}
+                  checked={props.filters.showClosed}
                   onCheckedChange={onShowClosedChanged}
                 >
                   Show closed

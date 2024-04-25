@@ -11,12 +11,7 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useDashboard, useListRepositories } from '@/hooks/queries'
 import { useSSE } from '@/hooks/sse'
 import { HowToVoteOutlined } from '@mui/icons-material'
-import {
-  IssueSortBy,
-  IssueStatus,
-  Organization,
-  Repository,
-} from '@polar-sh/sdk'
+import { IssueSortBy, Organization, Repository } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Separator } from 'polarkit/components/ui/separator'
@@ -63,16 +58,6 @@ export default function ClientPage() {
   }
 
   return <Issues key={key} org={org} repo={repo} />
-}
-
-const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
-  const next: Array<IssueStatus> = []
-  filters.statusBacklog && next.push(IssueStatus.BACKLOG)
-  filters.statusTriaged && next.push(IssueStatus.TRIAGED)
-  filters.statusInProgress && next.push(IssueStatus.IN_PROGRESS)
-  filters.statusPullRequest && next.push(IssueStatus.PULL_REQUEST)
-  filters.statusClosed && next.push(IssueStatus.CLOSED)
-  return next
 }
 
 const getSort = (sort: string | null): IssueSortBy => {
@@ -132,16 +117,8 @@ const Issues = ({
         ...DefaultFilters,
         q: s?.get('q') || '',
       }
-      if (s?.has('statuses')) {
-        const stat = s.get('statuses')
-        if (stat) {
-          const statuses = stat.split(',')
-          f.statusBacklog = statuses.includes('backlog')
-          f.statusTriaged = statuses.includes('triaged')
-          f.statusInProgress = statuses.includes('in_progress')
-          f.statusPullRequest = statuses.includes('pull_request')
-          f.statusClosed = statuses.includes('closed')
-        }
+      if (s?.has('showClosed')) {
+        f.showClosed = true
       }
       if (s?.has('sort')) {
         f.sort = getSort(s.get('sort'))
@@ -157,12 +134,6 @@ const Issues = ({
     }
   }, [search])
 
-  let [statuses, setStatuses] = useState<Array<IssueStatus>>(
-    buildStatusesFilter(filters),
-  )
-
-  useEffect(() => setStatuses(buildStatusesFilter(filters)), [filters])
-
   if (!org || !org.name) {
     return <></>
   }
@@ -171,7 +142,6 @@ const Issues = ({
     <OrganizationIssues
       filters={filters}
       onSetFilters={setFilters}
-      statuses={statuses}
       orgName={org.name}
       repoName={repo?.name}
       hasAppInstalled={org.has_app_installed}
@@ -183,27 +153,25 @@ const OrganizationIssues = ({
   orgName,
   repoName,
   filters,
-  statuses,
   onSetFilters,
   hasAppInstalled,
 }: {
   orgName: string
   repoName: string | undefined
   filters: DashboardFilters
-  statuses: Array<IssueStatus>
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
   hasAppInstalled: boolean
 }) => {
-  const dashboardQuery = useDashboard(
+  const dashboardQuery = useDashboard({
     orgName,
     repoName,
-    filters.q,
-    statuses,
-    filters.sort,
-    filters.onlyPledged,
-    filters.onlyBadged,
+    q: filters.q,
+    sort: filters.sort,
+    onlyPledged: filters.onlyPledged,
+    onlyBadged: filters.onlyBadged,
     hasAppInstalled,
-  )
+    showClosed: filters.showClosed,
+  })
   const dashboard = dashboardQuery.data
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
 
@@ -218,13 +186,7 @@ const OrganizationIssues = ({
   }, [dashboardQuery])
 
   const isDefaultFilters = useMemo(() => {
-    return (
-      filters.statusBacklog &&
-      filters.statusTriaged &&
-      filters.statusInProgress &&
-      filters.statusPullRequest &&
-      !filters.statusClosed
-    )
+    return !filters.showClosed
   }, [filters])
 
   const showAddBadgeBanner = useMemo(() => {

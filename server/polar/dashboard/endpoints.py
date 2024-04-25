@@ -10,7 +10,6 @@ from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
     IssueSortBy,
-    IssueStatus,
     PaginationResponse,
 )
 from polar.enums import Platforms
@@ -46,13 +45,11 @@ router = APIRouter(tags=["dashboard"])
 )
 async def get_personal_dashboard(
     auth_subject: WebUser,
-    status: list[IssueStatus] | None = Query(
-        default=None
-    ),  # TODO: remove, replace with show_closed
     q: str | None = Query(default=None),
     sort: IssueSortBy | None = Query(default=None),
     only_pledged: bool = Query(default=False),
     only_badged: bool = Query(default=False),
+    show_closed: bool = Query(default=False),
     page: int = Query(default=1),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -68,7 +65,7 @@ async def get_personal_dashboard(
         for_user=auth_subject.subject,
         only_pledged=only_pledged,
         only_badged=only_badged,
-        show_closed=status is not None and IssueStatus.closed in status,
+        show_closed=show_closed,
     )
 
 
@@ -81,13 +78,11 @@ async def get_dashboard(
     platform: Platforms,
     org_name: str,
     repo_name: str | None = Query(default=None),
-    status: list[IssueStatus] | None = Query(
-        default=None
-    ),  # TODO: remove, replace with show_closed
     q: str | None = Query(default=None),
     sort: IssueSortBy | None = Query(default=None),
     only_pledged: bool = Query(default=False),
     only_badged: bool = Query(default=False),
+    show_closed: bool = Query(default=False),
     page: int = Query(default=1),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -148,7 +143,7 @@ async def get_dashboard(
         for_org=org,
         only_pledged=only_pledged,
         only_badged=only_badged,
-        show_closed=status is not None and IssueStatus.closed in status,
+        show_closed=show_closed,
         page=page,
     )
 

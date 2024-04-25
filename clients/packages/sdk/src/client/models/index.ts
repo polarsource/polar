@@ -4824,21 +4824,6 @@ export const IssueSortBy = {
 } as const;
 export type IssueSortBy = typeof IssueSortBy[keyof typeof IssueSortBy];
 
-
-/**
- * 
- * @export
- */
-export const IssueStatus = {
-    BACKLOG: 'backlog',
-    TRIAGED: 'triaged',
-    IN_PROGRESS: 'in_progress',
-    PULL_REQUEST: 'pull_request',
-    CLOSED: 'closed',
-    BUILDING: 'building'
-} as const;
-export type IssueStatus = typeof IssueStatus[keyof typeof IssueStatus];
-
 /**
  * 
  * @export

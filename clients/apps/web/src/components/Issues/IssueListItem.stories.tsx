@@ -14,7 +14,6 @@ import {
 import {
   IssueReferenceRead,
   IssueReferenceType,
-  IssueStatus,
   Pledge,
   PledgeState,
   PledgeType,
@@ -211,12 +210,9 @@ const issueTriaged = {
     },
   ],
 }
-const issueInProgress = { ...issue, progress: IssueStatus.IN_PROGRESS }
-const issuePullRequest = {
-  ...issue,
-  progress: IssueStatus.PULL_REQUEST,
-}
-const issueClosed = { ...issue, progress: IssueStatus.CLOSED }
+const issueInProgress = { ...issue }
+const issuePullRequest = { ...issue }
+const issueClosed = { ...issue }
 
 const meta: Meta<typeof IssueListItem> = {
   title: 'Organisms/IssueListItem',

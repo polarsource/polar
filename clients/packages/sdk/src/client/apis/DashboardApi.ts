@@ -18,7 +18,6 @@ import type {
   HTTPValidationError,
   IssueListResponse,
   IssueSortBy,
-  IssueStatus,
   Platforms,
   PledgesTypeSummaries,
 } from '../models/index';
@@ -27,20 +26,20 @@ export interface DashboardApiGetDashboardRequest {
     platform: Platforms;
     orgName: string;
     repoName?: string;
-    status?: Array<IssueStatus>;
     q?: string;
     sort?: IssueSortBy;
     onlyPledged?: boolean;
     onlyBadged?: boolean;
+    showClosed?: boolean;
     page?: number;
 }
 
 export interface DashboardApiGetPersonalDashboardRequest {
-    status?: Array<IssueStatus>;
     q?: string;
     sort?: IssueSortBy;
     onlyPledged?: boolean;
     onlyBadged?: boolean;
+    showClosed?: boolean;
     page?: number;
 }
 
@@ -107,10 +106,6 @@ export class DashboardApi extends runtime.BaseAPI {
             queryParameters['repo_name'] = requestParameters['repoName'];
         }
 
-        if (requestParameters['status'] != null) {
-            queryParameters['status'] = requestParameters['status'];
-        }
-
         if (requestParameters['q'] != null) {
             queryParameters['q'] = requestParameters['q'];
         }
@@ -125,6 +120,10 @@ export class DashboardApi extends runtime.BaseAPI {
 
         if (requestParameters['onlyBadged'] != null) {
             queryParameters['only_badged'] = requestParameters['onlyBadged'];
+        }
+
+        if (requestParameters['showClosed'] != null) {
+            queryParameters['show_closed'] = requestParameters['showClosed'];
         }
 
         if (requestParameters['page'] != null) {
@@ -165,10 +164,6 @@ export class DashboardApi extends runtime.BaseAPI {
     async getPersonalDashboardRaw(requestParameters: DashboardApiGetPersonalDashboardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IssueListResponse>> {
         const queryParameters: any = {};
 
-        if (requestParameters['status'] != null) {
-            queryParameters['status'] = requestParameters['status'];
-        }
-
         if (requestParameters['q'] != null) {
             queryParameters['q'] = requestParameters['q'];
         }
@@ -183,6 +178,10 @@ export class DashboardApi extends runtime.BaseAPI {
 
         if (requestParameters['onlyBadged'] != null) {
             queryParameters['only_badged'] = requestParameters['onlyBadged'];
+        }
+
+        if (requestParameters['showClosed'] != null) {
+            queryParameters['show_closed'] = requestParameters['showClosed'];
         }
 
         if (requestParameters['page'] != null) {

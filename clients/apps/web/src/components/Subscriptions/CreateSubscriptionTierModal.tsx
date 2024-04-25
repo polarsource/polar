@@ -17,7 +17,6 @@ import {
   SubscriptionTierCreateTypeEnum,
   ValidationError,
 } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -64,7 +63,6 @@ interface CreateSubscriptionTierModalContentProps {
 const CreateSubscriptionTierModalContent: React.FC<
   CreateSubscriptionTierModalContentProps
 > = ({ type, organization, organizationBenefits, hide }) => {
-  const router = useRouter()
   const {
     formDrafts: { SubscriptionTierCreate: savedFormValues },
     saveDraft,

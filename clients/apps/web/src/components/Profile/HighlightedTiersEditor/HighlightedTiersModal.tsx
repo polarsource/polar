@@ -118,7 +118,7 @@ export const HighlightedTiersModal = ({
 
                 <Link
                   className="flex flex-row items-center gap-2 px-7 py-2 text-sm text-blue-500 dark:text-blue-400"
-                  href={`/maintainer/${organization.name}/subscriptions/tiers/new?type=individual`}
+                  href={`/maintainer/${organization.name}/subscriptions/tiers?new&type=individual`}
                 >
                   <AddOutlined fontSize="small" />
                   <span>Create New</span>
@@ -150,7 +150,7 @@ export const HighlightedTiersModal = ({
                 ))}
                 <Link
                   className="flex flex-row items-center gap-2 px-7 py-2 text-sm text-blue-500 dark:text-blue-400"
-                  href={`/maintainer/${organization.name}/subscriptions/tiers/new?type=business`}
+                  href={`/maintainer/${organization.name}/subscriptions/tiers?new&type=business`}
                 >
                   <AddOutlined fontSize="small" />
                   <span>Create New</span>

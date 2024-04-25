@@ -4,11 +4,7 @@ import {
   useUpdateBenefit,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  AutoAwesome,
-  LoyaltyOutlined,
-  MoreVertOutlined,
-} from '@mui/icons-material'
+import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
 import {
   BenefitCreate,
   BenefitPublicInner,
@@ -31,11 +27,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { NewBenefitForm, UpdateBenefitForm } from '../Benefit/BenefitForm'
-import {
-  CreatableBenefit,
-  isPremiumArticlesBenefit,
-  resolveBenefitIcon,
-} from '../Benefit/utils'
+import { CreatableBenefit, resolveBenefitIcon } from '../Benefit/utils'
 import { Modal } from '../Modal'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
@@ -71,34 +63,19 @@ const BenefitRow = ({
   }, [deleteBenefit, benefit])
 
   return (
-    <div className="flex flex-row items-center justify-between py-2">
-      <div className="flex flex-row items-center gap-x-4">
-        <div
-          className={twMerge(
-            'flex h-8 w-8 items-center justify-center rounded-full',
-            checked
-              ? 'bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-400'
-              : 'dark:text-polar-300 dark:bg-polar-700 bg-gray-100 text-gray-300',
-          )}
-        >
-          {resolveBenefitIcon(benefit)}
-        </div>
-        <span
-          className={twMerge(
-            'text-sm',
-            !checked && 'dark:text-polar-500 text-gray-400',
-          )}
-        >
-          {benefit.description}
-        </span>
+    <div
+      className={twMerge(
+        'flex flex-row items-center justify-between rounded-xl px-3 py-2',
+        checked
+          ? 'bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-200'
+          : 'dark:text-polar-500 bg-gray-100 text-gray-500 dark:bg-gray-700',
+      )}
+    >
+      <div className={twMerge('flex flex-row items-center gap-x-3')}>
+        {resolveBenefitIcon(benefit)}
+        <span className="text-sm">{benefit.description}</span>
       </div>
-      <div className="flex flex-row items-center gap-x-4 text-[14px]">
-        {isPremiumArticlesBenefit(benefit) && (
-          <div className="hidden flex-row items-center gap-1.5 rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white shadow md:flex dark:border dark:border-blue-400 dark:bg-blue-600">
-            <AutoAwesome className="!h-3 !w-3" />
-            Recommended
-          </div>
-        )}
+      <div className="flex flex-row items-center gap-x-2 text-[14px]">
         <Switch
           checked={checked}
           onCheckedChange={onCheckedChange}
@@ -186,7 +163,7 @@ const SubscriptionTierBenefitsForm = ({
 
   return (
     <>
-      <div className={twMerge('flex flex-col gap-y-6', className)}>
+      <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
         <div className="flex flex-row items-center justify-between">
           <h2 className="dark:text-polar-50 text-lg text-gray-950">Benefits</h2>
           <Button
@@ -198,29 +175,27 @@ const SubscriptionTierBenefitsForm = ({
             New Benefit
           </Button>
         </div>
-        <div className="dark:bg-polar-800 dark:border-polar-700 rounded-2xl border border-gray-200 bg-white px-6 py-4">
-          <div className="flex flex-col gap-y-6">
-            <div className="flex flex-col gap-y-4">
-              <div className="flex flex-col">
-                {organizationBenefits.length > 0 ? (
-                  organizationBenefits.map((benefit) => (
-                    <BenefitRow
-                      key={benefit.id}
-                      organization={organization}
-                      benefit={benefit}
-                      checked={benefits.some((b) => b.id === benefit.id)}
-                      onCheckedChange={handleCheckedChange(benefit)}
-                    />
-                  ))
-                ) : (
-                  <div className="dark:text-polar-400 flex flex-col items-center gap-y-6 py-12 text-gray-400">
-                    <LoyaltyOutlined fontSize="large" />
-                    <h4 className="text-sm">
-                      You haven&apos;t configured any benefits yet
-                    </h4>
-                  </div>
-                )}
-              </div>
+        <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
+            <div className="flex flex-col">
+              {organizationBenefits.length > 0 ? (
+                organizationBenefits.map((benefit) => (
+                  <BenefitRow
+                    key={benefit.id}
+                    organization={organization}
+                    benefit={benefit}
+                    checked={benefits.some((b) => b.id === benefit.id)}
+                    onCheckedChange={handleCheckedChange(benefit)}
+                  />
+                ))
+              ) : (
+                <div className="dark:text-polar-400 flex flex-col items-center gap-y-6 py-12 text-gray-400">
+                  <LoyaltyOutlined fontSize="large" />
+                  <h4 className="text-sm">
+                    You haven&apos;t configured any benefits yet
+                  </h4>
+                </div>
+              )}
             </div>
           </div>
         </div>

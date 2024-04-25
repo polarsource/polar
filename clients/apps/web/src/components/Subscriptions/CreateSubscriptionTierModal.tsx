@@ -1,14 +1,12 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   useBenefits,
   useCreateSubscriptionTier,
   useSubscriptionTiers,
   useUpdateSubscriptionTierBenefits,
 } from '@/hooks/queries'
-import { useRecurringInterval } from '@/hooks/subscriptions'
 import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
@@ -17,30 +15,27 @@ import {
   ResponseError,
   SubscriptionTierCreate as SubscriptionTierCreateSchema,
   SubscriptionTierCreateTypeEnum,
-  SubscriptionTierPrice,
   ValidationError,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { isPremiumArticlesBenefit } from '../Benefit/utils'
+import { InlineModalHeader } from '../Modal/InlineModal'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
-import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
-import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
 
-interface SubscriptionTierCreatePageProps {
+interface CreateSubscriptionTierModalProps {
   type?: SubscriptionTierCreateTypeEnum
   organization: Organization
+  hide: () => void
 }
 
-const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
-  type,
-  organization,
-}) => {
+const CreateSubscriptionTierModal: React.FC<
+  CreateSubscriptionTierModalProps
+> = ({ type, organization, hide }) => {
   const organizationBenefits = useBenefits(organization.name)
 
   if (!organizationBenefits.data) {
@@ -48,38 +43,39 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
   }
 
   return (
-    <SubscriptionTierCreate
+    <CreateSubscriptionTierModalContent
       type={type}
       organization={organization}
       organizationBenefits={organizationBenefits.data.items ?? []}
+      hide={hide}
     />
   )
 }
 
-export default SubscriptionTierCreatePage
+export default CreateSubscriptionTierModal
 
-interface SubscriptionTierCreateProps {
+interface CreateSubscriptionTierModalContentProps {
   type?: SubscriptionTierCreateTypeEnum
   organization: Organization
   organizationBenefits: BenefitPublicInner[]
+  hide: () => void
 }
 
-const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
-  type,
-  organization,
-  organizationBenefits,
-}) => {
+const CreateSubscriptionTierModalContent: React.FC<
+  CreateSubscriptionTierModalContentProps
+> = ({ type, organization, organizationBenefits, hide }) => {
   const router = useRouter()
   const {
     formDrafts: { SubscriptionTierCreate: savedFormValues },
     saveDraft,
     clearDraft,
   } = useStore()
+
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     BenefitPublicInner['id'][]
     // Pre-select premium articles benefit
   >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
-  const [recurringInterval, setRecurringInterval] = useRecurringInterval([])
+
   const highlightedTiers =
     useSubscriptionTiers(organization.name, 100).data?.items?.filter(
       (tier) => tier.is_highlighted,
@@ -105,8 +101,6 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   const { handleSubmit, watch, setError } = form
 
   const newSubscriptionTier = watch()
-  const selectedSubscriptionTierType = watch('type')
-  const prices = watch('prices')
 
   const createSubscriptionTier = useCreateSubscriptionTier(organization.name)
   const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits(
@@ -130,8 +124,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 
         revalidate(`subscriptionTiers:${organization.name}`)
 
-        router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
-        router.refresh()
+        hide()
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
@@ -143,13 +136,13 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
       }
     },
     [
-      router,
       organization,
       enabledBenefitIds,
       createSubscriptionTier,
       updateSubscriptionTierBenefits,
       setError,
       clearDraft,
+      hide,
     ],
   )
 
@@ -186,67 +179,42 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   }, [newSubscriptionTier, saveDraft])
 
   return (
-    <DashboardBody>
+    <div className="flex flex-col">
+      <InlineModalHeader hide={hide}>
+        <h1 className="text-lg font-medium">New Subscription Tier</h1>
+      </InlineModalHeader>
       <Form {...form}>
-        <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
-          <ShadowBoxOnMd className="relative flex w-full flex-col gap-y-12 md:w-2/3">
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-lg font-medium">New Subscription Tier</h1>
-              </div>
-              <div className="relative flex w-full flex-row justify-between gap-x-24">
-                <div className="flex w-full flex-col gap-y-6">
-                  <SubscriptionTierForm update={false} />
-                </div>
-              </div>
-            </form>
-            <SubscriptionTierBenefitsForm
-              benefits={enabledBenefits}
-              organization={organization}
-              organizationBenefits={organizationBenefits.filter(
-                (benefit) =>
-                  // Hide not selectable benefits unless they are already enabled
-                  benefit.selectable ||
-                  enabledBenefits.some((b) => b.id === benefit.id),
-              )}
-              onSelectBenefit={onSelectBenefit}
-              onRemoveBenefit={onRemoveBenefit}
-            />
-            <div className="flex flex-row gap-2">
-              <Button
-                onClick={handleSubmit(onSubmit)}
-                loading={createSubscriptionTier.isPending}
-              >
-                Save Tier
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => router.back()}
-              >
-                Cancel
-              </Button>
+        <div className="flex flex-col items-start justify-between gap-12 p-8">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="flex w-full flex-col gap-y-8">
+              <SubscriptionTierForm update={false} />
             </div>
-          </ShadowBoxOnMd>
-          {selectedSubscriptionTierType && (
-            <div className="flex w-full flex-col items-center gap-2 md:w-1/4">
-              <SubscriptionTierRecurringIntervalSwitch
-                recurringInterval={recurringInterval}
-                onChange={setRecurringInterval}
-              />
-              <SubscriptionTierCard
-                className="w-full"
-                subscriptionTier={{
-                  ...newSubscriptionTier,
-                  benefits: enabledBenefits,
-                  prices: prices as SubscriptionTierPrice[],
-                }}
-                recurringInterval={recurringInterval}
-              />
-            </div>
-          )}
+          </form>
+          <SubscriptionTierBenefitsForm
+            benefits={enabledBenefits}
+            organization={organization}
+            organizationBenefits={organizationBenefits.filter(
+              (benefit) =>
+                // Hide not selectable benefits unless they are already enabled
+                benefit.selectable ||
+                enabledBenefits.some((b) => b.id === benefit.id),
+            )}
+            onSelectBenefit={onSelectBenefit}
+            onRemoveBenefit={onRemoveBenefit}
+          />
+          <div className="flex flex-row gap-2">
+            <Button
+              onClick={handleSubmit(onSubmit)}
+              loading={createSubscriptionTier.isPending}
+            >
+              Create Tier
+            </Button>
+            <Button type="button" variant="ghost" onClick={hide}>
+              Cancel
+            </Button>
+          </div>
         </div>
       </Form>
-    </DashboardBody>
+    </div>
   )
 }

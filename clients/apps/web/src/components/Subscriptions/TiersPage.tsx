@@ -4,11 +4,15 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useSubscriptionTiers } from '@/hooks/queries'
 import { useRecurringInterval } from '@/hooks/subscriptions'
 import { Add, Bolt } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import React from 'react'
+import React, { useEffect, useMemo } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
+import { InlineModal } from '../Modal/InlineModal'
+import { useModal } from '../Modal/useModal'
+import CreateSubscriptionTierModal from './CreateSubscriptionTierModal'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierRecurringIntervalSwitch from './SubscriptionTierRecurringIntervalSwitch'
 
@@ -21,6 +25,33 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(subscriptionTiers?.items || [])
 
+  const searchParams = useSearchParams()
+
+  const {
+    isShown: isCreateSubscriptionTierModalShown,
+    show: showCreateSubscriptionTierModal,
+    hide: hideCreateSubscriptionTierModal,
+  } = useModal()
+
+  useEffect(() => {
+    if (searchParams.has('new')) {
+      showCreateSubscriptionTierModal()
+    } else {
+      hideCreateSubscriptionTierModal()
+    }
+  }, [searchParams])
+
+  const defaultSubscriptionType = useMemo(() => {
+    switch (searchParams.get('type')) {
+      case 'individual':
+        return SubscriptionTierType.INDIVIDUAL
+      case 'business':
+        return SubscriptionTierType.BUSINESS
+      default:
+        return undefined
+    }
+  }, [searchParams])
+
   if (!subscriptionTiers?.items?.length) {
     return (
       <EmptyLayout>
@@ -32,7 +63,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
             You haven&apos;t configured any subscription tiers
           </h2>
           <Link
-            href={`/maintainer/${organization.name}/subscriptions/tiers/new`}
+            href={`/maintainer/${organization.name}/subscriptions/tiers?new`}
           >
             <Button variant="secondary">Create Subscription Tier</Button>
           </Link>
@@ -51,16 +82,11 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
               Manage your subscription tiers & benefits
             </p>
           </div>
-          <Link
-            href={{
-              pathname: `/maintainer/${organization.name}/subscriptions/tiers/new`,
-            }}
-          >
-            <Button>
-              <Add className="mr-2" fontSize="small" />
-              New Tier
-            </Button>
-          </Link>
+
+          <Button onClick={showCreateSubscriptionTierModal}>
+            <Add className="mr-2" fontSize="small" />
+            New Tier
+          </Button>
         </div>
         {hasBothIntervals && (
           <div className="flex justify-center">
@@ -91,6 +117,17 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
           ))}
         </div>
       </div>
+      <InlineModal
+        modalContent={
+          <CreateSubscriptionTierModal
+            type={defaultSubscriptionType}
+            organization={organization}
+            hide={hideCreateSubscriptionTierModal}
+          />
+        }
+        isShown={isCreateSubscriptionTierModalShown}
+        hide={hideCreateSubscriptionTierModal}
+      />
     </DashboardBody>
   )
 }

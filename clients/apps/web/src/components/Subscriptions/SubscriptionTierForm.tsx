@@ -68,7 +68,7 @@ const SubscriptionTierPriceItem: React.FC<SubscriptionTierPriceItemProps> = ({
         rules={{ required: 'This field is required', min: 0 }}
         render={({ field }) => {
           return (
-            <FormItem className="max-w-[300px] grow">
+            <FormItem className="grow">
               <div className="flex gap-2">
                 <FormControl>
                   <MoneyInput
@@ -180,7 +180,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
         }}
         defaultValue=""
         render={({ field }) => (
-          <FormItem className="max-w-[300px]">
+          <FormItem>
             <div className="flex flex-row items-center justify-between">
               <FormLabel>Name</FormLabel>
               <span className="dark:text-polar-400 text-sm text-gray-400">
@@ -200,7 +200,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
           name="type"
           rules={{ required: 'This field is required' }}
           render={({ field }) => (
-            <FormItem className="max-w-[300px]">
+            <FormItem>
               <FormLabel>Type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
@@ -230,33 +230,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
       )}
       {!isFreeTier && (
         <>
-          <FormField
-            control={control}
-            name="is_highlighted"
-            render={({ field }) => {
-              return (
-                <div className="flex flex-col gap-y-4">
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        defaultChecked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm leading-none">
-                      Highlight this tier
-                    </FormLabel>
-                  </FormItem>
-                  <p className="dark:text-polar-500 text-sm text-gray-500">
-                    Highlighted tiers are shown on the public overview page.
-                    <br />
-                    Only one tier can be highlighted per tier type.
-                  </p>
-                </div>
-              )
-            }}
-          />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-4">
             <FormLabel>Pricing</FormLabel>
             {prices.map((price, index) => (
               <SubscriptionTierPriceItem
@@ -338,6 +312,33 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
           </FormItem>
         )}
       />
+      {!isFreeTier && (
+        <FormField
+          control={control}
+          name="is_highlighted"
+          render={({ field }) => {
+            return (
+              <div className="flex flex-col gap-y-4">
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      defaultChecked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="text-sm leading-none">
+                    Highlight this tier
+                  </FormLabel>
+                </FormItem>
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  Highlighted tiers are shown on the public overview page. Only
+                  one tier can be highlighted per tier type.
+                </p>
+              </div>
+            )
+          }}
+        />
+      )}
     </>
   )
 }

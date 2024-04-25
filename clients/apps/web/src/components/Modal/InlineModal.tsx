@@ -56,7 +56,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
           >
             <div
               className={twMerge(
-                'dark:bg-polar-800 relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-white shadow md:w-[420px]',
+                'dark:bg-polar-800 relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-white shadow md:w-[540px]',
                 className,
               )}
               onClick={onInnerClick}

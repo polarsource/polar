@@ -56,21 +56,16 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
             return (
               <FormItem>
                 <FormControl className="w-full">
-                  <Input
-                    type="email"
-                    required
-                    placeholder="Email"
-                    autoComplete="off"
-                    data-1p-ignore
-                    {...field}
-                  />
-                  <div className="absolute inset-y-0 right-0 z-50 flex items-center pr-2">
-                    <Button
-                      type="submit"
-                      size="sm"
-                      loading={loading}
-                      disabled={loading}
-                    >
+                  <div className="flex w-full flex-row items-center gap-2">
+                    <Input
+                      type="email"
+                      required
+                      placeholder="Email"
+                      autoComplete="off"
+                      data-1p-ignore
+                      {...field}
+                    />
+                    <Button type="submit" loading={loading} disabled={loading}>
                       Sign in
                     </Button>
                   </div>

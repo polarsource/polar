@@ -50,7 +50,6 @@ async def _authenticate(
         if user:
             scopes = {Scope.web_default}
             if user.github_username in {
-                "zegl",
                 "birkjernstrom",
                 "frankie567",
                 "emilwidlund",

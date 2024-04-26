@@ -78,7 +78,7 @@ class GithubPullRequestService(PullRequestService):
     async def store_full(
         self,
         session: AsyncSession,
-        data: types.PullRequest | types.WebhookPullRequestOpenedPropPullRequest,
+        data: types.PullRequest | types.PullRequestWebhook,
         organization: Organization,
         repository: Repository,
     ) -> PullRequest:
@@ -95,10 +95,7 @@ class GithubPullRequestService(PullRequestService):
         session: AsyncSession,
         data: Sequence[
             types.PullRequest
-            | types.WebhookPullRequestOpenedPropPullRequest
-            | types.WebhookPullRequestEditedPropPullRequest
-            | types.WebhookPullRequestClosedPropPullRequest
-            | types.WebhookPullRequestReopenedPropPullRequest
+            | types.PullRequestWebhook
             | types.WebhookPullRequestSynchronizePropPullRequest
         ],
         organization: Organization,
@@ -106,10 +103,7 @@ class GithubPullRequestService(PullRequestService):
     ) -> Sequence[PullRequest]:
         def parse(
             pr: types.PullRequest
-            | types.WebhookPullRequestOpenedPropPullRequest
-            | types.WebhookPullRequestEditedPropPullRequest
-            | types.WebhookPullRequestClosedPropPullRequest
-            | types.WebhookPullRequestReopenedPropPullRequest
+            | types.PullRequestWebhook
             | types.WebhookPullRequestSynchronizePropPullRequest,
         ) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(

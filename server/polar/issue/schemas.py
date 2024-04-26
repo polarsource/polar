@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Self, cast
+from typing import Any, Literal, Self, cast
 from uuid import UUID
 
 import structlog
@@ -243,11 +243,8 @@ class IssueAndPullRequestBase(Base):
         | types.WebhookIssuesTransferredPropChangesPropNewIssue
         | types.PullRequest
         | types.PullRequestSimple
-        | types.WebhookPullRequestOpenedPropPullRequest
-        | types.WebhookPullRequestEditedPropPullRequest
-        | types.WebhookPullRequestClosedPropPullRequest
-        | types.WebhookPullRequestReopenedPropPullRequest
-        | types.WebhookPullRequestSynchronizePropPullRequest,
+        | types.WebhookPullRequestSynchronizePropPullRequest
+        | types.PullRequestWebhook,
         organization: OrganizationModel,
         repository: RepositoryModel,
     ) -> Self:
@@ -287,6 +284,17 @@ class IssueAndPullRequestBase(Base):
         )
         state_reason: github.Missing[str | None] = getattr(data, "state_reason", None)
 
+        labels: list[Any] | None = None
+        if data.labels:
+            labels = []
+            for label in data.labels:
+                if label is None:
+                    continue
+                if isinstance(label, str):
+                    labels.append(label)
+                else:
+                    labels.append(label.model_dump(mode="json"))
+
         return cls(
             platform=Platforms.github,
             external_id=data.id,
@@ -298,12 +306,7 @@ class IssueAndPullRequestBase(Base):
             comments=getattr(data, "comments", None),
             author=data.user.model_dump(mode="json") if data.user else None,
             author_association=data.author_association,
-            labels=[
-                label if isinstance(label, str) else label.model_dump(mode="json")
-                for label in data.labels
-            ]
-            if data.labels
-            else None,
+            labels=labels,
             assignee=data.assignee.model_dump(mode="json") if data.assignee else None,
             assignees=[
                 assignee.model_dump(mode="json")

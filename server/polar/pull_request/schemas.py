@@ -105,10 +105,7 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
         cls,
         pr: types.PullRequestSimple
         | types.PullRequest
-        | types.WebhookPullRequestOpenedPropPullRequest
-        | types.WebhookPullRequestEditedPropPullRequest
-        | types.WebhookPullRequestClosedPropPullRequest
-        | types.WebhookPullRequestReopenedPropPullRequest
+        | types.PullRequestWebhook
         | types.WebhookPullRequestSynchronizePropPullRequest,
         organization: Organization,
         repository: Repository,
@@ -167,10 +164,7 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
     def full_pull_request_from_github(
         cls,
         pr: types.PullRequest
-        | types.WebhookPullRequestOpenedPropPullRequest
-        | types.WebhookPullRequestEditedPropPullRequest
-        | types.WebhookPullRequestClosedPropPullRequest
-        | types.WebhookPullRequestReopenedPropPullRequest
+        | types.PullRequestWebhook
         | types.WebhookPullRequestSynchronizePropPullRequest,
         organization: Organization,
         repository: Repository,

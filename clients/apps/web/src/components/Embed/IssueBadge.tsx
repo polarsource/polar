@@ -60,6 +60,7 @@ const IssueBadge = ({
           overflow: 'hidden',
           backgroundColor: darkmode ? '#1D1E27' /*gray-700*/ : 'white',
           fontFamily: 'var(--font-inter), Inter var, Inter, sans-serif',
+          width: '100%',
         }}
       >
         <div
@@ -68,6 +69,7 @@ const IssueBadge = ({
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'space-between',
             width: '100%',
           }}
         >
@@ -75,7 +77,8 @@ const IssueBadge = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              flexGrow: '0',
+              flexShrink: '1',
+              width: '100%',
             }}
           >
             <div
@@ -414,6 +417,7 @@ const FundingGoal = ({
         fontSize: 12,
         flexShrink: '1',
         gap: '2px',
+        width: '100%',
       }}
     >
       <div
@@ -449,6 +453,8 @@ const FundingGoal = ({
           display: 'flex',
           borderRadius: '2px',
           overflow: 'hidden',
+          width: '100%',
+          flexShrink: '0',
         }}
       >
         <div
@@ -456,6 +462,7 @@ const FundingGoal = ({
             width: `${progress}%`,
             height: '4px',
             backgroundColor: darkmode ? '#3381FF' : '#0062FF',
+            borderRadius: '2px',
 
             transitionProperty: 'all',
             transitionDuration: '200ms',
@@ -463,9 +470,10 @@ const FundingGoal = ({
         ></div>
         <div
           style={{
-            flexGrow: '1',
             height: '4px',
             backgroundColor: darkmode ? '#343748' : '#E5E5E1', // gray-200
+            width: '100%',
+            borderRadius: '2px',
           }}
         ></div>
       </div>

@@ -103,7 +103,7 @@ const FundingMethodTab = ({
 }) => (
   <PledgeTabsTrigger
     value={value}
-    className="w-full !rounded-lg  md:flex-col md:items-center"
+    className="w-full !rounded-lg md:flex-col md:items-center"
   >
     <div className="flex w-full items-center gap-4 px-1 text-left">
       <div className="shrink-0">{icon}</div>

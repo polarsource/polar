@@ -5,7 +5,6 @@ const Wrapper = (props: {
   amount: number
   fundingGoal: boolean
   upfrontSplit: boolean
-  avatarUrls: string[]
 }) => {
   let src = `http://localhost:3000/api/github/zegloforko/polarforkotest/issues/4/pledge-injected.svg?amount=${props.amount}`
   if (props.isDarkmode) {
@@ -39,7 +38,6 @@ const meta: Meta<typeof Wrapper> = {
   args: {
     amount: 4200,
     isDarkmode: false,
-    avatarUrls: [],
   },
 }
 
@@ -76,16 +74,6 @@ export const FundingGoalDark: Story = {
   args: {
     fundingGoal: true,
     isDarkmode: true,
-    avatarUrls: [
-      'https://avatars.githubusercontent.com/u/1144727?v=4',
-      'https://avatars.githubusercontent.com/u/47952?v=4',
-      'https://avatars.githubusercontent.com/u/281715?v=4',
-      'https://avatars.githubusercontent.com/u/1426460?v=4',
-      'https://avatars.githubusercontent.com/u/1144727?v=4',
-      'https://avatars.githubusercontent.com/u/47952?v=4',
-      'https://avatars.githubusercontent.com/u/281715?v=4',
-      'https://avatars.githubusercontent.com/u/1426460?v=4',
-    ],
   },
 }
 

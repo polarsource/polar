@@ -49,7 +49,7 @@ const IssueBadge = ({
         style={{
           display: 'flex',
           marginBottom: 2,
-          maxWidth: '500px',
+          maxWidth: '400px',
           flexDirection: 'column',
           borderRadius: 11,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
@@ -68,13 +68,14 @@ const IssueBadge = ({
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            width: '100%',
           }}
         >
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
+              flexGrow: '0',
             }}
           >
             <div
@@ -115,6 +116,7 @@ const IssueBadge = ({
               alignItems: 'center',
               gap: '8px',
               justifyItems: 'end',
+              flexShrink: '0',
             }}
           >
             {showAvatars.length > 0 ? (

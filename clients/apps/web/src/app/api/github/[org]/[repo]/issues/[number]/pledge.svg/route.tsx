@@ -101,7 +101,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       donationsEnabled={data.issue.repository.organization.donations_enabled}
     />,
     {
-      width: 500,
+      width: 400,
       fonts: [
         {
           name: 'Inter',

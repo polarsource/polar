@@ -64,7 +64,7 @@ async def maintainer_upgrade(
     personal_org = await github_organization_service.create_for_user(
         session, locker, user=user
     )
-    posthog.user_event(user, "user", "maintainer_upgrade", "submit")
+    posthog.auth_subject_event(auth_subject, "user", "maintainer_upgrade", "submit")
 
     log.info("user.maintainer_upgrade", user_id=user.id, new_org_id=personal_org.id)
     return Organization.from_db(personal_org)

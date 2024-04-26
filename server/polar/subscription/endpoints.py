@@ -165,8 +165,8 @@ async def update_subscription_tier(
         ):
             raise BadRequest("Paid tiers must have at least one price")
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "subscriptions",
         "tier",
         "update",
@@ -198,8 +198,8 @@ async def archive_subscription_tier(
     if subscription_tier is None:
         raise ResourceNotFound()
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "subscriptions",
         "tier",
         "archive",
@@ -228,8 +228,8 @@ async def update_subscription_tier_benefits(
     if subscription_tier is None:
         raise ResourceNotFound()
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "subscriptions",
         "tier_benefits",
         "update",
@@ -270,8 +270,8 @@ async def create_subscribe_session(
         raise ResourceNotFound()
 
     if is_user(auth_subject):
-        posthog.user_event(
-            auth_subject.subject,
+        posthog.auth_subject_event(
+            auth_subject,
             "subscriptions",
             "subscribe_session",
             "create",
@@ -494,8 +494,8 @@ async def create_free_subscription(
     )
 
     if is_user(auth_subject):
-        posthog.user_event(
-            auth_subject.subject,
+        posthog.auth_subject_event(
+            auth_subject,
             "subscriptions",
             "free_subscription",
             "create",
@@ -561,8 +561,8 @@ async def create_email_subscription(
         session, user=user, subscription_tier=free_tier
     )
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "subscriptions",
         "email_import",
         "create",
@@ -635,8 +635,8 @@ async def subscriptions_import(
         except Exception as e:
             log.error("subscriptions_import.failed", e=e)
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "subscriptions",
         "import",
         "create",
@@ -711,7 +711,7 @@ async def subscriptions_export(
 
             yield ",".join(fields) + "\n"
 
-    posthog.user_event(auth_subject.subject, "subscriptions", "export", "create")
+    posthog.auth_subject_event(auth_subject, "subscriptions", "export", "create")
 
     name = f"{organization.name}_subscribers.csv"
     headers = {"Content-Disposition": f'attachment; filename="{name}"'}
@@ -732,8 +732,8 @@ async def upgrade_subscription(
     if subscription is None:
         raise ResourceNotFound()
 
-    posthog.user_event(
-        auth_subject.subject, "subscriptions", "upgrade_subscription", "submit"
+    posthog.auth_subject_event(
+        auth_subject, "subscriptions", "upgrade_subscription", "submit"
     )
 
     return await subscription_service.upgrade_subscription(
@@ -758,7 +758,7 @@ async def cancel_subscription(
     if subscription is None:
         raise ResourceNotFound()
 
-    posthog.user_event(auth_subject.subject, "subscriptions", "subscription", "cancel")
+    posthog.auth_subject_event(auth_subject, "subscriptions", "subscription", "cancel")
 
     return await subscription_service.cancel_subscription(
         session, subscription=subscription, authz=authz, user=auth_subject.subject

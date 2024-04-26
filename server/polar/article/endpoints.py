@@ -215,8 +215,8 @@ async def create(
     art = await article_service.create(session, auth_subject.subject, create)
     await session.refresh(art, {"created_by_user", "organization"})
 
-    posthog.user_event(
-        auth_subject.subject, "articles", "api", "create", {"article_id": art.id}
+    posthog.auth_subject_event(
+        auth_subject, "articles", "api", "create", {"article_id": art.id}
     )
 
     return ArticleSchema.from_db(
@@ -360,8 +360,8 @@ async def send_preview(
     if not send_to_user:
         raise ResourceNotFound()
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "articles",
         "email_preview",
         "send",
@@ -405,8 +405,8 @@ async def send(
     if not await authz.can(auth_subject.subject, AccessType.write, art):
         raise Unauthorized()
 
-    posthog.user_event(
-        auth_subject.subject, "articles", "email", "send", {"article_id": art.id}
+    posthog.auth_subject_event(
+        auth_subject, "articles", "email", "send", {"article_id": art.id}
     )
 
     await article_service.send_to_subscribers(session, art)
@@ -447,8 +447,8 @@ async def update(
     if not art:
         raise ResourceNotFound()
 
-    posthog.user_event(
-        auth_subject.subject, "articles", "api", "update", {"article_id": art.id}
+    posthog.auth_subject_event(
+        auth_subject, "articles", "api", "update", {"article_id": art.id}
     )
 
     return ArticleSchema.from_db(
@@ -486,8 +486,8 @@ async def delete(
     art.deleted_at = utc_now()
     session.add(art)
 
-    posthog.user_event(
-        auth_subject.subject, "articles", "api", "delete", {"article_id": art.id}
+    posthog.auth_subject_event(
+        auth_subject, "articles", "api", "delete", {"article_id": art.id}
     )
 
     return ArticleDeleteResponse(ok=True)

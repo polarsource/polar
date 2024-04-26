@@ -87,7 +87,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         await session.commit()
 
         posthog.identify(user)
-        posthog.user_event_raw(user, "User Signed Up")
+        posthog.user_event(user, "user", "signed_up", "done")
         log.info("user signed up by email", user_id=user.id, email=email)
 
         enqueue_job("user.on_after_signup", user_id=user.id)

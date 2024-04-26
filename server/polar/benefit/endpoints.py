@@ -95,8 +95,8 @@ async def create_benefit(
         session, authz, benefit_create, auth_subject.subject
     )
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "benefits",
         "api",
         "create",
@@ -122,8 +122,8 @@ async def update_benefit(
     if benefit_update.type != benefit.type:
         raise BadRequest("The type of a benefit can't be changed.")
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "benefits",
         "api",
         "update",
@@ -147,8 +147,8 @@ async def delete_benefit(
     if benefit is None:
         raise ResourceNotFound()
 
-    posthog.user_event(
-        auth_subject.subject,
+    posthog.auth_subject_event(
+        auth_subject,
         "benefits",
         "api",
         "delete",

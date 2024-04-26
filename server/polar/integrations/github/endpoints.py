@@ -177,7 +177,7 @@ async def github_callback(
     )
 
     posthog.identify(user)
-    posthog.user_event(user, "user", "github_oauth_login", "done")
+    posthog.auth_subject_event(auth_subject, "user", "github_oauth_login", "done")
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to
@@ -379,8 +379,8 @@ async def install(
         if not organization:
             raise ResourceNotFound()
 
-        posthog.user_event(
-            auth_subject.subject,
+        posthog.auth_subject_event(
+            auth_subject,
             "organizations",
             "github_install",
             "submit",

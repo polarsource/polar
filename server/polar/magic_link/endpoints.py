@@ -61,7 +61,7 @@ async def authenticate_magic_link(
             e.message, e.status_code, return_to=return_to
         ) from e
 
-    posthog.user_event(user, "user", "magic_link_verified", "submit")
+    posthog.auth_subject_event(auth_subject, "user", "magic_link_verified", "submit")
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

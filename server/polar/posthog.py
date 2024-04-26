@@ -4,8 +4,43 @@ from typing import Any, Literal
 
 from posthog import Posthog
 
+from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.config import settings
-from polar.models.user import User
+from polar.models import Organization, User
+
+ORGANIZATION_EVENT_DISTINCT_ID = "organization_event"
+
+EventCategory = Literal[
+    "articles",
+    "benefits",
+    "subscriptions",
+    "user",
+    "organizations",
+]
+EventNoun = str
+EventVerb = Literal[
+    "click",
+    "submit",
+    "create",
+    "view",
+    "add",
+    "invite",
+    "update",
+    "delete",
+    "remove",
+    "start",
+    "end",
+    "cancel",
+    "fail",
+    "generate",
+    "send",
+    "archive",
+    "done",
+]
+
+
+def _build_event_key(category: EventCategory, noun: EventNoun, verb: EventVerb) -> str:
+    return f"{category}:{noun}:{verb}"
 
 
 class Service:
@@ -24,7 +59,9 @@ class Service:
         self,
         distinct_id: str,
         event: str,
+        *,
         properties: dict[str, Any] | None = None,
+        groups: dict[str, Any] | None = None,
     ) -> None:
         if not self.client:
             return
@@ -32,21 +69,43 @@ class Service:
         self.client.capture(
             distinct_id,
             event=event,
+            groups=groups,
             properties={
                 **self._get_common_properties(),
                 **(properties or {}),
             },
         )
 
+    def auth_subject_event(
+        self,
+        auth_subject: AuthSubject[Subject],
+        category: EventCategory,
+        noun: EventNoun,
+        verb: EventVerb,
+        properties: dict[str, Any] | None = None,
+    ) -> None:
+        event = f"{category}:{noun}:{verb}"
+
+        if is_user(auth_subject):
+            self.user_event(auth_subject.subject, category, noun, verb, properties)
+        elif is_organization(auth_subject):
+            self.organization_event(
+                auth_subject.subject, category, noun, verb, properties
+            )
+        else:
+            self.anonymous_event(category, noun, verb, properties)
+
     def anonymous_event(
         self,
-        event: str,
+        category: EventCategory,
+        noun: EventNoun,
+        verb: EventVerb,
         properties: dict[str, Any] | None = None,
     ) -> None:
         """Shorthand for one-off anonymous event capture."""
         self.capture(
             distinct_id="polar_anonymous",
-            event=event,
+            event=_build_event_key(category, noun, verb),
             properties={
                 **self._get_common_properties(),
                 **(properties or {}),
@@ -56,47 +115,37 @@ class Service:
     def user_event(
         self,
         user: User,
-        # strict typing in an attempt to force a common naming convention for events
-        category: Literal[
-            "articles", "benefits", "subscriptions", "user", "organizations"
-        ],
-        noun: str,
-        verb: Literal[
-            "click",
-            "submit",
-            "create",
-            "view",
-            "add",
-            "invite",
-            "update",
-            "delete",
-            "remove",
-            "start",
-            "end",
-            "cancel",
-            "fail",
-            "generate",
-            "send",
-            "archive",
-            "done",
-        ],
-        properties: dict[str, Any] | None = None,
-    ) -> None:
-        event = f"{category}:{noun}:{verb}"
-        self.user_event_raw(user, event, properties)
-
-    def user_event_raw(
-        self,
-        user: User,
-        event: str,
+        category: EventCategory,
+        noun: EventNoun,
+        verb: EventVerb,
         properties: dict[str, Any] | None = None,
     ) -> None:
         self.capture(
             user.posthog_distinct_id,
-            event=event,
+            event=_build_event_key(category, noun, verb),
             properties={
                 **self._get_common_properties(),
                 "$set": self._get_user_properties(user),
+                **(properties or {}),
+            },
+        )
+
+    def organization_event(
+        self,
+        organization: Organization,
+        category: EventCategory,
+        noun: EventNoun,
+        verb: EventVerb,
+        properties: dict[str, Any] | None = None,
+    ) -> None:
+        self.capture(
+            ORGANIZATION_EVENT_DISTINCT_ID,  # Ref: https://posthog.com/docs/product-analytics/group-analytics#advanced-server-side-only-capturing-group-events-without-a-user
+            event=_build_event_key(category, noun, verb),
+            groups={
+                "organization": str(organization.id),
+            },
+            properties={
+                **self._get_common_properties(),
                 **(properties or {}),
             },
         )

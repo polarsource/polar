@@ -244,9 +244,11 @@ class GithubUserService(UserService):
             github_user=authenticated,
         )
 
-        posthog.user_event_raw(
+        posthog.user_event(
             user,
+            "user",
             event_name,
+            "done",
             {
                 "$set": {
                     "org_count": org_count,
@@ -282,7 +284,7 @@ class GithubUserService(UserService):
             )
             posthog.user_event(user, "user", "github_oauth_logged_in", "done")
 
-            return (user, "User Logged In", False)
+            return (user, "logged_in", False)
 
         # Fetch user email
         github_email = await self.fetch_authenticated_user_primary_email(client=client)
@@ -301,7 +303,7 @@ class GithubUserService(UserService):
                     client=client,
                 )
                 posthog.user_event(user, "user", "github_oauth_logged_in", "done")
-                return (user, "User Logged In", False)
+                return (user, "logged_in", False)
 
             else:
                 # For security reasons, don't link if the email is not verified
@@ -315,7 +317,7 @@ class GithubUserService(UserService):
             tokens=tokens,
         )
         posthog.user_event(user, "user", "github_oauth_signed_up", "done")
-        return (user, "User Signed Up", True)
+        return (user, "signed_up", True)
 
     async def link_existing_user(
         self, session: AsyncSession, *, user: User, tokens: OAuthAccessToken

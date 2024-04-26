@@ -33,7 +33,7 @@ router = APIRouter(tags=["repositories"])
     response_model=ListResource[RepositorySchema],
     tags=[Tags.PUBLIC],
     description="List repositories in organizations that the authenticated user is a admin of. Requires authentication.",  # noqa: E501
-    summary="List repositories (Public API)",
+    summary="List repositories",
     status_code=200,
 )
 async def list(
@@ -58,7 +58,7 @@ async def list(
     response_model=ListResource[RepositorySchema],
     tags=[Tags.PUBLIC],
     description="Search repositories.",
-    summary="Search repositories (Public API)",
+    summary="Search repositories",
     status_code=200,
     responses={404: {}},
 )
@@ -105,7 +105,7 @@ async def search(
     response_model=RepositorySchema,
     tags=[Tags.PUBLIC],
     description="Lookup repositories. Like search but returns at only one repository.",  # noqa: E501
-    summary="Lookup repositories (Public API)",
+    summary="Lookup repositories",
     status_code=200,
     responses={404: {}},
 )
@@ -150,7 +150,7 @@ async def lookup(
     tags=[Tags.PUBLIC],
     description="Get a repository",
     status_code=200,
-    summary="Get a repository (Public API)",
+    summary="Get a repository",
     responses={404: {}},
 )
 async def get(
@@ -188,7 +188,7 @@ async def get(
     tags=[Tags.PUBLIC],
     description="Update repository",
     status_code=200,
-    summary="Update a repository (Public API)",
+    summary="Update a repository",
     responses={404: {}},
 )
 async def update(

@@ -35,6 +35,8 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
     "/endpoints/search",
     response_model=ListResource[WebhookEndpointSchema],
     tags=[Tags.PUBLIC],
+    description="Search for Webhook Endpoints",
+    status_code=200,
 )
 async def search_webhook_endpoints(
     pagination: PaginationParamsQuery,
@@ -77,6 +79,7 @@ async def search_webhook_endpoints(
     "/endpoints",
     response_model=WebhookEndpointSchema,
     tags=[Tags.PUBLIC],
+    description="Create a new Webhook Endpoint",
 )
 async def create_webhook_endpoint(
     create: WebhookEndpointCreate,
@@ -111,6 +114,7 @@ async def create_webhook_endpoint(
     "/endpoints/{id}",
     response_model=WebhookEndpointSchema,
     tags=[Tags.PUBLIC],
+    description="Delete a Webhook Endpoint",
 )
 async def delete_webhook_endpoint(
     id: UUID,
@@ -134,6 +138,7 @@ async def delete_webhook_endpoint(
     "/endpoints/{id}",
     response_model=WebhookEndpointSchema,
     tags=[Tags.PUBLIC],
+    description="Get a Webhook Endpoint",
 )
 async def get_webhook_endpoint(
     id: UUID,
@@ -155,6 +160,7 @@ async def get_webhook_endpoint(
     "/endpoints/{id}",
     response_model=WebhookEndpointSchema,
     tags=[Tags.PUBLIC],
+    description="Update a Webhook Endpoint",
 )
 async def update_webhook_endpoint(
     id: UUID,
@@ -181,6 +187,7 @@ async def update_webhook_endpoint(
     "/deliveries/search",
     response_model=ListResource[WebhookDeliverySchema],
     tags=[Tags.PUBLIC],
+    description="Search for Webhook Deliveries",
 )
 async def search_webhook_deliveries(
     pagination: PaginationParamsQuery,
@@ -213,6 +220,7 @@ async def search_webhook_deliveries(
     "/events/{id}/redeliver",
     response_model=WebhookEventRedeliver,
     tags=[Tags.PUBLIC],
+    description="Schedule a re-delivery of a Webhook Event",
 )
 async def event_redeliver(
     id: UUID,

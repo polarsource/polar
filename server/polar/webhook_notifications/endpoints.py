@@ -26,7 +26,7 @@ router = APIRouter(tags=["webhook_notifications"])
     response_model=ListResource[WebhookIntegrationSchema],
     tags=[Tags.PUBLIC],
     description="Search webhook notification integrations.",
-    summary="Search webhook notification integrations (Public API)",
+    summary="Search webhook notification integrations",
     status_code=200,
     responses={404: {}},
 )
@@ -60,7 +60,7 @@ async def search(
     response_model=WebhookIntegrationSchema,
     tags=[Tags.PUBLIC],
     description="Create a webhook notification integration.",
-    summary="Create a webhook notification integration (Public API)",
+    summary="Create a webhook notification integration",
     status_code=200,
     responses={404: {}},
 )
@@ -87,7 +87,7 @@ async def create(
     response_model=WebhookIntegrationSchema,
     tags=[Tags.PUBLIC],
     description="Update webhook notification integration.",
-    summary="Update webhook notification integration (Public API)",
+    summary="Update webhook notification integration",
     status_code=200,
     responses={404: {}},
 )
@@ -119,7 +119,7 @@ async def update(
     response_model=WebhookIntegrationSchema,
     tags=[Tags.PUBLIC],
     description="Delete webhook notification integration.",
-    summary="Delete webhook notification integration (Public API)",
+    summary="Delete webhook notification integration",
     status_code=200,
     responses={404: {}},
 )

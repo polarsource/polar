@@ -28,7 +28,7 @@ router = APIRouter(tags=["rewards"])
     response_model=ListResource[Reward],
     tags=[Tags.PUBLIC],
     description="Search rewards.",
-    summary="Search rewards (Public API)",
+    summary="Search rewards",
     status_code=200,
 )
 async def search(
@@ -124,7 +124,7 @@ def to_resource(
     response_model=RewardsSummary,
     tags=[Tags.PUBLIC],
     description="Get summary of rewards for resource.",  # noqa: E501
-    summary="Get rewards summary (Public API)",
+    summary="Get rewards summary",
     status_code=200,
 )
 async def summary(

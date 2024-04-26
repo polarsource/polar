@@ -27,7 +27,7 @@ router = APIRouter(tags=["personal_access_token"])
     response_model=PersonalAccessToken,
     tags=[Tags.PUBLIC],
     description="Delete a personal access tokens. Requires authentication.",  # noqa: E501
-    summary="Delete a personal access tokens (Public API)",
+    summary="Delete a personal access tokens",
     status_code=200,
 )
 async def delete(
@@ -52,7 +52,7 @@ async def delete(
     response_model=ListResource[PersonalAccessToken],
     tags=[Tags.PUBLIC],
     description="List personal access tokens. Requires authentication.",  # noqa: E501
-    summary="List personal access tokens (Public API)",
+    summary="List personal access tokens",
     status_code=200,
 )
 async def list(
@@ -74,7 +74,7 @@ async def list(
     response_model=CreatePersonalAccessTokenResponse,
     tags=[Tags.PUBLIC],
     description="Create a new personal access token. Requires authentication.",  # noqa: E501
-    summary="Create a new personal access token (Public API)",
+    summary="Create a new personal access token",
     status_code=200,
 )
 async def create(

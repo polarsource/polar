@@ -68,7 +68,7 @@ async def email_unsubscribe(
     response_model=ListResource[ArticleSchema],
     tags=[Tags.PUBLIC],
     description="List articles.",
-    summary="List articles (Public API)",
+    summary="List articles",
     status_code=200,
     responses={404: {}},
 )
@@ -103,7 +103,7 @@ async def list(
     response_model=ListResource[ArticleSchema],
     tags=[Tags.PUBLIC],
     description="Search articles.",
-    summary="Search articles (Public API)",
+    summary="Search articles",
     status_code=200,
     responses={404: {}},
 )
@@ -157,7 +157,7 @@ async def search(
     response_model=ArticleSchema,
     tags=[Tags.PUBLIC],
     description="Lookup article.",
-    summary="Lookup article (Public API)",
+    summary="Lookup article",
     status_code=200,
     responses={404: {}},
 )
@@ -195,7 +195,7 @@ async def lookup(
     response_model=ArticleSchema,
     tags=[Tags.PUBLIC],
     description="Create a new article.",
-    summary="Create article (Public API)",
+    summary="Create article",
     status_code=200,
     responses={404: {}},
 )
@@ -233,7 +233,7 @@ async def create(
     response_model=ArticleReceiversResponse,
     tags=[Tags.PUBLIC],
     description="Get number of potential receivers for an article.",
-    summary="Get number of potential receivers for an article. (Public API)",
+    summary="Get number of potential receivers for an article.",
     status_code=200,
     responses={404: {}},
 )
@@ -271,7 +271,7 @@ async def receivers(
     response_model=ArticleSchema,
     tags=[Tags.PUBLIC],
     description="Get article.",
-    summary="Get article (Public API)",
+    summary="Get article",
     status_code=200,
     responses={404: {}},
 )
@@ -303,7 +303,7 @@ async def get(
     response_model=ArticleViewedResponse,
     tags=[Tags.PUBLIC],
     description="Track article view",
-    summary="Track article (Public API)",
+    summary="Track article",
     status_code=200,
     responses={404: {}},
 )
@@ -333,7 +333,7 @@ async def viewed(
     response_model=ArticlePreviewResponse,
     tags=[Tags.PUBLIC],
     description="Send preview email",
-    summary="Send preview email (Public API)",
+    summary="Send preview email",
     status_code=200,
     responses={404: {}},
 )
@@ -383,7 +383,7 @@ async def send_preview(
     response_model=ArticleSentResponse,
     tags=[Tags.PUBLIC],
     description="Send email to all subscribers",
-    summary="Send email to all subscribers (Public API)",
+    summary="Send email to all subscribers",
     status_code=200,
     responses={404: {}},
 )
@@ -418,7 +418,7 @@ async def send(
     response_model=ArticleSchema,
     tags=[Tags.PUBLIC],
     description="Update an article.",
-    summary="Update an article (Public API)",
+    summary="Update an article",
     status_code=200,
     responses={404: {}},
 )
@@ -466,7 +466,7 @@ async def update(
     response_model=ArticleDeleteResponse,
     tags=[Tags.PUBLIC],
     description="Delete an article.",
-    summary="Delete an article (Public API)",
+    summary="Delete an article",
     status_code=200,
     responses={404: {}},
 )

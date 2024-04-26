@@ -68,7 +68,7 @@ async def to_schema(
     response_model=ListResource[OrganizationSchema],
     tags=[Tags.PUBLIC],
     description="List organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
-    summary="List organizations (Public API)",
+    summary="List organizations",
     status_code=200,
 )
 async def list(
@@ -94,7 +94,7 @@ async def list(
     response_model=ListResource[OrganizationSchema],
     tags=[Tags.PUBLIC],
     description="Search organizations.",
-    summary="Search organizations (Public API)",
+    summary="Search organizations",
     status_code=200,
 )
 async def search(
@@ -124,8 +124,8 @@ async def search(
     "/organizations/lookup",
     response_model=OrganizationSchema,
     tags=[Tags.PUBLIC],
-    description="Lookup organization. Like search but returns at only one organization.",  # noqa: E501
-    summary="Lookup organization (Public API)",
+    description="Lookup a single organization.",  # noqa: E501
+    summary="Lookup organization",
     status_code=200,
     responses={404: {}},
 )
@@ -160,9 +160,9 @@ async def lookup(
     "/organizations/{id}",
     response_model=OrganizationSchema,
     tags=[Tags.PUBLIC],
-    description="Get organization",
+    description="Get a organization by ID",
     status_code=200,
-    summary="Get organization (Public API)",
+    summary="Get organization",
     responses={404: {}},
 )
 async def get(
@@ -187,7 +187,7 @@ async def get(
     tags=[Tags.PUBLIC],
     description="Update organization",
     status_code=200,
-    summary="Update an organization (Public API)",
+    summary="Update an organization",
     responses={404: {}},
 )
 async def update(
@@ -226,7 +226,7 @@ async def update(
     tags=[Tags.PUBLIC],
     description="Set organization account",
     status_code=200,
-    summary="Set organization organization (Public API)",
+    summary="Set organization organization",
     responses={404: {}},
 )
 async def set_account(
@@ -259,7 +259,7 @@ async def set_account(
     response_model=ListResource[OrganizationMember],
     tags=[Tags.PUBLIC],
     description="List members of an organization. Requires authentication.",  # noqa: E501
-    summary="List members in an organization (Public API)",
+    summary="List members in an organization",
     status_code=200,
 )
 async def list_members(
@@ -293,6 +293,9 @@ async def list_members(
 @router.post(
     "/organizations/{id}/stripe_customer_portal",
     response_model=OrganizationStripePortalSession,
+    tags=[Tags.PUBLIC],
+    description="Start a new Stripe Customer session for a organization.",
+    status_code=200,
 )
 async def create_stripe_customer_portal(
     id: UUID,
@@ -317,6 +320,9 @@ async def create_stripe_customer_portal(
 @router.get(
     "/organizations/{id}/credit",
     response_model=CreditBalance,
+    tags=[Tags.PUBLIC],
+    description="Get credits for a organization",  # noqa: E501
+    status_code=200,
 )
 async def get_credits(
     id: UUID,

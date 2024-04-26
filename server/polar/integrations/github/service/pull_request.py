@@ -31,13 +31,15 @@ class GithubPullRequestService(PullRequestService):
         data: types.PullRequestSimple,
         organization: Organization,
         repository: Repository,
-    ) -> PullRequest:
+    ) -> PullRequest | None:
         records = await self.store_many_simple(
             session,
             data=[data],
             organization=organization,
             repository=repository,
         )
+        if len(records) == 0:
+            return None
         return records[0]
 
     async def store_many_simple(
@@ -81,13 +83,15 @@ class GithubPullRequestService(PullRequestService):
         data: types.PullRequest | types.PullRequestWebhook,
         organization: Organization,
         repository: Repository,
-    ) -> PullRequest:
+    ) -> PullRequest | None:
         records = await self.store_many_full(
             session,
             [data],
             organization=organization,
             repository=repository,
         )
+        if len(records) == 0:
+            return None
         return records[0]
 
     async def store_many_full(

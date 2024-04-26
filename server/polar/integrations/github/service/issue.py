@@ -66,7 +66,7 @@ class GithubIssueService(IssueService):
         organization: Organization,
         repository: Repository,
         autocommit: bool = True,
-    ) -> Issue:
+    ) -> Issue | None:
         records = await self.store_many(
             session,
             data=[data],
@@ -74,6 +74,8 @@ class GithubIssueService(IssueService):
             repository=repository,
             autocommit=autocommit,
         )
+        if len(records) == 0:
+            return None
         return records[0]
 
     async def store_many(
@@ -846,8 +848,8 @@ async def recommended_in_repo(
                 # disable autocommit to also disable downstream hooks
                 autocommit=False,
             )
-
-            res.append(issue)
+            if issue:
+                res.append(issue)
 
         # commit and cleanup session
         await session.commit()

@@ -40,7 +40,7 @@ export const PledgeTabsTrigger = React.forwardRef<
   <TabsTriggerPrimitive
     ref={ref}
     className={twMerge(
-      'dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 flex w-full flex-row items-center gap-x-2 px-4 py-2 font-normal hover:text-gray-950 data-[state=active]:font-medium data-[state=active]:text-gray-800 dark:data-[state=active]:text-white',
+      'dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 flex w-full flex-row items-center gap-x-2 px-4 py-2 font-normal hover:text-gray-950 data-[state=active]:bg-white data-[state=active]:font-medium data-[state=active]:text-gray-950 data-[state=active]:shadow-sm dark:data-[state=active]:text-white',
       size === 'default' ? 'text-sm' : 'text-xs',
       className,
     )}
@@ -80,7 +80,7 @@ const PledgeCheckoutPanel = ({
 
             <PledgeTabsTrigger
               value="contribute"
-              className="hover:text-blue-500 data-[state=active]:rounded-md data-[state=active]:bg-blue-50 data-[state=active]:text-green-400 data-[state=active]:shadow-none dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-green-400"
+              className="dark:data-[state=active]:bg-polar-700 hover:text-blue-500 data-[state=active]:rounded-md data-[state=active]:bg-white data-[state=active]:text-green-400 dark:data-[state=active]:text-green-400"
             >
               <CommandLineIcon className="h-4 w-4" />
               <div className="dark:text-polar-300 text-gray-700">

@@ -46,7 +46,7 @@ router = APIRouter(tags=["issues"])
     response_model=ListResource[IssueSchema],
     tags=[Tags.PUBLIC],
     description="Search issues.",
-    summary="Search issues (Public API)",
+    summary="Search issues",
     status_code=200,
     responses={404: {}},
 )
@@ -291,7 +291,7 @@ async def for_you(
     response_model=IssueSchema,
     tags=[Tags.PUBLIC],
     description="Get issue",
-    summary="Get issue (Public API)",
+    summary="Get issue",
 )
 async def get(
     id: UUID,
@@ -321,7 +321,7 @@ async def get(
     response_model=IssueSchema,
     tags=[Tags.PUBLIC],
     description="Update issue. Requires authentication.",
-    summary="Update issue. (Public API)",
+    summary="Update issue.",
 )
 async def update(
     id: UUID,
@@ -371,7 +371,7 @@ async def update(
     response_model=IssueSchema,
     tags=[Tags.PUBLIC],
     description="Mark an issue as confirmed solved, and configure issue reward splits. Enables payouts of pledges. Can only be done once per issue. Requires authentication.",  # noqa: E501
-    summary="Mark an issue as confirmed solved. (Public API)",
+    summary="Mark an issue as confirmed solved.",
 )
 async def confirm(
     id: UUID,

@@ -143,7 +143,7 @@ async def to_schema(session: AsyncSession, subject: Subject, p: Pledge) -> Pledg
     response_model=ListResource[PledgeSchema],
     tags=[Tags.PUBLIC],
     description="Search pledges. Requires authentication. The user can only read pledges that they have made (personally or via an organization) or received (to organizations that they are a member of).",  # noqa: E501
-    summary="Search pledges (Public API)",
+    summary="Search pledges",
     status_code=200,
 )
 async def search(
@@ -277,7 +277,7 @@ async def search(
     response_model=PledgePledgesSummary,
     tags=[Tags.PUBLIC],
     description="Get summary of pledges for resource.",  # noqa: E501
-    summary="Get pledges summary (Public API)",
+    summary="Get pledges summary",
     status_code=200,
 )
 async def summary(
@@ -301,7 +301,7 @@ async def summary(
     response_model=PledgeSpending,
     tags=[Tags.PUBLIC],
     description="Get current user spending in the current period. Used together with spending limits.",  # noqa: E501
-    summary="Get user spending (Public API)",
+    summary="Get user spending",
     status_code=200,
 )
 async def spending(
@@ -322,7 +322,7 @@ async def spending(
     response_model=PledgeSchema,
     tags=[Tags.PUBLIC],
     description="Get a pledge. Requires authentication.",  # noqa: E501
-    summary="Get pledge (Public API)",
+    summary="Get pledge",
     status_code=200,
 )
 async def get(

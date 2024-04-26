@@ -24,7 +24,7 @@ router = APIRouter(tags=["pull_requests"])
     response_model=ListResource[PullRequest],
     tags=[Tags.PUBLIC],
     description="Search pull requests.",
-    summary="Search pull requests (Public API)",
+    summary="Search pull requests",
     status_code=200,
     responses={404: {}},
 )

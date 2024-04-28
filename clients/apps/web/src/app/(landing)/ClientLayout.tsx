@@ -1,7 +1,6 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { AnimatedSeparator } from '@/components/Landing/AnimatedSeparator'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { StarOutlineOutlined } from '@mui/icons-material'
 import { motion } from 'framer-motion'
@@ -20,21 +19,11 @@ export default function Layout({ children }: PropsWithChildren) {
   return (
     <div className="flex w-full flex-col items-center">
       <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch md:max-w-7xl">
-        <AnimatedSeparator
-          className="hidden md:block"
-          orientation="vertical"
-          whileInView={false}
-        />
         <div className="flex w-full flex-grow flex-col">
           <LandingPageTopbar />
           {children}
           <LandingPageFooter />
         </div>
-        <AnimatedSeparator
-          className="hidden md:block"
-          orientation="vertical"
-          whileInView={false}
-        />
       </div>
     </div>
   )
@@ -42,27 +31,24 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="sticky top-0 z-50">
-      <div className="flex flex-row items-center justify-between bg-gray-50 px-8 py-6 md:px-12">
-        <BrandingMenu logoVariant="logotype" />
-        <div className="flex flex-row items-center gap-x-6">
-          <Link href="https://github.com/polarsource/polar" target="_blank">
-            <Button
-              className="rounded-lg bg-blue-50 px-3 py-4"
-              variant="secondary"
-            >
-              <div className="flex flex-row items-center gap-x-2">
-                <StarOutlineOutlined fontSize="small" />
-                <span>Star on GitHub</span>
-              </div>
-            </Button>
-          </Link>
-          <Link href="/login" className="text-blue-500 hover:text-blue-400">
-            Login
-          </Link>
-        </div>
+    <div className="mb-8 flex flex-row items-center justify-between bg-gray-50 px-8 py-6 md:px-12">
+      <BrandingMenu logoVariant="logotype" />
+      <div className="flex flex-row items-center gap-x-6">
+        <Link href="https://github.com/polarsource/polar" target="_blank">
+          <Button
+            className="rounded-lg bg-blue-50 px-3 py-4"
+            variant="secondary"
+          >
+            <div className="flex flex-row items-center gap-x-2">
+              <StarOutlineOutlined fontSize="small" />
+              <span>Star on GitHub</span>
+            </div>
+          </Button>
+        </Link>
+        <Link href="/login" className="text-blue-500 hover:text-blue-400">
+          Login
+        </Link>
       </div>
-      <AnimatedSeparator />
     </div>
   )
 }

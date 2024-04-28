@@ -27,19 +27,49 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+const Box = ({ children }: PropsWithChildren) => {
+  return (
+    <div className="flex flex-row bg-white">
+      <AnimatedSeparator
+        className="hidden md:block"
+        orientation="vertical"
+        whileInView={false}
+      />
+      <div className="flex flex-grow flex-col">
+        <AnimatedSeparator />
+        {children}
+        <AnimatedSeparator className="hidden md:block" />
+      </div>
+      <AnimatedSeparator
+        className="hidden md:block"
+        orientation="vertical"
+        whileInView={false}
+      />
+    </div>
+  )
+}
+
 export default function Page() {
   return (
-    <div className="flex flex-col">
-      <HeroSection />
-      <AnimatedSeparator />
-      <BenefitsUpsell />
-      <AnimatedSeparator />
-      <FeaturesUpsell />
-      <AnimatedSeparator />
-      <DevelopersUpsell />
-      <AnimatedSeparator />
-      <Pricing />
-      <SignUpBanner />
+    <div className="flex flex-col md:gap-y-24">
+      <Box>
+        <HeroSection />
+      </Box>
+      <Box>
+        <BenefitsUpsell />
+      </Box>
+      <Box>
+        <FeaturesUpsell />
+      </Box>
+      <Box>
+        <DevelopersUpsell />
+      </Box>
+      <Box>
+        <Pricing />
+      </Box>
+      <Box>
+        <SignUpBanner />
+      </Box>
     </div>
   )
 }
@@ -72,7 +102,7 @@ const HeroSection = () => {
         viewport={{ once: true }}
       >
         <div className="flex flex-col gap-y-8">
-          <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
+          <h1 className="text-pretty text-4xl leading-tight text-gray-950">
             Get paid coding on your passion
           </h1>
           <p className="text-xl leading-relaxed text-gray-500">
@@ -140,7 +170,7 @@ const BenefitsUpsell = () => {
       />
       <div className="flex flex-col gap-y-12 pr-6 md:w-1/2 md:pr-24">
         <div className="flex flex-col gap-y-8">
-          <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
+          <h1 className="text-pretty text-4xl  leading-tight text-gray-950">
             Powerful & built-in subscription benefits
           </h1>
           <p className="text-xl leading-relaxed text-gray-500">
@@ -154,7 +184,7 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <TextSnippet className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-blue-500">
+                <span className="font-medium text-gray-950">
                   Premium posts & newsletter
                 </span>
                 <p className="text-sm text-gray-500">
@@ -166,7 +196,7 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <GitHubIcon width={30} height={30} className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-blue-500">
+                <span className="font-medium text-gray-950">
                   Access to private GitHub repositories
                 </span>
                 <p className="text-sm text-gray-500">
@@ -178,7 +208,7 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <DiscordIcon size={30} className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-blue-500">
+                <span className="font-medium text-gray-950">
                   Discord invites
                 </span>
                 <p className="text-sm text-gray-500">
@@ -190,7 +220,7 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <BoltOutlined className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-blue-500">
+                <span className="font-medium text-gray-950">
                   Sponsorship 2.0
                 </span>
                 <p className="text-sm text-gray-500">
@@ -240,13 +270,13 @@ const FeaturesUpsell = () => {
     return (
       <div
         className={twMerge(
-          'flex flex-col items-center justify-center gap-12 overflow-hidden border-blue-100 p-12 text-center',
+          'flex flex-col items-center justify-center gap-12 overflow-hidden border-gray-200 p-12 text-center',
           className,
         )}
       >
         <div className="flex w-full flex-col items-center justify-center gap-y-4">
           <Icon className="text-blue-500" fontSize="large" />
-          <h3 className="text-pretty text-xl font-medium text-blue-500">
+          <h3 className="text-pretty text-xl font-medium text-gray-950">
             {title}
           </h3>
           <p className="text-pretty text-gray-500">{description}</p>
@@ -258,7 +288,7 @@ const FeaturesUpsell = () => {
 
   return (
     <motion.div
-      className="flex flex-col md:grid md:grid-cols-3 md:grid-rows-3"
+      className="flex w-screen flex-col md:grid md:w-full md:grid-cols-3 md:grid-rows-3"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
@@ -354,11 +384,11 @@ const DevelopersUpsell = () => {
     return (
       <Link
         href={href}
-        className="flex flex-col items-center gap-y-6 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-100"
+        className="bg-gray-75 flex flex-col items-center gap-y-6 p-8"
       >
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">
-          <h3 className="font-medium text-blue-500">{name}</h3>
+          <h3 className="font-medium text-gray-950">{name}</h3>
           <p className="text-sm text-gray-500">{description}</p>
         </div>
       </Link>
@@ -367,7 +397,7 @@ const DevelopersUpsell = () => {
 
   return (
     <motion.div
-      className="flex flex-1 flex-col md:flex-row"
+      className="flex flex-1 flex-col md:flex-row md:items-center"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
@@ -440,18 +470,17 @@ const DevelopersUpsell = () => {
           />
         </motion.div>
       </div>
-      <AnimatedSeparator className="hidden md:block" orientation="vertical" />
       <AnimatedSeparator className="md:hidden" orientation="horizontal" />
-      <div className="flex flex-col gap-y-12 px-6 py-16 md:w-1/2 md:px-12">
+      <div className="flex flex-col gap-y-12 px-6 py-16 md:w-1/2 md:px-16">
         <div className="flex flex-col gap-y-8">
-          <h1 className="text-pretty text-4xl !font-semibold leading-tight text-blue-500">
+          <h1 className="text-pretty text-4xl  leading-tight text-gray-950">
             Serving world-class developers
           </h1>
-          <p className="text-xl leading-relaxed text-gray-400">
+          <p className="text-xl leading-relaxed text-gray-500">
             We&apos;re proud to support incredible developers and open source
             initiatives that are shaping the future.
           </p>
-          <p className="text-xl leading-relaxed text-gray-400">
+          <p className="text-xl leading-relaxed text-gray-500">
             Join us today.
           </p>
         </div>
@@ -470,10 +499,10 @@ const Pricing = () => {
     description: string
   }>) => {
     return (
-      <div className="flex flex-1 flex-col gap-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-100">
+      <div className="flex w-full flex-1 flex-col gap-8 px-8 py-12 md:px-12 md:py-24">
         <span className="text-blue-500">{children}</span>
         <div className="flex flex-col gap-2">
-          <h1 className="text-xl font-semibold leading-snug">{title}</h1>
+          <h1 className="text-xl leading-snug">{title}</h1>
           <p className="text-lg text-gray-500">{description}</p>
         </div>
       </div>
@@ -482,21 +511,27 @@ const Pricing = () => {
 
   return (
     <motion.div
-      className="flex flex-col gap-12 px-6 py-12 md:px-12 md:py-24"
+      className="flex flex-col"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <h1 className="text-4xl !font-semibold text-blue-500">Pricing</h1>
-      <div className="flex flex-col gap-8 md:flex-row">
+      <h1 className="px-6 py-24 text-4xl text-gray-950 md:px-16 md:text-center">
+        Pricing
+      </h1>
+
+      <AnimatedSeparator />
+      <div className="flex flex-col md:flex-row md:px-12">
         <PriceCard
           title="Zero Fixed Costs"
           description="No hidden or monthly costs."
         >
           <FavoriteBorderOutlined fontSize="large" />
         </PriceCard>
+        <AnimatedSeparator className="hidden md:block" orientation="vertical" />
+        <AnimatedSeparator className="md:hidden" orientation="horizontal" />
         <PriceCard
           title="5% Revenue Share"
           description="
@@ -504,6 +539,8 @@ We're in this together. We earn when you do."
         >
           <PercentOutlined fontSize="large" />
         </PriceCard>
+        <AnimatedSeparator className="hidden md:block" orientation="vertical" />
+        <AnimatedSeparator className="md:hidden" orientation="horizontal" />
         <PriceCard
           title="Stripe Fees"
           description="Stripe transaction- and payout fees apply before transfers."
@@ -518,14 +555,14 @@ We're in this together. We earn when you do."
 const SignUpBanner = () => {
   return (
     <motion.div
-      className="flex flex-col items-center gap-12 bg-blue-50 px-12 py-24"
+      className="flex flex-col items-center gap-12 px-12 py-24"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <h1 className="text-center text-4xl leading-snug text-blue-500">
+      <h1 className="text-center text-4xl leading-snug text-gray-950">
         We&apos;ve run out of sales pitches
       </h1>
 

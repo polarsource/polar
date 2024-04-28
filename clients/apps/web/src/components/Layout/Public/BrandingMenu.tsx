@@ -51,7 +51,7 @@ export const BrandingMenu = ({
         <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
           <Link href="/">
             {logoVariant === 'logotype' ? (
-              <LogoType className="-ml-2 md:ml-0 " width={80} />
+              <LogoType className="-ml-2 md:ml-0" width={100} />
             ) : (
               <LogoIcon
                 className="text-blue-500 dark:text-blue-400"

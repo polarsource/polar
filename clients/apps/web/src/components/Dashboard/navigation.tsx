@@ -154,21 +154,11 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Posts',
     icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/posts/overview`,
+    link: `/maintainer/${org.name}/posts`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/posts`)
     },
     if: true,
-    subs: [
-      {
-        title: 'Overview',
-        link: `/maintainer/${org.name}/posts/overview`,
-      },
-      {
-        title: 'Analytics',
-        link: `/maintainer/${org.name}/posts/analytics`,
-      },
-    ],
   },
   {
     id: 'org-subscriptions',

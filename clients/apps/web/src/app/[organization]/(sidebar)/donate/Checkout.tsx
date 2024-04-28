@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
   Form,
   FormControl,
@@ -38,7 +39,6 @@ import {
 } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import { Textarea } from 'polarkit/components/ui/textarea'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import PaymentForm from './PaymentForm'
@@ -373,10 +373,7 @@ const Message = () => {
             </div>
             <FormControl>
               <div className="w-full">
-                <Textarea
-                  {...field}
-                  placeholder="Include a personal message"
-                ></Textarea>
+                <TextArea {...field} placeholder="Include a personal message" />
               </div>
             </FormControl>
           </FormItem>

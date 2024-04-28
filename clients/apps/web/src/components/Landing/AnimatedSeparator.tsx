@@ -33,7 +33,7 @@ export const AnimatedSeparator = ({
         : { animate: 'animate' })}
     >
       <Separator
-        className={twMerge('h-full w-full bg-blue-100', className)}
+        className={twMerge('h-full w-full bg-gray-200', className)}
         orientation={orientation}
         {...props}
       />

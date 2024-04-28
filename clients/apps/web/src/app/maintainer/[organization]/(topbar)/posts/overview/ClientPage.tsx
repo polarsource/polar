@@ -2,10 +2,7 @@
 
 import { AbbreviatedBrowserRender } from '@/components/Feed/Markdown/BrowserRender'
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
-import {
-  DashboardBody,
-  DashboardPaddingX,
-} from '@/components/Layout/DashboardLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
@@ -96,109 +93,101 @@ const ClientPage = () => {
 
   return (
     <>
-      <DashboardBody className="!p-0">
-        <DashboardPaddingX className="relative !px-0 xl:!px-8">
-          <div className="items mb-24 flex w-full flex-col-reverse items-start gap-y-12 xl:flex-row xl:gap-x-4 xl:gap-y-0">
-            <DashboardPaddingX className="flex w-full flex-1 flex-col gap-y-8 overflow-hidden ">
-              <div className="flex flex-row items-center justify-between">
-                <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
-                  Overview
-                </h3>
-                <Link
-                  href={`/maintainer/${org?.name}/posts/new`}
-                  onClick={() =>
-                    captureEvent('posts:overview_create_new:click')
-                  }
-                >
-                  <Button className="h-8 w-8 rounded-full">
-                    <AddOutlined fontSize="inherit" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="flex flex-col gap-y-12">
-                {showPosts ? (
-                  <StaggerReveal className="flex w-full flex-col gap-y-4">
-                    {posts.data?.items
-                      ? posts.data.items.map((post) => (
-                          <StaggerReveal.Child key={post.id}>
-                            <PostItem {...post} />
-                          </StaggerReveal.Child>
-                        ))
-                      : null}
-                  </StaggerReveal>
-                ) : null}
+      <DashboardBody className="flex flex-col">
+        <div className="mb-24 flex w-full flex-col-reverse items-start gap-y-12 xl:flex-row xl:gap-x-12 xl:gap-y-0">
+          <div className="flex w-full flex-1 flex-col gap-y-8">
+            <div className="flex flex-row items-center justify-between">
+              <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+                Overview
+              </h3>
+              <Link
+                href={`/maintainer/${org?.name}/posts/new`}
+                onClick={() => captureEvent('posts:overview_create_new:click')}
+              >
+                <Button className="h-8 w-8 rounded-full">
+                  <AddOutlined fontSize="inherit" />
+                </Button>
+              </Link>
+            </div>
+            <div className="flex flex-col gap-y-12">
+              {showPosts ? (
+                <StaggerReveal className="flex w-full flex-col gap-y-4">
+                  {posts.data?.items
+                    ? posts.data.items.map((post) => (
+                        <StaggerReveal.Child key={post.id}>
+                          <PostItem {...post} />
+                        </StaggerReveal.Child>
+                      ))
+                    : null}
+                </StaggerReveal>
+              ) : null}
 
-                {showNoPostsYet ? (
-                  <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
-                    <ViewDayOutlined fontSize="large" />
-                    <div className="flex flex-col items-center gap-y-2">
-                      <h3 className="p-2 text-lg font-medium">No posts yet</h3>
-                      <p className="dark:text-polar-600 min-w-0 truncate text-gray-300">
-                        Create your first post to start engaging with your
-                        subscribers
-                      </p>
-                    </div>
+              {showNoPostsYet ? (
+                <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
+                  <ViewDayOutlined fontSize="large" />
+                  <div className="flex flex-col items-center gap-y-2">
+                    <h3 className="p-2 text-lg font-medium">No posts yet</h3>
+                    <p className="dark:text-polar-600 min-w-0 truncate text-gray-300">
+                      Create your first post to start engaging with your
+                      subscribers
+                    </p>
                   </div>
-                ) : null}
-              </div>
-            </DashboardPaddingX>
-            <div className="lx:overflow-auto flex w-full flex-col gap-y-8 overflow-hidden xl:sticky xl:top-8 xl:w-1/3 xl:flex-shrink-0">
-              <DashboardPaddingX className="flex w-full flex-grow flex-row items-center justify-between xl:!px-0">
-                <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
-                  Analytics
-                </h3>
-              </DashboardPaddingX>
-              <div className="flex w-full overflow-x-auto md:overflow-hidden">
-                <DashboardPaddingX className="flex flex-row gap-6 md:overflow-hidden xl:flex-col xl:px-0">
-                  {trafficStatistics.data && (
-                    <Card className="md:min-w-inherit flex w-full min-w-[300px] flex-col gap-y-4 self-stretch p-4">
-                      <div className="flex w-full flex-row items-center justify-between">
-                        <h3 className="text-sm font-medium">Views</h3>
-                        <span className="text-right text-sm">
-                          {currentTraffic.toLocaleString()}
-                        </span>
-                      </div>
-                      <Chart
-                        y="views"
-                        axisYOptions={{
-                          ticks: 'month',
-                          label: null,
-                        }}
-                        data={trafficStatistics.data.periods.map((d) => ({
-                          ...d,
-                          parsedStartDate: new Date(d.start_date),
-                        }))}
-                        onDataIndexHover={setHoveredPeriodIndex}
-                        hoveredIndex={hoveredPeriodIndex}
-                      />
-                    </Card>
-                  )}
-                  {prettyReferrerrs && prettyReferrerrs.length > 0 && (
-                    <Card className="justify-top  md:min-w-inherit flex w-full min-w-[300px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-4">
-                      <div className="flex w-full flex-row items-center justify-between">
-                        <h3 className="text-sm font-medium">Top Referrers</h3>
-                      </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div className="lx:overflow-auto flex w-full flex-col gap-y-8 overflow-hidden xl:sticky xl:top-8 xl:w-fit xl:flex-shrink-0">
+            <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+              Analytics
+            </h3>
+            <div className="flex w-full overflow-x-auto md:overflow-hidden">
+              <div className="flex flex-row gap-6 md:overflow-hidden xl:flex-col xl:px-0">
+                {trafficStatistics.data && (
+                  <Card className="md:min-w-inherit flex w-full min-w-[360px] flex-col gap-y-4 self-stretch p-6">
+                    <div className="flex w-full flex-row items-center justify-between">
+                      <h3 className="text-sm font-medium">Views</h3>
+                      <span className="text-right text-sm">
+                        {currentTraffic.toLocaleString()}
+                      </span>
+                    </div>
+                    <Chart
+                      y="views"
+                      axisYOptions={{
+                        ticks: 'month',
+                        label: null,
+                      }}
+                      data={trafficStatistics.data.periods.map((d) => ({
+                        ...d,
+                        parsedStartDate: new Date(d.start_date),
+                      }))}
+                      onDataIndexHover={setHoveredPeriodIndex}
+                      hoveredIndex={hoveredPeriodIndex}
+                    />
+                  </Card>
+                )}
+                {prettyReferrerrs && prettyReferrerrs.length > 0 && (
+                  <Card className="justify-top  md:min-w-inherit flex w-full min-w-[300px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-4">
+                    <div className="flex w-full flex-row items-center justify-between">
+                      <h3 className="text-sm font-medium">Top Referrers</h3>
+                    </div>
 
-                      {prettyReferrerrs.map(
-                        ({ referrer, views, prettyURL }) => (
-                          <div
-                            key={referrer}
-                            className="flex w-full flex-row items-center justify-between gap-x-4 text-sm lg:gap-x-8"
-                          >
-                            <span className="truncate text-gray-600">
-                              {prettyURL}
-                            </span>
-                            <span>{views.toLocaleString()}</span>
-                          </div>
-                        ),
-                      )}
-                    </Card>
-                  )}
-                </DashboardPaddingX>
+                    {prettyReferrerrs.map(({ referrer, views, prettyURL }) => (
+                      <div
+                        key={referrer}
+                        className="flex w-full flex-row items-center justify-between gap-x-4 text-sm lg:gap-x-8"
+                      >
+                        <span className="truncate text-gray-600">
+                          {prettyURL}
+                        </span>
+                        <span>{views.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </Card>
+                )}
               </div>
             </div>
           </div>
-        </DashboardPaddingX>
+        </div>
       </DashboardBody>
     </>
   )

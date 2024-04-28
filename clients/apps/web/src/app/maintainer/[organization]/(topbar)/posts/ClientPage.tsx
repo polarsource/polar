@@ -17,6 +17,7 @@ import { EnvelopeIcon, EyeIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
   ArrowForward,
+  ArrowForwardOutlined,
   LanguageOutlined,
   ViewDayOutlined,
 } from '@mui/icons-material'
@@ -163,6 +164,13 @@ const ClientPage = () => {
                       onDataIndexHover={setHoveredPeriodIndex}
                       hoveredIndex={hoveredPeriodIndex}
                     />
+                    <Link
+                      className="flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+                      href={`/maintainer/${org?.name}/posts/analytics`}
+                    >
+                      <span>View Analytics</span>
+                      <ArrowForwardOutlined fontSize="inherit" />
+                    </Link>
                   </Card>
                 )}
                 {prettyReferrerrs && prettyReferrerrs.length > 0 && (

@@ -10,8 +10,8 @@ export const prettyCardName = (brand?: string) => {
   return brand[0].toUpperCase() + brand.slice(1)
 }
 
-export const validateEmail = (email: string) => {
-  return email.includes('@')
+export const validateEmail = (email?: string) => {
+  return email?.includes('@')
 }
 
 import { PaymentIntent } from '@stripe/stripe-js'

@@ -144,7 +144,7 @@ const ClientPage = () => {
             <div className="flex w-full overflow-x-auto md:overflow-hidden">
               <div className="flex flex-row gap-6 md:overflow-hidden xl:flex-col xl:px-0">
                 {trafficStatistics.data && (
-                  <Card className="md:min-w-inherit flex w-full min-w-[360px] flex-col gap-y-4 self-stretch p-6">
+                  <Card className="md:min-w-inherit flex w-full min-w-[360px] flex-col gap-y-6 self-stretch p-6">
                     <div className="flex w-full flex-row items-center justify-between">
                       <h3 className="text-sm font-medium">Views</h3>
                       <span className="text-right text-sm">
@@ -164,17 +164,10 @@ const ClientPage = () => {
                       onDataIndexHover={setHoveredPeriodIndex}
                       hoveredIndex={hoveredPeriodIndex}
                     />
-                    <Link
-                      className="flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                      href={`/maintainer/${org?.name}/posts/analytics`}
-                    >
-                      <span>View Analytics</span>
-                      <ArrowForwardOutlined fontSize="inherit" />
-                    </Link>
                   </Card>
                 )}
                 {prettyReferrerrs && prettyReferrerrs.length > 0 && (
-                  <Card className="justify-top  md:min-w-inherit flex w-full min-w-[300px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-4">
+                  <Card className="justify-top  md:min-w-inherit flex w-full min-w-[300px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-6">
                     <div className="flex w-full flex-row items-center justify-between">
                       <h3 className="text-sm font-medium">Top Referrers</h3>
                     </div>
@@ -190,6 +183,13 @@ const ClientPage = () => {
                         <span>{views.toLocaleString()}</span>
                       </div>
                     ))}
+                    <Link
+                      className="flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+                      href={`/maintainer/${org?.name}/posts/analytics`}
+                    >
+                      <span>View Analytics</span>
+                      <ArrowForwardOutlined fontSize="inherit" />
+                    </Link>
                   </Card>
                 )}
               </div>

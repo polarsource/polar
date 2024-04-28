@@ -161,6 +161,7 @@ export const OrganizationPublicSidebar = ({
             <Button
               className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:text-polar-200 flex h-10 w-10 flex-col items-center justify-center rounded-full border-none bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100"
               onClick={showRssModal}
+              variant="secondary"
             >
               <RssIcon className="h-4 w-4" />
             </Button>

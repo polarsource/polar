@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import EmptyLayout from '@/components/Layout/EmptyLayout'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useDonationStatistics, useUpdateOrganization } from '@/hooks/queries'
 import {
@@ -8,6 +9,7 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { getCentsInDollarString } from '@/utils/money'
+import { VolunteerActivism } from '@mui/icons-material'
 import { Donation, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -18,7 +20,6 @@ import {
   CardContent,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { Banner } from 'polarkit/components/ui/molecules'
 import { useState } from 'react'
 import DonorsTable from './DonorsTable'
 
@@ -78,30 +79,30 @@ export default function ClientPage({
       })
   }
 
+  if (!organization.donations_enabled) {
+    return (
+      <EmptyLayout>
+        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+          <span className="text-6xl text-blue-400">
+            <VolunteerActivism fontSize="inherit" />
+          </span>
+          <h2 className="text-lg">You are not accepting donations yet</h2>
+          <Button loading={enablingDonations} onClick={enableDonations}>
+            Enable Donations
+          </Button>
+        </div>
+      </EmptyLayout>
+    )
+  }
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Overview</h2>
-        </div>
-
-        {!organization.donations_enabled ? (
-          <Banner color={'blue'}>
-            <div className="flex w-full items-center justify-between">
-              {"You're currently not accepting donations on Polar."}
-              <Button
-                size={'sm'}
-                loading={enablingDonations}
-                onClick={enableDonations}
-              >
-                Enable donations
-              </Button>
-            </div>
-          </Banner>
-        ) : null}
-
         {donations.length > 0 ? (
           <>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-xl">Overview</h2>
+            </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <DonationActivity donations={donations} />
               <DonationsEarnings organization={organization} />
@@ -114,8 +115,11 @@ export default function ClientPage({
             />
           </>
         ) : (
-          <div className="p-4 text-gray-400">
-            {"You haven't received any donations yet, come back later..."}
+          <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+            <span className="text-6xl text-blue-400">
+              <VolunteerActivism fontSize="inherit" />
+            </span>
+            <h2 className="text-lg">You haven&apos;t received any donations</h2>
           </div>
         )}
       </div>

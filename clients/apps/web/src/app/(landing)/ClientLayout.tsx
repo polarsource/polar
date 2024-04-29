@@ -31,12 +31,12 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="mb-8 flex flex-row items-center justify-between bg-gray-50 px-8 py-6 md:px-12">
+    <div className="mb-8 flex flex-row items-center justify-between bg-transparent px-8 py-6 md:px-12">
       <BrandingMenu logoVariant="logotype" />
       <div className="flex flex-row items-center gap-x-6">
         <Link href="https://github.com/polarsource/polar" target="_blank">
           <Button
-            className="rounded-lg bg-transparent px-3 py-4"
+            className="rounded-lg bg-blue-50 px-3 py-4"
             variant="secondary"
           >
             <div className="flex flex-row items-center gap-x-2">

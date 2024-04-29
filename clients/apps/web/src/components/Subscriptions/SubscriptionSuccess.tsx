@@ -24,7 +24,6 @@ export const SubscriptionSuccess = (props: {
     subscribeSession: {
       customer_email: email,
       organization_name: organizationName,
-      repository_name: repositoryName,
       subscription_tier: subscriptionTier,
     },
   } = props
@@ -48,7 +47,7 @@ export const SubscriptionSuccess = (props: {
     } finally {
       setEmailSigninLoading(false)
     }
-  }, [email, router])
+  }, [email, router, organizationName, sendMagicLink])
 
   return (
     <>
@@ -65,7 +64,7 @@ export const SubscriptionSuccess = (props: {
           <Card className="w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="text-xl font-medium">
-                Thank you for supporting {organizationName || repositoryName}!
+                Thank you for supporting {organizationName}!
               </CardTitle>
               <p className="text-muted-foreground text-sm">
                 You&apos;re now eligible for the benefits in the{' '}

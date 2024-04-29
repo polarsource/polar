@@ -375,10 +375,7 @@ export const UpdateSubscriptionTierBenefitModalContent = ({
   )
 
   const form = useForm<Omit<BenefitUpdate, 'type'>>({
-    defaultValues: {
-      organization_id: organization.id,
-      ...benefit,
-    },
+    defaultValues: benefit,
   })
 
   const { handleSubmit } = form

@@ -247,6 +247,7 @@ const useCreateBaselineTier = (
           deletable: false,
           selectable: true,
           type: 'articles',
+          organization_id: organization.id,
         },
       ],
       prices: [
@@ -262,8 +263,9 @@ const useCreateBaselineTier = (
       created_at: new Date().toISOString(),
       is_highlighted: false,
       is_archived: false,
+      organization_id: organization.id,
     }
-  }, [])
+  }, [organization])
 
   const organizationBenefits = useBenefits(organization.name, 99)
   const premiumArticlesBenefit = organizationBenefits.data?.items?.filter(

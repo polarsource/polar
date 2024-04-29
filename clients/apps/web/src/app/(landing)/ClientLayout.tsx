@@ -36,7 +36,7 @@ const LandingPageTopbar = () => {
       <div className="flex flex-row items-center gap-x-6">
         <Link href="https://github.com/polarsource/polar" target="_blank">
           <Button
-            className="rounded-lg bg-blue-50 px-3 py-4"
+            className="rounded-lg bg-transparent px-3 py-4"
             variant="secondary"
           >
             <div className="flex flex-row items-center gap-x-2">

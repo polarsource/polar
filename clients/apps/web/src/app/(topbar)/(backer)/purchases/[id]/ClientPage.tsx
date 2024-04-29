@@ -41,7 +41,7 @@ export default function Page() {
       </Link>
       <div className="flex h-full flex-grow flex-row items-start gap-x-12">
         <div className="flex w-full flex-col gap-8 md:w-full">
-          {purchase.product.media.length && (
+          {'media' in purchase.product && purchase.product.media.length && (
             <Slideshow images={purchase.product.media} />
           )}
           <ShadowBox className="flex flex-col gap-6 ring-gray-100">
@@ -57,7 +57,7 @@ export default function Page() {
                   },
                 }}
               >
-                {purchase.product.description}
+                {purchase.product.description ?? ''}
               </Markdown>
             </div>
           </ShadowBox>
@@ -67,7 +67,12 @@ export default function Page() {
             <h3 className="text-lg font-medium">{purchase.product.name}</h3>
             <div className="flex flex-col gap-4">
               <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
-                ${getCentsInDollarString(purchase.product.price)}
+                $
+                {getCentsInDollarString(
+                  'price' in purchase.product
+                    ? purchase.product.price
+                    : purchase.product.prices[0].price_amount,
+                )}
               </h1>
               <p className="dark:text-polar-500 text-sm text-gray-400">
                 Purchased on{' '}
@@ -82,16 +87,18 @@ export default function Page() {
               <Button size="lg" fullWidth>
                 Download Receipt
               </Button>
-              <Link
-                href={organizationPageLink(
-                  purchase.product.organization,
-                  `/products/${purchase.product.id}`,
-                )}
-              >
-                <Button size="lg" variant="ghost" fullWidth>
-                  Go to Product
-                </Button>
-              </Link>
+              {'organization' in purchase.product && (
+                <Link
+                  href={organizationPageLink(
+                    purchase.product.organization,
+                    `/products/${purchase.product.id}`,
+                  )}
+                >
+                  <Button size="lg" variant="ghost" fullWidth>
+                    Go to Product
+                  </Button>
+                </Link>
+              )}
             </div>
           </ShadowBox>
           <div className="flex flex-col gap-y-4">

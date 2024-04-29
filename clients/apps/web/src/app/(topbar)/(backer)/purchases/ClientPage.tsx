@@ -1,7 +1,9 @@
 'use client'
 
 import { ProductCard } from '@/components/Products/ProductCard'
-import { usePurchases } from '@/hooks/queries/purchases'
+import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import { useUser, useUserSubscriptions } from '@/hooks/queries'
+import { Purchase, usePurchases } from '@/hooks/queries/purchases'
 import { Organization } from '@polar-sh/sdk'
 import Link, { LinkProps } from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -13,6 +15,7 @@ import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const user = useUser()
 
   const handleSearch = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,22 +25,42 @@ export default function ClientPage() {
   )
 
   const { data: purchases } = usePurchases()
+  const { data: subscriptions } = useUserSubscriptions(
+    user.data?.id,
+    undefined,
+    999,
+  )
+
   const searchParams = useSearchParams()
 
   const activeOrganization = searchParams.get('organization')
 
+  const purchaseItems = useMemo(() => {
+    return [
+      ...(purchases?.items ?? []),
+      ...(subscriptions?.items?.map((subscription) => ({
+        id: subscription.id,
+        product: subscription.subscription_tier,
+        created_at: subscription.created_at,
+        updated_at: new Date().toISOString(),
+      })) ?? []),
+    ]
+  }, [purchases, subscriptions])
+
   const filteredPurchases = useMemo(() => {
     const items =
-      purchases?.items.filter((purchase) =>
-        purchase.product.organization.name
-          .toLowerCase()
-          .includes(activeOrganization?.toLocaleLowerCase() ?? ''),
+      purchaseItems.filter((purchase) =>
+        'organization' in purchase.product
+          ? purchase.product.organization.name
+              .toLowerCase()
+              .includes(activeOrganization?.toLocaleLowerCase() ?? '')
+          : true,
       ) ?? []
 
     return items.filter((purchase) =>
       purchase.product.name.toLowerCase().includes(searchQuery.toLowerCase()),
     )
-  }, [activeOrganization, purchases, searchQuery])
+  }, [activeOrganization, searchQuery, purchaseItems])
 
   const creators = useMemo(() => {
     const creatorMap = new Map<
@@ -45,9 +68,13 @@ export default function ClientPage() {
       { organization: Organization; count: number }
     >()
 
-    for (const org of purchases?.items.map(
-      (purchase) => purchase.product.organization,
+    for (const org of purchases?.items.map((purchase) =>
+      'organization' in purchase.product
+        ? purchase.product.organization
+        : undefined,
     ) ?? []) {
+      if (!org) continue
+
       if (creatorMap.has(org.name)) {
         creatorMap.set(org.name, {
           organization: org,
@@ -77,13 +104,20 @@ export default function ClientPage() {
           <h3 className="text-sm font-medium">Type</h3>
           <div className="flex flex-col">
             <PurchaseLink href="#" active={true}>
-              All
+              <span className="flex flex-row items-center gap-x-2">All</span>
+              <span>{purchaseItems.length ?? 0}</span>
             </PurchaseLink>
             <PurchaseLink href="#" active={false}>
-              Product
+              <span className="flex flex-row items-center gap-x-2">
+                Product
+              </span>
+              <span>{purchases?.items.length ?? 0}</span>
             </PurchaseLink>
             <PurchaseLink href="#" active={false}>
-              Subscriptions
+              <span className="flex flex-row items-center gap-x-2">
+                Subscriptions
+              </span>
+              <span>{subscriptions?.items?.length ?? 0}</span>
             </PurchaseLink>
           </div>
         </div>
@@ -126,13 +160,7 @@ export default function ClientPage() {
       </ShadowBox>
       <div className="grid h-full grid-cols-1 gap-6 md:grid-cols-3">
         {filteredPurchases.map((purchase) => (
-          <Link key={purchase.id} href={`/purchases/${purchase.id}`}>
-            <ProductCard
-              key={purchase.id}
-              product={purchase.product}
-              showOrganization
-            />
-          </Link>
+          <PurchaseItem key={purchase.id} purchase={purchase} />
         ))}
       </div>
     </div>
@@ -146,10 +174,28 @@ const PurchaseLink = ({
   return (
     <Link
       className={twMerge(
-        'flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-xl bg-transparent px-4 py-2 text-sm text-gray-500 transition-colors hover:text-blue-500',
-        active ? 'bg-blue-50 text-blue-500' : '',
+        'flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-xl bg-transparent px-4 py-2 text-sm text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-50',
+        active
+          ? 'dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-blue-50'
+          : '',
       )}
       {...props}
     />
+  )
+}
+
+const PurchaseItem = ({ purchase }: { purchase: Purchase }) => {
+  return (
+    <Link href={`/purchases/${purchase.id}`}>
+      {'organization' in purchase.product ? (
+        <ProductCard
+          key={purchase.id}
+          product={purchase.product}
+          showOrganization
+        />
+      ) : (
+        <SubscriptionTierCard subscriptionTier={purchase.product} />
+      )}
+    </Link>
   )
 }

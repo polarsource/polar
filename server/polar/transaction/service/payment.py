@@ -1,6 +1,7 @@
 from typing import cast
 
 import stripe as stripe_lib
+from sqlalchemy import select
 
 from polar.donation.service import donation_service
 from polar.integrations.stripe.schemas import ProductType
@@ -64,6 +65,11 @@ class PaymentTransactionService(BaseTransactionService):
         subscription: Subscription | None = None
         pledge: Pledge | None = None
         donation: Donation | None = None
+
+        # Make sure we don't already have this transaction
+        existing_transaction = await self._get_by_charge_id(session, charge.id)
+        if existing_transaction is not None:
+            return existing_transaction
 
         # Retrieve customer
         customer_id = None
@@ -172,6 +178,16 @@ class PaymentTransactionService(BaseTransactionService):
             )
 
         return transaction
+
+    async def _get_by_charge_id(
+        self, session: AsyncSession, charge_id: str
+    ) -> Transaction | None:
+        statement = select(Transaction).where(
+            Transaction.type == TransactionType.payment,
+            Transaction.charge_id == charge_id,
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
 
 
 payment_transaction = PaymentTransactionService(Transaction)

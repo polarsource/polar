@@ -197,7 +197,7 @@ class Transaction(RecordModel):
     Type of processor fee. Only applies to transactions of type `TransactionType.processor_fee`.
     """
 
-    balance_correlation_key: Mapped[str] = mapped_column(
+    balance_correlation_key: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
     """

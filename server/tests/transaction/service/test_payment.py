@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Organization, Pledge, User
+from polar.models import Organization, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payment import (  # type: ignore[attr-defined]
@@ -90,6 +90,42 @@ def create_payment_fees_mock(mocker: MockerFixture) -> AsyncMock:
 
 @pytest.mark.asyncio
 class TestCreatePayment:
+    async def test_existing_transaction(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        pledge: Pledge,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            customer=user.stripe_customer_id,
+            payment_intent=pledge.payment_id,
+            balance_transaction=stripe_balance_transaction.id,
+        )
+
+        existing_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=PaymentProcessor.stripe,
+            currency=stripe_charge.currency,
+            amount=stripe_charge.amount,
+            account_currency=stripe_charge.currency,
+            account_amount=stripe_charge.amount,
+            tax_amount=0,
+            charge_id=stripe_charge.id,
+        )
+        await save_fixture(existing_transaction)
+
+        # then
+        session.expunge_all()
+
+        transaction = await payment_transaction_service.create_payment(
+            session, charge=stripe_charge
+        )
+
+        assert transaction.id == existing_transaction.id
+
     async def test_customer_user(
         self,
         session: AsyncSession,

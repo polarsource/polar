@@ -1,8 +1,10 @@
 import pytest_asyncio
 
+from polar.auth.models import AuthMethod, AuthSubject, S
+from polar.auth.scope import Scope
 from polar.config import settings
 from polar.kit import jwt
-from polar.models.user import User
+from polar.models import User
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -35,3 +37,12 @@ async def user_second_auth_jwt(
         type="auth",
     )
     return token
+
+
+def get_auth_subject(
+    subject: S,
+    *,
+    scopes: set[Scope] = {Scope.web_default},
+    auth_method: AuthMethod = AuthMethod.COOKIE,
+) -> AuthSubject[S]:
+    return AuthSubject[S](subject, scopes, auth_method)

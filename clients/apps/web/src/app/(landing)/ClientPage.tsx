@@ -591,6 +591,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,
+        organization_id: '123',
       },
     ],
   },
@@ -617,6 +618,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,
+        organization_id: '123',
       },
       {
         id: '456',
@@ -625,6 +627,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,
+        organization_id: '123',
       },
     ],
   },
@@ -651,6 +654,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,
+        organization_id: '123',
       },
       {
         id: '456',
@@ -659,6 +663,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,
+        organization_id: '123',
       },
       {
         id: '789',
@@ -667,6 +672,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,
+        organization_id: '123',
       },
     ],
   },

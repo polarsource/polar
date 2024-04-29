@@ -31,6 +31,7 @@ export const Default: Story = {
   args: {
     subscribeSession: {
       id: 'sub_1J5X2t2eZvKYlo2C2QqQ2Q2Q',
+      organization_name: 'Polar',
       price: {
         id: '123',
         created_at: '2021-10-01T00:00:00Z',
@@ -51,6 +52,7 @@ export const Default: Story = {
             selectable: true,
             created_at: '2021-10-08T11:17:14.000Z',
             type: 'custom',
+            organization_id: '123',
           },
         ],
         prices: [
@@ -67,6 +69,7 @@ export const Default: Story = {
         created_at: '2021-10-08T11:17:14.000Z',
         is_archived: false,
         is_highlighted: false,
+        organization_id: '123',
       },
     },
   },

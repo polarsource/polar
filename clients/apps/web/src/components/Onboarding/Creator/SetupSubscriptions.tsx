@@ -50,6 +50,7 @@ export const SetupSubscriptions = () => {
                   deletable: false,
                   description: 'Public Posts',
                   created_at: '2021-10-01T00:00:00Z',
+                  organization_id: '123',
                 },
               ],
             }}
@@ -78,6 +79,7 @@ export const SetupSubscriptions = () => {
                   deletable: false,
                   description: 'Premium Posts',
                   created_at: '2021-10-01T00:00:00Z',
+                  organization_id: '123',
                 },
                 {
                   id: '456',
@@ -86,6 +88,7 @@ export const SetupSubscriptions = () => {
                   deletable: false,
                   description: 'Paywalled Sections',
                   created_at: '2021-10-01T00:00:00Z',
+                  organization_id: '123',
                 },
               ],
             }}
@@ -115,6 +118,7 @@ export const SetupSubscriptions = () => {
                   deletable: false,
                   description: 'Premium Posts',
                   created_at: '2021-10-01T00:00:00Z',
+                  organization_id: '123',
                 },
                 {
                   id: '456',
@@ -123,6 +127,7 @@ export const SetupSubscriptions = () => {
                   deletable: false,
                   description: 'Paywalled Sections',
                   created_at: '2021-10-01T00:00:00Z',
+                  organization_id: '123',
                 },
               ],
             }}

@@ -70,6 +70,7 @@ export let products: Product[] = [
         selectable: true,
         type: 'custom',
         created_at: new Date().toISOString(),
+        organization_id: '123',
       },
     ],
     media: [
@@ -92,6 +93,7 @@ export let products: Product[] = [
         selectable: true,
         type: 'github_repository',
         created_at: new Date().toISOString(),
+        organization_id: '123',
       },
     ],
     media: [
@@ -114,6 +116,7 @@ export let products: Product[] = [
         selectable: true,
         type: 'github_repository',
         created_at: new Date().toISOString(),
+        organization_id: '123',
       },
       {
         id: '456',
@@ -122,6 +125,7 @@ export let products: Product[] = [
         selectable: true,
         type: 'custom',
         created_at: new Date().toISOString(),
+        organization_id: '123',
       },
     ],
     media: [

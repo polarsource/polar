@@ -120,7 +120,7 @@ class BenefitCreateBase(Schema):
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
         max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
     )
-    organization_id: UUID4
+    organization_id: UUID4 | None = None
 
 
 class BenefitCustomCreate(BenefitCreateBase):

@@ -3,12 +3,13 @@ from typing import Any, cast
 import httpx
 import structlog
 
+from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.integrations.discord.service import DiscordAccountNotConnected
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.integrations.discord.service import discord_user as discord_user_service
 from polar.logging import Logger
-from polar.models import User
+from polar.models import Organization, User
 from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
@@ -170,7 +171,7 @@ class BenefitDiscordService(
         )
 
     async def validate_properties(
-        self, user: User, properties: dict[str, Any]
+        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
     ) -> BenefitDiscordProperties:
         guild_id: str = properties["guild_id"]
         role_id: str = properties["role_id"]

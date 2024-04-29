@@ -16,6 +16,7 @@ import {
 } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { org as testOrg } from 'utils/testdata'
 import ImageUpload from '../Form/ImageUpload'
 import { InlineModalHeader } from '../Modal/InlineModal'
 import ProductBenefitsSelector from './ProductBenefitsSelector'
@@ -61,6 +62,7 @@ export const EditProductModal = ({ product, hide }: EditProductModalProps) => {
         productUpdate: {
           ...editProductParams,
           benefits: selectedBenefits,
+          organization: testOrg,
         },
       })
 

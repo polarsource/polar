@@ -74,7 +74,7 @@ export default async function RootLayout({
 
       <body
         className={twMerge(
-          'dark:bg-polar-950 dark:text-polar-50 h-full bg-gray-50 md:h-screen',
+          'dark:bg-polar-950 dark:text-polar-50 bg-gray-75 h-full md:h-screen',
           inter.className,
         )}
       >

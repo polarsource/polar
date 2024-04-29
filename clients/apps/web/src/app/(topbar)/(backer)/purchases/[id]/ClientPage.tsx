@@ -141,7 +141,7 @@ const GitHubRepoWidget = ({ benefit }: BenefitContextWidgetProps) => {
   )
 }
 
-const BenefitContextWidget = ({
+export const BenefitContextWidget = ({
   benefit,
   subscription,
 }: BenefitContextWidgetProps) => {

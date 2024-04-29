@@ -17,7 +17,6 @@ from polar.benefit.schemas import (
 )
 from polar.benefit.service.benefit import (  # type: ignore[attr-defined]
     OrganizationDoesNotExist,
-    RepositoryDoesNotExist,
     benefit_grant_service,
 )
 from polar.benefit.service.benefit import benefit as benefit_service
@@ -26,13 +25,7 @@ from polar.benefit.service.benefit_grant import (
 )
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams
-from polar.models import (
-    Benefit,
-    Organization,
-    Repository,
-    User,
-    UserOrganization,
-)
+from polar.models import Benefit, Organization, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -105,7 +98,7 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == plain_benefit.id
 
-    async def test_filter_organization_direct(
+    async def test_filter_organization(
         self,
         session: AsyncSession,
         user: User,
@@ -121,51 +114,9 @@ class TestSearch:
             session, user, organization=organization, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 1
-        assert len(results) == 1
-        assert results[0].id == benefit_organization.id
-
-    async def test_filter_organization_indirect(
-        self,
-        session: AsyncSession,
-        user: User,
-        organization: Organization,
-        benefits: list[Benefit],
-        user_organization: UserOrganization,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await benefit_service.search(
-            session,
-            user,
-            organization=organization,
-            direct_organization=False,
-            pagination=PaginationParams(1, 10),
-        )
-
         assert count == 3
         assert len(results) == 3
-
-    async def test_filter_repository(
-        self,
-        session: AsyncSession,
-        user: User,
-        repository: Repository,
-        benefits: list[Benefit],
-        benefit_private_repository: Benefit,
-        user_organization: UserOrganization,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await benefit_service.search(
-            session, user, repository=repository, pagination=PaginationParams(1, 10)
-        )
-
-        assert count == 1
-        assert len(results) == 1
-        assert results[0].id == benefit_private_repository.id
+        assert results[0].id == benefit_organization.id
 
 
 @pytest.mark.asyncio
@@ -173,7 +124,6 @@ class TestGetById:
     async def test_user(
         self,
         session: AsyncSession,
-        benefit_private_repository: Benefit,
         benefit_organization: Benefit,
         user: User,
     ) -> None:
@@ -184,11 +134,6 @@ class TestGetById:
             session, user, uuid.uuid4()
         )
         assert not_existing_benefit is None
-
-        private_benefit = await benefit_service.get_by_id(
-            session, user, benefit_private_repository.id
-        )
-        assert private_benefit is None
 
         organization_benefit = await benefit_service.get_by_id(
             session, user, benefit_organization.id
@@ -198,7 +143,6 @@ class TestGetById:
     async def test_user_organization(
         self,
         session: AsyncSession,
-        benefit_private_repository: Benefit,
         benefit_organization: Benefit,
         user: User,
         user_organization: UserOrganization,
@@ -210,12 +154,6 @@ class TestGetById:
             session, user, uuid.uuid4()
         )
         assert not_existing_benefit is None
-
-        private_benefit = await benefit_service.get_by_id(
-            session, user, benefit_private_repository.id
-        )
-        assert private_benefit is not None
-        assert private_benefit.id == benefit_private_repository.id
 
         organization_benefit = await benefit_service.get_by_id(
             session, user, benefit_organization.id
@@ -285,66 +223,6 @@ class TestUserCreate:
 
         benefit = await benefit_service.user_create(session, authz, create_schema, user)
         assert benefit.organization_id == organization.id
-
-    async def test_not_existing_repository(
-        self, session: AsyncSession, authz: Authz, user: User
-    ) -> None:
-        create_schema = BenefitCustomCreate(
-            type=BenefitType.custom,
-            description="Benefit",
-            is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
-            repository_id=uuid.uuid4(),
-        )
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(RepositoryDoesNotExist):
-            await benefit_service.user_create(session, authz, create_schema, user)
-
-    async def test_not_writable_repository(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        user: User,
-        repository: Repository,
-    ) -> None:
-        create_schema = BenefitCustomCreate(
-            type=BenefitType.custom,
-            description="Benefit",
-            is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
-            repository_id=repository.id,
-        )
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(RepositoryDoesNotExist):
-            await benefit_service.user_create(session, authz, create_schema, user)
-
-    async def test_valid_repository(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        user: User,
-        repository: Repository,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        create_schema = BenefitCustomCreate(
-            type=BenefitType.custom,
-            description="Benefit",
-            is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
-            repository_id=repository.id,
-        )
-
-        # then
-        session.expunge_all()
-
-        benefit = await benefit_service.user_create(session, authz, create_schema, user)
-        assert benefit.repository_id == repository.id
 
     async def test_invalid_properties(
         self,

@@ -11,7 +11,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Organization, Repository
+    from polar.models import Organization
 
 
 class TaxApplicationMustBeSpecified(PolarError):
@@ -86,29 +86,10 @@ class Benefit(RecordModel):
         "properties", JSONB, nullable=False, default=dict
     )
 
-    organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
-        ForeignKey("organizations.id", ondelete="cascade"),
-        nullable=True,
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
-    organization: Mapped["Organization | None"] = relationship(
-        "Organization", lazy="raise"
-    )
-
-    repository_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
-        ForeignKey("repositories.id", ondelete="cascade"),
-        nullable=True,
-    )
-    repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
-
-    @property
-    def managing_organization_id(self) -> UUID:
-        if self.organization_id is not None:
-            return self.organization_id
-        if self.repository is not None:
-            return self.repository.organization_id
-        raise RuntimeError()
+    organization: Mapped["Organization"] = relationship("Organization", lazy="raise")
 
     __mapper_args__ = {
         "polymorphic_on": "type",

@@ -249,7 +249,7 @@ class TestEnqueueBenefitGrantUpdates:
         subscription: Subscription,
         user: User,
         benefit_organization: Benefit,
-        benefit_repository: Benefit,
+        benefit_organization_second: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         granted_grant = BenefitGrant(
@@ -263,7 +263,7 @@ class TestEnqueueBenefitGrantUpdates:
         other_benefit_grant = BenefitGrant(
             subscription=subscription,
             user=user,
-            benefit=benefit_repository,
+            benefit=benefit_organization_second,
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)
@@ -293,7 +293,7 @@ class TestEnqueueBenefitGrantUpdates:
         subscription: Subscription,
         user: User,
         benefit_organization: Benefit,
-        benefit_repository: Benefit,
+        benefit_organization_second: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         revoked_grant = BenefitGrant(
@@ -303,7 +303,7 @@ class TestEnqueueBenefitGrantUpdates:
         await save_fixture(revoked_grant)
 
         other_benefit_grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_repository
+            subscription=subscription, user=user, benefit=benefit_organization_second
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)
@@ -426,7 +426,7 @@ class TestEnqueueBenefitGrantDeletions:
         subscription: Subscription,
         user: User,
         benefit_organization: Benefit,
-        benefit_repository: Benefit,
+        benefit_organization_second: Benefit,
     ) -> None:
         granted_grant = BenefitGrant(
             subscription=subscription, user=user, benefit=benefit_organization
@@ -435,7 +435,7 @@ class TestEnqueueBenefitGrantDeletions:
         await save_fixture(granted_grant)
 
         other_benefit_grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_repository
+            subscription=subscription, user=user, benefit=benefit_organization_second
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)

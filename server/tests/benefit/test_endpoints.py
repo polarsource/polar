@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Benefit, Organization, Repository, UserOrganization
+from polar.models import Benefit, Organization, UserOrganization
 from polar.models.benefit import BenefitType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
@@ -26,23 +26,6 @@ class TestSearchBenefits:
         response = await client.get(
             "/api/v1/benefits/search",
             params={"platform": "github", "organization_name": "not_existing"},
-        )
-
-        assert response.status_code == 404
-
-    @pytest.mark.authenticated
-    async def test_not_existing_repository(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-    ) -> None:
-        response = await client.get(
-            "/api/v1/benefits/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-                "repository_name": "not_existing",
-            },
         )
 
         assert response.status_code == 404
@@ -86,59 +69,10 @@ class TestSearchBenefits:
         assert response.status_code == 200
 
         json = response.json()
-        assert json["pagination"]["total_count"] == 1
+        assert json["pagination"]["total_count"] == 3
 
         items = json["items"]
         assert items[0]["id"] == str(benefits[0].id)
-
-    @pytest.mark.authenticated
-    async def test_indirect_organization(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        benefits: list[Benefit],
-    ) -> None:
-        response = await client.get(
-            "/api/v1/benefits/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-                "direct_organization": False,
-            },
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 3
-
-    @pytest.mark.authenticated
-    async def test_public_repository(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        public_repository: Repository,
-        user_organization: UserOrganization,
-        benefits: list[Benefit],
-    ) -> None:
-        response = await client.get(
-            "/api/v1/benefits/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-                "repository_name": public_repository.name,
-                "direct_organization": False,
-            },
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-
-        items = json["items"]
-        assert items[0]["repository_id"] == str(public_repository.id)
 
 
 @pytest.mark.asyncio
@@ -197,42 +131,6 @@ class TestCreateBenefit:
         )
 
         assert response.status_code == 401
-
-    @pytest.mark.authenticated
-    async def test_both_organization_and_repository(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        public_repository: Repository,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/api/v1/benefits/",
-            json={
-                "type": "custom",
-                "description": "Benefit",
-                "properties": {"note": None},
-                "organization_id": str(organization.id),
-                "repository_id": str(public_repository.id),
-            },
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.authenticated
-    async def test_neither_organization_nor_repository(
-        self, client: AsyncClient, user_organization_admin: UserOrganization
-    ) -> None:
-        response = await client.post(
-            "/api/v1/benefits/",
-            json={
-                "type": "custom",
-                "description": "Benefit",
-                "properties": {"note": None},
-            },
-        )
-
-        assert response.status_code == 422
 
     @pytest.mark.parametrize(
         "payload",

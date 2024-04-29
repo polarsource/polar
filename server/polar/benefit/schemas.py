@@ -1,12 +1,6 @@
-from typing import Literal, Self
+from typing import Literal
 
-from pydantic import (
-    UUID4,
-    Field,
-    computed_field,
-    field_validator,
-    model_validator,
-)
+from pydantic import UUID4, Field, computed_field, field_validator
 
 from polar.config import settings
 from polar.kit import jwt
@@ -126,22 +120,7 @@ class BenefitCreateBase(Schema):
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
         max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
     )
-    organization_id: UUID4 | None = None
-    repository_id: UUID4 | None = None
-
-    @model_validator(mode="after")
-    def check_either_organization_or_repository(self) -> Self:
-        if self.organization_id is not None and self.repository_id is not None:
-            raise ValueError(
-                "Subscription benefits should either be linked to "
-                "an Organization or a Repository, not both."
-            )
-        if self.organization_id is None and self.repository_id is None:
-            raise ValueError(
-                "Subscription benefits should be linked to "
-                "an Organization or a Repository."
-            )
-        return self
+    organization_id: UUID4
 
 
 class BenefitCustomCreate(BenefitCreateBase):
@@ -228,8 +207,7 @@ class BenefitBase(TimestampedSchema):
     description: str
     selectable: bool
     deletable: bool
-    organization_id: UUID4 | None = None
-    repository_id: UUID4 | None = None
+    organization_id: UUID4
 
 
 class BenefitCustom(BenefitBase):

@@ -475,19 +475,16 @@ async def create_benefit(
     type: BenefitType = BenefitType.custom,
     is_tax_applicable: bool | None = None,
     organization: Organization | None = None,
-    repository: Repository | None = None,
     description: str = "Subscription Benefit",
     selectable: bool = True,
     deletable: bool = True,
     properties: dict[str, Any] = {"note": None},
 ) -> Benefit:
-    assert (organization is not None) != (repository is not None)
     benefit = Benefit(
         type=type,
         description=description,
         is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
         organization_id=organization.id if organization is not None else None,
-        repository_id=repository.id if repository is not None else None,
         selectable=selectable,
         deletable=deletable,
         properties=properties,
@@ -640,28 +637,30 @@ async def benefit_organization(
 
 
 @pytest_asyncio.fixture
-async def benefit_repository(
-    save_fixture: SaveFixture, public_repository: Repository
+async def benefit_organization_second(
+    save_fixture: SaveFixture, organization: Organization
 ) -> Benefit:
-    return await create_benefit(save_fixture, repository=public_repository)
+    return await create_benefit(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
-async def benefit_private_repository(
-    save_fixture: SaveFixture, repository: Repository
+async def benefit_organization_third(
+    save_fixture: SaveFixture, organization: Organization
 ) -> Benefit:
-    return await create_benefit(
-        save_fixture, type=BenefitType.custom, repository=repository
-    )
+    return await create_benefit(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
 async def benefits(
     benefit_organization: Benefit,
-    benefit_repository: Benefit,
-    benefit_private_repository: Benefit,
+    benefit_organization_second: Benefit,
+    benefit_organization_third: Benefit,
 ) -> list[Benefit]:
-    return [benefit_organization, benefit_repository, benefit_private_repository]
+    return [
+        benefit_organization,
+        benefit_organization_second,
+        benefit_organization_third,
+    ]
 
 
 @pytest_asyncio.fixture

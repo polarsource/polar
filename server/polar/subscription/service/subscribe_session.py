@@ -1,15 +1,11 @@
 import uuid
 
-from polar.auth.models import Anonymous, AuthMethod, Subject
+from polar.auth.models import Anonymous, AuthMethod, AuthSubject, Subject, is_user
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound, Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
-from polar.models import (
-    SubscriptionTier,
-    SubscriptionTierPrice,
-    User,
-)
+from polar.models import SubscriptionTier, SubscriptionTierPrice
 from polar.models.organization import Organization
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.service import organization as organization_service
@@ -55,8 +51,7 @@ class SubscribeSessionService:
         subscription_tier: SubscriptionTier,
         price: SubscriptionTierPrice,
         success_url: str,
-        auth_subject: Subject,
-        auth_method: AuthMethod | None,
+        auth_subject: AuthSubject[Subject],
         authz: Authz,
         *,
         customer_email: str | None = None,
@@ -78,25 +73,27 @@ class SubscribeSessionService:
         }
 
         organization = (
-            await self._get_organization(session, authz, auth_subject, organization_id)
+            await self._get_organization(
+                session, authz, auth_subject.subject, organization_id
+            )
             if organization_id is not None
             else None
         )
 
         if organization is not None:
             metadata["organization_subscriber_id"] = str(organization.id)
-        if auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
-            metadata["user_id"] = str(auth_subject.id)
+        if auth_subject.method == AuthMethod.COOKIE and is_user(auth_subject):
+            metadata["user_id"] = str(auth_subject.subject.id)
 
         if (
-            auth_method == AuthMethod.COOKIE
-            and isinstance(auth_subject, User)
+            is_user(auth_subject)
+            and auth_subject.method == AuthMethod.COOKIE
             and organization is None
         ):
             existing_subscriptions = (
                 await subscription_service.get_active_user_subscriptions(
                     session,
-                    auth_subject,
+                    auth_subject.subject,
                     organization_id=subscription_tier.organization_id,
                 )
             )
@@ -114,7 +111,7 @@ class SubscribeSessionService:
                     # Prevent authenticated user to subscribe to another plan
                     # from the same organization
                     raise AlreadySubscribed(
-                        user_id=auth_subject.id,
+                        user_id=auth_subject.subject.id,
                         organization_id=subscription_tier.organization_id,
                     ) from e
                 else:
@@ -126,11 +123,12 @@ class SubscribeSessionService:
         # Set the customer only from a cookie-based authentication!
         # With the PAT, it's probably a call from the maintainer who wants to redirect
         # the backer they bring from their own website.
-        elif auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
-            if auth_subject.stripe_customer_id is not None:
-                customer_options["customer"] = auth_subject.stripe_customer_id
+        elif is_user(auth_subject) and auth_subject.method == AuthMethod.COOKIE:
+            user = auth_subject.subject
+            if user.stripe_customer_id is not None:
+                customer_options["customer"] = user.stripe_customer_id
             else:
-                customer_options["customer_email"] = auth_subject.email
+                customer_options["customer_email"] = user.email
         elif customer_email is not None:
             customer_options["customer_email"] = customer_email
 

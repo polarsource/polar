@@ -6,7 +6,7 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
-from polar.auth.models import Anonymous, AuthMethod
+from polar.auth.models import Anonymous
 from polar.authz.service import Authz
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
@@ -49,6 +49,7 @@ from polar.transaction.service.platform_fee import (
     PlatformFeeTransactionService,
 )
 from polar.user.service import user as user_service
+from tests.fixtures.auth import get_auth_subject
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
@@ -164,8 +165,7 @@ class TestCreateFreeSubscription:
                 free_subscription_create=FreeSubscriptionCreate(
                     tier_id=uuid.uuid4(), customer_email=None
                 ),
-                auth_subject=user,
-                auth_method=AuthMethod.COOKIE,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_not_free_subscription_tier(
@@ -183,8 +183,7 @@ class TestCreateFreeSubscription:
                 free_subscription_create=FreeSubscriptionCreate(
                     tier_id=subscription_tier.id, customer_email=None
                 ),
-                auth_subject=user,
-                auth_method=AuthMethod.COOKIE,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_already_subscribed_email(
@@ -211,8 +210,7 @@ class TestCreateFreeSubscription:
                     tier_id=subscription_tier_free.id,
                     customer_email=user.email,
                 ),
-                auth_subject=Anonymous(),
-                auth_method=None,
+                auth_subject=get_auth_subject(Anonymous()),
             )
 
     async def test_already_subscribed_user(
@@ -238,8 +236,7 @@ class TestCreateFreeSubscription:
                 free_subscription_create=FreeSubscriptionCreate(
                     tier_id=subscription_tier_free.id, customer_email=None
                 ),
-                auth_subject=user,
-                auth_method=AuthMethod.COOKIE,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_new_user_no_customer_email(
@@ -256,8 +253,7 @@ class TestCreateFreeSubscription:
                 free_subscription_create=FreeSubscriptionCreate(
                     tier_id=subscription_tier_free.id, customer_email=None
                 ),
-                auth_subject=Anonymous(),
-                auth_method=None,
+                auth_subject=get_auth_subject(Anonymous()),
             )
 
     async def test_new_user(
@@ -279,8 +275,7 @@ class TestCreateFreeSubscription:
                 tier_id=subscription_tier_free.id,
                 customer_email="backer@example.com",
             ),
-            auth_subject=Anonymous(),
-            auth_method=None,
+            auth_subject=get_auth_subject(Anonymous()),
         )
         await session.flush()
 
@@ -310,8 +305,7 @@ class TestCreateFreeSubscription:
             free_subscription_create=FreeSubscriptionCreate(
                 tier_id=subscription_tier_free.id, customer_email=None
             ),
-            auth_subject=user,
-            auth_method=AuthMethod.COOKIE,
+            auth_subject=get_auth_subject(user),
         )
         await session.flush()
 
@@ -1084,7 +1078,7 @@ class TestUpdateOrganizationBenefitsGrants:
 
 @pytest.mark.asyncio
 class TestSearch:
-    async def test_own_subscription(
+    async def test_user_own_subscription(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1118,7 +1112,7 @@ class TestSearch:
 
         results, count = await subscription_service.search(
             session,
-            user_second,
+            get_auth_subject(user_second),
             organization=organization,
             pagination=PaginationParams(1, 10),
         )
@@ -1126,7 +1120,7 @@ class TestSearch:
         assert len(results) == 0
         assert count == 0
 
-    async def test_not_organization_member(
+    async def test_user_not_organization_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1147,13 +1141,16 @@ class TestSearch:
         session.expunge_all()
 
         results, count = await subscription_service.search(
-            session, user, organization=organization, pagination=PaginationParams(1, 10)
+            session,
+            get_auth_subject(user),
+            organization=organization,
+            pagination=PaginationParams(1, 10),
         )
 
         assert len(results) == 0
         assert count == 0
 
-    async def test_organization_member(
+    async def test_user_organization_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1175,7 +1172,39 @@ class TestSearch:
         session.expunge_all()
 
         results, count = await subscription_service.search(
-            session, user, organization=organization, pagination=PaginationParams(1, 10)
+            session,
+            get_auth_subject(user),
+            organization=organization,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(results) == 1
+        assert count == 1
+
+    async def test_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_second: User,
+        subscription_tier: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture,
+            subscription_tier=subscription_tier,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        # then
+        session.expunge_all()
+
+        results, count = await subscription_service.search(
+            session,
+            get_auth_subject(organization),
+            organization=organization,
+            pagination=PaginationParams(1, 10),
         )
 
         assert len(results) == 1
@@ -1213,7 +1242,7 @@ class TestSearchSubscribed:
 
         results, count = await subscription_service.search_subscribed(
             session,
-            user,
+            get_auth_subject(user),
             pagination=PaginationParams(1, 10),
         )
 
@@ -1245,7 +1274,7 @@ class TestUpgradeSubscription:
                     subscription_tier_id=uuid.uuid4(), price_id=uuid.uuid4()
                 ),
                 authz=authz,
-                user=user_second,
+                auth_subject=get_auth_subject(user_second),
             )
 
     async def test_free_subscription(
@@ -1277,7 +1306,7 @@ class TestUpgradeSubscription:
                     subscription_tier_id=uuid.uuid4(), price_id=uuid.uuid4()
                 ),
                 authz=authz,
-                user=user,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_not_existing_tier(
@@ -1302,7 +1331,7 @@ class TestUpgradeSubscription:
                     subscription_tier_id=uuid.uuid4(), price_id=uuid.uuid4()
                 ),
                 authz=authz,
-                user=user,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_extraneous_tier(
@@ -1329,7 +1358,7 @@ class TestUpgradeSubscription:
                     price_id=subscription_tier_organization_second.prices[0].id,
                 ),
                 authz=authz,
-                user=user,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_valid(
@@ -1357,7 +1386,7 @@ class TestUpgradeSubscription:
                 price_id=subscription_tier_second.prices[0].id,
             ),
             authz=authz,
-            user=user,
+            auth_subject=get_auth_subject(user),
         )
         await session.flush()
 
@@ -1389,7 +1418,10 @@ class TestCancelSubscription:
 
         with pytest.raises(NotPermitted):
             await subscription_service.cancel_subscription(
-                session, subscription=subscription_loaded, authz=authz, user=user_second
+                session,
+                subscription=subscription_loaded,
+                authz=authz,
+                auth_subject=get_auth_subject(user_second),
             )
 
     async def test_already_canceled(
@@ -1417,7 +1449,10 @@ class TestCancelSubscription:
 
         with pytest.raises(AlreadyCanceledSubscription):
             await subscription_service.cancel_subscription(
-                session, subscription=subscription_loaded, authz=authz, user=user
+                session,
+                subscription=subscription_loaded,
+                authz=authz,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_cancel_at_period_end(
@@ -1444,7 +1479,10 @@ class TestCancelSubscription:
 
         with pytest.raises(AlreadyCanceledSubscription):
             await subscription_service.cancel_subscription(
-                session, subscription=subscription_loaded, authz=authz, user=user
+                session,
+                subscription=subscription_loaded,
+                authz=authz,
+                auth_subject=get_auth_subject(user),
             )
 
     async def test_free_subscription(
@@ -1471,7 +1509,10 @@ class TestCancelSubscription:
         assert subscription_loaded
 
         updated_subscription = await subscription_service.cancel_subscription(
-            session, subscription=subscription_loaded, authz=authz, user=user
+            session,
+            subscription=subscription_loaded,
+            authz=authz,
+            auth_subject=get_auth_subject(user),
         )
 
         assert updated_subscription.id == subscription.id
@@ -1504,7 +1545,10 @@ class TestCancelSubscription:
         assert subscription_loaded
 
         updated_subscription = await subscription_service.cancel_subscription(
-            session, subscription=subscription_loaded, authz=authz, user=user
+            session,
+            subscription=subscription_loaded,
+            authz=authz,
+            auth_subject=get_auth_subject(user),
         )
 
         assert updated_subscription.id == subscription.id
@@ -1556,7 +1600,7 @@ async def create_subscription_balances(
 
 @pytest.mark.asyncio
 class TestGetStatisticsPeriods:
-    async def test_not_organization_member(
+    async def test_user_not_organization_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1578,7 +1622,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
@@ -1590,7 +1634,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    async def test_organization_member(
+    async def test_user_organization_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1623,7 +1667,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
@@ -1639,7 +1683,54 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    async def test_multiple_users_organization(
+    async def test_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_account: Account,
+        user_second: User,
+        subscription_tier: SubscriptionTier,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            subscription_tier=subscription_tier,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+        price = subscription_tier.prices[0].price_amount
+        balances = await create_subscription_balances(
+            save_fixture,
+            gross_amount=price,
+            start_month=1,
+            end_month=6,
+            organization_account=organization_account,
+            subscription=subscription,
+        )
+
+        # then
+        session.expunge_all()
+
+        results = await subscription_service.get_statistics_periods(
+            session,
+            get_auth_subject(organization),
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:6]):
+            assert result.subscribers == 1
+            assert result.earnings == get_balances_sum(balances[i : i + 1])
+
+        for result in results[6:]:
+            assert result.subscribers == 0
+            assert result.earnings == 0
+
+    async def test_user_multiple_users_organization(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1686,7 +1777,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
@@ -1734,7 +1825,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             types=[SubscriptionTierType.business],
@@ -1795,7 +1886,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             subscription_tier_id=subscription_tier.id,
@@ -1850,7 +1941,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,
@@ -1899,7 +1990,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 1, 31),
             organization=organization,
@@ -1948,7 +2039,7 @@ class TestGetStatisticsPeriods:
 
         results = await subscription_service.get_statistics_periods(
             session,
-            user,
+            get_auth_subject(user),
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
             organization=organization,

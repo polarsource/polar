@@ -217,7 +217,7 @@ async def update(
         if update.profile_settings.highlighted_subscription_tiers is not None:
             for tier_id in update.profile_settings.highlighted_subscription_tiers:
                 tier = await subscription_tier_service.get_by_id(
-                    session, auth_subject.subject, tier_id
+                    session, auth_subject, tier_id
                 )
                 if not tier or tier.organization_id != repo.organization_id:
                     raise ResourceNotFound()

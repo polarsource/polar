@@ -20,6 +20,7 @@ from polar.subscription.service.subscribe_session import (
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
+from tests.fixtures.auth import get_auth_subject
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
@@ -57,8 +58,7 @@ class TestCreateSubscribeSession:
                 subscription_tier_free_loaded,
                 SubscriptionTierPrice(),
                 "SUCCESS_URL",
-                Anonymous(),
-                None,
+                get_auth_subject(Anonymous()),
                 authz,
             )
 
@@ -88,8 +88,7 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                Anonymous(),
-                None,
+                get_auth_subject(Anonymous()),
                 authz,
             )
 
@@ -121,8 +120,7 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                user,
-                AuthMethod.COOKIE,
+                get_auth_subject(user),
                 authz,
             )
 
@@ -159,8 +157,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            Anonymous(),
-            None,
+            get_auth_subject(Anonymous()),
             authz,
         )
 
@@ -220,8 +217,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            user,
-            AuthMethod.COOKIE,
+            get_auth_subject(user),
             authz,
         )
 
@@ -248,7 +244,7 @@ class TestCreateSubscribeSession:
             },
         )
 
-    async def test_valid_pat(
+    async def test_valid_token(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -284,8 +280,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            user,
-            AuthMethod.PERSONAL_ACCESS_TOKEN,
+            get_auth_subject(user, auth_method=AuthMethod.OAUTH2_ACCESS_TOKEN),
             authz,
         )
 
@@ -309,7 +304,7 @@ class TestCreateSubscribeSession:
             },
         )
 
-    async def test_valid_pat_customer_email(
+    async def test_valid_token_customer_email(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -345,8 +340,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            user,
-            AuthMethod.PERSONAL_ACCESS_TOKEN,
+            get_auth_subject(user, auth_method=AuthMethod.OAUTH2_ACCESS_TOKEN),
             authz,
             customer_email="backer@example.com",
         )
@@ -380,7 +374,6 @@ class TestCreateSubscribeSession:
         subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         organization: Organization,
-        user: User,
     ) -> None:
         applicable_tax_benefit = await create_benefit(
             save_fixture, is_tax_applicable=True, organization=organization
@@ -417,8 +410,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            Anonymous(),
-            None,
+            get_auth_subject(Anonymous()),
             authz,
         )
 
@@ -481,13 +473,12 @@ class TestCreateSubscribeSession:
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
 
-        subscribe_session = await subscribe_session_service.create_subscribe_session(
+        await subscribe_session_service.create_subscribe_session(
             session,
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            user,
-            AuthMethod.COOKIE,
+            get_auth_subject(user),
             authz,
         )
 
@@ -534,8 +525,7 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                Anonymous(),
-                None,
+                get_auth_subject(Anonymous()),
                 authz,
                 organization_id=organization_subscriber.id,
             )
@@ -565,8 +555,7 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                user,
-                AuthMethod.COOKIE,
+                get_auth_subject(user),
                 authz,
                 organization_id=organization_subscriber.id,
             )
@@ -611,8 +600,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            organization_subscriber_admin,
-            AuthMethod.COOKIE,
+            get_auth_subject(organization_subscriber_admin),
             authz,
             organization_id=organization_subscriber.id,
         )

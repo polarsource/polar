@@ -17,13 +17,11 @@ from polar.kit.pagination import ListResource, PaginationParams, PaginationParam
 from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription, SubscriptionTier
-from polar.models.organization import Organization
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.dependencies import (
-    OptionalOrganizationNamePlatform,
-    OrganizationNamePlatform,
+    ResolvedOptionalOrganization,
+    ResolvedOrganization,
 )
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.tags.api import Tags
@@ -63,22 +61,15 @@ router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 )
 async def search_subscription_tiers(
     pagination: PaginationParamsQuery,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
     include_archived: bool = Query(False),
     type: SubscriptionTierType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionTierSchema]:
-    organization_name, platform = organization_name_platform
-    organization = await organization_service.get_by_name(
-        session, platform, organization_name
-    )
-    if organization is None:
-        raise ResourceNotFound("Organization not found")
-
     results, count = await subscription_tier_service.search(
         session,
-        auth_subject.subject,
+        auth_subject,
         type=type,
         organization=organization,
         include_archived=include_archived,
@@ -103,7 +94,7 @@ async def lookup_subscription_tier(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject.subject, subscription_tier_id
+        session, auth_subject, subscription_tier_id
     )
 
     if subscription_tier is None:
@@ -125,7 +116,7 @@ async def create_subscription_tier(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     return await subscription_tier_service.user_create(
-        session, authz, subscription_tier_create, auth_subject.subject
+        session, authz, subscription_tier_create, auth_subject
     )
 
 
@@ -138,7 +129,7 @@ async def update_subscription_tier(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject.subject, id
+        session, auth_subject, id
     )
 
     if subscription_tier is None:
@@ -164,7 +155,7 @@ async def update_subscription_tier(
         authz,
         subscription_tier,
         subscription_tier_update,
-        auth_subject.subject,
+        auth_subject,
     )
 
 
@@ -178,7 +169,7 @@ async def archive_subscription_tier(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject.subject, id
+        session, auth_subject, id
     )
 
     if subscription_tier is None:
@@ -193,7 +184,7 @@ async def archive_subscription_tier(
     )
 
     return await subscription_tier_service.archive(
-        session, authz, subscription_tier, auth_subject.subject
+        session, authz, subscription_tier, auth_subject
     )
 
 
@@ -208,7 +199,7 @@ async def update_subscription_tier_benefits(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject.subject, id
+        session, auth_subject, id
     )
 
     if subscription_tier is None:
@@ -227,7 +218,7 @@ async def update_subscription_tier_benefits(
         authz,
         subscription_tier,
         benefits_update.benefits,
-        auth_subject.subject,
+        auth_subject,
     )
     return subscription_tier
 
@@ -245,7 +236,7 @@ async def create_subscribe_session(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
     subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject.subject, session_create.tier_id
+        session, auth_subject, session_create.tier_id
     )
 
     if subscription_tier is None:
@@ -269,8 +260,7 @@ async def create_subscribe_session(
         subscription_tier,
         price,
         str(session_create.success_url),
-        auth_subject.subject,
-        auth_subject.method,
+        auth_subject,
         authz,
         customer_email=session_create.customer_email,
         organization_id=session_create.organization_subscriber_id,
@@ -296,23 +286,16 @@ async def get_subscribe_session(
 )
 async def get_subscriptions_statistics(
     auth_subject: auth.CreatorSubscriptionsRead,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     start_date: date = Query(...),
     end_date: date = Query(...),
     types: list[SubscriptionTierType] | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionsStatistics:
-    organization_name, platform = organization_name_platform
-    organization = await organization_service.get_by_name(
-        session, platform, organization_name
-    )
-    if organization is None:
-        raise ResourceNotFound("Organization not found")
-
     periods = await subscription_service.get_statistics_periods(
         session,
-        auth_subject.subject,
+        auth_subject,
         start_date=start_date,
         end_date=end_date,
         organization=organization,
@@ -337,7 +320,7 @@ async def search_subscriptions(
     auth_subject: auth.CreatorSubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     subscriber_user_id: UUID4 | None = Query(None),
@@ -345,16 +328,9 @@ async def search_subscriptions(
     active: bool | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionSchema]:
-    organization_name, platform = organization_name_platform
-    organization = await organization_service.get_by_name(
-        session, platform, organization_name
-    )
-    if organization is None:
-        raise ResourceNotFound("Organization not found")
-
     results, count = await subscription_service.search(
         session,
-        auth_subject.subject,
+        auth_subject,
         type=type,
         organization=organization,
         subscription_tier_id=subscription_tier_id,
@@ -381,25 +357,16 @@ async def search_subscribed_subscriptions(
     auth_subject: auth.BackerSubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    organization_name_platform: OptionalOrganizationNamePlatform,
+    organization: ResolvedOptionalOrganization,
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     subscriber_user_id: UUID4 | None = Query(None),
     subscriber_organization_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionSubscriber]:
-    organization: Organization | None = None
-    if organization_name_platform is not None:
-        organization_name, platform = organization_name_platform
-        organization = await organization_service.get_by_name(
-            session, platform, organization_name
-        )
-        if organization is None:
-            raise ResourceNotFound("Organization not found")
-
     results, count = await subscription_service.search_subscribed(
         session,
-        auth_subject.subject,
+        auth_subject,
         type=type,
         organization=organization,
         subscription_tier_id=subscription_tier_id,
@@ -431,8 +398,7 @@ async def create_free_subscription(
     subscription = await subscription_service.create_free_subscription(
         session,
         free_subscription_create=free_subscription_create,
-        auth_subject=auth_subject.subject,
-        auth_method=auth_subject.method,
+        auth_subject=auth_subject,
     )
 
     if is_user(auth_subject):
@@ -459,19 +425,10 @@ async def create_free_subscription(
 async def create_email_subscription(
     subscription_create: SubscriptionCreateEmail,
     auth_subject: auth.CreatorSubscriptionsWrite,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    organization: Organization | None = None
-    if organization_name_platform is not None:
-        organization_name, platform = organization_name_platform
-        organization = await organization_service.get_by_name(
-            session, platform, organization_name
-        )
-        if organization is None:
-            raise ResourceNotFound("Organization not found")
-
     # authz
     if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise Unauthorized()
@@ -509,19 +466,10 @@ async def create_email_subscription(
 async def subscriptions_import(
     auth_subject: auth.CreatorSubscriptionsWrite,
     file: UploadFile,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionsImported:
-    organization: Organization | None = None
-    if organization_name_platform is not None:
-        organization_name, platform = organization_name_platform
-        organization = await organization_service.get_by_name(
-            session, platform, organization_name
-        )
-        if organization is None:
-            raise ResourceNotFound("Organization not found")
-
     # find free tier
     free_tier = await subscription_tier_service.get_free(
         session, organization=organization
@@ -571,19 +519,10 @@ async def subscriptions_import(
 )
 async def subscriptions_export(
     auth_subject: auth.CreatorSubscriptionsRead,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Response:
-    organization: Organization | None = None
-    if organization_name_platform is not None:
-        organization_name, platform = organization_name_platform
-        organization = await organization_service.get_by_name(
-            session, platform, organization_name
-        )
-        if organization is None:
-            raise ResourceNotFound("Organization not found")
-
     # authz
     if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise Unauthorized()
@@ -594,7 +533,7 @@ async def subscriptions_export(
 
         (subscribers, _) = await subscription_service.search(
             session,
-            user=auth_subject.subject,
+            auth_subject,
             organization=organization,
             pagination=PaginationParams(limit=1000000, page=1),
         )
@@ -643,7 +582,7 @@ async def upgrade_subscription(
         subscription=subscription,
         subscription_upgrade=subscription_upgrade,
         authz=authz,
-        user=auth_subject.subject,
+        auth_subject=auth_subject,
     )
 
 
@@ -663,7 +602,7 @@ async def cancel_subscription(
     posthog.auth_subject_event(auth_subject, "subscriptions", "subscription", "cancel")
 
     return await subscription_service.cancel_subscription(
-        session, subscription=subscription, authz=authz, user=auth_subject.subject
+        session, subscription=subscription, authz=authz, auth_subject=auth_subject
     )
 
 
@@ -674,16 +613,9 @@ async def cancel_subscription(
 )
 async def search_subscriptions_summary(
     pagination: PaginationParamsQuery,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionSummary]:
-    organization_name, platform = organization_name_platform
-    organization = await organization_service.get_by_name(
-        session, platform, organization_name
-    )
-    if organization is None:
-        raise ResourceNotFound("Organization not found")
-
     results, count = await subscription_service.search_summary(
         session, organization=organization, pagination=pagination
     )

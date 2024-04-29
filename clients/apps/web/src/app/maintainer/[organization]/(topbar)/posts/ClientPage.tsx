@@ -184,7 +184,7 @@ const ClientPage = () => {
                       </div>
                     ))}
                     <Link
-                      className="flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+                      className="mt-2 flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
                       href={`/maintainer/${org?.name}/posts/analytics`}
                     >
                       <span>View Analytics</span>

@@ -26,7 +26,6 @@ class BenefitArticlesService(
         attempt: int = 1,
     ) -> dict[str, Any]:
         async with self._acquire_lock(user):
-            await self.session.refresh(benefit, {"repository"})
             organization_id = benefit.organization_id
 
             articles_subscription = await self._get_articles_subscription(
@@ -53,7 +52,6 @@ class BenefitArticlesService(
         attempt: int = 1,
     ) -> dict[str, Any]:
         async with self._acquire_lock(user):
-            await self.session.refresh(benefit, {"repository"})
             organization_id = benefit.organization_id
 
             articles_subscription = await self._get_articles_subscription(

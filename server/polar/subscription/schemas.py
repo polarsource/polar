@@ -3,12 +3,7 @@ from datetime import date, datetime
 from typing import Literal, Self
 
 import stripe as stripe_lib
-from pydantic import (
-    UUID4,
-    AnyHttpUrl,
-    Field,
-    model_validator,
-)
+from pydantic import UUID4, AnyHttpUrl, Field
 
 from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
 from polar.enums import Platforms
@@ -50,22 +45,7 @@ class SubscriptionTierCreate(Schema):
     )
     is_highlighted: bool = False
     prices: list[SubscriptionTierPriceCreate] = Field(..., min_length=1)
-    organization_id: UUID4 | None = None
-    repository_id: UUID4 | None = None
-
-    @model_validator(mode="after")
-    def check_either_organization_or_repository(self) -> Self:
-        if self.organization_id is not None and self.repository_id is not None:
-            raise ValueError(
-                "Subscription tiers should either be linked to "
-                "an Organization or a Repository, not both."
-            )
-        if self.organization_id is None and self.repository_id is None:
-            raise ValueError(
-                "Subscription tiers should be linked to "
-                "an Organization or a Repository."
-            )
-        return self
+    organization_id: UUID4
 
 
 class ExistingSubscriptionTierPrice(Schema):
@@ -104,8 +84,7 @@ class SubscriptionTierBase(TimestampedSchema):
     description: str | None = None
     is_highlighted: bool
     is_archived: bool
-    organization_id: UUID4 | None = None
-    repository_id: UUID4 | None = None
+    organization_id: UUID4
     prices: list[SubscriptionTierPrice]
 
 
@@ -170,8 +149,7 @@ class SubscribeSession(Schema):
     organization_subscriber_id: UUID4 | None = None
     subscription_tier: SubscriptionTier
     price: SubscriptionTierPrice
-    organization_name: str | None = None
-    repository_name: str | None = None
+    organization_name: str
 
     @classmethod
     def from_db(
@@ -201,12 +179,7 @@ class SubscribeSession(Schema):
             organization_subscriber_id=organization_subscriber_id,
             subscription_tier=subscription_tier,  # type: ignore
             price=price,  # type: ignore
-            organization_name=subscription_tier.organization.name
-            if subscription_tier.organization is not None
-            else None,
-            repository_name=subscription_tier.repository.name
-            if subscription_tier.repository is not None
-            else None,
+            organization_name=subscription_tier.organization.name,
         )
 
 

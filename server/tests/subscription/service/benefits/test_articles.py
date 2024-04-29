@@ -29,11 +29,11 @@ async def test_concurrent_subscription_upgrade(
     save_fixture: SaveFixture,
     user: User,
     organization: Organization,
-    subscription_tier_organization: SubscriptionTier,
+    subscription_tier: SubscriptionTier,
 ) -> None:
     previous_subscription = await create_subscription(
         save_fixture,
-        subscription_tier=subscription_tier_organization,
+        subscription_tier=subscription_tier,
         user=user,
         status=SubscriptionStatus.canceled,
     )

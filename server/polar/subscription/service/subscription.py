@@ -21,7 +21,7 @@ from sqlalchemy import (
     text,
     tuple_,
 )
-from sqlalchemy.orm import aliased, contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthMethod, Subject
 from polar.authz.service import AccessType, Authz
@@ -43,7 +43,6 @@ from polar.models import (
     HeldBalance,
     OAuthAccount,
     Organization,
-    Repository,
     Subscription,
     SubscriptionTier,
     SubscriptionTierBenefit,
@@ -140,15 +139,12 @@ class AlreadySubscribed(SubscriptionError):
         self,
         *,
         user_id: uuid.UUID,
-        organization_id: uuid.UUID | None = None,
-        repository_id: uuid.UUID | None = None,
+        organization_id: uuid.UUID,
     ) -> None:
         self.user_id = user_id
         self.organization_id = organization_id
-        self.repository_id = repository_id
         message = (
-            "This user is already subscribed to one of the tier "
-            "of this organization or repository."
+            "This user is already subscribed to one of the tier of this organization."
         )
         super().__init__(message, 400)
 
@@ -178,7 +174,7 @@ class InvalidSubscriptionTierUpgrade(SubscriptionError):
         self.subscription_tier_id = subscription_tier_id
         message = (
             "Can't upgrade to this subscription tier: either it doesn't exist "
-            "or it doesn't belong to the same organization or repository."
+            "or it doesn't belong to the same organization."
         )
         super().__init__(message)
 
@@ -239,8 +235,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         user: User,
         *,
         organization: Organization,
-        repository: Repository | None = None,
-        direct_organization: bool = True,
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
         subscriber_user_id: uuid.UUID | None = None,
@@ -260,13 +254,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         if organization is not None:
-            clauses = [SubscriptionTier.organization_id == organization.id]
-            if not direct_organization:
-                clauses.append(Repository.organization_id == organization.id)
-            statement = statement.where(or_(*clauses))
-
-        if repository is not None:
-            statement = statement.where(SubscriptionTier.repository_id == repository.id)
+            statement = statement.where(
+                SubscriptionTier.organization_id == organization.id
+            )
 
         if type is not None:
             statement = statement.where(SubscriptionTier.type == type)
@@ -331,8 +321,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         user: User,
         *,
         organization: Organization | None = None,
-        repository: Repository | None = None,
-        direct_organization: bool = True,
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
         subscriber_user_id: uuid.UUID | None = None,
@@ -351,13 +339,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         if organization is not None:
-            clauses = [SubscriptionTier.organization_id == organization.id]
-            if not direct_organization:
-                clauses.append(Repository.organization_id == organization.id)
-            statement = statement.where(or_(*clauses))
-
-        if repository is not None:
-            statement = statement.where(SubscriptionTier.repository_id == repository.id)
+            statement = statement.where(
+                SubscriptionTier.organization_id == organization.id
+            )
 
         if type is not None:
             statement = statement.where(SubscriptionTier.type == type)
@@ -420,7 +404,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         *,
         organization: Organization | None = None,
-        repository: Repository | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Subscription], int]:
         statement = (
@@ -456,9 +439,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 SubscriptionTier.organization_id == organization.id
             )
 
-        if repository is not None:
-            statement = statement.where(SubscriptionTier.repository_id == repository.id)
-
         results, count = await paginate(session, statement, pagination=pagination)
 
         return results, count
@@ -474,7 +454,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         user: User,
         *,
         organization_id: uuid.UUID | None = None,
-        repository_id: uuid.UUID | None = None,
     ) -> list[Subscription]:
         statement = (
             select(Subscription)
@@ -487,9 +466,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             statement = statement.where(
                 SubscriptionTier.organization_id == organization_id
             )
-
-        if repository_id is not None:
-            statement = statement.where(SubscriptionTier.repository_id == repository_id)
 
         result = await session.execute(statement)
 
@@ -545,13 +521,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session,
             user,
             organization_id=subscription_tier.organization_id,
-            repository_id=subscription_tier.repository_id,
         )
         if len(existing_subscriptions) > 0:
             raise AlreadySubscribed(
-                user_id=user.id,
-                organization_id=subscription_tier.organization_id,
-                repository_id=subscription_tier.repository_id,
+                user_id=user.id, organization_id=subscription_tier.organization_id
             )
 
         start = utc_now()
@@ -590,7 +563,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         subscription_tier = price.subscription_tier
         subscription_tier_org = await organization_service.get(
-            session, subscription_tier.managing_organization_id
+            session, subscription_tier.organization_id
         )
         assert subscription_tier_org is not None
 
@@ -757,7 +730,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, subscription.subscription_tier_id
         ):
             if subscribed_to_org := await organization_service.get(
-                session, tier.managing_organization_id
+                session, tier.organization_id
             ):
                 await webhook_service.send(session, target=subscribed_to_org, we=event)
 
@@ -858,7 +831,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         # No account, create the held balance
         if account is None:
             managing_organization = await organization_service.get(
-                session, subscription.subscription_tier.managing_organization_id
+                session, subscription.subscription_tier.organization_id
             )
             assert managing_organization is not None
             held_balance.organization_id = managing_organization.id
@@ -953,12 +926,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # Special hard-coded logic to make sure
             # we always at least subscribe to public articles
             if subscription_tier.get_articles_benefit() is None:
-                await session.refresh(subscription_tier, {"organization", "repository"})
+                await session.refresh(subscription_tier, {"organization"})
                 enqueue_job(
                     "benefit.force_free_articles",
                     task=task,
                     user_id=user_id,
-                    organization_id=subscription_tier.managing_organization_id,
+                    organization_id=subscription_tier.organization_id,
                     subscription_id=subscription.id,
                 )
 
@@ -1016,16 +989,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_upgrade.subscription_tier_id
             )
 
-        # Make sure the new tier belongs to the same organization/repository
+        # Make sure the new tier belongs to the same organization
         old_subscription_tier = subscription.subscription_tier
         if (
             old_subscription_tier.organization_id
-            and old_subscription_tier.organization_id
             != new_subscription_tier.organization_id
-        ) or (
-            old_subscription_tier.repository_id
-            and old_subscription_tier.repository_id
-            != new_subscription_tier.repository_id
         ):
             raise InvalidSubscriptionTierUpgrade(new_subscription_tier.id)
 
@@ -1093,8 +1061,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         start_date: date,
         end_date: date,
         organization: Organization | None = None,
-        repository: Repository | None = None,
-        direct_organization: bool = True,
         types: list[SubscriptionTierType] | None = None,
         subscription_tier_id: uuid.UUID | None = None,
     ) -> list[SubscriptionsStatisticsPeriod]:
@@ -1104,14 +1070,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscriptions_statement = self._get_readable_subscriptions_statement(user)
 
         if organization is not None:
-            clauses = [SubscriptionTier.organization_id == organization.id]
-            if not direct_organization:
-                clauses.append(Repository.organization_id == organization.id)
-            subscriptions_statement = subscriptions_statement.where(or_(*clauses))
-
-        if repository is not None:
             subscriptions_statement = subscriptions_statement.where(
-                SubscriptionTier.repository_id == repository.id
+                SubscriptionTier.organization_id == organization.id
             )
 
         if types is not None:
@@ -1244,11 +1204,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         webhooks = await webhook_notifications_service.search(
             session,
-            organization_id=subscription.subscription_tier.managing_organization_id,
+            organization_id=subscription.subscription_tier.organization_id,
         )
 
         organization = await organization_service.get(
-            session, subscription.subscription_tier.managing_organization_id
+            session, subscription.subscription_tier.organization_id
         )
         assert organization is not None
 
@@ -1310,44 +1270,18 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
 
     def _get_readable_subscriptions_statement(self, user: User) -> Select[Any]:
-        statement = (
-            select(Subscription)
-            .join(Subscription.subscription_tier)
-            .join(
-                Repository,
-                onclause=SubscriptionTier.repository_id == Repository.id,
-                isouter=True,
-            )
-        )
+        statement = select(Subscription).join(Subscription.subscription_tier)
 
-        RepositoryUserOrganization = aliased(UserOrganization)
-
-        return (
-            statement.join(
-                UserOrganization,
-                isouter=True,
-                onclause=and_(
-                    UserOrganization.organization_id
-                    == SubscriptionTier.organization_id,
-                    UserOrganization.user_id == user.id,
-                ),
-            )
-            .join(
-                RepositoryUserOrganization,
-                isouter=True,
-                onclause=and_(
-                    RepositoryUserOrganization.organization_id
-                    == Repository.organization_id,
-                    RepositoryUserOrganization.user_id == user.id,
-                ),
-            )
-            .where(
-                Subscription.deleted_at.is_(None),
-                or_(
-                    UserOrganization.user_id == user.id,
-                    RepositoryUserOrganization.user_id == user.id,
-                ),
-            )
+        return statement.join(
+            UserOrganization,
+            isouter=True,
+            onclause=and_(
+                UserOrganization.organization_id == SubscriptionTier.organization_id,
+                UserOrganization.user_id == user.id,
+            ),
+        ).where(
+            Subscription.deleted_at.is_(None),
+            UserOrganization.user_id == user.id,
         )
 
     def _get_subscribed_subscriptions_statement(self, user: User) -> Select[Any]:

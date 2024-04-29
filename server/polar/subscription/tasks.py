@@ -92,9 +92,7 @@ async def subscription_discord_notification(
         if not tier:
             raise SubscriptionDoesNotExist(subscription_id)
 
-        tier_org = await organization_service.get(
-            session, tier.managing_organization_id
-        )
+        tier_org = await organization_service.get(session, tier.organization_id)
         if not tier_org:
             raise SubscriptionDoesNotExist(subscription_id)
 

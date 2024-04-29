@@ -77,7 +77,7 @@ class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
         mocker: MockerFixture,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         session: AsyncSession,
     ) -> None:
         update_subscription_tier_benefits_grants_mock = mocker.patch.object(
@@ -90,7 +90,7 @@ class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
         session.expunge_all()
 
         await subscription_update_subscription_tier_benefits_grants(
-            job_context, subscription_tier_organization.id, polar_worker_context
+            job_context, subscription_tier.id, polar_worker_context
         )
 
         update_subscription_tier_benefits_grants_mock.assert_called_once()

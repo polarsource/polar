@@ -8,16 +8,12 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.models.benefit import (
-    BenefitArticles,
-    BenefitType,
-)
+from polar.models.benefit import BenefitArticles, BenefitType
 
 if TYPE_CHECKING:
     from polar.models import (
         Benefit,
         Organization,
-        Repository,
         SubscriptionTierBenefit,
         SubscriptionTierPrice,
     )
@@ -48,25 +44,15 @@ class SubscriptionTier(RecordModel):
         String, nullable=True, index=True
     )
 
-    organization_id: Mapped[UUID | None] = mapped_column(
+    organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("organizations.id", ondelete="cascade"),
-        nullable=True,
+        nullable=False,
     )
 
     @declared_attr
-    def organization(cls) -> Mapped["Organization | None"]:
+    def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
-
-    repository_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
-        ForeignKey("repositories.id", ondelete="cascade"),
-        nullable=True,
-    )
-
-    @declared_attr
-    def repository(cls) -> Mapped["Repository | None"]:
-        return relationship("Repository", lazy="raise")
 
     @declared_attr
     def all_prices(cls) -> Mapped[list["SubscriptionTierPrice"]]:
@@ -102,14 +88,6 @@ class SubscriptionTier(RecordModel):
     )
 
     @property
-    def managing_organization_id(self) -> UUID:
-        if self.organization_id is not None:
-            return self.organization_id
-        if self.repository is not None:
-            return self.repository.organization_id
-        raise RuntimeError()
-
-    @property
     def is_tax_applicable(self) -> bool:
         if len(self.prices) == 0:
             return False
@@ -121,11 +99,7 @@ class SubscriptionTier(RecordModel):
         return False
 
     def get_stripe_name(self) -> str:
-        if self.organization is not None:
-            return f"{self.organization.name} - {self.name}"
-        if self.repository is not None:
-            return f"{self.repository.name} - {self.name}"
-        raise RuntimeError()
+        return f"{self.organization.name} - {self.name}"
 
     def get_articles_benefit(self) -> BenefitArticles | None:
         for benefit in self.benefits:

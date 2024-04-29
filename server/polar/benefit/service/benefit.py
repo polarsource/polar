@@ -3,9 +3,9 @@ from collections.abc import Sequence
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import Select, delete, or_, select
+from sqlalchemy import Select, delete, select
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import aliased, contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, PolarError
@@ -16,7 +16,6 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
     Organization,
-    Repository,
     SubscriptionTierBenefit,
     User,
     UserOrganization,
@@ -26,7 +25,6 @@ from polar.models.benefit import (
     BenefitType,
 )
 from polar.organization.service import organization as organization_service
-from polar.repository.service import repository as repository_service
 from polar.webhook.service import webhook_service
 from polar.webhook.webhooks import WebhookEventType
 
@@ -45,13 +43,6 @@ class OrganizationDoesNotExist(BenefitError):
         super().__init__(message, 422)
 
 
-class RepositoryDoesNotExist(BenefitError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = f"Repository with id {organization_id} does not exist."
-        super().__init__(message, 422)
-
-
 class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
     async def get(
         self,
@@ -65,10 +56,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             query = query.where(Benefit.deleted_at.is_(None))
 
         if loaded:
-            query = query.options(
-                joinedload(Benefit.organization),
-                joinedload(Benefit.repository),
-            )
+            query = query.options(joinedload(Benefit.organization))
 
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
@@ -80,8 +68,6 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         *,
         type: BenefitType | None = None,
         organization: Organization | None = None,
-        repository: Repository | None = None,
-        direct_organization: bool = True,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(user)
@@ -90,13 +76,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             statement = statement.where(Benefit.type == type)
 
         if organization is not None:
-            clauses = [Benefit.organization_id == organization.id]
-            if not direct_organization:
-                clauses.append(Repository.organization_id == organization.id)
-            statement = statement.where(or_(*clauses))
-
-        if repository is not None:
-            statement = statement.where(Benefit.repository_id == repository.id)
+            statement = statement.where(Benefit.organization_id == organization.id)
 
         statement = statement.order_by(
             Benefit.type,
@@ -113,10 +93,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         statement = (
             self._get_readable_benefit_statement(user)
             .where(Benefit.id == id, Benefit.deleted_at.is_(None))
-            .options(
-                contains_eager(Benefit.organization),
-                contains_eager(Benefit.repository),
-            )
+            .options(contains_eager(Benefit.organization))
         )
 
         result = await session.execute(statement)
@@ -130,24 +107,13 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         user: User,
     ) -> Benefit:
         organization: Organization | None = None
-        repository: Repository | None = None
-        if create_schema.organization_id is not None:
-            organization = await organization_service.get(
-                session, create_schema.organization_id
-            )
-            if organization is None or not await authz.can(
-                user, AccessType.write, organization
-            ):
-                raise OrganizationDoesNotExist(create_schema.organization_id)
-
-        if create_schema.repository_id is not None:
-            repository = await repository_service.get(
-                session, create_schema.repository_id
-            )
-            if repository is None or not await authz.can(
-                user, AccessType.write, repository
-            ):
-                raise RepositoryDoesNotExist(create_schema.repository_id)
+        organization = await organization_service.get(
+            session, create_schema.organization_id
+        )
+        if organization is None or not await authz.can(
+            user, AccessType.write, organization
+        ):
+            raise OrganizationDoesNotExist(create_schema.organization_id)
 
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")
@@ -164,14 +130,12 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         benefit = Benefit(
             organization=organization,
-            repository=repository,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
             **create_schema.model_dump(
                 by_alias=True,
                 exclude={
                     "organization_id",
-                    "repository_id",
                     "is_tax_applicable",
                     "properties",
                 },
@@ -197,7 +161,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         update_schema: BenefitUpdate,
         user: User,
     ) -> Benefit:
-        benefit = await self._with_organization_or_repository(session, benefit)
+        benefit = await self._with_organization(session, benefit)
 
         if not await authz.can(user, AccessType.write, benefit):
             raise NotPermitted()
@@ -242,7 +206,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         benefit: Benefit,
         user: User,
     ) -> Benefit:
-        benefit = await self._with_organization_or_repository(session, benefit)
+        benefit = await self._with_organization(session, benefit)
 
         if not await authz.can(user, AccessType.write, benefit):
             raise NotPermitted()
@@ -313,48 +277,29 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         return (public_articles, premium_articles)
 
-    async def _with_organization_or_repository(
+    async def _with_organization(
         self, session: AsyncSession, benefit: Benefit
     ) -> Benefit:
         try:
             benefit.organization
-            benefit.repository
         except InvalidRequestError:
-            await session.refresh(benefit, {"organization", "repository"})
+            await session.refresh(benefit, {"organization"})
         return benefit
 
     def _get_readable_benefit_statement(self, user: User) -> Select[Any]:
-        RepositoryOrganization = aliased(Organization)
-        RepositoryUserOrganization = aliased(UserOrganization)
-
         return (
             select(Benefit)
             .join(Benefit.organization, full=True)
-            .join(Benefit.repository, full=True)
             .join(
                 UserOrganization,
                 onclause=UserOrganization.organization_id == Benefit.organization_id,
-                full=True,
-            )
-            .join(
-                RepositoryOrganization,
-                onclause=RepositoryOrganization.id == Repository.organization_id,
-                full=True,
-            )
-            .join(
-                RepositoryUserOrganization,
-                onclause=RepositoryUserOrganization.organization_id
-                == RepositoryOrganization.id,
                 full=True,
             )
             .where(
                 # Prevent to return `None` objects due to the full outer join
                 Benefit.id.is_not(None),
                 Benefit.deleted_at.is_(None),
-                or_(
-                    UserOrganization.user_id == user.id,
-                    RepositoryUserOrganization.user_id == user.id,
-                ),
+                UserOrganization.user_id == user.id,
             )
         )
 

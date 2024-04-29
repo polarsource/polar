@@ -6,16 +6,12 @@ from polar.authz.service import Authz
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
-from polar.models import Benefit, Repository
+from polar.models import Benefit
 from polar.models.benefit import BenefitType
-from polar.organization.dependencies import (
-    OrganizationNamePlatform,
-)
+from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-from polar.repository.dependencies import OptionalRepositoryNameQuery
-from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
 from ..subscription import auth
@@ -33,8 +29,6 @@ async def search_benefits(
     auth_subject: auth.CreatorSubscriptionsRead,
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
-    direct_organization: bool = Query(True),
     type: BenefitType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitSchema]:
@@ -45,21 +39,11 @@ async def search_benefits(
     if organization is None:
         raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     results, count = await benefit_service.search(
         session,
         auth_subject.subject,
         type=type,
         organization=organization,
-        repository=repository,
-        direct_organization=direct_organization,
         pagination=pagination,
     )
 

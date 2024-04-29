@@ -1,5 +1,6 @@
 import { queryClient } from '@/utils/api'
-import { BenefitPublicInner } from '@polar-sh/sdk'
+import { org } from '@/utils/testdata'
+import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -10,6 +11,7 @@ export interface Product {
   media: string[]
   price: number
   benefits: BenefitPublicInner[]
+  organization: Organization
   created_at: string
   updated_at: string
 }
@@ -77,6 +79,7 @@ export let products: Product[] = [
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
     ],
+    organization: org,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -100,6 +103,7 @@ export let products: Product[] = [
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
     ],
+    organization: org,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -133,6 +137,7 @@ export let products: Product[] = [
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
       'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
     ],
+    organization: org,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },

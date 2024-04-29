@@ -6,13 +6,18 @@ import { PanoramaOutlined } from '@mui/icons-material'
 import Markdown from 'markdown-to-jsx'
 import Image from 'next/image'
 import { Pill } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { markdownOpts } from '../Feed/Markdown/markdown'
 
 interface ProductCardProps {
   product: Product
+  showOrganization?: boolean
 }
 
-export const ProductCard = ({ product }: ProductCardProps) => {
+export const ProductCard = ({
+  product,
+  showOrganization = false,
+}: ProductCardProps) => {
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex h-full w-full flex-col gap-6 rounded-3xl border border-transparent bg-white p-6 shadow-sm transition-colors hover:bg-gray-50">
       {product.media.length > 0 ? (
@@ -28,28 +33,42 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           <PanoramaOutlined className="dark:text-polar-500 text-gray-500" />
         </div>
       )}
-      <div className="flex flex-grow flex-col gap-2">
-        <h3 className="dark:text-polar-50 line-clamp-2 font-medium leading-snug text-gray-950">
-          {product.name}
-        </h3>
-        <div className="dark:text-polar-400 line-clamp-2 text-sm text-gray-600">
-          <Markdown
-            options={{
-              ...markdownOpts,
-              overrides: {
-                ...markdownOpts.overrides,
-                p: (args: any) => <>{args.children} </>, // Note the space
-                div: (args: any) => <>{args.children} </>, // Note the space
-                img: () => <></>,
-                a: (args: any) => <>{args.children}</>,
-                strong: (args: any) => <>{args.children}</>,
-                em: (args: any) => <>{args.children}</>,
-                defaultOverride: (args: any) => <>{args.children}</>,
-              },
-            }}
-          >
-            {product.description.substring(0, 100)}
-          </Markdown>
+      <div className="flex flex-grow flex-col gap-3">
+        {showOrganization && (
+          <div className="flex flex-row items-center gap-x-2">
+            <Avatar
+              className="h-4 w-4"
+              avatar_url={product.organization.avatar_url}
+              name={product.organization.name}
+            />
+            <span className="text-xs">
+              {product.organization.pretty_name ?? product.organization.name}
+            </span>
+          </div>
+        )}
+        <div className="flex flex-col gap-y-2">
+          <h3 className="dark:text-polar-50 line-clamp-2 font-medium leading-snug text-gray-950">
+            {product.name}
+          </h3>
+          <div className="dark:text-polar-400 line-clamp-2 text-sm text-gray-600">
+            <Markdown
+              options={{
+                ...markdownOpts,
+                overrides: {
+                  ...markdownOpts.overrides,
+                  p: (args: any) => <>{args.children} </>, // Note the space
+                  div: (args: any) => <>{args.children} </>, // Note the space
+                  img: () => <></>,
+                  a: (args: any) => <>{args.children}</>,
+                  strong: (args: any) => <>{args.children}</>,
+                  em: (args: any) => <>{args.children}</>,
+                  defaultOverride: (args: any) => <>{args.children}</>,
+                },
+              }}
+            >
+              {product.description.substring(0, 100)}
+            </Markdown>
+          </div>
         </div>
       </div>
       <div className="flex flex-row items-center justify-between">

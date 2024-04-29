@@ -9,6 +9,7 @@ import { useOrganization } from '@/hooks/queries'
 import { usePurchase } from '@/hooks/queries/purchases'
 import { getCentsInDollarString } from '@/utils/money'
 import { organizationPageLink } from '@/utils/nav'
+import { ArrowBackOutlined } from '@mui/icons-material'
 import { BenefitSubscriberInner, SubscriptionSubscriber } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
@@ -30,74 +31,83 @@ export default function Page() {
   }
 
   return (
-    <div className="flex h-full flex-grow flex-row items-start gap-x-12">
-      <div className="flex w-full flex-col gap-8 md:w-full">
-        {purchase.product.media.length && (
-          <Slideshow images={purchase.product.media} />
-        )}
-        <ShadowBox className="flex flex-col gap-6 ring-gray-100">
-          <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
-            <Markdown
-              options={{
-                ...previewOpts,
-                overrides: {
-                  ...previewOpts.overrides,
-                  a: (props) => (
-                    <a {...props} rel="noopener noreferrer nofollow" />
-                  ),
-                },
-              }}
-            >
-              {purchase.product.description}
-            </Markdown>
-          </div>
-        </ShadowBox>
-      </div>
-      <div className="flex w-full max-w-[340px] flex-col gap-8">
-        <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
-          <h3 className="text-lg font-medium">{purchase.product.name}</h3>
-          <div className="flex flex-col gap-4">
-            <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
-              ${getCentsInDollarString(purchase.product.price)}
-            </h1>
-            <p className="dark:text-polar-500 text-sm text-gray-400">
-              Purchased on{' '}
-              {new Date(purchase.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button size="lg" fullWidth>
-              Download Receipt
-            </Button>
-            <Link
-              href={organizationPageLink(
-                purchase.product.organization,
-                `/products/${purchase.product.id}`,
-              )}
-            >
-              <Button size="lg" variant="ghost" fullWidth>
-                Go to Product
+    <div className="flex flex-col gap-y-8">
+      <Link
+        className="flex flex-row items-center gap-2 self-start text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+        href={`/purchases`}
+      >
+        <ArrowBackOutlined fontSize="inherit" />
+        <span>Back to Purchases</span>
+      </Link>
+      <div className="flex h-full flex-grow flex-row items-start gap-x-12">
+        <div className="flex w-full flex-col gap-8 md:w-full">
+          {purchase.product.media.length && (
+            <Slideshow images={purchase.product.media} />
+          )}
+          <ShadowBox className="flex flex-col gap-6 ring-gray-100">
+            <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
+              <Markdown
+                options={{
+                  ...previewOpts,
+                  overrides: {
+                    ...previewOpts.overrides,
+                    a: (props) => (
+                      <a {...props} rel="noopener noreferrer nofollow" />
+                    ),
+                  },
+                }}
+              >
+                {purchase.product.description}
+              </Markdown>
+            </div>
+          </ShadowBox>
+        </div>
+        <div className="flex w-full max-w-[340px] flex-col gap-8">
+          <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
+            <h3 className="text-lg font-medium">{purchase.product.name}</h3>
+            <div className="flex flex-col gap-4">
+              <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
+                ${getCentsInDollarString(purchase.product.price)}
+              </h1>
+              <p className="dark:text-polar-500 text-sm text-gray-400">
+                Purchased on{' '}
+                {new Date(purchase.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button size="lg" fullWidth>
+                Download Receipt
               </Button>
-            </Link>
-          </div>
-        </ShadowBox>
-        <div className="flex flex-col gap-y-4">
-          <h3 className="font-medium">Benefits</h3>
+              <Link
+                href={organizationPageLink(
+                  purchase.product.organization,
+                  `/products/${purchase.product.id}`,
+                )}
+              >
+                <Button size="lg" variant="ghost" fullWidth>
+                  Go to Product
+                </Button>
+              </Link>
+            </div>
+          </ShadowBox>
           <div className="flex flex-col gap-y-4">
-            {purchase.product.benefits.length > 0 &&
-              purchase.product.benefits.map((benefit) => (
-                <ShadowBox
-                  key={benefit.id}
-                  className="flex flex-col gap-4 md:ring-gray-100"
-                >
-                  <h3 className="font-medium">{benefit.description}</h3>
-                  <p className="dark:text-polar-500 text-sm text-gray-400"></p>
-                </ShadowBox>
-              ))}
+            <h3 className="font-medium">Benefits</h3>
+            <div className="flex flex-col gap-y-4">
+              {purchase.product.benefits.length > 0 &&
+                purchase.product.benefits.map((benefit) => (
+                  <ShadowBox
+                    key={benefit.id}
+                    className="flex flex-col gap-4 md:ring-gray-100"
+                  >
+                    <h3 className="font-medium">{benefit.description}</h3>
+                    <p className="dark:text-polar-500 text-sm text-gray-400"></p>
+                  </ShadowBox>
+                ))}
+            </div>
           </div>
         </div>
       </div>

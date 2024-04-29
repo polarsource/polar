@@ -27,7 +27,7 @@ const Footer = ({
       >
         <div className="flex flex-col gap-y-6">
           <span className="text-blue-500 dark:text-blue-400">
-            <LogoType />
+            <LogoType width={120} />
           </span>
           <span className="dark:text-polar-500 text-gray-500">
             &copy; Polar Software Inc.

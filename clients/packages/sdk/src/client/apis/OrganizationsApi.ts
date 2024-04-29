@@ -84,6 +84,7 @@ export interface OrganizationsApiUpdateBadgeSettingsRequest {
 export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
+     * Start a new Stripe Customer session for a organization.
      * Create Stripe Customer Portal
      */
     async createStripeCustomerPortalRaw(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationStripePortalSession>> {
@@ -117,6 +118,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Start a new Stripe Customer session for a organization.
      * Create Stripe Customer Portal
      */
     async createStripeCustomerPortal(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationStripePortalSession> {
@@ -125,8 +127,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get a organization by ID
      * Get organization
-     * Get organization (Public API)
      */
     async getRaw(requestParameters: OrganizationsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters['id'] == null) {
@@ -159,8 +161,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get a organization by ID
      * Get organization
-     * Get organization (Public API)
      */
     async get(requestParameters: OrganizationsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -209,6 +211,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get credits for a organization
      * Get Credits
      */
     async getCreditsRaw(requestParameters: OrganizationsApiGetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreditBalance>> {
@@ -242,6 +245,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get credits for a organization
      * Get Credits
      */
     async getCredits(requestParameters: OrganizationsApiGetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreditBalance> {
@@ -251,7 +255,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * List organizations that the authenticated user is a member of. Requires authentication.
-     * List organizations (Public API)
+     * List organizations
      */
     async listRaw(requestParameters: OrganizationsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
         const queryParameters: any = {};
@@ -282,7 +286,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * List organizations that the authenticated user is a member of. Requires authentication.
-     * List organizations (Public API)
+     * List organizations
      */
     async list(requestParameters: OrganizationsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
         const response = await this.listRaw(requestParameters, initOverrides);
@@ -291,7 +295,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * List members of an organization. Requires authentication.
-     * List members in an organization (Public API)
+     * List members in an organization
      */
     async listMembersRaw(requestParameters: OrganizationsApiListMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganizationMember>> {
         if (requestParameters['id'] == null) {
@@ -325,7 +329,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * List members of an organization. Requires authentication.
-     * List members in an organization (Public API)
+     * List members in an organization
      */
     async listMembers(requestParameters: OrganizationsApiListMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganizationMember> {
         const response = await this.listMembersRaw(requestParameters, initOverrides);
@@ -333,8 +337,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup organization. Like search but returns at only one organization.
-     * Lookup organization (Public API)
+     * Lookup a single organization.
+     * Lookup organization
      */
     async lookupRaw(requestParameters: OrganizationsApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         const queryParameters: any = {};
@@ -372,8 +376,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup organization. Like search but returns at only one organization.
-     * Lookup organization (Public API)
+     * Lookup a single organization.
+     * Lookup organization
      */
     async lookup(requestParameters: OrganizationsApiLookupRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.lookupRaw(requestParameters, initOverrides);
@@ -382,7 +386,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * Search organizations.
-     * Search organizations (Public API)
+     * Search organizations
      */
     async searchRaw(requestParameters: OrganizationsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
         const queryParameters: any = {};
@@ -417,7 +421,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * Search organizations.
-     * Search organizations (Public API)
+     * Search organizations
      */
     async search(requestParameters: OrganizationsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
         const response = await this.searchRaw(requestParameters, initOverrides);
@@ -426,7 +430,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * Set organization account
-     * Set organization organization (Public API)
+     * Set organization organization
      */
     async setAccountRaw(requestParameters: OrganizationsApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters['id'] == null) {
@@ -470,7 +474,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * Set organization account
-     * Set organization organization (Public API)
+     * Set organization organization
      */
     async setAccount(requestParameters: OrganizationsApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.setAccountRaw(requestParameters, initOverrides);
@@ -479,7 +483,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * Update organization
-     * Update an organization (Public API)
+     * Update an organization
      */
     async updateRaw(requestParameters: OrganizationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters['id'] == null) {
@@ -523,7 +527,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
     /**
      * Update organization
-     * Update an organization (Public API)
+     * Update an organization
      */
     async update(requestParameters: OrganizationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.updateRaw(requestParameters, initOverrides);

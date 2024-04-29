@@ -48,7 +48,6 @@ export interface SubscriptionsApiCreateEmailSubscriptionRequest {
     organizationName: string;
     platform: Platforms;
     subscriptionCreateEmail: SubscriptionCreateEmail;
-    repositoryName?: string;
 }
 
 export interface SubscriptionsApiCreateFreeSubscriptionRequest {
@@ -72,8 +71,6 @@ export interface SubscriptionsApiGetSubscriptionsStatisticsRequest {
     endDate: string;
     organizationName: string;
     platform: Platforms;
-    repositoryName?: string;
-    directOrganization?: boolean;
     types?: Array<SubscriptionTierType>;
     subscriptionTierId?: string;
 }
@@ -83,8 +80,6 @@ export interface SubscriptionsApiLookupSubscriptionTierRequest {
 }
 
 export interface SubscriptionsApiSearchSubscribedSubscriptionsRequest {
-    repositoryName?: string;
-    directOrganization?: boolean;
     type?: SubscriptionTierType;
     subscriptionTierId?: string;
     subscriberUserId?: string;
@@ -99,8 +94,6 @@ export interface SubscriptionsApiSearchSubscribedSubscriptionsRequest {
 export interface SubscriptionsApiSearchSubscriptionTiersRequest {
     organizationName: string;
     platform: Platforms;
-    repositoryName?: string;
-    directOrganization?: boolean;
     includeArchived?: boolean;
     type?: SubscriptionTierType;
     page?: number;
@@ -110,8 +103,6 @@ export interface SubscriptionsApiSearchSubscriptionTiersRequest {
 export interface SubscriptionsApiSearchSubscriptionsRequest {
     organizationName: string;
     platform: Platforms;
-    repositoryName?: string;
-    directOrganization?: boolean;
     type?: SubscriptionTierType;
     subscriptionTierId?: string;
     subscriberUserId?: string;
@@ -125,7 +116,6 @@ export interface SubscriptionsApiSearchSubscriptionsRequest {
 export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
     organizationName: string;
     platform: Platforms;
-    repositoryName?: string;
     page?: number;
     limit?: number;
 }
@@ -133,14 +123,12 @@ export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
 export interface SubscriptionsApiSubscriptionsExportRequest {
     organizationName: string;
     platform: Platforms;
-    repositoryName?: string;
 }
 
 export interface SubscriptionsApiSubscriptionsImportRequest {
     organizationName: string;
     platform: Platforms;
     file: Blob;
-    repositoryName?: string;
 }
 
 export interface SubscriptionsApiUpdateSubscriptionTierRequest {
@@ -271,10 +259,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
 
         if (requestParameters['organizationName'] != null) {
             queryParameters['organization_name'] = requestParameters['organizationName'];
@@ -522,20 +506,12 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
         if (requestParameters['startDate'] != null) {
             queryParameters['start_date'] = requestParameters['startDate'];
         }
 
         if (requestParameters['endDate'] != null) {
             queryParameters['end_date'] = requestParameters['endDate'];
-        }
-
-        if (requestParameters['directOrganization'] != null) {
-            queryParameters['direct_organization'] = requestParameters['directOrganization'];
         }
 
         if (requestParameters['types'] != null) {
@@ -633,14 +609,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     async searchSubscribedSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscribedSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSubscriber>> {
         const queryParameters: any = {};
 
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
-        if (requestParameters['directOrganization'] != null) {
-            queryParameters['direct_organization'] = requestParameters['directOrganization'];
-        }
-
         if (requestParameters['type'] != null) {
             queryParameters['type'] = requestParameters['type'];
         }
@@ -725,14 +693,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
-        if (requestParameters['directOrganization'] != null) {
-            queryParameters['direct_organization'] = requestParameters['directOrganization'];
-        }
-
         if (requestParameters['includeArchived'] != null) {
             queryParameters['include_archived'] = requestParameters['includeArchived'];
         }
@@ -804,14 +764,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
-        if (requestParameters['directOrganization'] != null) {
-            queryParameters['direct_organization'] = requestParameters['directOrganization'];
-        }
 
         if (requestParameters['type'] != null) {
             queryParameters['type'] = requestParameters['type'];
@@ -901,10 +853,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
         if (requestParameters['page'] != null) {
             queryParameters['page'] = requestParameters['page'];
         }
@@ -968,10 +916,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
 
         if (requestParameters['organizationName'] != null) {
             queryParameters['organization_name'] = requestParameters['organizationName'];
@@ -1039,10 +983,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
 
         if (requestParameters['organizationName'] != null) {
             queryParameters['organization_name'] = requestParameters['organizationName'];

@@ -97,7 +97,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Delete an article.
-     * Delete an article (Public API)
+     * Delete an article
      */
     async _deleteRaw(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleDeleteResponse>> {
         if (requestParameters['id'] == null) {
@@ -131,7 +131,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Delete an article.
-     * Delete an article (Public API)
+     * Delete an article
      */
     async _delete(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleDeleteResponse> {
         const response = await this._deleteRaw(requestParameters, initOverrides);
@@ -140,7 +140,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Create a new article.
-     * Create article (Public API)
+     * Create article
      */
     async createRaw(requestParameters: ArticlesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
         if (requestParameters['articleCreate'] == null) {
@@ -177,7 +177,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Create a new article.
-     * Create article (Public API)
+     * Create article
      */
     async create(requestParameters: ArticlesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.createRaw(requestParameters, initOverrides);
@@ -233,7 +233,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Get article.
-     * Get article (Public API)
+     * Get article
      */
     async getRaw(requestParameters: ArticlesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
         if (requestParameters['id'] == null) {
@@ -267,7 +267,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Get article.
-     * Get article (Public API)
+     * Get article
      */
     async get(requestParameters: ArticlesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -276,7 +276,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * List articles.
-     * List articles (Public API)
+     * List articles
      */
     async listRaw(requestParameters: ArticlesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
         const queryParameters: any = {};
@@ -311,7 +311,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * List articles.
-     * List articles (Public API)
+     * List articles
      */
     async list(requestParameters: ArticlesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
         const response = await this.listRaw(requestParameters, initOverrides);
@@ -320,7 +320,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Lookup article.
-     * Lookup article (Public API)
+     * Lookup article
      */
     async lookupRaw(requestParameters: ArticlesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
         if (requestParameters['slug'] == null) {
@@ -380,7 +380,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Lookup article.
-     * Lookup article (Public API)
+     * Lookup article
      */
     async lookup(requestParameters: ArticlesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.lookupRaw(requestParameters, initOverrides);
@@ -389,7 +389,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Get number of potential receivers for an article.
-     * Get number of potential receivers for an article. (Public API)
+     * Get number of potential receivers for an article.
      */
     async receiversRaw(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleReceiversResponse>> {
         if (requestParameters['paidSubscribersOnly'] == null) {
@@ -449,7 +449,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Get number of potential receivers for an article.
-     * Get number of potential receivers for an article. (Public API)
+     * Get number of potential receivers for an article.
      */
     async receivers(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleReceiversResponse> {
         const response = await this.receiversRaw(requestParameters, initOverrides);
@@ -458,7 +458,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Search articles.
-     * Search articles (Public API)
+     * Search articles
      */
     async searchRaw(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
         if (requestParameters['organizationName'] == null) {
@@ -523,7 +523,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Search articles.
-     * Search articles (Public API)
+     * Search articles
      */
     async search(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
         const response = await this.searchRaw(requestParameters, initOverrides);
@@ -532,7 +532,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Send email to all subscribers
-     * Send email to all subscribers (Public API)
+     * Send email to all subscribers
      */
     async sendRaw(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleSentResponse>> {
         if (requestParameters['id'] == null) {
@@ -566,7 +566,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Send email to all subscribers
-     * Send email to all subscribers (Public API)
+     * Send email to all subscribers
      */
     async send(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleSentResponse> {
         const response = await this.sendRaw(requestParameters, initOverrides);
@@ -575,7 +575,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Send preview email
-     * Send preview email (Public API)
+     * Send preview email
      */
     async sendPreviewRaw(requestParameters: ArticlesApiSendPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticlePreviewResponse>> {
         if (requestParameters['id'] == null) {
@@ -619,7 +619,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Send preview email
-     * Send preview email (Public API)
+     * Send preview email
      */
     async sendPreview(requestParameters: ArticlesApiSendPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticlePreviewResponse> {
         const response = await this.sendPreviewRaw(requestParameters, initOverrides);
@@ -628,7 +628,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Update an article.
-     * Update an article (Public API)
+     * Update an article
      */
     async updateRaw(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
         if (requestParameters['id'] == null) {
@@ -672,7 +672,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Update an article.
-     * Update an article (Public API)
+     * Update an article
      */
     async update(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.updateRaw(requestParameters, initOverrides);
@@ -681,7 +681,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Track article view
-     * Track article (Public API)
+     * Track article
      */
     async viewedRaw(requestParameters: ArticlesApiViewedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleViewedResponse>> {
         if (requestParameters['id'] == null) {
@@ -715,7 +715,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Track article view
-     * Track article (Public API)
+     * Track article
      */
     async viewed(requestParameters: ArticlesApiViewedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleViewedResponse> {
         const response = await this.viewedRaw(requestParameters, initOverrides);

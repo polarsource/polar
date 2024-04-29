@@ -64,6 +64,7 @@ export interface WebhooksApiUpdateWebhookEndpointRequest {
 export class WebhooksApi extends runtime.BaseAPI {
 
     /**
+     * Create a new Webhook Endpoint
      * Create Webhook Endpoint
      */
     async createWebhookEndpointRaw(requestParameters: WebhooksApiCreateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
@@ -100,6 +101,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Create a new Webhook Endpoint
      * Create Webhook Endpoint
      */
     async createWebhookEndpoint(requestParameters: WebhooksApiCreateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
@@ -108,6 +110,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Delete a Webhook Endpoint
      * Delete Webhook Endpoint
      */
     async deleteWebhookEndpointRaw(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
@@ -141,6 +144,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Delete a Webhook Endpoint
      * Delete Webhook Endpoint
      */
     async deleteWebhookEndpoint(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
@@ -149,6 +153,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Schedule a re-delivery of a Webhook Event
      * Event Redeliver
      */
     async eventRedeliverRaw(requestParameters: WebhooksApiEventRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEventRedeliver>> {
@@ -182,6 +187,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Schedule a re-delivery of a Webhook Event
      * Event Redeliver
      */
     async eventRedeliver(requestParameters: WebhooksApiEventRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEventRedeliver> {
@@ -190,6 +196,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get a Webhook Endpoint
      * Get Webhook Endpoint
      */
     async getWebhookEndpointRaw(requestParameters: WebhooksApiGetWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
@@ -223,6 +230,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get a Webhook Endpoint
      * Get Webhook Endpoint
      */
     async getWebhookEndpoint(requestParameters: WebhooksApiGetWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
@@ -231,6 +239,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Search for Webhook Deliveries
      * Search Webhook Deliveries
      */
     async searchWebhookDeliveriesRaw(requestParameters: WebhooksApiSearchWebhookDeliveriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceWebhookDelivery>> {
@@ -276,6 +285,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Search for Webhook Deliveries
      * Search Webhook Deliveries
      */
     async searchWebhookDeliveries(requestParameters: WebhooksApiSearchWebhookDeliveriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceWebhookDelivery> {
@@ -284,6 +294,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Search for Webhook Endpoints
      * Search Webhook Endpoints
      */
     async searchWebhookEndpointsRaw(requestParameters: WebhooksApiSearchWebhookEndpointsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceWebhookEndpoint>> {
@@ -326,6 +337,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Search for Webhook Endpoints
      * Search Webhook Endpoints
      */
     async searchWebhookEndpoints(requestParameters: WebhooksApiSearchWebhookEndpointsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceWebhookEndpoint> {
@@ -334,6 +346,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Update a Webhook Endpoint
      * Update Webhook Endpoint
      */
     async updateWebhookEndpointRaw(requestParameters: WebhooksApiUpdateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
@@ -377,6 +390,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
+     * Update a Webhook Endpoint
      * Update Webhook Endpoint
      */
     async updateWebhookEndpoint(requestParameters: WebhooksApiUpdateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {

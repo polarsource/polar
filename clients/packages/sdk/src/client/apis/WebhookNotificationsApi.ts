@@ -48,7 +48,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Delete webhook notification integration.
-     * Delete webhook notification integration (Public API)
+     * Delete webhook notification integration
      */
     async _deleteRaw(requestParameters: WebhookNotificationsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
         if (requestParameters['id'] == null) {
@@ -82,7 +82,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Delete webhook notification integration.
-     * Delete webhook notification integration (Public API)
+     * Delete webhook notification integration
      */
     async _delete(requestParameters: WebhookNotificationsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookIntegration> {
         const response = await this._deleteRaw(requestParameters, initOverrides);
@@ -91,7 +91,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Create a webhook notification integration.
-     * Create a webhook notification integration (Public API)
+     * Create a webhook notification integration
      */
     async createRaw(requestParameters: WebhookNotificationsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
         if (requestParameters['webhookIntegrationCreate'] == null) {
@@ -128,7 +128,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Create a webhook notification integration.
-     * Create a webhook notification integration (Public API)
+     * Create a webhook notification integration
      */
     async create(requestParameters: WebhookNotificationsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookIntegration> {
         const response = await this.createRaw(requestParameters, initOverrides);
@@ -137,7 +137,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Search webhook notification integrations.
-     * Search webhook notification integrations (Public API)
+     * Search webhook notification integrations
      */
     async searchRaw(requestParameters: WebhookNotificationsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceWebhookIntegration>> {
         if (requestParameters['organizationName'] == null) {
@@ -186,7 +186,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Search webhook notification integrations.
-     * Search webhook notification integrations (Public API)
+     * Search webhook notification integrations
      */
     async search(requestParameters: WebhookNotificationsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceWebhookIntegration> {
         const response = await this.searchRaw(requestParameters, initOverrides);
@@ -195,7 +195,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Update webhook notification integration.
-     * Update webhook notification integration (Public API)
+     * Update webhook notification integration
      */
     async updateRaw(requestParameters: WebhookNotificationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
         if (requestParameters['id'] == null) {
@@ -239,7 +239,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
 
     /**
      * Update webhook notification integration.
-     * Update webhook notification integration (Public API)
+     * Update webhook notification integration
      */
     async update(requestParameters: WebhookNotificationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookIntegration> {
         const response = await this.updateRaw(requestParameters, initOverrides);

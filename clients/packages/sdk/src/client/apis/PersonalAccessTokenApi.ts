@@ -37,7 +37,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
 
     /**
      * Delete a personal access tokens. Requires authentication.
-     * Delete a personal access tokens (Public API)
+     * Delete a personal access tokens
      */
     async _deleteRaw(requestParameters: PersonalAccessTokenApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PersonalAccessToken>> {
         if (requestParameters['id'] == null) {
@@ -71,7 +71,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
 
     /**
      * Delete a personal access tokens. Requires authentication.
-     * Delete a personal access tokens (Public API)
+     * Delete a personal access tokens
      */
     async _delete(requestParameters: PersonalAccessTokenApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PersonalAccessToken> {
         const response = await this._deleteRaw(requestParameters, initOverrides);
@@ -80,7 +80,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
 
     /**
      * Create a new personal access token. Requires authentication.
-     * Create a new personal access token (Public API)
+     * Create a new personal access token
      */
     async createRaw(requestParameters: PersonalAccessTokenApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreatePersonalAccessTokenResponse>> {
         if (requestParameters['createPersonalAccessToken'] == null) {
@@ -117,7 +117,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
 
     /**
      * Create a new personal access token. Requires authentication.
-     * Create a new personal access token (Public API)
+     * Create a new personal access token
      */
     async create(requestParameters: PersonalAccessTokenApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreatePersonalAccessTokenResponse> {
         const response = await this.createRaw(requestParameters, initOverrides);
@@ -126,7 +126,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
 
     /**
      * List personal access tokens. Requires authentication.
-     * List personal access tokens (Public API)
+     * List personal access tokens
      */
     async listRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePersonalAccessToken>> {
         const queryParameters: any = {};
@@ -153,7 +153,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
 
     /**
      * List personal access tokens. Requires authentication.
-     * List personal access tokens (Public API)
+     * List personal access tokens
      */
     async list(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourcePersonalAccessToken> {
         const response = await this.listRaw(initOverrides);

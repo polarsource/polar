@@ -41,8 +41,6 @@ export interface BenefitsApiLookupBenefitRequest {
 export interface BenefitsApiSearchBenefitsRequest {
     organizationName: string;
     platform: Platforms;
-    repositoryName?: string;
-    directOrganization?: boolean;
     type?: BenefitType;
     page?: number;
     limit?: number;
@@ -206,14 +204,6 @@ export class BenefitsApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
-        if (requestParameters['directOrganization'] != null) {
-            queryParameters['direct_organization'] = requestParameters['directOrganization'];
-        }
 
         if (requestParameters['type'] != null) {
             queryParameters['type'] = requestParameters['type'];

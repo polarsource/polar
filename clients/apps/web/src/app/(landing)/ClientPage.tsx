@@ -51,7 +51,7 @@ const Box = ({ children }: PropsWithChildren) => {
 
 export default function Page() {
   return (
-    <div className="flex flex-col md:gap-y-24">
+    <div className="flex flex-col md:gap-y-12">
       <Box>
         <HeroSection />
       </Box>

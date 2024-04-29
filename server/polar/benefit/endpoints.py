@@ -8,8 +8,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
-from polar.organization.dependencies import OrganizationNamePlatform
-from polar.organization.service import organization as organization_service
+from polar.organization.dependencies import ResolvedOrganization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.tags.api import Tags
@@ -28,20 +27,13 @@ router = APIRouter(prefix="/benefits", tags=["benefits"])
 async def search_benefits(
     auth_subject: auth.CreatorSubscriptionsRead,
     pagination: PaginationParamsQuery,
-    organization_name_platform: OrganizationNamePlatform,
+    organization: ResolvedOrganization,
     type: BenefitType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitSchema]:
-    organization_name, platform = organization_name_platform
-    organization = await organization_service.get_by_name(
-        session, platform, organization_name
-    )
-    if organization is None:
-        raise ResourceNotFound("Organization not found")
-
     results, count = await benefit_service.search(
         session,
-        auth_subject.subject,
+        auth_subject,
         type=type,
         organization=organization,
         pagination=pagination,
@@ -60,7 +52,7 @@ async def lookup_benefit(
     auth_subject: auth.CreatorSubscriptionsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    benefit = await benefit_service.get_by_id(session, auth_subject.subject, benefit_id)
+    benefit = await benefit_service.get_by_id(session, auth_subject, benefit_id)
 
     if benefit is None:
         raise ResourceNotFound()
@@ -76,7 +68,7 @@ async def create_benefit(
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
     benefit = await benefit_service.user_create(
-        session, authz, benefit_create, auth_subject.subject
+        session, authz, benefit_create, auth_subject
     )
 
     posthog.auth_subject_event(
@@ -98,7 +90,7 @@ async def update_benefit(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    benefit = await benefit_service.get_by_id(session, auth_subject.subject, id)
+    benefit = await benefit_service.get_by_id(session, auth_subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
@@ -115,7 +107,7 @@ async def update_benefit(
     )
 
     return await benefit_service.user_update(
-        session, authz, benefit, benefit_update, auth_subject.subject
+        session, authz, benefit, benefit_update, auth_subject
     )
 
 
@@ -126,7 +118,7 @@ async def delete_benefit(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    benefit = await benefit_service.get_by_id(session, auth_subject.subject, id)
+    benefit = await benefit_service.get_by_id(session, auth_subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
@@ -139,4 +131,4 @@ async def delete_benefit(
         {"benefit_id": benefit.id},
     )
 
-    await benefit_service.user_delete(session, authz, benefit, auth_subject.subject)
+    await benefit_service.user_delete(session, authz, benefit, auth_subject)

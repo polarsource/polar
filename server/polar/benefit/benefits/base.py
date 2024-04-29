@@ -4,8 +4,9 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from pydantic_core import InitErrorDetails, PydanticCustomError
 
+from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
-from polar.models import Benefit, User
+from polar.models import Benefit, Organization, User
 from polar.models.benefit import BenefitProperties
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
@@ -189,7 +190,9 @@ class BenefitServiceProtocol(Protocol[B, BP]):
         """
         ...
 
-    async def validate_properties(self, user: User, properties: dict[str, Any]) -> BP:
+    async def validate_properties(
+        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+    ) -> BP:
         """
         Validates the benefit properties before creation.
 

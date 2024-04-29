@@ -89,6 +89,9 @@ class Authz:
         ):
             return await self._can_user_write_repository(subject, object)
 
+        if isinstance(subject, Organization) and isinstance(object, Repository):
+            return object.organization_id == subject.id
+
         if (
             isinstance(subject, Anonymous)
             and accessType == AccessType.read
@@ -106,6 +109,13 @@ class Authz:
             and isinstance(object, Organization)
         ):
             return await self._can_user_write_organization(subject, object)
+
+        if (
+            isinstance(subject, Organization)
+            and isinstance(object, Organization)
+            and subject == object
+        ):
+            return True
 
         if accessType == AccessType.read and isinstance(object, Organization):
             return True
@@ -188,12 +198,13 @@ class Authz:
         #
         # Benefit
         #
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.write
-            and isinstance(object, Benefit)
-        ):
-            return await self._can_user_write_organization(subject, object.organization)
+        if isinstance(object, Benefit) and accessType == AccessType.write:
+            if isinstance(subject, User):
+                return await self._can_user_write_organization(
+                    subject, object.organization
+                )
+            if isinstance(subject, Organization):
+                return object.organization_id == subject.id
 
         #
         # SubscriptionTier

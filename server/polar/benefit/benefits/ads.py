@@ -1,6 +1,7 @@
 from typing import Any, cast
 
-from polar.models import User
+from polar.auth.models import AuthSubject
+from polar.models import Organization, User
 from polar.models.benefit import BenefitAds, BenefitAdsProperties
 
 from .base import BenefitServiceProtocol
@@ -38,6 +39,6 @@ class BenefitAdsService(BenefitServiceProtocol[BenefitAds, BenefitAdsProperties]
         return False
 
     async def validate_properties(
-        self, user: User, properties: dict[str, Any]
+        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
     ) -> BenefitAdsProperties:
         return cast(BenefitAdsProperties, properties)

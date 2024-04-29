@@ -5,8 +5,9 @@ from typing import Any, cast
 
 from sqlalchemy import select
 
+from polar.auth.models import AuthSubject
 from polar.locker import Locker
-from polar.models import ArticlesSubscription, Benefit, BenefitGrant, User
+from polar.models import ArticlesSubscription, Benefit, BenefitGrant, Organization, User
 from polar.models.benefit import BenefitArticles, BenefitArticlesProperties, BenefitType
 from polar.redis import redis
 
@@ -77,7 +78,7 @@ class BenefitArticlesService(
         return False
 
     async def validate_properties(
-        self, user: User, properties: dict[str, Any]
+        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
     ) -> BenefitArticlesProperties:
         return cast(BenefitArticlesProperties, properties)
 

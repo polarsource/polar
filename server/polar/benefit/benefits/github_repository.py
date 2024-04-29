@@ -4,6 +4,7 @@ import structlog
 from githubkit import AppInstallationAuthStrategy, GitHub
 from githubkit.exception import RateLimitExceeded, RequestError, RequestTimeout
 
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.integrations.github import client as github
@@ -12,7 +13,7 @@ from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
 from polar.logging import Logger
-from polar.models import User
+from polar.models import Organization, User
 from polar.models.benefit import (
     BenefitGitHubRepository,
     BenefitGitHubRepositoryProperties,
@@ -219,8 +220,27 @@ class BenefitGitHubRepositoryService(
         )
 
     async def validate_properties(
-        self, user: User, properties: dict[str, Any]
+        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
     ) -> BenefitGitHubRepositoryProperties:
+        if is_organization(auth_subject):
+            # TODO: Support organization tokens
+            raise BenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "invalid_auth_subject",
+                        "message": (
+                            "We do not yet support creating this benefit "
+                            "with an organization token."
+                        ),
+                        "loc": ("repository_owner",),
+                        "input": properties["repository_owner"],
+                    }
+                ]
+            )
+
+        assert is_user(auth_subject)
+        user = auth_subject.subject
+
         # old style
         if properties["repository_id"]:
             return await self._validate_properties_repository_id(user, properties)

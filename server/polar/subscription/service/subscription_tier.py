@@ -7,7 +7,7 @@ from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.service import account as account_service
-from polar.auth.models import Subject
+from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError
@@ -27,6 +27,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
 from polar.webhook.service import webhook_service
 from polar.webhook.webhooks import WebhookEventType, WebhookTypeObject
@@ -40,13 +41,6 @@ from ..schemas import (
 
 
 class SubscriptionTierError(PolarError): ...
-
-
-class OrganizationDoesNotExist(SubscriptionTierError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = f"Organization with id {organization_id} does not exist."
-        super().__init__(message, 422)
 
 
 class BenefitDoesNotExist(SubscriptionTierError):
@@ -79,7 +73,7 @@ class SubscriptionTierService(
     async def search(
         self,
         session: AsyncSession,
-        auth_subject: Subject,
+        auth_subject: AuthSubject[Subject],
         *,
         type: SubscriptionTierType | None = None,
         organization: Organization | None = None,
@@ -153,7 +147,7 @@ class SubscriptionTierService(
         return results, count
 
     async def get_by_id(
-        self, session: AsyncSession, auth_subject: Subject, id: uuid.UUID
+        self, session: AsyncSession, auth_subject: AuthSubject[Subject], id: uuid.UUID
     ) -> SubscriptionTier | None:
         statement = (
             self._get_readable_subscription_tier_statement(auth_subject)
@@ -197,21 +191,19 @@ class SubscriptionTierService(
         session: AsyncSession,
         authz: Authz,
         create_schema: SubscriptionTierCreate,
-        user: User,
+        auth_subject: AuthSubject[User | Organization],
     ) -> SubscriptionTier:
-        organization = await organization_service.get(
-            session, create_schema.organization_id
+        subject = auth_subject.subject
+
+        organization = await get_payload_organization(
+            session, auth_subject, create_schema
         )
-        if organization is None or not await authz.can(
-            user, AccessType.write, organization
-        ):
-            raise OrganizationDoesNotExist(create_schema.organization_id)
+        if not await authz.can(subject, AccessType.write, organization):
+            raise NotPermitted()
 
         if create_schema.is_highlighted:
             await self._disable_other_highlights(
-                session,
-                type=create_schema.type,
-                organization_id=create_schema.organization_id,
+                session, type=create_schema.type, organization_id=organization.id
             )
 
         subscription_tier = SubscriptionTier(
@@ -262,11 +254,12 @@ class SubscriptionTierService(
         authz: Authz,
         subscription_tier: SubscriptionTier,
         update_schema: SubscriptionTierUpdate,
-        user: User,
+        auth_subject: AuthSubject[User | Organization],
     ) -> SubscriptionTier:
         subscription_tier = await self.with_organization(session, subscription_tier)
+        subject = auth_subject.subject
 
-        if not await authz.can(user, AccessType.write, subscription_tier):
+        if not await authz.can(subject, AccessType.write, subscription_tier):
             raise NotPermitted()
 
         product_update: ProductUpdateKwargs = {}
@@ -399,10 +392,12 @@ class SubscriptionTierService(
         authz: Authz,
         subscription_tier: SubscriptionTier,
         benefits: list[uuid.UUID],
-        user: User,
+        auth_subject: AuthSubject[User | Organization],
     ) -> tuple[SubscriptionTier, set[Benefit], set[Benefit]]:
         subscription_tier = await self.with_organization(session, subscription_tier)
-        if not await authz.can(user, AccessType.write, subscription_tier):
+
+        subject = auth_subject.subject
+        if not await authz.can(subject, AccessType.write, subscription_tier):
             raise NotPermitted()
 
         previous_benefits = set(subscription_tier.benefits)
@@ -414,7 +409,7 @@ class SubscriptionTierService(
         await session.flush()
 
         for order, benefit_id in enumerate(benefits):
-            benefit = await benefit_service.get_by_id(session, user, benefit_id)
+            benefit = await benefit_service.get_by_id(session, auth_subject, benefit_id)
             if benefit is None:
                 await nested.rollback()
                 raise BenefitDoesNotExist(benefit_id)
@@ -448,10 +443,12 @@ class SubscriptionTierService(
         session: AsyncSession,
         authz: Authz,
         subscription_tier: SubscriptionTier,
-        user: User,
+        auth_subject: AuthSubject[User | Organization],
     ) -> SubscriptionTier:
         subscription_tier = await self.with_organization(session, subscription_tier)
-        if not await authz.can(user, AccessType.write, subscription_tier):
+        if not await authz.can(
+            auth_subject.subject, AccessType.write, subscription_tier
+        ):
             raise NotPermitted()
 
         if subscription_tier.type == SubscriptionTierType.free:
@@ -477,25 +474,21 @@ class SubscriptionTierService(
         return subscription_tier
 
     def _get_readable_subscription_tier_ids_statement(
-        self,
-        auth_subject: Subject,
+        self, auth_subject: AuthSubject[Subject]
     ) -> Select[tuple[uuid.UUID]]:
         return self._apply_readable_subscription_tier_statement(
             auth_subject, select(SubscriptionTier.id)
         )
 
     def _get_readable_subscription_tier_statement(
-        self,
-        auth_subject: Subject,
+        self, auth_subject: AuthSubject[Subject]
     ) -> Select[tuple[SubscriptionTier]]:
         return self._apply_readable_subscription_tier_statement(
             auth_subject, select(SubscriptionTier)
         )
 
     def _apply_readable_subscription_tier_statement(
-        self,
-        auth_subject: Subject,
-        selector: Select[T],
+        self, auth_subject: AuthSubject[Subject], selector: Select[T]
     ) -> Select[T]:
         stmt = selector.join(SubscriptionTier.organization).where(
             # Prevent to return `None` objects due to the full outer join
@@ -503,26 +496,31 @@ class SubscriptionTierService(
             SubscriptionTier.deleted_at.is_(None),
         )
 
-        if isinstance(auth_subject, User):
-            # Tier's organization member
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            # Direct tier's organization member
             stmt = stmt.join(
                 UserOrganization,
                 onclause=and_(
                     UserOrganization.organization_id
                     == SubscriptionTier.organization_id,
-                    UserOrganization.user_id == auth_subject.id,
+                    UserOrganization.user_id == user.id,
                     UserOrganization.deleted_at.is_(None),
                 ),
                 full=True,
-            )
-
-            stmt = stmt.where(
+            ).where(
                 # Can see archived tiers if they are a member of the tier's organization
                 or_(
                     SubscriptionTier.is_archived.is_(False),
-                    UserOrganization.user_id == auth_subject.id,
+                    UserOrganization.user_id == user.id,
                 ),
             )
+        # Organization
+        elif is_organization(auth_subject):
+            stmt = stmt.where(
+                SubscriptionTier.organization_id == auth_subject.subject.id
+            )
+        # Anonymous
         else:
             stmt = stmt.where(
                 SubscriptionTier.is_archived.is_(False),

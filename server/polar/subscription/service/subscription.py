@@ -23,7 +23,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthMethod, Subject
+from polar.auth.models import (
+    Anonymous,
+    AuthMethod,
+    AuthSubject,
+    is_organization,
+    is_user,
+)
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.enums import UserSignupType
@@ -232,7 +238,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def search(
         self,
         session: AsyncSession,
-        user: User,
+        auth_subject: AuthSubject[User | Organization],
         *,
         organization: Organization,
         type: SubscriptionTierType | None = None,
@@ -245,7 +251,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             (SearchSortProperty.started_at, True)
         ],
     ) -> tuple[Sequence[Subscription], int]:
-        statement = self._get_readable_subscriptions_statement(user).where(
+        statement = self._get_readable_subscriptions_statement(auth_subject).where(
             Subscription.started_at.is_not(None)
         )
 
@@ -318,7 +324,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def search_subscribed(
         self,
         session: AsyncSession,
-        user: User,
+        auth_subject: AuthSubject[User],
         *,
         organization: Organization | None = None,
         type: SubscriptionTierType | None = None,
@@ -332,7 +338,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         ],
     ) -> tuple[Sequence[Subscription], int]:
         statement = (
-            self._get_subscribed_subscriptions_statement(user)
+            self._get_subscribed_subscriptions_statement(auth_subject)
             .join(SubscriptionTier)
             .join(Subscription.price, isouter=True)
             .where(Subscription.started_at.is_not(None))
@@ -403,7 +409,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         *,
-        organization: Organization | None = None,
+        organization: Organization,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Subscription], int]:
         statement = (
@@ -426,18 +432,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     joinedload(Subscription.price),
                 )
             )
-            .where(Subscription.active.is_(True))
+            .where(
+                Subscription.active.is_(True),
+                SubscriptionTier.organization_id == organization.id,
+            )
             .order_by(
                 # Put users with a GitHub account first, so we can display their avatar
                 OAuthAccount.created_at.desc().nulls_last(),
                 Subscription.started_at.desc(),
             )
         )
-
-        if organization is not None:
-            statement = statement.where(
-                SubscriptionTier.organization_id == organization.id
-            )
 
         results, count = await paginate(session, statement, pagination=pagination)
 
@@ -476,8 +480,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         *,
         free_subscription_create: FreeSubscriptionCreate,
-        auth_subject: Subject,
-        auth_method: AuthMethod | None,
+        auth_subject: AuthSubject[User | Anonymous],
         signup_type: UserSignupType = UserSignupType.backer,
     ) -> Subscription:
         subscription_tier = await subscription_tier_service.get(
@@ -494,8 +497,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         # Set the user directly only from a cookie-based authentication!
         # With the PAT, it's probably a call from the maintainer who wants to subscribe
         # a backer from their own website
-        if isinstance(auth_subject, User) and auth_method == AuthMethod.COOKIE:
-            user = auth_subject
+        if is_user(auth_subject) and auth_subject.method == AuthMethod.COOKIE:
+            user = auth_subject.subject
         else:
             if free_subscription_create.customer_email is None:
                 raise RequiredCustomerEmail()
@@ -518,13 +521,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         price: SubscriptionTierPrice | None = None,
     ) -> Subscription:
         existing_subscriptions = await self.get_active_user_subscriptions(
-            session,
-            user,
-            organization_id=subscription_tier.organization_id,
+            session, user, organization_id=subscription_tier.organization_id
         )
         if len(existing_subscriptions) > 0:
             raise AlreadySubscribed(
-                user_id=user.id, organization_id=subscription_tier.organization_id
+                user_id=user.id,
+                organization_id=subscription_tier.organization_id,
             )
 
         start = utc_now()
@@ -968,9 +970,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription: Subscription,
         subscription_upgrade: SubscriptionUpgrade,
         authz: Authz,
-        user: User,
+        auth_subject: AuthSubject[User],
     ) -> Subscription:
-        if not await authz.can(user, AccessType.write, subscription):
+        if not await authz.can(auth_subject.subject, AccessType.write, subscription):
             raise NotPermitted()
 
         await session.refresh(
@@ -981,7 +983,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise FreeSubscriptionUpgrade(subscription)
 
         new_subscription_tier = await subscription_tier_service.get_by_id(
-            session, user, subscription_upgrade.subscription_tier_id
+            session, auth_subject, subscription_upgrade.subscription_tier_id
         )
 
         if new_subscription_tier is None:
@@ -1022,13 +1024,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         *,
         subscription: Subscription,
         authz: Authz,
-        user: User,
+        auth_subject: AuthSubject[User],
     ) -> Subscription:
         await session.refresh(
             subscription, {"subscription_tier", "user", "organization", "price"}
         )
 
-        if not await authz.can(user, AccessType.write, subscription):
+        if not await authz.can(auth_subject.subject, AccessType.write, subscription):
             raise NotPermitted()
 
         if not subscription.active or subscription.cancel_at_period_end:
@@ -1056,7 +1058,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def get_statistics_periods(
         self,
         session: AsyncSession,
-        user: User,
+        auth_subject: AuthSubject[User | Organization],
         *,
         start_date: date,
         end_date: date,
@@ -1067,7 +1069,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if end_date > utc_now().date():
             raise EndDateInTheFuture(end_date)
 
-        subscriptions_statement = self._get_readable_subscriptions_statement(user)
+        subscriptions_statement = self._get_readable_subscriptions_statement(
+            auth_subject
+        )
 
         if organization is not None:
             subscriptions_statement = subscriptions_statement.where(
@@ -1269,22 +1273,40 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     ],
                 )
 
-    def _get_readable_subscriptions_statement(self, user: User) -> Select[Any]:
-        statement = select(Subscription).join(Subscription.subscription_tier)
-
-        return statement.join(
-            UserOrganization,
-            isouter=True,
-            onclause=and_(
-                UserOrganization.organization_id == SubscriptionTier.organization_id,
-                UserOrganization.user_id == user.id,
-            ),
-        ).where(
-            Subscription.deleted_at.is_(None),
-            UserOrganization.user_id == user.id,
+    def _get_readable_subscriptions_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[Any]:
+        statement = (
+            select(Subscription)
+            .join(Subscription.subscription_tier)
+            .where(
+                Subscription.deleted_at.is_(None),
+            )
         )
 
-    def _get_subscribed_subscriptions_statement(self, user: User) -> Select[Any]:
+        if is_user(auth_subject):
+            statement = statement.join(
+                UserOrganization,
+                isouter=True,
+                onclause=and_(
+                    UserOrganization.organization_id
+                    == SubscriptionTier.organization_id,
+                    UserOrganization.user_id == auth_subject.subject.id,
+                ),
+            ).where(
+                UserOrganization.user_id == auth_subject.subject.id,
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                SubscriptionTier.organization_id == auth_subject.subject.id,
+            )
+
+        return statement
+
+    def _get_subscribed_subscriptions_statement(
+        self, auth_subject: AuthSubject[User]
+    ) -> Select[Any]:
+        user = auth_subject.subject
         return (
             select(Subscription)
             .join(

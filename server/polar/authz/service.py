@@ -209,12 +209,13 @@ class Authz:
         #
         # SubscriptionTier
         #
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.write
-            and isinstance(object, SubscriptionTier)
-        ):
-            return await self._can_user_write_organization(subject, object.organization)
+        if isinstance(object, SubscriptionTier) and accessType == AccessType.write:
+            if isinstance(subject, User):
+                return await self._can_user_write_organization(
+                    subject, object.organization
+                )
+            if isinstance(subject, Organization):
+                return object.organization_id == subject.id
 
         #
         # Subscription

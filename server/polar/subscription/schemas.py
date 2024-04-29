@@ -45,7 +45,7 @@ class SubscriptionTierCreate(Schema):
     )
     is_highlighted: bool = False
     prices: list[SubscriptionTierPriceCreate] = Field(..., min_length=1)
-    organization_id: UUID4
+    organization_id: UUID4 | None = None
 
 
 class ExistingSubscriptionTierPrice(Schema):

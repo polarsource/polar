@@ -197,7 +197,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                 </Form>
               )}
               <Button
-                className="w-full whitespace-nowrap sm:w-auto sm:grow"
+                className="w-full whitespace-nowrap md:w-fit md:grow-0 md:self-start"
                 onClick={onAccountSetup}
                 disabled={loading}
               >

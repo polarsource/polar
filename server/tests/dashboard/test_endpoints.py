@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
@@ -18,19 +17,16 @@ from tests.fixtures.random_objects import create_user_github_oauth
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get(
     user: User,
     organization: Organization,
     repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -40,35 +36,31 @@ async def test_get(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-async def test_get_personal(user: User, auth_jwt: str, client: AsyncClient) -> None:
-    response = await client.get(
-        "/api/v1/dashboard/personal",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+@pytest.mark.authenticated
+async def test_get_personal(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/dashboard/personal")
 
     assert response.status_code == 200
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_no_member(
     user: User,
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_with_pledge_from_org(
     user: User,
     organization: Organization,
@@ -77,13 +69,9 @@ async def test_get_with_pledge_from_org(
     pledging_organization: Organization,
     pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -102,6 +90,7 @@ async def test_get_with_pledge_from_org(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_with_pledge_from_user(
     user: User,
     organization: Organization,
@@ -110,7 +99,6 @@ async def test_get_with_pledge_from_user(
     # pledging_organization: Organization,
     pledge_by_user: Pledge,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
 ) -> None:
@@ -118,10 +106,7 @@ async def test_get_with_pledge_from_user(
     pledging_user = await user_service.get(session, pledge_by_user.by_user_id)
     assert pledging_user
 
-    response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -141,6 +126,7 @@ async def test_get_with_pledge_from_user(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_with_pledge_from_user_github_oauth(
     user: User,
     # user_github_oauth: OAuthAccount,
@@ -150,7 +136,6 @@ async def test_get_with_pledge_from_user_github_oauth(
     # pledging_organization: Organization,
     pledge_by_user: Pledge,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -160,10 +145,7 @@ async def test_get_with_pledge_from_user_github_oauth(
     assert pledging_user
     pledger_gh = await create_user_github_oauth(save_fixture, pledging_user)
 
-    response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -183,6 +165,7 @@ async def test_get_with_pledge_from_user_github_oauth(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_with_pledge_initiated(
     user: User,
     organization: Organization,
@@ -191,7 +174,6 @@ async def test_get_with_pledge_initiated(
     pledging_organization: Organization,
     pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -199,10 +181,7 @@ async def test_get_with_pledge_initiated(
     pledge.state = PledgeState.initiated
     await save_fixture(pledge)
 
-    response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -215,6 +194,7 @@ async def test_get_with_pledge_initiated(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_only_pledged_with_pledge(
     user: User,
     organization: Organization,
@@ -223,12 +203,10 @@ async def test_get_only_pledged_with_pledge(
     pledging_organization: Organization,
     pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True"
     )
 
     assert response.status_code == 200
@@ -246,6 +224,7 @@ async def test_get_only_pledged_with_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_only_pledged_no_pledge(
     user: User,
     organization: Organization,
@@ -254,12 +233,10 @@ async def test_get_only_pledged_no_pledge(
     # pledging_organization: Organization,
     # pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True"
     )
 
     assert response.status_code == 200
@@ -270,6 +247,7 @@ async def test_get_only_pledged_no_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_only_badged_no_badge(
     user: User,
     organization: Organization,
@@ -278,12 +256,10 @@ async def test_get_only_badged_no_badge(
     pledging_organization: Organization,
     # pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_badged=True",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/dashboard/github/{organization.name}?only_badged=True"
     )
 
     assert response.status_code == 200
@@ -294,6 +270,7 @@ async def test_get_only_badged_no_badge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_only_badged_is_badged(
     user: User,
     organization: Organization,
@@ -302,7 +279,6 @@ async def test_get_only_badged_is_badged(
     pledging_organization: Organization,
     # pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -310,8 +286,7 @@ async def test_get_only_badged_is_badged(
     await save_fixture(issue)
 
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_badged=True",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/dashboard/github/{organization.name}?only_badged=True"
     )
 
     assert response.status_code == 200

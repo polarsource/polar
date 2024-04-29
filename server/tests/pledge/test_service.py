@@ -10,7 +10,6 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.config import settings
 from polar.enums import AccountType, Platforms
 from polar.exceptions import NotPermitted
 from polar.issue.hooks import IssueHook, issue_upserted
@@ -961,13 +960,13 @@ async def test_month_range() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_pledge_states(
     session: AsyncSession,
     save_fixture: SaveFixture,
     subtests: Any,
     mocker: MockerFixture,
     client: AsyncClient,
-    auth_jwt: str,
     user: User,
 ) -> None:
     notifications_sent: dict[str, int] = {}
@@ -1208,7 +1207,6 @@ async def test_pledge_states(
                             },
                         ]
                     },
-                    cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
                 )
                 assert response.status_code == 200
 

@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
+from polar.models import Article
 from polar.models.articles_subscription import ArticlesSubscription
 from polar.models.organization import Organization
 from polar.models.user import OAuthAccount, User
@@ -13,11 +13,11 @@ from tests.fixtures.random_objects import create_user
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_no_body(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -30,7 +30,6 @@ async def test_create_no_body(
             "title": "Hello World!",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 422
@@ -38,11 +37,11 @@ async def test_create_no_body(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -56,7 +55,6 @@ async def test_create(
             "body": "Body body",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -67,11 +65,11 @@ async def test_create(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_with_slug(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -86,7 +84,6 @@ async def test_create_with_slug(
             "body": "Body body",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -97,11 +94,11 @@ async def test_create_with_slug(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_with_slug_slugify(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -116,7 +113,6 @@ async def test_create_with_slug_slugify(
             "body": "Body body",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -127,8 +123,9 @@ async def test_create_with_slug_slugify(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_non_member(
-    user: User, organization: Organization, auth_jwt: str, client: AsyncClient
+    user: User, organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.post(
         "/api/v1/articles",
@@ -137,7 +134,6 @@ async def test_create_non_member(
             "body": "Body body",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 401
@@ -145,11 +141,11 @@ async def test_create_non_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_non_admin(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     response = await client.post(
@@ -159,18 +155,17 @@ async def test_create_non_admin(
             "body": "Body body",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_get_public(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -189,7 +184,6 @@ async def test_get_public(
             "organization_id": str(organization.id),
             "visibility": "public",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -219,11 +213,11 @@ async def test_get_public(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_get_hidden(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -242,7 +236,6 @@ async def test_get_hidden(
             "organization_id": str(organization.id),
             "visibility": "hidden",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -262,11 +255,11 @@ async def test_get_hidden(
 
 
 @pytest.mark.asyncio
-async def test_get_private(
+@pytest.mark.authenticated
+async def test_get_private_user(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -274,62 +267,75 @@ async def test_get_private(
     user_organization.is_admin = True
     await save_fixture(user_organization)
 
+    article = article = Article(
+        slug="hello-world",
+        title="Hello World!",
+        body="Body body",
+        created_by_user=user,
+        organization=organization,
+        visibility=Article.Visibility.private,
+    )
+    await save_fixture(article)
+
     # then
     session.expunge_all()
 
-    response = await client.post(
-        "/api/v1/articles",
-        json={
-            "title": "Hello World!",
-            "body": "Body body",
-            "organization_id": str(organization.id),
-            "visibility": "private",
-        },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
-
-    assert response.status_code == 200
-    res = response.json()
-    assert res["title"] == "Hello World!"
-    assert res["slug"] == "hello-world"
-
-    get = await client.get(
-        f"/api/v1/articles/{res['id']}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    get = await client.get(f"/api/v1/articles/{article.id}")
     assert get.status_code == 200
 
     get_json = get.json()
 
-    assert get_json["id"] == res["id"]
+    assert get_json["id"] == str(article.id)
     assert get_json["title"] == "Hello World!"
     assert get_json["visibility"] == "private"
 
-    get_anon = await client.get(
-        f"/api/v1/articles/{res['id']}",
-    )
-    assert get_anon.status_code == 404
-
-    # lookup anon
-    lookup = await client.get(
-        f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world",
-    )
-    assert lookup.status_code == 404
-
     # lookup auth
     lookup = await client.get(
-        f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world"
     )
     assert lookup.status_code == 200
 
 
 @pytest.mark.asyncio
+async def test_get_private_anonymous(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    client: AsyncClient,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    article = article = Article(
+        slug="hello-world",
+        title="Hello World!",
+        body="Body body",
+        created_by_user=user,
+        organization=organization,
+        visibility=Article.Visibility.private,
+    )
+    await save_fixture(article)
+
+    # then
+    session.expunge_all()
+
+    get_anon = await client.get(f"/api/v1/articles/{article.id}")
+    assert get_anon.status_code == 404
+
+    lookup = await client.get(
+        f"/api/v1/articles/lookup?platform=github&organization_name={organization.name}&slug=hello-world",
+    )
+    assert lookup.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_byline_default(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -347,7 +353,6 @@ async def test_byline_default(
             "body": "Body body",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -356,12 +361,12 @@ async def test_byline_default(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_byline_user_github(
     user: User,
     user_github_oauth: OAuthAccount,  # sets username
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -380,7 +385,6 @@ async def test_byline_user_github(
             "organization_id": str(organization.id),
             "byline": "user",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -390,11 +394,11 @@ async def test_byline_user_github(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_byline_user_no_oauth(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -413,7 +417,6 @@ async def test_byline_user_no_oauth(
             "organization_id": str(organization.id),
             "byline": "user",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -422,11 +425,11 @@ async def test_byline_user_no_oauth(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_byline_org(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -445,7 +448,6 @@ async def test_byline_org(
             "organization_id": str(organization.id),
             "byline": "organization",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -454,11 +456,11 @@ async def test_byline_org(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_list(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -478,7 +480,6 @@ async def test_list(
             "visibility": "public",
             "published_at": "2023-11-26 00:00:00",  # a date in the past
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_1.status_code == 200
 
@@ -492,7 +493,6 @@ async def test_list(
             "published_at": "2023-11-26 00:00:00",  # a date in the past
             "paid_subscribers_only": True,
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_2.status_code == 200
 
@@ -505,7 +505,6 @@ async def test_list(
             "organization_id": str(organization.id),
             "visibility": "private",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_private.status_code == 200
 
@@ -518,7 +517,6 @@ async def test_list(
             "organization_id": str(organization.id),
             "visibility": "hidden",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_hidden.status_code == 200
 
@@ -532,7 +530,6 @@ async def test_list(
             "visibility": "public",
             "published_at": "2030-11-27 00:00:00",  # a date in the future
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_future.status_code == 200
 
@@ -549,8 +546,7 @@ async def test_list(
 
     # authed, expect can see private if enabled
     get_authed = await client.get(
-        f"/api/v1/articles/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}"
     )
     assert get_authed.status_code == 200
     list_json_authed = get_authed.json()
@@ -559,8 +555,7 @@ async def test_list(
 
     # authed, expect can see private if enabled
     get_show_unpublished = await client.get(
-        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true"
     )
     assert get_show_unpublished.status_code == 200
     list_json_authed_unpublished = get_show_unpublished.json()
@@ -587,8 +582,7 @@ async def test_list(
 
     # authed and is subscribed
     get_show_unpublished = await client.get(
-        f"/api/v1/articles/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}"
     )
     assert get_show_unpublished.status_code == 200
     list_json_authed_unpublished = get_show_unpublished.json()
@@ -597,8 +591,7 @@ async def test_list(
 
     # authed and is subscribed and want to see unpublished
     get_show_unpublished = await client.get(
-        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true"
     )
     assert get_show_unpublished.status_code == 200
     list_json_authed_unpublished = get_show_unpublished.json()
@@ -609,8 +602,7 @@ async def test_list(
     sub.paid_subscriber = True
 
     get_show_unpublished = await client.get(
-        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/articles/search?platform=github&organization_name={organization.name}&show_unpublished=true"
     )
     assert get_show_unpublished.status_code == 200
     list_json_authed_unpublished = get_show_unpublished.json()
@@ -619,11 +611,11 @@ async def test_list(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_slug_collision(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -642,7 +634,6 @@ async def test_slug_collision(
             "organization_id": str(organization.id),
             "visibility": "public",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_0.status_code == 200
     assert create_0.json()["slug"] == "hello-world"
@@ -655,7 +646,6 @@ async def test_slug_collision(
             "organization_id": str(organization.id),
             "visibility": "public",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_1.status_code == 200
     assert create_1.json()["slug"] == "hello-world-1"
@@ -668,18 +658,17 @@ async def test_slug_collision(
             "organization_id": str(organization.id),
             "visibility": "public",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert create_2.status_code == 200
     assert create_2.json()["slug"] == "hello-world-2"
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_update(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -698,7 +687,6 @@ async def test_update(
             "organization_id": str(organization.id),
             "visibility": "private",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -712,7 +700,6 @@ async def test_update(
             "body": "Here comes the post...",
             "visibility": "public",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert get.status_code == 200
 
@@ -725,11 +712,11 @@ async def test_update(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_view_counter(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -748,7 +735,6 @@ async def test_view_counter(
             "organization_id": str(organization.id),
             "visibility": "private",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -757,17 +743,11 @@ async def test_view_counter(
     assert res["slug"] == "hello-world"
 
     for x in range(0, 3):
-        viewed = await client.post(
-            f"/api/v1/articles/{res['id']}/viewed",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+        viewed = await client.post(f"/api/v1/articles/{res['id']}/viewed")
         assert viewed.status_code == 200
 
     # get again
-    get = await client.get(
-        f"/api/v1/articles/{res['id']}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    get = await client.get(f"/api/v1/articles/{res['id']}")
     assert get.status_code == 200
 
     get_json = get.json()
@@ -777,11 +757,11 @@ async def test_view_counter(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_pinned(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -798,7 +778,6 @@ async def test_pinned(
             "published_at": "2023-11-26 00:00:00",  # a date in the past
             "visibility": "public",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response_pinned.status_code == 200
@@ -817,7 +796,6 @@ async def test_pinned(
             "published_at": "2023-11-26 00:00:00",  # a date in the past
             "visibility": "public",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response_not_pinned.status_code == 200
@@ -833,7 +811,6 @@ async def test_pinned(
             "organization_name": organization.name,
             "is_pinned": True,
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert search_pinned.status_code == 200
     search_pinned_res = search_pinned.json()
@@ -849,7 +826,6 @@ async def test_pinned(
             "organization_name": organization.name,
             "is_pinned": False,
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert search_not_pinned.status_code == 200
     search_not_pinned_res = search_not_pinned.json()
@@ -864,7 +840,6 @@ async def test_pinned(
             "platform": "github",
             "organization_name": organization.name,
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert search.status_code == 200
     search_res = search.json()
@@ -874,11 +849,11 @@ async def test_pinned(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_og_image_url(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -893,7 +868,6 @@ async def test_og_image_url(
             "organization_id": str(organization.id),
             "og_image_url": "https://polar.sh/foo.png",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -909,7 +883,6 @@ async def test_og_image_url(
             "set_og_image_url": "true",
             "og_image_url": "https://polar.sh/foo2.png",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert response.status_code == 200
     res = response.json()
@@ -921,7 +894,6 @@ async def test_og_image_url(
         json={
             "og_image_url": "https://polar.sh/foo3.png",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert response.status_code == 200
     res = response.json()
@@ -933,7 +905,6 @@ async def test_og_image_url(
         json={
             "set_og_image_url": "true",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert response.status_code == 200
     res = response.json()
@@ -942,11 +913,11 @@ async def test_og_image_url(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_og_description(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -961,7 +932,6 @@ async def test_og_description(
             "organization_id": str(organization.id),
             "og_description": "description!",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -977,7 +947,6 @@ async def test_og_description(
             "set_og_description": "true",
             "og_description": "updated",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert response.status_code == 200
     res = response.json()
@@ -989,7 +958,6 @@ async def test_og_description(
         json={
             "og_description": "whaaaaaaa",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert response.status_code == 200
     res = response.json()
@@ -1001,7 +969,6 @@ async def test_og_description(
         json={
             "set_og_description": "true",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert response.status_code == 200
     res = response.json()
@@ -1010,11 +977,11 @@ async def test_og_description(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_body_base64(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -1028,7 +995,6 @@ async def test_body_base64(
             "body_base64": "aGVsbG8gaW4gYjY0",
             "organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -1043,7 +1009,6 @@ async def test_body_base64(
         json={
             "body_base64": "dXBkYXRlZCBiNjQ=",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
     assert response.status_code == 200
     res = response.json()

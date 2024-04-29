@@ -195,6 +195,7 @@ async def create_user(save_fixture: SaveFixture) -> User:
         username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
+        oauth_accounts=[],
     )
     await save_fixture(user)
     return user

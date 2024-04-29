@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models.advertisement_campaign import AdvertisementCampaign
@@ -188,11 +187,11 @@ class TestAdvertisementCampaign:
         assert searched.status_code == 200
         assert len(searched.json()["items"]) == 1
 
+    @pytest.mark.authenticated(subject="user_second")
     async def test_search_unauthorized(
         self,
         client: AsyncClient,
         user: User,
-        user_second_auth_jwt: str,
         subscription: Subscription,
         benefit_organization: Benefit,
         save_fixture: SaveFixture,
@@ -212,7 +211,6 @@ class TestAdvertisementCampaign:
                 "subscription_id": str(subscription.id),
                 "benefit_id": str(benefit_organization.id),
             },
-            cookies={settings.AUTH_COOKIE_KEY: user_second_auth_jwt},
         )
 
         assert searched.status_code == 403
@@ -304,6 +302,7 @@ class TestAdvertisementCampaign:
 
         assert searched.status_code == 401
 
+    @pytest.mark.authenticated(subject="user_second")
     async def test_search_benefit_id_unauthorized(
         self,
         client: AsyncClient,
@@ -312,7 +311,6 @@ class TestAdvertisementCampaign:
         benefit_organization: Benefit,
         session: AsyncSession,
         advertisement_campaign: AdvertisementCampaign,
-        user_second_auth_jwt: str,
     ) -> None:
         # appears in search
         searched = await client.get(
@@ -320,11 +318,11 @@ class TestAdvertisementCampaign:
             params={
                 "benefit_id": str(benefit_organization.id),
             },
-            cookies={settings.AUTH_COOKIE_KEY: user_second_auth_jwt},
         )
 
         assert searched.status_code == 401
 
+    @pytest.mark.authenticated
     async def test_track_view(
         self,
         client: AsyncClient,
@@ -333,7 +331,6 @@ class TestAdvertisementCampaign:
         user_organization: UserOrganization,  # member
         benefit_organization: Benefit,
         advertisement_campaign: AdvertisementCampaign,
-        auth_jwt: str,
         save_fixture: SaveFixture,
     ) -> None:
         user_organization.is_admin = True
@@ -356,8 +353,7 @@ class TestAdvertisementCampaign:
         # check bumped view counter
 
         got = await client.get(
-            f"/api/v1/advertisements/campaigns/{advertisement_campaign.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+            f"/api/v1/advertisements/campaigns/{advertisement_campaign.id}"
         )
         assert got.status_code == 200
         assert got.json()["views"] == 1

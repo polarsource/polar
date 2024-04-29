@@ -143,7 +143,7 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert "error=login_required" in location
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_authenticated_invalid_sub_type(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
@@ -158,7 +158,7 @@ class TestOAuth2Authorize:
 
         assert response.status_code == 400
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     @pytest.mark.parametrize(
         "input_sub_type,expected_sub_type",
         [("user", "user"), (None, "user"), ("organization", "organization")],
@@ -187,7 +187,7 @@ class TestOAuth2Authorize:
         assert set(json["scopes"]) == {"openid", "profile", "email"}
         assert json["sub_type"] == expected_sub_type
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_authenticated_prompt_login(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
@@ -202,7 +202,7 @@ class TestOAuth2Authorize:
 
         assert response.status_code == 401
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     @pytest.mark.parametrize("scope", ["openid", "openid profile email"])
     async def test_granted(
         self,
@@ -231,7 +231,7 @@ class TestOAuth2Authorize:
         assert location.startswith(params["redirect_uri"])
         assert "code=" in location
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_granted_prompt_consent(
         self,
         save_fixture: SaveFixture,
@@ -258,7 +258,7 @@ class TestOAuth2Authorize:
         assert json["client"]["client_id"] == oauth2_client.client_id
         assert set(json["scopes"]) == {"openid", "profile", "email"}
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_not_granted_prompt_none(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
@@ -275,7 +275,7 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert "error=consent_required" in location
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     @pytest.mark.parametrize("scope", ["openid", "openid profile email"])
     async def test_granted_organization(
         self,
@@ -307,7 +307,7 @@ class TestOAuth2Authorize:
         assert location.startswith(params["redirect_uri"])
         assert "code=" in location
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_granted_organization_prompt_consent(
         self,
         save_fixture: SaveFixture,
@@ -337,7 +337,7 @@ class TestOAuth2Authorize:
         assert json["client"]["client_id"] == oauth2_client.client_id
         assert set(json["scopes"]) == {"openid", "profile", "email"}
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_not_granted_organization_prompt_none(
         self,
         client: AsyncClient,
@@ -360,7 +360,7 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert "error=consent_required" in location
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_organization_personal(
         self,
         save_fixture: SaveFixture,
@@ -398,7 +398,7 @@ class TestOAuth2Consent:
 
         assert response.status_code == 401
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_deny(self, client: AsyncClient, oauth2_client: OAuth2Client) -> None:
         params = {
             "client_id": oauth2_client.client_id,
@@ -414,7 +414,7 @@ class TestOAuth2Consent:
         location = response.headers["location"]
         assert "error=access_denied" in location
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_allow(
         self,
         client: AsyncClient,
@@ -446,7 +446,7 @@ class TestOAuth2Consent:
         assert grant is not None
         assert grant.scopes == ["openid", "profile", "email"]
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_organization_missing_sub(
         self,
         client: AsyncClient,
@@ -470,7 +470,7 @@ class TestOAuth2Consent:
         json = response.json()
         assert json["error"] == "invalid_sub"
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_organization_not_member(
         self,
         client: AsyncClient,
@@ -495,7 +495,7 @@ class TestOAuth2Consent:
         json = response.json()
         assert json["error"] == "invalid_sub"
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_organization_deny(
         self,
         client: AsyncClient,
@@ -520,7 +520,7 @@ class TestOAuth2Consent:
         location = response.headers["location"]
         assert "error=access_denied" in location
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_organization_allow(
         self,
         client: AsyncClient,
@@ -555,7 +555,7 @@ class TestOAuth2Consent:
         assert grant is not None
         assert grant.scopes == ["openid", "profile", "email"]
 
-    @pytest.mark.override_current_user
+    @pytest.mark.authenticated
     async def test_organization_personal(
         self,
         save_fixture: SaveFixture,

@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
 from polar.models import Organization
 from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
@@ -93,14 +92,13 @@ class TestSearch:
         json = response.json()
         assert json["items"][0]["issue"]["id"] == str(issues_pledges[-1][0].id)
 
-    async def test_private_repository(
+    async def test_anonymous_private_repository(
         self,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
         session: AsyncSession,
-        auth_jwt: str,
     ) -> None:
         private_repository = await create_repository(
             save_fixture, organization, is_private=True
@@ -126,7 +124,24 @@ class TestSearch:
         assert json["pagination"]["total_count"] == 0
         assert len(json["items"]) == 0
 
-        # authed user can see
+    @pytest.mark.authenticated
+    async def test_user_private_repository(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,  # makes User a member of Organization
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+    ) -> None:
+        private_repository = await create_repository(
+            save_fixture, organization, is_private=True
+        )
+        issues_pledges = await create_issues_pledges(
+            save_fixture, organization, private_repository
+        )
+
+        # then
+        session.expunge_all()
 
         response = await client.get(
             "/api/v1/funding/search",
@@ -134,7 +149,6 @@ class TestSearch:
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
             },
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
         assert response.status_code == 200

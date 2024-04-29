@@ -3,7 +3,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
@@ -23,13 +22,13 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_get_pledge(
     organization: Organization,
     repository: Repository,
     pledge: Pledge,
     issue: Issue,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     session: AsyncSession,
     save_fixture: SaveFixture,
     client: AsyncClient,
@@ -40,10 +39,7 @@ async def test_get_pledge(
     # then
     session.expunge_all()
 
-    response = await client.get(
-        f"/api/v1/pledges/{pledge.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(pledge.id)
@@ -57,12 +53,12 @@ async def test_get_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_pledge_member_sending_org(
     organization: Organization,
     repository: Repository,
     pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
@@ -88,10 +84,7 @@ async def test_get_pledge_member_sending_org(
     )
     await save_fixture(user_organization)
 
-    response = await client.get(
-        f"/api/v1/pledges/{pledge.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
@@ -104,12 +97,12 @@ async def test_get_pledge_member_sending_org(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_pledge_member_sending_org_user_has_github(
     organization: Organization,
     repository: Repository,
     pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
@@ -138,10 +131,7 @@ async def test_get_pledge_member_sending_org_user_has_github(
     )
     await save_fixture(user_organization)
 
-    response = await client.get(
-        f"/api/v1/pledges/{pledge.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
@@ -154,12 +144,12 @@ async def test_get_pledge_member_sending_org_user_has_github(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_pledge_member_receiving_org(
     organization: Organization,
     repository: Repository,
     pledge: Pledge,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
@@ -185,10 +175,7 @@ async def test_get_pledge_member_receiving_org(
     )
     await save_fixture(user_organization)
 
-    response = await client.get(
-        f"/api/v1/pledges/{pledge.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
@@ -200,6 +187,7 @@ async def test_get_pledge_member_receiving_org(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_pledge_not_admin(
     organization: Organization,
     pledging_organization: Organization,
@@ -207,47 +195,40 @@ async def test_get_pledge_not_admin(
     pledge: Pledge,
     user: User,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = False
     await save_fixture(user_organization)
 
-    response = await client.get(
-        f"/api/v1/pledges/{pledge.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_pledge_not_member(
     organization: Organization,
     repository: Repository,
     pledge: Pledge,
-    auth_jwt: str,
     session: AsyncSession,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        f"/api/v1/pledges/{pledge.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/{pledge.id}")
 
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_search_pledge(
     organization: Organization,
     repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     issue: Issue,
     client: AsyncClient,
@@ -256,8 +237,7 @@ async def test_search_pledge(
     await save_fixture(user_organization)
 
     response = await client.get(
-        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -273,12 +253,12 @@ async def test_search_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_search_pledge_no_admin(
     organization: Organization,
     repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -286,8 +266,7 @@ async def test_search_pledge_no_admin(
     await save_fixture(user_organization)
 
     response = await client.get(
-        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -296,16 +275,15 @@ async def test_search_pledge_no_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_search_pledge_no_member(
     organization: Organization,
     repository: Repository,
     pledge: Pledge,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -313,13 +291,13 @@ async def test_search_pledge_no_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_search_pledge_by_issue_id(
     organization: Organization,
     pledging_organization: Organization,
     repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     session: AsyncSession,
     issue: Issue,
@@ -360,10 +338,7 @@ async def test_search_pledge_by_issue_id(
     # then
     session.expunge_all()
 
-    response = await client.get(
-        f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/search?issue_id={pledge.issue_id}")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
@@ -376,10 +351,7 @@ async def test_search_pledge_by_issue_id(
         "id"
     ] == str(organization.id)
 
-    response = await client.get(
-        f"/api/v1/pledges/search?issue_id={other_issue.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/pledges/search?issue_id={other_issue.id}")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 2
@@ -391,17 +363,14 @@ async def test_search_pledge_by_issue_id(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_search_no_params(
     organization: Organization,
     repository: Repository,
     pledge: Pledge,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        "/api/v1/pledges/search",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get("/api/v1/pledges/search")
 
     assert response.status_code == 400
     assert response.json() == {"detail": "No search criteria specified"}
@@ -409,17 +378,16 @@ async def test_search_no_params(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_pay_on_completion(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     create_pledge = await client.post(
         "/api/v1/pledges/pay_on_completion",
         json={"issue_id": str(issue.id), "amount": 133700},
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_pledge.status_code == 200
@@ -430,8 +398,7 @@ async def test_create_pay_on_completion(
 
     # pledge_id = pledge["id"]
     # create_invoice = await client.post(
-    #     f"/api/v1/pledges/{pledge_id}/create_invoice",
-    #     cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    #     f"/api/v1/pledges/{pledge_id}/create_invoice"
     # )
     # assert create_invoice.status_code == 200
     # pledge = create_invoice.json()
@@ -501,11 +468,11 @@ async def test_summary_private_repo(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_create_pay_on_completion_total_monthly_spending_limit(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -526,7 +493,6 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
             "amount": 6000,
             "by_organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_pledge.status_code == 200
@@ -542,7 +508,6 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
             "amount": 6000,
             "by_organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_pledge.status_code == 400
@@ -554,11 +519,11 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_create_pay_on_completion_per_user_monthly_spending_limit(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -579,7 +544,6 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
             "amount": 6000,
             "by_organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_pledge.status_code == 200
@@ -595,7 +559,6 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
             "amount": 6000,
             "by_organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_pledge.status_code == 400
@@ -608,11 +571,11 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_no_billing_email(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
     save_fixture: SaveFixture,
 ) -> None:
@@ -628,7 +591,6 @@ async def test_no_billing_email(
             "amount": 6000,
             "by_organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_pledge.status_code == 400
@@ -640,11 +602,11 @@ async def test_no_billing_email(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_spending(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -665,7 +627,6 @@ async def test_spending(
             "amount": 6000,
             "by_organization_id": str(organization.id),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_pledge.status_code == 200
@@ -676,8 +637,7 @@ async def test_spending(
     # get spending
 
     spending = await client.get(
-        f"/api/v1/pledges/spending?organization_id={organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/pledges/spending?organization_id={organization.id}"
     )
 
     assert spending.status_code == 200
@@ -686,16 +646,12 @@ async def test_spending(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-async def test_spending_zero(
-    organization: Organization,
-    auth_jwt: str,
-    client: AsyncClient,
-) -> None:
+@pytest.mark.authenticated
+async def test_spending_zero(organization: Organization, client: AsyncClient) -> None:
     # get spending
 
     spending = await client.get(
-        f"/api/v1/pledges/spending?organization_id={organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/pledges/spending?organization_id={organization.id}"
     )
 
     assert spending.status_code == 200

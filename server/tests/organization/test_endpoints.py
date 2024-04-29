@@ -3,7 +3,6 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
 from polar.models.repository import Repository
@@ -16,13 +15,11 @@ from tests.fixtures.database import SaveFixture
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_organization(
-    organization: Organization, auth_jwt: str, client: AsyncClient
+    organization: Organization, client: AsyncClient
 ) -> None:
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -33,19 +30,16 @@ async def test_get_organization(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_organization_member_only_fields_no_member(
     save_fixture: SaveFixture,
     organization: Organization,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     organization.billing_email = "billing@polar.sh"
     await save_fixture(organization)
 
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -57,20 +51,17 @@ async def test_get_organization_member_only_fields_no_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_organization_member_only_fields_is_member(
     save_fixture: SaveFixture,
     organization: Organization,
-    auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
 ) -> None:
     organization.billing_email = "billing@polar.sh"
     await save_fixture(organization)
 
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -81,11 +72,11 @@ async def test_get_organization_member_only_fields_is_member(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_update_organization_billing_email(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
 ) -> None:
@@ -95,10 +86,7 @@ async def test_update_organization_billing_email(
     # then
     session.expunge_all()
 
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -110,7 +98,6 @@ async def test_update_organization_billing_email(
     # edit
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         json={
             "billing_email": "billing_via_api@polar.sh",
         },
@@ -121,10 +108,7 @@ async def test_update_organization_billing_email(
     assert org.billing_email == "billing_via_api@polar.sh"
 
     # get again!
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
     org = OrganizationSchema.model_validate(response.json())
@@ -133,16 +117,13 @@ async def test_update_organization_billing_email(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_list_organization_member(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        "/api/v1/organizations",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get("/api/v1/organizations")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 0
@@ -150,16 +131,13 @@ async def test_list_organization_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_list_organization_member_allow_non_admin(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        "/api/v1/organizations?is_admin_only=false",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get("/api/v1/organizations?is_admin_only=false")
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(organization.id)
@@ -167,10 +145,10 @@ async def test_list_organization_member_allow_non_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_list_organization_member_admin(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -178,10 +156,7 @@ async def test_list_organization_member_admin(
     user_organization.is_admin = True
     await save_fixture(user_organization)
 
-    response = await client.get(
-        "/api/v1/organizations",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get("/api/v1/organizations")
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(organization.id)
@@ -189,12 +164,12 @@ async def test_list_organization_member_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_organization_lookup_not_found(
-    organization: Organization, auth_jwt: str, client: AsyncClient
+    organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        "/api/v1/organizations/lookup?platform=github&organization_name=foobar",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        "/api/v1/organizations/lookup?platform=github&organization_name=foobar"
     )
 
     assert response.status_code == 404
@@ -202,12 +177,12 @@ async def test_organization_lookup_not_found(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_organization_lookup(
-    organization: Organization, auth_jwt: str, client: AsyncClient
+    organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        f"/api/v1/organizations/lookup?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/organizations/lookup?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -216,12 +191,12 @@ async def test_organization_lookup(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_organization_search(
-    organization: Organization, auth_jwt: str, client: AsyncClient
+    organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        f"/api/v1/organizations/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/organizations/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -230,12 +205,12 @@ async def test_organization_search(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_organization_search_no_matches(
-    organization: Organization, auth_jwt: str, client: AsyncClient
+    organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        "/api/v1/organizations/search?platform=github&organization_name=foobar",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        "/api/v1/organizations/search?platform=github&organization_name=foobar"
     )
 
     assert response.status_code == 200
@@ -244,35 +219,30 @@ async def test_organization_search_no_matches(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_organization_deleted(
     save_fixture: SaveFixture,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     # soft-delete the organization
     organization.deleted_at = utc_now()
     await save_fixture(organization)
 
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}")
 
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_update_organization_no_admin(
-    organization: Organization,
-    auth_jwt: str,
-    client: AsyncClient,
+    organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         json={
             "set_default_upfront_split_to_contributors": True,
             "default_upfront_split_to_contributors": 85,
@@ -283,9 +253,9 @@ async def test_update_organization_no_admin(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_update_organization(
     organization: Organization,
-    auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
@@ -299,7 +269,6 @@ async def test_update_organization(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         json={
             "set_default_upfront_split_to_contributors": True,
             "default_upfront_split_to_contributors": 85,
@@ -312,7 +281,6 @@ async def test_update_organization(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         json={
             "default_upfront_split_to_contributors": 70,  # no change
         },
@@ -324,7 +292,6 @@ async def test_update_organization(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         json={
             "set_default_upfront_split_to_contributors": True,  # unset!
         },
@@ -337,18 +304,15 @@ async def test_update_organization(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_list_members(
     session: AsyncSession,
     organization: Organization,
     user_organization_admin: UserOrganization,  # makes User a member of Organization
     user_organization_second: UserOrganization,  # adds another member
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}/members",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}/members")
 
     assert response.status_code == 200
 
@@ -366,18 +330,15 @@ async def test_list_members(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_list_members_not_member(
     session: AsyncSession,
     organization: Organization,
     # user_organization_admin: UserOrganization,  # makes User a member of Organization
     user_organization_second: UserOrganization,  # adds another member
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(
-        f"/api/v1/organizations/{organization.id}/members",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/organizations/{organization.id}/members")
 
     assert response.status_code == 401
 
@@ -386,7 +347,6 @@ async def test_list_members_not_member(
 @pytest.mark.authenticated
 async def test_update_organization_profile_settings(
     organization: Organization,
-    auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     repository: Repository,
@@ -459,7 +419,6 @@ async def test_update_organization_profile_settings(
 @pytest.mark.authenticated
 async def test_update_organization_profile_settings_featured_projects(
     organization: Organization,
-    auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     repository: Repository,
@@ -509,7 +468,6 @@ async def test_update_organization_profile_settings_featured_projects(
 @pytest.mark.authenticated
 async def test_update_organization_profile_settings_featured_organizations(
     organization: Organization,
-    auth_jwt: str,
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     repository: Repository,

@@ -2,7 +2,6 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.config import settings
 from polar.issue.schemas import Reactions
 from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
@@ -17,21 +16,18 @@ from tests.fixtures.database import SaveFixture
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_issue(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = False
     await save_fixture(repository)
 
-    response = await client.get(
-        f"/api/v1/issues/{issue.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -41,11 +37,11 @@ async def test_get_issue(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_issue_reactions(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -65,10 +61,7 @@ async def test_get_issue_reactions(
     ).model_dump(mode="json")
     await save_fixture(issue)
 
-    response = await client.get(
-        f"/api/v1/issues/{issue.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -77,32 +70,29 @@ async def test_get_issue_reactions(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_not_found_private_repo(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
     repository.is_private = True
     await save_fixture(repository)
 
-    response = await client.get(
-        f"/api/v1/issues/{issue.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/issues/{issue.id}")
 
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_get_private_repo_member(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
@@ -110,10 +100,7 @@ async def test_get_private_repo_member(
     repository.is_private = True
     await save_fixture(repository)
 
-    response = await client.get(
-        f"/api/v1/issues/{issue.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -121,11 +108,11 @@ async def test_get_private_repo_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_issue_search_public_repo(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -134,8 +121,7 @@ async def test_issue_search_public_repo(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
     )
 
     assert response.status_code == 200
@@ -149,11 +135,11 @@ async def test_issue_search_public_repo(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_issue_search_public_repo_without_repo_selector(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -162,8 +148,7 @@ async def test_issue_search_public_repo_without_repo_selector(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -173,11 +158,11 @@ async def test_issue_search_public_repo_without_repo_selector(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_issue_search_private_repo(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -186,8 +171,7 @@ async def test_issue_search_private_repo(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
     )
 
     assert response.status_code == 404
@@ -196,11 +180,11 @@ async def test_issue_search_private_repo(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_issue_search_private_repo_without_repo_selector(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
@@ -209,8 +193,7 @@ async def test_issue_search_private_repo_without_repo_selector(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -218,11 +201,11 @@ async def test_issue_search_private_repo_without_repo_selector(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_update_funding_goal(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     session: AsyncSession,
     save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -235,10 +218,7 @@ async def test_update_funding_goal(
     session.expunge_all()
 
     # get, default value should be None
-    response = await client.get(
-        f"/api/v1/issues/{issue.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -248,7 +228,6 @@ async def test_update_funding_goal(
     response = await client.post(
         f"/api/v1/issues/{issue.id}",
         json={"funding_goal": {"currency": "USD", "amount": 12000}},
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -259,10 +238,7 @@ async def test_update_funding_goal(
     }
 
     # get after post, should be persisted
-    response = await client.get(
-        f"/api/v1/issues/{issue.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
+    response = await client.get(f"/api/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -273,11 +249,11 @@ async def test_update_funding_goal(
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_confirm_solved(
     organization: Organization,
     repository: Repository,
     issue: Issue,
-    auth_jwt: str,
     pledge: Pledge,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -296,8 +272,7 @@ async def test_confirm_solved(
 
     # fetch pledges
     pledges_response = await client.get(
-        f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/pledges/search?issue_id={pledge.issue_id}"
     )
 
     assert pledges_response.status_code == 200
@@ -319,7 +294,6 @@ async def test_confirm_solved(
                 },
             ]
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -327,8 +301,7 @@ async def test_confirm_solved(
 
     # fetch pledges
     pledges_response = await client.get(
-        f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/pledges/search?issue_id={pledge.issue_id}"
     )
 
     assert pledges_response.status_code == 200

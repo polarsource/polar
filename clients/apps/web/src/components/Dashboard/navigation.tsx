@@ -308,6 +308,17 @@ const backerRoutesList = (): Route[] => [
     if: true,
     subs: undefined,
   },
+  {
+    id: 'purchases',
+    title: 'Purchases',
+    link: `/purchases`,
+    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    get if() {
+      return isFeatureEnabled('products')
+    },
+    subs: undefined,
+  },
 ]
 
 const personalFinanceSubRoutesList = (): SubRoute[] => [

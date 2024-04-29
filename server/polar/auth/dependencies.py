@@ -39,7 +39,7 @@ async def _get_cookie_token(request: Request) -> str | None:
     return request.cookies.get(settings.AUTH_COOKIE_KEY)
 
 
-async def _authenticate(
+async def get_auth_subject(
     cookie_token: str | None = Depends(_get_cookie_token),
     oauth2_token: OAuth2Token | None = Depends(get_optional_token),
     auth_header: HTTPAuthorizationCredentials | None = Depends(auth_header_scheme),
@@ -90,7 +90,7 @@ class Authenticator:
         self.required_scopes = required_scopes or set()
 
     def __call__(
-        self, auth_subject: AuthSubject[Subject] = Depends(_authenticate)
+        self, auth_subject: AuthSubject[Subject] = Depends(get_auth_subject)
     ) -> AuthSubject[Subject]:
         # Anonymous
         if is_anonymous(auth_subject):

@@ -71,6 +71,22 @@ class OrganizationService(ResourceServiceReader[Organization]):
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
+    async def get_personal(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Organization | None:
+        query = (
+            sql.select(Organization)
+            .join(UserOrganization)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.is_personal.is_(True),
+                UserOrganization.user_id == user_id,
+                UserOrganization.deleted_at.is_(None),
+            )
+        )
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
+
     async def list_all_orgs_by_user_id(
         self,
         session: AsyncSession,

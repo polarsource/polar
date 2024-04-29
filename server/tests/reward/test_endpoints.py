@@ -3,7 +3,6 @@ from datetime import timedelta
 import pytest
 from httpx import AsyncClient
 
-from polar.config import settings
 from polar.enums import AccountType
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
@@ -19,6 +18,7 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
+@pytest.mark.authenticated
 async def test_search(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -26,7 +26,6 @@ async def test_search(
     organization: Organization,
     user_organization: UserOrganization,
     user: User,
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
@@ -69,8 +68,7 @@ async def test_search(
     assert len(rewards) == 2
 
     response = await client.get(
-        f"/api/v1/rewards/search?pledges_to_organization={organization.id}",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/rewards/search?pledges_to_organization={organization.id}"
     )
 
     assert response.status_code == 200

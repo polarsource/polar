@@ -7,7 +7,6 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.account.service import account as account_service
-from polar.config import settings
 from polar.enums import AccountType
 from polar.integrations.open_collective.service import (
     CollectiveNotFoundError,
@@ -25,14 +24,14 @@ from polar.postgres import AsyncSession
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-async def test_create_invalid_account_type(auth_jwt: str, client: AsyncClient) -> None:
+@pytest.mark.authenticated
+async def test_create_invalid_account_type(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/accounts",
         json={
             "account_type": "unknown",
             "country": "US",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 422
@@ -41,8 +40,9 @@ async def test_create_invalid_account_type(auth_jwt: str, client: AsyncClient) -
 @pytest.mark.asyncio
 @pytest.mark.parametrize("slug", [None, ""])
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_open_collective_missing_slug(
-    slug: str | None, auth_jwt: str, client: AsyncClient
+    slug: str | None, client: AsyncClient
 ) -> None:
     response = await client.post(
         "/api/v1/accounts",
@@ -51,7 +51,6 @@ async def test_create_open_collective_missing_slug(
             "country": "US",
             **({"open_collective_slug": slug} if slug is not None else {}),
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 422
@@ -66,11 +65,9 @@ async def test_create_open_collective_missing_slug(
         CollectiveNotFoundError("Not found"),
     ],
 )
+@pytest.mark.authenticated
 async def test_create_open_collective_get_collective_error(
-    error: OpenCollectiveServiceError,
-    auth_jwt: str,
-    mocker: MockerFixture,
-    client: AsyncClient,
+    error: OpenCollectiveServiceError, mocker: MockerFixture, client: AsyncClient
 ) -> None:
     open_collective_mock = mocker.patch.object(open_collective, "get_collective")
     open_collective_mock.side_effect = error
@@ -82,7 +79,6 @@ async def test_create_open_collective_get_collective_error(
             "open_collective_slug": "polar",
             "country": "US",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 400
@@ -100,9 +96,9 @@ async def test_create_open_collective_get_collective_error(
         OpenCollectiveCollective("polar", "opensource", False, True, False, False),
     ],
 )
+@pytest.mark.authenticated
 async def test_create_open_collective_not_eligible(
     collective: OpenCollectiveCollective,
-    auth_jwt: str,
     mocker: MockerFixture,
     session: AsyncSession,
     client: AsyncClient,
@@ -117,7 +113,6 @@ async def test_create_open_collective_not_eligible(
             "open_collective_slug": "polar",
             "country": "US",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 400
@@ -128,8 +123,9 @@ async def test_create_open_collective_not_eligible(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_open_collective(
-    auth_jwt: str, session: AsyncSession, mocker: MockerFixture, client: AsyncClient
+    session: AsyncSession, mocker: MockerFixture, client: AsyncClient
 ) -> None:
     open_collective_mock = mocker.patch.object(open_collective, "get_collective")
     open_collective_mock.return_value = OpenCollectiveCollective(
@@ -143,7 +139,6 @@ async def test_create_open_collective(
             "open_collective_slug": "polar",
             "country": "US",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 200
@@ -164,9 +159,9 @@ async def test_create_open_collective(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_create_personal_stripe(
     user: User,
-    auth_jwt: str,
     mocker: MockerFixture,
     client: AsyncClient,
 ) -> None:
@@ -193,7 +188,6 @@ async def test_create_personal_stripe(
             "account_type": "stripe",
             "country": "US",
         },
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert create_response.status_code == 200
@@ -203,13 +197,13 @@ async def test_create_personal_stripe(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_onboarding_link_open_collective(
-    open_collective_account: Account, auth_jwt: str, client: AsyncClient
+    open_collective_account: Account, client: AsyncClient
 ) -> None:
     response = await client.post(
         f"/api/v1/accounts/{open_collective_account.id}/onboarding_link",
         params={"return_path": "/finance/account"},
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
     assert response.status_code == 404
@@ -217,16 +211,15 @@ async def test_onboarding_link_open_collective(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_dashboard_link_not_existing_account(
     user: User,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
     client: AsyncClient,
 ) -> None:
     response = await client.post(
-        "/api/v1/accounts/3794dd38-54d1-4a64-bd68-fa22e1659e7b/dashboard_link",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        "/api/v1/accounts/3794dd38-54d1-4a64-bd68-fa22e1659e7b/dashboard_link"
     )
 
     assert response.status_code == 404
@@ -234,12 +227,12 @@ async def test_dashboard_link_not_existing_account(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
+@pytest.mark.authenticated
 async def test_dashboard_link_open_collective(
-    open_collective_account: Account, auth_jwt: str, client: AsyncClient
+    open_collective_account: Account, client: AsyncClient
 ) -> None:
     response = await client.post(
-        f"/api/v1/accounts/{open_collective_account.id}/dashboard_link",
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        f"/api/v1/accounts/{open_collective_account.id}/dashboard_link"
     )
 
     assert response.status_code == 200

@@ -13,11 +13,9 @@ from collections.abc import Iterator
 import pytest
 
 from polar.app import app
-from polar.auth.dependencies import get_auth_subject
-from polar.auth.models import AuthMethod, AuthSubject
-from polar.auth.scope import SCOPES_SUPPORTED, Scope
+from polar.auth.scope import SCOPES_SUPPORTED
 from polar.kit.db.postgres import Engine, Session
-from polar.models import Model, User
+from polar.models import Model
 from polar.oauth2.authorization_server import AuthorizationServer
 from polar.oauth2.dependencies import get_authorization_server
 from polar.postgres import create_sync_engine
@@ -81,25 +79,3 @@ def override_get_authorization_server(sync_session: Session) -> Iterator[None]:
     app.dependency_overrides[get_authorization_server] = lambda: authorization_server
     yield
     app.dependency_overrides.pop(get_authorization_server)
-
-
-@pytest.fixture(autouse=True)
-def override_current_user(request: pytest.FixtureRequest, user: User) -> Iterator[None]:
-    """
-    Special fixture to authenticate a user during OAuth2 tests.
-
-    We can't rely on the usual tools since the user is not present in the async session,
-    so we need to override the full Auth dependency.
-    """
-    override_current_user_marker = request.node.get_closest_marker(
-        "override_current_user"
-    )
-    if override_current_user_marker is not None:
-        auth_subject = AuthSubject(
-            user, scopes={Scope.web_default}, method=AuthMethod.COOKIE
-        )
-        app.dependency_overrides[get_auth_subject] = lambda: auth_subject
-
-    yield
-
-    app.dependency_overrides.pop(get_auth_subject, None)

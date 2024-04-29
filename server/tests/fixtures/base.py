@@ -7,7 +7,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.app import app
-from polar.config import settings
+from polar.auth.models import AuthSubject, Subject
 from polar.postgres import AsyncSession, get_db_session
 
 # We used to use anyio, but it was causing garbage collection issues
@@ -27,16 +27,13 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop.close()
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture
 async def client(
-    request: pytest.FixtureRequest, session: AsyncSession, auth_jwt: str
+    request: pytest.FixtureRequest,
+    authenticated_marker: AuthSubject[Subject],
+    session: AsyncSession,
 ) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db_session] = lambda: session
-
-    cookies = {}
-    authenticated_marker = request.node.get_closest_marker("authenticated")
-    if authenticated_marker is not None:
-        cookies[settings.AUTH_COOKIE_KEY] = auth_jwt
 
     request_hooks = []
 
@@ -58,7 +55,6 @@ async def client(
     async with AsyncClient(
         app=app,
         base_url="http://test",
-        cookies=cookies,
         event_hooks={"request": request_hooks},
     ) as client:
         client.event_hooks

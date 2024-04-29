@@ -37,7 +37,7 @@ export class RewardsApi extends runtime.BaseAPI {
 
     /**
      * Search rewards.
-     * Search rewards (Public API)
+     * Search rewards
      */
     async searchRaw(requestParameters: RewardsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceReward>> {
         const queryParameters: any = {};
@@ -76,7 +76,7 @@ export class RewardsApi extends runtime.BaseAPI {
 
     /**
      * Search rewards.
-     * Search rewards (Public API)
+     * Search rewards
      */
     async search(requestParameters: RewardsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceReward> {
         const response = await this.searchRaw(requestParameters, initOverrides);
@@ -85,7 +85,7 @@ export class RewardsApi extends runtime.BaseAPI {
 
     /**
      * Get summary of rewards for resource.
-     * Get rewards summary (Public API)
+     * Get rewards summary
      */
     async summaryRaw(requestParameters: RewardsApiSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<RewardsSummary>> {
         if (requestParameters['issueId'] == null) {
@@ -123,7 +123,7 @@ export class RewardsApi extends runtime.BaseAPI {
 
     /**
      * Get summary of rewards for resource.
-     * Get rewards summary (Public API)
+     * Get rewards summary
      */
     async summary(requestParameters: RewardsApiSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<RewardsSummary> {
         const response = await this.summaryRaw(requestParameters, initOverrides);

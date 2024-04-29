@@ -1999,13 +1999,7 @@ export interface BenefitAds {
      * @type {string}
      * @memberof BenefitAds
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitAds
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitAdsProperties}
@@ -2040,13 +2034,7 @@ export interface BenefitAdsCreate {
      * @type {string}
      * @memberof BenefitAdsCreate
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitAdsCreate
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {string}
@@ -2142,13 +2130,7 @@ export interface BenefitAdsSubscriber {
      * @type {string}
      * @memberof BenefitAdsSubscriber
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitAdsSubscriber
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitAdsProperties}
@@ -2254,13 +2236,7 @@ export interface BenefitArticles {
      * @type {string}
      * @memberof BenefitArticles
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticles
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitArticlesProperties}
@@ -2344,13 +2320,7 @@ export interface BenefitArticlesSubscriber {
      * @type {string}
      * @memberof BenefitArticlesSubscriber
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticlesSubscriber
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitArticlesSubscriberProperties}
@@ -2463,13 +2433,7 @@ export interface BenefitBase {
      * @type {string}
      * @memberof BenefitBase
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitBase
-     */
-    repository_id?: string;
+    organization_id: string;
 }
 /**
  * @type BenefitCreate
@@ -2530,13 +2494,7 @@ export interface BenefitCustom {
      * @type {string}
      * @memberof BenefitCustom
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitCustom
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitCustomProperties}
@@ -2577,13 +2535,7 @@ export interface BenefitCustomCreate {
      * @type {string}
      * @memberof BenefitCustomCreate
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitCustomCreate
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {string}
@@ -2679,13 +2631,7 @@ export interface BenefitCustomSubscriber {
      * @type {string}
      * @memberof BenefitCustomSubscriber
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitCustomSubscriber
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitCustomSubscriberProperties}
@@ -2804,13 +2750,7 @@ export interface BenefitDiscord {
      * @type {string}
      * @memberof BenefitDiscord
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitDiscord
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitDiscordProperties}
@@ -2845,13 +2785,7 @@ export interface BenefitDiscordCreate {
      * @type {string}
      * @memberof BenefitDiscordCreate
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitDiscordCreate
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {string}
@@ -2972,13 +2906,7 @@ export interface BenefitDiscordSubscriber {
      * @type {string}
      * @memberof BenefitDiscordSubscriber
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitDiscordSubscriber
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitDiscordSubscriberProperties}
@@ -3097,13 +3025,7 @@ export interface BenefitGitHubRepository {
      * @type {string}
      * @memberof BenefitGitHubRepository
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGitHubRepository
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitGitHubRepositoryProperties}
@@ -3138,13 +3060,7 @@ export interface BenefitGitHubRepositoryCreate {
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreate
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGitHubRepositoryCreate
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {string}
@@ -3311,13 +3227,7 @@ export interface BenefitGitHubRepositorySubscriber {
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriber
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGitHubRepositorySubscriber
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {BenefitGitHubRepositorySubscriberProperties}
@@ -8481,13 +8391,7 @@ export interface SubscribeSession {
      * @type {string}
      * @memberof SubscribeSession
      */
-    organization_name?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSession
-     */
-    repository_name?: string;
+    organization_name: string;
 }
 /**
  * 
@@ -8907,13 +8811,7 @@ export interface SubscriptionTier {
      * @type {string}
      * @memberof SubscriptionTier
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {Array<SubscriptionTierPrice>}
@@ -8981,13 +8879,7 @@ export interface SubscriptionTierCreate {
      * @type {string}
      * @memberof SubscriptionTierCreate
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierCreate
-     */
-    repository_id?: string;
+    organization_id: string;
 }
 
 
@@ -9144,13 +9036,7 @@ export interface SubscriptionTierSubscriber {
      * @type {string}
      * @memberof SubscriptionTierSubscriber
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    repository_id?: string;
+    organization_id: string;
     /**
      * 
      * @type {Array<SubscriptionTierPrice>}

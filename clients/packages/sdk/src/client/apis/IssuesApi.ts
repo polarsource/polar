@@ -226,7 +226,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Mark an issue as confirmed solved, and configure issue reward splits. Enables payouts of pledges. Can only be done once per issue. Requires authentication.
-     * Mark an issue as confirmed solved. (Public API)
+     * Mark an issue as confirmed solved.
      */
     async confirmRaw(requestParameters: IssuesApiConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
         if (requestParameters['id'] == null) {
@@ -270,7 +270,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Mark an issue as confirmed solved, and configure issue reward splits. Enables payouts of pledges. Can only be done once per issue. Requires authentication.
-     * Mark an issue as confirmed solved. (Public API)
+     * Mark an issue as confirmed solved.
      */
     async confirm(requestParameters: IssuesApiConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Issue> {
         const response = await this.confirmRaw(requestParameters, initOverrides);
@@ -313,7 +313,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Get issue
-     * Get issue (Public API)
+     * Get issue
      */
     async getRaw(requestParameters: IssuesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
         if (requestParameters['id'] == null) {
@@ -347,7 +347,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Get issue
-     * Get issue (Public API)
+     * Get issue
      */
     async get(requestParameters: IssuesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Issue> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -480,7 +480,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Search issues.
-     * Search issues (Public API)
+     * Search issues
      */
     async searchRaw(requestParameters: IssuesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceIssue>> {
         if (requestParameters['platform'] == null) {
@@ -549,7 +549,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Search issues.
-     * Search issues (Public API)
+     * Search issues
      */
     async search(requestParameters: IssuesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceIssue> {
         const response = await this.searchRaw(requestParameters, initOverrides);
@@ -558,7 +558,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Update issue. Requires authentication.
-     * Update issue. (Public API)
+     * Update issue.
      */
     async updateRaw(requestParameters: IssuesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
         if (requestParameters['id'] == null) {
@@ -602,7 +602,7 @@ export class IssuesApi extends runtime.BaseAPI {
 
     /**
      * Update issue. Requires authentication.
-     * Update issue. (Public API)
+     * Update issue.
      */
     async update(requestParameters: IssuesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Issue> {
         const response = await this.updateRaw(requestParameters, initOverrides);

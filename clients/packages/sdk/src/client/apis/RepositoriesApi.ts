@@ -50,7 +50,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Get a repository
-     * Get a repository (Public API)
+     * Get a repository
      */
     async getRaw(requestParameters: RepositoriesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
         if (requestParameters['id'] == null) {
@@ -84,7 +84,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Get a repository
-     * Get a repository (Public API)
+     * Get a repository
      */
     async get(requestParameters: RepositoriesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Repository> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -93,7 +93,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * List repositories in organizations that the authenticated user is a admin of. Requires authentication.
-     * List repositories (Public API)
+     * List repositories
      */
     async listRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceRepository>> {
         const queryParameters: any = {};
@@ -120,7 +120,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * List repositories in organizations that the authenticated user is a admin of. Requires authentication.
-     * List repositories (Public API)
+     * List repositories
      */
     async list(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceRepository> {
         const response = await this.listRaw(initOverrides);
@@ -129,7 +129,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Lookup repositories. Like search but returns at only one repository.
-     * Lookup repositories (Public API)
+     * Lookup repositories
      */
     async lookupRaw(requestParameters: RepositoriesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
         if (requestParameters['platform'] == null) {
@@ -189,7 +189,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Lookup repositories. Like search but returns at only one repository.
-     * Lookup repositories (Public API)
+     * Lookup repositories
      */
     async lookup(requestParameters: RepositoriesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Repository> {
         const response = await this.lookupRaw(requestParameters, initOverrides);
@@ -198,7 +198,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Search repositories.
-     * Search repositories (Public API)
+     * Search repositories
      */
     async searchRaw(requestParameters: RepositoriesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceRepository>> {
         if (requestParameters['platform'] == null) {
@@ -251,7 +251,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Search repositories.
-     * Search repositories (Public API)
+     * Search repositories
      */
     async search(requestParameters: RepositoriesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceRepository> {
         const response = await this.searchRaw(requestParameters, initOverrides);
@@ -260,7 +260,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Update repository
-     * Update a repository (Public API)
+     * Update a repository
      */
     async updateRaw(requestParameters: RepositoriesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
         if (requestParameters['id'] == null) {
@@ -304,7 +304,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
      * Update repository
-     * Update a repository (Public API)
+     * Update a repository
      */
     async update(requestParameters: RepositoriesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Repository> {
         const response = await this.updateRaw(requestParameters, initOverrides);

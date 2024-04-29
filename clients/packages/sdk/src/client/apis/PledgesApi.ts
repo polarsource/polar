@@ -313,7 +313,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Get a pledge. Requires authentication.
-     * Get pledge (Public API)
+     * Get pledge
      */
     async getRaw(requestParameters: PledgesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
         if (requestParameters['id'] == null) {
@@ -347,7 +347,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Get a pledge. Requires authentication.
-     * Get pledge (Public API)
+     * Get pledge
      */
     async get(requestParameters: PledgesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Pledge> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -356,7 +356,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Search pledges. Requires authentication. The user can only read pledges that they have made (personally or via an organization) or received (to organizations that they are a member of).
-     * Search pledges (Public API)
+     * Search pledges
      */
     async searchRaw(requestParameters: PledgesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePledge>> {
         const queryParameters: any = {};
@@ -407,7 +407,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Search pledges. Requires authentication. The user can only read pledges that they have made (personally or via an organization) or received (to organizations that they are a member of).
-     * Search pledges (Public API)
+     * Search pledges
      */
     async search(requestParameters: PledgesApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourcePledge> {
         const response = await this.searchRaw(requestParameters, initOverrides);
@@ -416,7 +416,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Get current user spending in the current period. Used together with spending limits.
-     * Get user spending (Public API)
+     * Get user spending
      */
     async spendingRaw(requestParameters: PledgesApiSpendingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgeSpending>> {
         if (requestParameters['organizationId'] == null) {
@@ -454,7 +454,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Get current user spending in the current period. Used together with spending limits.
-     * Get user spending (Public API)
+     * Get user spending
      */
     async spending(requestParameters: PledgesApiSpendingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PledgeSpending> {
         const response = await this.spendingRaw(requestParameters, initOverrides);
@@ -463,7 +463,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Get summary of pledges for resource.
-     * Get pledges summary (Public API)
+     * Get pledges summary
      */
     async summaryRaw(requestParameters: PledgesApiSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgePledgesSummary>> {
         if (requestParameters['issueId'] == null) {
@@ -501,7 +501,7 @@ export class PledgesApi extends runtime.BaseAPI {
 
     /**
      * Get summary of pledges for resource.
-     * Get pledges summary (Public API)
+     * Get pledges summary
      */
     async summary(requestParameters: PledgesApiSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PledgePledgesSummary> {
         const response = await this.summaryRaw(requestParameters, initOverrides);

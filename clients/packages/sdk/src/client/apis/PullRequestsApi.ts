@@ -30,7 +30,7 @@ export class PullRequestsApi extends runtime.BaseAPI {
 
     /**
      * Search pull requests.
-     * Search pull requests (Public API)
+     * Search pull requests
      */
     async searchRaw(requestParameters: PullRequestsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePullRequest>> {
         const queryParameters: any = {};
@@ -61,7 +61,7 @@ export class PullRequestsApi extends runtime.BaseAPI {
 
     /**
      * Search pull requests.
-     * Search pull requests (Public API)
+     * Search pull requests
      */
     async search(requestParameters: PullRequestsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourcePullRequest> {
         const response = await this.searchRaw(requestParameters, initOverrides);

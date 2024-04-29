@@ -260,7 +260,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             scope_name = subscription.subscription_tier.name
             subscription_tier = subscription.subscription_tier
             managing_organization = await organization_service.get(
-                session, subscription_tier.managing_organization_id
+                session, subscription_tier.organization_id
             )
             assert managing_organization is not None
             organization_name = managing_organization.name

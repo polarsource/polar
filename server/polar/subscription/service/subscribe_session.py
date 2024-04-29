@@ -41,20 +41,10 @@ class ArchivedSubscriptionTier(SubscribeSessionError):
 
 
 class AlreadySubscribed(SubscribeSessionError):
-    def __init__(
-        self,
-        *,
-        user_id: uuid.UUID,
-        organization_id: uuid.UUID | None = None,
-        repository_id: uuid.UUID | None = None,
-    ) -> None:
+    def __init__(self, *, user_id: uuid.UUID, organization_id: uuid.UUID) -> None:
         self.user_id = user_id
         self.organization_id = organization_id
-        self.repository_id = repository_id
-        message = (
-            "You're already subscribed to one of the tier "
-            "of this organization or repository."
-        )
+        message = "You're already subscribed to one of the tier of this organization."
         super().__init__(message, 400)
 
 
@@ -72,10 +62,8 @@ class SubscribeSessionService:
         customer_email: str | None = None,
         organization_id: uuid.UUID | None = None,
     ) -> SubscribeSession:
-        subscription_tier = (
-            await subscription_tier_service.with_organization_or_repository(
-                session, subscription_tier
-            )
+        subscription_tier = await subscription_tier_service.with_organization(
+            session, subscription_tier
         )
 
         if subscription_tier.type == SubscriptionTierType.free:
@@ -110,7 +98,6 @@ class SubscribeSessionService:
                     session,
                     auth_subject,
                     organization_id=subscription_tier.organization_id,
-                    repository_id=subscription_tier.repository_id,
                 )
             )
             # Trying to upgrade from a Free subscription, set it in metadata for
@@ -125,11 +112,10 @@ class SubscribeSessionService:
                     )
                 except StopIteration as e:
                     # Prevent authenticated user to subscribe to another plan
-                    # from the same organization/repository
+                    # from the same organization
                     raise AlreadySubscribed(
                         user_id=auth_subject.id,
                         organization_id=subscription_tier.organization_id,
-                        repository_id=subscription_tier.repository_id,
                     ) from e
                 else:
                     metadata["subscription_id"] = str(free_subscription_upgrade.id)
@@ -182,10 +168,8 @@ class SubscribeSessionService:
         if subscription_tier is None:
             raise ResourceNotFound()
 
-        subscription_tier = (
-            await subscription_tier_service.with_organization_or_repository(
-                session, subscription_tier
-            )
+        subscription_tier = await subscription_tier_service.with_organization(
+            session, subscription_tier
         )
 
         price = subscription_tier.get_price(uuid.UUID(subscription_tier_price_id))

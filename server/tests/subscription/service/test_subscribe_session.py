@@ -39,24 +39,22 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_organization_free: SubscriptionTier,
+        subscription_tier_free: SubscriptionTier,
     ) -> None:
         # then
         session.expunge_all()
 
         # create_subscribe_session calls .refresh() which requires the objects to be from the same session
         # re-load the tier without any relationships
-        subscription_tier_organization_free_loaded = (
-            await subscription_tier_service.get(
-                session, subscription_tier_organization_free.id
-            )
+        subscription_tier_free_loaded = await subscription_tier_service.get(
+            session, subscription_tier_free.id
         )
-        assert subscription_tier_organization_free_loaded
+        assert subscription_tier_free_loaded
 
         with pytest.raises(FreeSubscriptionTier):
             await subscribe_session_service.create_subscribe_session(
                 session,
-                subscription_tier_organization_free_loaded,
+                subscription_tier_free_loaded,
                 SubscriptionTierPrice(),
                 "SUCCESS_URL",
                 Anonymous(),
@@ -69,17 +67,17 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
     ) -> None:
-        subscription_tier_organization.is_archived = True
-        await save_fixture(subscription_tier_organization)
+        subscription_tier.is_archived = True
+        await save_fixture(subscription_tier)
 
         # then
         session.expunge_all()
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -100,11 +98,11 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, subscription_tier=subscription_tier_organization, user=user
+            save_fixture, subscription_tier=subscription_tier, user=user
         )
 
         # then
@@ -112,7 +110,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -132,7 +130,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_subscription_checkout_session_mock: MagicMock = (
@@ -151,7 +149,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -170,20 +168,18 @@ class TestCreateSubscribeSession:
         assert subscribe_session.url == "STRIPE_URL"
         assert subscribe_session.customer_email is None
         assert subscribe_session.customer_name is None
-        assert (
-            subscribe_session.subscription_tier.id == subscription_tier_organization.id
-        )
+        assert subscribe_session.subscription_tier.id == subscription_tier.id
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
         )
@@ -192,7 +188,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
@@ -214,7 +210,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -233,9 +229,7 @@ class TestCreateSubscribeSession:
         assert subscribe_session.url == "STRIPE_URL"
         assert subscribe_session.customer_email == "backer@example.com"
         assert subscribe_session.customer_name == "John"
-        assert (
-            subscribe_session.subscription_tier.id == subscription_tier_organization.id
-        )
+        assert subscribe_session.subscription_tier.id == subscription_tier.id
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             price.stripe_price_id,
@@ -243,12 +237,12 @@ class TestCreateSubscribeSession:
             is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
                 "user_id": str(user.id),
             },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
                 "user_id": str(user.id),
             },
@@ -258,7 +252,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
@@ -280,7 +274,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -299,20 +293,18 @@ class TestCreateSubscribeSession:
         assert subscribe_session.url == "STRIPE_URL"
         assert subscribe_session.customer_email is None
         assert subscribe_session.customer_name is None
-        assert (
-            subscribe_session.subscription_tier.id == subscription_tier_organization.id
-        )
+        assert subscribe_session.subscription_tier.id == subscription_tier.id
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=False,
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
         )
@@ -321,7 +313,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
@@ -343,7 +335,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -363,9 +355,7 @@ class TestCreateSubscribeSession:
         assert subscribe_session.url == "STRIPE_URL"
         assert subscribe_session.customer_email == "backer@example.com"
         assert subscribe_session.customer_name is None
-        assert (
-            subscribe_session.subscription_tier.id == subscription_tier_organization.id
-        )
+        assert subscribe_session.subscription_tier.id == subscription_tier.id
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             price.stripe_price_id,
@@ -373,11 +363,11 @@ class TestCreateSubscribeSession:
             is_tax_applicable=False,
             customer_email="backer@example.com",
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
         )
@@ -387,7 +377,7 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         organization: Organization,
         user: User,
@@ -395,9 +385,9 @@ class TestCreateSubscribeSession:
         applicable_tax_benefit = await create_benefit(
             save_fixture, is_tax_applicable=True, organization=organization
         )
-        subscription_tier_organization = await add_subscription_benefits(
+        subscription_tier = await add_subscription_benefits(
             save_fixture,
-            subscription_tier=subscription_tier_organization,
+            subscription_tier=subscription_tier,
             benefits=[applicable_tax_benefit],
         )
 
@@ -417,7 +407,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -436,20 +426,18 @@ class TestCreateSubscribeSession:
         assert subscribe_session.url == "STRIPE_URL"
         assert subscribe_session.customer_email is None
         assert subscribe_session.customer_name is None
-        assert (
-            subscribe_session.subscription_tier.id == subscription_tier_organization.id
-        )
+        assert subscribe_session.subscription_tier.id == subscription_tier.id
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             price.stripe_price_id,
             "SUCCESS_URL",
             is_tax_applicable=True,
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
             },
         )
@@ -459,14 +447,14 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
-        subscription_tier_organization_free: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
+        subscription_tier_free: SubscriptionTier,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
         free_subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_organization_free,
+            subscription_tier=subscription_tier_free,
             user=user,
         )
 
@@ -488,7 +476,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -509,13 +497,13 @@ class TestCreateSubscribeSession:
             is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
                 "subscription_id": str(free_subscription.id),
                 "user_id": str(user.id),
             },
             subscription_metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
+                "subscription_tier_id": str(subscription_tier.id),
                 "subscription_tier_price_id": str(price.id),
                 "subscription_id": str(free_subscription.id),
                 "user_id": str(user.id),
@@ -526,7 +514,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         organization_subscriber: Organization,
     ) -> None:
@@ -535,7 +523,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -556,7 +544,7 @@ class TestCreateSubscribeSession:
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         organization_subscriber: Organization,
         user: User,
@@ -566,7 +554,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -588,7 +576,7 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
         organization_subscriber: Organization,
         organization_subscriber_admin: User,
@@ -613,7 +601,7 @@ class TestCreateSubscribeSession:
 
         # load
         subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier_organization.id
+            session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
         price = subscription_tier_organization_loaded.prices[0]
@@ -688,7 +676,7 @@ class TestGetSubscribeSession:
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
-        subscription_tier_organization: SubscriptionTier,
+        subscription_tier: SubscriptionTier,
     ) -> None:
         get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(
@@ -697,10 +685,8 @@ class TestGetSubscribeSession:
             customer_email=None,
             customer_details={"name": "John", "email": "backer@example.com"},
             metadata={
-                "subscription_tier_id": str(subscription_tier_organization.id),
-                "subscription_tier_price_id": str(
-                    subscription_tier_organization.prices[0].id
-                ),
+                "subscription_tier_id": str(subscription_tier.id),
+                "subscription_tier_price_id": str(subscription_tier.prices[0].id),
             },
         )
 
@@ -715,7 +701,5 @@ class TestGetSubscribeSession:
         assert subscribe_session.url == "STRIPE_URL"
         assert subscribe_session.customer_email == "backer@example.com"
         assert subscribe_session.customer_name == "John"
-        assert (
-            subscribe_session.subscription_tier.id == subscription_tier_organization.id
-        )
-        assert subscribe_session.price.id == subscription_tier_organization.prices[0].id
+        assert subscribe_session.subscription_tier.id == subscription_tier.id
+        assert subscribe_session.price.id == subscription_tier.prices[0].id

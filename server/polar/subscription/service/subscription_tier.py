@@ -4,7 +4,7 @@ from typing import Any, Literal, TypeVar
 
 from sqlalchemy import Select, and_, case, func, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import aliased, contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import Subject
@@ -20,7 +20,6 @@ from polar.models import (
     Account,
     Benefit,
     Organization,
-    Repository,
     SubscriptionTier,
     SubscriptionTierBenefit,
     SubscriptionTierPrice,
@@ -29,7 +28,6 @@ from polar.models import (
 )
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.service import organization as organization_service
-from polar.repository.service import repository as repository_service
 from polar.webhook.service import webhook_service
 from polar.webhook.webhooks import WebhookEventType, WebhookTypeObject
 from polar.worker import enqueue_job
@@ -48,13 +46,6 @@ class OrganizationDoesNotExist(SubscriptionTierError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = f"Organization with id {organization_id} does not exist."
-        super().__init__(message, 422)
-
-
-class RepositoryDoesNotExist(SubscriptionTierError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = f"Repository with id {organization_id} does not exist."
         super().__init__(message, 422)
 
 
@@ -92,8 +83,6 @@ class SubscriptionTierService(
         *,
         type: SubscriptionTierType | None = None,
         organization: Organization | None = None,
-        repository: Repository | None = None,
-        direct_organization: bool = True,
         include_archived: bool = False,
         pagination: PaginationParams,
     ) -> tuple[Sequence[SubscriptionTier], int]:
@@ -110,19 +99,9 @@ class SubscriptionTierService(
 
         if organization is not None:
             clauses = [SubscriptionTier.organization_id == organization.id]
-            if not direct_organization:
-                clauses.append(Repository.organization_id == organization.id)
 
-            inner_statement = inner_statement.where(or_(*clauses))
-            count_statement = count_statement.where(or_(*clauses))
-
-        if repository is not None:
-            inner_statement = inner_statement.where(
-                SubscriptionTier.repository_id == repository.id
-            )
-            count_statement = count_statement.where(
-                SubscriptionTier.repository_id == repository.id
-            )
+            inner_statement = inner_statement.where(*clauses)
+            count_statement = count_statement.where(*clauses)
 
         if not include_archived:
             inner_statement = inner_statement.where(
@@ -179,10 +158,7 @@ class SubscriptionTierService(
         statement = (
             self._get_readable_subscription_tier_statement(auth_subject)
             .where(SubscriptionTier.id == id, SubscriptionTier.deleted_at.is_(None))
-            .options(
-                contains_eager(SubscriptionTier.organization),
-                contains_eager(SubscriptionTier.repository),
-            )
+            .options(contains_eager(SubscriptionTier.organization))
             .limit(1)
         )
 
@@ -195,10 +171,7 @@ class SubscriptionTierService(
         statement = (
             select(SubscriptionTier)
             .where(SubscriptionTier.id == id)
-            .options(
-                joinedload(SubscriptionTier.organization),
-                joinedload(SubscriptionTier.repository),
-            )
+            .options(joinedload(SubscriptionTier.organization))
             .limit(1)
         )
 
@@ -213,14 +186,10 @@ class SubscriptionTierService(
         self,
         session: AsyncSession,
         *,
-        organization: Organization | None = None,
-        repository: Repository | None = None,
+        organization: Organization,
     ) -> SubscriptionTier | None:
         return await self.get_by(
-            session,
-            type=SubscriptionTierType.free,
-            organization_id=organization.id if organization else None,
-            repository_id=repository.id if repository else None,
+            session, type=SubscriptionTierType.free, organization_id=organization.id
         )
 
     async def user_create(
@@ -230,54 +199,34 @@ class SubscriptionTierService(
         create_schema: SubscriptionTierCreate,
         user: User,
     ) -> SubscriptionTier:
-        organization: Organization | None = None
-        repository: Repository | None = None
-        if create_schema.organization_id is not None:
-            organization = await organization_service.get(
-                session, create_schema.organization_id
-            )
-            if organization is None or not await authz.can(
-                user, AccessType.write, organization
-            ):
-                raise OrganizationDoesNotExist(create_schema.organization_id)
-
-        if create_schema.repository_id is not None:
-            repository = await repository_service.get(
-                session, create_schema.repository_id
-            )
-            if repository is None or not await authz.can(
-                user, AccessType.write, repository
-            ):
-                raise RepositoryDoesNotExist(create_schema.repository_id)
+        organization = await organization_service.get(
+            session, create_schema.organization_id
+        )
+        if organization is None or not await authz.can(
+            user, AccessType.write, organization
+        ):
+            raise OrganizationDoesNotExist(create_schema.organization_id)
 
         if create_schema.is_highlighted:
             await self._disable_other_highlights(
                 session,
                 type=create_schema.type,
                 organization_id=create_schema.organization_id,
-                repository_id=create_schema.repository_id,
             )
 
         subscription_tier = SubscriptionTier(
             organization=organization,
-            repository=repository,
             prices=[],
             subscription_tier_benefits=[],
-            **create_schema.model_dump(
-                exclude={"organization_id", "repository_id", "prices"}
-            ),
+            **create_schema.model_dump(exclude={"organization_id", "prices"}),
         )
         session.add(subscription_tier)
         await session.flush()
         assert subscription_tier.id is not None
 
         metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
-        if organization is not None:
-            metadata["organization_id"] = str(organization.id)
-            metadata["organization_name"] = organization.name
-        if repository is not None:
-            metadata["repository_id"] = str(repository.id)
-            metadata["repository_name"] = repository.name
+        metadata["organization_id"] = str(organization.id)
+        metadata["organization_name"] = organization.name
 
         product = stripe_service.create_product(
             subscription_tier.get_stripe_name(),
@@ -315,9 +264,7 @@ class SubscriptionTierService(
         update_schema: SubscriptionTierUpdate,
         user: User,
     ) -> SubscriptionTier:
-        subscription_tier = await self.with_organization_or_repository(
-            session, subscription_tier
-        )
+        subscription_tier = await self.with_organization(session, subscription_tier)
 
         if not await authz.can(user, AccessType.write, subscription_tier):
             raise NotPermitted()
@@ -389,7 +336,6 @@ class SubscriptionTierService(
                 session,
                 type=subscription_tier.type,
                 organization_id=subscription_tier.organization_id,
-                repository_id=subscription_tier.repository_id,
             )
 
         for attr, value in update_schema.model_dump(
@@ -409,20 +355,16 @@ class SubscriptionTierService(
         self,
         session: AsyncSession,
         benefits: list[Benefit],
-        organization: Organization | None = None,
-        repository: Repository | None = None,
+        organization: Organization,
     ) -> SubscriptionTier:
-        free_subscription_tier = await self.get_free(
-            session, organization=organization, repository=repository
-        )
+        free_subscription_tier = await self.get_free(session, organization=organization)
 
         # create if does not exist
         if free_subscription_tier is None:
             free_subscription_tier = SubscriptionTier(
                 type=SubscriptionTierType.free,
                 name="Free",
-                organization_id=organization.id if organization else None,
-                repository_id=repository.id if repository else None,
+                organization_id=organization.id,
                 prices=[],
             )
 
@@ -459,9 +401,7 @@ class SubscriptionTierService(
         benefits: list[uuid.UUID],
         user: User,
     ) -> tuple[SubscriptionTier, set[Benefit], set[Benefit]]:
-        subscription_tier = await self.with_organization_or_repository(
-            session, subscription_tier
-        )
+        subscription_tier = await self.with_organization(session, subscription_tier)
         if not await authz.can(user, AccessType.write, subscription_tier):
             raise NotPermitted()
 
@@ -510,9 +450,7 @@ class SubscriptionTierService(
         subscription_tier: SubscriptionTier,
         user: User,
     ) -> SubscriptionTier:
-        subscription_tier = await self.with_organization_or_repository(
-            session, subscription_tier
-        )
+        subscription_tier = await self.with_organization(session, subscription_tier)
         if not await authz.can(user, AccessType.write, subscription_tier):
             raise NotPermitted()
 
@@ -529,14 +467,13 @@ class SubscriptionTierService(
 
         return subscription_tier
 
-    async def with_organization_or_repository(
+    async def with_organization(
         self, session: AsyncSession, subscription_tier: SubscriptionTier
     ) -> SubscriptionTier:
         try:
             subscription_tier.organization
-            subscription_tier.repository
         except InvalidRequestError:
-            await session.refresh(subscription_tier, {"organization", "repository"})
+            await session.refresh(subscription_tier, {"organization"})
         return subscription_tier
 
     def _get_readable_subscription_tier_ids_statement(
@@ -560,21 +497,14 @@ class SubscriptionTierService(
         auth_subject: Subject,
         selector: Select[T],
     ) -> Select[T]:
-        RepositoryOrganization = aliased(Organization)
-        RepositoryUserOrganization = aliased(UserOrganization)
-
-        stmt = (
-            selector.join(SubscriptionTier.organization, full=True)
-            .join(SubscriptionTier.repository, full=True)
-            .where(
-                # Prevent to return `None` objects due to the full outer join
-                SubscriptionTier.id.is_not(None),
-                SubscriptionTier.deleted_at.is_(None),
-            )
+        stmt = selector.join(SubscriptionTier.organization).where(
+            # Prevent to return `None` objects due to the full outer join
+            SubscriptionTier.id.is_not(None),
+            SubscriptionTier.deleted_at.is_(None),
         )
 
         if isinstance(auth_subject, User):
-            # Direct tier's organization member
+            # Tier's organization member
             stmt = stmt.join(
                 UserOrganization,
                 onclause=and_(
@@ -586,44 +516,16 @@ class SubscriptionTierService(
                 full=True,
             )
 
-            # Tier's repository's organization member
-            stmt = stmt.join(
-                RepositoryOrganization,
-                onclause=RepositoryOrganization.id == Repository.organization_id,
-                full=True,
-            ).join(
-                RepositoryUserOrganization,
-                onclause=and_(
-                    RepositoryUserOrganization.organization_id
-                    == RepositoryOrganization.id,
-                    RepositoryUserOrganization.user_id == auth_subject.id,
-                    RepositoryUserOrganization.deleted_at.is_(None),
-                ),
-                full=True,
-            )
-
             stmt = stmt.where(
-                # Can see private repository tiers if they are
-                # a member of the repository's organization
-                or_(
-                    SubscriptionTier.repository_id.is_(None),
-                    Repository.is_private.is_(False),
-                    RepositoryUserOrganization.user_id == auth_subject.id,
-                ),
                 # Can see archived tiers if they are a member of the tier's organization
                 or_(
                     SubscriptionTier.is_archived.is_(False),
                     UserOrganization.user_id == auth_subject.id,
-                    RepositoryUserOrganization.user_id == auth_subject.id,
                 ),
             )
         else:
             stmt = stmt.where(
                 SubscriptionTier.is_archived.is_(False),
-                or_(
-                    SubscriptionTier.repository_id.is_(None),
-                    Repository.is_private.is_(False),
-                ),
             )
 
         return stmt
@@ -632,7 +534,7 @@ class SubscriptionTierService(
         self, session: AsyncSession, subscription_tier: SubscriptionTier
     ) -> Account | None:
         return await account_service.get_by_organization_id(
-            session, subscription_tier.managing_organization_id
+            session, subscription_tier.organization_id
         )
 
     async def _disable_other_highlights(
@@ -640,22 +542,16 @@ class SubscriptionTierService(
         session: AsyncSession,
         *,
         type: SubscriptionTierType,
-        organization_id: uuid.UUID | None = None,
-        repository_id: uuid.UUID | None = None,
+        organization_id: uuid.UUID,
     ) -> None:
         statement = (
             update(SubscriptionTier)
-            .where(SubscriptionTier.type == type)
+            .where(
+                SubscriptionTier.type == type,
+                SubscriptionTier.organization_id == organization_id,
+            )
             .values(is_highlighted=False)
         )
-
-        if organization_id is not None:
-            statement = statement.where(
-                SubscriptionTier.organization_id == organization_id
-            )
-
-        if repository_id is not None:
-            statement = statement.where(SubscriptionTier.repository_id == repository_id)
 
         await session.execute(statement)
 
@@ -695,7 +591,7 @@ class SubscriptionTierService(
                 event = (event_type, full_tier)
 
         if managing_org := await organization_service.get(
-            session, tier.managing_organization_id
+            session, tier.organization_id
         ):
             await webhook_service.send(session, target=managing_org, we=event)
 

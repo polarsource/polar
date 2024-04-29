@@ -72,8 +72,7 @@ class TransactionService(BaseTransactionService):
             # Subscription
             subqueryload(Transaction.subscription).options(
                 joinedload(Subscription.subscription_tier).options(
-                    joinedload(SubscriptionTier.organization),
-                    joinedload(SubscriptionTier.repository),
+                    joinedload(SubscriptionTier.organization)
                 ),
             ),
             # SubscriptionTierPrice

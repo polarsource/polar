@@ -413,8 +413,7 @@ async def create_subscription_tier(
     save_fixture: SaveFixture,
     *,
     type: SubscriptionTierType = SubscriptionTierType.individual,
-    organization: Organization | None = None,
-    repository: Repository | None = None,
+    organization: Organization,
     name: str = "Subscription Tier",
     is_highlighted: bool = False,
     is_archived: bool = False,
@@ -422,15 +421,13 @@ async def create_subscription_tier(
         (1000, SubscriptionTierPriceRecurringInterval.month)
     ],
 ) -> SubscriptionTier:
-    assert (organization is not None) != (repository is not None)
     subscription_tier = SubscriptionTier(
         type=type,
         name=name,
         description="Description",
         is_highlighted=is_highlighted,
         is_archived=is_archived,
-        organization_id=organization.id if organization is not None else None,
-        repository_id=repository.id if repository is not None else None,
+        organization_id=organization.id,
         stripe_product_id=rstr("PRODUCT_ID"),
         all_prices=[],
         prices=[],
@@ -571,7 +568,7 @@ async def create_active_subscription(
 
 
 @pytest_asyncio.fixture
-async def subscription_tier_organization_free(
+async def subscription_tier_free(
     save_fixture: SaveFixture, organization: Organization
 ) -> SubscriptionTier:
     return await create_subscription_tier(
@@ -583,7 +580,14 @@ async def subscription_tier_organization_free(
 
 
 @pytest_asyncio.fixture
-async def subscription_tier_organization(
+async def subscription_tier(
+    save_fixture: SaveFixture, organization: Organization
+) -> SubscriptionTier:
+    return await create_subscription_tier(save_fixture, organization=organization)
+
+
+@pytest_asyncio.fixture
+async def subscription_tier_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> SubscriptionTier:
     return await create_subscription_tier(save_fixture, organization=organization)
@@ -591,41 +595,25 @@ async def subscription_tier_organization(
 
 @pytest_asyncio.fixture
 async def subscription_tier_organization_second(
-    save_fixture: SaveFixture, organization: Organization
-) -> SubscriptionTier:
-    return await create_subscription_tier(save_fixture, organization=organization)
-
-
-@pytest_asyncio.fixture
-async def subscription_tier_repository(
-    save_fixture: SaveFixture, public_repository: Repository
-) -> SubscriptionTier:
-    return await create_subscription_tier(save_fixture, repository=public_repository)
-
-
-@pytest_asyncio.fixture
-async def subscription_tier_private_repository(
-    save_fixture: SaveFixture, repository: Repository
+    save_fixture: SaveFixture, second_organization: Organization
 ) -> SubscriptionTier:
     return await create_subscription_tier(
-        save_fixture, type=SubscriptionTierType.business, repository=repository
+        save_fixture, organization=second_organization
     )
 
 
 @pytest_asyncio.fixture
 async def subscription_tiers(
-    subscription_tier_organization: SubscriptionTier,
+    subscription_tier: SubscriptionTier,
+    subscription_tier_second: SubscriptionTier,
+    subscription_tier_free: SubscriptionTier,
     subscription_tier_organization_second: SubscriptionTier,
-    subscription_tier_organization_free: SubscriptionTier,
-    subscription_tier_repository: SubscriptionTier,
-    subscription_tier_private_repository: SubscriptionTier,
 ) -> list[SubscriptionTier]:
     return [
-        subscription_tier_organization_free,
-        subscription_tier_organization,
+        subscription_tier_free,
+        subscription_tier,
+        subscription_tier_second,
         subscription_tier_organization_second,
-        subscription_tier_repository,
-        subscription_tier_private_repository,
     ]
 
 
@@ -721,24 +709,24 @@ async def organization_subscriber_members(
 @pytest_asyncio.fixture
 async def subscription(
     save_fixture: SaveFixture,
-    subscription_tier_organization: SubscriptionTier,
+    subscription_tier: SubscriptionTier,
     user: User,
 ) -> Subscription:
     return await create_subscription(
-        save_fixture, subscription_tier=subscription_tier_organization, user=user
+        save_fixture, subscription_tier=subscription_tier, user=user
     )
 
 
 @pytest_asyncio.fixture
 async def subscription_organization(
     save_fixture: SaveFixture,
-    subscription_tier_organization: SubscriptionTier,
+    subscription_tier: SubscriptionTier,
     organization_subscriber: Organization,
     user_second: User,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
-        subscription_tier=subscription_tier_organization,
+        subscription_tier=subscription_tier,
         user=user_second,
         organization=organization_subscriber,
     )

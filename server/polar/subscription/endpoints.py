@@ -16,7 +16,7 @@ from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Repository, Subscription, SubscriptionTier
+from polar.models import Subscription, SubscriptionTier
 from polar.models.organization import Organization
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.dependencies import (
@@ -26,8 +26,6 @@ from polar.organization.dependencies import (
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-from polar.repository.dependencies import OptionalRepositoryNameQuery
-from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
 
@@ -67,8 +65,6 @@ async def search_subscription_tiers(
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
     auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
-    repository_name: OptionalRepositoryNameQuery = None,
-    direct_organization: bool = Query(True),
     include_archived: bool = Query(False),
     type: SubscriptionTierType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
@@ -80,21 +76,11 @@ async def search_subscription_tiers(
     if organization is None:
         raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     results, count = await subscription_tier_service.search(
         session,
         auth_subject.subject,
         type=type,
         organization=organization,
-        repository=repository,
-        direct_organization=direct_organization,
         include_archived=include_archived,
         pagination=pagination,
     )
@@ -311,10 +297,8 @@ async def get_subscribe_session(
 async def get_subscriptions_statistics(
     auth_subject: auth.CreatorSubscriptionsRead,
     organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
     start_date: date = Query(...),
     end_date: date = Query(...),
-    direct_organization: bool = Query(True),
     types: list[SubscriptionTierType] | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
@@ -326,22 +310,12 @@ async def get_subscriptions_statistics(
     if organization is None:
         raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     periods = await subscription_service.get_statistics_periods(
         session,
         auth_subject.subject,
         start_date=start_date,
         end_date=end_date,
         organization=organization,
-        repository=repository,
-        direct_organization=direct_organization,
         types=types,
         subscription_tier_id=subscription_tier_id,
     )
@@ -364,8 +338,6 @@ async def search_subscriptions(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
-    direct_organization: bool = Query(True),
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     subscriber_user_id: UUID4 | None = Query(None),
@@ -380,25 +352,11 @@ async def search_subscriptions(
     if organization is None:
         raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        if organization is None:
-            raise BadRequest(
-                "organization_name and platform are required when repository_name is set"
-            )
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     results, count = await subscription_service.search(
         session,
         auth_subject.subject,
         type=type,
         organization=organization,
-        repository=repository,
-        direct_organization=direct_organization,
         subscription_tier_id=subscription_tier_id,
         subscriber_user_id=subscriber_user_id,
         subscriber_organization_id=subscriber_organization_id,
@@ -424,8 +382,6 @@ async def search_subscribed_subscriptions(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     organization_name_platform: OptionalOrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
-    direct_organization: bool = Query(True),
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     subscriber_user_id: UUID4 | None = Query(None),
@@ -441,25 +397,11 @@ async def search_subscribed_subscriptions(
         if organization is None:
             raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        if organization is None:
-            raise BadRequest(
-                "organization_name and platform are required when repository_name is set"
-            )
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     results, count = await subscription_service.search_subscribed(
         session,
         auth_subject.subject,
         type=type,
         organization=organization,
-        repository=repository,
-        direct_organization=direct_organization,
         subscription_tier_id=subscription_tier_id,
         subscriber_user_id=subscriber_user_id,
         subscriber_organization_id=subscriber_organization_id,
@@ -518,7 +460,6 @@ async def create_email_subscription(
     subscription_create: SubscriptionCreateEmail,
     auth_subject: auth.CreatorSubscriptionsWrite,
     organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
@@ -531,25 +472,13 @@ async def create_email_subscription(
         if organization is None:
             raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        if organization is None:
-            raise BadRequest(
-                "organization_name and platform are required when repository_name is set"
-            )
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     # authz
     if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise Unauthorized()
 
     # find free tier
     free_tier = await subscription_tier_service.get_free(
-        session, organization=organization, repository=repository
+        session, organization=organization
     )
     if free_tier is None:
         raise ResourceNotFound("No free tier found")
@@ -581,7 +510,6 @@ async def subscriptions_import(
     auth_subject: auth.CreatorSubscriptionsWrite,
     file: UploadFile,
     organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionsImported:
@@ -594,21 +522,9 @@ async def subscriptions_import(
         if organization is None:
             raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        if organization is None:
-            raise BadRequest(
-                "organization_name and platform are required when repository_name is set"
-            )
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     # find free tier
     free_tier = await subscription_tier_service.get_free(
-        session, organization=organization, repository=repository
+        session, organization=organization
     )
     if free_tier is None:
         raise ResourceNotFound("No free tier found")
@@ -656,7 +572,6 @@ async def subscriptions_import(
 async def subscriptions_export(
     auth_subject: auth.CreatorSubscriptionsRead,
     organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Response:
@@ -668,18 +583,6 @@ async def subscriptions_export(
         )
         if organization is None:
             raise ResourceNotFound("Organization not found")
-
-    repository: Repository | None = None
-    if repository_name is not None:
-        if organization is None:
-            raise BadRequest(
-                "organization_name and platform are required when repository_name is set"
-            )
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
 
     # authz
     if not await authz.can(auth_subject.subject, AccessType.write, organization):
@@ -693,7 +596,6 @@ async def subscriptions_export(
             session,
             user=auth_subject.subject,
             organization=organization,
-            repository=repository,
             pagination=PaginationParams(limit=1000000, page=1),
         )
 
@@ -773,7 +675,6 @@ async def cancel_subscription(
 async def search_subscriptions_summary(
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
-    repository_name: OptionalRepositoryNameQuery = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionSummary]:
     organization_name, platform = organization_name_platform
@@ -783,19 +684,8 @@ async def search_subscriptions_summary(
     if organization is None:
         raise ResourceNotFound("Organization not found")
 
-    repository: Repository | None = None
-    if repository_name is not None:
-        repository = await repository_service.get_by_org_and_name(
-            session, organization.id, repository_name
-        )
-        if repository is None:
-            raise ResourceNotFound("Repository not found")
-
     results, count = await subscription_service.search_summary(
-        session,
-        organization=organization,
-        repository=repository,
-        pagination=pagination,
+        session, organization=organization, pagination=pagination
     )
 
     return ListResource.from_paginated_results(

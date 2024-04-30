@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Literal, Union
 
 from fastapi import FastAPI
@@ -12,24 +11,11 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.subscription import Subscription
 from polar.models.subscription_tier import SubscriptionTier
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchema
-
-
-class WebhookEventType(Enum):
-    subscription_created = "subscription.created"
-    subscription_updated = "subscription.updated"
-    subscription_tier_created = "subscription_tier.created"
-    subscription_tier_updated = "subscription_tier.updated"
-    benefit_created = "benefit.created"
-    benefit_updated = "benefit.updated"
-    organization_updated = "organization.updated"
-    pledge_created = "pledge.created"
-    pledge_updated = "pledge.updated"
-    donation_created = "donation.created"
-
 
 WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.subscription_created], Subscription],

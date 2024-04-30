@@ -62,6 +62,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
 from polar.models.user import OAuthPlatform
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -84,7 +85,7 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from polar.webhook.service import webhook_service
-from polar.webhook.webhooks import WebhookEventType, WebhookTypeObject
+from polar.webhook.webhooks import WebhookTypeObject
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 

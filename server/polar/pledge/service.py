@@ -44,6 +44,7 @@ from polar.models.pledge_transaction import PledgeTransaction, PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerPledgedIssueConfirmationPendingNotificationPayload,
     MaintainerPledgedIssuePendingNotificationPayload,
@@ -69,7 +70,6 @@ from polar.transaction.service.platform_fee import (
 )
 from polar.user.service import user as user_service
 from polar.webhook.service import webhook_service
-from polar.webhook.webhooks import WebhookEventType
 
 from .hooks import (
     PledgeHook,

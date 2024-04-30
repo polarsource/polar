@@ -1,14 +1,25 @@
+from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import (
-    Boolean,
-    ForeignKey,
-    String,
-)
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models.base import RecordModel
 from polar.kit.extensions.sqlalchemy.types import PostgresUUID
+
+
+class WebhookEventType(StrEnum):
+    subscription_created = "subscription.created"
+    subscription_updated = "subscription.updated"
+    subscription_tier_created = "subscription_tier.created"
+    subscription_tier_updated = "subscription_tier.updated"
+    benefit_created = "benefit.created"
+    benefit_updated = "benefit.updated"
+    organization_updated = "organization.updated"
+    pledge_created = "pledge.created"
+    pledge_updated = "pledge.updated"
+    donation_created = "donation.created"
 
 
 class WebhookEndpoint(RecordModel):
@@ -38,54 +49,6 @@ class WebhookEndpoint(RecordModel):
         nullable=True,
     )
 
-    # Events
-    event_subscription_created: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_subscription_updated: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_subscription_tier_created: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_subscription_tier_updated: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_pledge_created: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_pledge_updated: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_donation_created: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_organization_updated: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_benefit_created: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
-    )
-    event_benefit_updated: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="false",
+    events: Mapped[list[WebhookEventType]] = mapped_column(
+        JSONB, nullable=False, default=[]
     )

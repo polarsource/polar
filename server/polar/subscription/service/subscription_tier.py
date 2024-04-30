@@ -27,10 +27,11 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
 from polar.webhook.service import webhook_service
-from polar.webhook.webhooks import WebhookEventType, WebhookTypeObject
+from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 from ..schemas import (

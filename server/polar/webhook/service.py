@@ -2,13 +2,14 @@ from collections.abc import Sequence
 from typing import NoReturn
 from uuid import UUID
 
-from sqlalchemy import desc
+from sqlalchemy import Select, and_, desc, or_, select, text, update
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.benefit.schemas import benefit_schema_map
 from polar.donation.schemas import Donation as DonationSchema
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.models.benefit import Benefit
@@ -16,8 +17,9 @@ from polar.models.donation import Donation
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.user import User
+from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
 from polar.models.webhook_event import WebhookEvent
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
@@ -30,7 +32,6 @@ from .webhooks import (
     WebhookBenefitCreatedPayload,
     WebhookBenefitUpdatedPayload,
     WebhookDonationCreatedPayload,
-    WebhookEventType,
     WebhookOrganizationUpdatedPayload,
     WebhookPayload,
     WebhookPledgeCreatedPayload,
@@ -51,75 +52,75 @@ class WebhookService:
     async def list_endpoints(
         self,
         session: AsyncSession,
-        target: Organization | User,
-        event: WebhookEventType | None = None,
-    ) -> Sequence[WebhookEndpoint]:
-        stmt = sql.select(WebhookEndpoint).where(
-            WebhookEndpoint.deleted_at.is_(None),
-        )
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        user_id: UUID | None,
+        organization_id: UUID | None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[WebhookEndpoint], int]:
+        statement = self._get_readable_endpoints_statement(auth_subject)
 
-        if isinstance(target, Organization):
-            stmt = stmt.where(WebhookEndpoint.organization_id == target.id)
-        else:
-            stmt = stmt.where(WebhookEndpoint.user_id == target.id)
-
-        match event:
-            case None:
-                ...
-            case WebhookEventType.subscription_created:
-                stmt = stmt.where(WebhookEndpoint.event_subscription_created.is_(True))
-            case WebhookEventType.subscription_updated:
-                stmt = stmt.where(WebhookEndpoint.event_subscription_updated.is_(True))
-            case WebhookEventType.subscription_tier_created:
-                stmt = stmt.where(
-                    WebhookEndpoint.event_subscription_tier_created.is_(True)
-                )
-            case WebhookEventType.subscription_tier_updated:
-                stmt = stmt.where(
-                    WebhookEndpoint.event_subscription_tier_updated.is_(True)
-                )
-            case WebhookEventType.pledge_created:
-                stmt = stmt.where(WebhookEndpoint.event_pledge_created.is_(True))
-            case WebhookEventType.pledge_updated:
-                stmt = stmt.where(WebhookEndpoint.event_pledge_updated.is_(True))
-            case WebhookEventType.donation_created:
-                stmt = stmt.where(WebhookEndpoint.event_donation_created.is_(True))
-            case WebhookEventType.organization_updated:
-                stmt = stmt.where(WebhookEndpoint.event_organization_updated.is_(True))
-            case WebhookEventType.benefit_created:
-                stmt = stmt.where(WebhookEndpoint.event_benefit_created.is_(True))
-            case WebhookEventType.benefit_updated:
-                stmt = stmt.where(WebhookEndpoint.event_benefit_updated.is_(True))
-            case x:
-                assert_never(x)  # asserts that the match above is exhaustive
-
-        res = await session.execute(stmt)
-        return res.scalars().unique().all()
-
-    async def get_event(self, session: AsyncSession, id: UUID) -> WebhookEvent | None:
-        stmt = (
-            sql.select(WebhookEvent)
-            .where(
-                WebhookEvent.id == id,
+        if user_id is not None:
+            statement = statement.where(WebhookEndpoint.user_id == user_id)
+        if organization_id is not None:
+            statement = statement.where(
+                WebhookEndpoint.organization_id == organization_id
             )
-            .options(joinedload(WebhookEvent.webhook_endpoint))
-        )
-        res = await session.execute(stmt)
-        return res.scalars().unique().one_or_none()
+
+        statement = statement.order_by(WebhookEndpoint.created_at.desc())
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
 
     async def get_endpoint(
-        self, session: AsyncSession, id: UUID
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
     ) -> WebhookEndpoint | None:
-        stmt = sql.select(WebhookEndpoint).where(
-            WebhookEndpoint.id == id,
-            WebhookEndpoint.deleted_at.is_(None),
+        statement = self._get_readable_endpoints_statement(auth_subject).where(
+            WebhookEndpoint.id == id
         )
-        res = await session.execute(stmt)
+        res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
 
-    async def delete_endpoint(self, session: AsyncSession, id: UUID) -> None:
+    async def create_endpoint(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        create: WebhookEndpointCreate,
+    ) -> WebhookEndpoint:
+        endpoint = WebhookEndpoint(**create.model_dump())
+        session.add(endpoint)
+        await session.flush()
+        return endpoint
+
+    async def update_endpoint(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        endpoint: WebhookEndpoint,
+        update: WebhookEndpointUpdate,
+    ) -> WebhookEndpoint:
+        for attr, value in update.model_dump(
+            exclude_unset=True, exclude_none=True
+        ).items():
+            setattr(endpoint, attr, value)
+        session.add(endpoint)
+        await session.flush()
+        return endpoint
+
+    async def delete_endpoint(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+    ) -> None:
         stmt = (
-            sql.update(WebhookEndpoint)
+            update(WebhookEndpoint)
             .where(
                 WebhookEndpoint.id == id,
             )
@@ -127,14 +128,82 @@ class WebhookService:
         )
         await session.execute(stmt)
 
+    async def list_deliveries(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        endpoint_id: UUID | None = None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[WebhookDelivery], int]:
+        readable_endpoints_statement = self._get_readable_endpoints_statement(
+            auth_subject
+        )
+        statement = (
+            select(WebhookDelivery)
+            .join(WebhookEndpoint)
+            .where(
+                WebhookDelivery.deleted_at.is_(None),
+                WebhookEndpoint.id.in_(
+                    readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
+                ),
+            )
+            .options(joinedload(WebhookDelivery.webhook_event))
+            .order_by(desc(WebhookDelivery.created_at))
+        )
+
+        if endpoint_id is not None:
+            statement = statement.where(
+                WebhookDelivery.webhook_endpoint_id == endpoint_id
+            )
+
+        return await paginate(session, statement, pagination=pagination)
+
+    async def redeliver_event(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+    ) -> None:
+        readable_endpoints_statement = self._get_readable_endpoints_statement(
+            auth_subject
+        )
+        statement = (
+            select(WebhookEvent)
+            .join(WebhookEndpoint)
+            .where(
+                WebhookEvent.id == id,
+                WebhookEvent.deleted_at.is_(None),
+                WebhookEndpoint.id.in_(
+                    readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
+                ),
+            )
+        )
+
+        res = await session.execute(statement)
+        event = res.scalars().unique().one_or_none()
+        if event is None:
+            raise ResourceNotFound()
+
+        enqueue_job("webhook_event.send", webhook_event_id=event.id)
+
+    async def get_event_by_id(
+        self, session: AsyncSession, id: UUID
+    ) -> WebhookEvent | None:
+        statement = (
+            select(WebhookEvent)
+            .where(WebhookEvent.deleted_at.is_(None), WebhookEvent.id == id)
+            .options(joinedload(WebhookEvent.webhook_endpoint))
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
     async def send(
         self,
         session: AsyncSession,
         target: Organization | User,
         we: WebhookTypeObject,
     ) -> None:
-        endpoints = await self.list_endpoints(session, target, event=we[0])
-
         payload: WebhookPayload | None = None
 
         match we[0]:
@@ -218,7 +287,9 @@ class WebhookService:
         if payload is None:
             raise Exception("no payload")
 
-        for e in endpoints:
+        for e in await self._get_event_target_endpoints(
+            session, event=we[0], target=target
+        ):
             event = WebhookEvent(
                 webhook_endpoint_id=e.id, payload=payload.model_dump_json()
             )
@@ -229,113 +300,53 @@ class WebhookService:
 
         return
 
-    async def create_endpoint(
+    def _get_readable_endpoints_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[WebhookEndpoint]]:
+        statement = select(WebhookEndpoint).where(WebhookEndpoint.deleted_at.is_(None))
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.join(
+                UserOrganization,
+                onclause=UserOrganization.organization_id
+                == WebhookEndpoint.organization_id,
+                full=True,
+            ).where(
+                or_(
+                    WebhookEndpoint.user_id == user.id,
+                    and_(
+                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.is_admin.is_(True),
+                    ),
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                WebhookEndpoint.organization_id == auth_subject.subject.id
+            )
+
+        return statement
+
+    async def _get_event_target_endpoints(
         self,
         session: AsyncSession,
         *,
-        create: WebhookEndpointCreate,
-    ) -> WebhookEndpoint:
-        endpoint = WebhookEndpoint(
-            url=str(create.url),
-            user_id=create.user_id,
-            organization_id=create.organization_id,
-            secret=create.secret,
-            event_subscription_created=create.event_subscription_created,
-            event_subscription_updated=create.event_subscription_updated,
-            event_subscription_tier_created=create.event_subscription_tier_created,
-            event_subscription_tier_updated=create.event_subscription_tier_updated,
-            event_pledge_created=create.event_pledge_created,
-            event_pledge_updated=create.event_pledge_updated,
-            event_donation_created=create.event_donation_created,
-            event_organization_updated=create.event_organization_updated,
-            event_benefit_created=create.event_benefit_created,
-            event_benefit_updated=create.event_benefit_updated,
+        event: WebhookEventType,
+        target: Organization | User,
+    ) -> Sequence[WebhookEndpoint]:
+        statement = select(WebhookEndpoint).where(
+            WebhookEndpoint.deleted_at.is_(None),
+            WebhookEndpoint.events.bool_op("@>")(text(f"'[\"{event}\"]'")),
         )
-        session.add(endpoint)
-        await session.flush()
-        return endpoint
+        if isinstance(target, Organization):
+            statement = statement.where(WebhookEndpoint.organization_id == target.id)
+        else:
+            statement = statement.where(WebhookEndpoint.user_id == target.id)
 
-    async def update_endpoint(
-        self,
-        session: AsyncSession,
-        *,
-        endpoint: WebhookEndpoint,
-        update: WebhookEndpointUpdate,
-    ) -> WebhookEndpoint:
-        if update.url is not None:
-            endpoint.url = update.url
-
-        if update.secret is not None:
-            endpoint.secret = update.secret
-
-        if update.event_subscription_created is not None:
-            endpoint.event_subscription_created = update.event_subscription_created
-        if update.event_subscription_updated is not None:
-            endpoint.event_subscription_updated = update.event_subscription_updated
-        if update.event_subscription_tier_created is not None:
-            endpoint.event_subscription_tier_created = (
-                update.event_subscription_tier_created
-            )
-        if update.event_subscription_tier_updated is not None:
-            endpoint.event_subscription_tier_updated = (
-                update.event_subscription_tier_updated
-            )
-        if update.event_pledge_created is not None:
-            endpoint.event_pledge_created = update.event_pledge_created
-        if update.event_pledge_updated is not None:
-            endpoint.event_pledge_updated = update.event_pledge_updated
-        if update.event_donation_created is not None:
-            endpoint.event_donation_created = update.event_donation_created
-        if update.event_organization_updated is not None:
-            endpoint.event_organization_updated = update.event_organization_updated
-        if update.event_benefit_created is not None:
-            endpoint.event_benefit_created = update.event_benefit_created
-        if update.event_benefit_updated is not None:
-            endpoint.event_benefit_updated = update.event_benefit_updated
-
-        session.add(endpoint)
-        await session.flush()
-        return endpoint
-
-    async def search_endpoints(
-        self,
-        session: AsyncSession,
-        *,
-        user_id: UUID | None,
-        organization_id: UUID | None,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[WebhookEndpoint], int]:
-        stmt = sql.select(WebhookEndpoint).where(WebhookEndpoint.deleted_at.is_(None))
-
-        if user_id is not None:
-            stmt = stmt.where(WebhookEndpoint.user_id == user_id)
-        if organization_id is not None:
-            stmt = stmt.where(WebhookEndpoint.organization_id == organization_id)
-
-        stmt = stmt.order_by(desc(WebhookEndpoint.created_at))
-
-        results, count = await paginate(session, stmt, pagination=pagination)
-
-        return results, count
-
-    async def search_deliveries(
-        self,
-        session: AsyncSession,
-        *,
-        endpoint_id: UUID,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[WebhookDelivery], int]:
-        stmt = sql.select(WebhookDelivery)
-
-        stmt = stmt.where(WebhookDelivery.webhook_endpoint_id == endpoint_id)
-
-        stmt = stmt.options(joinedload(WebhookDelivery.webhook_event))
-
-        stmt = stmt.order_by(desc(WebhookDelivery.created_at))
-
-        results, count = await paginate(session, stmt, pagination=pagination)
-
-        return results, count
+        res = await session.execute(statement)
+        return res.scalars().unique().all()
 
 
 webhook_service = WebhookService()

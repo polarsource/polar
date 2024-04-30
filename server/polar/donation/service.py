@@ -39,6 +39,7 @@ from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.transaction import Transaction
 from polar.models.user import User
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerDonationReceivedNotificationPayload,
@@ -56,7 +57,6 @@ from polar.transaction.service.platform_fee import (
 )
 from polar.user.service import user as user_service
 from polar.webhook.service import webhook_service
-from polar.webhook.webhooks import WebhookEventType
 from polar.webhook_notifications.service import webhook_notifications_service
 
 

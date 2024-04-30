@@ -12,12 +12,12 @@ from polar.exceptions import BadRequest, PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceServiceReader
 from polar.models import Organization, User, UserOrganization
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from polar.webhook.service import webhook_service
-from polar.webhook.webhooks import WebhookEventType
 from polar.worker import enqueue_job
 
 from .schemas import (

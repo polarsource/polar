@@ -63,12 +63,15 @@ class Settings(BaseSettings):
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
-    # Postgres
+    # Database
     POSTGRES_USER: str = "polar"
     POSTGRES_PWD: str = "polar"
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
     POSTGRES_DATABASE: str = "polar_development"
+    DATABASE_POOL_SIZE: int = 5
+    DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
+    DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
 
     # Redis
     REDIS_HOST: str = "127.0.0.1"

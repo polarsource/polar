@@ -16,7 +16,12 @@ from ..extensions.sqlalchemy import sql
 
 
 def create_async_engine(
-    *, dsn: str, application_name: str | None = None, debug: bool = False
+    *,
+    dsn: str,
+    application_name: str | None = None,
+    pool_size: int | None = None,
+    pool_recycle: int | None = None,
+    debug: bool = False,
 ) -> AsyncEngine:
     return _create_async_engine(
         dsn,
@@ -24,16 +29,25 @@ def create_async_engine(
         connect_args={"server_settings": {"application_name": application_name}}
         if application_name
         else {},
+        pool_size=pool_size,
+        pool_recycle=pool_recycle,
     )
 
 
 def create_sync_engine(
-    *, dsn: str, application_name: str | None = None, debug: bool = False
+    *,
+    dsn: str,
+    application_name: str | None = None,
+    pool_size: int | None = None,
+    pool_recycle: int | None = None,
+    debug: bool = False,
 ) -> Engine:
     return _create_engine(
         dsn,
         echo=debug,
         connect_args={"application_name": application_name} if application_name else {},
+        pool_size=pool_size,
+        pool_recycle=pool_recycle,
     )
 
 

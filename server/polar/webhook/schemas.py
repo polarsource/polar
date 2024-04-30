@@ -1,90 +1,52 @@
-from datetime import datetime
 from typing import Annotated
-from uuid import UUID
 
-from pydantic import UrlConstraints
-from pydantic_core import Url
+from pydantic import UUID4, AnyUrl, PlainSerializer, UrlConstraints
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.webhook_endpoint import WebhookEventType
 
 HttpsUrl = Annotated[
-    Url,
+    AnyUrl,
     UrlConstraints(
         max_length=2083,
         allowed_schemes=["https"],
         host_required=True,
     ),
+    PlainSerializer(lambda v: str(v), return_type=str),
 ]
 
 
-class WebhookEndpoint(Schema):
-    id: UUID
+class WebhookEndpoint(TimestampedSchema):
+    id: UUID4
     url: str
-    user_id: UUID | None
-    organization_id: UUID | None
-    created_at: datetime
-
-    event_subscription_created: bool = False
-    event_subscription_updated: bool = False
-    event_subscription_tier_created: bool = False
-    event_subscription_tier_updated: bool = False
-    event_pledge_created: bool = False
-    event_pledge_updated: bool = False
-    event_donation_created: bool = False
-    event_organization_updated: bool = False
-    event_benefit_created: bool = False
-    event_benefit_updated: bool = False
+    user_id: UUID4 | None
+    organization_id: UUID4 | None
+    events: list[WebhookEventType]
 
 
 class WebhookEndpointUpdate(Schema):
     url: str | None = None
     secret: str | None = None
-
-    event_subscription_created: bool | None = None
-    event_subscription_updated: bool | None = None
-    event_subscription_tier_created: bool | None = None
-    event_subscription_tier_updated: bool | None = None
-    event_pledge_created: bool | None = None
-    event_pledge_updated: bool | None = None
-    event_donation_created: bool | None = None
-    event_organization_updated: bool | None = None
-    event_benefit_created: bool | None = None
-    event_benefit_updated: bool | None = None
+    events: list[WebhookEventType] | None = None
 
 
 class WebhookEndpointCreate(Schema):
     url: HttpsUrl
     secret: str
-    user_id: UUID | None = None
-    organization_id: UUID | None = None
-
-    event_subscription_created: bool | None = None
-    event_subscription_updated: bool | None = None
-    event_subscription_tier_created: bool | None = None
-    event_subscription_tier_updated: bool | None = None
-    event_pledge_created: bool | None = None
-    event_pledge_updated: bool | None = None
-    event_donation_created: bool | None = None
-    event_organization_updated: bool | None = None
-    event_benefit_created: bool | None = None
-    event_benefit_updated: bool | None = None
+    events: list[WebhookEventType]
+    user_id: UUID4 | None = None
+    organization_id: UUID4 | None = None
 
 
-class WebhookEvent(Schema):
-    id: UUID
-    created_at: datetime
-    last_http_code: int | None
-    succeeded: bool | None
+class WebhookEvent(TimestampedSchema):
+    id: UUID4
+    last_http_code: int | None = None
+    succeeded: bool | None = None
     payload: str
 
 
-class WebhookDelivery(Schema):
-    id: UUID
-    created_at: datetime
-    http_code: int | None
+class WebhookDelivery(TimestampedSchema):
+    id: UUID4
+    http_code: int | None = None
     succeeded: bool
     webhook_event: WebhookEvent
-
-
-class WebhookEventRedeliver(Schema):
-    ok: bool

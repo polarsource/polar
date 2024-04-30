@@ -7,7 +7,7 @@ from polar.models.webhook_event import WebhookEvent
 from tests.fixtures.database import SaveFixture
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def webhook_endpoint(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -21,7 +21,7 @@ async def webhook_endpoint(
     return endpoint
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def webhook_event(
     save_fixture: SaveFixture,
     webhook_endpoint: WebhookEndpoint,
@@ -36,7 +36,7 @@ async def webhook_event(
     return event
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def webhook_delivery(
     save_fixture: SaveFixture,
     webhook_endpoint: WebhookEndpoint,

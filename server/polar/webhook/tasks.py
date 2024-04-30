@@ -14,12 +14,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.worker import (
-    AsyncSessionMaker,
-    JobContext,
-    PolarWorkerContext,
-    task,
-)
+from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import webhook_service
 
@@ -87,7 +82,7 @@ async def _webhook_event_send(
     ctx: JobContext,
     webhook_event_id: UUID,
 ) -> None:
-    event = await webhook_service.get_event(session, webhook_event_id)
+    event = await webhook_service.get_event_by_id(session, webhook_event_id)
     if not event:
         raise Exception(f"webhook event not found id={webhook_event_id}")
 
@@ -121,7 +116,7 @@ async def _webhook_event_send(
         timeout=20.0,
     )
 
-    succeeded = r.status_code >= 200 and r.status_code <= 299
+    succeeded = r.is_success
 
     if succeeded:
         event.succeeded = True

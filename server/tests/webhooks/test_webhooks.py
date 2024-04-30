@@ -10,12 +10,11 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 from polar.kit.db.postgres import AsyncSession
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
-from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.webhook.service import webhook_service
 from polar.webhook.tasks import _webhook_event_send, allowed_url, webhook_event_send
-from polar.webhook.webhooks import WebhookEventType
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.database import SaveFixture
 
@@ -44,7 +43,7 @@ async def test_webhook_send(
         url="https://example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
-        event_subscription_created=True,  # subscribe to event
+        events=[WebhookEventType.subscription_created],  # subscribe to event
     )
     await save_fixture(endpoint)
 
@@ -86,7 +85,7 @@ async def test_webhook_send_not_subscribed_to_event(
         url="https://example.com/hook",
         organization_id=organization.id,
         secret="mysecret",
-        event_subscription_created=False,  # not subscribing
+        events=[],  # not subscribing
     )
     await save_fixture(endpoint)
 

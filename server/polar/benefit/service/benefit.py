@@ -22,9 +22,9 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitArticles, BenefitType
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.webhook.service import webhook_service
-from polar.webhook.webhooks import WebhookEventType
 
 from ..benefits import BenefitPropertiesValidationError, get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate

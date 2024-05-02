@@ -17,7 +17,7 @@ from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.webhook.service import webhook_service
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .schemas import (

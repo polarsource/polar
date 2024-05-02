@@ -16,7 +16,7 @@ from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
-from .service import webhook_service
+from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
 

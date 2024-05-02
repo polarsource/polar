@@ -242,12 +242,11 @@ class Authz:
         # WebhookEndpoint
         #
 
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.write
-            and isinstance(object, WebhookEndpoint)
-        ):
-            return await self._can_user_write_webhook_endpoint(subject, object)
+        if accessType == AccessType.write and isinstance(object, WebhookEndpoint):
+            if isinstance(subject, User):
+                return await self._can_user_write_webhook_endpoint(subject, object)
+            if isinstance(subject, Organization):
+                return object.organization_id == subject.id
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501

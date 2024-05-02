@@ -5,11 +5,12 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from polar.auth.scope import Scope
 from polar.config import settings
-from polar.exceptions import NotPermitted, PolarError, Unauthorized
+from polar.exceptions import PolarError, Unauthorized
 from polar.models import OAuth2Token
 from polar.oauth2.dependencies import get_optional_token
 from polar.postgres import AsyncSession, get_db_session
 
+from .exceptions import MissingScope
 from .models import (
     SUBJECTS,
     Anonymous,
@@ -112,11 +113,7 @@ class Authenticator:
         if auth_subject.scopes & self.required_scopes:
             return auth_subject
 
-        raise NotPermitted(
-            "Missing required scope: "
-            f"have={','.join(auth_subject.scopes)} "
-            f"requires={','.join(self.required_scopes)}"
-        )
+        raise MissingScope(auth_subject.scopes, self.required_scopes)
 
 
 _WebUserOrAnonymous = Authenticator(

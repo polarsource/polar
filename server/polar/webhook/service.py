@@ -2,13 +2,16 @@ from collections.abc import Sequence
 from typing import NoReturn
 from uuid import UUID
 
-from sqlalchemy import Select, and_, desc, or_, select, text, update
+from sqlalchemy import Select, and_, desc, or_, select, text
 from sqlalchemy.orm import joinedload
 
+from polar.auth.exceptions import MissingScope
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.scope import Scope
+from polar.authz.service import AccessType, Authz
 from polar.benefit.schemas import benefit_schema_map
 from polar.donation.schemas import Donation as DonationSchema
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -21,6 +24,7 @@ from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
 from polar.models.webhook_event import WebhookEvent
+from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
@@ -88,11 +92,48 @@ class WebhookService:
     async def create_endpoint(
         self,
         session: AsyncSession,
+        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        *,
-        create: WebhookEndpointCreate,
+        create_schema: WebhookEndpointCreate,
     ) -> WebhookEndpoint:
-        endpoint = WebhookEndpoint(**create.model_dump())
+        endpoint = WebhookEndpoint(**create_schema.model_dump())
+
+        # Organization ID unset: guess from auth_subject
+        if create_schema.organization_id is None:
+            if is_user(auth_subject):
+                if (
+                    not auth_subject.has_web_default_scope()
+                    and Scope.backer_webhooks_write not in auth_subject.scopes
+                ):
+                    raise MissingScope(
+                        auth_subject.scopes, {Scope.backer_webhooks_write}
+                    )
+                endpoint.user_id = auth_subject.subject.id
+            elif is_organization(auth_subject):
+                if (
+                    not auth_subject.has_web_default_scope()
+                    and Scope.creator_webhooks_write not in auth_subject.scopes
+                ):
+                    raise MissingScope(
+                        auth_subject.scopes, {Scope.creator_webhooks_write}
+                    )
+                endpoint.organization_id = auth_subject.subject.id
+        # Organization ID set: check if it's a user, and that he can write to it
+        else:
+            if (
+                not auth_subject.has_web_default_scope()
+                and Scope.creator_webhooks_write not in auth_subject.scopes
+            ):
+                raise MissingScope(auth_subject.scopes, {Scope.creator_webhooks_write})
+            organization = await get_payload_organization(
+                session, auth_subject, create_schema
+            )
+            if not await authz.can(
+                auth_subject.subject, AccessType.write, organization
+            ):
+                raise NotPermitted()
+            endpoint.organization_id = organization.id
+
         session.add(endpoint)
         await session.flush()
         return endpoint
@@ -100,12 +141,15 @@ class WebhookService:
     async def update_endpoint(
         self,
         session: AsyncSession,
+        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         *,
         endpoint: WebhookEndpoint,
-        update: WebhookEndpointUpdate,
+        update_schema: WebhookEndpointUpdate,
     ) -> WebhookEndpoint:
-        for attr, value in update.model_dump(
+        await self._can_write_endpoint(authz, auth_subject, endpoint)
+
+        for attr, value in update_schema.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
             setattr(endpoint, attr, value)
@@ -116,17 +160,16 @@ class WebhookService:
     async def delete_endpoint(
         self,
         session: AsyncSession,
+        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        id: UUID,
-    ) -> None:
-        stmt = (
-            update(WebhookEndpoint)
-            .where(
-                WebhookEndpoint.id == id,
-            )
-            .values(deleted_at=utc_now())
-        )
-        await session.execute(stmt)
+        endpoint: WebhookEndpoint,
+    ) -> WebhookEndpoint:
+        await self._can_write_endpoint(authz, auth_subject, endpoint)
+
+        endpoint.deleted_at = utc_now()
+        session.add(endpoint)
+        await session.flush()
+        return endpoint
 
     async def list_deliveries(
         self,
@@ -348,5 +391,28 @@ class WebhookService:
         res = await session.execute(statement)
         return res.scalars().unique().all()
 
+    async def _can_write_endpoint(
+        self,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        endpoint: WebhookEndpoint,
+    ) -> None:
+        if (
+            endpoint.user_id is not None
+            and not auth_subject.has_web_default_scope()
+            and Scope.backer_webhooks_write not in auth_subject.scopes
+        ):
+            raise MissingScope(auth_subject.scopes, {Scope.backer_webhooks_write})
 
-webhook_service = WebhookService()
+        if (
+            endpoint.organization_id is not None
+            and not auth_subject.has_web_default_scope()
+            and Scope.creator_webhooks_write not in auth_subject.scopes
+        ):
+            raise MissingScope(auth_subject.scopes, {Scope.creator_webhooks_write})
+
+        if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
+            raise NotPermitted()
+
+
+webhook = WebhookService()

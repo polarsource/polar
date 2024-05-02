@@ -24,18 +24,17 @@ class WebhookEndpoint(TimestampedSchema):
     events: list[WebhookEventType]
 
 
-class WebhookEndpointUpdate(Schema):
-    url: str | None = None
-    secret: str | None = None
-    events: list[WebhookEventType] | None = None
-
-
 class WebhookEndpointCreate(Schema):
     url: HttpsUrl
     secret: str
     events: list[WebhookEventType]
-    user_id: UUID4 | None = None
     organization_id: UUID4 | None = None
+
+
+class WebhookEndpointUpdate(Schema):
+    url: HttpsUrl | None = None
+    secret: str | None = None
+    events: list[WebhookEventType] | None = None
 
 
 class WebhookEvent(TimestampedSchema):

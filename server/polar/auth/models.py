@@ -34,6 +34,9 @@ class AuthSubject(Generic[S]):
         self.scopes = scopes
         self.method = method
 
+    def has_web_default_scope(self) -> bool:
+        return Scope.web_default in self.scopes
+
 
 def is_anonymous(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[Anonymous]]:
     return isinstance(auth_subject.subject, Anonymous)

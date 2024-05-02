@@ -1,16 +1,31 @@
 import pytest_asyncio
 
-from polar.models.organization import Organization
-from polar.models.webhook_delivery import WebhookDelivery
-from polar.models.webhook_endpoint import WebhookEndpoint
-from polar.models.webhook_event import WebhookEvent
+from polar.models import (
+    Organization,
+    User,
+    WebhookDelivery,
+    WebhookEndpoint,
+    WebhookEvent,
+)
 from tests.fixtures.database import SaveFixture
 
 
 @pytest_asyncio.fixture
-async def webhook_endpoint(
-    save_fixture: SaveFixture,
-    organization: Organization,
+async def webhook_endpoint_user(
+    save_fixture: SaveFixture, user: User
+) -> WebhookEndpoint:
+    endpoint = WebhookEndpoint(
+        url="https://example.com/foo",
+        user_id=user.id,
+        secret="foobar",
+    )
+    await save_fixture(endpoint)
+    return endpoint
+
+
+@pytest_asyncio.fixture
+async def webhook_endpoint_organization(
+    save_fixture: SaveFixture, organization: Organization
 ) -> WebhookEndpoint:
     endpoint = WebhookEndpoint(
         url="https://example.com/foo",
@@ -24,10 +39,10 @@ async def webhook_endpoint(
 @pytest_asyncio.fixture
 async def webhook_event(
     save_fixture: SaveFixture,
-    webhook_endpoint: WebhookEndpoint,
+    webhook_endpoint_organization: WebhookEndpoint,
 ) -> WebhookEvent:
     event = WebhookEvent(
-        webhook_endpoint_id=webhook_endpoint.id,
+        webhook_endpoint_id=webhook_endpoint_organization.id,
         last_http_code=200,
         succeeded=True,
         payload='{"foo":"bar"}',
@@ -39,11 +54,11 @@ async def webhook_event(
 @pytest_asyncio.fixture
 async def webhook_delivery(
     save_fixture: SaveFixture,
-    webhook_endpoint: WebhookEndpoint,
+    webhook_endpoint_organization: WebhookEndpoint,
     webhook_event: WebhookEvent,
 ) -> WebhookDelivery:
     delivery = WebhookDelivery(
-        webhook_endpoint_id=webhook_endpoint.id,
+        webhook_endpoint_id=webhook_endpoint_organization.id,
         webhook_event_id=webhook_event.id,
         http_code=200,
         succeeded=True,

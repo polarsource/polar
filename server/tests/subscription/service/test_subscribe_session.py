@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from polar.auth.models import Anonymous, AuthMethod
+from polar.auth.models import Anonymous, AuthMethod, AuthSubject
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.models import Organization, SubscriptionTier, SubscriptionTierPrice, User
@@ -20,7 +20,7 @@ from polar.subscription.service.subscribe_session import (
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
-from tests.fixtures.auth import get_auth_subject
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_subscription_benefits,
@@ -38,6 +38,7 @@ def authz(session: AsyncSession) -> Authz:
 class TestCreateSubscribeSession:
     async def test_free_subscription_tier(
         self,
+        auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         authz: Authz,
         subscription_tier_free: SubscriptionTier,
@@ -58,12 +59,13 @@ class TestCreateSubscribeSession:
                 subscription_tier_free_loaded,
                 SubscriptionTierPrice(),
                 "SUCCESS_URL",
-                get_auth_subject(Anonymous()),
+                auth_subject,
                 authz,
             )
 
     async def test_archived_subscription_tier(
         self,
+        auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
@@ -88,12 +90,14 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                get_auth_subject(Anonymous()),
+                auth_subject,
                 authz,
             )
 
+    @pytest.mark.authenticated
     async def test_already_subscribed(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
@@ -120,12 +124,13 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                get_auth_subject(user),
+                auth_subject,
                 authz,
             )
 
     async def test_valid_anonymous(
         self,
+        auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         authz: Authz,
         subscription_tier: SubscriptionTier,
@@ -157,7 +162,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            get_auth_subject(Anonymous()),
+            auth_subject,
             authz,
         )
 
@@ -181,8 +186,10 @@ class TestCreateSubscribeSession:
             },
         )
 
+    @pytest.mark.authenticated
     async def test_valid_user_cookie(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         subscription_tier: SubscriptionTier,
@@ -217,7 +224,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            get_auth_subject(user),
+            auth_subject,
             authz,
         )
 
@@ -244,8 +251,12 @@ class TestCreateSubscribeSession:
             },
         )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN)
+    )
     async def test_valid_token(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         subscription_tier: SubscriptionTier,
@@ -280,7 +291,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            get_auth_subject(user, auth_method=AuthMethod.OAUTH2_ACCESS_TOKEN),
+            auth_subject,
             authz,
         )
 
@@ -304,8 +315,12 @@ class TestCreateSubscribeSession:
             },
         )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN)
+    )
     async def test_valid_token_customer_email(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         subscription_tier: SubscriptionTier,
@@ -340,7 +355,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            get_auth_subject(user, auth_method=AuthMethod.OAUTH2_ACCESS_TOKEN),
+            auth_subject,
             authz,
             customer_email="backer@example.com",
         )
@@ -368,6 +383,7 @@ class TestCreateSubscribeSession:
 
     async def test_valid_tax_applicable(
         self,
+        auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
@@ -410,7 +426,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            get_auth_subject(Anonymous()),
+            auth_subject,
             authz,
         )
 
@@ -434,8 +450,10 @@ class TestCreateSubscribeSession:
             },
         )
 
+    @pytest.mark.authenticated
     async def test_valid_free_subscription_upgrade(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
@@ -478,7 +496,7 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            get_auth_subject(user),
+            auth_subject,
             authz,
         )
 
@@ -503,11 +521,12 @@ class TestCreateSubscribeSession:
 
     async def test_organization_anonymous(
         self,
+        auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         authz: Authz,
         subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
-        organization_subscriber: Organization,
+        organization_second: Organization,
     ) -> None:
         # then
         session.expunge_all()
@@ -525,18 +544,20 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                get_auth_subject(Anonymous()),
+                auth_subject,
                 authz,
-                organization_id=organization_subscriber.id,
+                organization_id=organization_second.id,
             )
 
+    @pytest.mark.authenticated
     async def test_organization_not_admin(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
-        organization_subscriber: Organization,
+        organization_second: Organization,
         user: User,
     ) -> None:
         # then
@@ -555,24 +576,26 @@ class TestCreateSubscribeSession:
                 subscription_tier_organization_loaded,
                 price,
                 "SUCCESS_URL",
-                get_auth_subject(user),
+                auth_subject,
                 authz,
-                organization_id=organization_subscriber.id,
+                organization_id=organization_second.id,
             )
 
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
     async def test_organization_valid(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
         subscription_tier: SubscriptionTier,
         stripe_service_mock: MagicMock,
-        organization_subscriber: Organization,
-        organization_subscriber_admin: User,
+        organization_second: Organization,
+        organization_second_admin: User,
     ) -> None:
-        organization_subscriber.stripe_customer_id = "ORGANIZATION_STRIPE_CUSTOMER_ID"
-        organization_subscriber_admin.stripe_customer_id = "STRIPE_CUSTOMER_ID"
-        await save_fixture(organization_subscriber)
+        organization_second.stripe_customer_id = "ORGANIZATION_STRIPE_CUSTOMER_ID"
+        organization_second_admin.stripe_customer_id = "STRIPE_CUSTOMER_ID"
+        await save_fixture(organization_second)
 
         create_subscription_checkout_session_mock: MagicMock = (
             stripe_service_mock.create_subscription_checkout_session
@@ -582,7 +605,7 @@ class TestCreateSubscribeSession:
             url="STRIPE_URL",
             customer_email=None,
             customer_details={"name": "Organization", "email": "backer@example.com"},
-            metadata={"organization_subscriber_id": str(organization_subscriber.id)},
+            metadata={"organization_subscriber_id": str(organization_second.id)},
         )
 
         # then
@@ -600,9 +623,9 @@ class TestCreateSubscribeSession:
             subscription_tier_organization_loaded,
             price,
             "SUCCESS_URL",
-            get_auth_subject(organization_subscriber_admin),
+            auth_subject,
             authz,
-            organization_id=organization_subscriber.id,
+            organization_id=organization_second.id,
         )
 
         assert subscribe_session.id == "SESSION_ID"
@@ -622,14 +645,14 @@ class TestCreateSubscribeSession:
             metadata={
                 "subscription_tier_id": str(subscription_tier_organization_loaded.id),
                 "subscription_tier_price_id": str(price.id),
-                "organization_subscriber_id": str(organization_subscriber.id),
-                "user_id": str(organization_subscriber_admin.id),
+                "organization_subscriber_id": str(organization_second.id),
+                "user_id": str(organization_second_admin.id),
             },
             subscription_metadata={
                 "subscription_tier_id": str(subscription_tier_organization_loaded.id),
                 "subscription_tier_price_id": str(price.id),
-                "organization_subscriber_id": str(organization_subscriber.id),
-                "user_id": str(organization_subscriber_admin.id),
+                "organization_subscriber_id": str(organization_second.id),
+                "user_id": str(organization_second_admin.id),
             },
         )
 

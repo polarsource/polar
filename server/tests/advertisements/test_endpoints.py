@@ -8,6 +8,7 @@ from polar.models.benefit import Benefit
 from polar.models.subscription import Subscription
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit_grant
 
@@ -187,7 +188,7 @@ class TestAdvertisementCampaign:
         assert searched.status_code == 200
         assert len(searched.json()["items"]) == 1
 
-    @pytest.mark.authenticated(subject="user_second")
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
     async def test_search_unauthorized(
         self,
         client: AsyncClient,
@@ -302,7 +303,7 @@ class TestAdvertisementCampaign:
 
         assert searched.status_code == 401
 
-    @pytest.mark.authenticated(subject="user_second")
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
     async def test_search_benefit_id_unauthorized(
         self,
         client: AsyncClient,

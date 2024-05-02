@@ -27,7 +27,7 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, Organization, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
-from tests.fixtures.auth import get_auth_subject
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
 
@@ -37,22 +37,19 @@ def authz(session: AsyncSession) -> Authz:
     return Authz(session)
 
 
-@pytest.fixture(params=("user", "organization"))
-def auth_subject(
-    request: pytest.FixtureRequest, user: User, organization: Organization
-) -> AuthSubject[User | Organization]:
-    return get_auth_subject(user if request.param == "user" else organization)
-
-
 @pytest.mark.asyncio
 class TestSearch:
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user(
-        self, session: AsyncSession, benefits: list[Benefit], user: User
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        benefits: list[Benefit],
+        user: User,
     ) -> None:
         # then
         session.expunge_all()
 
-        auth_subject = get_auth_subject(user)
         results, count = await benefit_service.search(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
@@ -60,8 +57,10 @@ class TestSearch:
         assert count == 0
         assert len(results) == 0
 
+    @pytest.mark.authenticated
     async def test_user_organization(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         user: User,
         benefits: list[Benefit],
@@ -70,7 +69,6 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        auth_subject = get_auth_subject(user)
         results, count = await benefit_service.search(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
@@ -78,8 +76,10 @@ class TestSearch:
         assert count == len(benefits)
         assert len(results) == len(benefits)
 
+    @pytest.mark.authenticated
     async def test_filter_type(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
@@ -93,7 +93,6 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        auth_subject = get_auth_subject(user)
         results, count = await benefit_service.search(
             session,
             auth_subject,
@@ -105,10 +104,11 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == plain_benefit.id
 
+    @pytest.mark.authenticated
     async def test_filter_organization(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
-        user: User,
         organization: Organization,
         benefits: list[Benefit],
         benefit_organization: Benefit,
@@ -117,7 +117,6 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        auth_subject = get_auth_subject(user)
         results, count = await benefit_service.search(
             session,
             auth_subject,
@@ -129,8 +128,10 @@ class TestSearch:
         assert len(results) == 3
         assert results[0].id == benefit_organization.id
 
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         organization: Organization,
         benefit_organization: Benefit,
@@ -138,7 +139,6 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        auth_subject = get_auth_subject(organization)
         results, count = await benefit_service.search(
             session,
             auth_subject,
@@ -153,16 +153,15 @@ class TestSearch:
 
 @pytest.mark.asyncio
 class TestGetById:
+    @pytest.mark.authenticated
     async def test_user(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         benefit_organization: Benefit,
-        user: User,
     ) -> None:
         # then
         session.expunge_all()
-
-        auth_subject = get_auth_subject(user)
 
         not_existing_benefit = await benefit_service.get_by_id(
             session, auth_subject, uuid.uuid4()
@@ -174,17 +173,16 @@ class TestGetById:
         )
         assert organization_benefit is None
 
+    @pytest.mark.authenticated
     async def test_user_organization(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         benefit_organization: Benefit,
-        user: User,
         user_organization: UserOrganization,
     ) -> None:
         # then
         session.expunge_all()
-
-        auth_subject = get_auth_subject(user)
 
         not_existing_benefit = await benefit_service.get_by_id(
             session, auth_subject, uuid.uuid4()
@@ -197,16 +195,15 @@ class TestGetById:
         assert organization_benefit is not None
         assert organization_benefit.id == benefit_organization.id
 
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         benefit_organization: Benefit,
-        organization: Organization,
     ) -> None:
         # then
         session.expunge_all()
-
-        auth_subject = get_auth_subject(organization)
 
         not_existing_benefit = await benefit_service.get_by_id(
             session, auth_subject, uuid.uuid4()
@@ -221,8 +218,9 @@ class TestGetById:
 
 @pytest.mark.asyncio
 class TestUserCreate:
+    @pytest.mark.authenticated
     async def test_user_missing_organization(
-        self, session: AsyncSession, authz: Authz, user: User
+        self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -235,13 +233,13 @@ class TestUserCreate:
         session.expunge_all()
 
         with pytest.raises(RequestValidationError):
-            auth_subject = get_auth_subject(user)
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
 
+    @pytest.mark.authenticated
     async def test_user_not_existing_organization(
-        self, session: AsyncSession, authz: Authz, user: User
+        self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -255,16 +253,16 @@ class TestUserCreate:
         session.expunge_all()
 
         with pytest.raises(RequestValidationError):
-            auth_subject = get_auth_subject(user)
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
 
+    @pytest.mark.authenticated
     async def test_user_not_writable_organization(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         organization: Organization,
     ) -> None:
         create_schema = BenefitCustomCreate(
@@ -279,13 +277,14 @@ class TestUserCreate:
         session.expunge_all()
 
         with pytest.raises(OrganizationDoesNotExist):
-            auth_subject = get_auth_subject(user)
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
 
+    @pytest.mark.authenticated
     async def test_user_valid_organization(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         user: User,
@@ -303,38 +302,41 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        auth_subject = get_auth_subject(user)
         benefit = await benefit_service.user_create(
             session, authz, create_schema, auth_subject
         )
         assert benefit.organization_id == organization.id
 
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
     async def test_organization_set_organization_id(
-        self, session: AsyncSession, authz: Authz, organization: Organization
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
             properties=BenefitCustomProperties(),
-            organization_id=organization.id,
+            organization_id=uuid.uuid4(),
         )
 
         # then
         session.expunge_all()
 
         with pytest.raises(RequestValidationError):
-            auth_subject = get_auth_subject(organization)
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
 
+    @pytest.mark.authenticated
     async def test_invalid_properties(
         self,
+        auth_subject: AuthSubject[User],
         mocker: MockerFixture,
         session: AsyncSession,
         authz: Authz,
-        user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
@@ -364,7 +366,6 @@ class TestUserCreate:
         session.expunge_all()
 
         with pytest.raises(RequestValidationError):
-            auth_subject = get_auth_subject(user)
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
@@ -372,11 +373,12 @@ class TestUserCreate:
 
 @pytest.mark.asyncio
 class TestUserUpdate:
+    @pytest.mark.authenticated
     async def test_user_not_writable_benefit(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         benefit_organization: Benefit,
     ) -> None:
         update_schema = BenefitCustomUpdate(
@@ -394,7 +396,6 @@ class TestUserUpdate:
         assert benefit_organization_loaded
 
         with pytest.raises(NotPermitted):
-            auth_subject = get_auth_subject(user)
             await benefit_service.user_update(
                 session,
                 authz,
@@ -403,6 +404,10 @@ class TestUserUpdate:
                 auth_subject,
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_valid_description_change(
         self,
         mocker: MockerFixture,
@@ -441,11 +446,12 @@ class TestUserUpdate:
 
 @pytest.mark.asyncio
 class TestUserDelete:
+    @pytest.mark.authenticated
     async def test_user_not_writable_benefit(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         benefit_organization: Benefit,
     ) -> None:
         # then
@@ -458,11 +464,14 @@ class TestUserDelete:
         assert benefit_organization_loaded
 
         with pytest.raises(NotPermitted):
-            auth_subject = get_auth_subject(user)
             await benefit_service.user_delete(
                 session, authz, benefit_organization_loaded, auth_subject
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_not_deletable_benefit(
         self,
         session: AsyncSession,
@@ -492,6 +501,10 @@ class TestUserDelete:
                 session, authz, benefit_loaded, auth_subject
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_valid(
         self,
         mocker: MockerFixture,

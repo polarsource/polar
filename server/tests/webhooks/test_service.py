@@ -1,9 +1,11 @@
+import uuid
 from typing import cast
 
 import pytest
 from fastapi.exceptions import RequestValidationError
 
 from polar.auth.exceptions import MissingScope
+from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted
@@ -11,9 +13,7 @@ from polar.models import Organization, User, UserOrganization, WebhookEndpoint
 from polar.postgres import AsyncSession
 from polar.webhook.schemas import HttpsUrl, WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
-from tests.fixtures.auth import get_auth_subject
-from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_organization
+from tests.fixtures.auth import AuthSubjectFixture
 
 
 @pytest.fixture
@@ -27,10 +27,10 @@ webhook_url = cast(HttpsUrl, "https://example.com/hook")
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestCreateEndpoint:
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_no_organization_id_missing_scope(
-        self, session: AsyncSession, authz: Authz, user: User
+        self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=set())
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[]
         )
@@ -40,17 +40,17 @@ class TestCreateEndpoint:
                 session, authz, auth_subject, create_schema
             )
 
-    @pytest.mark.parametrize(
-        "scopes",
-        [
-            {Scope.web_default},
-            {Scope.backer_webhooks_write},
-        ],
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.backer_webhooks_write}),
     )
     async def test_user_no_organization_id_valid(
-        self, scopes: set[Scope], session: AsyncSession, authz: Authz, user: User
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=scopes)
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[]
         )
@@ -61,15 +61,15 @@ class TestCreateEndpoint:
         assert endpoint.user_id == user.id
         assert endpoint.organization_id is None
 
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_organization_id_missing_scope(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=set())
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
         )
@@ -79,15 +79,17 @@ class TestCreateEndpoint:
                 session, authz, auth_subject, create_schema
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write})
+    )
     async def test_user_organization_id_not_admin(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes={Scope.creator_webhooks_write})
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
         )
@@ -97,23 +99,18 @@ class TestCreateEndpoint:
                 session, authz, auth_subject, create_schema
             )
 
-    @pytest.mark.parametrize(
-        "scopes",
-        [
-            {Scope.web_default},
-            {Scope.creator_webhooks_write},
-        ],
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
     )
     async def test_user_organization_id_valid(
         self,
-        scopes: set[Scope],
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=scopes)
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
         )
@@ -124,10 +121,13 @@ class TestCreateEndpoint:
         assert endpoint.user_id is None
         assert endpoint.organization_id == organization.id
 
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization", scopes=set()))
     async def test_organization_missing_scope(
-        self, session: AsyncSession, authz: Authz, organization: Organization
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
     ) -> None:
-        auth_subject = get_auth_subject(organization, scopes=set())
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[]
         )
@@ -137,14 +137,19 @@ class TestCreateEndpoint:
                 session, authz, auth_subject, create_schema
             )
 
-    async def test_organization_set_organization_id(
-        self, session: AsyncSession, authz: Authz, organization: Organization
-    ) -> None:
-        auth_subject = get_auth_subject(
-            organization, scopes={Scope.creator_webhooks_write}
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
         )
+    )
+    async def test_organization_set_organization_id(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+    ) -> None:
         create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
+            url=webhook_url, secret="SECRET", events=[], organization_id=uuid.uuid4()
         )
 
         with pytest.raises(RequestValidationError):
@@ -152,12 +157,18 @@ class TestCreateEndpoint:
                 session, authz, auth_subject, create_schema
             )
 
-    async def test_organization_valid(
-        self, session: AsyncSession, authz: Authz, organization: Organization
-    ) -> None:
-        auth_subject = get_auth_subject(
-            organization, scopes={Scope.creator_webhooks_write}
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
         )
+    )
+    async def test_organization_valid(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+        organization: Organization,
+    ) -> None:
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[]
         )
@@ -172,14 +183,15 @@ class TestCreateEndpoint:
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestUpdateEndpoint:
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_user_endpoint_missing_scope(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         user: User,
         webhook_endpoint_user: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=set())
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         with pytest.raises(MissingScope):
@@ -191,22 +203,17 @@ class TestUpdateEndpoint:
                 update_schema=update_schema,
             )
 
-    @pytest.mark.parametrize(
-        "scopes",
-        [
-            {Scope.web_default},
-            {Scope.backer_webhooks_write},
-        ],
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.backer_webhooks_write}),
     )
     async def test_user_user_endpoint_valid(
         self,
-        scopes: set[Scope],
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         webhook_endpoint_user: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=scopes)
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         updated_endpoint = await webhook_service.update_endpoint(
@@ -218,15 +225,16 @@ class TestUpdateEndpoint:
         )
         assert updated_endpoint.secret == "UPDATED_SECRET"
 
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_organization_endpoint_missing_scope(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         user: User,
         user_organization_admin: UserOrganization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=set())
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         with pytest.raises(MissingScope):
@@ -238,14 +246,17 @@ class TestUpdateEndpoint:
                 update_schema=update_schema,
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write})
+    )
     async def test_user_organization_endpoint_not_admin(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
         user: User,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes={Scope.creator_webhooks_write})
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         with pytest.raises(NotPermitted):
@@ -257,23 +268,18 @@ class TestUpdateEndpoint:
                 update_schema=update_schema,
             )
 
-    @pytest.mark.parametrize(
-        "scopes",
-        [
-            {Scope.web_default},
-            {Scope.creator_webhooks_write},
-        ],
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
     )
     async def test_user_organization_endpoint_valid(
         self,
-        scopes: set[Scope],
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         user_organization_admin: UserOrganization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=scopes)
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         updated_endpoint = await webhook_service.update_endpoint(
@@ -285,14 +291,14 @@ class TestUpdateEndpoint:
         )
         assert updated_endpoint.secret == "UPDATED_SECRET"
 
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization", scopes=set()))
     async def test_organization_endpoint_missing_scope(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         authz: Authz,
-        organization: Organization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(organization, scopes=set())
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         with pytest.raises(MissingScope):
@@ -304,15 +310,18 @@ class TestUpdateEndpoint:
                 update_schema=update_schema,
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(
+            subject="organization_second", scopes={Scope.creator_webhooks_write}
+        )
+    )
     async def test_organization_endpoint_not_admin(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        save_fixture: SaveFixture,
         authz: Authz,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        other_organization = await create_organization(save_fixture)
-        auth_subject = get_auth_subject(other_organization, scopes=set())
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         with pytest.raises(NotPermitted):
@@ -324,16 +333,18 @@ class TestUpdateEndpoint:
                 update_schema=update_schema,
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
+        )
+    )
     async def test_organization_endpoint_valid(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         authz: Authz,
-        organization: Organization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(
-            organization, scopes={Scope.creator_webhooks_write}
-        )
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         updated_endpoint = await webhook_service.update_endpoint(
@@ -349,14 +360,14 @@ class TestUpdateEndpoint:
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestDeleteEndpoint:
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_user_endpoint_missing_scope(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         webhook_endpoint_user: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=set())
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
 
         with pytest.raises(MissingScope):
@@ -364,120 +375,110 @@ class TestDeleteEndpoint:
                 session, authz, auth_subject, webhook_endpoint_user
             )
 
-    @pytest.mark.parametrize(
-        "scopes",
-        [
-            {Scope.web_default},
-            {Scope.backer_webhooks_write},
-        ],
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.backer_webhooks_write}),
     )
     async def test_user_user_endpoint_valid(
         self,
-        scopes: set[Scope],
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         webhook_endpoint_user: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=scopes)
-
         deleted_endpoint = await webhook_service.delete_endpoint(
             session, authz, auth_subject, webhook_endpoint_user
         )
         assert deleted_endpoint.deleted_at is not None
 
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_organization_endpoint_missing_scope(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         user_organization_admin: UserOrganization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=set())
-
         with pytest.raises(MissingScope):
             await webhook_service.delete_endpoint(
                 session, authz, auth_subject, webhook_endpoint_organization
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write})
+    )
     async def test_user_organization_endpoint_not_admin(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes={Scope.creator_webhooks_write})
-
         with pytest.raises(NotPermitted):
             await webhook_service.delete_endpoint(
                 session, authz, auth_subject, webhook_endpoint_organization
             )
 
-    @pytest.mark.parametrize(
-        "scopes",
-        [
-            {Scope.web_default},
-            {Scope.creator_webhooks_write},
-        ],
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
     )
     async def test_user_organization_endpoint_valid(
         self,
-        scopes: set[Scope],
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user: User,
         user_organization_admin: UserOrganization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(user, scopes=scopes)
-
         deleted_endpoint = await webhook_service.delete_endpoint(
             session, authz, auth_subject, webhook_endpoint_organization
         )
         assert deleted_endpoint.deleted_at is not None
 
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization", scopes=set()))
     async def test_organization_endpoint_missing_scope(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         authz: Authz,
-        organization: Organization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(organization, scopes=set())
-
         with pytest.raises(MissingScope):
             await webhook_service.delete_endpoint(
                 session, authz, auth_subject, webhook_endpoint_organization
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(
+            subject="organization_second", scopes={Scope.creator_webhooks_write}
+        )
+    )
     async def test_organization_endpoint_not_admin(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        save_fixture: SaveFixture,
         authz: Authz,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        other_organization = await create_organization(save_fixture)
-        auth_subject = get_auth_subject(other_organization, scopes=set())
-
         with pytest.raises(NotPermitted):
             await webhook_service.delete_endpoint(
                 session, authz, auth_subject, webhook_endpoint_organization
             )
 
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
+        )
+    )
     async def test_organization_endpoint_valid(
         self,
+        auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         authz: Authz,
-        organization: Organization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        auth_subject = get_auth_subject(
-            organization, scopes={Scope.creator_webhooks_write}
-        )
-
         deleted_endpoint = await webhook_service.delete_endpoint(
             session, authz, auth_subject, webhook_endpoint_organization
         )

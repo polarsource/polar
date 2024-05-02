@@ -2034,7 +2034,7 @@ export interface BenefitAdsCreate {
      * @type {string}
      * @memberof BenefitAdsCreate
      */
-    organization_id: string;
+    organization_id?: string;
     /**
      * 
      * @type {string}
@@ -2535,7 +2535,7 @@ export interface BenefitCustomCreate {
      * @type {string}
      * @memberof BenefitCustomCreate
      */
-    organization_id: string;
+    organization_id?: string;
     /**
      * 
      * @type {string}
@@ -2785,7 +2785,7 @@ export interface BenefitDiscordCreate {
      * @type {string}
      * @memberof BenefitDiscordCreate
      */
-    organization_id: string;
+    organization_id?: string;
     /**
      * 
      * @type {string}
@@ -3060,7 +3060,7 @@ export interface BenefitGitHubRepositoryCreate {
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreate
      */
-    organization_id: string;
+    organization_id?: string;
     /**
      * 
      * @type {string}
@@ -8321,7 +8321,11 @@ export const Scope = {
     CREATORSUBSCRIPTIONSREAD: 'creator:subscriptions:read',
     CREATORSUBSCRIPTIONSWRITE: 'creator:subscriptions:write',
     BACKERSUBSCRIPTIONSREAD: 'backer:subscriptions:read',
-    BACKERSUBSCRIPTIONSWRITE: 'backer:subscriptions:write'
+    BACKERSUBSCRIPTIONSWRITE: 'backer:subscriptions:write',
+    CREATORWEBHOOKSREAD: 'creator:webhooks:read',
+    CREATORWEBHOOKSWRITE: 'creator:webhooks:write',
+    BACKERWEBHOOKSREAD: 'backer:webhooks:read',
+    BACKERWEBHOOKSWRITE: 'backer:webhooks:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 
@@ -8879,7 +8883,7 @@ export interface SubscriptionTierCreate {
      * @type {string}
      * @memberof SubscriptionTierCreate
      */
-    organization_id: string;
+    organization_id?: string;
 }
 
 
@@ -10681,19 +10685,25 @@ export interface WebhookDelivery {
      * @type {string}
      * @memberof WebhookDelivery
      */
-    id: string;
+    created_at: string;
     /**
      * 
      * @type {string}
      * @memberof WebhookDelivery
      */
-    created_at: string;
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookDelivery
+     */
+    id: string;
     /**
      * 
      * @type {number}
      * @memberof WebhookDelivery
      */
-    http_code: number | null;
+    http_code?: number;
     /**
      * 
      * @type {boolean}
@@ -10747,6 +10757,18 @@ export interface WebhookEndpoint {
      * @type {string}
      * @memberof WebhookEndpoint
      */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpoint
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEndpoint
+     */
     id: string;
     /**
      * 
@@ -10768,70 +10790,10 @@ export interface WebhookEndpoint {
     organization_id: string | null;
     /**
      * 
-     * @type {string}
+     * @type {Array<WebhookEventType>}
      * @memberof WebhookEndpoint
      */
-    created_at: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_subscription_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_subscription_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_subscription_tier_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_subscription_tier_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_pledge_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_pledge_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_donation_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_organization_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_benefit_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpoint
-     */
-    event_benefit_updated?: boolean;
+    events: Array<WebhookEventType>;
 }
 /**
  * 
@@ -10853,76 +10815,16 @@ export interface WebhookEndpointCreate {
     secret: string;
     /**
      * 
-     * @type {string}
+     * @type {Array<WebhookEventType>}
      * @memberof WebhookEndpointCreate
      */
-    user_id?: string;
+    events: Array<WebhookEventType>;
     /**
      * 
      * @type {string}
      * @memberof WebhookEndpointCreate
      */
     organization_id?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_subscription_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_subscription_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_subscription_tier_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_subscription_tier_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_pledge_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_pledge_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_donation_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_organization_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_benefit_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointCreate
-     */
-    event_benefit_updated?: boolean;
 }
 /**
  * 
@@ -10944,64 +10846,10 @@ export interface WebhookEndpointUpdate {
     secret?: string;
     /**
      * 
-     * @type {boolean}
+     * @type {Array<WebhookEventType>}
      * @memberof WebhookEndpointUpdate
      */
-    event_subscription_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_subscription_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_subscription_tier_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_subscription_tier_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_pledge_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_pledge_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_donation_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_organization_updated?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_benefit_created?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEndpointUpdate
-     */
-    event_benefit_updated?: boolean;
+    events?: Array<WebhookEventType>;
 }
 /**
  * 
@@ -11014,25 +10862,31 @@ export interface WebhookEvent {
      * @type {string}
      * @memberof WebhookEvent
      */
-    id: string;
+    created_at: string;
     /**
      * 
      * @type {string}
      * @memberof WebhookEvent
      */
-    created_at: string;
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookEvent
+     */
+    id: string;
     /**
      * 
      * @type {number}
      * @memberof WebhookEvent
      */
-    last_http_code: number | null;
+    last_http_code?: number;
     /**
      * 
      * @type {boolean}
      * @memberof WebhookEvent
      */
-    succeeded: boolean | null;
+    succeeded?: boolean;
     /**
      * 
      * @type {string}
@@ -11040,19 +10894,25 @@ export interface WebhookEvent {
      */
     payload: string;
 }
+
 /**
  * 
  * @export
- * @interface WebhookEventRedeliver
  */
-export interface WebhookEventRedeliver {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof WebhookEventRedeliver
-     */
-    ok: boolean;
-}
+export const WebhookEventType = {
+    SUBSCRIPTION_CREATED: 'subscription.created',
+    SUBSCRIPTION_UPDATED: 'subscription.updated',
+    SUBSCRIPTION_TIER_CREATED: 'subscription_tier.created',
+    SUBSCRIPTION_TIER_UPDATED: 'subscription_tier.updated',
+    BENEFIT_CREATED: 'benefit.created',
+    BENEFIT_UPDATED: 'benefit.updated',
+    ORGANIZATION_UPDATED: 'organization.updated',
+    PLEDGE_CREATED: 'pledge.created',
+    PLEDGE_UPDATED: 'pledge.updated',
+    DONATION_CREATED: 'donation.created'
+} as const;
+export type WebhookEventType = typeof WebhookEventType[keyof typeof WebhookEventType];
+
 /**
  * 
  * @export

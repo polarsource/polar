@@ -84,7 +84,7 @@ from polar.user.service import user as user_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.webhook.service import webhook_service
+from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job

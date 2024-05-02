@@ -6,7 +6,6 @@ from pydantic_core import InitErrorDetails, PydanticCustomError
 
 from polar.auth.models import AuthSubject, Subject, is_organization
 from polar.models import Organization
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 
 
@@ -34,13 +33,16 @@ async def get_payload_organization(
     auth_subject: AuthSubject[Subject],
     model: OrganizationIDModel,
 ) -> Organization:
+    # Avoids a circular import :(
+    from polar.organization.service import organization as organization_service
+
     if is_organization(auth_subject):
         if model.organization_id is not None:
             raise RequestValidationError(
                 [
                     {
                         "type": PydanticCustomError(
-                            "organization_token",
+                            "not_settable_organization_id",
                             "Setting organization_id is disallowed when using an organization token.",
                         ),
                         "loc": ("organization_id",),

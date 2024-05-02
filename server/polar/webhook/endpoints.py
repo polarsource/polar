@@ -5,18 +5,18 @@ from fastapi import Depends, Query
 
 from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import WebhookEndpoint
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
+from .auth import WebhooksRead, WebhooksWrite
 from .schemas import WebhookDelivery as WebhookDeliverySchema
 from .schemas import WebhookEndpoint as WebhookEndpointSchema
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
-from .service import webhook_service
+from .service import webhook as webhook_service
 
 log = structlog.get_logger()
 
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 )
 async def list_webhook_endpoints(
     pagination: PaginationParamsQuery,
-    auth_subject: WebUser,
+    auth_subject: WebhooksRead,
     organization_id: UUID | None = None,
     user_id: UUID | None = None,
     session: AsyncSession = Depends(get_db_session),
@@ -59,7 +59,7 @@ async def list_webhook_endpoints(
 )
 async def get_webhook_endpoint(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: WebhooksRead,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpoint:
@@ -81,27 +81,14 @@ async def get_webhook_endpoint(
     status_code=201,
 )
 async def create_webhook_endpoint(
-    create: WebhookEndpointCreate,
-    auth_subject: WebUser,
+    endpoint_create: WebhookEndpointCreate,
+    auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpoint:
-    if not create.user_id and not create.organization_id:
-        raise BadRequest("neither user_id nor organization_id is set")
-
-    if create.user_id:
-        if create.user_id != auth_subject.subject.id:
-            raise BadRequest("user_id is not the current users ID")
-
-    if create.organization_id:
-        org = await organization_service.get(session, create.organization_id)
-        if not org:
-            raise ResourceNotFound("organization not found")
-
-        if not await authz.can(auth_subject.subject, AccessType.write, org):
-            raise Unauthorized()
-
-    return await webhook_service.create_endpoint(session, auth_subject, create=create)
+    return await webhook_service.create_endpoint(
+        session, authz, auth_subject, endpoint_create
+    )
 
 
 @router.patch(
@@ -113,7 +100,7 @@ async def create_webhook_endpoint(
 async def update_webhook_endpoint(
     id: UUID,
     update: WebhookEndpointUpdate,
-    auth_subject: WebUser,
+    auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpoint:
@@ -121,11 +108,8 @@ async def update_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
-        raise Unauthorized()
-
     return await webhook_service.update_endpoint(
-        session, auth_subject, endpoint=endpoint, update=update
+        session, authz, auth_subject, endpoint=endpoint, update_schema=update
     )
 
 
@@ -137,7 +121,7 @@ async def update_webhook_endpoint(
 )
 async def delete_webhook_endpoint(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> None:
@@ -145,10 +129,7 @@ async def delete_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
-        raise Unauthorized()
-
-    await webhook_service.delete_endpoint(session, auth_subject, id)
+    await webhook_service.delete_endpoint(session, authz, auth_subject, endpoint)
 
 
 @router.get(

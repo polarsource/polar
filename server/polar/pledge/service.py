@@ -69,7 +69,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service import user as user_service
-from polar.webhook.service import webhook_service
+from polar.webhook.service import webhook as webhook_service
 
 from .hooks import (
     PledgeHook,

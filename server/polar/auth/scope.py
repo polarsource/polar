@@ -16,6 +16,11 @@ class Scope(StrEnum):
     backer_subscriptions_read = "backer:subscriptions:read"
     backer_subscriptions_write = "backer:subscriptions:write"
 
+    creator_webhooks_read = "creator:webhooks:read"
+    creator_webhooks_write = "creator:webhooks:write"
+    backer_webhooks_read = "backer:webhooks:read"
+    backer_webhooks_write = "backer:webhooks:write"
+
 
 RESERVED_SCOPES = {Scope.admin, Scope.web_default}
 SCOPES_SUPPORTED = [s.value for s in Scope if s not in RESERVED_SCOPES]

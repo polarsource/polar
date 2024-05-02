@@ -43,12 +43,6 @@ class WebhookEndpoint(RecordModel):
         index=True,
     )
 
-    created_by_user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=True,
-    )
-
     events: Mapped[list[WebhookEventType]] = mapped_column(
         JSONB, nullable=False, default=[]
     )

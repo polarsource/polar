@@ -37,32 +37,32 @@ export default function ClientPage({
 
   const [isSaving, setIsSaving] = useState(false)
 
-  const onSubmit = useCallback(async (form: WebhookEndpointUpdate) => {
-    setIsSaving(true)
-    await api.webhooks.updateWebhookEndpoint({
-      id: endpoint.id,
-      webhookEndpointUpdate: form,
-    })
-    setIsSaving(false)
-    window.location.reload()
-  }, [])
+  const onSubmit = useCallback(
+    async (form: WebhookEndpointUpdate) => {
+      setIsSaving(true)
+      await api.webhooks.updateWebhookEndpoint({
+        id: endpoint.id,
+        webhookEndpointUpdate: form,
+      })
+      setIsSaving(false)
+      window.location.reload()
+    },
+    [endpoint],
+  )
 
   const {
-    hide: hideArchiveModal,
+    hide: hideDeleteModal,
     isShown: isArchiveModalShown,
     show: showArchiveModal,
   } = useModal()
 
   const router = useRouter()
 
-  const handleArchiveArticle = useCallback(async () => {
-    const res = await api.webhooks.deleteWebhookEndpoint({ id: endpoint.id })
-    if (res) {
-      router.push(`/maintainer/${organization.name}/webhooks`)
-    } else {
-      hideArchiveModal()
-    }
-  }, [hideArchiveModal, router])
+  const handleDeleteWebhookEndpoint = useCallback(async () => {
+    await api.webhooks.deleteWebhookEndpoint({ id: endpoint.id })
+    router.push(`/maintainer/${organization.name}/webhooks`)
+    hideDeleteModal()
+  }, [hideDeleteModal, router, endpoint, organization])
 
   return (
     <DashboardBody>
@@ -115,9 +115,9 @@ export default function ClientPage({
               'This action will delete the endpoint configuration and stop sending webhooks to it'
             }
             destructiveText="Delete"
-            onConfirm={handleArchiveArticle}
+            onConfirm={handleDeleteWebhookEndpoint}
             isShown={isArchiveModalShown}
-            hide={hideArchiveModal}
+            hide={hideDeleteModal}
             destructive
           />
         </ShadowBoxOnMd>

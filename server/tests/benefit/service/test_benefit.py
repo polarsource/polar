@@ -39,7 +39,7 @@ def authz(session: AsyncSession) -> Authz:
 
 @pytest.mark.asyncio
 class TestSearch:
-    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user(
         self,
         auth_subject: AuthSubject[User],
@@ -57,7 +57,7 @@ class TestSearch:
         assert count == 0
         assert len(results) == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -76,7 +76,7 @@ class TestSearch:
         assert count == len(benefits)
         assert len(results) == len(benefits)
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_filter_type(
         self,
         auth_subject: AuthSubject[User],
@@ -104,7 +104,7 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == plain_benefit.id
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_filter_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -128,7 +128,7 @@ class TestSearch:
         assert len(results) == 3
         assert results[0].id == benefit_organization.id
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
         auth_subject: AuthSubject[Organization],
@@ -153,7 +153,7 @@ class TestSearch:
 
 @pytest.mark.asyncio
 class TestGetById:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user(
         self,
         auth_subject: AuthSubject[User],
@@ -173,7 +173,7 @@ class TestGetById:
         )
         assert organization_benefit is None
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -195,7 +195,7 @@ class TestGetById:
         assert organization_benefit is not None
         assert organization_benefit.id == benefit_organization.id
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
         auth_subject: AuthSubject[Organization],
@@ -218,7 +218,7 @@ class TestGetById:
 
 @pytest.mark.asyncio
 class TestUserCreate:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_missing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
@@ -237,7 +237,7 @@ class TestUserCreate:
                 session, authz, create_schema, auth_subject
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_existing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
@@ -257,7 +257,7 @@ class TestUserCreate:
                 session, authz, create_schema, auth_subject
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_writable_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -281,7 +281,7 @@ class TestUserCreate:
                 session, authz, create_schema, auth_subject
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_valid_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -307,7 +307,7 @@ class TestUserCreate:
         )
         assert benefit.organization_id == organization.id
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_set_organization_id(
         self,
         auth_subject: AuthSubject[Organization],
@@ -330,7 +330,7 @@ class TestUserCreate:
                 session, authz, create_schema, auth_subject
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_invalid_properties(
         self,
         auth_subject: AuthSubject[User],
@@ -373,7 +373,7 @@ class TestUserCreate:
 
 @pytest.mark.asyncio
 class TestUserUpdate:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_writable_benefit(
         self,
         auth_subject: AuthSubject[User],
@@ -404,7 +404,7 @@ class TestUserUpdate:
                 auth_subject,
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -446,7 +446,7 @@ class TestUserUpdate:
 
 @pytest.mark.asyncio
 class TestUserDelete:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_writable_benefit(
         self,
         auth_subject: AuthSubject[User],
@@ -468,7 +468,7 @@ class TestUserDelete:
                 session, authz, benefit_organization_loaded, auth_subject
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -501,7 +501,7 @@ class TestUserDelete:
                 session, authz, benefit_loaded, auth_subject
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )

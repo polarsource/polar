@@ -7,7 +7,7 @@ from polar.models.user import User
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
     response = await client.get("/api/v1/users/me")
 
@@ -29,7 +29,7 @@ async def test_get_users_me_no_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 @pytest.mark.http_auto_expunge
 async def test_set_preferences_true(client: AsyncClient) -> None:
     response = await client.put(
@@ -49,7 +49,7 @@ async def test_set_preferences_true(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 @pytest.mark.http_auto_expunge
 async def test_set_preferences_false(client: AsyncClient) -> None:
     response = await client.put(
@@ -69,7 +69,7 @@ async def test_set_preferences_false(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 @pytest.mark.http_auto_expunge
 async def test_set_account(
     client: AsyncClient, open_collective_account: Account

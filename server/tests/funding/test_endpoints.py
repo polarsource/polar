@@ -124,7 +124,7 @@ class TestSearch:
         assert json["pagination"]["total_count"] == 0
         assert len(json["items"]) == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_private_repository(
         self,
         client: AsyncClient,

@@ -22,7 +22,7 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_pledge(
     organization: Organization,
     repository: Repository,
@@ -53,7 +53,7 @@ async def test_get_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_pledge_member_sending_org(
     organization: Organization,
     repository: Repository,
@@ -97,7 +97,7 @@ async def test_get_pledge_member_sending_org(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_pledge_member_sending_org_user_has_github(
     organization: Organization,
     repository: Repository,
@@ -144,7 +144,7 @@ async def test_get_pledge_member_sending_org_user_has_github(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_pledge_member_receiving_org(
     organization: Organization,
     repository: Repository,
@@ -187,7 +187,7 @@ async def test_get_pledge_member_receiving_org(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_pledge_not_admin(
     organization: Organization,
     pledging_organization: Organization,
@@ -208,7 +208,7 @@ async def test_get_pledge_not_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_pledge_not_member(
     organization: Organization,
     repository: Repository,
@@ -223,7 +223,7 @@ async def test_get_pledge_not_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_search_pledge(
     organization: Organization,
     repository: Repository,
@@ -253,7 +253,7 @@ async def test_search_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_search_pledge_no_admin(
     organization: Organization,
     repository: Repository,
@@ -275,7 +275,7 @@ async def test_search_pledge_no_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_search_pledge_no_member(
     organization: Organization,
     repository: Repository,
@@ -291,7 +291,7 @@ async def test_search_pledge_no_member(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_search_pledge_by_issue_id(
     organization: Organization,
     pledging_organization: Organization,
@@ -363,7 +363,7 @@ async def test_search_pledge_by_issue_id(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_search_no_params(
     organization: Organization,
     repository: Repository,
@@ -378,7 +378,7 @@ async def test_search_no_params(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_pay_on_completion(
     organization: Organization,
     repository: Repository,
@@ -468,7 +468,7 @@ async def test_summary_private_repo(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_pay_on_completion_total_monthly_spending_limit(
     organization: Organization,
     repository: Repository,
@@ -519,7 +519,7 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_pay_on_completion_per_user_monthly_spending_limit(
     organization: Organization,
     repository: Repository,
@@ -571,7 +571,7 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_no_billing_email(
     organization: Organization,
     repository: Repository,
@@ -602,7 +602,7 @@ async def test_no_billing_email(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_spending(
     organization: Organization,
     repository: Repository,
@@ -646,7 +646,7 @@ async def test_spending(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_spending_zero(organization: Organization, client: AsyncClient) -> None:
     # get spending
 

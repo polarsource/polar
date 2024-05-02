@@ -17,7 +17,7 @@ from tests.fixtures.random_objects import create_user_github_oauth
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get(
     user: User,
     organization: Organization,
@@ -36,7 +36,7 @@ async def test_get(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_personal(client: AsyncClient) -> None:
     response = await client.get("/api/v1/dashboard/personal")
 
@@ -45,7 +45,7 @@ async def test_get_personal(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_no_member(
     user: User,
     organization: Organization,
@@ -60,7 +60,7 @@ async def test_get_no_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_with_pledge_from_org(
     user: User,
     organization: Organization,
@@ -90,7 +90,7 @@ async def test_get_with_pledge_from_org(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_with_pledge_from_user(
     user: User,
     organization: Organization,
@@ -126,7 +126,7 @@ async def test_get_with_pledge_from_user(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_with_pledge_from_user_github_oauth(
     user: User,
     # user_github_oauth: OAuthAccount,
@@ -165,7 +165,7 @@ async def test_get_with_pledge_from_user_github_oauth(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_with_pledge_initiated(
     user: User,
     organization: Organization,
@@ -194,7 +194,7 @@ async def test_get_with_pledge_initiated(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_only_pledged_with_pledge(
     user: User,
     organization: Organization,
@@ -224,7 +224,7 @@ async def test_get_only_pledged_with_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_only_pledged_no_pledge(
     user: User,
     organization: Organization,
@@ -247,7 +247,7 @@ async def test_get_only_pledged_no_pledge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_only_badged_no_badge(
     user: User,
     organization: Organization,
@@ -270,7 +270,7 @@ async def test_get_only_badged_no_badge(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_only_badged_is_badged(
     user: User,
     organization: Organization,

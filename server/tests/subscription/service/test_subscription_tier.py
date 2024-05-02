@@ -83,7 +83,7 @@ class TestSearch:
         assert results[2].id == subscription_tiers[2].id
         assert results[3].id == subscription_tiers[3].id
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user(
         self,
         auth_subject: AuthSubject[User],
@@ -105,7 +105,7 @@ class TestSearch:
         assert results[2].id == subscription_tiers[2].id
         assert results[3].id == subscription_tiers[3].id
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -123,7 +123,7 @@ class TestSearch:
         assert count == 4
         assert len(results) == 4
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
         auth_subject: AuthSubject[Organization],
@@ -140,7 +140,7 @@ class TestSearch:
         assert count == 3
         assert len(results) == 3
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_filter_type(
         self,
         auth_subject: AuthSubject[User],
@@ -171,7 +171,7 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == individual_subscription_tier.id
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_filter_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -471,7 +471,7 @@ class TestGetById:
         assert accessible_subscription_tier is not None
         assert accessible_subscription_tier.id == subscription_tier.id
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user(
         self,
         auth_subject: AuthSubject[User],
@@ -492,7 +492,7 @@ class TestGetById:
         assert accessible_subscription_tier is not None
         assert accessible_subscription_tier.id == subscription_tier.id
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -515,7 +515,7 @@ class TestGetById:
         assert accessible_subscription_tier is not None
         assert accessible_subscription_tier.id == subscription_tier.id
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
         auth_subject: AuthSubject[Organization],
@@ -539,7 +539,7 @@ class TestGetById:
 
 @pytest.mark.asyncio
 class TestUserCreate:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_existing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
@@ -564,7 +564,7 @@ class TestUserCreate:
                 session, authz, create_schema, auth_subject
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_writable_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -593,7 +593,7 @@ class TestUserCreate:
                 session, authz, create_schema, auth_subject
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_valid_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -639,7 +639,7 @@ class TestUserCreate:
         assert len(subscription_tier.prices) == 1
         assert subscription_tier.prices[0].stripe_price_id == "PRICE_ID"
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_valid_highlighted(
         self,
         auth_subject: AuthSubject[User],
@@ -692,7 +692,7 @@ class TestUserCreate:
         assert updated_highlighted_subscription_tier is not None
         assert not updated_highlighted_subscription_tier.is_highlighted
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_empty_description(
         self,
         auth_subject: AuthSubject[User],
@@ -731,7 +731,7 @@ class TestUserCreate:
         )
         assert subscription_tier.description is None
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_set_organization_id(
         self,
         auth_subject: AuthSubject[Organization],
@@ -760,7 +760,7 @@ class TestUserCreate:
                 session, authz, create_schema, auth_subject
             )
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_valid(
         self,
         auth_subject: AuthSubject[Organization],
@@ -800,7 +800,7 @@ class TestUserCreate:
 
 @pytest.mark.asyncio
 class TestUserUpdate:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_writable_subscription_tier(
         self,
         auth_subject: AuthSubject[User],
@@ -827,7 +827,7 @@ class TestUserUpdate:
                 auth_subject,
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -867,7 +867,7 @@ class TestUserUpdate:
             name=f"{organization.name} - Subscription Tier Update",
         )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -906,7 +906,7 @@ class TestUserUpdate:
             description="Description update",
         )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -942,7 +942,7 @@ class TestUserUpdate:
 
         update_product_mock.assert_not_called()
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1001,7 +1001,7 @@ class TestUserUpdate:
         assert updated_subscription_tier.prices[1].price_amount == 12000
         assert updated_subscription_tier.prices[1].stripe_price_id == "NEW_PRICE_ID"
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1056,7 +1056,7 @@ class TestUserUpdate:
         assert updated_subscription_tier.prices[0].price_amount == 12000
         assert updated_subscription_tier.prices[0].stripe_price_id == "NEW_PRICE_ID"
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1160,7 +1160,7 @@ class TestCreateFree:
 
 @pytest.mark.asyncio
 class TestUpdateBenefits:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_writable_subscription_tier(
         self,
         auth_subject: AuthSubject[User],
@@ -1182,7 +1182,7 @@ class TestUpdateBenefits:
                 session, authz, subscription_tier_organization_loaded, [], auth_subject
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1226,7 +1226,7 @@ class TestUpdateBenefits:
             subscription_tier_organization_loaded.subscription_tier_benefits
         ) == len(benefits)
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1278,7 +1278,7 @@ class TestUpdateBenefits:
             subscription_tier.id,
         )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1330,7 +1330,7 @@ class TestUpdateBenefits:
             subscription_tier.id,
         )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1378,7 +1378,7 @@ class TestUpdateBenefits:
             subscription_tier.id,
         )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1437,7 +1437,7 @@ class TestUpdateBenefits:
             subscription_tier.id,
         )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1477,7 +1477,7 @@ class TestUpdateBenefits:
                 auth_subject,
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1523,7 +1523,7 @@ class TestUpdateBenefits:
                 auth_subject,
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1590,7 +1590,7 @@ class TestUpdateBenefits:
 
 @pytest.mark.asyncio
 class TestArchive:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_writable_subscription_tier(
         self,
         auth_subject: AuthSubject[User],
@@ -1612,7 +1612,7 @@ class TestArchive:
                 session, authz, subscription_tier_organization_loaded, auth_subject
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -1638,7 +1638,7 @@ class TestArchive:
                 session, authz, subscription_tier_free_loaded, auth_subject
             )
 
-    @pytest.mark.authenticated(
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )

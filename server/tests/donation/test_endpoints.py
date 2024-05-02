@@ -21,7 +21,7 @@ class TestSearch:
         response = await client.get("/api/v1/donations/search", params=params)
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_authenticated_not_member(
         self,
         client: AsyncClient,
@@ -31,7 +31,7 @@ class TestSearch:
         response = await client.get("/api/v1/donations/search", params=params)
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_authenticated_not_admin(
         self,
         client: AsyncClient,
@@ -48,7 +48,7 @@ class TestSearch:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_authenticated(
         self,
         client: AsyncClient,
@@ -68,7 +68,7 @@ class TestSearch:
 
         assert {"items": [], "pagination": {"total_count": 0, "max_page": 0}} == json
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_with_data(
         self,
         client: AsyncClient,
@@ -131,7 +131,7 @@ class TestSearch:
         # anonymous
         assert json["items"][2]["donor"] is None
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_with_issue(
         self,
         client: AsyncClient,

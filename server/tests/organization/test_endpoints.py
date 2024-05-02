@@ -15,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_organization(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -30,7 +30,7 @@ async def test_get_organization(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_organization_member_only_fields_no_member(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -51,7 +51,7 @@ async def test_get_organization_member_only_fields_no_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_organization_member_only_fields_is_member(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -72,7 +72,7 @@ async def test_get_organization_member_only_fields_is_member(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization_billing_email(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -117,7 +117,7 @@ async def test_update_organization_billing_email(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_organization_member(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -131,7 +131,7 @@ async def test_list_organization_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_organization_member_allow_non_admin(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -145,7 +145,7 @@ async def test_list_organization_member_allow_non_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_organization_member_admin(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -164,7 +164,7 @@ async def test_list_organization_member_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_organization_lookup_not_found(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -177,7 +177,7 @@ async def test_organization_lookup_not_found(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_organization_lookup(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -191,7 +191,7 @@ async def test_organization_lookup(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_organization_search(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -205,7 +205,7 @@ async def test_organization_search(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_organization_search_no_matches(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -219,7 +219,7 @@ async def test_organization_search_no_matches(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_organization_deleted(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -237,7 +237,7 @@ async def test_get_organization_deleted(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization_no_admin(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -253,7 +253,7 @@ async def test_update_organization_no_admin(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization(
     organization: Organization,
     client: AsyncClient,
@@ -304,7 +304,7 @@ async def test_update_organization(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_members(
     session: AsyncSession,
     organization: Organization,
@@ -330,7 +330,7 @@ async def test_list_members(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_members_not_member(
     session: AsyncSession,
     organization: Organization,
@@ -344,7 +344,7 @@ async def test_list_members_not_member(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization_profile_settings(
     organization: Organization,
     client: AsyncClient,
@@ -416,7 +416,7 @@ async def test_update_organization_profile_settings(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization_profile_settings_featured_projects(
     organization: Organization,
     client: AsyncClient,
@@ -465,7 +465,7 @@ async def test_update_organization_profile_settings_featured_projects(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization_profile_settings_featured_organizations(
     organization: Organization,
     client: AsyncClient,
@@ -514,7 +514,7 @@ async def test_update_organization_profile_settings_featured_organizations(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization_profile_settings_description(
     organization: Organization,
     client: AsyncClient,
@@ -588,7 +588,7 @@ async def test_update_organization_profile_settings_description(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_organization_profile_settings_links(
     organization: Organization,
     client: AsyncClient,
@@ -639,7 +639,7 @@ async def test_update_organization_profile_settings_links(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_donations_enabled(
     organization: Organization,
     client: AsyncClient,
@@ -697,7 +697,7 @@ async def test_donations_enabled(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_public_donation_timestamps(
     organization: Organization,
     client: AsyncClient,

@@ -94,7 +94,7 @@ class TestCreateSubscribeSession:
                 authz,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_already_subscribed(
         self,
         auth_subject: AuthSubject[User],
@@ -186,7 +186,7 @@ class TestCreateSubscribeSession:
             },
         )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid_user_cookie(
         self,
         auth_subject: AuthSubject[User],
@@ -251,9 +251,7 @@ class TestCreateSubscribeSession:
             },
         )
 
-    @pytest.mark.authenticated(
-        AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN)
-    )
+    @pytest.mark.auth(AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN))
     async def test_valid_token(
         self,
         auth_subject: AuthSubject[User],
@@ -315,9 +313,7 @@ class TestCreateSubscribeSession:
             },
         )
 
-    @pytest.mark.authenticated(
-        AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN)
-    )
+    @pytest.mark.auth(AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN))
     async def test_valid_token_customer_email(
         self,
         auth_subject: AuthSubject[User],
@@ -450,7 +446,7 @@ class TestCreateSubscribeSession:
             },
         )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid_free_subscription_upgrade(
         self,
         auth_subject: AuthSubject[User],
@@ -549,7 +545,7 @@ class TestCreateSubscribeSession:
                 organization_id=organization_second.id,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_organization_not_admin(
         self,
         auth_subject: AuthSubject[User],
@@ -581,7 +577,7 @@ class TestCreateSubscribeSession:
                 organization_id=organization_second.id,
             )
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_organization_valid(
         self,
         auth_subject: AuthSubject[User],

@@ -11,7 +11,7 @@ from tests.fixtures.database import SaveFixture
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_search_references(
     repository: Repository,
     issue: Issue,

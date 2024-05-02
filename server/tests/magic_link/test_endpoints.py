@@ -65,7 +65,7 @@ async def test_authenticate_invalid_token(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 @pytest.mark.http_auto_expunge
 async def test_authenticate_already_authenticated(
     client: AsyncClient, user: User, mocker: MockerFixture

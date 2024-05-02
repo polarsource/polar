@@ -7,6 +7,7 @@ from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 
@@ -82,7 +83,7 @@ class TestListWebhookEndpoints:
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestCreateWebhookEndpoint:
-    @pytest.mark.authenticated(scopes=set())
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
         self,
         client: AsyncClient,
@@ -97,10 +98,11 @@ class TestCreateWebhookEndpoint:
 
         assert response.status_code == 403
 
-    @pytest.mark.authenticated(scope={Scope.backer_webhooks_write})
-    async def test_user_valid_creator_webhooks_write_scope(
-        self, client: AsyncClient
-    ) -> None:
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.backer_webhooks_write}),
+    )
+    async def test_user_valid(self, client: AsyncClient) -> None:
         params = {
             "url": "https://example.com/hook",
             "secret": "foo",
@@ -110,18 +112,7 @@ class TestCreateWebhookEndpoint:
 
         assert response.status_code == 201
 
-    @pytest.mark.authenticated
-    async def test_user_valid_web_default_scope(self, client: AsyncClient) -> None:
-        params = {
-            "url": "https://example.com/hook",
-            "secret": "foo",
-            "events": [],
-        }
-        response = await client.post("/api/v1/webhooks/endpoints", json=params)
-
-        assert response.status_code == 201
-
-    @pytest.mark.authenticated(subject="organization", scopes=set())
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization", scopes=set()))
     async def test_organization_missing_scope(self, client: AsyncClient) -> None:
         params = {
             "url": "https://example.com/hook",
@@ -133,7 +124,9 @@ class TestCreateWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.authenticated(
-        subject="organization", scope={Scope.backer_webhooks_write}
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
+        )
     )
     async def test_organization_valid_creator_webhooks_write_scope(
         self, client: AsyncClient
@@ -151,7 +144,7 @@ class TestCreateWebhookEndpoint:
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestUpdateWebhookEndpoint:
-    @pytest.mark.authenticated(scopes=set())
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
         self,
         client: AsyncClient,
@@ -164,8 +157,11 @@ class TestUpdateWebhookEndpoint:
 
         assert response.status_code == 403
 
-    @pytest.mark.authenticated(scopes={Scope.creator_webhooks_write})
-    async def test_user_valid_creator_webhooks_write_scope(
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
+    )
+    async def test_user_valid(
         self,
         client: AsyncClient,
         webhook_endpoint_organization: WebhookEndpoint,
@@ -177,20 +173,7 @@ class TestUpdateWebhookEndpoint:
 
         assert response.status_code == 200
 
-    @pytest.mark.authenticated
-    async def test_user_valid_web_default_scope(
-        self,
-        client: AsyncClient,
-        webhook_endpoint_organization: WebhookEndpoint,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        response = await client.patch(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
-        )
-
-        assert response.status_code == 200
-
-    @pytest.mark.authenticated(subject="organization", scopes=set())
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization", scopes=set()))
     async def test_organization_missing_scope(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
@@ -201,7 +184,9 @@ class TestUpdateWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.authenticated(
-        subject="organization", scope={Scope.creator_webhooks_write}
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
+        )
     )
     async def test_organization_valid_creator_webhooks_write_scope(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
@@ -216,7 +201,7 @@ class TestUpdateWebhookEndpoint:
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestDeleteWebhookEndpoint:
-    @pytest.mark.authenticated(scopes=set())
+    @pytest.mark.authenticated(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
         self,
         client: AsyncClient,
@@ -229,8 +214,11 @@ class TestDeleteWebhookEndpoint:
 
         assert response.status_code == 403
 
-    @pytest.mark.authenticated(scopes={Scope.creator_webhooks_write})
-    async def test_user_valid_creator_webhooks_write_scope(
+    @pytest.mark.authenticated(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
+    )
+    async def test_user_valid(
         self,
         client: AsyncClient,
         webhook_endpoint_organization: WebhookEndpoint,
@@ -242,20 +230,7 @@ class TestDeleteWebhookEndpoint:
 
         assert response.status_code == 204
 
-    @pytest.mark.authenticated
-    async def test_user_valid_web_default_scope(
-        self,
-        client: AsyncClient,
-        webhook_endpoint_organization: WebhookEndpoint,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        response = await client.delete(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
-        )
-
-        assert response.status_code == 204
-
-    @pytest.mark.authenticated(subject="organization", scopes=set())
+    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization", scopes=set()))
     async def test_organization_missing_scope(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
@@ -266,7 +241,9 @@ class TestDeleteWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.authenticated(
-        subject="organization", scope={Scope.creator_webhooks_write}
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
+        )
     )
     async def test_organization_valid_creator_webhooks_write_scope(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint

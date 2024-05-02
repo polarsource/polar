@@ -7,6 +7,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.app import app
+from polar.auth.dependencies import get_auth_subject
 from polar.auth.models import AuthSubject, Subject
 from polar.postgres import AsyncSession, get_db_session
 
@@ -30,10 +31,11 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 @pytest_asyncio.fixture
 async def client(
     request: pytest.FixtureRequest,
-    authenticated_marker: AuthSubject[Subject],
+    auth_subject: AuthSubject[Subject],
     session: AsyncSession,
 ) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db_session] = lambda: session
+    app.dependency_overrides[get_auth_subject] = lambda: auth_subject
 
     request_hooks = []
 
@@ -60,3 +62,6 @@ async def client(
         client.event_hooks
 
         yield client
+
+    app.dependency_overrides.pop(get_db_session)
+    app.dependency_overrides.pop(get_auth_subject)

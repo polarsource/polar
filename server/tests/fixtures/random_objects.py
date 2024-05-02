@@ -47,6 +47,11 @@ async def organization(save_fixture: SaveFixture) -> Organization:
 
 
 @pytest_asyncio.fixture(scope="function")
+async def organization_second(save_fixture: SaveFixture) -> Organization:
+    return await create_organization(save_fixture)
+
+
+@pytest_asyncio.fixture(scope="function")
 async def second_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
 
@@ -673,17 +678,12 @@ async def organization_account(
 
 
 @pytest_asyncio.fixture
-async def organization_subscriber(save_fixture: SaveFixture) -> Organization:
-    return await create_organization(save_fixture)
-
-
-@pytest_asyncio.fixture
-async def organization_subscriber_admin(
-    save_fixture: SaveFixture, organization_subscriber: Organization, user_second: User
+async def organization_second_admin(
+    save_fixture: SaveFixture, organization_second: Organization, user_second: User
 ) -> User:
     user_organization = UserOrganization(
         user_id=user_second.id,
-        organization_id=organization_subscriber.id,
+        organization_id=organization_second.id,
         is_admin=True,
     )
     await save_fixture(user_organization)
@@ -691,15 +691,15 @@ async def organization_subscriber_admin(
 
 
 @pytest_asyncio.fixture
-async def organization_subscriber_members(
-    save_fixture: SaveFixture, organization_subscriber: Organization
+async def organization_second_members(
+    save_fixture: SaveFixture, organization_second: Organization
 ) -> list[User]:
     users: list[User] = []
     for _ in range(5):
         user = await create_user(save_fixture)
         user_organization = UserOrganization(
             user_id=user.id,
-            organization_id=organization_subscriber.id,
+            organization_id=organization_second.id,
             is_admin=False,
         )
         await save_fixture(user_organization)
@@ -722,14 +722,14 @@ async def subscription(
 async def subscription_organization(
     save_fixture: SaveFixture,
     subscription_tier: SubscriptionTier,
-    organization_subscriber: Organization,
+    organization_second: Organization,
     user_second: User,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
         subscription_tier=subscription_tier,
         user=user_second,
-        organization=organization_subscriber,
+        organization=organization_second,
     )
 
 

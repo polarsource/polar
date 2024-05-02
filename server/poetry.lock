@@ -1084,13 +1084,13 @@ colorama = ">=0.3.9"
 
 [[package]]
 name = "logfire"
-version = "0.26.0"
-description = "Coming soon..."
+version = "0.28.2"
+description = "The best Python observability tool! 🪵🔥"
 optional = false
-python-versions = ">=3.8"
+python-versions = "*"
 files = [
-    {file = "logfire-0.26.0-py3-none-any.whl", hash = "sha256:8a077dd346957ec61d269812791a5cebf814f54cfc51d055298ae4ba71d3ad5f"},
-    {file = "logfire-0.26.0.tar.gz", hash = "sha256:e51248fca9508e49dfa60c0a98c9339fb10f4881d9fb97d4791d2a73992a0138"},
+    {file = "logfire-0.28.2-py2.py3-none-any.whl", hash = "sha256:3f0e6e973f02a1331aefdc949d67b2e6cf58ef58b1e7b666e461c2877109290b"},
+    {file = "logfire-0.28.2.tar.gz", hash = "sha256:aa890dbed875369ae476112f282564868dea527dd9a09b4ba2e591db4412080c"},
 ]
 
 [package.dependencies]
@@ -1103,19 +1103,20 @@ typing-extensions = ">=4.0.0"
 
 [package.extras]
 aiohttp = ["opentelemetry-instrumentation-aiohttp-client (>=0.42b0)"]
+asyncpg = ["opentelemetry-instrumentation-asyncpg (>=0.42b0)"]
 celery = ["opentelemetry-instrumentation-celery (>=0.42b0)"]
 django = ["opentelemetry-instrumentation-django (>=0.42b0)"]
 fastapi = ["opentelemetry-instrumentation-fastapi (>=0.42b0)"]
 flask = ["opentelemetry-instrumentation-flask (>=0.42b0)"]
 httpx = ["opentelemetry-instrumentation-httpx (>=0.42b0)"]
-psycopg2 = ["opentelemetry-instrumentation-psycopg2 (>=0.42b0)"]
+psycopg = ["opentelemetry-instrumentation-psycopg2 (>=0.42b0)", "packaging"]
+psycopg2 = ["opentelemetry-instrumentation-psycopg2 (>=0.42b0)", "packaging"]
 pymongo = ["opentelemetry-instrumentation-pymongo (>=0.42b0)"]
 redis = ["opentelemetry-instrumentation-redis (>=0.42b0)"]
 requests = ["opentelemetry-instrumentation-requests (>=0.42b0)"]
 sqlalchemy = ["opentelemetry-instrumentation-sqlalchemy (>=0.42b0)"]
 starlette = ["opentelemetry-instrumentation-starlette (>=0.42b0)"]
 system-metrics = ["opentelemetry-instrumentation-system-metrics (>=0.42b0)"]
-test = ["Flask (>=3.0.0)", "anyio (>=4.2.0)", "attrs (>=23.1.0)", "devtools (>=0.12.2,<0.13.0)", "dirty-equals (>=0.6.0)", "django (>=3.2.0)", "eval-type-backport (>=0.1.3,<0.2.0)", "fastapi (>=0.68.0)", "gitpython (>=3.1.40)", "httpx (>=0.22.0)", "inline-snapshot (>=0)", "loguru", "openai (>=1.17.0)", "opentelemetry-instrumentation-aiohttp-client (>=0.42b0)", "opentelemetry-instrumentation-asgi (>=0.42b0)", "opentelemetry-instrumentation-django (>=0.42b0)", "opentelemetry-instrumentation-fastapi (>=0.42b0)", "opentelemetry-instrumentation-flask (>=0.42b0)", "opentelemetry-instrumentation-httpx (>=0.42b0)", "opentelemetry-instrumentation-requests (>=0.42b0)", "opentelemetry-instrumentation-sqlalchemy (>=0.42b0)", "opentelemetry-instrumentation-starlette (>=0.42b0)", "opentelemetry-instrumentation-system-metrics (>=0.42b0)", "opentelemetry-instrumentation-wsgi (>=0.42b0)", "pandas", "pydantic (>=2.5.3)", "pytest (>=7.4.2)", "pytest-django (>=4.8.0,<5.0.0)", "requests (>=2.31.0)", "requests-mock", "sqlalchemy (>=2.0.22)", "starlette (>=0.27.0)", "structlog (>=21.1.0)"]
 
 [[package]]
 name = "mako"
@@ -3462,4 +3463,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b92e4714b8fdbc51500f129fc3229588962f38436af72cabf1c835b521feb7eb"
+content-hash = "81aa63b84973a6c0619230b1450450f0a834ea83a47a5ec546c49bcde3f3a86e"

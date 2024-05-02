@@ -3,7 +3,7 @@ from typing import NoReturn
 from uuid import UUID
 
 from sqlalchemy import Select, and_, desc, or_, select, text
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.exceptions import MissingScope
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -205,6 +205,7 @@ class WebhookService:
     async def redeliver_event(
         self,
         session: AsyncSession,
+        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         id: UUID,
     ) -> None:
@@ -221,12 +222,16 @@ class WebhookService:
                     readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
                 ),
             )
+            .options(contains_eager(WebhookEvent.webhook_endpoint))
         )
 
         res = await session.execute(statement)
         event = res.scalars().unique().one_or_none()
         if event is None:
             raise ResourceNotFound()
+
+        endpoint = event.webhook_endpoint
+        await self._can_write_endpoint(authz, auth_subject, endpoint)
 
         enqueue_job("webhook_event.send", webhook_event_id=event.id)
 

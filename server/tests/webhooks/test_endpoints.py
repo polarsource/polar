@@ -259,23 +259,20 @@ class TestDeleteWebhookEndpoint:
 @pytest.mark.http_auto_expunge
 class TestListWebhookDeliveries:
     @pytest.mark.auth
-    async def test_search(
+    async def test_user_not_member(
         self,
         client: AsyncClient,
-        user: User,
         webhook_endpoint_organization: WebhookEndpoint,
         webhook_delivery: WebhookDelivery,
-        user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.get("/api/v1/webhooks/deliveries")
 
         assert response.status_code == 200
         json = response.json()
-        assert len(json["items"]) == 1
-        assert json["items"][0]["id"] == str(webhook_delivery.id)
+        assert len(json["items"]) == 0
 
     @pytest.mark.auth
-    async def test_search_member_no_admin(
+    async def test_user_not_admin(
         self,
         client: AsyncClient,
         user: User,
@@ -290,7 +287,25 @@ class TestListWebhookDeliveries:
         assert len(json["items"]) == 0
 
     @pytest.mark.auth
-    async def test_search_no_member(
+    async def test_user(
+        self,
+        client: AsyncClient,
+        user: User,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_delivery: WebhookDelivery,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.get("/api/v1/webhooks/deliveries")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json["items"]) == 1
+        assert json["items"][0]["id"] == str(webhook_delivery.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.creator_webhooks_read})
+    )
+    async def test_organization(
         self,
         client: AsyncClient,
         webhook_endpoint_organization: WebhookEndpoint,
@@ -300,4 +315,5 @@ class TestListWebhookDeliveries:
 
         assert response.status_code == 200
         json = response.json()
-        assert len(json["items"]) == 0
+        assert len(json["items"]) == 1
+        assert json["items"][0]["id"] == str(webhook_delivery.id)

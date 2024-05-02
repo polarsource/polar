@@ -16,7 +16,7 @@ from tests.fixtures.random_objects import create_benefit_grant
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestAdvertisementCampaign:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_create(
         self,
         client: AsyncClient,
@@ -48,7 +48,7 @@ class TestAdvertisementCampaign:
         assert response.json()["text"] == "hello"
         assert response.json()["link_url"] == "https://example.com/"
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_create_no_benefit_granted(
         self,
         client: AsyncClient,
@@ -70,7 +70,7 @@ class TestAdvertisementCampaign:
 
         assert response.status_code == 403
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_edit(
         self,
         client: AsyncClient,
@@ -113,7 +113,7 @@ class TestAdvertisementCampaign:
         assert updated.json()["text"] == "hello updated"
         assert updated.json()["link_url"] == "https://example.com/updated.html"
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_delete(
         self,
         client: AsyncClient,
@@ -159,7 +159,7 @@ class TestAdvertisementCampaign:
         assert searched.status_code == 200
         assert len(searched.json()["items"]) == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_search(
         self,
         client: AsyncClient,
@@ -188,7 +188,7 @@ class TestAdvertisementCampaign:
         assert searched.status_code == 200
         assert len(searched.json()["items"]) == 1
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_search_unauthorized(
         self,
         client: AsyncClient,
@@ -216,7 +216,7 @@ class TestAdvertisementCampaign:
 
         assert searched.status_code == 403
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_search_benefit_id(
         self,
         client: AsyncClient,
@@ -248,7 +248,7 @@ class TestAdvertisementCampaign:
         assert searched.status_code == 200
         assert len(searched.json()["items"]) == 1
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_search_benefit_id_grant_revoked(
         self,
         client: AsyncClient,
@@ -282,7 +282,7 @@ class TestAdvertisementCampaign:
         assert searched.status_code == 200
         assert len(searched.json()["items"]) == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_search_benefit_id_no_member(
         self,
         client: AsyncClient,
@@ -303,7 +303,7 @@ class TestAdvertisementCampaign:
 
         assert searched.status_code == 401
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_search_benefit_id_unauthorized(
         self,
         client: AsyncClient,
@@ -323,7 +323,7 @@ class TestAdvertisementCampaign:
 
         assert searched.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_track_view(
         self,
         client: AsyncClient,

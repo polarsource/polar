@@ -960,7 +960,7 @@ async def test_month_range() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_pledge_states(
     session: AsyncSession,
     save_fixture: SaveFixture,

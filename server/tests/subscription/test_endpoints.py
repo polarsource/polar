@@ -171,7 +171,7 @@ class TestCreateSubscriptionTier:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     @pytest.mark.http_auto_expunge
     async def test_cant_create_free_type_tier(
         self,
@@ -208,7 +208,7 @@ class TestCreateSubscriptionTier:
             },
         ],
     )
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_validation(
         self,
         payload: dict[str, Any],
@@ -248,7 +248,7 @@ class TestCreateSubscriptionTier:
 
         assert response.status_code == 422
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -304,7 +304,7 @@ class TestUpdateSubscriptionTier:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing(
         self,
         client: AsyncClient,
@@ -334,7 +334,7 @@ class TestUpdateSubscriptionTier:
             },
         ],
     )
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_validation(
         self,
         payload: dict[str, Any],
@@ -349,7 +349,7 @@ class TestUpdateSubscriptionTier:
 
         assert response.status_code == 422
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -366,7 +366,7 @@ class TestUpdateSubscriptionTier:
         json = response.json()
         assert json["name"] == "Updated Name"
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_paid_tier_no_prices(
         self,
         client: AsyncClient,
@@ -379,7 +379,7 @@ class TestUpdateSubscriptionTier:
         )
         assert response.status_code == 400
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_free_tier_no_prices(
         self,
         client: AsyncClient,
@@ -408,7 +408,7 @@ class TestUpdateSubscriptionTierBenefits:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing(
         self,
         client: AsyncClient,
@@ -420,7 +420,7 @@ class TestUpdateSubscriptionTierBenefits:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -453,7 +453,7 @@ class TestArchiveSubscriptionTier:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{uuid.uuid4()}/archive"
@@ -461,7 +461,7 @@ class TestArchiveSubscriptionTier:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -609,7 +609,7 @@ class TestSearchSubscriptions:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/search",
@@ -618,7 +618,7 @@ class TestSearchSubscriptions:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid_organization(
         self,
         save_fixture: SaveFixture,
@@ -662,7 +662,7 @@ class TestSearchSubscribedSubscriptions:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/subscribed",
@@ -671,7 +671,7 @@ class TestSearchSubscribedSubscriptions:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         session: AsyncSession,
@@ -697,7 +697,7 @@ class TestSearchSubscribedSubscriptions:
         for item in json["items"]:
             assert "user" not in item
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_with_multiple_subscriptions(
         self,
         save_fixture: SaveFixture,
@@ -783,7 +783,7 @@ class TestUpgradeSubscription:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing(
         self,
         client: AsyncClient,
@@ -799,7 +799,7 @@ class TestUpgradeSubscription:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -832,7 +832,7 @@ class TestCancelSubscription:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     @pytest.mark.http_auto_expunge
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.delete(
@@ -841,7 +841,7 @@ class TestCancelSubscription:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         session: AsyncSession,
@@ -936,7 +936,7 @@ class TestGetSubscriptionsStatistics:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/statistics",
@@ -950,7 +950,7 @@ class TestGetSubscriptionsStatistics:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,

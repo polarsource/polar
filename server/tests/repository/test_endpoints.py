@@ -12,7 +12,7 @@ from tests.fixtures.database import SaveFixture
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_repository_private_not_member(
     organization: Organization, repository: Repository, client: AsyncClient
 ) -> None:
@@ -22,7 +22,7 @@ async def test_get_repository_private_not_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_repository_public(
     organization: Organization, public_repository: Repository, client: AsyncClient
 ) -> None:
@@ -35,7 +35,7 @@ async def test_get_repository_public(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_repository_private_member(
     organization: Organization,
     repository: Repository,
@@ -51,7 +51,7 @@ async def test_get_repository_private_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_repositories_no_member(
     organization: Organization, repository: Repository, client: AsyncClient
 ) -> None:
@@ -63,7 +63,7 @@ async def test_list_repositories_no_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_repositories_member(
     organization: Organization,
     repository: Repository,
@@ -78,7 +78,7 @@ async def test_list_repositories_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list_repositories_admin(
     organization: Organization,
     repository: Repository,
@@ -99,7 +99,7 @@ async def test_list_repositories_admin(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_repository_lookup_not_found(client: AsyncClient) -> None:
     response = await client.get(
         "/api/v1/repositories/lookup?platform=github&organization_name=foobar&repository_name=barbar"
@@ -110,7 +110,7 @@ async def test_repository_lookup_not_found(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_repository_lookup_public(
     organization: Organization, public_repository: Repository, client: AsyncClient
 ) -> None:
@@ -124,7 +124,7 @@ async def test_repository_lookup_public(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_repository_lookup_private_member(
     organization: Organization,
     repository: Repository,
@@ -141,7 +141,7 @@ async def test_repository_lookup_private_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_repository_lookup_private_non_member(
     organization: Organization,
     repository: Repository,
@@ -156,7 +156,7 @@ async def test_repository_lookup_private_non_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_repository_search_no_matching_org(
     organization: Organization,
     repository: Repository,
@@ -173,7 +173,7 @@ async def test_repository_search_no_matching_org(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_repository_search_org(
     organization: Organization,
     repository: Repository,
@@ -190,7 +190,7 @@ async def test_repository_search_org(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_repository_profile_settings_featured_organizations(
     organization: Organization,
     client: AsyncClient,
@@ -239,7 +239,7 @@ async def test_update_repository_profile_settings_featured_organizations(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_repository_profile_settings_highlighted_subscription_tiers(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -304,7 +304,7 @@ async def test_update_repository_profile_settings_highlighted_subscription_tiers
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_repository_profile_settings_cover_image_url(
     organization: Organization,
     client: AsyncClient,
@@ -376,7 +376,7 @@ async def test_update_repository_profile_settings_cover_image_url(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_repository_profile_settings_description(
     organization: Organization,
     client: AsyncClient,
@@ -450,7 +450,7 @@ async def test_update_repository_profile_settings_description(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update_repository_profile_settings_links(
     organization: Organization,
     client: AsyncClient,

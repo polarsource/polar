@@ -30,7 +30,7 @@ class TestSearchTransactions:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -57,7 +57,7 @@ class TestLookupTransaction:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_transaction_payout(
         self,
         save_fixture: SaveFixture,
@@ -104,7 +104,7 @@ class TestGetSummary:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_account(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/transactions/summary", params={"account_id": str(uuid.uuid4())}
@@ -112,7 +112,7 @@ class TestGetSummary:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -141,7 +141,7 @@ class TestCreatePayout:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_account(self, client: AsyncClient) -> None:
         response = await client.post(
             "/api/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
@@ -149,7 +149,7 @@ class TestCreatePayout:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_permitted(
         self,
         session: AsyncSession,
@@ -168,7 +168,7 @@ class TestCreatePayout:
 
         assert response.status_code == 403
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         session: AsyncSession,

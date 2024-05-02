@@ -24,7 +24,7 @@ from polar.postgres import AsyncSession
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_invalid_account_type(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/accounts",
@@ -40,7 +40,7 @@ async def test_create_invalid_account_type(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("slug", [None, ""])
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_open_collective_missing_slug(
     slug: str | None, client: AsyncClient
 ) -> None:
@@ -65,7 +65,7 @@ async def test_create_open_collective_missing_slug(
         CollectiveNotFoundError("Not found"),
     ],
 )
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_open_collective_get_collective_error(
     error: OpenCollectiveServiceError, mocker: MockerFixture, client: AsyncClient
 ) -> None:
@@ -96,7 +96,7 @@ async def test_create_open_collective_get_collective_error(
         OpenCollectiveCollective("polar", "opensource", False, True, False, False),
     ],
 )
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_open_collective_not_eligible(
     collective: OpenCollectiveCollective,
     mocker: MockerFixture,
@@ -123,7 +123,7 @@ async def test_create_open_collective_not_eligible(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_open_collective(
     session: AsyncSession, mocker: MockerFixture, client: AsyncClient
 ) -> None:
@@ -159,7 +159,7 @@ async def test_create_open_collective(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_personal_stripe(
     user: User,
     mocker: MockerFixture,
@@ -197,7 +197,7 @@ async def test_create_personal_stripe(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_onboarding_link_open_collective(
     open_collective_account: Account, client: AsyncClient
 ) -> None:
@@ -211,7 +211,7 @@ async def test_onboarding_link_open_collective(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_dashboard_link_not_existing_account(
     user: User,
     organization: Organization,
@@ -227,7 +227,7 @@ async def test_dashboard_link_not_existing_account(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_dashboard_link_open_collective(
     open_collective_account: Account, client: AsyncClient
 ) -> None:

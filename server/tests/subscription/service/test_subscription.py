@@ -151,7 +151,7 @@ def authz(session: AsyncSession) -> Authz:
 
 @pytest.mark.asyncio
 class TestCreateFreeSubscription:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_subscription_tier(
         self, auth_subject: AuthSubject[User], session: AsyncSession
     ) -> None:
@@ -167,7 +167,7 @@ class TestCreateFreeSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_free_subscription_tier(
         self,
         auth_subject: AuthSubject[User],
@@ -215,7 +215,7 @@ class TestCreateFreeSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_already_subscribed_user(
         self,
         auth_subject: AuthSubject[User],
@@ -292,7 +292,7 @@ class TestCreateFreeSubscription:
             "subscription.subscription.enqueue_benefits_grants", subscription.id
         )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_authenticated_user(
         self,
         auth_subject: AuthSubject[User],
@@ -1086,7 +1086,7 @@ class TestUpdateOrganizationBenefitsGrants:
 
 @pytest.mark.asyncio
 class TestSearch:
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_user_own_subscription(
         self,
         auth_subject: AuthSubject[User],
@@ -1130,7 +1130,7 @@ class TestSearch:
         assert len(results) == 0
         assert count == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_organization_member(
         self,
         auth_subject: AuthSubject[User],
@@ -1162,7 +1162,7 @@ class TestSearch:
         assert len(results) == 0
         assert count == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_organization_member(
         self,
         auth_subject: AuthSubject[User],
@@ -1195,7 +1195,7 @@ class TestSearch:
         assert len(results) == 1
         assert count == 1
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
         auth_subject: AuthSubject[Organization],
@@ -1229,7 +1229,7 @@ class TestSearch:
 
 @pytest.mark.asyncio
 class TestSearchSubscribed:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         auth_subject: AuthSubject[User],
@@ -1270,7 +1270,7 @@ class TestSearchSubscribed:
 
 @pytest.mark.asyncio
 class TestUpgradeSubscription:
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_not_permitted(
         self,
         auth_subject: AuthSubject[User],
@@ -1296,7 +1296,7 @@ class TestUpgradeSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_free_subscription(
         self,
         auth_subject: AuthSubject[User],
@@ -1330,7 +1330,7 @@ class TestUpgradeSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_tier(
         self,
         auth_subject: AuthSubject[User],
@@ -1357,7 +1357,7 @@ class TestUpgradeSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_extraneous_tier(
         self,
         auth_subject: AuthSubject[User],
@@ -1386,7 +1386,7 @@ class TestUpgradeSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         auth_subject: AuthSubject[User],
@@ -1429,7 +1429,7 @@ class TestUpgradeSubscription:
 
 @pytest.mark.asyncio
 class TestCancelSubscription:
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="user_second"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_not_permitted(
         self,
         auth_subject: AuthSubject[User],
@@ -1453,7 +1453,7 @@ class TestCancelSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_already_canceled(
         self,
         auth_subject: AuthSubject[User],
@@ -1486,7 +1486,7 @@ class TestCancelSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_cancel_at_period_end(
         self,
         auth_subject: AuthSubject[User],
@@ -1518,7 +1518,7 @@ class TestCancelSubscription:
                 auth_subject=auth_subject,
             )
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_free_subscription(
         self,
         auth_subject: AuthSubject[User],
@@ -1557,7 +1557,7 @@ class TestCancelSubscription:
 
         stripe_service_mock.cancel_subscription.assert_not_called()
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_stripe_subscription(
         self,
         auth_subject: AuthSubject[User],
@@ -1637,7 +1637,7 @@ async def create_subscription_balances(
 
 @pytest.mark.asyncio
 class TestGetStatisticsPeriods:
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_not_organization_member(
         self,
         auth_subject: AuthSubject[User],
@@ -1673,7 +1673,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_organization_member(
         self,
         auth_subject: AuthSubject[User],
@@ -1724,7 +1724,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    @pytest.mark.authenticated(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
         auth_subject: AuthSubject[Organization],
@@ -1773,7 +1773,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_user_multiple_users_organization(
         self,
         auth_subject: AuthSubject[User],
@@ -1838,7 +1838,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_filter_type(
         self,
         auth_subject: AuthSubject[User],
@@ -1884,7 +1884,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_filter_subscription_tier_id(
         self,
         auth_subject: AuthSubject[User],
@@ -1951,7 +1951,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 0
             assert result.earnings == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_free_subscription(
         self,
         auth_subject: AuthSubject[User],
@@ -2004,7 +2004,7 @@ class TestGetStatisticsPeriods:
             assert result.subscribers == 2
             assert result.earnings == get_balances_sum(balances[i : i + 1])
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_cancelled_subscriptions(
         self,
         auth_subject: AuthSubject[User],
@@ -2054,7 +2054,7 @@ class TestGetStatisticsPeriods:
         result = results[0]
         assert result.subscribers == 1
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_yearly_subscription(
         self,
         auth_subject: AuthSubject[User],

@@ -45,8 +45,8 @@ def auth_subject(
     to override the FastAPI authentication dependency, but also can be used manually
     if needed.
 
-    Its parameters are generated through the `authenticated` marker.
-    Seee `pytest_generate_tests` below for more information.
+    Its parameters are generated through the `auth` marker.
+    See `pytest_generate_tests` below for more information.
     """
     auth_subject_fixture: AuthSubjectFixture = request.param
     subjects_map: dict[str, Anonymous | User | Organization] = {
@@ -68,11 +68,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "auth_subject" in metafunc.fixturenames:
         pytest_params = []
 
-        # The test is decorated with the `authenticated` marker
-        authenticated_marker = metafunc.definition.get_closest_marker("authenticated")
-        if authenticated_marker is not None:
+        # The test is decorated with the `auth` marker
+        auth_marker = metafunc.definition.get_closest_marker("auth")
+        if auth_marker is not None:
             # No argument: use a default AuthSubjectFixture
-            args: tuple[Any] = authenticated_marker.args
+            args: tuple[Any] = auth_marker.args
             if len(args) == 0:
                 args = (AuthSubjectFixture(),)
 
@@ -80,11 +80,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             for arg in args:
                 if not isinstance(arg, AuthSubjectFixture):
                     raise ValueError(
-                        "authenticated marker arguments must be "
+                        "auth marker arguments must be "
                         f"of type AuthSubjectFixture, got {type(arg)}"
                     )
                 pytest_params.append(pytest.param(arg, id=repr(arg)))
-        # Test is not decorated with `authenticated` marker: consider the user anonymous
+        # Test is not decorated with `auth` marker: consider the user anonymous
         else:
             pytest_params = [
                 pytest.param(AuthSubjectFixture(subject="anonymous"), id="anonymous")

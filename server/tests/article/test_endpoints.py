@@ -13,7 +13,7 @@ from tests.fixtures.random_objects import create_user
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_no_body(
     user: User,
     organization: Organization,
@@ -37,7 +37,7 @@ async def test_create_no_body(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create(
     user: User,
     organization: Organization,
@@ -65,7 +65,7 @@ async def test_create(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_with_slug(
     user: User,
     organization: Organization,
@@ -94,7 +94,7 @@ async def test_create_with_slug(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_with_slug_slugify(
     user: User,
     organization: Organization,
@@ -123,7 +123,7 @@ async def test_create_with_slug_slugify(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_non_member(
     user: User, organization: Organization, client: AsyncClient
 ) -> None:
@@ -141,7 +141,7 @@ async def test_create_non_member(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_non_admin(
     user: User,
     organization: Organization,
@@ -161,7 +161,7 @@ async def test_create_non_admin(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_public(
     user: User,
     organization: Organization,
@@ -213,7 +213,7 @@ async def test_get_public(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_hidden(
     user: User,
     organization: Organization,
@@ -255,7 +255,7 @@ async def test_get_hidden(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_get_private_user(
     user: User,
     organization: Organization,
@@ -331,7 +331,7 @@ async def test_get_private_anonymous(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_byline_default(
     user: User,
     organization: Organization,
@@ -361,7 +361,7 @@ async def test_byline_default(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_byline_user_github(
     user: User,
     user_github_oauth: OAuthAccount,  # sets username
@@ -394,7 +394,7 @@ async def test_byline_user_github(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_byline_user_no_oauth(
     user: User,
     organization: Organization,
@@ -425,7 +425,7 @@ async def test_byline_user_no_oauth(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_byline_org(
     user: User,
     organization: Organization,
@@ -456,7 +456,7 @@ async def test_byline_org(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list(
     user: User,
     organization: Organization,
@@ -611,7 +611,7 @@ async def test_list(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_slug_collision(
     user: User,
     organization: Organization,
@@ -664,7 +664,7 @@ async def test_slug_collision(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_update(
     user: User,
     organization: Organization,
@@ -712,7 +712,7 @@ async def test_update(
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_view_counter(
     user: User,
     organization: Organization,
@@ -757,7 +757,7 @@ async def test_view_counter(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_pinned(
     user: User,
     organization: Organization,
@@ -849,7 +849,7 @@ async def test_pinned(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_og_image_url(
     user: User,
     organization: Organization,
@@ -913,7 +913,7 @@ async def test_og_image_url(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_og_description(
     user: User,
     organization: Organization,
@@ -977,7 +977,7 @@ async def test_og_description(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_body_base64(
     user: User,
     organization: Organization,

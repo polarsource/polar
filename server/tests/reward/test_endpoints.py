@@ -18,7 +18,7 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_search(
     session: AsyncSession,
     save_fixture: SaveFixture,

@@ -21,7 +21,7 @@ class TestSearchBenefits:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/benefits/search",
@@ -30,7 +30,7 @@ class TestSearchBenefits:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_user_organization(
         self,
         client: AsyncClient,
@@ -50,7 +50,7 @@ class TestSearchBenefits:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_organization(
         self,
         client: AsyncClient,
@@ -88,7 +88,7 @@ class TestLookupBenefit:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/benefits/lookup",
@@ -97,7 +97,7 @@ class TestLookupBenefit:
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -159,7 +159,7 @@ class TestCreateBenefit:
             },
         ],
     )
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_validation(
         self,
         payload: dict[str, Any],
@@ -178,7 +178,7 @@ class TestCreateBenefit:
 
         assert response.status_code == 422
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -220,7 +220,7 @@ class TestUpdateBenefit:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
             f"/api/v1/benefits/{uuid.uuid4()}",
@@ -243,7 +243,7 @@ class TestUpdateBenefit:
             },
         ],
     )
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_validation(
         self,
         payload: dict[str, Any],
@@ -258,7 +258,7 @@ class TestUpdateBenefit:
 
         assert response.status_code == 422
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -279,7 +279,7 @@ class TestUpdateBenefit:
         assert json["description"] == "Updated Description"
         assert "properties" in json
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_cant_update_articles_properties(
         self,
         save_fixture: SaveFixture,
@@ -309,7 +309,7 @@ class TestUpdateBenefit:
         assert "properties" in json
         assert json["properties"]["paid_articles"] is False
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_can_update_custom_properties(
         self,
         save_fixture: SaveFixture,
@@ -353,13 +353,13 @@ class TestDeleteBenefit:
 
         assert response.status_code == 401
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.delete(f"/api/v1/benefits/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
-    @pytest.mark.authenticated
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,

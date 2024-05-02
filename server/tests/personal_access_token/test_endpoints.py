@@ -6,7 +6,7 @@ from polar.kit.db.postgres import AsyncSession
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens", json={"comment": "hello world"}
@@ -20,7 +20,7 @@ async def test_create(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_list(client: AsyncClient, session: AsyncSession) -> None:
     t1 = await client.post("/api/v1/personal_access_tokens", json={"comment": "one"})
 
@@ -37,7 +37,7 @@ async def test_list(client: AsyncClient, session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_delete(client: AsyncClient) -> None:
     t1 = await client.post("/api/v1/personal_access_tokens", json={"comment": "one"})
 
@@ -56,7 +56,7 @@ async def test_delete(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_auth(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens", json={"comment": "hello world"}
@@ -67,7 +67,7 @@ async def test_auth(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-@pytest.mark.authenticated
+@pytest.mark.auth
 async def test_create_scoped(client: AsyncClient, session: AsyncSession) -> None:
     response = await client.post(
         "/api/v1/personal_access_tokens",

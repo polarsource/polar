@@ -1,8 +1,8 @@
 'use client'
 
 import {
+  useListWebhooksDeliveries,
   useRedeliverWebhookEvent,
-  useSearchWebhooksDeliveries,
 } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -89,7 +89,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     )
   }
 
-  const deliveriesHook = useSearchWebhooksDeliveries({
+  const deliveriesHook = useListWebhooksDeliveries({
     webhookEndpointId: endpoint.id,
     ...getAPIParams(pagination, sorting),
   })

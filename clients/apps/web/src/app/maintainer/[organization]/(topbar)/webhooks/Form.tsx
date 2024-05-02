@@ -1,4 +1,8 @@
-import { WebhookEndpointCreate, WebhookEndpointUpdate } from '@polar-sh/sdk'
+import {
+  WebhookEndpointCreate,
+  WebhookEndpointUpdate,
+  WebhookEventType,
+} from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
@@ -12,7 +16,6 @@ import {
 
 import Link from 'next/link'
 import { useFormContext } from 'react-hook-form'
-import { events } from './events'
 
 type CreateOrUpdate = WebhookEndpointCreate | WebhookEndpointUpdate
 
@@ -120,13 +123,13 @@ export const FieldEvents = () => {
         Events
       </h2>
 
-      {events.map((e) => (
+      {Object.values(WebhookEventType).map((event) => (
         <FormField
-          key={e[0]}
+          key={event}
           control={form.control}
-          name={e[0]}
+          name="events"
           render={({ field }) => {
-            const docsKey = e[1].replaceAll('.', '_')
+            const docsKey = event.replaceAll('.', '_')
 
             // Example: https://api.polar.sh/docs#/webhooks/subscription_tier_updatedsubscription_tier_updated_post
             // yes, docsKey is repeated twice
@@ -136,11 +139,19 @@ export const FieldEvents = () => {
               <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                 <FormControl>
                   <Checkbox
-                    defaultChecked={field.value}
-                    onCheckedChange={field.onChange}
+                    defaultChecked={field.value && field.value.includes(event)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        field.onChange([...(field.value || []), event])
+                      } else {
+                        field.onChange(
+                          (field.value || []).filter((v) => v !== event),
+                        )
+                      }
+                    }}
                   />
                 </FormControl>
-                <FormLabel className="text-sm leading-none">{e[1]}</FormLabel>
+                <FormLabel className="text-sm leading-none">{event}</FormLabel>
                 <Link className="text-xs text-blue-400" href={href}>
                   Schema
                 </Link>

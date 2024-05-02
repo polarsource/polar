@@ -9,7 +9,6 @@ import { Organization, WebhookEndpoint } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
-import { events } from '../../events'
 import DeliveriesTable from './DeliveriesTable'
 
 export default function ClientPage({
@@ -23,8 +22,6 @@ export default function ClientPage({
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }) {
-  const subscribedEvents = events.filter(([k, _]) => endpoint[k])
-
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
@@ -41,15 +38,15 @@ export default function ClientPage({
           <h3>Events</h3>
 
           <div className="flex flex-col space-y-2">
-            {subscribedEvents.length > 0 ? (
+            {endpoint.events.length > 0 ? (
               <>
-                {subscribedEvents.map((e) => (
+                {endpoint.events.map((event) => (
                   <div
                     className="flex flex-row items-center space-x-3 space-y-0"
-                    key={e[0]}
+                    key={event}
                   >
                     <Checkbox checked={true} disabled={true} />
-                    <span className="text-sm leading-none">{e[1]}</span>
+                    <span className="text-sm leading-none">{event}</span>
                   </div>
                 ))}
               </>

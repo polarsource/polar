@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchWebhooksEndpoints } from '@/hooks/queries'
+import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { Organization, WebhookEndpoint } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -10,7 +10,7 @@ import {
 import Button from 'polarkit/components/ui/atoms/button'
 
 const WebhookSettings = (props: { org: Organization }) => {
-  const endpoints = useSearchWebhooksEndpoints({
+  const endpoints = useListWebhooksEndpoints({
     organizationId: props.org.id,
     limit: 100,
     page: 1,

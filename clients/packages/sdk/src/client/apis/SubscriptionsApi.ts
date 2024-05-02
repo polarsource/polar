@@ -45,9 +45,9 @@ export interface SubscriptionsApiCancelSubscriptionRequest {
 }
 
 export interface SubscriptionsApiCreateEmailSubscriptionRequest {
-    organizationName: string;
-    platform: Platforms;
     subscriptionCreateEmail: SubscriptionCreateEmail;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiCreateFreeSubscriptionRequest {
@@ -69,10 +69,10 @@ export interface SubscriptionsApiGetSubscribeSessionRequest {
 export interface SubscriptionsApiGetSubscriptionsStatisticsRequest {
     startDate: string;
     endDate: string;
-    organizationName: string;
-    platform: Platforms;
     types?: Array<SubscriptionTierType>;
     subscriptionTierId?: string;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiLookupSubscriptionTierRequest {
@@ -92,17 +92,15 @@ export interface SubscriptionsApiSearchSubscribedSubscriptionsRequest {
 }
 
 export interface SubscriptionsApiSearchSubscriptionTiersRequest {
-    organizationName: string;
-    platform: Platforms;
     includeArchived?: boolean;
     type?: SubscriptionTierType;
     page?: number;
     limit?: number;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiSearchSubscriptionsRequest {
-    organizationName: string;
-    platform: Platforms;
     type?: SubscriptionTierType;
     subscriptionTierId?: string;
     subscriberUserId?: string;
@@ -111,24 +109,26 @@ export interface SubscriptionsApiSearchSubscriptionsRequest {
     page?: number;
     limit?: number;
     sorting?: Array<string>;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
-    organizationName: string;
-    platform: Platforms;
     page?: number;
     limit?: number;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiSubscriptionsExportRequest {
-    organizationName: string;
-    platform: Platforms;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiSubscriptionsImportRequest {
-    organizationName: string;
-    platform: Platforms;
     file: Blob;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiUpdateSubscriptionTierRequest {
@@ -237,20 +237,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Create Email Subscription
      */
     async createEmailSubscriptionRaw(requestParameters: SubscriptionsApiCreateEmailSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling createEmailSubscription().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling createEmailSubscription().'
-            );
-        }
-
         if (requestParameters['subscriptionCreateEmail'] == null) {
             throw new runtime.RequiredError(
                 'subscriptionCreateEmail',
@@ -490,20 +476,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling getSubscriptionsStatistics().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling getSubscriptionsStatistics().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['startDate'] != null) {
@@ -677,20 +649,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscription Tiers
      */
     async searchSubscriptionTiersRaw(requestParameters: SubscriptionsApiSearchSubscriptionTiersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionTier>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling searchSubscriptionTiers().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling searchSubscriptionTiers().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['includeArchived'] != null) {
@@ -740,7 +698,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     /**
      * Search Subscription Tiers
      */
-    async searchSubscriptionTiers(requestParameters: SubscriptionsApiSearchSubscriptionTiersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionTier> {
+    async searchSubscriptionTiers(requestParameters: SubscriptionsApiSearchSubscriptionTiersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionTier> {
         const response = await this.searchSubscriptionTiersRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -749,20 +707,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscriptions
      */
     async searchSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscription>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling searchSubscriptions().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling searchSubscriptions().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['type'] != null) {
@@ -828,7 +772,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     /**
      * Search Subscriptions
      */
-    async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
+    async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
         const response = await this.searchSubscriptionsRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -837,20 +781,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscriptions Summary
      */
     async searchSubscriptionsSummaryRaw(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSummary>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling searchSubscriptionsSummary().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling searchSubscriptionsSummary().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['page'] != null) {
@@ -892,7 +822,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     /**
      * Search Subscriptions Summary
      */
-    async searchSubscriptionsSummary(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSummary> {
+    async searchSubscriptionsSummary(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSummary> {
         const response = await this.searchSubscriptionsSummaryRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -901,20 +831,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Subscriptions Export
      */
     async subscriptionsExportRaw(requestParameters: SubscriptionsApiSubscriptionsExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling subscriptionsExport().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling subscriptionsExport().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['organizationName'] != null) {
@@ -952,7 +868,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     /**
      * Subscriptions Export
      */
-    async subscriptionsExport(requestParameters: SubscriptionsApiSubscriptionsExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+    async subscriptionsExport(requestParameters: SubscriptionsApiSubscriptionsExportRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.subscriptionsExportRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -961,20 +877,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Subscriptions Import
      */
     async subscriptionsImportRaw(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsImported>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling subscriptionsImport().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling subscriptionsImport().'
-            );
-        }
-
         if (requestParameters['file'] == null) {
             throw new runtime.RequiredError(
                 'file',

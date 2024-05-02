@@ -39,11 +39,11 @@ export interface BenefitsApiLookupBenefitRequest {
 }
 
 export interface BenefitsApiSearchBenefitsRequest {
-    organizationName: string;
-    platform: Platforms;
     type?: BenefitType;
     page?: number;
     limit?: number;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface BenefitsApiUpdateBenefitRequest {
@@ -189,20 +189,6 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Search Benefits
      */
     async searchBenefitsRaw(requestParameters: BenefitsApiSearchBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling searchBenefits().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling searchBenefits().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['type'] != null) {
@@ -248,7 +234,7 @@ export class BenefitsApi extends runtime.BaseAPI {
     /**
      * Search Benefits
      */
-    async searchBenefits(requestParameters: BenefitsApiSearchBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository> {
+    async searchBenefits(requestParameters: BenefitsApiSearchBenefitsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository> {
         const response = await this.searchBenefitsRaw(requestParameters, initOverrides);
         return await response.value();
     }

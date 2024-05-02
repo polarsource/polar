@@ -1,15 +1,23 @@
 import uuid
 from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.exceptions import RequestValidationError
+from pytest_mock import MockerFixture
 
 from polar.auth.exceptions import MissingScope
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.authz.service import Authz
-from polar.exceptions import NotPermitted
-from polar.models import Organization, User, UserOrganization, WebhookEndpoint
+from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.models import (
+    Organization,
+    User,
+    UserOrganization,
+    WebhookEndpoint,
+    WebhookEvent,
+)
 from polar.postgres import AsyncSession
 from polar.webhook.schemas import HttpsUrl, WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
@@ -19,6 +27,11 @@ from tests.fixtures.auth import AuthSubjectFixture
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.webhook.service.enqueue_job")
 
 
 webhook_url = cast(HttpsUrl, "https://example.com/hook")
@@ -477,3 +490,130 @@ class TestDeleteEndpoint:
             session, authz, auth_subject, webhook_endpoint_organization
         )
         assert deleted_endpoint.deleted_at is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestRedeliverEvent:
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_user_user_endpoint_missing_scope(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        webhook_event_user: WebhookEvent,
+    ) -> None:
+        with pytest.raises(MissingScope):
+            await webhook_service.redeliver_event(
+                session, authz, auth_subject, webhook_event_user.id
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.backer_webhooks_write}),
+    )
+    async def test_user_user_endpoint_valid(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        webhook_event_user: WebhookEvent,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        await webhook_service.redeliver_event(
+            session, authz, auth_subject, webhook_event_user.id
+        )
+        enqueue_job_mock.assert_called_once()
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_user_organization_endpoint_missing_scope(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        user_organization_admin: UserOrganization,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        with pytest.raises(MissingScope):
+            await webhook_service.redeliver_event(
+                session, authz, auth_subject, webhook_event_organization.id
+            )
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.creator_webhooks_write}))
+    async def test_user_organization_endpoint_not_admin(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        with pytest.raises(ResourceNotFound):
+            await webhook_service.redeliver_event(
+                session, authz, auth_subject, webhook_event_organization.id
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
+    )
+    async def test_user_organization_endpoint_valid(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        user_organization_admin: UserOrganization,
+        webhook_event_organization: WebhookEvent,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        await webhook_service.redeliver_event(
+            session, authz, auth_subject, webhook_event_organization.id
+        )
+        enqueue_job_mock.assert_called_once()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization", scopes=set()))
+    async def test_organization_endpoint_missing_scope(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        with pytest.raises(MissingScope):
+            await webhook_service.redeliver_event(
+                session, authz, auth_subject, webhook_event_organization.id
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization_second", scopes={Scope.creator_webhooks_write}
+        )
+    )
+    async def test_organization_endpoint_not_admin(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        with pytest.raises(ResourceNotFound):
+            await webhook_service.redeliver_event(
+                session, authz, auth_subject, webhook_event_organization.id
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_webhooks_write}
+        )
+    )
+    async def test_organization_endpoint_valid(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+        webhook_event_organization: WebhookEvent,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        await webhook_service.redeliver_event(
+            session, authz, auth_subject, webhook_event_organization.id
+        )
+        enqueue_job_mock.assert_called_once()

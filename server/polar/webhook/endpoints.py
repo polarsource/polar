@@ -3,7 +3,6 @@ from uuid import UUID
 import structlog
 from fastapi import Depends, Query
 
-from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -140,7 +139,7 @@ async def delete_webhook_endpoint(
 )
 async def list_webhook_deliveries(
     pagination: PaginationParamsQuery,
-    auth_subject: WebUser,
+    auth_subject: WebhooksRead,
     endpoint_id: UUID | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[WebhookDeliverySchema]:
@@ -163,7 +162,8 @@ async def list_webhook_deliveries(
 )
 async def redeliver_webhook_event(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> None:
-    return await webhook_service.redeliver_event(session, auth_subject, id)
+    return await webhook_service.redeliver_event(session, authz, auth_subject, id)

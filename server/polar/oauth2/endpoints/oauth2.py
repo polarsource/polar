@@ -53,7 +53,7 @@ async def oauth2_configure_get(
     auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
-    request.state.user = auth_subject.subject
+    request.state.user = auth_subject.subject if is_user(auth_subject) else None
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request
     )
@@ -67,7 +67,7 @@ async def oauth2_configure_put(
     auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
-    request.state.user = auth_subject.subject
+    request.state.user = auth_subject.subject if is_user(auth_subject) else None
     request.state.parsed_data = client_configuration.model_dump(mode="json")
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request
@@ -81,7 +81,7 @@ async def oauth2_configure_delete(
     auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
-    request.state.user = auth_subject.subject
+    request.state.user = auth_subject.subject if is_user(auth_subject) else None
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request
     )

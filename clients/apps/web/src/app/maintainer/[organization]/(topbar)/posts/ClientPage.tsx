@@ -3,6 +3,7 @@
 import { AbbreviatedBrowserRender } from '@/components/Feed/Markdown/BrowserRender'
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import EmptyLayout from '@/components/Layout/EmptyLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
@@ -10,6 +11,7 @@ import {
   useOrganizationArticles,
   useTrafficStatistics,
   useTrafficTopReferrers,
+  useUpdateOrganization,
 } from '@/hooks/queries'
 import { captureEvent } from '@/utils/posthog'
 import { prettyReferrerURL } from '@/utils/traffic'
@@ -52,6 +54,8 @@ function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
 }
 
 const ClientPage = () => {
+  const updateOrganization = useUpdateOrganization()
+  const [enablingPosts, setEnablingPosts] = useState(false)
   const { org } = useCurrentOrgAndRepoFromURL()
 
   const posts = useOrganizationArticles({
@@ -91,6 +95,46 @@ const ClientPage = () => {
   const showPosts = (posts.data?.items?.length ?? 0) > 0
   const showNoPostsYet =
     !showPosts && posts.data?.items && posts.data.items.length === 0
+
+  const enablePosts = async () => {
+    if (!org) return
+
+    setEnablingPosts(true)
+
+    await updateOrganization
+      .mutateAsync({
+        id: org?.id,
+        settings: {
+          articles_enabled: true,
+        },
+      })
+      .catch(() => {
+        setEnablingPosts(false)
+      })
+  }
+
+  if (org && !org.articles_enabled) {
+    return (
+      <EmptyLayout>
+        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+          <span className="text-6xl text-blue-400">
+            <ViewDayOutlined fontSize="inherit" />
+          </span>
+          <div className="flex flex-col items-center gap-4 text-center">
+            <h2 className="dark:text-polar-50 text-2xl font-medium text-gray-950">
+              Posts
+            </h2>
+            <h2 className="text-lg">
+              Create and publish posts to engage with your audience
+            </h2>
+          </div>
+          <Button loading={enablingPosts} onClick={enablePosts}>
+            Enable Posts
+          </Button>
+        </div>
+      </EmptyLayout>
+    )
+  }
 
   return (
     <>

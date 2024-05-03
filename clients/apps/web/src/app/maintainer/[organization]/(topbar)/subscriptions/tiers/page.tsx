@@ -1,3 +1,4 @@
+import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
 import TiersPage from '@/components/Subscriptions/TiersPage'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { Platforms } from '@polar-sh/sdk'
@@ -24,6 +25,10 @@ export default async function Page({
     organizationName: params.organization,
     platform: Platforms.GITHUB,
   })
+
+  if (!organization.subscriptions_enabled) {
+    return <EnableSubscriptionsView organization={organization} />
+  }
 
   return <TiersPage organization={organization} />
 }

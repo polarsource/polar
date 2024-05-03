@@ -1,6 +1,7 @@
 'use client'
 
 import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
+import { EnableIssuesView } from '@/components/Issues/EnableIssuesView'
 import IssueList, { Header } from '@/components/Issues/IssueList'
 import { DashboardFilters, DefaultFilters } from '@/components/Issues/filters'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -55,6 +56,10 @@ export default function ClientPage() {
 
   if (!isLoaded) {
     return <></>
+  }
+
+  if (org && !org.issue_funding_enabled) {
+    return <EnableIssuesView organization={org} />
   }
 
   return <Issues key={key} org={org} repo={repo} />

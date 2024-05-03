@@ -1,5 +1,6 @@
 'use client'
 
+import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
 import NoPayoutAccountTooltip from '@/components/Subscriptions/NoPayoutAccountTooltip'
 import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
@@ -183,6 +184,10 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
   const selectedSingleTier = subscriptionTierId
     ? subscriptionTiers.data?.items?.find((t) => t.id === subscriptionTierId)
     : undefined
+
+  if (!organization.subscriptions_enabled) {
+    return <EnableSubscriptionsView organization={organization} />
+  }
 
   return (
     <div className="flex flex-col gap-6">

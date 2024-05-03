@@ -1,3 +1,4 @@
+import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
 import SubscribersPage from '@/components/Subscriptions/SubscribersPage'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
@@ -34,6 +35,10 @@ export default async function Page({
   const { pagination, sorting } = parseSearchParams(searchParams, [
     { id: 'started_at', desc: true },
   ])
+
+  if (!organization.subscriptions_enabled) {
+    return <EnableSubscriptionsView organization={organization} />
+  }
 
   return (
     <SubscribersPage

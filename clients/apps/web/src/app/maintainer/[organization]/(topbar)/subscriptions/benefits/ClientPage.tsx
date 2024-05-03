@@ -5,6 +5,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import {
   NewSubscriptionTierBenefitModalContent,
@@ -76,6 +77,10 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     },
     [],
   )
+
+  if (!organization.subscriptions_enabled) {
+    return <EnableSubscriptionsView organization={organization} />
+  }
 
   return (
     <DashboardBody className="flex flex-col gap-y-8">

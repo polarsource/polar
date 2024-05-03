@@ -26,9 +26,11 @@ async def oauth2_client(save_fixture: SaveFixture) -> OAuth2Client:
     oauth2_client = OAuth2Client(
         client_id="polar_ci_123",
         client_secret="polar_cs_123",
+        registration_access_token="polar_rat_123",
     )
     oauth2_client.set_client_metadata(
         {
+            "client_name": "Test Client",
             "redirect_uris": ["http://127.0.0.1:8000/docs/oauth2-redirect"],
             "token_endpoint_auth_method": "client_secret_post",
             "grant_types": ["authorization_code", "refresh_token"],
@@ -109,6 +111,133 @@ async def create_oauth2_token(
         token.sub_type = SubType.organization
     await save_fixture(token)
     return token
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestOAuth2Register:
+    async def test_unauthenticated(self, client: AsyncClient) -> None:
+        response = await client.post("/api/v1/oauth2/register", json={})
+
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("redirect_uri", ["http://example.com", "foobar"])
+    @pytest.mark.auth
+    async def test_invalid_redirect_uri(
+        self, redirect_uri: str, client: AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/api/v1/oauth2/register",
+            json={"client_name": "Test Client", "redirect_uris": [redirect_uri]},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "redirect_uri",
+        [
+            "https://example.com",
+            "http://localhost:8000/callback",
+            "http://127.0.0.1:8000/callback",
+        ],
+    )
+    async def test_valid(self, redirect_uri: str, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/oauth2/register",
+            json={"client_name": "Test Client", "redirect_uris": [redirect_uri]},
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+
+        assert "registration_access_token" in json
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestOAuth2ConfigureGet:
+    async def test_unauthenticated(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.get(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
+        )
+
+        assert response.status_code == 400
+
+    async def test_token_not_existing_client(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/oauth2/register/INVALID_CLIENT_ID",
+            headers={"Authorization": "Bearer REGISTRATION_ACCESS_TOKEN"},
+        )
+
+        assert response.status_code == 401
+
+    async def test_token_invalid_token(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.get(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            headers={"Authorization": "Bearer INVALID_REGISTRATION_ACCESS_TOKEN"},
+        )
+
+        assert response.status_code == 401
+
+    async def test_token_valid(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.get(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            headers={
+                "Authorization": f"Bearer {oauth2_client.registration_access_token}"
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["client_id"] == oauth2_client.client_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestOAuth2ConfigurePut:
+    async def test_token_valid(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.put(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            headers={
+                "Authorization": f"Bearer {oauth2_client.registration_access_token}"
+            },
+            json={
+                "client_id": oauth2_client.client_id,
+                "client_name": "Test Client Updated",
+                "redirect_uris": ["https://example.com/callback"],
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["client_id"] == oauth2_client.client_id
+        assert json["client_name"] == "Test Client Updated"
+        assert json["redirect_uris"] == ["https://example.com/callback"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestOAuth2ConfigureDelete:
+    async def test_token_valid(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.delete(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            headers={
+                "Authorization": f"Bearer {oauth2_client.registration_access_token}"
+            },
+        )
+
+        assert response.status_code == 204
 
 
 @pytest.mark.asyncio

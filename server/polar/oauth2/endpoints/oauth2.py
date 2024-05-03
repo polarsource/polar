@@ -20,7 +20,12 @@ from ..authorization_server import (
 )
 from ..dependencies import get_authorization_server, get_token
 from ..grants import AuthorizationCodeGrant
-from ..schemas import AuthorizeResponse, authorize_response_adapter
+from ..schemas import (
+    AuthorizeResponse,
+    OAuth2ClientConfiguration,
+    OAuth2ClientConfigurationUpdate,
+    authorize_response_adapter,
+)
 from ..sub_type import SubType
 from ..userinfo import UserInfo, generate_user_info
 
@@ -29,6 +34,7 @@ router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 @router.post("/register", name="oauth2.register")
 async def oauth2_register(
+    _client_configuration: OAuth2ClientConfiguration,
     request: Request,
     auth_subject: WebUser,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -40,18 +46,41 @@ async def oauth2_register(
     )
 
 
-@router.api_route(
-    "/register/{client_id}", methods=["GET", "PUT", "DELETE"], name="oauth2.configure"
-)
-async def oauth2_configure(
+@router.get("/register/{client_id}", name="oauth2.configure_get")
+async def oauth2_configure_get(
     client_id: str,
     request: Request,
-    auth_subject: WebUser,
+    auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
-    raise NotImplementedError("TODO: proper access control")
-    if request.method == "PUT":
-        await request.json()
+    request.state.user = auth_subject.subject
+    return authorization_server.create_endpoint_response(
+        ClientConfigurationEndpoint.ENDPOINT_NAME, request
+    )
+
+
+@router.put("/register/{client_id}", name="oauth2.configure_put")
+async def oauth2_configure_put(
+    client_id: str,
+    client_configuration: OAuth2ClientConfigurationUpdate,
+    request: Request,
+    auth_subject: WebUserOrAnonymous,
+    authorization_server: AuthorizationServer = Depends(get_authorization_server),
+) -> Response:
+    request.state.user = auth_subject.subject
+    request.state.parsed_data = client_configuration.model_dump(mode="json")
+    return authorization_server.create_endpoint_response(
+        ClientConfigurationEndpoint.ENDPOINT_NAME, request
+    )
+
+
+@router.delete("/register/{client_id}", name="oauth2.configure_delete")
+async def oauth2_configure_delete(
+    client_id: str,
+    request: Request,
+    auth_subject: WebUserOrAnonymous,
+    authorization_server: AuthorizationServer = Depends(get_authorization_server),
+) -> Response:
     request.state.user = auth_subject.subject
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request

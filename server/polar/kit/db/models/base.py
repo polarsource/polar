@@ -41,6 +41,9 @@ class TimestampedModel(Model):
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
+    def set_deleted_at(self) -> None:
+        self.deleted_at = utc_now()
+
 
 class RecordModel(TimestampedModel):
     __abstract__ = True

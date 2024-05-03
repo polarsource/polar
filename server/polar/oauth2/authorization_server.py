@@ -1,4 +1,5 @@
 import json
+import secrets
 import time
 import typing
 
@@ -29,6 +30,7 @@ from polar.oauth2.sub_type import SubTypeValue
 from .constants import (
     ACCESS_TOKEN_PREFIX,
     CLIENT_ID_PREFIX,
+    CLIENT_REGISTRATION_TOKEN_PREFIX,
     CLIENT_SECRET_PREFIX,
     ISSUER,
     REFRESH_TOKEN_PREFIX,
@@ -57,13 +59,14 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     def generate_client_registration_info(
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> dict[str, str]:
+        assert client.registration_access_token is not None
         return {
             "registration_client_uri": str(
-                request._request.url_for("oauth2.configure", client_id=client.client_id)
+                request._request.url_for(
+                    "oauth2.configure_get", client_id=client.client_id
+                )
             ),
-            "registration_access_token": generate_token(
-                prefix="registration_access_token"
-            ),
+            "registration_access_token": client.registration_access_token,
         }
 
     def generate_client_id(self) -> str:
@@ -86,6 +89,11 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     ) -> OAuth2Client:
         oauth2_client = OAuth2Client(**client_info)
         oauth2_client.set_client_metadata(client_metadata)
+
+        oauth2_client.registration_access_token = generate_token(
+            prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
+        )
+
         self.server.session.add(oauth2_client)
         self.server.session.flush()
         return oauth2_client
@@ -99,24 +107,48 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
     ) -> dict[str, str]:
         return {
             "registration_client_uri": str(
-                request._request.url_for("oauth2.configure", client_id=client.client_id)
+                request._request.url_for(
+                    "oauth2.configure_get", client_id=client.client_id
+                )
             ),
-            "registration_access_token": generate_token(
-                prefix="registration_access_token"
-            ),
+            "registration_access_token": client.registration_access_token,
         }
 
-    def authenticate_token(self, request: StarletteJsonRequest) -> bool:
-        return True
+    def authenticate_token(self, request: StarletteJsonRequest) -> str | None:
+        authorization = request.headers.get("Authorization")
+        if authorization is None:
+            return None
+
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() == "bearer" and token != "":
+            return token
+
+        if request.user:
+            raise NotImplementedError("TODO: proper access control")
+
+        return None
 
     def authenticate_client(self, request: StarletteJsonRequest) -> OAuth2Client | None:
         client_id = request.path_params.get("client_id")
         if client_id is None:
             return None
 
-        statement = select(OAuth2Client).where(OAuth2Client.client_id == client_id)
+        statement = select(OAuth2Client).where(
+            OAuth2Client.deleted_at.is_(None), OAuth2Client.client_id == client_id
+        )
         result = self.server.session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        client = result.unique().scalar_one_or_none()
+
+        if client is None:
+            return None
+
+        credential = request.credential
+        if credential is None or not secrets.compare_digest(
+            client.registration_access_token, credential
+        ):
+            return None
+
+        return client
 
     def revoke_access_token(
         self, token: typing.Any, request: StarletteJsonRequest
@@ -131,7 +163,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
     def delete_client(
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> None:
-        self.server.session.delete(client)
+        client.set_deleted_at()
         self.server.session.flush()
 
     def update_client(
@@ -241,7 +273,9 @@ class AuthorizationServer(_AuthorizationServer):
         return authorization_server
 
     def query_client(self, client_id: str) -> OAuth2Client | None:
-        statement = select(OAuth2Client).where(OAuth2Client.client_id == client_id)
+        statement = select(OAuth2Client).where(
+            OAuth2Client.deleted_at.is_(None), OAuth2Client.client_id == client_id
+        )
         result = self.session.execute(statement)
         return result.unique().scalar_one_or_none()
 

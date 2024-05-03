@@ -4,6 +4,7 @@ from .sub_type import SubType
 
 CLIENT_ID_PREFIX = "polar_ci_"
 CLIENT_SECRET_PREFIX = "polar_cs_"
+CLIENT_REGISTRATION_TOKEN_PREFIX = "polar_crt_"
 AUTHORIZATION_CODE_PREFIX = "polar_ac_"
 ACCESS_TOKEN_PREFIX: dict[SubType, str] = {
     SubType.user: "polar_at_u_",

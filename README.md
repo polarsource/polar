@@ -1,7 +1,7 @@
 <p align="center">
 
   <a href="https://polar.sh">
-      <img src="https://github.com/polarsource/polar/assets/281715/3fdbd858-a3f8-4ca8-8bcb-67a7f4596151" />
+      <img src="https://github.com/polarsource/polar/assets/281715/06d25b84-2f3a-40d5-aa83-5fcf7a3997fb" />
   </a>
 
 </p>

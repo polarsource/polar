@@ -28,13 +28,17 @@ class TimestampedModel(Model):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=utc_now
+        TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
     modified_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), onupdate=utc_now, nullable=True, default=None
+        TIMESTAMP(timezone=True),
+        onupdate=utc_now,
+        nullable=True,
+        default=None,
+        index=True,
     )
     deleted_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
 

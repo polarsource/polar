@@ -9,7 +9,6 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     ForeignKey,
-    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -43,7 +42,6 @@ class Organization(RecordModel):
         UniqueConstraint("name"),
         UniqueConstraint("external_id"),
         UniqueConstraint("installation_id"),
-        Index("idx_deleted_at", "deleted_at"),
     )
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)

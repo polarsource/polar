@@ -1,7 +1,7 @@
 <p align="center">
 
   <a href="https://polar.sh">
-      <img src="https://github.com/polarsource/polar/assets/10053249/d8ae965b-a755-4857-93f4-8ee4e7789183" />
+      <img src="https://github.com/polarsource/polar/assets/281715/3fdbd858-a3f8-4ca8-8bcb-67a7f4596151" />
   </a>
 
 </p>
@@ -16,14 +16,13 @@
     </picture>
 </a>
 
-<a href="https://polar.sh">Website</a>
+<a href="https://polar.sh">Sign Up</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/polarsource">Blog</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://docs.polar.sh/">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://docs.polar.sh/api/">API</a>
-
 
 
 <p align="center">
@@ -42,41 +41,51 @@
 </div>
 <hr />
 
-## Polar.sh: A Creator Platform for Developers
-A creator platform for developers and the open source ecosystem – built open source (Apache 2.0).
+## Polar.sh: All-in-one funding & monetization platform for developers
+Focus on building your passion. We'll focus on the infrastructure to get you paid. From first donation to IPO.
 
-Offering you – as a developer –  a platform on top of your GitHub repositories to:
+- All-in-one funding & monetization (soon) platform for open source- and indie developers.
+- Build your own audience with Polar Newsletters/Posts
+- 1% OSS Program - setup automatic rewards to upstream contributors/dependencies (soon)
+- We're the merchant of record handling the...
+  - ...boilerplate (billing, receipts, customer accounts etc)
+  - ...headaches (sales tax, VAT)
 
-- Build, own & reach your audience through free- and premium posts and newsletters. 
-- Offer subscriptions of value-add benefits designed for our ecosystem & built-in to Polar.
-    - Access to Private GitHub Repositories (Unlimited)
-    - Discord Invites (Multiple roles)
-    - Premium Posts & Newsletter
-    - Automated Ads for Commercial Partners & Sponsors (README, Site, Docs & Posts)
-    - Custom: Provide secret notes for subscribers to unlock, e.g Cal.com links (Consultancy), Email address (Support) etc.
-- Polar handles value-add tax (VAT) 
-- Get funding behind your GitHub issues & split it with contributors (Rewards)
-- Integrate it all on your own docs, sites or services using our API & SDK.
+## Serving world-class open source- and indie developers
 
-Start building, engaging & converting your own community into free- and paid subscribers.
+|     | Developer/Initiative    |  How they're using Polar   |
+| --- | --- | --- |
+|  <img src="https://avatars.githubusercontent.com/u/50811782?s=200&v=4" height="20" width="20" alt="SerenityOS" />  |  [SerenityOS & Ladybird](https://polar.sh/SerenityOS)   |  Uses issue funding & rewarding contributors 100%   |
+|  <img src="https://avatars.githubusercontent.com/u/78011399?s=200&v=4" height="20" width="20" alt="tRPC" />  | [tRPC](https://polar.sh/trpc)   |  All their issues are fundable with contributors getting 70%   |
+|  <img src="https://avatars.githubusercontent.com/u/85560643?v=4" height="20" width="20" alt="tRPC" />  | [Bela Bohlender](https://polar.sh/bbohlender)    |  Blogging (incl. premium posts for members) and sponsorship    |
+|  <img src="https://avatars.githubusercontent.com/u/159799280?s=200&v=4" height="20" width="20" alt="Your next store" />  | [Your Next Store](https://yournextstore.com/)   |  Selling access via their website to private GitHub repo of their Next.js storefront    |
+|  <img src="https://avatars.githubusercontent.com/u/140182603?s=200&v=4" height="20" width="20" alt="tRPC" />  | [Biome](https://polar.sh/biomejs)  | Uses issue funding & rewarding contributors 70%     |
+|  <img src="https://avatars.githubusercontent.com/u/48071860?s=200&v=4" height="20" width="20" alt="tRPC" />  | [Strawberry GraphQL](https://polar.sh/strawberry-graphql)  | Membership benefits, newsletter & sponsorship + Discord invites     |
+|  <img src="https://avatars.githubusercontent.com/u/1939362?v=4" height="20" width="20" alt="tRPC" />  | [David Hewitt](https://polar.sh/davidhewitt)  |  Blogging (incl. premium posts for members) and sponsorship    |
+|  <img src="https://avatars.githubusercontent.com/u/136892265?s=200&v=4" height="20" width="20" alt="Your next store" />  | [Open Status](https://polar.sh/openstatusHQ)   |  Funding towards their issues/backlog    |
+|  <img src="https://avatars.githubusercontent.com/u/47423046?v=4" height="20" width="20" alt="tRPC" />  | [Isaac Harris-Holt](https://polar.sh/davidhewitt)  |  Blogging (incl. premium posts for members) and sponsorship    |
 
-_Subscribe to us on Polar [here](https://polar.sh/polarsource). We ship features & improvements fast._
 
-### Polar API & SDK
-You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api), [Webhook API](https://api.polar.sh/docs#/webhooks), and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
+... and thousands more. Join us!
+
 
 ## Pricing
 
 - No fixed, monthly, costs
-- 5% (Polar) + payment & payout fees (Stripe)
-- _We'll also cover Stripe fees from our 5% until March 31st, 2024._
+- 5% + payment & payout fees
 
 ## Roadmap, Issues & Feature Requests
-[Join our Discord](https://discord.gg/STfRufb32V) or [GitHub Discussions](https://github.com/orgs/polarsource/discussions) to help shape the future of Polar and to see what we're working on. We're excited to hear from you!
+**🎯 v1.0 North Star.** [Checkout what we're building towards](https://github.com/polarsource/polar/issues/3242)
+
+**💬 Shape the future of Polar with us.** [Join our Discord](https://discord.gg/STfRufb32V)
 
 **🐛 Found a bug?** [Submit it here](https://github.com/polarsource/polar/issues).
 
 **🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures to security@polar.sh. See [Security](./README.md#Security)
+
+### Polar API & SDK
+You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api), [Webhook API](https://api.polar.sh/docs#/webhooks), and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
+
 
 ## Contributions
 

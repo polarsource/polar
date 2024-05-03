@@ -1,5 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
+import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
@@ -10,13 +11,14 @@ import {
   BoltOutlined,
   CropFreeOutlined,
   DiamondOutlined,
+  DonutLargeOutlined,
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
   SpaceDashboardOutlined,
   TuneOutlined,
   ViewDayOutlined,
-  VolunteerActivism,
+  VolunteerActivismOutlined,
   Webhook,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
@@ -93,6 +95,20 @@ export const useMaintainerRoutes = (
       return []
     }
 
+    if (shouldBeOnboarded(org)) {
+      return [
+        {
+          id: 'onboarding',
+          title: 'Onboarding',
+          link: `/maintainer/${org.name}/onboarding`,
+          icon: <DonutLargeOutlined className="h-5 w-5" fontSize="inherit" />,
+          postIcon: undefined,
+          if: true,
+          subs: undefined,
+        },
+      ].map(applyIsActive(path))
+    }
+
     return maintainerRoutesList(org)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
@@ -108,7 +124,7 @@ export const useDashboardRoutes = (
 ): RouteWithActive[] => {
   const path = usePathname()
 
-  if (!org) {
+  if (!org || shouldBeOnboarded(org)) {
     return []
   }
 
@@ -205,7 +221,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
   {
     id: 'donations',
     title: 'Donations',
-    icon: <VolunteerActivism className="h-5 w-5" fontSize="inherit" />,
+    icon: <VolunteerActivismOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     link: `/maintainer/${org.name}/donations/overview`,
     checkIsActive: (currentRoute: string): boolean => {

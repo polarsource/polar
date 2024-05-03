@@ -13,7 +13,7 @@ const DashboardNavigation = () => {
   const isPersonal = Boolean(org && personalOrg && org.id === personalOrg.id)
   const navs = useDashboardRoutes(org, isPersonal, isOrgAdmin ?? false)
 
-  if (!org) {
+  if (!org || navs.length === 0) {
     return <></>
   }
 

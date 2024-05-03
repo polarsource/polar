@@ -184,6 +184,14 @@ export const useUpdateOrganization = () =>
       queryClient.invalidateQueries({
         queryKey: ['organizations', variables.id],
       })
+
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'adminOrganizations'],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'allOrganizations'],
+      })
     },
   })
 

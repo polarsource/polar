@@ -6544,6 +6544,42 @@ export interface Organization {
      */
     profile_settings: OrganizationProfileSettings | null;
     /**
+     * If this organization has articles enabled
+     * @type {boolean}
+     * @memberof Organization
+     */
+    articles_enabled: boolean;
+    /**
+     * If this organization has subscriptions enabled
+     * @type {boolean}
+     * @memberof Organization
+     */
+    subscriptions_enabled: boolean;
+    /**
+     * If this organization has a public Polar page
+     * @type {boolean}
+     * @memberof Organization
+     */
+    public_page_enabled: boolean;
+    /**
+     * If this organization has issue funding enabled
+     * @type {boolean}
+     * @memberof Organization
+     */
+    issue_funding_enabled: boolean;
+    /**
+     * If this organizations accepts donations
+     * @type {boolean}
+     * @memberof Organization
+     */
+    donations_enabled: boolean;
+    /**
+     * If this organization should make donation timestamps publicly available
+     * @type {boolean}
+     * @memberof Organization
+     */
+    public_donation_timestamps: boolean;
+    /**
      * 
      * @type {string}
      * @memberof Organization
@@ -6567,24 +6603,6 @@ export interface Organization {
      * @memberof Organization
      */
     is_teams_enabled: boolean;
-    /**
-     * If this organizations accepts donations
-     * @type {boolean}
-     * @memberof Organization
-     */
-    donations_enabled: boolean;
-    /**
-     * If this organization has a public Polar page
-     * @type {boolean}
-     * @memberof Organization
-     */
-    public_page_enabled: boolean;
-    /**
-     * If this organization should make donation timestamps publicly available
-     * @type {boolean}
-     * @memberof Organization
-     */
-    public_donation_timestamps: boolean;
 }
 /**
  * 
@@ -6895,6 +6913,24 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     public_donation_timestamps?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    issue_funding_enabled?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    articles_enabled?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    subscriptions_enabled?: boolean;
     /**
      * 
      * @type {OrganizationProfileSettingsUpdate}

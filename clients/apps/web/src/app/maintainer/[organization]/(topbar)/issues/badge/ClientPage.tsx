@@ -1,6 +1,7 @@
 'use client'
 
 import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
+import { EnableIssuesView } from '@/components/Issues/EnableIssuesView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
@@ -18,6 +19,10 @@ export default function ClientPage() {
         </div>
       </>
     )
+  }
+
+  if (org && !org.issue_funding_enabled) {
+    return <EnableIssuesView organization={org} />
   }
 
   return (

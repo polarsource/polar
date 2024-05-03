@@ -86,7 +86,14 @@ export default function ClientPage({
           <span className="text-6xl text-blue-400">
             <VolunteerActivism fontSize="inherit" />
           </span>
-          <h2 className="text-lg">You are not accepting donations yet</h2>
+          <div className="flex flex-col items-center gap-4 text-center">
+            <h2 className="dark:text-polar-50 text-2xl font-medium text-gray-950">
+              Donations
+            </h2>
+            <h2 className="text-lg">
+              Give your supporters the ability to say thanks with a donation
+            </h2>
+          </div>
           <Button loading={enablingDonations} onClick={enableDonations}>
             Enable Donations
           </Button>

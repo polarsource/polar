@@ -251,6 +251,15 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 settings.public_donation_timestamps
             )
 
+        if settings.issue_funding_enabled is not None:
+            organization.issue_funding_enabled = settings.issue_funding_enabled
+
+        if settings.articles_enabled is not None:
+            organization.articles_enabled = settings.articles_enabled
+
+        if settings.subscriptions_enabled is not None:
+            organization.subscriptions_enabled = settings.subscriptions_enabled
+
         session.add(organization)
 
         log.info(

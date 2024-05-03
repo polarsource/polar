@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import UUID4, Field, HttpUrl
 
+from polar import issue
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import types
@@ -62,6 +63,25 @@ class Organization(Schema):
         description="Settings for the organization profile"
     )
 
+    articles_enabled: bool = Field(
+        description="If this organization has articles enabled"
+    )
+    subscriptions_enabled: bool = Field(
+        description="If this organization has subscriptions enabled"
+    )
+    public_page_enabled: bool = Field(
+        description="If this organization has a public Polar page"
+    )
+    issue_funding_enabled: bool = Field(
+        description="If this organization has issue funding enabled"
+    )
+    donations_enabled: bool = Field(
+        description="If this organizations accepts donations"
+    )
+    public_donation_timestamps: bool = Field(
+        description="If this organization should make donation timestamps publicly available"
+    )
+
     # Team fields
     billing_email: str | None = Field(
         None,
@@ -77,18 +97,6 @@ class Organization(Schema):
     )
     is_teams_enabled: bool = Field(
         description="Feature flag for if this organization is a team."
-    )
-
-    donations_enabled: bool = Field(
-        description="If this organizations accepts donations"
-    )
-
-    public_page_enabled: bool = Field(
-        description="If this organization has a public Polar page"
-    )
-
-    public_donation_timestamps: bool = Field(
-        description="If this organization should make donation timestamps publicly available"
     )
 
     @classmethod
@@ -132,6 +140,10 @@ class Organization(Schema):
             total_monthly_spending_limit=o.total_monthly_spending_limit
             if include_member_fields
             else None,
+            #
+            issue_funding_enabled=o.issue_funding_enabled,
+            articles_enabled=o.articles_enabled,
+            subscriptions_enabled=o.subscriptions_enabled,
             #
             per_user_monthly_spending_limit=o.per_user_monthly_spending_limit
             if include_member_fields
@@ -179,6 +191,10 @@ class OrganizationUpdate(Schema):
 
     donations_enabled: bool | None = None
     public_donation_timestamps: bool | None = None
+
+    issue_funding_enabled: bool | None = None
+    articles_enabled: bool | None = None
+    subscriptions_enabled: bool | None = None
 
     profile_settings: OrganizationProfileSettingsUpdate | None = None
 

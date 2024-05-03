@@ -7,7 +7,7 @@ import { useCreateArticle } from '@/hooks/queries'
 import { useStore } from '@/store'
 import { captureEvent } from '@/utils/posthog'
 import { ArticleCreate } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
 import { useEffect, useState } from 'react'
@@ -107,6 +107,10 @@ const ClientPage = () => {
 
   if (!org) {
     return null
+  }
+
+  if (!org.articles_enabled) {
+    return redirect(`/maintainer/${org.name}/posts`)
   }
 
   return (

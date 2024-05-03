@@ -13,7 +13,7 @@ import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleVisibilityEnum } from '@polar-sh/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { redirect, useParams, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -157,6 +157,10 @@ const ClientPage = () => {
     } else if (tab === 'preview') {
       captureEvent('posts:edit_tab_preview:view')
     }
+  }
+
+  if (!post.data.organization.articles_enabled) {
+    return redirect(`/maintainer/${post.data.organization.name}/posts`)
   }
 
   return (

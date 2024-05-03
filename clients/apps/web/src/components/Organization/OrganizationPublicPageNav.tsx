@@ -42,29 +42,37 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        <Link href={organizationPageLink(organization, 'subscriptions')}>
-          <TabsTrigger value="subscriptions" size="small">
-            Subscriptions
-          </TabsTrigger>
-        </Link>
+        {organization.subscriptions_enabled && (
+          <Link href={organizationPageLink(organization, 'subscriptions')}>
+            <TabsTrigger value="subscriptions" size="small">
+              Subscriptions
+            </TabsTrigger>
+          </Link>
+        )}
 
-        <Link href={organizationPageLink(organization, 'posts')}>
-          <TabsTrigger value="posts" size="small">
-            Posts
-          </TabsTrigger>
-        </Link>
+        {organization.articles_enabled && (
+          <Link href={organizationPageLink(organization, 'posts')}>
+            <TabsTrigger value="posts" size="small">
+              Posts
+            </TabsTrigger>
+          </Link>
+        )}
 
-        <Link href={organizationPageLink(organization, 'issues')}>
-          <TabsTrigger value="issues" size="small">
-            Issues
-          </TabsTrigger>
-        </Link>
+        {organization.issue_funding_enabled && (
+          <Link href={organizationPageLink(organization, 'issues')}>
+            <TabsTrigger value="issues" size="small">
+              Issues
+            </TabsTrigger>
+          </Link>
+        )}
 
-        <Link href={organizationPageLink(organization, 'repositories')}>
-          <TabsTrigger value="repositories" size="small">
-            Repositories
-          </TabsTrigger>
-        </Link>
+        {organization.has_app_installed && (
+          <Link href={organizationPageLink(organization, 'repositories')}>
+            <TabsTrigger value="repositories" size="small">
+              Repositories
+            </TabsTrigger>
+          </Link>
+        )}
       </TabsList>
     </Tabs>
   )

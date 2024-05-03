@@ -7,8 +7,10 @@ import SubscriptionTierSubscribeButton from '@/components/Subscriptions/Subscrip
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useListAdminOrganizations } from '@/hooks/queries'
 import { useRecurringInterval } from '@/hooks/subscriptions'
+import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
+import { redirect } from 'next/navigation'
 import React, { useMemo } from 'react'
 
 interface OrganizationSubscriptionsPublicPageProps {
@@ -30,6 +32,10 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
     () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
     [organization, orgs],
   )
+
+  if (!organization.subscriptions_enabled) {
+    return redirect(organizationPageLink(organization))
+  }
 
   return (
     <div className="flex flex-col gap-y-12">

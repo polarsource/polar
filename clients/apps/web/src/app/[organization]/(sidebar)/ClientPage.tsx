@@ -89,65 +89,75 @@ const ClientPage = ({
     })
   }
 
+  const PostsEmptyState = () => {
+    return isAdmin ? (
+      <div className="flex flex-col gap-y-6">
+        <p className="dark:text-polar-500 text-gray-500">
+          Build out an audience by writing posts and share it with your
+          subscribers
+        </p>
+        <PublicPagePostWizard organization={organization} />
+      </div>
+    ) : (
+      <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-16 text-gray-600">
+        <ViewDayOutlined fontSize="large" />
+        <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
+          <h3 className="p-2 text-lg font-medium">
+            {organization.name} is typing...
+          </h3>
+          <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
+            Subscribe to {organization.name} to get future posts fresh out of
+            the press.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
           {isAdmin && !organization.has_app_installed && <GitHubAppUpsell />}
 
-          <div className="flex w-full flex-col gap-y-6">
-            <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
-              <h2 className="text-lg">Pinned & Latest Posts</h2>
-              <Link
-                className="text-sm text-blue-500 dark:text-blue-400"
-                href={organizationPageLink(organization, 'posts')}
-              >
-                <span>View all</span>
-              </Link>
+          {organization.articles_enabled && (
+            <div className="flex w-full flex-col gap-y-6">
+              <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
+                <h2 className="text-lg">Pinned & Latest Posts</h2>
+                <Link
+                  className="text-sm text-blue-500 dark:text-blue-400"
+                  href={organizationPageLink(organization, 'posts')}
+                >
+                  <span>View all</span>
+                </Link>
+              </div>
+              {(posts.length ?? 0) > 0 ? (
+                <div className="flex flex-col gap-y-8">
+                  <div className="flex flex-col gap-6">
+                    {posts.map((post) => (
+                      <PostComponent
+                        article={post}
+                        key={post.id}
+                        highlightPinned
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <PostsEmptyState />
+              )}
             </div>
-            {(posts.length ?? 0) > 0 ? (
-              <div className="flex flex-col gap-y-8">
-                <div className="flex flex-col gap-6">
-                  {posts.map((post) => (
-                    <PostComponent
-                      article={post}
-                      key={post.id}
-                      highlightPinned
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : isAdmin ? (
-              <div className="flex flex-col gap-y-6">
-                <p className="dark:text-polar-500 text-gray-500">
-                  Build out an audience by writing posts and share it with your
-                  subscribers
-                </p>
-                <PublicPagePostWizard organization={organization} />
-              </div>
-            ) : (
-              <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-16 text-gray-600">
-                <ViewDayOutlined fontSize="large" />
-                <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
-                  <h3 className="p-2 text-lg font-medium">
-                    {organization.name} is typing...
-                  </h3>
-                  <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
-                    Subscribe to {organization.name} to get future posts fresh
-                    out of the press.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
-          <div className="flex w-full flex-col lg:hidden">
-            <HighlightedTiersEditor
-              organization={organization}
-              adminOrganizations={adminOrganizations}
-              subscriptionTiers={subscriptionTiers}
-            />
-          </div>
+          {organization.subscriptions_enabled && (
+            <div className="flex w-full flex-col lg:hidden">
+              <HighlightedTiersEditor
+                organization={organization}
+                adminOrganizations={adminOrganizations}
+                subscriptionTiers={subscriptionTiers}
+              />
+            </div>
+          )}
 
           {repositories.length > 0 ? (
             <ProjectsEditor
@@ -165,9 +175,11 @@ const ClientPage = ({
             disabled={!isAdmin}
           />
 
-          <div className="flex w-full flex-col lg:hidden">
-            <DonationsFeed donations={donations} />
-          </div>
+          {organization.donations_enabled && (
+            <div className="flex w-full flex-col lg:hidden">
+              <DonationsFeed donations={donations} />
+            </div>
+          )}
 
           <div className="flex w-full flex-col lg:hidden">
             <LinksEditor
@@ -178,7 +190,7 @@ const ClientPage = ({
             />
           </div>
 
-          {issues.length > 0 ? (
+          {organization.issue_funding_enabled && issues.length > 0 ? (
             <OrganizationIssueSummaryList
               issues={issues}
               organization={organization}
@@ -187,13 +199,17 @@ const ClientPage = ({
         </div>
 
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
-          <HighlightedTiersEditor
-            organization={organization}
-            adminOrganizations={adminOrganizations}
-            subscriptionTiers={subscriptionTiers}
-          />
+          {organization.subscriptions_enabled && (
+            <HighlightedTiersEditor
+              organization={organization}
+              adminOrganizations={adminOrganizations}
+              subscriptionTiers={subscriptionTiers}
+            />
+          )}
 
-          <DonationsFeed donations={donations} />
+          {organization.donations_enabled && (
+            <DonationsFeed donations={donations} />
+          )}
 
           <LinksEditor
             links={links}

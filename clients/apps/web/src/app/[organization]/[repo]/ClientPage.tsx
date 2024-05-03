@@ -126,12 +126,14 @@ const ClientPage = ({
               disabled={!isAdmin}
             />
 
-            <SubscriptionTierEditor
-              organization={organization}
-              repository={repository}
-              subscriptionTiers={subscriptionTiers}
-              disabled={!isAdmin}
-            />
+            {organization.subscriptions_enabled && (
+              <SubscriptionTierEditor
+                organization={organization}
+                repository={repository}
+                subscriptionTiers={subscriptionTiers}
+                disabled={!isAdmin}
+              />
+            )}
 
             <CreatorsEditor
               organization={organization}
@@ -140,22 +142,23 @@ const ClientPage = ({
               disabled={!isAdmin}
             />
 
-            {(issuesFunding.items?.length ?? 0) > 0 && (
-              <ShadowBoxOnMd>
-                <div className="p-4">
-                  <div className="flex flex-row items-start justify-between pb-8">
-                    <h2 className="text-lg font-medium">
-                      Issues looking for funding
-                    </h2>
+            {organization.issue_funding_enabled &&
+              (issuesFunding.items?.length ?? 0) > 0 && (
+                <ShadowBoxOnMd>
+                  <div className="p-4">
+                    <div className="flex flex-row items-start justify-between pb-8">
+                      <h2 className="text-lg font-medium">
+                        Issues looking for funding
+                      </h2>
+                    </div>
+                    <IssuesLookingForFunding
+                      organization={organization}
+                      repository={repository}
+                      issues={issuesFunding}
+                    />
                   </div>
-                  <IssuesLookingForFunding
-                    organization={organization}
-                    repository={repository}
-                    issues={issuesFunding}
-                  />
-                </div>
-              </ShadowBoxOnMd>
-            )}
+                </ShadowBoxOnMd>
+              )}
           </div>
 
           <div className="flex w-full flex-col gap-12 md:max-w-52 lg:max-w-72">
@@ -244,7 +247,10 @@ const ClientPage = ({
                 </div>
               </ShadowBoxOnMd>
 
-              {freeSubscriptionTier && !isAdmin ? (
+              {(organization.subscriptions_enabled ||
+                organization.articles_enabled) &&
+              freeSubscriptionTier &&
+              !isAdmin ? (
                 <>
                   <FreeTierSubscribe
                     subscriptionTier={freeSubscriptionTier}
@@ -259,7 +265,7 @@ const ClientPage = ({
               <DonateWidget organization={organization} />
             ) : null}
 
-            {posts.length > 0 && (
+            {organization.articles_enabled && posts.length > 0 && (
               <div className="flex flex-col gap-6">
                 <div className="flex flex-row items-center gap-4">
                   <h3>Posts from the creator</h3>

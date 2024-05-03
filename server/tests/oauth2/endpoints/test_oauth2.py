@@ -18,15 +18,17 @@ from polar.models import (
 )
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 
 @pytest_asyncio.fixture
-async def oauth2_client(save_fixture: SaveFixture) -> OAuth2Client:
+async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(
         client_id="polar_ci_123",
         client_secret="polar_cs_123",
         registration_access_token="polar_rat_123",
+        user=user,
     )
     oauth2_client.set_client_metadata(
         {
@@ -192,6 +194,28 @@ class TestOAuth2ConfigureGet:
             headers={
                 "Authorization": f"Bearer {oauth2_client.registration_access_token}"
             },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["client_id"] == oauth2_client.client_id
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_user_not_owner(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.get(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_valid(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.get(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
         )
 
         assert response.status_code == 200

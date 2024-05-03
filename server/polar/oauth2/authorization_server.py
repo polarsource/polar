@@ -90,6 +90,8 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         oauth2_client = OAuth2Client(**client_info)
         oauth2_client.set_client_metadata(client_metadata)
 
+        assert request.user is not None
+        oauth2_client.user_id = request.user.id
         oauth2_client.registration_access_token = generate_token(
             prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
         )
@@ -114,7 +116,10 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             "registration_access_token": client.registration_access_token,
         }
 
-    def authenticate_token(self, request: StarletteJsonRequest) -> str | None:
+    def authenticate_token(self, request: StarletteJsonRequest) -> User | str | None:
+        if request.user is not None:
+            return request.user
+
         authorization = request.headers.get("Authorization")
         if authorization is None:
             return None
@@ -122,9 +127,6 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
         scheme, _, token = authorization.partition(" ")
         if scheme.lower() == "bearer" and token != "":
             return token
-
-        if request.user:
-            raise NotImplementedError("TODO: proper access control")
 
         return None
 
@@ -143,8 +145,15 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             return None
 
         credential = request.credential
-        if credential is None or not secrets.compare_digest(
-            client.registration_access_token, credential
+        if (
+            credential is None
+            or (
+                isinstance(credential, str)
+                and not secrets.compare_digest(
+                    client.registration_access_token, credential
+                )
+            )
+            or (isinstance(credential, User) and client.user_id != credential.id)
         ):
             return None
 

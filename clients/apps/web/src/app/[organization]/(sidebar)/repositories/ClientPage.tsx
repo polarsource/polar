@@ -7,6 +7,7 @@ import { StarIcon } from '@heroicons/react/24/solid'
 import { HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository, Visibility } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Pill } from 'polarkit/components/ui/atoms'
 import {
   Card,
@@ -31,6 +32,10 @@ export const ClientPage = ({
   )
   const repositoriesAsCards = repositoriesByStars.slice(0, 4)
   const repositoriesAsList = repositoriesByStars.slice(4)
+
+  if (!organization.has_app_installed) {
+    return redirect(organizationPageLink(organization))
+  }
 
   return (
     <>

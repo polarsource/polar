@@ -9,6 +9,7 @@ import { ArrowBackOutlined } from '@mui/icons-material'
 import { useListAllOrganizations, useUserSubscriptions } from '@/hooks/queries'
 import { Article, BenefitPublicInner, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 
 interface PostPageProps {
@@ -62,6 +63,10 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
 
   const paidArticlesBenefit =
     tierWithPaidArticlesBenefit?.benefits.find(isPaidBenefit)
+
+  if (!article.organization.articles_enabled) {
+    return redirect(organizationPageLink(article.organization))
+  }
 
   return (
     <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative flex w-full flex-col items-center rounded-3xl ring-gray-100 md:bg-white md:p-12 md:shadow-sm md:ring-1 dark:md:border dark:md:ring-1">

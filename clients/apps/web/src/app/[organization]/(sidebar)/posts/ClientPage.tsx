@@ -3,10 +3,12 @@
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { useIsOrganizationAdmin } from '@/hooks'
 import { useSearchArticles } from '@/hooks/queries'
+import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ViewDayOutlined } from '@mui/icons-material'
 import { Article, ListResourceArticle, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -39,6 +41,10 @@ const ClientPage = ({
       posts.fetchNextPage()
     }
   }, [inView, posts])
+
+  if (!organization.articles_enabled) {
+    return redirect(organizationPageLink(organization))
+  }
 
   return (
     <div className="flex w-full flex-col gap-y-6">

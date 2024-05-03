@@ -49,7 +49,31 @@ def upgrade() -> None:
     op.execute(
         """
         UPDATE organizations
-        SET issue_funding_enabled = TRUE, articles_enabled = TRUE, subscriptions_enabled = TRUE
+        SET issue_funding_enabled = TRUE
+        WHERE organizations.installation_id IS NOT NULL
+        """
+    )
+
+    op.execute(
+        """
+        UPDATE organizations
+        SET subscriptions_enabled = TRUE
+        WHERE ID IN (
+            SELECT DISTINCT organization_id
+            FROM subscription_tiers
+            WHERE subscription_tiers.type != 'free'
+        );
+        """
+    )
+
+    op.execute(
+        """
+        UPDATE organizations
+        SET articles_enabled = TRUE
+        WHERE ID IN (
+            SELECT DISTINCT organization_id
+            FROM articles
+        );
         """
     )
     # ### end Alembic commands ###

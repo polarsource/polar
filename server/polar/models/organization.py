@@ -167,8 +167,24 @@ class Organization(RecordModel):
     # Donation fields
     #
 
-    donations_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    donations_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     public_donation_timestamps: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    #
+    # Feature Flags
+    #
+
+    issue_funding_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    articles_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    subscriptions_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
 
     #
     # Fields synced from GitHub

@@ -640,6 +640,180 @@ async def test_update_organization_profile_settings_links(
 
 @pytest.mark.asyncio
 @pytest.mark.auth
+async def test_issue_funding_enabled(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"issue_funding_enabled": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["issue_funding_enabled"] is True
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"issue_funding_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["issue_funding_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["issue_funding_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"issue_funding_enabled": False},
+    )
+    assert response.status_code == 200
+    assert response.json()["issue_funding_enabled"] is False
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"issue_funding_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["issue_funding_enabled"] is False  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["issue_funding_enabled"] is False  # no change
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_articles_enabled(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"articles_enabled": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["articles_enabled"] is True
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"articles_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["articles_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["articles_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"articles_enabled": False},
+    )
+    assert response.status_code == 200
+    assert response.json()["articles_enabled"] is False
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"articles_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["articles_enabled"] is False  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["articles_enabled"] is False  # no change
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_subscriptions_enabled(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization.is_admin = True
+    await save_fixture(user_organization)
+
+    # then
+    session.expunge_all()
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"subscriptions_enabled": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["subscriptions_enabled"] is True
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"subscriptions_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["subscriptions_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["subscriptions_enabled"] is True  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"subscriptions_enabled": False},
+    )
+    assert response.status_code == 200
+    assert response.json()["subscriptions_enabled"] is False
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={"subscriptions_enabled": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["subscriptions_enabled"] is False  # no change
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["subscriptions_enabled"] is False  # no change
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
 async def test_donations_enabled(
     organization: Organization,
     client: AsyncClient,

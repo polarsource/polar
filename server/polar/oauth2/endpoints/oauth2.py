@@ -32,7 +32,7 @@ from ..userinfo import UserInfo, generate_user_info
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 
-@router.post("/register", name="oauth2.register")
+@router.post("/register", name="oauth2.register", tags=[Tags.PUBLIC])
 async def oauth2_register(
     _client_configuration: OAuth2ClientConfiguration,
     request: Request,
@@ -46,7 +46,7 @@ async def oauth2_register(
     )
 
 
-@router.get("/register/{client_id}", name="oauth2.configure_get")
+@router.get("/register/{client_id}", name="oauth2.configure_get", tags=[Tags.PUBLIC])
 async def oauth2_configure_get(
     client_id: str,
     request: Request,
@@ -59,7 +59,7 @@ async def oauth2_configure_get(
     )
 
 
-@router.put("/register/{client_id}", name="oauth2.configure_put")
+@router.put("/register/{client_id}", name="oauth2.configure_put", tags=[Tags.PUBLIC])
 async def oauth2_configure_put(
     client_id: str,
     client_configuration: OAuth2ClientConfigurationUpdate,
@@ -74,7 +74,9 @@ async def oauth2_configure_put(
     )
 
 
-@router.delete("/register/{client_id}", name="oauth2.configure_delete")
+@router.delete(
+    "/register/{client_id}", name="oauth2.configure_delete", tags=[Tags.PUBLIC]
+)
 async def oauth2_configure_delete(
     client_id: str,
     request: Request,

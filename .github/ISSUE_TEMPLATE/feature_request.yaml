@@ -1,0 +1,18 @@
+name: "\U0001F680 Feature Request"
+description: Suggest an idea for this project
+labels: ["feat"]
+body:
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue describing similar ide already exists .
+      options:
+        - label: I have searched the existing issues
+          required: true
+  - type: textarea
+    attributes:
+      label: Is your feature request related to a problem? Please describe.
+      description: A clear and concise description of what the problem is and which solutions you considered
+      placeholder: I'm always frustrated when I have to press this small button.
+    validations:
+      required: false

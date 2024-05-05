@@ -78,7 +78,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     [],
   )
 
-  if (!organization.subscriptions_enabled) {
+  if (!organization.feature_settings?.subscriptions_enabled) {
     return <EnableSubscriptionsView organization={organization} />
   }
 

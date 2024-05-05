@@ -16,7 +16,7 @@ const ClientPage = ({
 }) => {
   useTrafficRecordPageView({ organization })
 
-  if (!organization.issue_funding_enabled) {
+  if (!organization.feature_settings?.issue_funding_enabled) {
     return redirect(organizationPageLink(organization))
   }
 

@@ -36,7 +36,7 @@ export default async function Page({
     { id: 'started_at', desc: true },
   ])
 
-  if (!organization.subscriptions_enabled) {
+  if (!organization.feature_settings?.subscriptions_enabled) {
     return <EnableSubscriptionsView organization={organization} />
   }
 

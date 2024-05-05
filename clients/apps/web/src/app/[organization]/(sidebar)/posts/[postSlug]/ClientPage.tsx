@@ -64,7 +64,7 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
   const paidArticlesBenefit =
     tierWithPaidArticlesBenefit?.benefits.find(isPaidBenefit)
 
-  if (!article.organization.articles_enabled) {
+  if (!article.organization.feature_settings?.articles_enabled) {
     return redirect(organizationPageLink(article.organization))
   }
 

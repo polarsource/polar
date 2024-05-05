@@ -105,7 +105,9 @@ const ClientPage = () => {
       .mutateAsync({
         id: org?.id,
         settings: {
-          articles_enabled: true,
+          feature_settings: {
+            articles_enabled: true,
+          },
         },
       })
       .catch(() => {
@@ -113,7 +115,7 @@ const ClientPage = () => {
       })
   }
 
-  if (org && !org.articles_enabled) {
+  if (org && !org.feature_settings?.articles_enabled) {
     return (
       <EmptyLayout>
         <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">

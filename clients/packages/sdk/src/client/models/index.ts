@@ -6538,35 +6538,11 @@ export interface Organization {
      */
     custom_domain?: string;
     /**
-     * 
-     * @type {OrganizationProfileSettings}
-     * @memberof Organization
-     */
-    profile_settings: OrganizationProfileSettings | null;
-    /**
-     * If this organization has articles enabled
-     * @type {boolean}
-     * @memberof Organization
-     */
-    articles_enabled: boolean;
-    /**
-     * If this organization has subscriptions enabled
-     * @type {boolean}
-     * @memberof Organization
-     */
-    subscriptions_enabled: boolean;
-    /**
      * If this organization has a public Polar page
      * @type {boolean}
      * @memberof Organization
      */
     public_page_enabled: boolean;
-    /**
-     * If this organization has issue funding enabled
-     * @type {boolean}
-     * @memberof Organization
-     */
-    issue_funding_enabled: boolean;
     /**
      * If this organizations accepts donations
      * @type {boolean}
@@ -6579,6 +6555,18 @@ export interface Organization {
      * @memberof Organization
      */
     public_donation_timestamps: boolean;
+    /**
+     * 
+     * @type {OrganizationProfileSettings}
+     * @memberof Organization
+     */
+    profile_settings: OrganizationProfileSettings | null;
+    /**
+     * 
+     * @type {OrganizationFeatureSettings}
+     * @memberof Organization
+     */
+    feature_settings: OrganizationFeatureSettings | null;
     /**
      * 
      * @type {string}
@@ -6703,6 +6691,56 @@ export interface OrganizationCheckPermissionsInput {
      * @memberof OrganizationCheckPermissionsInput
      */
     permissions: AppPermissionsType;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationFeatureSettings
+ */
+export interface OrganizationFeatureSettings {
+    /**
+     * If this organization has articles enabled
+     * @type {boolean}
+     * @memberof OrganizationFeatureSettings
+     */
+    articles_enabled?: boolean;
+    /**
+     * If this organization has subscriptions enabled
+     * @type {boolean}
+     * @memberof OrganizationFeatureSettings
+     */
+    subscriptions_enabled?: boolean;
+    /**
+     * If this organization has issue funding enabled
+     * @type {boolean}
+     * @memberof OrganizationFeatureSettings
+     */
+    issue_funding_enabled?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationFeatureSettingsUpdate
+ */
+export interface OrganizationFeatureSettingsUpdate {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationFeatureSettingsUpdate
+     */
+    articles_enabled?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationFeatureSettingsUpdate
+     */
+    subscriptions_enabled?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationFeatureSettingsUpdate
+     */
+    issue_funding_enabled?: boolean;
 }
 /**
  * 
@@ -6915,28 +6953,16 @@ export interface OrganizationUpdate {
     public_donation_timestamps?: boolean;
     /**
      * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    issue_funding_enabled?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    articles_enabled?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    subscriptions_enabled?: boolean;
-    /**
-     * 
      * @type {OrganizationProfileSettingsUpdate}
      * @memberof OrganizationUpdate
      */
     profile_settings?: OrganizationProfileSettingsUpdate;
+    /**
+     * 
+     * @type {OrganizationFeatureSettingsUpdate}
+     * @memberof OrganizationUpdate
+     */
+    feature_settings?: OrganizationFeatureSettingsUpdate;
 }
 /**
  * 

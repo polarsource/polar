@@ -126,7 +126,7 @@ const ClientPage = ({
               disabled={!isAdmin}
             />
 
-            {organization.subscriptions_enabled && (
+            {organization.feature_settings?.subscriptions_enabled && (
               <SubscriptionTierEditor
                 organization={organization}
                 repository={repository}
@@ -142,7 +142,7 @@ const ClientPage = ({
               disabled={!isAdmin}
             />
 
-            {organization.issue_funding_enabled &&
+            {organization.feature_settings?.issue_funding_enabled &&
               (issuesFunding.items?.length ?? 0) > 0 && (
                 <ShadowBoxOnMd>
                   <div className="p-4">
@@ -247,8 +247,8 @@ const ClientPage = ({
                 </div>
               </ShadowBoxOnMd>
 
-              {(organization.subscriptions_enabled ||
-                organization.articles_enabled) &&
+              {(organization.feature_settings?.subscriptions_enabled ||
+                organization.feature_settings?.articles_enabled) &&
               freeSubscriptionTier &&
               !isAdmin ? (
                 <>
@@ -265,44 +265,45 @@ const ClientPage = ({
               <DonateWidget organization={organization} />
             ) : null}
 
-            {organization.articles_enabled && posts.length > 0 && (
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-row items-center gap-4">
-                  <h3>Posts from the creator</h3>
-                </div>
-                <ShadowBoxOnMd className="flex w-full flex-col gap-6 md:p-6">
-                  {posts.map((post) => (
-                    <Link
-                      key={post.id}
-                      href={organizationPageLink(
-                        organization,
-                        `posts/${post.slug}`,
-                      )}
-                      className="flex w-full flex-col gap-1 transition-opacity hover:opacity-70"
-                    >
-                      <h3 className="line-clamp-2">{post.title}</h3>
-                      <span className="dark:text-polar-500 text-sm text-gray-500">
-                        {new Date(post.published_at ?? 0).toLocaleDateString(
-                          'en-US',
-                          {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          },
+            {organization.feature_settings?.articles_enabled &&
+              posts.length > 0 && (
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-row items-center gap-4">
+                    <h3>Posts from the creator</h3>
+                  </div>
+                  <ShadowBoxOnMd className="flex w-full flex-col gap-6 md:p-6">
+                    {posts.map((post) => (
+                      <Link
+                        key={post.id}
+                        href={organizationPageLink(
+                          organization,
+                          `posts/${post.slug}`,
                         )}
-                      </span>
+                        className="flex w-full flex-col gap-1 transition-opacity hover:opacity-70"
+                      >
+                        <h3 className="line-clamp-2">{post.title}</h3>
+                        <span className="dark:text-polar-500 text-sm text-gray-500">
+                          {new Date(post.published_at ?? 0).toLocaleDateString(
+                            'en-US',
+                            {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            },
+                          )}
+                        </span>
+                      </Link>
+                    ))}
+                    <Link
+                      className="flex flex-row items-center gap-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+                      href={organizationPageLink(organization, 'posts')}
+                    >
+                      <span>View all</span>
+                      <ArrowForward fontSize="inherit" />
                     </Link>
-                  ))}
-                  <Link
-                    className="flex flex-row items-center gap-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                    href={organizationPageLink(organization, 'posts')}
-                  >
-                    <span>View all</span>
-                    <ArrowForward fontSize="inherit" />
-                  </Link>
-                </ShadowBoxOnMd>
-              </div>
-            )}
+                  </ShadowBoxOnMd>
+                </div>
+              )}
 
             <LinksEditor
               links={links}

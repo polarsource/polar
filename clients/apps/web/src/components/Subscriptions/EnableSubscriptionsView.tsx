@@ -26,7 +26,9 @@ export const EnableSubscriptionsView = ({
       .mutateAsync({
         id: organization.id,
         settings: {
-          subscriptions_enabled: true,
+          feature_settings: {
+            subscriptions_enabled: true,
+          },
         },
       })
       .then(() => {

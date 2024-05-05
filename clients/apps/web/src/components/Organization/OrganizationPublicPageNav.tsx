@@ -42,7 +42,7 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        {organization.subscriptions_enabled && (
+        {organization.feature_settings?.subscriptions_enabled && (
           <Link href={organizationPageLink(organization, 'subscriptions')}>
             <TabsTrigger value="subscriptions" size="small">
               Subscriptions
@@ -50,7 +50,7 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        {organization.articles_enabled && (
+        {organization.feature_settings?.articles_enabled && (
           <Link href={organizationPageLink(organization, 'posts')}>
             <TabsTrigger value="posts" size="small">
               Posts
@@ -58,7 +58,7 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        {organization.issue_funding_enabled && (
+        {organization.feature_settings?.issue_funding_enabled && (
           <Link href={organizationPageLink(organization, 'issues')}>
             <TabsTrigger value="issues" size="small">
               Issues

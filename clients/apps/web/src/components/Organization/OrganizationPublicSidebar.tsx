@@ -167,8 +167,8 @@ export const OrganizationPublicSidebar = ({
             </Button>
           </div>
         </div>
-        {(organization.subscriptions_enabled ||
-          organization.articles_enabled) && (
+        {(organization.feature_settings?.subscriptions_enabled ||
+          organization.feature_settings?.articles_enabled) && (
           <div className="flex w-full flex-col gap-y-6">
             {freeSubscriptionTier && !isAdmin ? (
               <>

@@ -159,7 +159,7 @@ const ClientPage = () => {
     }
   }
 
-  if (!post.data.organization.articles_enabled) {
+  if (!post.data.organization.feature_settings?.articles_enabled) {
     return redirect(`/maintainer/${post.data.organization.name}/posts`)
   }
 

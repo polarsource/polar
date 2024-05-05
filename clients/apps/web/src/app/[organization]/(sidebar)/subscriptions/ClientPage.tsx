@@ -33,7 +33,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
     [organization, orgs],
   )
 
-  if (!organization.subscriptions_enabled) {
+  if (!organization.feature_settings?.subscriptions_enabled) {
     return redirect(organizationPageLink(organization))
   }
 

@@ -26,7 +26,7 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
 
-  if (!organization.subscriptions_enabled) {
+  if (!organization.feature_settings?.subscriptions_enabled) {
     return <EnableSubscriptionsView organization={organization} />
   }
 

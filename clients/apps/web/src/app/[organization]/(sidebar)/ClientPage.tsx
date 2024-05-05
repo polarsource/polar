@@ -120,7 +120,7 @@ const ClientPage = ({
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
           {isAdmin && !organization.has_app_installed && <GitHubAppUpsell />}
 
-          {organization.articles_enabled && (
+          {organization.feature_settings?.articles_enabled && (
             <div className="flex w-full flex-col gap-y-6">
               <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
                 <h2 className="text-lg">Pinned & Latest Posts</h2>
@@ -149,7 +149,7 @@ const ClientPage = ({
             </div>
           )}
 
-          {organization.subscriptions_enabled && (
+          {organization.feature_settings?.subscriptions_enabled && (
             <div className="flex w-full flex-col lg:hidden">
               <HighlightedTiersEditor
                 organization={organization}
@@ -190,7 +190,8 @@ const ClientPage = ({
             />
           </div>
 
-          {organization.issue_funding_enabled && issues.length > 0 ? (
+          {organization.feature_settings?.issue_funding_enabled &&
+          issues.length > 0 ? (
             <OrganizationIssueSummaryList
               issues={issues}
               organization={organization}
@@ -199,7 +200,7 @@ const ClientPage = ({
         </div>
 
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
-          {organization.subscriptions_enabled && (
+          {organization.feature_settings?.subscriptions_enabled && (
             <HighlightedTiersEditor
               organization={organization}
               adminOrganizations={adminOrganizations}

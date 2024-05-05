@@ -21,7 +21,7 @@ export default function ClientPage() {
     )
   }
 
-  if (org && !org.issue_funding_enabled) {
+  if (org && !org.feature_settings?.issue_funding_enabled) {
     return <EnableIssuesView organization={org} />
   }
 

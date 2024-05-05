@@ -42,7 +42,7 @@ const ClientPage = ({
     }
   }, [inView, posts])
 
-  if (!organization.articles_enabled) {
+  if (!organization.feature_settings?.articles_enabled) {
     return redirect(organizationPageLink(organization))
   }
 

@@ -109,7 +109,7 @@ const ClientPage = () => {
     return null
   }
 
-  if (!org.articles_enabled) {
+  if (!org.feature_settings?.articles_enabled) {
     return redirect(`/maintainer/${org.name}/posts`)
   }
 

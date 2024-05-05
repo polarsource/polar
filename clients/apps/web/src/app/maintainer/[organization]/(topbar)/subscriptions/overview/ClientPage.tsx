@@ -185,7 +185,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
     ? subscriptionTiers.data?.items?.find((t) => t.id === subscriptionTierId)
     : undefined
 
-  if (!organization.subscriptions_enabled) {
+  if (!organization.feature_settings?.subscriptions_enabled) {
     return <EnableSubscriptionsView organization={organization} />
   }
 

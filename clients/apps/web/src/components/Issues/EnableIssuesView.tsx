@@ -24,7 +24,9 @@ export const EnableIssuesView = ({ organization }: EnableIssuesViewProps) => {
       .mutateAsync({
         id: organization.id,
         settings: {
-          issue_funding_enabled: true,
+          feature_settings: {
+            issue_funding_enabled: true,
+          },
         },
       })
       .then(() => {

@@ -5,12 +5,23 @@ from uuid import UUID
 
 from pydantic import UUID4, Field, HttpUrl
 
-from polar import issue
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import types
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization as OrganizationModel
+
+
+class OrganizationFeatureSettings(Schema):
+    articles_enabled: bool = Field(
+        False, description="If this organization has articles enabled"
+    )
+    subscriptions_enabled: bool = Field(
+        False, description="If this organization has subscriptions enabled"
+    )
+    issue_funding_enabled: bool = Field(
+        False, description="If this organization has issue funding enabled"
+    )
 
 
 class OrganizationProfileSettings(Schema):
@@ -59,27 +70,24 @@ class Organization(Schema):
 
     custom_domain: str | None = None
 
+    public_page_enabled: bool = Field(
+        description="If this organization has a public Polar page"
+    )
+
+    donations_enabled: bool = Field(
+        description="If this organizations accepts donations"
+    )
+
+    public_donation_timestamps: bool = Field(
+        description="If this organization should make donation timestamps publicly available"
+    )
+
     profile_settings: OrganizationProfileSettings | None = Field(
         description="Settings for the organization profile"
     )
 
-    articles_enabled: bool = Field(
-        description="If this organization has articles enabled"
-    )
-    subscriptions_enabled: bool = Field(
-        description="If this organization has subscriptions enabled"
-    )
-    public_page_enabled: bool = Field(
-        description="If this organization has a public Polar page"
-    )
-    issue_funding_enabled: bool = Field(
-        description="If this organization has issue funding enabled"
-    )
-    donations_enabled: bool = Field(
-        description="If this organizations accepts donations"
-    )
-    public_donation_timestamps: bool = Field(
-        description="If this organization should make donation timestamps publicly available"
+    feature_settings: OrganizationFeatureSettings | None = Field(
+        description="Settings for the organization features"
     )
 
     # Team fields
@@ -114,6 +122,16 @@ class Organization(Schema):
             links=o.profile_settings.get("links", None),
         )
 
+        feature_settings = OrganizationFeatureSettings(
+            articles_enabled=o.feature_settings.get("articles_enabled", False),
+            subscriptions_enabled=o.feature_settings.get(
+                "subscriptions_enabled", False
+            ),
+            issue_funding_enabled=o.feature_settings.get(
+                "issue_funding_enabled", False
+            ),
+        )
+
         return cls(
             id=o.id,
             platform=o.platform,
@@ -133,7 +151,13 @@ class Organization(Schema):
             account_id=o.account_id,
             has_app_installed=o.installation_id is not None,
             custom_domain=o.custom_domain,
+            public_page_enabled=True
+            if o.installation_id or o.created_from_user_maintainer_upgrade
+            else False,
+            donations_enabled=o.donations_enabled,
+            public_donation_timestamps=o.public_donation_timestamps,
             profile_settings=profile_settings,
+            feature_settings=feature_settings,
             #
             billing_email=o.billing_email if include_member_fields else None,
             #
@@ -141,19 +165,10 @@ class Organization(Schema):
             if include_member_fields
             else None,
             #
-            issue_funding_enabled=o.issue_funding_enabled,
-            articles_enabled=o.articles_enabled,
-            subscriptions_enabled=o.subscriptions_enabled,
-            #
             per_user_monthly_spending_limit=o.per_user_monthly_spending_limit
             if include_member_fields
             else None,
             is_teams_enabled=o.is_teams_enabled,
-            donations_enabled=o.donations_enabled,
-            public_donation_timestamps=o.public_donation_timestamps,
-            public_page_enabled=True
-            if o.installation_id or o.created_from_user_maintainer_upgrade
-            else False,
         )
 
 
@@ -167,6 +182,12 @@ class OrganizationProfileSettingsUpdate(Schema):
     featured_projects: list[UUID4] | None = None
     featured_organizations: list[UUID4] | None = None
     links: list[HttpUrl] | None = None
+
+
+class OrganizationFeatureSettingsUpdate(Schema):
+    articles_enabled: bool | None = None
+    subscriptions_enabled: bool | None = None
+    issue_funding_enabled: bool | None = None
 
 
 class OrganizationUpdate(Schema):
@@ -192,11 +213,8 @@ class OrganizationUpdate(Schema):
     donations_enabled: bool | None = None
     public_donation_timestamps: bool | None = None
 
-    issue_funding_enabled: bool | None = None
-    articles_enabled: bool | None = None
-    subscriptions_enabled: bool | None = None
-
     profile_settings: OrganizationProfileSettingsUpdate | None = None
+    feature_settings: OrganizationFeatureSettingsUpdate | None = None
 
 
 class OrganizationSetAccount(Schema):

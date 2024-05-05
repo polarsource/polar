@@ -176,14 +176,8 @@ class Organization(RecordModel):
     # Feature Flags
     #
 
-    issue_funding_enabled: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
-    articles_enabled: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
-    subscriptions_enabled: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
+    feature_settings: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
     )
 
     #

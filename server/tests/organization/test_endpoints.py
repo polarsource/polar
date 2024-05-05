@@ -655,45 +655,53 @@ async def test_issue_funding_enabled(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"issue_funding_enabled": True},
+        json={"feature_settings": {"issue_funding_enabled": True}},
     )
     assert response.status_code == 200
-    assert response.json()["issue_funding_enabled"] is True
+    assert response.json()["feature_settings"]["issue_funding_enabled"] is True
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"issue_funding_enabled": None},
+        json={"feature_settings": {"issue_funding_enabled": None}},
     )
     assert response.status_code == 200
-    assert response.json()["issue_funding_enabled"] is True  # no change
+    assert (
+        response.json()["feature_settings"]["issue_funding_enabled"] is True
+    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={},
+        json={"feature_settings": {}},
     )
     assert response.status_code == 200
-    assert response.json()["issue_funding_enabled"] is True  # no change
+    assert (
+        response.json()["feature_settings"]["issue_funding_enabled"] is True
+    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"issue_funding_enabled": False},
+        json={"feature_settings": {"issue_funding_enabled": False}},
     )
     assert response.status_code == 200
-    assert response.json()["issue_funding_enabled"] is False
+    assert response.json()["feature_settings"]["issue_funding_enabled"] is False
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"issue_funding_enabled": None},
+        json={"feature_settings": {"issue_funding_enabled": None}},
     )
     assert response.status_code == 200
-    assert response.json()["issue_funding_enabled"] is False  # no change
+    assert (
+        response.json()["feature_settings"]["issue_funding_enabled"] is False
+    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={},
+        json={"feature_settings": {}},
     )
     assert response.status_code == 200
-    assert response.json()["issue_funding_enabled"] is False  # no change
+    assert (
+        response.json()["feature_settings"]["issue_funding_enabled"] is False
+    )  # no change
 
 
 @pytest.mark.asyncio
@@ -713,45 +721,45 @@ async def test_articles_enabled(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"articles_enabled": True},
+        json={"feature_settings": {"articles_enabled": True}},
     )
     assert response.status_code == 200
-    assert response.json()["articles_enabled"] is True
+    assert response.json()["feature_settings"]["articles_enabled"] is True
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"articles_enabled": None},
+        json={"feature_settings": {"articles_enabled": None}},
     )
     assert response.status_code == 200
-    assert response.json()["articles_enabled"] is True  # no change
+    assert response.json()["feature_settings"]["articles_enabled"] is True  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={},
+        json={"feature_settings": {}},
     )
     assert response.status_code == 200
-    assert response.json()["articles_enabled"] is True  # no change
+    assert response.json()["feature_settings"]["articles_enabled"] is True  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"articles_enabled": False},
+        json={"feature_settings": {"articles_enabled": False}},
     )
     assert response.status_code == 200
-    assert response.json()["articles_enabled"] is False
+    assert response.json()["feature_settings"]["articles_enabled"] is False
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"articles_enabled": None},
+        json={"feature_settings": {"articles_enabled": None}},
     )
     assert response.status_code == 200
-    assert response.json()["articles_enabled"] is False  # no change
+    assert response.json()["feature_settings"]["articles_enabled"] is False  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={},
+        json={"feature_settings": {}},
     )
     assert response.status_code == 200
-    assert response.json()["articles_enabled"] is False  # no change
+    assert response.json()["feature_settings"]["articles_enabled"] is False  # no change
 
 
 @pytest.mark.asyncio
@@ -771,45 +779,53 @@ async def test_subscriptions_enabled(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"subscriptions_enabled": True},
+        json={"feature_settings": {"subscriptions_enabled": True}},
     )
     assert response.status_code == 200
-    assert response.json()["subscriptions_enabled"] is True
+    assert response.json()["feature_settings"]["subscriptions_enabled"] is True
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"subscriptions_enabled": None},
+        json={"feature_settings": {"subscriptions_enabled": None}},
     )
     assert response.status_code == 200
-    assert response.json()["subscriptions_enabled"] is True  # no change
+    assert (
+        response.json()["feature_settings"]["subscriptions_enabled"] is True
+    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={},
+        json={"feature_settings": {}},
     )
     assert response.status_code == 200
-    assert response.json()["subscriptions_enabled"] is True  # no change
+    assert (
+        response.json()["feature_settings"]["subscriptions_enabled"] is True
+    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"subscriptions_enabled": False},
+        json={"feature_settings": {"subscriptions_enabled": False}},
     )
     assert response.status_code == 200
-    assert response.json()["subscriptions_enabled"] is False
+    assert response.json()["feature_settings"]["subscriptions_enabled"] is False
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"subscriptions_enabled": None},
+        json={"feature_settings": {"subscriptions_enabled": None}},
     )
     assert response.status_code == 200
-    assert response.json()["subscriptions_enabled"] is False  # no change
+    assert (
+        response.json()["feature_settings"]["subscriptions_enabled"] is False
+    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={},
+        json={"feature_settings": {}},
     )
     assert response.status_code == 200
-    assert response.json()["subscriptions_enabled"] is False  # no change
+    assert (
+        response.json()["feature_settings"]["subscriptions_enabled"] is False
+    )  # no change
 
 
 @pytest.mark.asyncio

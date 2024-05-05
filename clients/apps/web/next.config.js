@@ -244,11 +244,6 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/maintainer/:organization',
-        destination: '/maintainer/:organization/overview',
-        permanent: false,
-      },
-      {
         source: '/maintainer/:organization/issues',
         destination: '/maintainer/:organization/issues/overview',
         permanent: false,

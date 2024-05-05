@@ -1,7 +1,8 @@
+import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { MaintainerOrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { ListResourceOrganization } from '@polar-sh/sdk'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import React from 'react'
 
 export default async function Layout({
@@ -42,6 +43,10 @@ export default async function Layout({
 
   if (!org) {
     return notFound()
+  }
+
+  if (shouldBeOnboarded(org)) {
+    return redirect(`/maintainer/${org.name}/onboarding`)
   }
 
   return (

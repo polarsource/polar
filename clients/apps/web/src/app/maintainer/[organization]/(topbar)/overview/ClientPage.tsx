@@ -10,11 +10,9 @@ import {
   EarningsMetric,
   SubscribersMetric,
 } from '@/components/Subscriptions/SubscriptionsMetric'
-import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { useSubscriptionStatistics } from '@/hooks/queries'
 import { FlagOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
-import { redirect } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -57,10 +55,6 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
       subscriberGoals.find((goal) => goal > lastPeriod.subscribers) ?? 10000
     )
   }, [lastPeriod])
-
-  if (shouldBeOnboarded(organization)) {
-    return redirect(`/maintainer/${organization.name}/onboarding`)
-  }
 
   return (
     <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">

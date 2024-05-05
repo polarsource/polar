@@ -38,6 +38,7 @@ export default function Page() {
     !adminOrgsAreLoading &&
     !postsAreLoading &&
     !!personalOrg &&
+    personalOrg.feature_settings?.articles_enabled &&
     (posts.data?.pages.flatMap((page) => page.items).length ?? 0) < 1
 
   const githubAccount = useGitHubAccount()

@@ -5,10 +5,11 @@ import { Progress50 } from '@/components/Issues/IssueProgress'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import FakePullRequest from '@/components/Settings/FakePullRequest'
 import { useAuth, usePersonalOrganization } from '@/hooks'
+import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { useListAdminOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback, useEffect } from 'react'
 
@@ -49,10 +50,19 @@ export default function Page() {
 
     // redirect to first org
     if (personalOrg) {
-      router.push(`/maintainer/${personalOrg.name}/overview`)
+      shouldBeOnboarded(personalOrg)
+        ? redirect(`/maintainer/${personalOrg.name}/onboarding`)
+        : redirect(`/maintainer/${personalOrg.name}/overview`)
       return
     }
-  }, [listOrganizationsQuery, orgs, router, authenticated, currentUser])
+  }, [
+    listOrganizationsQuery,
+    orgs,
+    router,
+    authenticated,
+    currentUser,
+    personalOrg,
+  ])
 
   const steps = [
     {
@@ -72,6 +82,10 @@ export default function Page() {
   const isBacker =
     listOrganizationsQuery.isFetched &&
     listOrganizationsQuery.data?.items?.length === 0
+
+  if (!personalOrg) {
+    return null
+  }
 
   return (
     <Gatekeeper>

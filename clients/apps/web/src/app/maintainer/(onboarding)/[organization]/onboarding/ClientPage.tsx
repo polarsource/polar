@@ -1,14 +1,16 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useUpdateOrganization } from '@/hooks/queries'
 import {
+  Bolt,
   CheckOutlined,
+  HowToVoteOutlined,
   HubOutlined,
   ShapeLineOutlined,
+  ViewDayOutlined,
+  VolunteerActivismOutlined,
 } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Card,
@@ -31,8 +33,8 @@ export default function ClientPage({
 }: {
   organization: Organization
 }) {
+  const [featuresUpdated, setFeaturesUpdated] = useState<boolean>(false)
   const [features, setFeatures] = useState<FeatureKey[]>([])
-  const router = useRouter()
   const updateOrganization = useUpdateOrganization()
 
   const toggleFeature = useCallback(
@@ -59,25 +61,33 @@ export default function ClientPage({
         {},
       )
 
+      const { donations_enabled, ...feature_settings } = featuresRecord
+
+      setFeaturesUpdated(true)
+
       updateOrganization
         .mutateAsync({
           id: organization.id,
           settings: {
-            ...featuresRecord,
+            feature_settings,
+            donations_enabled,
           },
         })
         .then(() => {
-          router.refresh()
+          location.reload()
+        })
+        .catch(() => {
+          setFeaturesUpdated(false)
         })
     },
-    [organization, router, updateOrganization],
+    [organization, updateOrganization],
   )
 
   return (
-    <DashboardBody className="flex max-w-4xl flex-col gap-12 py-12">
+    <div className="flex max-w-4xl flex-col gap-12 py-12">
       <div className="flex flex-col items-center gap-4">
         <h1 className="text-2xl font-semibold">What describes you best?</h1>
-        <p className="dark:text-polar-400 text-gray-600">
+        <p className="dark:text-polar-400 text-center text-gray-600">
           We&apos;ll help you setup the most appropriate monetization tools for
           your usecase
         </p>
@@ -132,6 +142,7 @@ export default function ClientPage({
           name="Subscriptions"
           description="Offer benefits to your supporters via recurring payments"
           active={features.includes('subscriptions_enabled')}
+          icon={<Bolt fontSize="inherit" />}
           onClick={toggleFeature}
         />
         <FeatureItem
@@ -139,6 +150,7 @@ export default function ClientPage({
           name="Donations"
           description="Allow your supporters to say thanks with a donation"
           active={features.includes('donations_enabled')}
+          icon={<VolunteerActivismOutlined fontSize="inherit" />}
           onClick={toggleFeature}
         />
         <FeatureItem
@@ -146,6 +158,7 @@ export default function ClientPage({
           name="Issue Funding"
           description="Enable crowdfunding by allowing pledges to your GitHub issues"
           active={features.includes('issue_funding_enabled')}
+          icon={<HowToVoteOutlined fontSize="inherit" />}
           onClick={toggleFeature}
         />
         <FeatureItem
@@ -153,6 +166,7 @@ export default function ClientPage({
           name="Posts"
           description="Reach your supporters with a newsletter by writing about your projects"
           active={features.includes('articles_enabled')}
+          icon={<ViewDayOutlined fontSize="inherit" />}
           onClick={toggleFeature}
         />
       </div>
@@ -164,10 +178,11 @@ export default function ClientPage({
         onClick={() => initializeFeatures(features)}
         className="self-center"
         disabled={features.length === 0}
+        loading={featuresUpdated}
       >
         Continue
       </Button>
-    </DashboardBody>
+    </div>
   )
 }
 
@@ -189,10 +204,10 @@ const OnboardingCard = ({
   return (
     <Card
       className={twMerge(
-        'dark:hover:bg-polar-800 dark:ring-polar-800 relative flex h-full flex-col shadow-sm ring-1 transition-colors hover:cursor-pointer hover:bg-gray-50',
+        'dark:hover:bg-polar-800 dark:ring-polar-800 relative flex h-full select-none flex-col border-none ring-0 transition-colors hover:cursor-pointer hover:bg-gray-50 dark:ring-1',
         active
-          ? 'dark:bg-polar-800 bg-white ring-gray-100'
-          : 'dark:bg-polar-900 bg-gray-100 ring-gray-200',
+          ? 'dark:bg-polar-800 bg-white shadow-sm'
+          : 'dark:bg-polar-900 bg-gray-200',
       )}
       onClick={onClick}
     >
@@ -231,6 +246,7 @@ interface FeatureItemProps {
   name: string
   description: string
   active: boolean
+  icon: JSX.Element
   onClick: (key: FeatureKey) => () => void
 }
 
@@ -239,17 +255,33 @@ const FeatureItem = ({
   name,
   description,
   active,
+  icon,
   onClick,
 }: FeatureItemProps) => {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-row items-center justify-between gap-4 rounded-2xl bg-gray-200/70 px-6 py-4 transition-colors hover:cursor-pointer hover:bg-gray-50',
-        active ? 'dark:bg-polar-700 bg-white shadow-sm' : '',
+        'dark:bg-polar-900 dark:hover:bg-polar-800 flex select-none flex-row items-center justify-between gap-4 rounded-2xl bg-gray-200/70 px-6 py-4 transition-colors hover:cursor-pointer hover:bg-gray-50',
+        active ? 'dark:bg-polar-800 bg-white shadow-sm' : '',
       )}
       onClick={onClick(id)}
     >
-      <div className="flex flex-row items-baseline gap-x-4">
+      <div
+        className={twMerge(
+          'flex flex-row items-baseline gap-x-4',
+          active
+            ? 'dark:text-polar-50 text-white'
+            : 'dark:text-polar-500 text-gray-500',
+        )}
+      >
+        <span
+          className={twMerge(
+            'text-xl',
+            active && 'text-blue-500 dark:text-blue-400',
+          )}
+        >
+          {icon}
+        </span>
         <span className={twMerge(active && 'font-medium')}>{name}</span>
         <p className="dark:text-polar-500 text-sm text-gray-500">
           {description}

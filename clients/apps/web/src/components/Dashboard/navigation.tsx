@@ -11,7 +11,6 @@ import {
   BoltOutlined,
   CropFreeOutlined,
   DiamondOutlined,
-  DonutLargeOutlined,
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
@@ -93,20 +92,6 @@ export const useMaintainerRoutes = (
   const r = useMemo(() => {
     if (!org) {
       return []
-    }
-
-    if (shouldBeOnboarded(org)) {
-      return [
-        {
-          id: 'onboarding',
-          title: 'Onboarding',
-          link: `/maintainer/${org.name}/onboarding`,
-          icon: <DonutLargeOutlined className="h-5 w-5" fontSize="inherit" />,
-          postIcon: undefined,
-          if: true,
-          subs: undefined,
-        },
-      ].map(applyIsActive(path))
     }
 
     return maintainerRoutesList(org)

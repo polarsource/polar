@@ -2,7 +2,6 @@ import { Organization } from '@polar-sh/sdk'
 
 import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { isFeatureEnabled } from '@/utils/feature-flags'
-import { organizationPageLink } from '@/utils/nav'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,

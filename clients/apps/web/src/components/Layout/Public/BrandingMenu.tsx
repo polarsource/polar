@@ -17,11 +17,14 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export const BrandingMenu = ({
   logoVariant = 'icon',
+  className,
 }: {
   logoVariant?: 'icon' | 'logotype'
+  className?: string
 }) => {
   const brandingMenuRef = useRef<HTMLDivElement>(null)
 
@@ -46,7 +49,7 @@ export const BrandingMenu = ({
   }, [logoVariant])
 
   return (
-    <div className="relative flex flex-row items-center">
+    <div className={twMerge('relative flex flex-row items-center', className)}>
       <DropdownMenu open={brandingMenuOpen}>
         <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
           <Link href="/">

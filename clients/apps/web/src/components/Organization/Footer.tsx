@@ -14,7 +14,7 @@ const Footer = ({
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 dark:bg-polar-900 border-gray-75 flex w-full flex-col items-center space-y-24 border-t bg-white py-24 md:py-32',
+        'dark:border-polar-800 dark:bg-polar-950 border-gray-75 flex w-full flex-col items-center space-y-24 border-t bg-white py-24 md:py-32',
       )}
     >
       {showUpsellFooter ? <UpsellFooter wide={wide} /> : null}
@@ -30,7 +30,7 @@ const Footer = ({
             <LogoType width={120} />
           </span>
           <span className="dark:text-polar-500 text-gray-500">
-            &copy; Polar Software Inc.
+            &copy; Polar Software Inc. {new Date().getFullYear()}
           </span>
         </div>
         <div
@@ -39,7 +39,7 @@ const Footer = ({
             wide ? 'gap-x-24 lg:gap-x-32' : 'gap-x-20',
           )}
         >
-          <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
             <h3 className="dark:text-polar-50 text-base">Creators</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://api.polar.sh/api/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
@@ -56,7 +56,7 @@ const Footer = ({
               </FooterLink>
             </div>
           </div>
-          <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
             <h3 className="dark:text-polar-50 text-base">Company</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="/careers">Careers</FooterLink>
@@ -72,7 +72,7 @@ const Footer = ({
               </FooterLink>
             </div>
           </div>
-          <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
             <h3 className="dark:text-polar-50 text-lg">Community</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://discord.gg/STfRufb32V">
@@ -84,7 +84,7 @@ const Footer = ({
               <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
             </div>
           </div>
-          <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
             <h3 className="dark:text-polar-50 text-base">Support</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://docs.polar.sh/">Docs</FooterLink>
@@ -103,7 +103,7 @@ export default Footer
 const FooterLink = (props: PropsWithChildren<LinkProps>) => {
   return (
     <Link
-      className="flex flex-row items-center gap-x-1 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-50"
       {...props}
     >
       {props.children}

@@ -81,6 +81,7 @@ const EmbedIssue = (props: { src: string }) => {
         donations_enabled: false,
         public_page_enabled: true,
         public_donation_timestamps: false,
+        feature_settings: {},
       },
     },
     pledge_badge_currently_embedded: false,

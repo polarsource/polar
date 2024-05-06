@@ -74,7 +74,7 @@ export const PostWizard = () => {
 
   const drafts = posts?.items?.filter((post) => !post.published_at) ?? []
 
-  if (!org) return null
+  if (!org || !org.feature_settings?.articles_enabled) return null
 
   return (
     <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">

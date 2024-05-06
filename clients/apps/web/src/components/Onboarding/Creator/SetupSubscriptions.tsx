@@ -13,7 +13,12 @@ export const SetupSubscriptions = () => {
     (tier) => tier.type === 'individual' || tier.type === 'business',
   )
 
-  if (!org || hasPaidSubscriptionTiers) return null
+  if (
+    !org ||
+    hasPaidSubscriptionTiers ||
+    !org.feature_settings?.subscriptions_enabled
+  )
+    return null
 
   return (
     <div className="flex flex-col gap-y-8">
